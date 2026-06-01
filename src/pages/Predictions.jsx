@@ -1,12 +1,40 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
+// ELO-based autofill — weighted random based on FIFA rankings
+const predictScore = (homeRank, awayRank) => {
+  // Lower rank number = better team
+  const homeStrength = 1 / (homeRank || 20)
+  const awayStrength = 1 / (awayRank || 20)
+  const total = homeStrength + awayStrength
+  const homeWinProb = homeStrength / total
+
+  // Add home advantage
+  const adjustedHomeProb = Math.min(0.75, homeWinProb * 1.1)
+  const rand = Math.random()
+
+  let result
+  if (rand < adjustedHomeProb * 0.7) result = 'home'
+  else if (rand < adjustedHomeProb * 0.7 + 0.28) result = 'draw'
+  else result = 'away'
+
+  // Generate realistic scores
+  const scoreOptions = {
+    home: [[1,0],[2,0],[2,1],[3,0],[3,1],[1,0],[2,0]],
+    draw: [[0,0],[1,1],[2,2],[1,1],[0,0]],
+    away: [[0,1],[0,2],[1,2],[0,3],[1,2]],
+  }
+  const scores = scoreOptions[result]
+  const [h, a] = scores[Math.floor(Math.random() * scores.length)]
+  return { home: h, away: a }
+}
+
 export default function Predictions() {
-  const { user } = useAuthStore()
+  const { user, profile, loadProfile } = useAuthStore()
   const navigate = useNavigate()
   const [activeGroup, setActiveGroup] = useState('A')
   const [viewMode, setViewMode] = useState('group')
@@ -16,12 +44,34 @@ export default function Predictions() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState({})
   const [saved, setSaved] = useState({})
+  const [jokersRemaining, setJokersRemaining] = useState(5)
+  const [autoFilling, setAutoFilling] = useState(false)
+  const [showJokerReminder, setShowJokerReminder] = useState(false)
 
   useEffect(() => {
     loadMatches()
     loadOdds()
-    if (user) loadPredictions()
+    if (user) {
+      loadPredictions()
+      checkJokerReminder()
+    }
   }, [user])
+
+  useEffect(() => {
+    if (profile) {
+      setJokersRemaining(profile.jokers_group_remaining ?? 5)
+    }
+  }, [profile])
+
+  const checkJokerReminder = async () => {
+    // Check if last group match is within 24 hours
+    const lastGroupMatch = new Date('2026-06-28T20:00:00Z')
+    const now = new Date()
+    const hoursUntilEnd = (lastGroupMatch - now) / (1000 * 60 * 60)
+    if (hoursUntilEnd > 0 && hoursUntilEnd < 24 && (profile?.jokers_group_remaining ?? 5) > 0) {
+      setShowJokerReminder(true)
+    }
+  }
 
   const loadOdds = async () => {
     try {
@@ -43,14 +93,13 @@ export default function Predictions() {
       .from('matches')
       .select(`
         *,
-        home_team:home_team_id(id,name,flag_emoji,short_code),
-        away_team:away_team_id(id,name,flag_emoji,short_code),
+        home_team:home_team_id(id,name,flag_emoji,short_code,fifa_ranking),
+        away_team:away_team_id(id,name,flag_emoji,short_code,fifa_ranking),
         group:group_id(name),
         venue:venue_id(city,country)
       `)
       .eq('stage', 'group')
       .order('kickoff_time', { ascending: true })
-
     setMatches(data || [])
     setLoading(false)
   }
@@ -60,14 +109,13 @@ export default function Predictions() {
       .from('predictions')
       .select('*')
       .eq('user_id', user.id)
-
     if (data) {
       const predMap = {}
       data.forEach(p => {
         predMap[p.match_id] = {
           home: p.home_score,
           away: p.away_score,
-          confident: p.is_confident,
+          joker: p.is_confident,
         }
       })
       setPredictions(predMap)
@@ -85,15 +133,44 @@ export default function Predictions() {
     }))
   }
 
-  const handleConfident = (matchId) => {
+  const handleJoker = async (matchId, currentJoker) => {
     if (!user) return
+    const pred = predictions[matchId]
+    if (!pred) return
+
+    // Can't add joker if none remaining (unless removing one)
+    if (!currentJoker && jokersRemaining <= 0) return
+
+    const newJoker = !currentJoker
+    const newRemaining = newJoker ? jokersRemaining - 1 : jokersRemaining + 1
+
+    // Update local state immediately
     setPredictions(prev => ({
       ...prev,
-      [matchId]: { ...prev[matchId], confident: !prev[matchId]?.confident }
+      [matchId]: { ...prev[matchId], joker: newJoker }
     }))
+    setJokersRemaining(newRemaining)
+
+    // Save to DB
+    await supabase
+      .from('predictions')
+      .upsert({
+        user_id: user.id,
+        match_id: matchId,
+        home_score: pred.home ?? 0,
+        away_score: pred.away ?? 0,
+        is_confident: newJoker,
+        bracket_type: 'main',
+      }, { onConflict: 'user_id,match_id,bracket_type' })
+
+    // Update joker count in profile
+    await supabase
+      .from('profiles')
+      .update({ jokers_group_remaining: newRemaining })
+      .eq('id', user.id)
   }
 
-  const savePrediction = async (match) => {
+  const savePrediction = async (match, jokerOverride) => {
     if (!user) return
     const pred = predictions[match.id]
     if (pred?.home === '' || pred?.home === undefined || pred?.away === '' || pred?.away === undefined) return
@@ -107,7 +184,7 @@ export default function Predictions() {
         match_id: match.id,
         home_score: pred.home,
         away_score: pred.away,
-        is_confident: pred.confident || false,
+        is_confident: jokerOverride ?? pred.joker ?? false,
         bracket_type: 'main',
       }, { onConflict: 'user_id,match_id,bracket_type' })
 
@@ -116,6 +193,44 @@ export default function Predictions() {
       setSaved(prev => ({ ...prev, [match.id]: true }))
       setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
     }
+  }
+
+  const autoFillGroup = async () => {
+    if (!user || autoFilling) return
+    setAutoFilling(true)
+
+    const groupMatchesToFill = matches.filter(m =>
+      m.group?.name === activeGroup && !isLocked(m.kickoff_time)
+    )
+
+    const newPreds = { ...predictions }
+    const updates = []
+
+    for (const match of groupMatchesToFill) {
+      const score = predictScore(
+        match.home_team?.fifa_ranking,
+        match.away_team?.fifa_ranking
+      )
+      newPreds[match.id] = {
+        ...newPreds[match.id],
+        home: score.home,
+        away: score.away,
+      }
+      updates.push(
+        supabase.from('predictions').upsert({
+          user_id: user.id,
+          match_id: match.id,
+          home_score: score.home,
+          away_score: score.away,
+          is_confident: newPreds[match.id]?.joker ?? false,
+          bracket_type: 'main',
+        }, { onConflict: 'user_id,match_id,bracket_type' })
+      )
+    }
+
+    setPredictions(newPreds)
+    await Promise.all(updates)
+    setAutoFilling(false)
   }
 
   const formatDate = (time) => {
@@ -152,6 +267,8 @@ export default function Predictions() {
 
   const groupMatches = matches.filter(m => m.group?.name === activeGroup)
 
+  const jokerColor = jokersRemaining <= 1 ? 'var(--accent-red)' : jokersRemaining <= 2 ? 'var(--accent-orange)' : 'var(--accent-green)'
+
   if (loading) {
     return <div className="loading-screen"><div className="spinner" /></div>
   }
@@ -164,6 +281,8 @@ export default function Predictions() {
     const matchOdds = getMatchOdds(match)
     const hasPrediction = pred.home !== undefined && pred.home !== ''
     const isGuest = !user
+    const hasJoker = pred.joker === true
+    const canUseJoker = !locked && user && hasPrediction && (jokersRemaining > 0 || hasJoker)
 
     const getFavourite = () => {
       if (!matchOdds) return null
@@ -183,10 +302,30 @@ export default function Predictions() {
         className="card"
         style={{
           opacity: locked ? 0.7 : 1,
-          border: hasPrediction ? '1px solid var(--accent-green)' : '1px solid var(--border-light)',
-          position: 'relative',
+          border: hasJoker
+            ? '2px solid var(--accent-gold)'
+            : hasPrediction
+            ? '1px solid var(--accent-green)'
+            : '1px solid var(--border-light)',
+          background: hasJoker ? 'var(--accent-gold-light)' : 'var(--bg-card)',
         }}
       >
+        {/* Joker indicator */}
+        {hasJoker && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '6px',
+            marginBottom: '10px',
+            padding: '6px 10px',
+            background: 'rgba(255,215,0,0.2)',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '12px',
+            fontWeight: '700',
+            color: '#b8860b',
+          }}>
+            🃏 Joker applied — 2x points if correct!
+          </div>
+        )}
+
         {/* Match info */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -197,7 +336,7 @@ export default function Predictions() {
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {locked && <span className="badge badge-red">🔒 Locked</span>}
-            {!locked && hasPrediction && <span className="badge badge-green">✓ Saved</span>}
+            {!locked && hasPrediction && !hasJoker && <span className="badge badge-green">✓ Saved</span>}
             {match.status === 'completed' && (
               <span className="badge badge-gray">{match.home_score} – {match.away_score}</span>
             )}
@@ -220,8 +359,7 @@ export default function Predictions() {
               value={pred.home ?? ''}
               onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
               onBlur={() => savePrediction(match)}
-              disabled={locked || isGuest}
-              placeholder="?"
+              disabled={locked || isGuest} placeholder="?"
               style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
             />
             <span className="score-divider">–</span>
@@ -230,8 +368,7 @@ export default function Predictions() {
               value={pred.away ?? ''}
               onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
               onBlur={() => savePrediction(match)}
-              disabled={locked || isGuest}
-              placeholder="?"
+              disabled={locked || isGuest} placeholder="?"
               style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
             />
           </div>
@@ -265,15 +402,8 @@ export default function Predictions() {
 
         {/* Guest CTA */}
         {isGuest && !locked && (
-          <div style={{
-            marginTop: '14px', paddingTop: '12px',
-            borderTop: '1px solid var(--border-light)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            gap: '12px',
-          }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-              Register to save your predictions
-            </span>
+          <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Register to save your predictions</span>
             <div style={{ display: 'flex', gap: '8px' }}>
               <Link to="/register" className="btn btn-primary btn-sm">Join free</Link>
               <Link to="/login" className="btn btn-secondary btn-sm">Sign in</Link>
@@ -281,23 +411,26 @@ export default function Predictions() {
           </div>
         )}
 
-        {/* Confidence + Save (logged in only) */}
+        {/* Joker + Save (logged in only) */}
         {!isGuest && !locked && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: `1px solid ${hasJoker ? 'rgba(255,215,0,0.4)' : 'var(--border-light)'}` }}>
             <button
-              onClick={() => handleConfident(match.id)}
+              onClick={() => hasPrediction && canUseJoker && handleJoker(match.id, hasJoker)}
+              disabled={!hasPrediction || (!canUseJoker && !hasJoker)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '6px 12px', borderRadius: 'var(--radius-full)',
-                fontSize: '12px', fontWeight: '600',
-                background: pred.confident ? 'var(--accent-gold-light)' : 'var(--bg-tertiary)',
-                color: pred.confident ? '#b8860b' : 'var(--text-muted)',
-                border: pred.confident ? '1px solid var(--accent-gold)' : '1px solid transparent',
-                transition: 'all 0.15s', cursor: 'pointer',
+                fontSize: '12px', fontWeight: '700',
+                background: hasJoker ? 'var(--accent-gold)' : jokersRemaining > 0 ? 'var(--bg-tertiary)' : 'var(--bg-tertiary)',
+                color: hasJoker ? 'white' : jokersRemaining > 0 ? 'var(--text-secondary)' : 'var(--text-muted)',
+                border: hasJoker ? '1px solid var(--accent-gold)' : '1px solid var(--border-light)',
+                transition: 'all 0.15s', cursor: hasPrediction && (canUseJoker || hasJoker) ? 'pointer' : 'not-allowed',
+                opacity: !hasPrediction ? 0.5 : 1,
               }}
             >
-              🎯 {pred.confident ? 'Confident! (2x pts)' : 'Confident?'}
+              🃏 {hasJoker ? 'Joker ON' : 'Use Joker'}
             </button>
+
             <button
               onClick={() => savePrediction(match)}
               disabled={isSaving || pred.home === '' || pred.home === undefined}
@@ -313,7 +446,10 @@ export default function Predictions() {
 
         {locked && match.status === 'completed' && hasPrediction && (
           <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>Your prediction: <strong>{pred.home} – {pred.away}</strong></span>
+            <span style={{ color: 'var(--text-muted)' }}>
+              Your prediction: <strong>{pred.home} – {pred.away}</strong>
+              {hasJoker && <span style={{ marginLeft: '6px', color: '#b8860b' }}>🃏</span>}
+            </span>
             <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>+{predictions[match.id]?.points_total || 0} pts</span>
           </div>
         )}
@@ -323,6 +459,21 @@ export default function Predictions() {
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+      {/* Joker reminder banner */}
+      {showJokerReminder && user && jokersRemaining > 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, #b8860b, #ffd700)',
+          padding: '12px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '12px',
+        }}>
+          <div style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>
+            ⚠️ Group stage ends in less than 24hrs! You have <strong>{jokersRemaining} joker{jokersRemaining > 1 ? 's' : ''}</strong> left — use them!
+          </div>
+          <button onClick={() => setShowJokerReminder(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '16px' }}>✕</button>
+        </div>
+      )}
+
       {/* Guest banner */}
       {!user && (
         <div style={{
@@ -350,11 +501,26 @@ export default function Predictions() {
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <h1 style={{ fontSize: '20px', fontWeight: '800' }}>⚽ Predictions</h1>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{
-                display: 'flex', background: 'var(--bg-tertiary)',
-                borderRadius: 'var(--radius-full)', padding: '3px', gap: '2px',
-              }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {/* Joker counter */}
+              {user && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '5px 12px',
+                  borderRadius: 'var(--radius-full)',
+                  background: jokersRemaining === 0 ? 'var(--bg-tertiary)' : 'var(--accent-gold-light)',
+                  border: `1px solid ${jokersRemaining === 0 ? 'var(--border-light)' : 'var(--accent-gold)'}`,
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  color: jokersRemaining === 0 ? 'var(--text-muted)' : '#b8860b',
+                  animation: jokersRemaining > 0 && showJokerReminder ? 'pulse 1.5s infinite' : 'none',
+                }}>
+                  🃏 {jokersRemaining} left
+                </div>
+              )}
+
+              {/* View toggle */}
+              <div style={{ display: 'flex', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', padding: '3px', gap: '2px' }}>
                 <button
                   onClick={() => setViewMode('group')}
                   style={{
@@ -378,6 +544,7 @@ export default function Predictions() {
                   }}
                 >By Date</button>
               </div>
+
               {user && (
                 <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                   <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>{getPredictionCount()}</span>
@@ -387,26 +554,58 @@ export default function Predictions() {
             </div>
           </div>
 
+          {/* Group tabs + autofill */}
           {viewMode === 'group' && (
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
-              {GROUPS.map(g => (
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', flex: 1 }}>
+                {GROUPS.map(g => (
+                  <button
+                    key={g}
+                    onClick={() => setActiveGroup(g)}
+                    style={{
+                      padding: '6px 14px', borderRadius: 'var(--radius-full)',
+                      fontSize: '13px', fontWeight: '700',
+                      background: activeGroup === g ? 'var(--primary)' : 'var(--bg-tertiary)',
+                      color: activeGroup === g ? 'var(--text-inverse)' : 'var(--text-muted)',
+                      border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                      transition: 'all 0.15s', flexShrink: 0,
+                    }}
+                  >Group {g}</button>
+                ))}
+              </div>
+
+              {/* Autofill button */}
+              {user && (
                 <button
-                  key={g}
-                  onClick={() => setActiveGroup(g)}
+                  onClick={autoFillGroup}
+                  disabled={autoFilling}
                   style={{
-                    padding: '6px 14px', borderRadius: 'var(--radius-full)',
-                    fontSize: '13px', fontWeight: '700',
-                    background: activeGroup === g ? 'var(--primary)' : 'var(--bg-tertiary)',
-                    color: activeGroup === g ? 'var(--text-inverse)' : 'var(--text-muted)',
-                    border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-                    transition: 'all 0.15s', flexShrink: 0,
+                    padding: '6px 12px', borderRadius: 'var(--radius-full)',
+                    fontSize: '12px', fontWeight: '700', flexShrink: 0,
+                    background: 'var(--accent-blue-light)',
+                    color: 'var(--accent-blue)',
+                    border: '1px solid var(--accent-blue)',
+                    cursor: autoFilling ? 'wait' : 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                    transition: 'all 0.15s',
                   }}
-                >Group {g}</button>
-              ))}
+                >
+                  {autoFilling ? <div className="spinner" style={{ width: '12px', height: '12px', borderWidth: '2px' }} /> : '🎲'}
+                  {autoFilling ? 'Filling...' : 'Autofill'}
+                </button>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Pulse animation */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.05); }
+        }
+      `}</style>
 
       {/* Matches */}
       <div className="container" style={{ padding: '16px' }}>
@@ -427,7 +626,7 @@ export default function Predictions() {
                 <div style={{
                   fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)',
                   textTransform: 'uppercase', letterSpacing: '0.08em',
-                  marginBottom: '10px', paddingLeft: '4px',
+                  marginBottom: '10px',
                   display: 'flex', alignItems: 'center', gap: '8px',
                 }}>
                   <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
