@@ -3,17 +3,16 @@ import { useAuthStore } from '../store/index.js'
 
 const navItems = [
   { to: '/', icon: '🏠', label: 'Home' },
-  { to: '/predictions', icon: '⚽', label: 'Predict' },
-  { to: '/leaderboard', icon: '🏆', label: 'Standings' },
+  { to: '/predictions', icon: '⚽', label: 'Groups' },
+  { to: '/knockout', icon: '🏆', label: 'Knockout' },
+  { to: '/leaderboard', icon: '📊', label: 'Standings' },
   { to: '/leagues', icon: '👥', label: 'Leagues' },
-  { to: '/profile', icon: '👤', label: 'Profile' },
 ]
 
 export default function BottomNav() {
   const location = useLocation()
   const { user } = useAuthStore()
 
-  // Hide on desktop
   return (
     <nav className="hide-desktop" style={{
       position: 'fixed',
@@ -26,13 +25,13 @@ export default function BottomNav() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-around',
-      padding: '0 8px',
+      padding: '0 4px',
       zIndex: 100,
       boxShadow: '0 -4px 12px rgba(0,0,0,0.06)',
     }}>
       {navItems.map(({ to, icon, label }) => {
         const isActive = location.pathname === to
-        const isProtected = ['/predictions', '/leagues', '/profile'].includes(to)
+        const isProtected = ['/leagues'].includes(to)
         const href = isProtected && !user ? '/login' : to
 
         return (
@@ -41,15 +40,15 @@ export default function BottomNav() {
             flexDirection: 'column',
             alignItems: 'center',
             gap: '2px',
-            padding: '8px 12px',
+            padding: '6px 8px',
             borderRadius: 'var(--radius-md)',
             background: isActive ? 'var(--bg-tertiary)' : 'transparent',
-            minWidth: '56px',
+            minWidth: '52px',
             transition: 'all 0.15s',
           }}>
-            <span style={{ fontSize: '20px', lineHeight: 1 }}>{icon}</span>
+            <span style={{ fontSize: '18px', lineHeight: 1 }}>{icon}</span>
             <span style={{
-              fontSize: '10px',
+              fontSize: '9px',
               fontWeight: isActive ? '700' : '400',
               color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
               letterSpacing: '0.02em',
