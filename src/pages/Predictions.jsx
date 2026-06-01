@@ -20,7 +20,23 @@ export default function Predictions() {
     if (!user) { navigate('/login'); return }
     loadMatches()
     loadPredictions()
+    loadOdds()
   }, [user])
+
+  const loadOdds = async () => {
+    try {
+      const response = await fetch('/.netlify/functions/get-odds')
+      if (!response.ok) return
+      const data = await response.json()
+      const oddsMap = {}
+      data.forEach(game => {
+        oddsMap[`${game.home_team}|${game.away_team}`] = game.odds
+      })
+      setOdds(oddsMap)
+    } catch (e) {
+      console.log('Odds unavailable', e)
+    }
+  }
 
   const loadMatches = async () => {
     const { data } = await supabase
@@ -113,7 +129,10 @@ export default function Predictions() {
 
   const groupMatches = matches.filter(m => m.group?.name === activeGroup)
 
-  const getMatchOdds = (matchId) => odds[matchId] || null
+  const getMatchOdds = (match) => {
+    const key = `${match.home_team?.name}|${match.away_team?.name}`
+    return odds[key] || null
+  }
 
   const getPredictionCount = () => {
     return Object.values(predictions).filter(p => p.home !== undefined && p.home !== '' && p.away !== undefined && p.away !== '').length
@@ -178,20 +197,17 @@ export default function Predictions() {
             const locked = isLocked(match.kickoff_time)
             const isSaving = saving[match.id]
             const isSaved = saved[match.id]
-            const matchOdds = getMatchOdds(match.id)
+            const matchOdds = getMatchOdds(match)
             const hasPrediction = pred.home !== undefined && pred.home !== ''
 
-            // Determine favourite from odds
             const getFavourite = () => {
               if (!matchOdds) return null
-              const { home, draw, away } = matchOdds
-              const minOdds = Math.min(
-                parseFloat(home) || 99,
-                parseFloat(draw) || 99,
-                parseFloat(away) || 99
-              )
-              if (parseFloat(home) === minOdds) return 'home'
-              if (parseFloat(away) === minOdds) return 'away'
+              const homeD = matchOdds.home_decimal || 99
+              const drawD = matchOdds.draw_decimal || 99
+              const awayD = matchOdds.away_decimal || 99
+              const minOdds = Math.min(homeD, drawD, awayD)
+              if (homeD === minOdds) return 'home'
+              if (awayD === minOdds) return 'away'
               return 'draw'
             }
             const favourite = getFavourite()
