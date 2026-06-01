@@ -500,7 +500,7 @@ export default function Predictions() {
       }}>
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <h1 style={{ fontSize: '20px', fontWeight: '800' }}>⚽ Predictions</h1>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><h1 style={{ fontSize: "20px", fontWeight: "800" }}>⚽ Predictions</h1><Link to="/how-to-play" style={{ width: "22px", height: "22px", borderRadius: "50%", background: "var(--bg-tertiary)", border: "1px solid var(--border-medium)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "700", color: "var(--text-muted)", flexShrink: 0 }}>?</Link></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {/* Joker counter */}
               {user && (

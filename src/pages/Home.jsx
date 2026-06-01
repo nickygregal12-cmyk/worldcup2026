@@ -311,8 +311,17 @@ export default function Home() {
             </div>
           )}
 
+
+          {/* How to play */}
+          <div style={{ textAlign: 'center', paddingBottom: '24px' }}>
+            <Link to="/how-to-play" style={{ fontSize: '14px', color: 'var(--accent-blue)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              ❓ How does scoring work?
+            </Link>
+          </div>
+
         </div>
       </div>
     </div>
   )
 }
+
