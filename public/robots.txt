@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://wc26predictor1.netlify.app/sitemap.xml
