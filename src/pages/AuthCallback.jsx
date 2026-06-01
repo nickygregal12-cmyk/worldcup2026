@@ -5,17 +5,26 @@ import { useAuthStore } from '../store/index.js'
 
 export default function AuthCallback() {
   const navigate = useNavigate()
-  const { loadProfile } = useAuthStore()
+  const { loadProfile, setUser } = useAuthStore()
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    const handleCallback = async () => {
+      // Wait a moment for Supabase to process the hash/token
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
       if (session?.user) {
+        setUser(session.user)
         await loadProfile(session.user.id)
-        navigate('/')
+        navigate('/', { replace: true })
       } else {
-        navigate('/login')
+        console.error('Auth callback error:', error)
+        navigate('/login', { replace: true })
       }
-    })
+    }
+
+    handleCallback()
   }, [])
 
   return (
