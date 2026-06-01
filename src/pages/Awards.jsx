@@ -1,76 +1,354 @@
-import { useEffect } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuthStore, useAppStore } from './store/index.js'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { supabase } from '../lib/supabase.js'
+import { useAuthStore } from '../store/index.js'
 
-import NavBar from './components/NavBar.jsx'
-import BottomNav from './components/BottomNav.jsx'
-import PWAInstall from './components/PWAInstall.jsx'
+const AWARDS = [
+  {
+    type: 'golden_boot',
+    label: 'Golden Boot',
+    icon: '👟',
+    desc: 'Top scorer of the tournament',
+    points: 15,
+  },
+  {
+    type: 'golden_glove',
+    label: 'Golden Glove',
+    icon: '🧤',
+    desc: 'Best goalkeeper of the tournament',
+    points: 10,
+  },
+  {
+    type: 'player_of_tournament',
+    label: 'Player of the Tournament',
+    icon: '⭐',
+    desc: 'Best overall player',
+    points: 10,
+  },
+]
 
-import Home from './pages/Home.jsx'
-import Login from './pages/Login.jsx'
-import Register from './pages/Register.jsx'
-import Predictions from './pages/Predictions.jsx'
-import Knockout from './pages/Knockout.jsx'
-import Awards from './pages/Awards.jsx'
-import Leagues from './pages/Leagues.jsx'
-import Leaderboard from './pages/Leaderboard.jsx'
-import Profile from './pages/Profile.jsx'
-import AdminPanel from './pages/AdminPanel.jsx'
-import AuthCallback from './pages/AuthCallback.jsx'
+export default function Awards() {
+  const { user } = useAuthStore()
+  const [players, setPlayers] = useState([])
+  const [teams, setTeams] = useState([])
+  const [predictions, setPredictions] = useState({})
+  const [search, setSearch] = useState({})
+  const [teamFilter, setTeamFilter] = useState({})
+  const [showDropdown, setShowDropdown] = useState({})
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState({})
+  const [saved, setSaved] = useState({})
 
-function ProtectedRoute({ children }) {
-  const { user, isLoading } = useAuthStore()
-  if (isLoading) return <div className="loading-screen"><div className="spinner" /></div>
-  if (!user) return <Navigate to="/login" replace />
-  return children
-}
-
-function AdminRoute({ children }) {
-  const { user, isAdmin, isLoading } = useAuthStore()
-  if (isLoading) return <div className="loading-screen"><div className="spinner" /></div>
-  if (!user || !isAdmin) return <Navigate to="/" replace />
-  return children
-}
-
-export default function App() {
-  const { initialize, isLoading } = useAuthStore()
-  const { darkMode } = useAppStore()
-
-  useEffect(() => { initialize() }, [])
+  const tournamentStarted = new Date() >= new Date('2026-06-11T23:00:00Z')
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
-    }
-  }, [darkMode])
+    loadData()
+  }, [user])
 
-  if (isLoading) {
-    return <div className="loading-screen"><div className="spinner" /></div>
+  const loadData = async () => {
+    const [playersRes, teamsRes] = await Promise.all([
+      supabase.from('players').select('*, team:team_id(id,name,flag_emoji,short_code)').order('name'),
+      supabase.from('teams').select('id,name,flag_emoji,short_code').order('name'),
+    ])
+    setPlayers(playersRes.data || [])
+    setTeams(teamsRes.data || [])
+
+    if (user) {
+      const { data } = await supabase
+        .from('award_predictions')
+        .select('*')
+        .eq('user_id', user.id)
+
+      if (data) {
+        const predMap = {}
+        data.forEach(p => {
+          predMap[p.award_type] = {
+            player_name: p.predicted_player_name,
+            team_id: p.predicted_team_id,
+          }
+        })
+        setPredictions(predMap)
+      }
+    }
+    setLoading(false)
   }
 
+  const getFilteredPlayers = (awardType) => {
+    const query = (search[awardType] || '').toLowerCase()
+    const tFilter = teamFilter[awardType]
+
+    return players.filter(p => {
+      const matchesSearch = query.length < 2 || p.name.toLowerCase().includes(query)
+      const matchesTeam = !tFilter || p.team_id === tFilter
+      return matchesSearch && matchesTeam
+    }).slice(0, 20)
+  }
+
+  const selectPlayer = async (awardType, player) => {
+    if (!user || tournamentStarted) return
+
+    setShowDropdown(prev => ({ ...prev, [awardType]: false }))
+    setSearch(prev => ({ ...prev, [awardType]: player.name }))
+    setPredictions(prev => ({
+      ...prev,
+      [awardType]: { player_name: player.name, team_id: player.team_id }
+    }))
+
+    setSaving(prev => ({ ...prev, [awardType]: true }))
+
+    const { error } = await supabase
+      .from('award_predictions')
+      .upsert({
+        user_id: user.id,
+        award_type: awardType,
+        predicted_player_name: player.name,
+        predicted_team_id: player.team_id,
+        bracket_type: 'main',
+        is_locked: false,
+      }, { onConflict: 'user_id,award_type,bracket_type' })
+
+    setSaving(prev => ({ ...prev, [awardType]: false }))
+    if (!error) {
+      setSaved(prev => ({ ...prev, [awardType]: true }))
+      setTimeout(() => setSaved(prev => ({ ...prev, [awardType]: false })), 2000)
+    }
+  }
+
+  if (loading) return <div className="loading-screen"><div className="spinner" /></div>
+
   return (
-    <div className="app-container">
-      <NavBar />
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/predictions" element={<Predictions />} />
-          <Route path="/knockout" element={<Knockout />} />
-          <Route path="/awards" element={<Awards />} />
-          <Route path="/leagues" element={<ProtectedRoute><Leagues /></ProtectedRoute>} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-      <BottomNav />
-      <PWAInstall />
+    <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+      {/* Header */}
+      <div style={{
+        background: 'linear-gradient(135deg, #1a1000, #2a2000)',
+        padding: '24px 20px',
+        color: 'white',
+        textAlign: 'center',
+      }}>
+        <h1 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>🏅 Award Predictions</h1>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>
+          {tournamentStarted
+            ? 'Predictions locked — tournament has started'
+            : 'Predict before 11 Jun 2026 · Locks at kickoff'}
+        </p>
+        {tournamentStarted && (
+          <div style={{
+            marginTop: '10px',
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            fontSize: '13px',
+            color: 'rgba(255,255,255,0.8)',
+          }}>
+            🔒 Award predictions locked at tournament kickoff
+          </div>
+        )}
+      </div>
+
+      {/* Guest banner */}
+      {!user && (
+        <div style={{
+          background: 'var(--accent-blue-light)',
+          padding: '12px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '12px', flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: '13px', color: 'var(--accent-blue)', fontWeight: '600' }}>
+            Register to save your award predictions
+          </span>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Link to="/register" className="btn btn-primary btn-sm">Join free</Link>
+            <Link to="/login" className="btn btn-secondary btn-sm">Sign in</Link>
+          </div>
+        </div>
+      )}
+
+      <div className="container" style={{ padding: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {AWARDS.map(award => {
+            const pred = predictions[award.type]
+            const isSaving = saving[award.type]
+            const isSaved = saved[award.type]
+            const filtered = getFilteredPlayers(award.type)
+            const isOpen = showDropdown[award.type]
+            const currentSearch = search[award.type] || pred?.player_name || ''
+
+            return (
+              <div key={award.type} className="card">
+                {/* Award header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{
+                    width: '48px', height: '48px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--accent-gold-light)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '24px', flexShrink: 0,
+                  }}>
+                    {award.icon}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '800', fontSize: '16px' }}>{award.label}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{award.desc}</div>
+                  </div>
+                  <div style={{
+                    background: 'var(--accent-gold-light)',
+                    color: '#b8860b',
+                    padding: '4px 10px',
+                    borderRadius: 'var(--radius-full)',
+                    fontSize: '12px',
+                    fontWeight: '700',
+                  }}>
+                    +{award.points}pts
+                  </div>
+                </div>
+
+                {/* Current prediction display */}
+                {pred?.player_name && (
+                  <div style={{
+                    background: 'var(--accent-green-light)',
+                    border: '1px solid var(--accent-green)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '10px 14px',
+                    marginBottom: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                  }}>
+                    <span style={{ fontSize: '20px' }}>
+                      {teams.find(t => t.id === pred.team_id)?.flag_emoji || '🏳️'}
+                    </span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--accent-green)' }}>
+                        ✓ {pred.player_name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        {teams.find(t => t.id === pred.team_id)?.name}
+                      </div>
+                    </div>
+                    {isSaved && <span style={{ color: 'var(--accent-green)', fontSize: '12px', fontWeight: '700' }}>Saved!</span>}
+                    {isSaving && <div className="spinner" style={{ width: '16px', height: '16px' }} />}
+                  </div>
+                )}
+
+                {/* Search */}
+                {!tournamentStarted && (
+                  <div style={{ position: 'relative' }}>
+                    {/* Team filter */}
+                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '8px' }}>
+                      <button
+                        onClick={() => setTeamFilter(prev => ({ ...prev, [award.type]: null }))}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: 'var(--radius-full)',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          background: !teamFilter[award.type] ? 'var(--primary)' : 'var(--bg-tertiary)',
+                          color: !teamFilter[award.type] ? 'var(--text-inverse)' : 'var(--text-muted)',
+                          border: 'none', cursor: 'pointer', flexShrink: 0,
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        All Teams
+                      </button>
+                      {teams.map(team => (
+                        <button
+                          key={team.id}
+                          onClick={() => setTeamFilter(prev => ({
+                            ...prev,
+                            [award.type]: prev[award.type] === team.id ? null : team.id
+                          }))}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: 'var(--radius-full)',
+                            fontSize: '12px',
+                            fontWeight: '600',
+                            background: teamFilter[award.type] === team.id ? 'var(--primary)' : 'var(--bg-tertiary)',
+                            color: teamFilter[award.type] === team.id ? 'var(--text-inverse)' : 'var(--text-secondary)',
+                            border: 'none', cursor: 'pointer', flexShrink: 0,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {team.flag_emoji} {team.short_code}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Search input */}
+                    <input
+                      className="input"
+                      placeholder={`Search players... (e.g. "mb" for Mbappé)`}
+                      value={currentSearch}
+                      onChange={e => {
+                        setSearch(prev => ({ ...prev, [award.type]: e.target.value }))
+                        setShowDropdown(prev => ({ ...prev, [award.type]: true }))
+                      }}
+                      onFocus={() => setShowDropdown(prev => ({ ...prev, [award.type]: true }))}
+                      disabled={!user || tournamentStarted}
+                      style={{ opacity: !user || tournamentStarted ? 0.6 : 1 }}
+                    />
+
+                    {/* Dropdown */}
+                    {isOpen && filtered.length > 0 && user && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0, right: 0,
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: 'var(--radius-md)',
+                        boxShadow: 'var(--shadow-lg)',
+                        zIndex: 100,
+                        maxHeight: '280px',
+                        overflowY: 'auto',
+                        marginTop: '4px',
+                      }}>
+                        {filtered.map(player => (
+                          <button
+                            key={player.id}
+                            onClick={() => selectPlayer(award.type, player)}
+                            style={{
+                              width: '100%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '10px',
+                              padding: '10px 14px',
+                              border: 'none',
+                              background: 'none',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              transition: 'background 0.1s',
+                              borderBottom: '1px solid var(--border-light)',
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                          >
+                            <span style={{ fontSize: '22px' }}>{player.team?.flag_emoji}</span>
+                            <div>
+                              <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)' }}>
+                                {player.name}
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                {player.team?.name} · {player.position}
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Not logged in message */}
+                {!user && (
+                  <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    <Link to="/register" style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>Register</Link> to make award predictions
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
