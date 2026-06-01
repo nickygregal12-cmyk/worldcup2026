@@ -1,63 +1,98 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useAuthStore } from '../store/index.js'
+import { useAuthStore, useAppStore } from '../store/index.js'
 
-const navItems = [
-  { to: '/', icon: '🏠', label: 'Home' },
-  { to: '/predictions', icon: '⚽', label: 'Groups' },
-  { to: '/knockout', icon: '🏆', label: 'Knockout' },
-  { to: '/leaderboard', icon: '📊', label: 'Standings' },
-  { to: '/leagues', icon: '👥', label: 'Leagues' },
-]
-
-export default function BottomNav() {
+export default function NavBar() {
+  const { user, profile, isAdmin, logout } = useAuthStore()
+  const { darkMode, toggleDarkMode } = useAppStore()
   const location = useLocation()
-  const { user } = useAuthStore()
 
   return (
-    <nav className="hide-desktop" style={{
+    <nav style={{
       position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 'var(--bottom-nav-height)',
+      top: 0, left: 0, right: 0,
+      height: 'var(--nav-height)',
       background: 'var(--bg-card)',
-      borderTop: '1px solid var(--border-light)',
+      borderBottom: '1px solid var(--border-light)',
+      zIndex: 100,
       display: 'flex',
       alignItems: 'center',
-      justifyContent: 'space-around',
-      padding: '0 4px',
-      zIndex: 100,
-      boxShadow: '0 -4px 12px rgba(0,0,0,0.06)',
+      padding: '0 20px',
+      gap: '16px',
+      boxShadow: 'var(--shadow-sm)',
     }}>
-      {navItems.map(({ to, icon, label }) => {
-        const isActive = location.pathname === to
-        const isProtected = ['/leagues'].includes(to)
-        const href = isProtected && !user ? '/login' : to
+      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontSize: '22px' }}>⚽</span>
+        <span style={{ fontWeight: '800', fontSize: '16px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+          WC26 <span style={{ color: 'var(--accent-green)' }}>Predictor</span>
+        </span>
+      </Link>
 
-        return (
-          <Link key={to} to={href} style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: '2px',
-            padding: '6px 8px',
+      <div style={{ display: 'flex', gap: '4px', marginLeft: '16px', flex: 1 }} className="hide-mobile">
+        {[
+          { to: '/', label: 'Home' },
+          { to: '/predictions', label: 'Groups' },
+          { to: '/knockout', label: 'Knockout' },
+          { to: '/awards', label: '🏅 Awards' },
+          { to: '/leaderboard', label: 'Leaderboard' },
+          { to: '/leagues', label: 'Leagues' },
+        ].map(({ to, label }) => (
+          <Link key={to} to={to} style={{
+            padding: '6px 14px',
             borderRadius: 'var(--radius-md)',
-            background: isActive ? 'var(--bg-tertiary)' : 'transparent',
-            minWidth: '52px',
+            fontSize: '14px',
+            fontWeight: location.pathname === to ? '600' : '400',
+            color: location.pathname === to ? 'var(--text-primary)' : 'var(--text-muted)',
+            background: location.pathname === to ? 'var(--bg-tertiary)' : 'transparent',
             transition: 'all 0.15s',
           }}>
-            <span style={{ fontSize: '18px', lineHeight: 1 }}>{icon}</span>
-            <span style={{
-              fontSize: '9px',
-              fontWeight: isActive ? '700' : '400',
-              color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-              letterSpacing: '0.02em',
-            }}>
-              {label}
-            </span>
+            {label}
           </Link>
-        )
-      })}
+        ))}
+        {isAdmin && (
+          <Link to="/admin" style={{
+            padding: '6px 14px',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '14px',
+            fontWeight: location.pathname === '/admin' ? '600' : '400',
+            color: 'var(--accent-orange)',
+            background: location.pathname === '/admin' ? 'var(--accent-gold-light)' : 'transparent',
+          }}>Admin</Link>
+        )}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: 'auto' }}>
+        <button onClick={toggleDarkMode} style={{
+          width: '36px', height: '36px',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--bg-tertiary)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '16px', border: 'none', cursor: 'pointer',
+        }}>
+          {darkMode ? '☀️' : '🌙'}
+        </button>
+
+        {user ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link to="/profile" style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--bg-tertiary)',
+              fontSize: '14px', fontWeight: '500',
+              color: 'var(--text-primary)',
+            }}>
+              <span>👤</span>
+              <span className="hide-mobile">{profile?.username || 'Profile'}</span>
+            </Link>
+            <button onClick={logout} className="btn btn-secondary btn-sm hide-mobile">Sign out</button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Link to="/login" className="btn btn-secondary btn-sm">Sign in</Link>
+            <Link to="/register" className="btn btn-primary btn-sm hide-mobile">Register</Link>
+          </div>
+        )}
+      </div>
     </nav>
   )
 }

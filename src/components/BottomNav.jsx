@@ -5,7 +5,7 @@ const navItems = [
   { to: '/', icon: '🏠', label: 'Home' },
   { to: '/predictions', icon: '⚽', label: 'Groups' },
   { to: '/knockout', icon: '🏆', label: 'Knockout' },
-  { to: '/leaderboard', icon: '📊', label: 'Standings' },
+  { to: '/awards', icon: '🏅', label: 'Awards' },
   { to: '/leagues', icon: '👥', label: 'Leagues' },
 ]
 
@@ -16,9 +16,7 @@ export default function BottomNav() {
   return (
     <nav className="hide-desktop" style={{
       position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
+      bottom: 0, left: 0, right: 0,
       height: 'var(--bottom-nav-height)',
       background: 'var(--bg-card)',
       borderTop: '1px solid var(--border-light)',
