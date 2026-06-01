@@ -11,6 +11,7 @@ import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Predictions from './pages/Predictions.jsx'
 import Knockout from './pages/Knockout.jsx'
+import Awards from './pages/Awards.jsx'
 import Leagues from './pages/Leagues.jsx'
 import Leaderboard from './pages/Leaderboard.jsx'
 import Profile from './pages/Profile.jsx'
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/predictions" element={<Predictions />} />
           <Route path="/knockout" element={<Knockout />} />
+          <Route path="/awards" element={<Awards />} />
           <Route path="/leagues" element={<ProtectedRoute><Leagues /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
