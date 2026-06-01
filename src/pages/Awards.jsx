@@ -283,6 +283,7 @@ export default function Awards() {
                         setShowDropdown(prev => ({ ...prev, [award.type]: true }))
                       }}
                       onFocus={() => setShowDropdown(prev => ({ ...prev, [award.type]: true }))}
+                      onBlur={() => setTimeout(() => setShowDropdown(prev => ({ ...prev, [award.type]: false })), 200)}
                       disabled={!user || tournamentStarted}
                       style={{ opacity: !user || tournamentStarted ? 0.6 : 1 }}
                     />
@@ -305,7 +306,7 @@ export default function Awards() {
                         {filtered.map(player => (
                           <button
                             key={player.id}
-                            onClick={() => selectPlayer(award.type, player)}
+                            onMouseDown={() => selectPlayer(award.type, player)}
                             style={{
                               width: '100%',
                               display: 'flex',
