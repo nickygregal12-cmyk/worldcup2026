@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 
@@ -9,7 +9,7 @@ export default function Predictions() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [activeGroup, setActiveGroup] = useState('A')
-  const [viewMode, setViewMode] = useState('group') // 'group' or 'date'
+  const [viewMode, setViewMode] = useState('group')
   const [matches, setMatches] = useState([])
   const [predictions, setPredictions] = useState({})
   const [odds, setOdds] = useState({})
@@ -18,10 +18,9 @@ export default function Predictions() {
   const [saved, setSaved] = useState({})
 
   useEffect(() => {
-    if (!user) { navigate('/login'); return }
     loadMatches()
-    loadPredictions()
     loadOdds()
+    if (user) loadPredictions()
   }, [user])
 
   const loadOdds = async () => {
@@ -78,6 +77,7 @@ export default function Predictions() {
   const isLocked = (kickoffTime) => new Date() >= new Date(kickoffTime)
 
   const handleScoreChange = (matchId, side, value) => {
+    if (!user) return
     const num = value === '' ? '' : Math.max(0, Math.min(99, parseInt(value) || 0))
     setPredictions(prev => ({
       ...prev,
@@ -86,6 +86,7 @@ export default function Predictions() {
   }
 
   const handleConfident = (matchId) => {
+    if (!user) return
     setPredictions(prev => ({
       ...prev,
       [matchId]: { ...prev[matchId], confident: !prev[matchId]?.confident }
@@ -93,6 +94,7 @@ export default function Predictions() {
   }
 
   const savePrediction = async (match) => {
+    if (!user) return
     const pred = predictions[match.id]
     if (pred?.home === '' || pred?.home === undefined || pred?.away === '' || pred?.away === undefined) return
     if (isLocked(match.kickoff_time)) return
@@ -141,7 +143,6 @@ export default function Predictions() {
     ).length
   }
 
-  // Group matches by date for date view
   const matchesByDate = matches.reduce((acc, match) => {
     const key = formatDateKey(match.kickoff_time)
     if (!acc[key]) acc[key] = []
@@ -150,7 +151,6 @@ export default function Predictions() {
   }, {})
 
   const groupMatches = matches.filter(m => m.group?.name === activeGroup)
-  const displayMatches = viewMode === 'group' ? groupMatches : matches
 
   if (loading) {
     return <div className="loading-screen"><div className="spinner" /></div>
@@ -163,6 +163,7 @@ export default function Predictions() {
     const isSaved = saved[match.id]
     const matchOdds = getMatchOdds(match)
     const hasPrediction = pred.home !== undefined && pred.home !== ''
+    const isGuest = !user
 
     const getFavourite = () => {
       if (!matchOdds) return null
@@ -183,6 +184,7 @@ export default function Predictions() {
         style={{
           opacity: locked ? 0.7 : 1,
           border: hasPrediction ? '1px solid var(--accent-green)' : '1px solid var(--border-light)',
+          position: 'relative',
         }}
       >
         {/* Match info */}
@@ -218,7 +220,9 @@ export default function Predictions() {
               value={pred.home ?? ''}
               onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
               onBlur={() => savePrediction(match)}
-              disabled={locked} placeholder="0"
+              disabled={locked || isGuest}
+              placeholder="?"
+              style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
             />
             <span className="score-divider">–</span>
             <input
@@ -226,7 +230,9 @@ export default function Predictions() {
               value={pred.away ?? ''}
               onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
               onBlur={() => savePrediction(match)}
-              disabled={locked} placeholder="0"
+              disabled={locked || isGuest}
+              placeholder="?"
+              style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
             />
           </div>
 
@@ -257,8 +263,26 @@ export default function Predictions() {
           </div>
         )}
 
-        {/* Confidence + Save */}
-        {!locked && (
+        {/* Guest CTA */}
+        {isGuest && !locked && (
+          <div style={{
+            marginTop: '14px', paddingTop: '12px',
+            borderTop: '1px solid var(--border-light)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: '12px',
+          }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+              Register to save your predictions
+            </span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Link to="/register" className="btn btn-primary btn-sm">Join free</Link>
+              <Link to="/login" className="btn btn-secondary btn-sm">Sign in</Link>
+            </div>
+          </div>
+        )}
+
+        {/* Confidence + Save (logged in only) */}
+        {!isGuest && !locked && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
             <button
               onClick={() => handleConfident(match.id)}
@@ -299,6 +323,25 @@ export default function Predictions() {
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+      {/* Guest banner */}
+      {!user && (
+        <div style={{
+          background: 'linear-gradient(135deg, #0a0a0a, #1a2a1a)',
+          padding: '14px 20px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          gap: '12px', flexWrap: 'wrap',
+        }}>
+          <div style={{ color: 'white', fontSize: '14px' }}>
+            <strong>👋 Browsing as guest</strong>
+            <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: '8px' }}>Register free to save predictions & compete</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <Link to="/register" className="btn btn-green btn-sm">Join free</Link>
+            <Link to="/login" className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>Sign in</Link>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{
         background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)',
@@ -308,7 +351,6 @@ export default function Predictions() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <h1 style={{ fontSize: '20px', fontWeight: '800' }}>⚽ Predictions</h1>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {/* View toggle */}
               <div style={{
                 display: 'flex', background: 'var(--bg-tertiary)',
                 borderRadius: 'var(--radius-full)', padding: '3px', gap: '2px',
@@ -323,9 +365,7 @@ export default function Predictions() {
                     boxShadow: viewMode === 'group' ? 'var(--shadow-sm)' : 'none',
                     transition: 'all 0.15s',
                   }}
-                >
-                  By Group
-                </button>
+                >By Group</button>
                 <button
                   onClick={() => setViewMode('date')}
                   style={{
@@ -336,18 +376,17 @@ export default function Predictions() {
                     boxShadow: viewMode === 'date' ? 'var(--shadow-sm)' : 'none',
                     transition: 'all 0.15s',
                   }}
-                >
-                  By Date
-                </button>
+                >By Date</button>
               </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>{getPredictionCount()}</span>
-                <span> / {matches.length}</span>
-              </div>
+              {user && (
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                  <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>{getPredictionCount()}</span>
+                  <span> / {matches.length}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Group tabs — only show in group mode */}
           {viewMode === 'group' && (
             <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
               {GROUPS.map(g => (
@@ -362,9 +401,7 @@ export default function Predictions() {
                     border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
                     transition: 'all 0.15s', flexShrink: 0,
                   }}
-                >
-                  Group {g}
-                </button>
+                >Group {g}</button>
               ))}
             </div>
           )}
