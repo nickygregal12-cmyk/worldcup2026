@@ -5,6 +5,7 @@ import { useAuthStore, useAppStore } from './store/index.js'
 // Layout
 import NavBar from './components/NavBar.jsx'
 import BottomNav from './components/BottomNav.jsx'
+import PWAInstall from './components/PWAInstall.jsx'
 
 // Pages
 import Home from './pages/Home.jsx'
@@ -64,7 +65,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/predictions" element={<ProtectedRoute><Predictions /></ProtectedRoute>} />
+          <Route path="/predictions" element={<Predictions />} />
           <Route path="/leagues" element={<ProtectedRoute><Leagues /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
@@ -73,6 +74,7 @@ export default function App() {
         </Routes>
       </main>
       <BottomNav />
+      <PWAInstall />
     </div>
   )
 }
