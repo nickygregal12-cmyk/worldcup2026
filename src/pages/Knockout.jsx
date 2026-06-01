@@ -3,332 +3,203 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 
-const STAGE_LABELS = {
-  r32: 'Round of 32',
-  r16: 'Round of 16',
-  qf: 'Quarter-finals',
-  sf: 'Semi-finals',
-  '3rd': '3rd Place',
-  final: 'The Final',
-}
-
-const STAGE_POINTS = {
-  r32: 5,
-  r16: 8,
-  qf: 12,
-  sf: 16,
-  '3rd': 8,
-  final: 20,
-}
-
-const STAGES = ['r32', 'r16', 'qf', 'sf', '3rd', 'final']
-
-// Pre-tournament placeholders so users can predict before teams are known
-const STAGE_PLACEHOLDERS = {
-  r32: Array.from({ length: 16 }, (_, i) => ({
-    id: `r32-placeholder-${i}`,
-    match_number: 73 + i,
-    stage: 'r32',
-    home_team_placeholder: `Winner Group ${String.fromCharCode(65 + Math.floor(i / 2))}`,
-    away_team_placeholder: `Runner-up Group ${String.fromCharCode(65 + Math.floor(i / 2))}`,
-    kickoff_time: '2026-06-28T23:00:00Z',
-    isPlaceholder: true,
-  })),
-}
+const STAGES = [
+  { key: 'r16', label: 'Round of 16', slots: 16, points: 5, emoji: '🏟️' },
+  { key: 'qf', label: 'Quarter-finals', slots: 8, points: 8, emoji: '⚡' },
+  { key: 'sf', label: 'Semi-finals', slots: 4, points: 12, emoji: '🔥' },
+  { key: 'final', label: 'The Final', slots: 2, points: 16, emoji: '🌟' },
+  { key: 'winner', label: 'Tournament Winner', slots: 1, points: 25, emoji: '🏆' },
+]
 
 export default function Knockout() {
-  const { user } = useAuthStore()
-  const [matches, setMatches] = useState([])
-  const [predictions, setPredictions] = useState({})
+  const { user, profile } = useAuthStore()
+  const [teams, setTeams] = useState([])
+  const [picks, setPicks] = useState({}) // { r16: [teamId, ...], qf: [...], ... }
+  const [activeStage, setActiveStage] = useState('r16')
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState({})
-  const [saved, setSaved] = useState({})
-  const [activeStage, setActiveStage] = useState('r32')
-  const [jokerPicks, setJokerPicks] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [lastSaved, setLastSaved] = useState(null)
+  const [jokerPick, setJokerPick] = useState(null) // teamId for winner joker
   const [jokersRemaining, setJokersRemaining] = useState(3)
 
-  const tournamentStarted = new Date() >= new Date('2026-06-28T20:00:00Z') // group stage ends
+  const tournamentStarted = new Date() >= new Date('2026-06-11T23:00:00Z')
+  const knockoutDeadline = new Date('2026-06-28T20:00:00Z')
+  const isLocked = new Date() >= knockoutDeadline
 
   useEffect(() => {
-    loadMatches()
-    if (user) loadPredictions()
+    loadTeams()
+    if (user) loadPicks()
   }, [user])
 
   useEffect(() => {
-    if (user?.profile) {
-      setJokersRemaining(user.profile.jokers_knockout_remaining ?? 3)
-    }
-  }, [user])
+    if (profile) setJokersRemaining(profile.jokers_knockout_remaining ?? 3)
+  }, [profile])
 
-  const loadMatches = async () => {
+  const loadTeams = async () => {
     const { data } = await supabase
-      .from('matches')
-      .select(`
-        *,
-        home_team:home_team_id(id,name,flag_emoji,short_code),
-        away_team:away_team_id(id,name,flag_emoji,short_code),
-        venue:venue_id(city,country)
-      `)
-      .in('stage', STAGES)
-      .order('match_number', { ascending: true })
-
-    setMatches(data || [])
+      .from('teams')
+      .select('id, name, flag_emoji, short_code, group:group_teams(group:group_id(name))')
+      .order('name')
+    setTeams(data || [])
     setLoading(false)
   }
 
-  const loadPredictions = async () => {
-    if (!matches.length) return
+  const loadPicks = async () => {
     const { data } = await supabase
-      .from('predictions')
+      .from('knockout_picks')
       .select('*')
       .eq('user_id', user.id)
-      .eq('bracket_type', 'main')
 
-    if (data) {
-      const predMap = {}
-      const jokerMap = {}
+    if (data && data.length > 0) {
+      const pickMap = {}
+      let joker = null
       data.forEach(p => {
-        predMap[p.match_id] = p.winner_team_id || p.home_team_placeholder_pick
-        jokerMap[p.match_id] = p.is_confident
+        if (!pickMap[p.stage]) pickMap[p.stage] = []
+        pickMap[p.stage].push(p.team_id)
+        if (p.is_joker) joker = p.team_id
       })
-      setPredictions(predMap)
-      setJokerPicks(jokerMap)
+      setPicks(pickMap)
+      setJokerPick(joker)
     }
   }
 
-  useEffect(() => {
-    if (matches.length && user) loadPredictions()
-  }, [matches, user])
+  const toggleTeam = async (teamId) => {
+    if (!user || isLocked) return
+    const stage = activeStage
+    const maxSlots = STAGES.find(s => s.key === stage)?.slots || 16
+    const current = picks[stage] || []
 
-  const isLocked = (kickoffTime) => new Date() >= new Date(kickoffTime)
-
-  const savePick = async (matchId, teamId, teamName, isPlaceholder) => {
-    if (!user) return
-    setSaving(prev => ({ ...prev, [matchId]: true }))
-
-    const upsertData = {
-      user_id: user.id,
-      match_id: isPlaceholder ? null : matchId,
-      bracket_type: 'main',
-      home_score: 1,
-      away_score: 0,
-      is_confident: jokerPicks[matchId] || false,
-    }
-
-    if (isPlaceholder) {
-      // Store by match_number reference for placeholder matches
-      upsertData.match_number_ref = matchId
-      upsertData.winner_team_placeholder = teamName
+    let updated
+    if (current.includes(teamId)) {
+      updated = current.filter(id => id !== teamId)
+      // Remove joker if this team is deselected
+      if (jokerPick === teamId && stage === 'winner') setJokerPick(null)
     } else {
-      upsertData.winner_team_id = teamId
+      if (current.length >= maxSlots) return // already at max
+      updated = [...current, teamId]
     }
 
-    const { error } = await supabase
-      .from('predictions')
-      .upsert(
-        { ...upsertData, match_id: isPlaceholder ? matchId : matchId },
-        { onConflict: 'user_id,match_id,bracket_type' }
+    const newPicks = { ...picks, [stage]: updated }
+    setPicks(newPicks)
+
+    // Auto-save
+    setSaving(true)
+    await supabase.from('knockout_picks').delete()
+      .eq('user_id', user.id).eq('stage', stage)
+
+    if (updated.length > 0) {
+      await supabase.from('knockout_picks').insert(
+        updated.map(tid => ({
+          user_id: user.id,
+          stage,
+          team_id: tid,
+          is_joker: tid === jokerPick && stage === 'winner',
+        }))
       )
-
-    setSaving(prev => ({ ...prev, [matchId]: false }))
-    if (!error) {
-      setPredictions(prev => ({ ...prev, [matchId]: teamId || teamName }))
-      setSaved(prev => ({ ...prev, [matchId]: true }))
-      setTimeout(() => setSaved(prev => ({ ...prev, [matchId]: false })), 2000)
     }
+    setSaving(false)
+    setLastSaved(new Date())
   }
 
-  const handleJoker = async (matchId) => {
-    if (!user) return
-    const hasJoker = jokerPicks[matchId]
-    const newJoker = !hasJoker
-    const newRemaining = newJoker ? jokersRemaining - 1 : jokersRemaining + 1
+  const toggleJoker = async (teamId) => {
+    if (!user || isLocked) return
+    if (activeStage !== 'winner') return
+    const newJoker = jokerPick === teamId ? null : teamId
+    const newRemaining = newJoker ? (jokerPick ? jokersRemaining : jokersRemaining - 1) : jokersRemaining + 1
+    if (newJoker && !jokerPick && jokersRemaining <= 0) return
 
-    if (newJoker && jokersRemaining <= 0) return
-
-    setJokerPicks(prev => ({ ...prev, [matchId]: newJoker }))
+    setJokerPick(newJoker)
     setJokersRemaining(newRemaining)
+
+    // Update DB
+    await supabase.from('knockout_picks')
+      .update({ is_joker: false })
+      .eq('user_id', user.id).eq('stage', 'winner')
+
+    if (newJoker) {
+      await supabase.from('knockout_picks')
+        .update({ is_joker: true })
+        .eq('user_id', user.id).eq('stage', 'winner').eq('team_id', newJoker)
+    }
 
     await supabase.from('profiles')
       .update({ jokers_knockout_remaining: newRemaining })
       .eq('id', user.id)
   }
 
-  const formatDate = (time) => {
-    if (!time) return 'TBC'
-    const d = new Date(time)
-    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
-      ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const autofill = () => {
+    if (!user || isLocked || teams.length === 0) return
+    const stage = activeStage
+    const maxSlots = STAGES.find(s => s.key === stage)?.slots || 16
+
+    // Pick random teams weighted by "strength" (just random for now)
+    const shuffled = [...teams].sort(() => Math.random() - 0.5)
+    const selected = shuffled.slice(0, maxSlots).map(t => t.id)
+    setPicks(prev => ({ ...prev, [stage]: selected }))
+
+    // Save all
+    setSaving(true)
+    supabase.from('knockout_picks').delete()
+      .eq('user_id', user.id).eq('stage', stage)
+      .then(() => {
+        supabase.from('knockout_picks').insert(
+          selected.map(tid => ({ user_id: user.id, stage, team_id: tid, is_joker: false }))
+        ).then(() => { setSaving(false); setLastSaved(new Date()) })
+      })
   }
 
-  const getTeamDisplay = (match, side) => {
-    const team = side === 'home' ? match.home_team : match.away_team
-    const placeholder = side === 'home' ? match.home_team_placeholder : match.away_team_placeholder
-
-    if (team) return { name: team.name, flag: team.flag_emoji, id: team.id, known: true }
-    if (placeholder) return { name: placeholder, flag: '🏳️', id: placeholder, known: false }
-    return { name: 'TBC', flag: '🏳️', id: null, known: false }
-  }
-
-  const stageMatches = matches.filter(m => m.stage === activeStage)
+  const currentStage = STAGES.find(s => s.key === activeStage)
+  const currentPicks = picks[activeStage] || []
+  const slotsLeft = currentStage ? currentStage.slots - currentPicks.length : 0
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>
-
-  const renderMatch = (match) => {
-    const home = getTeamDisplay(match, 'home')
-    const away = getTeamDisplay(match, 'away')
-    const locked = isLocked(match.kickoff_time)
-    const predicted = predictions[match.id]
-    const isSaving = saving[match.id]
-    const isSaved = saved[match.id]
-    const hasJoker = jokerPicks[match.id]
-    const hasPrediction = !!predicted
-    const canPick = !locked && user
-
-    return (
-      <div
-        key={match.id}
-        className="card"
-        style={{
-          border: hasJoker
-            ? '2px solid var(--accent-gold)'
-            : hasPrediction
-            ? '1px solid var(--accent-green)'
-            : '1px solid var(--border-light)',
-          background: hasJoker ? 'var(--accent-gold-light)' : 'var(--bg-card)',
-        }}
-      >
-        {/* Joker indicator */}
-        {hasJoker && (
-          <div style={{
-            marginBottom: '10px', padding: '6px 10px',
-            background: 'rgba(184,134,11,0.15)',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)',
-          }}>
-            🃏 Joker applied — 2x points if correct!
-          </div>
-        )}
-
-        {/* Match info */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Match {match.match_number} · {formatDate(match.kickoff_time)}
-            {match.venue?.city && ` · ${match.venue.city}`}
-          </div>
-          <div style={{ display: 'flex', gap: '6px' }}>
-            {locked && <span className="badge badge-red">🔒 Locked</span>}
-            {hasPrediction && !locked && <span className="badge badge-green">✓ Picked</span>}
-            {isSaved && <span className="badge badge-green">Saved!</span>}
-          </div>
-        </div>
-
-        {/* Teams */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {[{ team: home, side: 'home' }, { team: away, side: 'away' }].map(({ team }) => {
-            const isPicked = predicted === team.id || predicted === team.name
-            const isWinner = match.winner_team_id && team.id === match.winner_team_id
-
-            return (
-              <button
-                key={team.id || team.name}
-                onClick={() => canPick && team.id && savePick(match.id, team.id, team.name, !team.known)}
-                disabled={!canPick || isSaving}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                  padding: '12px 14px',
-                  borderRadius: 'var(--radius-md)',
-                  border: isPicked
-                    ? '2px solid var(--accent-green)'
-                    : isWinner
-                    ? '2px solid var(--accent-gold)'
-                    : '1.5px solid var(--border-light)',
-                  background: isPicked
-                    ? 'var(--accent-green-light)'
-                    : isWinner
-                    ? 'var(--accent-gold-light)'
-                    : 'var(--bg-secondary)',
-                  cursor: canPick && team.id ? 'pointer' : 'default',
-                  transition: 'all 0.15s',
-                  width: '100%', textAlign: 'left',
-                  opacity: !team.known && !tournamentStarted ? 0.75 : 1,
-                }}
-              >
-                <span style={{ fontSize: team.known ? '28px' : '20px' }}>{team.flag}</span>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)' }}>{team.name}</div>
-                  {!team.known && (
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Team TBC after group stage</div>
-                  )}
-                </div>
-                {isPicked && <span style={{ color: 'var(--accent-green)', fontSize: '18px' }}>✓</span>}
-                {isWinner && !isPicked && <span style={{ color: 'var(--accent-gold)', fontSize: '14px', fontWeight: '700' }}>Winner</span>}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Joker + actions */}
-        {canPick && hasPrediction && (
-          <div style={{
-            marginTop: '12px', paddingTop: '12px',
-            borderTop: '1px solid var(--border-light)',
-            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          }}>
-            <button
-              onClick={() => handleJoker(match.id)}
-              disabled={!hasJoker && jokersRemaining <= 0}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '6px 12px', borderRadius: 'var(--radius-full)',
-                fontSize: '12px', fontWeight: '700',
-                background: hasJoker ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
-                color: hasJoker ? 'white' : jokersRemaining > 0 ? 'var(--text-secondary)' : 'var(--text-muted)',
-                border: 'none', cursor: (!hasJoker && jokersRemaining <= 0) ? 'not-allowed' : 'pointer',
-                opacity: (!hasJoker && jokersRemaining <= 0) ? 0.5 : 1,
-              }}
-            >
-              🃏 {hasJoker ? 'Joker ON' : 'Use Joker'}
-            </button>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {isSaving
-                ? <div className="spinner" style={{ width: '14px', height: '14px' }} />
-                : hasPrediction ? `Picked ✓` : ''}
-            </div>
-          </div>
-        )}
-
-        {/* Guest CTA */}
-        {!user && !locked && (
-          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Register to pick a winner</span>
-            <Link to="/register" className="btn btn-primary btn-sm">Join free</Link>
-          </div>
-        )}
-      </div>
-    )
-  }
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, #0a0a0a, #1a2a1a)',
-        padding: '20px', color: 'white', textAlign: 'center',
+        padding: '20px', color: 'white',
       }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>🏆 Knockout Stage</h1>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>
-          {tournamentStarted
-            ? 'Pick the winner of each match'
-            : 'Predict now — teams confirmed after group stage ends 28 Jun'}
-        </p>
-        {!tournamentStarted && (
-          <div style={{
-            marginTop: '10px', background: 'rgba(255,255,255,0.1)',
-            borderRadius: '8px', padding: '8px 16px',
-            fontSize: '12px', color: 'rgba(255,255,255,0.7)',
-          }}>
-            💡 Teams shown as placeholders until group stage completes
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>🏆 Knockout Picks</h1>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>
+              Pick which teams advance through each round
+            </p>
+          </div>
+          {user && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              padding: '5px 12px', borderRadius: 'var(--radius-full)',
+              background: jokersRemaining === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,215,0,0.2)',
+              border: `1px solid ${jokersRemaining === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,215,0,0.5)'}`,
+              fontSize: '12px', fontWeight: '700',
+              color: jokersRemaining === 0 ? 'rgba(255,255,255,0.5)' : '#ffd700',
+            }}>
+              🃏 {jokersRemaining} left
+            </div>
+          )}
+        </div>
+
+        {/* Points summary strip */}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
+          {STAGES.map(s => (
+            <div key={s.key} style={{
+              background: 'rgba(255,255,255,0.08)',
+              borderRadius: '8px', padding: '6px 10px', flexShrink: 0,
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: '16px' }}>{s.emoji}</div>
+              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>{s.label}</div>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: '#ffd700' }}>+{s.points}pts</div>
+            </div>
+          ))}
+        </div>
+
+        {isLocked && (
+          <div style={{ marginTop: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 16px', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
+            🔒 Knockout picks locked — group stage complete
           </div>
         )}
       </div>
@@ -338,64 +209,193 @@ export default function Knockout() {
         background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)',
         position: 'sticky', top: 'var(--nav-height)', zIndex: 50, overflowX: 'auto',
       }}>
-        <div style={{ display: 'flex', padding: '0 16px' }}>
-          {STAGES.map(stage => (
-            <button
-              key={stage}
-              onClick={() => setActiveStage(stage)}
-              style={{
-                padding: '14px 16px', fontSize: '13px',
-                fontWeight: activeStage === stage ? '700' : '400',
-                color: activeStage === stage ? 'var(--text-primary)' : 'var(--text-muted)',
-                borderBottom: activeStage === stage ? '2px solid var(--primary)' : '2px solid transparent',
-                whiteSpace: 'nowrap', background: 'none', border: 'none',
-                borderBottom: activeStage === stage ? '2px solid var(--primary)' : '2px solid transparent',
-                cursor: 'pointer', transition: 'all 0.15s',
-              }}
-            >
-              {STAGE_LABELS[stage]}
-            </button>
-          ))}
+        <div style={{ display: 'flex' }}>
+          {STAGES.map(stage => {
+            const stagePicks = picks[stage.key] || []
+            const complete = stagePicks.length === stage.slots
+            return (
+              <button
+                key={stage.key}
+                onClick={() => setActiveStage(stage.key)}
+                style={{
+                  padding: '12px 14px', fontSize: '12px', whiteSpace: 'nowrap',
+                  fontWeight: activeStage === stage.key ? '700' : '400',
+                  color: activeStage === stage.key ? 'var(--text-primary)' : 'var(--text-muted)',
+                  borderBottom: activeStage === stage.key ? '2px solid var(--primary)' : '2px solid transparent',
+                  background: 'none', border: 'none',
+                  borderBottom: activeStage === stage.key ? '2px solid var(--primary)' : '2px solid transparent',
+                  cursor: 'pointer',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                }}
+              >
+                {stage.label}
+                <span style={{
+                  fontSize: '10px', fontWeight: '600',
+                  color: complete ? 'var(--accent-green)' : 'var(--text-muted)',
+                }}>
+                  {complete ? '✓' : `${stagePicks.length}/${stage.slots}`}
+                </span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {/* Points info + joker counter */}
+      {/* Stage info bar */}
       <div style={{
         background: 'var(--accent-blue-light)', padding: '10px 20px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        fontSize: '13px',
       }}>
-        <span style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>
-          🏅 Correct {STAGE_LABELS[activeStage]} pick = <strong>{STAGE_POINTS[activeStage]} pts</strong>
-        </span>
-        {user && (
+        <div style={{ fontSize: '13px', color: 'var(--accent-blue)', fontWeight: '600' }}>
+          {currentStage?.emoji} Pick <strong>{currentStage?.slots} team{currentStage?.slots > 1 ? 's' : ''}</strong> to reach the {currentStage?.label} · <strong>+{currentStage?.points}pts</strong> each
+        </div>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {user && !isLocked && (
+            <button
+              onClick={autofill}
+              style={{
+                padding: '4px 10px', borderRadius: 'var(--radius-full)',
+                fontSize: '12px', fontWeight: '700',
+                background: 'var(--accent-blue-light)',
+                color: 'var(--accent-blue)',
+                border: '1px solid var(--accent-blue)',
+                cursor: 'pointer',
+              }}
+            >
+              🎲 Autofill
+            </button>
+          )}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '5px',
-            padding: '4px 10px', borderRadius: 'var(--radius-full)',
-            background: jokersRemaining === 0 ? 'var(--bg-tertiary)' : 'var(--accent-gold-light)',
-            border: `1px solid ${jokersRemaining === 0 ? 'var(--border-light)' : 'var(--accent-gold)'}`,
             fontSize: '12px', fontWeight: '700',
-            color: jokersRemaining === 0 ? 'var(--text-muted)' : 'var(--accent-gold)',
+            color: slotsLeft === 0 ? 'var(--accent-green)' : 'var(--text-muted)',
           }}>
-            🃏 {jokersRemaining} left
+            {slotsLeft === 0 ? '✓ Complete' : `${slotsLeft} left`}
           </div>
-        )}
+        </div>
       </div>
 
-      {/* Matches */}
+      {/* Team grid */}
       <div className="container" style={{ padding: '16px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {stageMatches.length > 0
-            ? stageMatches.map(renderMatch)
-            : (
-              <div className="empty-state">
-                <div className="empty-state-icon">🏆</div>
-                <div className="empty-state-title">No {STAGE_LABELS[activeStage]} matches yet</div>
-                <div className="empty-state-desc">Matches will appear once confirmed</div>
+        {!user ? (
+          <div className="card" style={{ textAlign: 'center', padding: '32px' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏆</div>
+            <div style={{ fontWeight: '700', fontSize: '18px', marginBottom: '8px' }}>Pick your knockout teams</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '20px' }}>
+              Register to predict which teams will advance through each round
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              <Link to="/register" className="btn btn-primary">Join free</Link>
+              <Link to="/login" className="btn btn-secondary">Sign in</Link>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Winner joker banner */}
+            {activeStage === 'winner' && currentPicks.length > 0 && (
+              <div style={{
+                marginBottom: '12px', padding: '10px 14px',
+                background: 'var(--accent-gold-light)',
+                border: '1px solid var(--accent-gold)',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '13px', color: 'var(--accent-gold)',
+                fontWeight: '600',
+              }}>
+                🃏 Tap "Joker" on your tournament winner pick to double your points!
               </div>
-            )
-          }
-        </div>
+            )}
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '8px',
+            }}>
+              {teams.map(team => {
+                const isPicked = currentPicks.includes(team.id)
+                const isJoker = jokerPick === team.id && activeStage === 'winner'
+                const atMax = currentPicks.length >= currentStage?.slots && !isPicked
+
+                return (
+                  <div
+                    key={team.id}
+                    style={{
+                      borderRadius: 'var(--radius-md)',
+                      border: isJoker
+                        ? '2px solid var(--accent-gold)'
+                        : isPicked
+                        ? '2px solid var(--accent-green)'
+                        : '1.5px solid var(--border-light)',
+                      background: isJoker
+                        ? 'var(--accent-gold-light)'
+                        : isPicked
+                        ? 'var(--accent-green-light)'
+                        : 'var(--bg-card)',
+                      overflow: 'hidden',
+                      opacity: atMax ? 0.4 : 1,
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <button
+                      onClick={() => toggleTeam(team.id)}
+                      disabled={atMax || isLocked}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '10px 12px', background: 'none', border: 'none',
+                        cursor: atMax || isLocked ? 'default' : 'pointer', textAlign: 'left',
+                      }}
+                    >
+                      <span style={{ fontSize: '26px' }}>{team.flag_emoji}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontWeight: '700', fontSize: '13px',
+                          color: isPicked ? 'var(--accent-green)' : 'var(--text-primary)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {team.name}
+                        </div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                          {team.short_code}
+                        </div>
+                      </div>
+                      {isPicked && (
+                        <span style={{ color: isJoker ? 'var(--accent-gold)' : 'var(--accent-green)', fontSize: '16px', flexShrink: 0 }}>
+                          {isJoker ? '🃏' : '✓'}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Joker button for winner stage */}
+                    {activeStage === 'winner' && isPicked && (
+                      <button
+                        onClick={() => toggleJoker(team.id)}
+                        disabled={!isJoker && jokersRemaining <= 0}
+                        style={{
+                          width: '100%', padding: '6px 12px',
+                          background: isJoker ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
+                          color: isJoker ? 'white' : 'var(--text-muted)',
+                          border: 'none', borderTop: '1px solid var(--border-light)',
+                          cursor: (!isJoker && jokersRemaining <= 0) ? 'not-allowed' : 'pointer',
+                          fontSize: '11px', fontWeight: '700',
+                          opacity: (!isJoker && jokersRemaining <= 0) ? 0.5 : 1,
+                        }}
+                      >
+                        {isJoker ? '🃏 Joker ON — 2x pts!' : '🃏 Use Joker'}
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Save indicator */}
+            {(saving || lastSaved) && (
+              <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '13px', color: 'var(--text-muted)' }}>
+                {saving
+                  ? <><div className="spinner" style={{ width: '14px', height: '14px', display: 'inline-block', marginRight: '6px' }} />Saving...</>
+                  : lastSaved ? '✓ Picks saved' : ''}
+              </div>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
