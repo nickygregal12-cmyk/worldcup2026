@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
+import ShareBracket from '../components/ShareBracket.jsx'
 
 export default function Profile() {
   const { user, profile, loadProfile, logout } = useAuthStore()
@@ -11,6 +12,7 @@ export default function Profile() {
   const [editing, setEditing] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showShare, setShowShare] = useState(false)
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -66,6 +68,27 @@ export default function Profile() {
         </div>
         <div style={{ fontWeight: '800', fontSize: '22px' }}>{profile.display_name || profile.username}</div>
         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '4px' }}>@{profile.username}</div>
+
+        {/* Share button */}
+        <button
+          onClick={() => setShowShare(true)}
+          style={{
+            marginTop: '16px',
+            background: 'rgba(255,255,255,0.15)',
+            color: 'white',
+            border: '1px solid rgba(255,255,255,0.3)',
+            borderRadius: 'var(--radius-full)',
+            padding: '8px 20px',
+            fontSize: '13px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          📤 Share my predictions
+        </button>
       </div>
 
       <div className="container" style={{ padding: '16px' }}>
@@ -123,7 +146,6 @@ export default function Profile() {
         <div className="card" style={{ marginBottom: '16px' }}>
           <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '14px' }}>⚙️ Settings</div>
 
-          {/* Display name */}
           <div style={{ marginBottom: '16px' }}>
             <label className="label">Display Name</label>
             {editing ? (
@@ -146,7 +168,6 @@ export default function Profile() {
             )}
           </div>
 
-          {/* Dark mode */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid var(--border-light)' }}>
             <div>
               <div style={{ fontWeight: '600', fontSize: '14px' }}>Dark Mode</div>
@@ -160,16 +181,13 @@ export default function Profile() {
                 background: darkMode ? 'var(--accent-green)' : 'var(--border-medium)',
                 position: 'relative',
                 transition: 'background 0.2s',
-                border: 'none',
-                cursor: 'pointer',
+                border: 'none', cursor: 'pointer',
               }}
             >
               <div style={{
                 width: '20px', height: '20px',
-                borderRadius: '50%',
-                background: 'white',
-                position: 'absolute',
-                top: '4px',
+                borderRadius: '50%', background: 'white',
+                position: 'absolute', top: '4px',
                 left: darkMode ? '24px' : '4px',
                 transition: 'left 0.2s',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
@@ -178,11 +196,13 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Sign out */}
         <button onClick={handleLogout} className="btn btn-secondary btn-full" style={{ marginBottom: '24px' }}>
           Sign out
         </button>
       </div>
+
+      {/* Share modal */}
+      {showShare && <ShareBracket onClose={() => setShowShare(false)} />}
     </div>
   )
 }
