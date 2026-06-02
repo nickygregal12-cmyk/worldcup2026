@@ -79,12 +79,26 @@ export const useAuthStore = create(
   )
 )
 
-export const useAppStore = create((set) => ({
-  darkMode: false,
-  mobileMenuOpen: false,
-  activeTab: 'home',
-  
-  toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
-  setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
-  setActiveTab: (tab) => set({ activeTab: tab }),
-}))
+export const useAppStore = create(
+  persist(
+    (set) => ({
+      darkMode: false,
+      showFuturePredictions: true,
+      mobileMenuOpen: false,
+      activeTab: 'home',
+
+      toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
+      setShowFuturePredictions: (val) => set({ showFuturePredictions: val }),
+      toggleShowFuturePredictions: () => set((state) => ({ showFuturePredictions: !state.showFuturePredictions })),
+      setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
+      setActiveTab: (tab) => set({ activeTab: tab }),
+    }),
+    {
+      name: 'wc26-app',
+      partialize: (state) => ({
+        darkMode: state.darkMode,
+        showFuturePredictions: state.showFuturePredictions,
+      }),
+    }
+  )
+)

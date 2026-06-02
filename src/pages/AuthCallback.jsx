@@ -9,17 +9,34 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleCallback = async () => {
-      // Wait a moment for Supabase to process the hash/token
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const { data: { session }, error } = await supabase.auth.getSession()
-      
-      if (session?.user) {
-        setUser(session.user)
-        await loadProfile(session.user.id)
-        navigate('/', { replace: true })
-      } else {
-        console.error('Auth callback error:', error)
+      try {
+        // PKCE: exchange the code in the URL for a session
+        const { data: { session }, error } = await supabase.auth.exchangeCodeForSession(
+          window.location.href
+        )
+
+        if (session?.user) {
+          setUser(session.user)
+          await loadProfile(session.user.id)
+          navigate('/', { replace: true })
+          return
+        }
+
+        if (error) {
+          console.error('Auth callback error:', error)
+        }
+
+        // Fallback: check if session already exists (e.g. implicit flow)
+        const { data: { session: existingSession } } = await supabase.auth.getSession()
+        if (existingSession?.user) {
+          setUser(existingSession.user)
+          await loadProfile(existingSession.user.id)
+          navigate('/', { replace: true })
+        } else {
+          navigate('/login', { replace: true })
+        }
+      } catch (e) {
+        console.error('Auth callback exception:', e)
         navigate('/login', { replace: true })
       }
     }

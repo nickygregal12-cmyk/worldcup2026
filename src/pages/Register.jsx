@@ -54,36 +54,16 @@ export default function Register() {
         <div style={{ textAlign: 'center', maxWidth: '380px' }} className="fade-in">
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
           <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>You're in!</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginBottom: '20px' }}>
-            Welcome to WC26 Predictor, <strong>{username}</strong>!
+          <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginBottom: '28px' }}>
+            Welcome to WC26 Predictor, <strong>{username}</strong>! The tournament starts 11 Jun — get your predictions in!
           </p>
-
-          {/* Spam warning */}
-          <div style={{
-            padding: '16px', background: 'var(--accent-gold-light)',
-            border: '1px solid var(--accent-gold)',
-            borderRadius: 'var(--radius-md)', marginBottom: '20px', textAlign: 'left',
-          }}>
-            <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--accent-gold)', marginBottom: '6px' }}>
-              📬 Check your email
-            </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5' }}>
-              We sent a confirmation link to <strong>{email}</strong>.
-              If it doesn't arrive in a minute, <strong>check your spam or junk folder</strong>.
-            </div>
-          </div>
-
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
-            You can start predicting straight away — your picks will be saved once you confirm your email.
-          </div>
 
           <button onClick={() => navigate('/predictions')} className="btn btn-primary btn-full btn-lg">
             ⚽ Start predicting
           </button>
 
           <p style={{ marginTop: '16px', fontSize: '13px', color: 'var(--text-muted)' }}>
-            Already confirmed?{' '}
-            <Link to="/login" style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>Sign in</Link>
+            <Link to="/how-to-play" style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>How does it work?</Link>
           </p>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
 export default function Profile() {
-  const { user, profile, loadProfile, logout, isAdmin } = useAuthStore()
+  const { user, profile, loadProfile, setProfile, logout, isAdmin } = useAuthStore()
   const { darkMode, toggleDarkMode } = useAppStore()
   const navigate = useNavigate()
   const [badges, setBadges] = useState([])
@@ -39,8 +39,10 @@ export default function Profile() {
 
   const toggleFuturePredictions = async () => {
     const newVal = !profile.show_future_predictions
+    // Optimistic update — update store immediately so toggle feels instant
+    setProfile({ ...profile, show_future_predictions: newVal })
+    // Save to DB
     await supabase.from('profiles').update({ show_future_predictions: newVal }).eq('id', user.id)
-    await loadProfile(user.id)
   }
 
   const handleLogout = async () => {
