@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 
+const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
+
 export default function Leagues() {
   const { user, isAdmin } = useAuthStore()
   const [myLeagues, setMyLeagues] = useState([])
@@ -16,19 +18,39 @@ export default function Leagues() {
   const [leagueMembers, setLeagueMembers] = useState({})
   const [loadingMembers, setLoadingMembers] = useState({})
   const [confirmAction, setConfirmAction] = useState(null)
-  const [memberModal, setMemberModal] = useState(null) // { userId, username, leagueId }
+  const [memberModal, setMemberModal] = useState(null)
   const [memberPredictions, setMemberPredictions] = useState([])
   const [loadingPreds, setLoadingPreds] = useState(false)
+  const [matchOdds, setMatchOdds] = useState({}) // for pre-match %
+
+  const tournamentLive = new Date() >= TOURNAMENT_START
 
   useEffect(() => { if (user) loadMyLeagues() }, [user])
 
   const loadMyLeagues = async () => {
-    const { data } = await supabase
+    // Fix 1: get real member count from league_members table
+    const { data: memberships } = await supabase
       .from('league_members')
-      .select('*, league:league_id(id, name, invite_code, is_global, member_count, created_by)')
+      .select('league_id, league:league_id(id, name, invite_code, is_global, created_by)')
       .eq('user_id', user.id)
       .order('joined_at', { ascending: false })
-    setMyLeagues(data || [])
+
+    if (!memberships) { setLoading(false); return }
+
+    // Get real counts for each league
+    const leagueIds = memberships.map(m => m.league_id)
+    const { data: counts } = await supabase
+      .from('league_members')
+      .select('league_id')
+      .in('league_id', leagueIds)
+
+    const countMap = {}
+    counts?.forEach(c => { countMap[c.league_id] = (countMap[c.league_id] || 0) + 1 })
+
+    setMyLeagues(memberships.map(m => ({
+      ...m,
+      memberCount: countMap[m.league_id] || 1,
+    })))
     setLoading(false)
   }
 
@@ -41,47 +63,79 @@ export default function Leagues() {
       .order('joined_at', { ascending: true })
     setLeagueMembers(prev => ({ ...prev, [leagueId]: data || [] }))
     setLoadingMembers(prev => ({ ...prev, [leagueId]: false }))
+
+    // Fix 5: load upcoming matches for pre-match % if tournament is live
+    if (tournamentLive) {
+      loadPreMatchStats(leagueId, data || [])
+    }
+  }
+
+  // Item 5: Pre-match % — what % of league picked each outcome for next matches
+  const loadPreMatchStats = async (leagueId, members) => {
+    const now = new Date().toISOString()
+    const memberIds = members.map(m => m.user_id)
+    if (!memberIds.length) return
+
+    // Get next 3 upcoming matches
+    const { data: upcoming } = await supabase
+      .from('matches')
+      .select('id, kickoff_time, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code)')
+      .eq('status', 'scheduled')
+      .gt('kickoff_time', now)
+      .order('kickoff_time', { ascending: true })
+      .limit(3)
+
+    if (!upcoming?.length) return
+
+    // Get all member predictions for those matches
+    const matchIds = upcoming.map(m => m.id)
+    const { data: preds } = await supabase
+      .from('predictions')
+      .select('user_id, match_id, home_score, away_score')
+      .in('match_id', matchIds)
+      .in('user_id', memberIds)
+
+    // Calculate % for each match
+    const stats = {}
+    upcoming.forEach(match => {
+      const matchPreds = (preds || []).filter(p => p.match_id === match.id)
+      const total = matchPreds.length
+      if (!total) return
+      const homeWins = matchPreds.filter(p => p.home_score > p.away_score).length
+      const draws    = matchPreds.filter(p => p.home_score === p.away_score).length
+      const awayWins = matchPreds.filter(p => p.home_score < p.away_score).length
+      stats[match.id] = {
+        match,
+        total,
+        home: Math.round((homeWins / total) * 100),
+        draw: Math.round((draws / total) * 100),
+        away: Math.round((awayWins / total) * 100),
+      }
+    })
+    setMatchOdds(prev => ({ ...prev, [leagueId]: stats }))
   }
 
   const loadMemberPredictions = async (userId, showFuture) => {
     setLoadingPreds(true)
-    const now = new Date().toISOString()
-
     const { data: preds } = await supabase
       .from('predictions')
-      .select(`
-        *,
-        match:match_id(
-          match_number, kickoff_time, stage, status,
-          home_score, away_score,
-          home_team:home_team_id(name, flag_emoji, short_code),
-          away_team:away_team_id(name, flag_emoji, short_code)
-        )
-      `)
+      .select(`*, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))`)
       .eq('user_id', userId)
       .order('match_id', { ascending: true })
 
-    // Filter by visibility rules:
-    // - Past predictions (kicked off) = always show
-    // - Future predictions = only show if user has show_future_predictions = true
     const filtered = (preds || []).filter(p => {
-      const kickoff = new Date(p.match?.kickoff_time)
-      const haKickedOff = kickoff <= new Date()
-      return haKickedOff || showFuture
+      const kicked = new Date(p.match?.kickoff_time) <= new Date()
+      return kicked || showFuture
     })
-
     setMemberPredictions(filtered)
     setLoadingPreds(false)
   }
 
   const openMemberModal = async (member, leagueId) => {
+    if (!tournamentLive) return // Item 3: locked pre-tournament
     setMemberModal({ userId: member.user_id, username: member.profile?.username, leagueId })
-    // Check if member allows future predictions visibility
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('show_future_predictions')
-      .eq('id', member.user_id)
-      .single()
+      .from('profiles').select('show_future_predictions').eq('id', member.user_id).single()
     await loadMemberPredictions(member.user_id, profile?.show_future_predictions || false)
   }
 
@@ -176,6 +230,7 @@ export default function Leagues() {
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+
       {/* Header */}
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '20px' }}>
         <div className="container">
@@ -234,11 +289,12 @@ export default function Leagues() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {myLeagues.map(({ league }) => {
+            {myLeagues.map(({ league, memberCount }) => {
               if (!league) return null
               const isCreator = league.created_by === user.id
               const isExpanded = expandedLeague === league.id
               const members = sortedMembers(league.id)
+              const leagueStats = matchOdds[league.id] || {}
 
               return (
                 <div key={league.id} className="card">
@@ -251,14 +307,15 @@ export default function Leagues() {
                         {isCreator ? 'You created this league' : 'Member'}
                       </div>
                     </div>
+                    {/* Fix 1: real member count */}
                     <div style={{ fontSize: '13px', color: 'var(--text-muted)', flexShrink: 0 }}>
-                      {league.member_count || '?'} members
+                      {memberCount} {memberCount === 1 ? 'member' : 'members'}
                     </div>
                   </div>
 
                   {!league.is_global && (
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <div style={{ background: 'var(--bg-tertiary)', padding: '6px 14px', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '16px', letterSpacing: '0.12em', color: 'var(--text-primary)' }}>
+                      <div style={{ background: 'var(--bg-tertiary)', padding: '6px 14px', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '16px', letterSpacing: '0.12em' }}>
                         {league.invite_code}
                       </div>
                       <button onClick={() => copyInviteCode(league.invite_code)} className="btn btn-secondary btn-sm">📋 Copy</button>
@@ -290,75 +347,128 @@ export default function Leagues() {
 
                   {/* Members list */}
                   {isExpanded && (
-                    <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-light)', paddingTop: '12px' }}>
+                    <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
                       {loadingMembers[league.id] ? (
                         <div style={{ display: 'flex', justifyContent: 'center', padding: '16px' }}><div className="spinner" /></div>
                       ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                        <>
+                          {/* Item 5: Pre-match % breakdown — live from 11 Jun */}
+                          {tournamentLive && Object.keys(leagueStats).length > 0 && (
+                            <div style={{ marginBottom: '16px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
+                                🔮 League Predictions — Upcoming Matches
+                              </div>
+                              {Object.values(leagueStats).map(({ match, total, home, draw, away }) => (
+                                <div key={match.id} style={{ marginBottom: '10px', padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ fontSize: '12px', fontWeight: '700' }}>
+                                      {match.home_team?.flag_emoji} {match.home_team?.short_code} vs {match.away_team?.short_code} {match.away_team?.flag_emoji}
+                                    </span>
+                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{total} picks</span>
+                                  </div>
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
+                                    {[
+                                      { label: match.home_team?.short_code, pct: home },
+                                      { label: 'Draw', pct: draw },
+                                      { label: match.away_team?.short_code, pct: away },
+                                    ].map(({ label, pct }) => (
+                                      <div key={label} style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '3px', fontWeight: '600' }}>{label}</div>
+                                        <div style={{ height: '4px', background: 'var(--border-light)', borderRadius: '2px', overflow: 'hidden', marginBottom: '3px' }}>
+                                          <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent-green)', borderRadius: '2px', transition: 'width 0.4s' }} />
+                                        </div>
+                                        <div style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)' }}>{pct}%</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Leaderboard */}
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
                             Leaderboard
                           </div>
-                          {members.map((member, i) => {
-                            const isMe = member.user_id === user.id
-                            const isLeagueCreator = league.created_by === member.user_id
-                            const canRemove = (isCreator || isAdmin) && !isMe && !isLeagueCreator
-                            const myPos = members.findIndex(m => m.user_id === user.id)
-                            const gap = i === myPos ? null : (members[0]?.profile?.total_points || 0) - (member.profile?.total_points || 0)
 
-                            return (
-                              <div key={member.user_id} style={{
-                                display: 'flex', alignItems: 'center', gap: '8px',
-                                padding: '8px 10px', borderRadius: 'var(--radius-sm)',
-                                background: isMe ? 'var(--accent-blue-light)' : 'var(--bg-secondary)',
-                                border: isMe ? '1px solid rgba(21,88,176,0.2)' : '1px solid transparent',
-                              }}>
-                                <span style={{ fontSize: '12px', fontWeight: '800', color: i < 3 ? ['var(--accent-gold)', 'var(--text-muted)', '#cd7f32'][i] : 'var(--text-muted)', width: '20px' }}>
-                                  #{i + 1}
-                                </span>
-                                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isMe ? 'var(--accent-blue)' : 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', color: isMe ? 'white' : 'var(--text-secondary)', flexShrink: 0 }}>
-                                  {(member.profile?.username || '?')[0].toUpperCase()}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                  <div style={{ fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    {member.profile?.display_name || member.profile?.username || 'Unknown'}
-                                    {isMe && <span style={{ fontSize: '10px', color: 'var(--accent-blue)', fontWeight: '700' }}>YOU</span>}
-                                    {isLeagueCreator && <span style={{ fontSize: '10px' }}>👑</span>}
+                          {/* Item 3 & 4: Pre-tournament message when no points yet */}
+                          {!tournamentLive && (
+                            <div style={{ padding: '12px 14px', background: 'var(--accent-blue-light)', borderRadius: 'var(--radius-md)', marginBottom: '12px', fontSize: '13px', color: 'var(--accent-blue)', fontWeight: '600' }}>
+                              🗓️ Leaderboard goes live on 11 Jun when the tournament kicks off — make sure everyone has joined before then!
+                            </div>
+                          )}
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {members.map((member, i) => {
+                              const isMe = member.user_id === user.id
+                              const isLeagueCreator = league.created_by === member.user_id
+                              const canRemove = (isCreator || isAdmin) && !isMe && !isLeagueCreator
+                              const pts = member.profile?.total_points || 0
+                              const leaderPts = members[0]?.profile?.total_points || 0
+                              // Fix 2: hide gap when equal or 0
+                              const gap = i > 0 && pts !== leaderPts ? leaderPts - pts : null
+
+                              return (
+                                <div key={member.user_id} style={{
+                                  display: 'flex', alignItems: 'center', gap: '8px',
+                                  padding: '8px 10px', borderRadius: 'var(--radius-sm)',
+                                  background: isMe ? 'var(--accent-blue-light)' : 'var(--bg-secondary)',
+                                  border: isMe ? '1px solid rgba(21,88,176,0.2)' : '1px solid transparent',
+                                }}>
+                                  <span style={{ fontSize: '12px', fontWeight: '800', color: i < 3 ? ['var(--accent-gold)','var(--text-muted)','#cd7f32'][i] : 'var(--text-muted)', width: '20px' }}>
+                                    #{i + 1}
+                                  </span>
+                                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isMe ? '#007a33' : 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', color: isMe ? 'white' : 'var(--text-secondary)', flexShrink: 0 }}>
+                                    {(member.profile?.username || '?')[0].toUpperCase()}
                                   </div>
-                                  <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
-                                    {member.profile?.streak_current > 0 && (
-                                      <span style={{ fontSize: '10px', color: 'var(--accent-orange)' }}>🔥 {member.profile.streak_current}</span>
-                                    )}
-                                    {member.profile?.exact_scores > 0 && (
-                                      <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>🎯 {member.profile.exact_scores}</span>
-                                    )}
-                                  </div>
-                                </div>
-                                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                  <div style={{ fontWeight: '800', fontSize: '14px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)' }}>
-                                    {member.profile?.total_points || 0}pts
-                                  </div>
-                                  {i > 0 && (
-                                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                                      -{gap}pts
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                      {member.profile?.display_name || member.profile?.username || 'Unknown'}
+                                      {isMe && <span style={{ fontSize: '10px', color: 'var(--accent-blue)', fontWeight: '700' }}>YOU</span>}
+                                      {isLeagueCreator && <span style={{ fontSize: '10px' }}>👑</span>}
                                     </div>
-                                  )}
-                                </div>
-                                <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                                  <button onClick={() => openMemberModal(member, league.id)}
-                                    className="btn btn-sm" style={{ fontSize: '11px', padding: '3px 8px' }}>
-                                    👁 Picks
-                                  </button>
-                                  {canRemove && (
-                                    <button onClick={() => setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username })}
-                                      style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', border: '1px solid #e53935', color: '#e53935', background: 'none', cursor: 'pointer' }}>
-                                      ×
+                                    <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
+                                      {member.profile?.streak_current > 0 && (
+                                        <span style={{ fontSize: '10px', color: 'var(--accent-orange)' }}>🔥 {member.profile.streak_current}</span>
+                                      )}
+                                      {member.profile?.exact_scores > 0 && (
+                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>🎯 {member.profile.exact_scores}</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                    {/* Fix 4: only green when pts > 0 */}
+                                    <div style={{ fontWeight: '800', fontSize: '14px', fontFamily: 'var(--font-mono)', color: pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                                      {pts}pts
+                                    </div>
+                                    {/* Fix 2: only show gap when genuinely behind */}
+                                    {gap !== null && (
+                                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>-{gap}pts</div>
+                                    )}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                                    {/* Fix 3: picks button only live from 11 Jun */}
+                                    <button
+                                      onClick={() => openMemberModal(member, league.id)}
+                                      disabled={!tournamentLive}
+                                      className="btn btn-sm"
+                                      style={{ fontSize: '11px', padding: '3px 8px', opacity: tournamentLive ? 1 : 0.4, cursor: tournamentLive ? 'pointer' : 'default' }}
+                                      title={tournamentLive ? '' : 'Available from 11 Jun'}
+                                    >
+                                      👁 Picks
                                     </button>
-                                  )}
+                                    {canRemove && (
+                                      <button onClick={() => setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username })}
+                                        style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', border: '1px solid #e53935', color: '#e53935', background: 'none', cursor: 'pointer' }}>
+                                        ×
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            )
-                          })}
-                        </div>
+                              )
+                            })}
+                          </div>
+                        </>
                       )}
                     </div>
                   )}
@@ -373,10 +483,7 @@ export default function Leagues() {
       {memberModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
           onClick={() => setMemberModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{
-            background: 'var(--bg-card)', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
-            width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
-          }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0', width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontWeight: '800', fontSize: '16px' }}>{memberModal.username}'s Predictions</div>
@@ -384,15 +491,14 @@ export default function Leagues() {
               </div>
               <button onClick={() => setMemberModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
             </div>
-
             <div style={{ overflowY: 'auto', padding: '16px', flex: 1 }}>
               {loadingPreds ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
               ) : memberPredictions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
-                  <div style={{ fontWeight: '700' }}>No predictions to show</div>
-                  <div style={{ fontSize: '13px', marginTop: '4px' }}>Past predictions appear here once matches kick off</div>
+                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>⚽</div>
+                  <div style={{ fontWeight: '700', marginBottom: '4px' }}>No results yet</div>
+                  <div style={{ fontSize: '13px' }}>Predictions appear here once matches kick off</div>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -404,9 +510,7 @@ export default function Leagues() {
                       <div key={pred.id} style={{
                         display: 'flex', alignItems: 'center', gap: '10px',
                         padding: '10px 12px', borderRadius: 'var(--radius-md)',
-                        background: result === 'exact' ? 'var(--accent-green-light)' :
-                                    result === 'correct' ? 'var(--accent-blue-light)' :
-                                    result === 'wrong' ? 'var(--accent-red-light)' : 'var(--bg-secondary)',
+                        background: result === 'exact' ? 'var(--accent-green-light)' : result === 'correct' ? 'var(--accent-blue-light)' : result === 'wrong' ? 'var(--accent-red-light)' : 'var(--bg-secondary)',
                         border: `1px solid ${result === 'exact' ? 'rgba(0,122,51,0.2)' : result === 'correct' ? 'rgba(21,88,176,0.2)' : result === 'wrong' ? 'rgba(198,40,40,0.2)' : 'var(--border-light)'}`,
                       }}>
                         <span style={{ fontSize: '18px' }}>{match?.home_team?.flag_emoji}</span>
@@ -416,16 +520,14 @@ export default function Leagues() {
                           {pred.home_score} – {pred.away_score}
                         </div>
                         {match?.status === 'completed' && (
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '32px', textAlign: 'right' }}>
+                          <div style={{ fontSize: '11px', minWidth: '32px', textAlign: 'right' }}>
                             {result === 'exact' ? '🎯' : result === 'correct' ? '✓' : '✗'}
                             <div style={{ fontWeight: '700', color: result === 'exact' ? 'var(--accent-green)' : result === 'correct' ? 'var(--accent-blue)' : 'var(--accent-red)' }}>
                               {pred.points_awarded || 0}pts
                             </div>
                           </div>
                         )}
-                        {!kicked && (
-                          <span style={{ fontSize: '10px', color: 'var(--accent-blue)', fontWeight: '700' }}>🔮 Future</span>
-                        )}
+                        {!kicked && <span style={{ fontSize: '10px', color: 'var(--accent-blue)', fontWeight: '700' }}>🔮</span>}
                       </div>
                     )
                   })}
