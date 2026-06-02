@@ -39,6 +39,12 @@ export default function Profile() {
     setSaving(false)
   }
 
+  const toggleFuturePredictions = async () => {
+    const newVal = !profile.show_future_predictions
+    await supabase.from('profiles').update({ show_future_predictions: newVal }).eq('id', user.id)
+    await loadProfile(user.id)
+  }
+
   const handleLogout = async () => {
     await logout()
     navigate('/')
@@ -174,25 +180,20 @@ export default function Profile() {
               <div style={{ fontWeight: '600', fontSize: '14px' }}>Dark Mode</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{darkMode ? 'On' : 'Off'}</div>
             </div>
-            <button
-              onClick={toggleDarkMode}
-              style={{
-                width: '48px', height: '28px',
-                borderRadius: 'var(--radius-full)',
-                background: darkMode ? 'var(--accent-green)' : 'var(--border-medium)',
-                position: 'relative',
-                transition: 'background 0.2s',
-                border: 'none', cursor: 'pointer',
-              }}
-            >
-              <div style={{
-                width: '20px', height: '20px',
-                borderRadius: '50%', background: 'white',
-                position: 'absolute', top: '4px',
-                left: darkMode ? '24px' : '4px',
-                transition: 'left 0.2s',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-              }} />
+            <button onClick={toggleDarkMode} style={{ width: '48px', height: '28px', borderRadius: 'var(--radius-full)', background: darkMode ? 'var(--accent-green)' : 'var(--border-medium)', position: 'relative', transition: 'background 0.2s', border: 'none', cursor: 'pointer' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '4px', left: darkMode ? '24px' : '4px', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid var(--border-light)' }}>
+            <div>
+              <div style={{ fontWeight: '600', fontSize: '14px' }}>🔮 Show Future Predictions</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                {profile.show_future_predictions ? 'Others can see your upcoming picks' : 'Future picks are private'}
+              </div>
+            </div>
+            <button onClick={toggleFuturePredictions} style={{ width: '48px', height: '28px', borderRadius: 'var(--radius-full)', background: profile.show_future_predictions ? 'var(--accent-green)' : 'var(--border-medium)', position: 'relative', transition: 'background 0.2s', border: 'none', cursor: 'pointer' }}>
+              <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '4px', left: profile.show_future_predictions ? '24px' : '4px', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
             </button>
           </div>
         </div>
