@@ -140,7 +140,7 @@ export default function Home() {
   const progressItems = user ? [
     { label: 'Groups', done: Math.min(predictionCount, 72), total: 72, to: '/predictions' },
     { label: 'Knockouts', done: profile?.knockout_picks_count || 0, total: 5, to: '/knockout' },
-    { label: 'Awards', done: profile?.awards_complete ? 3 : 0, total: 3, to: '/awards' },
+    { label: 'Awards', done: profile?.awards_complete ? 4 : 0, total: 4, to: '/awards' },
   ] : []
 
   // ── Hero subtitle ─────────────────────────────────────────────────────────
