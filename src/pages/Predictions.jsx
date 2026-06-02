@@ -6,25 +6,20 @@ import { toApiName, normalise } from '../lib/teamNames.js'
 import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
+const TOTAL_GROUP_MATCHES = 72 // 12 groups × 6 matches
 
-// ELO-based autofill — weighted random based on FIFA rankings
+// ELO-based autofill
 const predictScore = (homeRank, awayRank) => {
-  // Lower rank number = better team
   const homeStrength = 1 / (homeRank || 20)
   const awayStrength = 1 / (awayRank || 20)
   const total = homeStrength + awayStrength
   const homeWinProb = homeStrength / total
-
-  // Add home advantage
   const adjustedHomeProb = Math.min(0.75, homeWinProb * 1.1)
   const rand = Math.random()
-
   let result
   if (rand < adjustedHomeProb * 0.7) result = 'home'
   else if (rand < adjustedHomeProb * 0.7 + 0.28) result = 'draw'
   else result = 'away'
-
-  // Generate realistic scores
   const scoreOptions = {
     home: [[1,0],[2,0],[2,1],[3,0],[3,1],[1,0],[2,0]],
     draw: [[0,0],[1,1],[2,2],[1,1],[0,0]],
@@ -35,8 +30,6 @@ const predictScore = (homeRank, awayRank) => {
   return { home: h, away: a }
 }
 
-
-// Venue → country flag mapping
 const VENUE_FLAGS = {
   'New York/NJ': '🇺🇸', 'Los Angeles': '🇺🇸', 'Dallas': '🇺🇸',
   'Houston': '🇺🇸', 'San Francisco': '🇺🇸', 'Seattle': '🇺🇸',
@@ -46,20 +39,19 @@ const VENUE_FLAGS = {
   'Mexico City': '🇲🇽', 'Guadalajara': '🇲🇽', 'Monterrey': '🇲🇽',
 }
 
-// Head-to-head tiebreaker for group standings
+// Item 5: Group standings with proper 3rd place logic
+// Only show "Possible 3rd" highlight if all 4 teams have played all 3 games
 const calcGroupStandings = (matches, predictions) => {
   const teams = {}
   for (const match of matches) {
     const hId = match.home_team_id, aId = match.away_team_id
     if (!teams[hId]) teams[hId] = { team: match.home_team, id: hId, pts: 0, gd: 0, gf: 0, played: 0, h2h: {} }
     if (!teams[aId]) teams[aId] = { team: match.away_team, id: aId, pts: 0, gd: 0, gf: 0, played: 0, h2h: {} }
-    
     const pred = predictions[match.id]
     let hs, as_
     if (match.status === 'completed') { hs = match.home_score; as_ = match.away_score }
     else if (pred?.home !== undefined && pred?.away !== undefined) { hs = Number(pred.home); as_ = Number(pred.away) }
     else continue
-
     const h = teams[hId], a = teams[aId]
     h.played++; a.played++
     h.gf += hs; h.gd += hs - as_
@@ -67,8 +59,6 @@ const calcGroupStandings = (matches, predictions) => {
     if (hs > as_) { h.pts += 3 }
     else if (hs === as_) { h.pts += 1; a.pts += 1 }
     else { a.pts += 3 }
-
-    // Track h2h
     if (!h.h2h[aId]) h.h2h[aId] = { pts: 0, gd: 0, gf: 0 }
     if (!a.h2h[hId]) a.h2h[hId] = { pts: 0, gd: 0, gf: 0 }
     if (hs > as_) { h.h2h[aId].pts += 3 }
@@ -77,21 +67,24 @@ const calcGroupStandings = (matches, predictions) => {
     h.h2h[aId].gd += hs - as_; h.h2h[aId].gf += hs
     a.h2h[hId].gd += as_ - hs; a.h2h[hId].gf += as_
   }
-
-  return Object.values(teams).sort((a, b) => {
+  const sorted = Object.values(teams).sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts
-    // Head-to-head
     const aH2H = a.h2h[b.id] || { pts: 0, gd: 0, gf: 0 }
     const bH2H = b.h2h[a.id] || { pts: 0, gd: 0, gf: 0 }
     if (bH2H.pts !== aH2H.pts) return bH2H.pts - aH2H.pts
     if (bH2H.gd !== aH2H.gd) return bH2H.gd - aH2H.gd
     if (bH2H.gf !== aH2H.gf) return bH2H.gf - aH2H.gf
-    // Overall
     if (b.gd !== a.gd) return b.gd - a.gd
     if (b.gf !== a.gf) return b.gf - a.gf
-    return 0 // Fair play — notify user
+    return 0
   })
+  // Item 5: allGroupMatchesPredicted — only show 3rd place indicator when all 6 games predicted
+  const allPredicted = sorted.every(t => t.played === 3)
+  return { standings: sorted, allPredicted }
 }
+
+// Item 8: Score validation
+const isHighScore = (val) => val !== '' && val !== undefined && Number(val) >= 7
 
 export default function Predictions() {
   const { user, profile, loadProfile } = useAuthStore()
@@ -107,8 +100,10 @@ export default function Predictions() {
   const [saved, setSaved] = useState({})
   const [jokersRemaining, setJokersRemaining] = useState(8)
   const [autoFilling, setAutoFilling] = useState(false)
+  const [autoFillingDate, setAutoFillingDate] = useState(null) // Item 2: date autofill
   const [showJokerReminder, setShowJokerReminder] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [scoreWarning, setScoreWarning] = useState(null) // Item 8: {matchId, side, value}
 
   useEffect(() => {
     loadMatches()
@@ -120,13 +115,10 @@ export default function Predictions() {
   }, [user])
 
   useEffect(() => {
-    if (profile) {
-      setJokersRemaining(profile.jokers_group_remaining ?? 8)
-    }
+    if (profile) setJokersRemaining(profile.jokers_group_remaining ?? 8)
   }, [profile])
 
   const checkJokerReminder = async () => {
-    // Check if last group match is within 24 hours
     const lastGroupMatch = new Date('2026-06-28T20:00:00Z')
     const now = new Date()
     const hoursUntilEnd = (lastGroupMatch - now) / (1000 * 60 * 60)
@@ -141,27 +133,16 @@ export default function Predictions() {
       if (!response.ok) return
       const data = await response.json()
       const oddsMap = {}
-      data.forEach(game => {
-        // Key uses DB names (already normalised in get-odds function)
-        oddsMap[`${game.home_team}|${game.away_team}`] = game.odds
-      })
+      data.forEach(game => { oddsMap[`${game.home_team}|${game.away_team}`] = game.odds })
       setOdds(oddsMap)
-    } catch (e) {
-      console.log('Odds unavailable', e)
-    }
+    } catch (e) { console.log('Odds unavailable', e) }
   }
 
   const loadMatches = async () => {
     try {
       const { data, error } = await supabase
         .from('matches')
-        .select(`
-          *,
-          home_team:home_team_id(id,name,flag_emoji,short_code,fifa_ranking),
-          away_team:away_team_id(id,name,flag_emoji,short_code,fifa_ranking),
-          group:group_id(name),
-          venue:venue_id(city,country)
-        `)
+        .select(`*, home_team:home_team_id(id,name,flag_emoji,short_code,fifa_ranking), away_team:away_team_id(id,name,flag_emoji,short_code,fifa_ranking), group:group_id(name), venue:venue_id(city,country)`)
         .eq('stage', 'group')
         .order('kickoff_time', { ascending: true })
       if (error) throw error
@@ -170,25 +151,14 @@ export default function Predictions() {
     } catch (e) {
       console.error('Failed to load matches:', e)
       setLoadError(true)
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   const loadPredictions = async () => {
-    const { data } = await supabase
-      .from('predictions')
-      .select('*')
-      .eq('user_id', user.id)
+    const { data } = await supabase.from('predictions').select('*').eq('user_id', user.id)
     if (data) {
       const predMap = {}
-      data.forEach(p => {
-        predMap[p.match_id] = {
-          home: p.home_score,
-          away: p.away_score,
-          joker: p.is_confident,
-        }
-      })
+      data.forEach(p => { predMap[p.match_id] = { home: p.home_score, away: p.away_score, joker: p.is_confident } })
       setPredictions(predMap)
     }
   }
@@ -198,47 +168,35 @@ export default function Predictions() {
   const handleScoreChange = (matchId, side, value) => {
     if (!user) return
     const num = value === '' ? '' : Math.max(0, Math.min(99, parseInt(value) || 0))
-    setPredictions(prev => ({
-      ...prev,
-      [matchId]: { ...prev[matchId], [side]: num }
-    }))
+    setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], [side]: num } }))
+  }
+
+  // Item 8: blur handler — check for high score before saving
+  const handleScoreBlur = (match, side) => {
+    const pred = predictions[match.id] || {}
+    const val = pred[side]
+    if (isHighScore(val)) {
+      setScoreWarning({ matchId: match.id, match, side, value: val })
+    } else {
+      savePrediction(match)
+    }
   }
 
   const handleJoker = async (matchId, currentJoker) => {
     if (!user) return
     const pred = predictions[matchId]
     if (!pred) return
-
-    // Can't add joker if none remaining (unless removing one)
     if (!currentJoker && jokersRemaining <= 0) return
-
     const newJoker = !currentJoker
     const newRemaining = newJoker ? jokersRemaining - 1 : jokersRemaining + 1
-
-    // Update local state immediately
-    setPredictions(prev => ({
-      ...prev,
-      [matchId]: { ...prev[matchId], joker: newJoker }
-    }))
+    setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], joker: newJoker } }))
     setJokersRemaining(newRemaining)
-
-    // Save to DB
-    await supabase
-      .from('predictions')
-      .upsert({
-        user_id: user.id,
-        match_id: matchId,
-        home_score: pred.home ?? 0,
-        away_score: pred.away ?? 0,
-        is_confident: newJoker,
-        bracket_type: 'main',
-      }, { onConflict: 'user_id,match_id,bracket_type' })
-
-    // Update joker count in profile
-    await supabase
-      .from('profiles')
-      .update({ jokers_group_remaining: newRemaining })
-      .eq('id', user.id)
+    await supabase.from('predictions').upsert({
+      user_id: user.id, match_id: matchId,
+      home_score: pred.home ?? 0, away_score: pred.away ?? 0,
+      is_confident: newJoker, bracket_type: 'main',
+    }, { onConflict: 'user_id,match_id,bracket_type' })
+    await supabase.from('profiles').update({ jokers_group_remaining: newRemaining }).eq('id', user.id)
   }
 
   const savePrediction = async (match, jokerOverride) => {
@@ -246,19 +204,13 @@ export default function Predictions() {
     const pred = predictions[match.id]
     if (pred?.home === '' || pred?.home === undefined || pred?.away === '' || pred?.away === undefined) return
     if (isLocked(match.kickoff_time)) return
-
     setSaving(prev => ({ ...prev, [match.id]: true }))
-    const { error } = await supabase
-      .from('predictions')
-      .upsert({
-        user_id: user.id,
-        match_id: match.id,
-        home_score: pred.home,
-        away_score: pred.away,
-        is_confident: jokerOverride ?? pred.joker ?? false,
-        bracket_type: 'main',
-      }, { onConflict: 'user_id,match_id,bracket_type' })
-
+    const { error } = await supabase.from('predictions').upsert({
+      user_id: user.id, match_id: match.id,
+      home_score: pred.home, away_score: pred.away,
+      is_confident: jokerOverride ?? pred.joker ?? false,
+      bracket_type: 'main',
+    }, { onConflict: 'user_id,match_id,bracket_type' })
     setSaving(prev => ({ ...prev, [match.id]: false }))
     if (!error) {
       setSaved(prev => ({ ...prev, [match.id]: true }))
@@ -266,89 +218,63 @@ export default function Predictions() {
     }
   }
 
+  // Item 2: autofill for By Date view
   const autoFillGroup = async () => {
     if (!user || autoFilling) return
     setAutoFilling(true)
-
-    const groupMatchesToFill = matches.filter(m =>
-      m.group?.name === activeGroup && !isLocked(m.kickoff_time)
-    )
-
-    const newPreds = { ...predictions }
-    const updates = []
-
-    for (const match of groupMatchesToFill) {
-      const score = predictScore(
-        match.home_team?.fifa_ranking,
-        match.away_team?.fifa_ranking
-      )
-      newPreds[match.id] = {
-        ...newPreds[match.id],
-        home: score.home,
-        away: score.away,
-      }
-      updates.push(
-        supabase.from('predictions').upsert({
-          user_id: user.id,
-          match_id: match.id,
-          home_score: score.home,
-          away_score: score.away,
-          is_confident: newPreds[match.id]?.joker ?? false,
-          bracket_type: 'main',
-        }, { onConflict: 'user_id,match_id,bracket_type' })
-      )
-    }
-
-    setPredictions(newPreds)
-    await Promise.all(updates)
+    const groupMatchesToFill = matches.filter(m => m.group?.name === activeGroup && !isLocked(m.kickoff_time))
+    await runAutofill(groupMatchesToFill)
     setAutoFilling(false)
   }
 
-  const formatDate = (time) => {
-    const d = new Date(time)
-    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+  const autoFillDate = async (dateMatches) => {
+    if (!user) return
+    const key = dateMatches[0]?.kickoff_time
+    setAutoFillingDate(key)
+    const toFill = dateMatches.filter(m => !isLocked(m.kickoff_time))
+    await runAutofill(toFill)
+    setAutoFillingDate(null)
   }
 
-  const formatTime = (time) => {
-    return new Date(time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const runAutofill = async (matchList) => {
+    const newPreds = { ...predictions }
+    const updates = []
+    for (const match of matchList) {
+      const score = predictScore(match.home_team?.fifa_ranking, match.away_team?.fifa_ranking)
+      newPreds[match.id] = { ...newPreds[match.id], home: score.home, away: score.away }
+      updates.push(supabase.from('predictions').upsert({
+        user_id: user.id, match_id: match.id,
+        home_score: score.home, away_score: score.away,
+        is_confident: newPreds[match.id]?.joker ?? false, bracket_type: 'main',
+      }, { onConflict: 'user_id,match_id,bracket_type' }))
+    }
+    setPredictions(newPreds)
+    await Promise.all(updates)
   }
 
-  const formatDateKey = (time) => {
-    const d = new Date(time)
-    return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-  }
+  const formatDate = (time) => new Date(time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+  const formatTime = (time) => new Date(time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const formatDateKey = (time) => new Date(time).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
   const clearPick = async (matchId) => {
     if (!user) return
-    setPredictions(prev => {
-      const next = { ...prev }
-      delete next[matchId]
-      return next
-    })
+    setPredictions(prev => { const next = { ...prev }; delete next[matchId]; return next })
     await supabase.from('predictions').delete().eq('match_id', matchId).eq('user_id', user.id)
   }
 
   const clearGroupPredictions = async () => {
     if (!user) return
     const groupMatchIds = groupMatches.map(m => m.id)
-    setPredictions(prev => {
-      const next = { ...prev }
-      groupMatchIds.forEach(id => delete next[id])
-      return next
-    })
+    setPredictions(prev => { const next = { ...prev }; groupMatchIds.forEach(id => delete next[id]); return next })
     await supabase.from('predictions').delete().in('match_id', groupMatchIds).eq('user_id', user.id)
     setShowClearConfirm(false)
   }
 
   const clearDatePredictions = async (dateMatches) => {
     if (!user) return
-    const dateMatchIds = dateMatches.map(m => m.id).filter(id => !isLocked(matches.find(m => m.id === id)?.kickoff_time))
-    setPredictions(prev => {
-      const next = { ...prev }
-      dateMatchIds.forEach(id => delete next[id])
-      return next
-    })
-    await supabase.from('predictions').delete().in('match_id', dateMatchIds).eq('user_id', user.id)
+    const ids = dateMatches.map(m => m.id).filter(id => !isLocked(matches.find(m => m.id === id)?.kickoff_time))
+    setPredictions(prev => { const next = { ...prev }; ids.forEach(id => delete next[id]); return next })
+    await supabase.from('predictions').delete().in('match_id', ids).eq('user_id', user.id)
     setShowClearConfirm(false)
   }
 
@@ -356,33 +282,20 @@ export default function Predictions() {
     const homeName = match.home_team?.name
     const awayName = match.away_team?.name
     if (!homeName || !awayName) return null
-
-    // Try 1: exact DB name (get-odds normalises to DB names)
     const key1 = `${homeName}|${awayName}`
     if (odds[key1]) return odds[key1]
-
-    // Try 2: API name variant
     const key2 = `${toApiName(homeName)}|${toApiName(awayName)}`
     if (odds[key2]) return odds[key2]
-
-    // Try 3: normalised fuzzy match against all odds keys
-    const normHome = normalise(homeName)
-    const normAway = normalise(awayName)
+    const normHome = normalise(homeName), normAway = normalise(awayName)
     for (const key of Object.keys(odds)) {
       const [h, a] = key.split('|')
-      if (normalise(h) === normHome && normalise(a) === normAway) {
-        return odds[key]
-      }
+      if (normalise(h) === normHome && normalise(a) === normAway) return odds[key]
     }
-
     return null
   }
 
-  const getPredictionCount = () => {
-    return Object.values(predictions).filter(p =>
-      p.home !== undefined && p.home !== '' && p.away !== undefined && p.away !== ''
-    ).length
-  }
+  const getPredictionCount = () =>
+    Object.values(predictions).filter(p => p.home !== undefined && p.home !== '' && p.away !== undefined && p.away !== '').length
 
   const matchesByDate = matches.reduce((acc, match) => {
     const key = formatDateKey(match.kickoff_time)
@@ -393,16 +306,11 @@ export default function Predictions() {
 
   const groupMatches = matches.filter(m => m.group?.name === activeGroup)
 
-  const jokerColor = jokersRemaining <= 1 ? 'var(--accent-red)' : jokersRemaining <= 2 ? 'var(--accent-orange)' : 'var(--accent-green)'
-
   if (loading) {
     return (
       <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh', padding: '16px' }}>
         <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px' }}>
-          <SkeletonCard rows={2} />
-          <SkeletonCard rows={4} />
-          <SkeletonCard rows={4} />
-          <SkeletonCard rows={4} />
+          <SkeletonCard rows={2} /><SkeletonCard rows={4} /><SkeletonCard rows={4} /><SkeletonCard rows={4} />
         </div>
       </div>
     )
@@ -411,9 +319,21 @@ export default function Predictions() {
   if (loadError) {
     return (
       <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
-        <ErrorState message="Couldn't load predictions" onRetry={() => { setLoading(true); setLoadError(false); loadMatches(); }} />
+        <ErrorState message="Couldn't load predictions" onRetry={() => { setLoading(true); setLoadError(false); loadMatches() }} />
       </div>
     )
+  }
+
+  // Item 7: colour coding for completed match result vs prediction
+  const getResultColour = (match, pred) => {
+    if (match.status !== 'completed' || pred?.home === undefined) return null
+    const predHome = Number(pred.home), predAway = Number(pred.away)
+    const actHome = match.home_score, actAway = match.away_score
+    if (predHome === actHome && predAway === actAway) return 'gold'   // exact score
+    const predResult = predHome > predAway ? 'H' : predHome < predAway ? 'A' : 'D'
+    const actResult  = actHome  > actAway  ? 'H' : actHome  < actAway  ? 'A' : 'D'
+    if (predResult === actResult) return 'green'  // correct result
+    return 'red' // wrong
   }
 
   const renderMatch = (match) => {
@@ -426,12 +346,11 @@ export default function Predictions() {
     const isGuest = !user
     const hasJoker = pred.joker === true
     const canUseJoker = !locked && user && hasPrediction && (jokersRemaining > 0 || hasJoker)
+    const resultColour = getResultColour(match, pred)
 
     const getFavourite = () => {
       if (!matchOdds) return null
-      const homeD = matchOdds.home_decimal || 99
-      const drawD = matchOdds.draw_decimal || 99
-      const awayD = matchOdds.away_decimal || 99
+      const homeD = matchOdds.home_decimal || 99, drawD = matchOdds.draw_decimal || 99, awayD = matchOdds.away_decimal || 99
       const minOdds = Math.min(homeD, drawD, awayD)
       if (homeD === minOdds) return 'home'
       if (awayD === minOdds) return 'away'
@@ -439,86 +358,79 @@ export default function Predictions() {
     }
     const favourite = getFavourite()
 
+    // Item 7: border/bg for completed matches
+    const cardBorder = resultColour === 'gold' ? '2px solid var(--accent-gold)'
+      : resultColour === 'green' ? '2px solid var(--accent-green)'
+      : resultColour === 'red' ? '2px solid var(--accent-red)'
+      : hasJoker ? '2px solid var(--accent-gold)'
+      : hasPrediction ? '1px solid var(--accent-green)'
+      : '1px solid var(--border-light)'
+
+    const cardBg = resultColour === 'gold' ? 'var(--accent-gold-light)'
+      : resultColour === 'green' ? 'var(--accent-green-light)'
+      : resultColour === 'red' ? 'var(--accent-red-light)'
+      : hasJoker ? 'var(--accent-gold-light)'
+      : 'var(--bg-card)'
+
     return (
-      <div
-        key={match.id}
-        className="card"
-        style={{
-          opacity: locked ? 0.7 : 1,
-          border: hasJoker
-            ? '2px solid var(--accent-gold)'
-            : hasPrediction
-            ? '1px solid var(--accent-green)'
-            : '1px solid var(--border-light)',
-          background: hasJoker ? 'var(--accent-gold-light)' : 'var(--bg-card)',
-        }}
-      >
-        {/* Joker indicator */}
-        {hasJoker && (
+      <div key={match.id} className="card" style={{ opacity: locked && !hasPrediction ? 0.6 : 1, border: cardBorder, background: cardBg }}>
+
+        {/* Result badge for completed */}
+        {resultColour && (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '6px',
-            marginBottom: '10px',
-            padding: '6px 10px',
-            background: 'rgba(255,215,0,0.2)',
-            borderRadius: 'var(--radius-sm)',
-            fontSize: '12px',
-            fontWeight: '700',
-            color: '#b8860b',
+            display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px',
+            padding: '5px 10px', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '700',
+            background: resultColour === 'gold' ? 'rgba(255,215,0,0.2)' : resultColour === 'green' ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.1)',
+            color: resultColour === 'gold' ? '#b8860b' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)',
           }}>
+            {resultColour === 'gold' ? '🎯 Exact score!' : resultColour === 'green' ? '✅ Correct result' : '❌ Wrong result'}
+            {hasJoker && ' · 🃏 Joker'}
+          </div>
+        )}
+
+        {/* Joker indicator (non-completed) */}
+        {hasJoker && !resultColour && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', padding: '6px 10px', background: 'rgba(255,215,0,0.2)', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '700', color: '#b8860b' }}>
             🃏 Joker applied — 2x points if correct!
           </div>
         )}
 
-        {/* Match info */}
+        {/* Match info row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {viewMode === 'date'
-              ? `Group ${match.group?.name} · ${formatTime(match.kickoff_time)}`
-              : `${formatDate(match.kickoff_time)} · ${formatTime(match.kickoff_time)}`
-            }
-            {match.venue?.city && (
-              <span style={{ marginLeft: '6px' }}>
-                · {match.venue.city} {VENUE_FLAGS[match.venue.city] || ''}
-              </span>
-            )}
+            {viewMode === 'date' ? `Group ${match.group?.name} · ${formatTime(match.kickoff_time)}` : `${formatDate(match.kickoff_time)} · ${formatTime(match.kickoff_time)}`}
+            {match.venue?.city && <span style={{ marginLeft: '6px' }}>· {match.venue.city} {VENUE_FLAGS[match.venue.city] || ''}</span>}
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {locked && <span className="badge badge-red">🔒 Locked</span>}
             {!locked && hasPrediction && !hasJoker && <span className="badge badge-green">✓ Saved</span>}
-            {!locked && hasPrediction && user && (
-              <button onClick={() => clearPick(match.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '14px', padding: '2px 4px', lineHeight: 1 }} title="Clear pick">×</button>
-            )}
             {match.status === 'completed' && (
               <span className="badge badge-gray">{match.home_score} – {match.away_score}</span>
             )}
           </div>
         </div>
 
-        {/* Teams + Score inputs */}
+        {/* Teams + inputs */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '36px' }}>{match.home_team?.flag_emoji}</span>
             <span style={{ fontWeight: '700', fontSize: '13px', textAlign: 'center' }}>{match.home_team?.name}</span>
-            {favourite === 'home' && matchOdds && (
-              <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>
-            )}
+            {favourite === 'home' && matchOdds && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input
-              type="number" className="score-input" min="0" max="99"
+            <input type="number" className="score-input" min="0" max="99"
               value={pred.home ?? ''}
               onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
-              onBlur={() => savePrediction(match)}
+              onBlur={() => handleScoreBlur(match, 'home')}
               disabled={locked || isGuest} placeholder="?"
               style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
             />
             <span className="score-divider">–</span>
-            <input
-              type="number" className="score-input" min="0" max="99"
+            <input type="number" className="score-input" min="0" max="99"
               value={pred.away ?? ''}
               onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
-              onBlur={() => savePrediction(match)}
+              onBlur={() => handleScoreBlur(match, 'away')}
               disabled={locked || isGuest} placeholder="?"
               style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
             />
@@ -527,9 +439,7 @@ export default function Predictions() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '36px' }}>{match.away_team?.flag_emoji}</span>
             <span style={{ fontWeight: '700', fontSize: '13px', textAlign: 'center' }}>{match.away_team?.name}</span>
-            {favourite === 'away' && matchOdds && (
-              <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>
-            )}
+            {favourite === 'away' && matchOdds && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
           </div>
         </div>
 
@@ -562,7 +472,7 @@ export default function Predictions() {
           </div>
         )}
 
-        {/* Joker + Save (logged in only) */}
+        {/* Joker + Save */}
         {!isGuest && !locked && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: `1px solid ${hasJoker ? 'rgba(255,215,0,0.4)' : 'var(--border-light)'}` }}>
             <button
@@ -572,7 +482,7 @@ export default function Predictions() {
                 display: 'flex', alignItems: 'center', gap: '6px',
                 padding: '6px 12px', borderRadius: 'var(--radius-full)',
                 fontSize: '12px', fontWeight: '700',
-                background: hasJoker ? 'var(--accent-gold)' : jokersRemaining > 0 ? 'var(--bg-tertiary)' : 'var(--bg-tertiary)',
+                background: hasJoker ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
                 color: hasJoker ? 'white' : jokersRemaining > 0 ? 'var(--text-secondary)' : 'var(--text-muted)',
                 border: hasJoker ? '1px solid var(--accent-gold)' : '1px solid var(--border-light)',
                 transition: 'all 0.15s', cursor: hasPrediction && (canUseJoker || hasJoker) ? 'pointer' : 'not-allowed',
@@ -582,23 +492,37 @@ export default function Predictions() {
               🃏 {hasJoker ? 'Joker ON' : 'Use Joker'}
             </button>
 
-            <button
-              onClick={() => savePrediction(match)}
-              disabled={isSaving || pred.home === '' || pred.home === undefined}
-              className={`btn btn-sm ${isSaved ? 'btn-save-success' : 'btn-save'}`}
-              style={{ minWidth: '80px' }}
-            >
-              {isSaving
-                ? <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} />
-                : isSaved ? '✓ Saved' : 'Save'}
-            </button>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {/* Item 4: Clear button on individual card */}
+              {hasPrediction && (
+                <button
+                  onClick={() => clearPick(match.id)}
+                  style={{
+                    padding: '6px 10px', borderRadius: 'var(--radius-full)',
+                    fontSize: '12px', fontWeight: '600', border: '1px solid var(--border-light)',
+                    background: 'var(--bg-tertiary)', color: 'var(--text-muted)', cursor: 'pointer',
+                  }}
+                >Clear</button>
+              )}
+              <button
+                onClick={() => savePrediction(match)}
+                disabled={isSaving || pred.home === '' || pred.home === undefined}
+                className={`btn btn-sm ${isSaved ? 'btn-save-success' : 'btn-save'}`}
+                style={{ minWidth: '80px' }}
+              >
+                {isSaving
+                  ? <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} />
+                  : isSaved ? '✓ Saved' : 'Save'}
+              </button>
+            </div>
           </div>
         )}
 
+        {/* Completed match — prediction vs result */}
         {locked && match.status === 'completed' && hasPrediction && (
           <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
             <span style={{ color: 'var(--text-muted)' }}>
-              Your prediction: <strong>{pred.home} – {pred.away}</strong>
+              Your pick: <strong>{pred.home} – {pred.away}</strong>
               {hasJoker && <span style={{ marginLeft: '6px', color: '#b8860b' }}>🃏</span>}
             </span>
             <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>+{predictions[match.id]?.points_total || 0} pts</span>
@@ -608,16 +532,103 @@ export default function Predictions() {
     )
   }
 
+  // Item 6: fair play warning only when all 6 matches in group predicted
+  const renderGroupStandings = () => {
+    if (groupMatches.length === 0) return null
+    const { standings, allPredicted } = calcGroupStandings(groupMatches, predictions)
+    const hasPreds = standings.some(s => s.played > 0)
+    if (!hasPreds) return null
+
+    const hasFairPlayTie = allPredicted && standings.some((s, i) => {
+      if (i === 0) return false
+      const prev = standings[i - 1]
+      return s.pts === prev.pts && s.gd === prev.gd && s.gf === prev.gf
+    })
+
+    return (
+      <div className="card" style={{ marginTop: '4px' }}>
+        <div style={{ fontWeight: '800', fontSize: '13px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>📊 Predicted Group {activeGroup} Standings</span>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400' }}>Based on your picks</span>
+        </div>
+        {hasFairPlayTie && (
+          <div style={{ marginBottom: '8px', padding: '6px 10px', background: 'var(--accent-gold-light)', borderRadius: 'var(--radius-sm)', fontSize: '11px', color: 'var(--accent-gold)', fontWeight: '600' }}>
+            ⚠️ Teams are level on all criteria — FIFA would use fair play points or a draw of lots. You may want to adjust your predictions.
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px 4px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '16px' }}>#</span>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', flex: 1 }}>Team</span>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '18px', textAlign: 'center' }}>P</span>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '20px', textAlign: 'center' }}>Pts</span>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right' }}>GD</span>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '24px', textAlign: 'right' }}>GF</span>
+        </div>
+        {standings.map((entry, i) => (
+          <div key={entry.id} style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '6px 8px', borderRadius: 'var(--radius-sm)', marginBottom: '3px',
+            // Item 5: 3rd only highlighted when all games predicted
+            background: i < 2 ? 'var(--accent-green-light)' : (i === 2 && allPredicted) ? 'var(--accent-gold-light)' : 'var(--bg-secondary)',
+            border: i < 2 ? '1px solid rgba(0,122,51,0.15)' : '1px solid transparent',
+          }}>
+            <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', width: '16px' }}>{i + 1}</span>
+            <span style={{ fontSize: '18px' }}>{entry.team?.flag_emoji}</span>
+            <span style={{ fontSize: '12px', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.team?.short_code || entry.team?.name}</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '18px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{entry.played}</span>
+            <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', width: '20px', textAlign: 'center' }}>{entry.pts}</span>
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gd > 0 ? '+' : ''}{entry.gd}</span>
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '24px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gf}</span>
+          </div>
+        ))}
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-light)', fontSize: '10px', color: 'var(--text-muted)' }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block' }} /> Advances
+          </span>
+          {allPredicted && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-gold)', display: 'inline-block' }} /> Possible 3rd
+            </span>
+          )}
+          {!allPredicted && (
+            <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Predict all 6 games to see 3rd place</span>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
-      {/* Joker reminder banner */}
+
+      {/* Item 8: Score warning modal */}
+      {scoreWarning && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ maxWidth: '320px', width: '100%' }}>
+            <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>⚠️ High score entered</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+              You've entered <strong>{scoreWarning.value}</strong> goals — are you sure? That's unusually high for a World Cup match.
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => { setScoreWarning(null); savePrediction(scoreWarning.match) }}
+                className="btn btn-primary" style={{ flex: 1 }}
+              >Yes, save it</button>
+              <button
+                onClick={() => {
+                  handleScoreChange(scoreWarning.matchId, scoreWarning.side, '')
+                  setScoreWarning(null)
+                }}
+                className="btn btn-secondary" style={{ flex: 1 }}
+              >Change it</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Joker reminder */}
       {showJokerReminder && user && jokersRemaining > 0 && (
-        <div style={{
-          background: 'linear-gradient(135deg, #b8860b, #ffd700)',
-          padding: '12px 20px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: '12px',
-        }}>
+        <div style={{ background: 'linear-gradient(135deg, #b8860b, #ffd700)', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <div style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>
             ⚠️ Group stage ends in less than 24hrs! You have <strong>{jokersRemaining} joker{jokersRemaining > 1 ? 's' : ''}</strong> left — use them!
           </div>
@@ -627,12 +638,7 @@ export default function Predictions() {
 
       {/* Guest banner */}
       {!user && (
-        <div style={{
-          background: 'linear-gradient(135deg, #0a0a0a, #1a2a1a)',
-          padding: '14px 20px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          gap: '12px', flexWrap: 'wrap',
-        }}>
+        <div style={{ background: 'linear-gradient(135deg, #0a0a0a, #1a2a1a)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{ color: 'white', fontSize: '14px' }}>
             <strong>👋 Browsing as guest</strong>
             <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: '8px' }}>Register free to save predictions & compete</span>
@@ -644,18 +650,15 @@ export default function Predictions() {
         </div>
       )}
 
-      {/* Header */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0a0a0a, #0a1a0a)',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        padding: '16px 20px', position: 'sticky', top: 'var(--nav-height)', zIndex: 50,
-        color: 'white',
-      }}>
+      {/* Sticky header */}
+      <div style={{ background: 'linear-gradient(135deg, #0a0a0a, #0a1a0a)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '16px 20px', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, color: 'white' }}>
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><h1 style={{ fontSize: "20px", fontWeight: "800", color: 'white' }}>⚽ Predictions</h1><Link to="/how-to-play" style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "700", color: "rgba(255,255,255,0.7)", flexShrink: 0 }}>?</Link></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: '800', color: 'white' }}>⚽ Predictions</h1>
+              <Link to="/how-to-play" style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.7)', flexShrink: 0 }}>?</Link>
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {/* Joker counter */}
               {user && (
                 <div className={`joker-counter ${jokersRemaining === 0 ? 'joker-counter-empty' : jokersRemaining <= 2 ? 'joker-counter-low' : 'joker-counter-active'}`}
                   style={{ animation: jokersRemaining > 0 && showJokerReminder ? 'pulse 1.5s infinite' : 'none' }}>
@@ -664,33 +667,17 @@ export default function Predictions() {
                   <span style={{ fontSize: '11px', fontWeight: '500', opacity: 0.8 }}>left</span>
                 </div>
               )}
-
-              {/* View toggle */}
               <div style={{ display: 'flex', background: 'rgba(255,255,255,0.1)', borderRadius: 'var(--radius-full)', padding: '3px', gap: '2px' }}>
-                <button
-                  onClick={() => setViewMode('group')}
-                  style={{
+                {['group', 'date'].map(mode => (
+                  <button key={mode} onClick={() => setViewMode(mode)} style={{
                     padding: '5px 12px', borderRadius: 'var(--radius-full)',
                     fontSize: '12px', fontWeight: '600', border: 'none', cursor: 'pointer',
-                    background: viewMode === 'group' ? 'rgba(255,255,255,0.9)' : 'transparent',
-                    color: viewMode === 'group' ? '#0a0a0a' : 'rgba(255,255,255,0.6)',
-                    boxShadow: viewMode === 'group' ? 'var(--shadow-sm)' : 'none',
+                    background: viewMode === mode ? 'rgba(255,255,255,0.9)' : 'transparent',
+                    color: viewMode === mode ? '#0a0a0a' : 'rgba(255,255,255,0.6)',
                     transition: 'all 0.15s',
-                  }}
-                >By Group</button>
-                <button
-                  onClick={() => setViewMode('date')}
-                  style={{
-                    padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                    fontSize: '12px', fontWeight: '600', border: 'none', cursor: 'pointer',
-                    background: viewMode === 'date' ? 'rgba(255,255,255,0.9)' : 'transparent',
-                    color: viewMode === 'date' ? '#0a0a0a' : 'rgba(255,255,255,0.6)',
-                    boxShadow: viewMode === 'date' ? 'var(--shadow-sm)' : 'none',
-                    transition: 'all 0.15s',
-                  }}
-                >By Date</button>
+                  }}>{mode === 'group' ? 'By Group' : 'By Date'}</button>
+                ))}
               </div>
-
               {user && (
                 <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
                   <span style={{ fontWeight: '700', color: '#4ade80' }}>{getPredictionCount()}</span>
@@ -700,72 +687,43 @@ export default function Predictions() {
             </div>
           </div>
 
-          {/* Group tabs + autofill */}
+          {/* Group tabs row */}
           {viewMode === 'group' && (
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', flex: 1 }}>
                 {GROUPS.map(g => (
-                  <button
-                    key={g}
-                    onClick={() => setActiveGroup(g)}
-                    style={{
-                      padding: '6px 14px', borderRadius: 'var(--radius-full)',
-                      fontSize: '13px', fontWeight: '700',
-                      background: activeGroup === g ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.1)',
-                      color: activeGroup === g ? '#0a0a0a' : 'rgba(255,255,255,0.65)',
-                      border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-                      transition: 'all 0.15s', flexShrink: 0,
-                    }}
-                  >Group {g}</button>
+                  <button key={g} onClick={() => setActiveGroup(g)} style={{
+                    padding: '6px 14px', borderRadius: 'var(--radius-full)', fontSize: '13px', fontWeight: '700',
+                    background: activeGroup === g ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.1)',
+                    color: activeGroup === g ? '#0a0a0a' : 'rgba(255,255,255,0.65)',
+                    border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s', flexShrink: 0,
+                  }}>Group {g}</button>
                 ))}
               </div>
-
-              {/* Autofill button */}
               {user && (
-                <button
-                  onClick={autoFillGroup}
-                  disabled={autoFilling}
-                  style={{
-                    padding: '6px 12px', borderRadius: 'var(--radius-full)',
-                    fontSize: '12px', fontWeight: '700', flexShrink: 0,
-                    background: 'rgba(255,255,255,0.15)',
-                    color: 'rgba(255,255,255,0.9)',
-                    border: '1px solid rgba(255,255,255,0.25)',
-                    cursor: autoFilling ? 'wait' : 'pointer',
-                    display: 'flex', alignItems: 'center', gap: '4px',
-                    transition: 'all 0.15s',
-                  }}
-                >
-                  {autoFilling ? <div className="spinner" style={{ width: '12px', height: '12px', borderWidth: '2px' }} /> : '🎲'}
-                  {autoFilling ? 'Filling...' : 'Autofill'}
-                </button>
-              )}
-              {user && (
-                <button
-                  onClick={() => setShowClearConfirm('group')}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '4px',
-                    padding: '6px 10px', borderRadius: 'var(--radius-full)',
-                    fontSize: '12px', fontWeight: '600', border: '1px solid rgba(255,255,255,0.2)',
-                    background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)', cursor: 'pointer',
-                    flexShrink: 0,
-                  }}
-                >
-                  🗑️ Clear
-                </button>
+                <>
+                  <button onClick={autoFillGroup} disabled={autoFilling} style={{
+                    padding: '6px 12px', borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '700', flexShrink: 0,
+                    background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)', border: '1px solid rgba(255,255,255,0.25)',
+                    cursor: autoFilling ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s',
+                  }}>
+                    {autoFilling ? <div className="spinner" style={{ width: '12px', height: '12px', borderWidth: '2px' }} /> : '🎲'}
+                    {autoFilling ? 'Filling...' : 'Autofill'}
+                  </button>
+                  <button onClick={() => setShowClearConfirm('group')} style={{
+                    display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px',
+                    borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '600',
+                    border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.7)', cursor: 'pointer', flexShrink: 0,
+                  }}>🗑️ Clear</button>
+                </>
               )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Pulse animation */}
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-        }
-      `}</style>
+      <style>{`@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }`}</style>
 
       {/* Matches */}
       <div className="container" style={{ padding: '16px' }}>
@@ -778,93 +736,52 @@ export default function Predictions() {
                 <div className="empty-state-title">No matches in Group {activeGroup}</div>
               </div>
             )}
-
-            {/* Predicted group standings */}
-            {groupMatches.length > 0 && (() => {
-              const standings = calcGroupStandings(groupMatches, predictions)
-              const hasPreds = standings.some(s => s.played > 0)
-              if (!hasPreds) return null
-              // Check for fair play tie (same pts, gd, gf, h2h)
-              const hasFairPlayTie = standings.some((s, i) => {
-                if (i === 0) return false
-                const prev = standings[i-1]
-                return s.pts === prev.pts && s.gd === prev.gd && s.gf === prev.gf
-              })
+            {renderGroupStandings()}
+          </div>
+        ) : (
+          // Item 2 & 3: By Date view with autofill and clear per day
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {Object.entries(matchesByDate).map(([date, dayMatches]) => {
+              const hasUnlocked = dayMatches.some(m => !isLocked(m.kickoff_time))
+              const hasPreds = dayMatches.some(m => predictions[m.id])
+              const isFillingThis = autoFillingDate === dayMatches[0]?.kickoff_time
               return (
-                <div className="card" style={{ marginTop: '4px' }}>
-                  <div style={{ fontWeight: '800', fontSize: '13px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span>📊 Predicted Group {activeGroup} Standings</span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400' }}>Based on your picks</span>
+                <div key={date}>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
+                    <span>{date}</span>
+                    <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
+                    {/* Item 2: autofill per day */}
+                    {user && hasUnlocked && (
+                      <button onClick={() => autoFillDate(dayMatches)} disabled={isFillingThis} style={{
+                        fontSize: '11px', padding: '3px 8px', borderRadius: 'var(--radius-full)',
+                        border: '1px solid var(--border-medium)', background: 'var(--accent-blue-light)',
+                        color: 'var(--accent-blue)', cursor: 'pointer', fontWeight: '600',
+                        display: 'flex', alignItems: 'center', gap: '4px',
+                      }}>
+                        {isFillingThis ? <div className="spinner" style={{ width: '10px', height: '10px', borderWidth: '2px' }} /> : '🎲'}
+                        {isFillingThis ? '' : 'Autofill'}
+                      </button>
+                    )}
+                    {/* Item 3: clear per day */}
+                    {user && hasPreds && hasUnlocked && (
+                      <button onClick={() => clearDatePredictions(dayMatches)} style={{
+                        fontSize: '11px', padding: '3px 8px', borderRadius: 'var(--radius-full)',
+                        border: '1px solid var(--border-medium)', background: 'var(--bg-card)',
+                        color: 'var(--text-muted)', cursor: 'pointer',
+                      }}>🗑️ Clear</button>
+                    )}
                   </div>
-                  {hasFairPlayTie && (
-                    <div style={{ marginBottom: '8px', padding: '6px 10px', background: 'var(--accent-gold-light)', borderRadius: 'var(--radius-sm)', fontSize: '11px', color: 'var(--accent-gold)', fontWeight: '600' }}>
-                      ⚠️ Teams are level on all criteria — FIFA would use fair play points or a draw of lots. You may want to adjust your predictions.
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px 4px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '16px' }}>#</span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', flex: 1 }}>Team</span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '18px', textAlign: 'center' }}>P</span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '20px', textAlign: 'center' }}>Pts</span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right' }}>GD</span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '24px', textAlign: 'right' }}>GF</span>
-                  </div>
-                  {standings.map((entry, i) => (
-                    <div key={entry.id} style={{
-                      display: 'flex', alignItems: 'center', gap: '8px',
-                      padding: '6px 8px', borderRadius: 'var(--radius-sm)', marginBottom: '3px',
-                      background: i < 2 ? 'var(--accent-green-light)' : i === 2 ? 'var(--accent-gold-light)' : 'var(--bg-secondary)',
-                      border: i < 2 ? '1px solid rgba(0,122,51,0.15)' : '1px solid transparent',
-                    }}>
-                      <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', width: '16px' }}>{i+1}</span>
-                      <span style={{ fontSize: '18px' }}>{entry.team?.flag_emoji}</span>
-                      <span style={{ fontSize: '12px', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.team?.short_code || entry.team?.name}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '18px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{entry.played}</span>
-                      <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', width: '20px', textAlign: 'center' }}>{entry.pts}</span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gd > 0 ? '+' : ''}{entry.gd}</span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '24px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gf}</span>
-                    </div>
-                  ))}
-                  <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-light)', fontSize: '10px', color: 'var(--text-muted)' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block' }} /> Advances
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-gold)', display: 'inline-block' }} /> Possible 3rd
-                    </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {dayMatches.map(renderMatch)}
                   </div>
                 </div>
               )
-            })()}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            {Object.entries(matchesByDate).map(([date, dayMatches]) => (
-              <div key={date}>
-                <div style={{
-                  fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)',
-                  textTransform: 'uppercase', letterSpacing: '0.08em',
-                  marginBottom: '10px',
-                  display: 'flex', alignItems: 'center', gap: '8px',
-                }}>
-                  <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
-                  <span>{date}</span>
-                  <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
-                  {user && dayMatches.some(m => predictions[m.id] && !isLocked(m.kickoff_time)) && (
-                    <button onClick={() => { setShowClearConfirm('date_' + date); clearDatePredictions(dayMatches) }}
-                      style={{ fontSize: '11px', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-medium)', background: 'var(--bg-card)', color: 'var(--text-muted)', cursor: 'pointer' }}>
-                      🗑️ Clear day
-                    </button>
-                  )}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {dayMatches.map(renderMatch)}
-                </div>
-              </div>
-            ))}
+            })}
           </div>
         )}
       </div>
+
       {/* Clear confirm modal */}
       {showClearConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
