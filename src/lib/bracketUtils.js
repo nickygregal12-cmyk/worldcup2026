@@ -139,6 +139,21 @@ export function calcPredictedStandings(matches, predictions) {
 }
 
 /**
+ * Check if ALL 3 group games for a group have been predicted (or completed)
+ * Only returns true when the full group is predicted — bracket is stable at that point
+ */
+export function groupFullyPredicted(groupName, matches, predictions) {
+  const groupMatches = matches.filter(m => m.group?.name === groupName && m.stage === 'group')
+  if (groupMatches.length === 0) return false
+  return groupMatches.every(match => {
+    if (match.status === 'completed') return true
+    const pred = predictions[match.id]
+    return pred?.home !== undefined && pred?.away !== undefined &&
+           pred.home !== '' && pred.away !== ''
+  })
+}
+
+/**
  * Get the 8 best 3rd place teams from predicted standings
  * Returns array of { team, group, pts, gd, gf } sorted best first
  */
@@ -157,10 +172,11 @@ export function getBest3rdTeams(standings) {
 
 /**
  * Resolve a slot descriptor to a team object from standings
+ * Only returns a team if the group has actual predictions/results
  * e.g. '1A' = winner of group A, '2B' = runner-up of group B
  * '3S'-'3Z' = best 3rd place teams (ranked 1st-8th)
  */
-export function resolveSlot(slot, standings) {
+export function resolveSlot(slot, standings, matches = [], predictions = {}) {
   if (!slot) return null
   
   // Winner/runner-up slots: '1A', '2B', etc
@@ -168,6 +184,8 @@ export function resolveSlot(slot, standings) {
   if (posMatch) {
     const pos = parseInt(posMatch[1]) - 1
     const group = posMatch[2]
+    // Only show team if this group has at least one prediction or completed match
+    if (!groupFullyPredicted(group, matches, predictions)) return null
     const entry = standings[group]?.[pos]
     return entry?.team || null
   }
@@ -175,8 +193,11 @@ export function resolveSlot(slot, standings) {
   // 3rd place slots: '3S' = best 3rd, '3T' = 2nd best 3rd, etc
   const thirdMatch = slot.match(/^3([S-Z])$/)
   if (thirdMatch) {
-    const rank = thirdMatch[1].charCodeAt(0) - 'S'.charCodeAt(0) // 0=best, 7=8th best
+    const rank = thirdMatch[1].charCodeAt(0) - 'S'.charCodeAt(0)
     const best3rd = getBest3rdTeams(standings)
+    // Only show if we have enough groups with predictions
+    const groupsWithPreds = Object.keys(standings).filter(g => groupFullyPredicted(g, matches, predictions))
+    if (groupsWithPreds.length < 4) return null // need at least 4 groups predicted to rank 3rds meaningfully
     return best3rd[rank]?.team || null
   }
   

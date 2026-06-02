@@ -8,12 +8,6 @@ import {
   calcPredictedStandings, resolveSlot, getBest3rdTeams, findAffectedPicks
 } from '../lib/bracketUtils.js'
 
-const RESULT_OPTIONS = [
-  { key: 'normal', label: '90 mins', bonus: 0 },
-  { key: 'et', label: 'Extra Time', bonus: 3 },
-  { key: 'pens', label: 'Penalties', bonus: 5 },
-]
-
 function slotLabel(slot) {
   const posMatch = slot.match(/^([12])([A-L])$/)
   if (posMatch) {
@@ -40,7 +34,6 @@ export default function Knockout() {
   const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState({})
   const [saved, setSaved] = useState({})
-  const [jokersRemaining, setJokersRemaining] = useState(3)
 
   const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
   const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
@@ -77,9 +70,6 @@ export default function Knockout() {
         })
         setKnockoutPicks(koMap)
 
-        const { data: profile } = await supabase
-          .from('profiles').select('jokers_knockout_remaining').eq('id', user.id).single()
-        setJokersRemaining(profile?.jokers_knockout_remaining ?? 3)
       }
 
       setStandings(calcPredictedStandings(matchData || [], predMap))
@@ -132,14 +122,14 @@ export default function Knockout() {
     }
 
     setAffectedMatches(prev => prev.filter(n => n !== mn))
-    const newPick = { winner_id: winnerId, home_id: home?.id, away_id: away?.id, result_type: resultType, is_joker: existing?.is_joker || false }
+    const newPick = { winner_id: winnerId, home_id: home?.id, away_id: away?.id, result_type: resultType }
     setKnockoutPicks(prev => ({ ...prev, [mn]: newPick }))
     setSaving(prev => ({ ...prev, [mn]: true }))
 
     await supabase.from('knockout_picks').upsert({
       user_id: user.id, match_number: mn, winner_team_id: winnerId,
       home_team_id: home?.id, away_team_id: away?.id,
-      result_type: resultType, is_joker: newPick.is_joker,
+      result_type: resultType,
     }, { onConflict: 'user_id,match_number' })
 
     setSaving(prev => ({ ...prev, [mn]: false }))
@@ -147,18 +137,6 @@ export default function Knockout() {
     setTimeout(() => setSaved(prev => ({ ...prev, [mn]: false })), 1500)
   }
 
-  const toggleJoker = async (matchDef) => {
-    if (!user) return
-    const mn = matchDef.match_number
-    const pick = knockoutPicks[mn]
-    if (!pick?.winner_id) return
-    const newJoker = !pick.is_joker
-    if (newJoker && jokersRemaining <= 0) return
-    setKnockoutPicks(prev => ({ ...prev, [mn]: { ...prev[mn], is_joker: newJoker } }))
-    setJokersRemaining(prev => newJoker ? prev - 1 : prev + 1)
-    await supabase.from('knockout_picks').update({ is_joker: newJoker }).eq('user_id', user.id).eq('match_number', mn)
-    await supabase.from('profiles').update({ jokers_knockout_remaining: jokersRemaining + (newJoker ? -1 : 1) }).eq('id', user.id)
-  }
 
   const fmt = (time) => {
     const d = new Date(time)
@@ -385,7 +363,7 @@ export default function Knockout() {
         <div style={{ background: 'var(--accent-blue-light)', padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
           <span style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>
             🏅 Correct pick = <strong>{currentStage?.points}pts</strong>
-            {activeStage === 'r32' ? ' · +3pts ET · +5pts Pens' : ''}
+            
           </span>
           <span style={{ fontSize: '12px', fontWeight: '700', color: stagePicks === stageMatches.length ? 'var(--accent-green)' : 'var(--text-muted)' }}>
             {stagePicks === stageMatches.length ? '✓ Complete' : `${stagePicks}/${stageMatches.length}`}

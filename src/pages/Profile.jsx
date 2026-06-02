@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import ShareBracket from '../components/ShareBracket.jsx'
 
 export default function Profile() {
-  const { user, profile, loadProfile, logout } = useAuthStore()
+  const { user, profile, loadProfile, logout, isAdmin } = useAuthStore()
   const { darkMode, toggleDarkMode } = useAppStore()
   const navigate = useNavigate()
   const [badges, setBadges] = useState([])
@@ -196,6 +196,16 @@ export default function Profile() {
           </div>
         </div>
 
+        {isAdmin && (
+          <Link to="/admin" className="btn btn-full" style={{
+            marginBottom: '12px', display: 'block', textAlign: 'center',
+            background: 'var(--accent-orange)', color: 'white',
+            padding: '12px', borderRadius: 'var(--radius-lg)',
+            fontWeight: '700', fontSize: '14px', textDecoration: 'none',
+          }}>
+            ⚙️ Admin Panel
+          </Link>
+        )}
         <button onClick={handleLogout} className="btn btn-secondary btn-full" style={{ marginBottom: '24px' }}>
           Sign out
         </button>

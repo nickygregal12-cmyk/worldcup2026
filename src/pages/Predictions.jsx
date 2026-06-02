@@ -35,6 +35,64 @@ const predictScore = (homeRank, awayRank) => {
   return { home: h, away: a }
 }
 
+
+// Venue → country flag mapping
+const VENUE_FLAGS = {
+  'New York/NJ': '🇺🇸', 'Los Angeles': '🇺🇸', 'Dallas': '🇺🇸',
+  'Houston': '🇺🇸', 'San Francisco': '🇺🇸', 'Seattle': '🇺🇸',
+  'Boston': '🇺🇸', 'Miami': '🇺🇸', 'Atlanta': '🇺🇸',
+  'Philadelphia': '🇺🇸', 'Kansas City': '🇺🇸',
+  'Toronto': '🇨🇦', 'Vancouver': '🇨🇦',
+  'Mexico City': '🇲🇽', 'Guadalajara': '🇲🇽', 'Monterrey': '🇲🇽',
+}
+
+// Head-to-head tiebreaker for group standings
+const calcGroupStandings = (matches, predictions) => {
+  const teams = {}
+  for (const match of matches) {
+    const hId = match.home_team_id, aId = match.away_team_id
+    if (!teams[hId]) teams[hId] = { team: match.home_team, id: hId, pts: 0, gd: 0, gf: 0, played: 0, h2h: {} }
+    if (!teams[aId]) teams[aId] = { team: match.away_team, id: aId, pts: 0, gd: 0, gf: 0, played: 0, h2h: {} }
+    
+    const pred = predictions[match.id]
+    let hs, as_
+    if (match.status === 'completed') { hs = match.home_score; as_ = match.away_score }
+    else if (pred?.home !== undefined && pred?.away !== undefined) { hs = Number(pred.home); as_ = Number(pred.away) }
+    else continue
+
+    const h = teams[hId], a = teams[aId]
+    h.played++; a.played++
+    h.gf += hs; h.gd += hs - as_
+    a.gf += as_; a.gd += as_ - hs
+    if (hs > as_) { h.pts += 3 }
+    else if (hs === as_) { h.pts += 1; a.pts += 1 }
+    else { a.pts += 3 }
+
+    // Track h2h
+    if (!h.h2h[aId]) h.h2h[aId] = { pts: 0, gd: 0, gf: 0 }
+    if (!a.h2h[hId]) a.h2h[hId] = { pts: 0, gd: 0, gf: 0 }
+    if (hs > as_) { h.h2h[aId].pts += 3 }
+    else if (hs === as_) { h.h2h[aId].pts += 1; a.h2h[hId].pts += 1 }
+    else { a.h2h[hId].pts += 3 }
+    h.h2h[aId].gd += hs - as_; h.h2h[aId].gf += hs
+    a.h2h[hId].gd += as_ - hs; a.h2h[hId].gf += as_
+  }
+
+  return Object.values(teams).sort((a, b) => {
+    if (b.pts !== a.pts) return b.pts - a.pts
+    // Head-to-head
+    const aH2H = a.h2h[b.id] || { pts: 0, gd: 0, gf: 0 }
+    const bH2H = b.h2h[a.id] || { pts: 0, gd: 0, gf: 0 }
+    if (bH2H.pts !== aH2H.pts) return bH2H.pts - aH2H.pts
+    if (bH2H.gd !== aH2H.gd) return bH2H.gd - aH2H.gd
+    if (bH2H.gf !== aH2H.gf) return bH2H.gf - aH2H.gf
+    // Overall
+    if (b.gd !== a.gd) return b.gd - a.gd
+    if (b.gf !== a.gf) return b.gf - a.gf
+    return 0 // Fair play — notify user
+  })
+}
+
 export default function Predictions() {
   const { user, profile, loadProfile } = useAuthStore()
   const navigate = useNavigate()
@@ -50,6 +108,7 @@ export default function Predictions() {
   const [jokersRemaining, setJokersRemaining] = useState(5)
   const [autoFilling, setAutoFilling] = useState(false)
   const [showJokerReminder, setShowJokerReminder] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   useEffect(() => {
     loadMatches()
@@ -259,6 +318,40 @@ export default function Predictions() {
     return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   }
 
+  const clearPick = async (matchId) => {
+    if (!user) return
+    setPredictions(prev => {
+      const next = { ...prev }
+      delete next[matchId]
+      return next
+    })
+    await supabase.from('predictions').delete().eq('match_id', matchId).eq('user_id', user.id)
+  }
+
+  const clearGroupPredictions = async () => {
+    if (!user) return
+    const groupMatchIds = groupMatches.map(m => m.id)
+    setPredictions(prev => {
+      const next = { ...prev }
+      groupMatchIds.forEach(id => delete next[id])
+      return next
+    })
+    await supabase.from('predictions').delete().in('match_id', groupMatchIds).eq('user_id', user.id)
+    setShowClearConfirm(false)
+  }
+
+  const clearDatePredictions = async (dateMatches) => {
+    if (!user) return
+    const dateMatchIds = dateMatches.map(m => m.id).filter(id => !isLocked(matches.find(m => m.id === id)?.kickoff_time))
+    setPredictions(prev => {
+      const next = { ...prev }
+      dateMatchIds.forEach(id => delete next[id])
+      return next
+    })
+    await supabase.from('predictions').delete().in('match_id', dateMatchIds).eq('user_id', user.id)
+    setShowClearConfirm(false)
+  }
+
   const getMatchOdds = (match) => {
     const homeName = match.home_team?.name
     const awayName = match.away_team?.name
@@ -370,13 +463,21 @@ export default function Predictions() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {viewMode === 'date'
-              ? `Group ${match.group?.name} · ${formatTime(match.kickoff_time)} · ${match.venue?.city}`
-              : `${formatDate(match.kickoff_time)} · ${formatTime(match.kickoff_time)} · ${match.venue?.city}`
+              ? `Group ${match.group?.name} · ${formatTime(match.kickoff_time)}`
+              : `${formatDate(match.kickoff_time)} · ${formatTime(match.kickoff_time)}`
             }
+            {match.venue?.city && (
+              <span style={{ marginLeft: '6px' }}>
+                · {match.venue.city} {VENUE_FLAGS[match.venue.city] || ''}
+              </span>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {locked && <span className="badge badge-red">🔒 Locked</span>}
             {!locked && hasPrediction && !hasJoker && <span className="badge badge-green">✓ Saved</span>}
+            {!locked && hasPrediction && user && (
+              <button onClick={() => clearPick(match.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '14px', padding: '2px 4px', lineHeight: 1 }} title="Clear pick">×</button>
+            )}
             {match.status === 'completed' && (
               <span className="badge badge-gray">{match.home_score} – {match.away_score}</span>
             )}
@@ -634,6 +735,20 @@ export default function Predictions() {
                   {autoFilling ? 'Filling...' : 'Autofill'}
                 </button>
               )}
+              {user && (
+                <button
+                  onClick={() => setShowClearConfirm('group')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '4px',
+                    padding: '6px 10px', borderRadius: 'var(--radius-full)',
+                    fontSize: '12px', fontWeight: '600', border: '1px solid var(--border-medium)',
+                    background: 'var(--bg-card)', color: 'var(--text-muted)', cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  🗑️ Clear
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -658,6 +773,64 @@ export default function Predictions() {
                 <div className="empty-state-title">No matches in Group {activeGroup}</div>
               </div>
             )}
+
+            {/* Predicted group standings */}
+            {groupMatches.length > 0 && (() => {
+              const standings = calcGroupStandings(groupMatches, predictions)
+              const hasPreds = standings.some(s => s.played > 0)
+              if (!hasPreds) return null
+              // Check for fair play tie (same pts, gd, gf, h2h)
+              const hasFairPlayTie = standings.some((s, i) => {
+                if (i === 0) return false
+                const prev = standings[i-1]
+                return s.pts === prev.pts && s.gd === prev.gd && s.gf === prev.gf
+              })
+              return (
+                <div className="card" style={{ marginTop: '4px' }}>
+                  <div style={{ fontWeight: '800', fontSize: '13px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>📊 Predicted Group {activeGroup} Standings</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400' }}>Based on your picks</span>
+                  </div>
+                  {hasFairPlayTie && (
+                    <div style={{ marginBottom: '8px', padding: '6px 10px', background: 'var(--accent-gold-light)', borderRadius: 'var(--radius-sm)', fontSize: '11px', color: 'var(--accent-gold)', fontWeight: '600' }}>
+                      ⚠️ Teams are level on all criteria — FIFA would use fair play points or a draw of lots. You may want to adjust your predictions.
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px 4px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '16px' }}>#</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', flex: 1 }}>Team</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '18px', textAlign: 'center' }}>P</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '20px', textAlign: 'center' }}>Pts</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right' }}>GD</span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '24px', textAlign: 'right' }}>GF</span>
+                  </div>
+                  {standings.map((entry, i) => (
+                    <div key={entry.id} style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '6px 8px', borderRadius: 'var(--radius-sm)', marginBottom: '3px',
+                      background: i < 2 ? 'var(--accent-green-light)' : i === 2 ? 'var(--accent-gold-light)' : 'var(--bg-secondary)',
+                      border: i < 2 ? '1px solid rgba(0,122,51,0.15)' : '1px solid transparent',
+                    }}>
+                      <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', width: '16px' }}>{i+1}</span>
+                      <span style={{ fontSize: '18px' }}>{entry.team?.flag_emoji}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.team?.short_code || entry.team?.name}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '18px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{entry.played}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', width: '20px', textAlign: 'center' }}>{entry.pts}</span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gd > 0 ? '+' : ''}{entry.gd}</span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '24px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gf}</span>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-light)', fontSize: '10px', color: 'var(--text-muted)' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block' }} /> Advances
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-gold)', display: 'inline-block' }} /> Possible 3rd
+                    </span>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -672,6 +845,12 @@ export default function Predictions() {
                   <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
                   <span>{date}</span>
                   <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
+                  {user && dayMatches.some(m => predictions[m.id] && !isLocked(m.kickoff_time)) && (
+                    <button onClick={() => { setShowClearConfirm('date_' + date); clearDatePredictions(dayMatches) }}
+                      style={{ fontSize: '11px', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-medium)', background: 'var(--bg-card)', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                      🗑️ Clear day
+                    </button>
+                  )}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {dayMatches.map(renderMatch)}
@@ -681,6 +860,23 @@ export default function Predictions() {
           </div>
         )}
       </div>
+      {/* Clear confirm modal */}
+      {showClearConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ maxWidth: '340px', width: '100%' }}>
+            <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>🗑️ Clear Predictions</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+              {showClearConfirm === 'group'
+                ? `Clear all unlocked predictions in Group ${activeGroup}? This cannot be undone.`
+                : 'Clear all unlocked predictions for this date? This cannot be undone.'}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => showClearConfirm === 'group' ? clearGroupPredictions() : clearDatePredictions([])} className="btn btn-primary" style={{ background: '#e53935', flex: 1 }}>Clear</button>
+              <button onClick={() => setShowClearConfirm(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
