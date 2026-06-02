@@ -22,11 +22,11 @@ export default function NavBar() {
       {/* Desktop nav only */}
       <nav className="hide-mobile" style={{
         position: 'fixed', top: 0, left: 0, right: 0,
-        height: 'var(--nav-height-safe)',
+        height: 'var(--nav-height)',
         background: 'var(--bg-card)',
         borderBottom: '1px solid var(--border-light)',
-        zIndex: 100, display: 'flex', alignItems: 'flex-end',
-        padding: '0 24px env(safe-area-inset-top, 0px)', gap: '8px',
+        zIndex: 100, display: 'flex', alignItems: 'center',
+        padding: '0 24px', gap: '8px',
         boxShadow: 'var(--shadow-sm)',
       }}>
         {/* Logo */}
@@ -103,11 +103,11 @@ export default function NavBar() {
       {/* Mobile header — logo + dark mode + profile only, no nav links */}
       <nav className="hide-desktop" style={{
         position: 'fixed', top: 0, left: 0, right: 0,
-        height: 'var(--nav-height-safe)',
+        height: 'var(--nav-height)',
         background: 'var(--bg-card)',
         borderBottom: '1px solid var(--border-light)',
-        zIndex: 100, display: 'flex', alignItems: 'flex-end',
-        padding: '0 16px env(safe-area-inset-top, 0px)', justifyContent: 'space-between',
+        zIndex: 100, display: 'flex', alignItems: 'center',
+        padding: '0 16px', justifyContent: 'space-between',
         boxShadow: 'var(--shadow-sm)',
       }}>
         {/* Logo */}

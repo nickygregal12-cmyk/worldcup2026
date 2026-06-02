@@ -17,14 +17,13 @@ export default function BottomNav() {
     <nav className="hide-desktop" style={{
       position: 'fixed',
       bottom: 0, left: 0, right: 0,
-      height: 'calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px))',
+      height: 'var(--bottom-nav-height)',
       background: 'var(--bg-card)',
       borderTop: '1px solid var(--border-light)',
       display: 'flex',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       justifyContent: 'space-around',
       padding: '0 4px',
-      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       zIndex: 100,
       boxShadow: '0 -4px 12px rgba(0,0,0,0.06)',
     }}>

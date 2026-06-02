@@ -137,23 +137,21 @@ export default function Home() {
       </div>
 
       {/* Stats Bar */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '16px 20px' }}>
-        <div className="container">
-          <div style={{ display: 'flex', gap: '24px', overflowX: 'auto', justifyContent: 'center' }}>
-            {[
-              { label: 'Teams', value: '48' },
-              { label: 'Matches', value: '104' },
-              { label: 'Groups', value: '12' },
-              { label: 'Hosts', value: 'USA · CAN · MEX' },
-              { label: 'Start', value: '11 Jun' },
-              { label: 'Final', value: '19 Jul' },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ textAlign: 'center', minWidth: '60px', flexShrink: 0 }}>
-                <div style={{ fontWeight: '800', fontSize: '16px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{value}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-              </div>
-            ))}
-          </div>
+      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '16px 0' }}>
+        <div style={{ display: 'flex', gap: '24px', overflowX: 'auto', padding: '0 16px', scrollbarWidth: 'none' }}>
+          {[
+            { label: 'Teams', value: '48' },
+            { label: 'Matches', value: '104' },
+            { label: 'Groups', value: '12' },
+            { label: 'Hosts', value: 'USA · CAN · MEX' },
+            { label: 'Start', value: '11 Jun' },
+            { label: 'Final', value: '19 Jul' },
+          ].map(({ label, value }) => (
+            <div key={label} style={{ textAlign: 'center', minWidth: '60px', flexShrink: 0 }}>
+              <div style={{ fontWeight: '800', fontSize: '16px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{value}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+            </div>
+          ))}
         </div>
       </div>
 

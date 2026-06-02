@@ -128,16 +128,6 @@ img {
   height: auto;
 }
 
-/* ---- Safe Area (iPhone home bar / notch) ---- */
-:root {
-  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-top: env(safe-area-inset-top, 0px);
-  --safe-area-left: env(safe-area-inset-left, 0px);
-  --safe-area-right: env(safe-area-inset-right, 0px);
-  /* Nav height includes safe area top so fixed navbar clears the notch */
-  --nav-height-safe: calc(var(--nav-height) + var(--safe-area-top));
-}
-
 /* ---- Layout ---- */
 .app-container {
   min-height: 100vh;
@@ -147,9 +137,8 @@ img {
 
 .main-content {
   flex: 1;
-  /* Push content below the navbar which now includes safe area */
-  padding-top: var(--nav-height-safe);
-  padding-bottom: calc(var(--bottom-nav-height) + var(--safe-area-bottom));
+  padding-top: var(--nav-height);
+  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 768px) {
@@ -161,23 +150,13 @@ img {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  /* Fix 2: use padding longhand so left/right don't override each other */
-  padding-top: 0;
-  padding-bottom: 0;
-  padding-left: max(16px, env(safe-area-inset-left, 16px));
-  padding-right: max(16px, env(safe-area-inset-right, 16px));
+  padding: 0 16px;
 }
 
 @media (min-width: 768px) {
   .container {
-    padding-left: 24px;
-    padding-right: 24px;
+    padding: 0 24px;
   }
-}
-
-/* ---- Bottom Nav safe area ---- */
-.bottom-nav {
-  padding-bottom: var(--safe-area-bottom);
 }
 
 /* ---- Cards ---- */
