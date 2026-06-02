@@ -567,12 +567,27 @@ export default function AdminPanel() {
         {activeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {[
-              { key: 'live_api_enabled', label: '🔄 Live Score Sync', desc: 'Enable automatic score syncing from football-data.org', type: 'toggle' },
-              { key: 'predictions_open', label: '⚽ Predictions Open', desc: 'Allow users to make/edit predictions', type: 'toggle' },
-              { key: 'show_odds', label: '📊 Show Betting Odds', desc: 'Display odds on prediction cards', type: 'toggle' },
-              { key: 'maintenance_mode', label: '🔧 Maintenance Mode', desc: 'Show maintenance page to all non-admin users', type: 'toggle' },
-              { key: 'tournament_phase', label: '🏆 Tournament Phase', desc: 'Current phase: pre_tournament, group_stage, knockout, complete', type: 'text' },
-            ].map(setting => (
+              { section: '🏆 Tournament State' },
+              { key: 'tournament_phase', label: 'Tournament Phase', desc: 'pre_tournament → group_stage → knockout → complete', type: 'text' },
+              { key: 'group_stage_complete', label: 'Group Stage Complete', desc: 'Override: marks group stage as done, unlocks knockout bracket', type: 'toggle' },
+              { key: 'knockout_picks_open', label: 'Knockout Picks Open', desc: 'Allow users to make/edit knockout picks', type: 'toggle' },
+              { key: 'last32_banner_visible', label: 'Last 32 Banner Visible', desc: 'Show "Last 32 is coming" banner on home page', type: 'toggle' },
+              { key: 'last32_predictions_open', label: 'Last 32 Predictions Open', desc: 'Unlock Last 32 mini-game predictions', type: 'toggle' },
+              { section: '⚽ Predictions' },
+              { key: 'predictions_open', label: 'Group Predictions Open', desc: 'Allow users to make/edit group stage predictions', type: 'toggle' },
+              { key: 'awards_locked', label: 'Awards Locked', desc: 'Override: lock award predictions early', type: 'toggle' },
+              { section: '🔄 Live Data' },
+              { key: 'live_api_enabled', label: 'Live Score Sync', desc: 'Enable automatic score syncing from football-data.org', type: 'toggle' },
+              { key: 'show_odds', label: 'Show Betting Odds', desc: 'Display odds on prediction cards', type: 'toggle' },
+              { section: '🔧 Platform' },
+              { key: 'maintenance_mode', label: 'Maintenance Mode', desc: 'Show maintenance message to all non-admin users', type: 'toggle' },
+              { key: 'registration_open', label: 'Registration Open', desc: 'Allow new user registrations', type: 'toggle' },
+            ].map((setting, idx) => (
+              setting.section ? (
+                <div key={idx} style={{ fontWeight: '800', fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: idx > 0 ? '8px' : 0 }}>
+                  {setting.section}
+                </div>
+              ) :
               <div key={setting.key} className="card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
                   <div style={{ flex: 1 }}>
