@@ -1,231 +1,415 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 
+const TABS = [
+  { key: 'health',   label: '🩺 Health' },
+  { key: 'matches',  label: '⚽ Matches' },
+  { key: 'users',    label: '👥 Users' },
+  { key: 'leagues',  label: '🏆 Leagues' },
+  { key: 'points',   label: '🎯 Points' },
+  { key: 'audit',    label: '📋 Audit Log' },
+  { key: 'settings', label: '⚙️ Settings' },
+]
+
 export default function AdminPanel() {
   const { user, isAdmin } = useAuthStore()
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('matches')
+  const [activeTab, setActiveTab] = useState('health')
+  const [loading, setLoading] = useState(true)
+
+  // Data
   const [matches, setMatches] = useState([])
   const [users, setUsers] = useState([])
+  const [leagues, setLeagues] = useState([])
+  const [auditLog, setAuditLog] = useState([])
   const [settings, setSettings] = useState({})
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState({})
+  const [health, setHealth] = useState({})
+
+  // UI state
+  const [stageFilter, setStageFilter] = useState('group')
   const [editingMatch, setEditingMatch] = useState(null)
   const [scores, setScores] = useState({})
-  const [stageFilter, setStageFilter] = useState('group')
+  const [saving, setSaving] = useState({})
+  const [userSearch, setUserSearch] = useState('')
+  const [pointAdjUser, setPointAdjUser] = useState(null)
+  const [pointAdjAmount, setPointAdjAmount] = useState('')
+  const [pointAdjReason, setPointAdjReason] = useState('')
+  const [confirmAction, setConfirmAction] = useState(null)
+  const [actionResult, setActionResult] = useState('')
 
   useEffect(() => {
     if (!user || !isAdmin) { navigate('/'); return }
-    loadData()
+    loadAll()
   }, [user, isAdmin])
 
-  const loadData = async () => {
+  const loadAll = async () => {
     setLoading(true)
-    const [matchRes, userRes, settingsRes] = await Promise.all([
-      supabase.from('matches').select(`
-        *,
-        home_team:home_team_id(name,flag_emoji,short_code),
-        away_team:away_team_id(name,flag_emoji,short_code)
-      `).order('kickoff_time', { ascending: true }),
-      supabase.from('profiles').select('*').order('total_points', { ascending: false }).limit(50),
-      supabase.from('app_settings').select('*'),
-    ])
-
-    setMatches(matchRes.data || [])
-    setUsers(userRes.data || [])
-    const sMap = {}
-    settingsRes.data?.forEach(s => { sMap[s.key] = s.value })
-    setSettings(sMap)
+    await Promise.all([loadHealth(), loadMatches(), loadUsers(), loadLeagues(), loadAudit(), loadSettings()])
     setLoading(false)
   }
 
+  const loadHealth = async () => {
+    const now = new Date()
+    const [matchRes, liveRes, syncRes, userCountRes] = await Promise.all([
+      supabase.from('matches').select('status', { count: 'exact' }),
+      supabase.from('matches').select('id', { count: 'exact' }).eq('status', 'live'),
+      supabase.from('app_settings').select('*').eq('key', 'last_sync_at').single(),
+      supabase.from('profiles').select('id', { count: 'exact' }),
+    ])
+
+    const completedRes = await supabase.from('matches').select('id', { count: 'exact' }).eq('status', 'completed')
+    const scheduledRes = await supabase.from('matches').select('id', { count: 'exact' }).eq('status', 'scheduled')
+
+    const lastSync = syncRes.data?.value ? new Date(syncRes.data.value) : null
+    const syncAge = lastSync ? Math.round((now - lastSync) / 60000) : null
+
+    setHealth({
+      totalMatches: matchRes.count || 0,
+      liveMatches: liveRes.count || 0,
+      completedMatches: completedRes.count || 0,
+      scheduledMatches: scheduledRes.count || 0,
+      totalUsers: userCountRes.count || 0,
+      lastSync,
+      syncAge,
+      syncOk: syncAge !== null && syncAge < 10,
+      dbOk: !matchRes.error,
+    })
+  }
+
+  const loadMatches = async () => {
+    const { data } = await supabase
+      .from('matches')
+      .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code)')
+      .order('kickoff_time', { ascending: true })
+    setMatches(data || [])
+  }
+
+  const loadUsers = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('total_points', { ascending: false })
+      .limit(100)
+    setUsers(data || [])
+  }
+
+  const loadLeagues = async () => {
+    const { data } = await supabase
+      .from('leagues')
+      .select('*, creator:created_by(username), members:league_members(count)')
+      .order('created_at', { ascending: false })
+    setLeagues(data || [])
+  }
+
+  const loadAudit = async () => {
+    const { data } = await supabase
+      .from('admin_audit_log')
+      .select('*, admin:admin_user_id(username)')
+      .order('created_at', { ascending: false })
+      .limit(50)
+    setAuditLog(data || [])
+  }
+
+  const loadSettings = async () => {
+    const { data } = await supabase.from('app_settings').select('*')
+    const sMap = {}
+    data?.forEach(s => { sMap[s.key] = s.value })
+    setSettings(sMap)
+  }
+
+  const logAudit = async (action, details) => {
+    await supabase.from('admin_audit_log').insert({
+      admin_user_id: user.id,
+      action,
+      details: JSON.stringify(details),
+    })
+  }
+
+  // Match score save
   const saveMatchResult = async (match) => {
     const s = scores[match.id] || {}
     if (s.home === undefined || s.away === undefined) return
-
     setSaving(prev => ({ ...prev, [match.id]: true }))
     const homeScore = parseInt(s.home)
     const awayScore = parseInt(s.away)
-    const winnerId = homeScore > awayScore ? match.home_team_id :
-                     awayScore > homeScore ? match.away_team_id : null
+    const winnerId = homeScore > awayScore ? match.home_team_id : awayScore > homeScore ? match.away_team_id : null
 
-    const { error } = await supabase
-      .from('matches')
-      .update({
-        home_score: homeScore,
-        away_score: awayScore,
-        winner_team_id: winnerId,
-        status: 'completed',
-        use_manual_override: true,
-      })
-      .eq('id', match.id)
+    const { error } = await supabase.from('matches').update({
+      home_score: homeScore, away_score: awayScore,
+      winner_team_id: winnerId, status: 'completed', use_manual_override: true,
+    }).eq('id', match.id)
 
     if (!error) {
-      // Trigger points calculation
       await supabase.rpc('calculate_prediction_points', { p_match_id: match.id })
+      await logAudit('SCORE_OVERRIDE', { match_id: match.id, match_number: match.match_number, home: homeScore, away: awayScore })
       setEditingMatch(null)
-      loadData()
+      loadMatches()
     }
     setSaving(prev => ({ ...prev, [match.id]: false }))
   }
 
-  const updateSetting = async (key, value) => {
-    await supabase
-      .from('app_settings')
-      .update({ value, updated_by: user.id })
-      .eq('key', key)
-    setSettings(prev => ({ ...prev, [key]: value }))
+  const setMatchLive = async (matchId) => {
+    await supabase.from('matches').update({ status: 'live' }).eq('id', matchId)
+    await logAudit('SET_LIVE', { match_id: matchId })
+    loadMatches()
   }
 
-  const recalculateAllPoints = async () => {
+  const resetMatchOverride = async (matchId) => {
+    await supabase.from('matches').update({ use_manual_override: false, status: 'scheduled' }).eq('id', matchId)
+    await logAudit('RESET_OVERRIDE', { match_id: matchId })
+    loadMatches()
+  }
+
+  // User actions
+  const banUser = async (userId, username) => {
+    await supabase.from('profiles').update({ is_banned: true }).eq('id', userId)
+    await logAudit('BAN_USER', { user_id: userId, username })
+    setActionResult(`Banned ${username}`)
+    loadUsers()
+  }
+
+  const unbanUser = async (userId, username) => {
+    await supabase.from('profiles').update({ is_banned: false }).eq('id', userId)
+    await logAudit('UNBAN_USER', { user_id: userId, username })
+    setActionResult(`Unbanned ${username}`)
+    loadUsers()
+  }
+
+  const resetUserPredictions = async (userId, username) => {
+    await supabase.from('predictions').delete().eq('user_id', userId)
+    await supabase.from('profiles').update({ total_points: 0, streak_current: 0 }).eq('id', userId)
+    await logAudit('RESET_PREDICTIONS', { user_id: userId, username })
+    setActionResult(`Reset predictions for ${username}`)
+    loadUsers()
+  }
+
+  const makeAdmin = async (userId, username) => {
+    await supabase.from('profiles').update({ is_admin: true }).eq('id', userId)
+    await logAudit('MAKE_ADMIN', { user_id: userId, username })
+    setActionResult(`Made ${username} an admin`)
+    loadUsers()
+  }
+
+  // Point adjustment
+  const applyPointAdjustment = async () => {
+    if (!pointAdjUser || !pointAdjAmount || !pointAdjReason) return
+    const amount = parseInt(pointAdjAmount)
+    const u = users.find(u => u.id === pointAdjUser)
+    const newPoints = (u?.total_points || 0) + amount
+
+    await supabase.from('profiles').update({ total_points: newPoints }).eq('id', pointAdjUser)
+    await logAudit('POINT_ADJUSTMENT', { user_id: pointAdjUser, username: u?.username, amount, reason: pointAdjReason, new_total: newPoints })
+    setActionResult(`Adjusted ${u?.username} points by ${amount > 0 ? '+' : ''}${amount}`)
+    setPointAdjUser(null); setPointAdjAmount(''); setPointAdjReason('')
+    loadUsers()
+  }
+
+  // League actions
+  const deleteLeague = async (leagueId, leagueName) => {
+    await supabase.from('leagues').delete().eq('id', leagueId)
+    await logAudit('DELETE_LEAGUE', { league_id: leagueId, name: leagueName })
+    setActionResult(`Deleted league: ${leagueName}`)
+    loadLeagues()
+  }
+
+  // Settings
+  const updateSetting = async (key, value) => {
+    await supabase.from('app_settings').upsert({ key, value, updated_by: user.id }, { onConflict: 'key' })
+    setSettings(prev => ({ ...prev, [key]: value }))
+    await logAudit('SETTING_CHANGE', { key, value })
+  }
+
+  const recalcAllPoints = async () => {
+    setSaving(prev => ({ ...prev, recalc: true }))
     const { data: userList } = await supabase.from('profiles').select('id')
     for (const u of userList || []) {
       await supabase.rpc('recalculate_user_total_points', { p_user_id: u.id })
     }
-    alert('Points recalculated for all users!')
-    loadData()
+    await logAudit('RECALC_ALL_POINTS', { user_count: userList?.length })
+    setSaving(prev => ({ ...prev, recalc: false }))
+    setActionResult('Points recalculated for all users!')
+    loadUsers()
   }
 
+  const filteredUsers = users.filter(u =>
+    !userSearch || u.username?.toLowerCase().includes(userSearch.toLowerCase()) || u.email?.toLowerCase().includes(userSearch.toLowerCase())
+  )
   const filteredMatches = matches.filter(m => m.stage === stageFilter)
+
+  const fmt = (t) => t ? new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
       {/* Header */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1a0a00, #2a1500)',
-        padding: '20px',
-        color: 'white',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-      }}>
+      <div style={{ background: 'linear-gradient(135deg, #1a0a00, #2a1500)', padding: '20px', color: 'white' }}>
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
-            <span style={{ fontSize: '24px' }}>⚙️</span>
-            <h1 style={{ fontSize: '22px', fontWeight: '800' }}>Admin Panel</h1>
-            <span style={{ background: 'var(--accent-orange)', color: 'white', padding: '2px 10px', borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: '700' }}>
-              ADMIN
-            </span>
+            <h1 style={{ fontSize: '22px', fontWeight: '800' }}>⚙️ Admin Panel</h1>
+            <span style={{ background: 'var(--accent-orange)', color: 'white', padding: '2px 10px', borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: '700' }}>ADMIN</span>
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>WorldCup26 Predictor Management</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>WC26 Predictor Management · {health.totalUsers} users</p>
+          {actionResult && (
+            <div style={{ marginTop: '8px', background: 'rgba(0,255,0,0.15)', padding: '8px 12px', borderRadius: '8px', fontSize: '13px', color: '#00ff88' }}>
+              ✓ {actionResult}
+              <button onClick={() => setActionResult('')} style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', marginLeft: '8px' }}>×</button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)' }}>
+      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', overflowX: 'auto' }}>
         <div className="container">
-          <div className="tabs">
-            {['matches', 'users', 'settings'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`tab ${activeTab === tab ? 'active' : ''}`}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', textTransform: 'capitalize' }}
-              >
-                {tab === 'matches' ? '⚽ Matches' : tab === 'users' ? '👥 Users' : '⚙️ Settings'}
-              </button>
+          <div style={{ display: 'flex' }}>
+            {TABS.map(tab => (
+              <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+                padding: '12px 16px', fontSize: '13px', whiteSpace: 'nowrap',
+                fontWeight: activeTab === tab.key ? '700' : '400',
+                color: activeTab === tab.key ? 'var(--text-primary)' : 'var(--text-muted)',
+                borderBottom: activeTab === tab.key ? '2px solid var(--primary)' : '2px solid transparent',
+                background: 'none', border: 'none',
+                borderBottom: activeTab === tab.key ? '2px solid var(--accent-orange)' : '2px solid transparent',
+                cursor: 'pointer',
+              }}>{tab.label}</button>
             ))}
           </div>
         </div>
       </div>
 
       <div className="container" style={{ padding: '16px' }}>
-        {/* Matches Tab */}
+
+        {/* ── HEALTH ── */}
+        {activeTab === 'health' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Status cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+              {[
+                { label: 'Database', ok: health.dbOk, detail: 'Supabase connection' },
+                { label: 'Score Sync', ok: health.syncOk, detail: health.syncAge !== null ? `Last sync ${health.syncAge}m ago` : 'Never synced' },
+                { label: 'Live Matches', ok: true, detail: `${health.liveMatches} in progress`, neutral: true },
+                { label: 'Users', ok: true, detail: `${health.totalUsers} registered`, neutral: true },
+              ].map(item => (
+                <div key={item.label} className="card" style={{ border: `1px solid ${item.neutral ? 'var(--border-light)' : item.ok ? 'var(--accent-green)' : '#e53935'}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ fontWeight: '700', fontSize: '14px' }}>{item.label}</span>
+                    <span style={{ fontSize: '18px' }}>{item.neutral ? '📊' : item.ok ? '✅' : '🔴'}</span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{item.detail}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Match stats */}
+            <div className="card">
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '12px' }}>Match Status</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {[
+                  { label: 'Scheduled', count: health.scheduledMatches, color: 'var(--accent-blue)' },
+                  { label: 'Live', count: health.liveMatches, color: '#e53935' },
+                  { label: 'Completed', count: health.completedMatches, color: 'var(--accent-green)' },
+                  { label: 'Total', count: health.totalMatches, color: 'var(--text-primary)' },
+                ].map(row => (
+                  <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{row.label}</span>
+                    <span style={{ fontWeight: '800', fontSize: '16px', color: row.color, fontFamily: 'var(--font-mono)' }}>{row.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Quick actions */}
+            <div className="card">
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '12px' }}>Quick Actions</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button onClick={recalcAllPoints} disabled={saving.recalc} className="btn btn-primary">
+                  {saving.recalc ? 'Recalculating...' : '🔄 Recalculate All Points'}
+                </button>
+                <button onClick={loadAll} className="btn btn-secondary">🔃 Refresh All Data</button>
+              </div>
+            </div>
+
+            {/* Last sync time */}
+            <div className="card">
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '8px' }}>Score Sync Status</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                Last sync: {health.lastSync ? fmt(health.lastSync) : 'Never'}
+                {health.syncAge !== null && <span style={{ marginLeft: '8px', color: health.syncOk ? 'var(--accent-green)' : '#e53935', fontWeight: '700' }}>
+                  ({health.syncAge}m ago)
+                </span>}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Sync runs every 5 minutes via Netlify scheduled function. Enable/disable in Settings tab.
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MATCHES ── */}
         {activeTab === 'matches' && (
           <div>
-            {/* Stage filter */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '16px', flexWrap: 'wrap' }}>
               {['group', 'r32', 'r16', 'qf', 'sf', '3rd', 'final'].map(stage => (
-                <button
-                  key={stage}
-                  onClick={() => setStageFilter(stage)}
-                  className="btn btn-sm"
-                  style={{
-                    background: stageFilter === stage ? 'var(--primary)' : 'var(--bg-card)',
-                    color: stageFilter === stage ? 'var(--text-inverse)' : 'var(--text-secondary)',
-                    border: '1px solid var(--border-light)',
-                  }}
-                >
+                <button key={stage} onClick={() => setStageFilter(stage)} className="btn btn-sm" style={{
+                  background: stageFilter === stage ? 'var(--primary)' : 'var(--bg-card)',
+                  color: stageFilter === stage ? 'white' : 'var(--text-secondary)',
+                  border: '1px solid var(--border-light)',
+                }}>
                   {stage.toUpperCase()}
                 </button>
               ))}
             </div>
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {filteredMatches.map(match => {
                 const isEditing = editingMatch === match.id
                 const s = scores[match.id] || { home: match.home_score ?? '', away: match.away_score ?? '' }
-
                 return (
                   <div key={match.id} className="card">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>
-                        Match #{match.match_number} · {new Date(match.kickoff_time).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        #{match.match_number} · {fmt(match.kickoff_time)}
+                        {match.use_manual_override && <span style={{ marginLeft: '6px', color: 'var(--accent-orange)', fontWeight: '700' }}>MANUAL</span>}
                       </div>
                       <span className={`badge ${match.status === 'completed' ? 'badge-green' : match.status === 'live' ? 'badge-red' : 'badge-gray'}`}>
                         {match.status}
                       </span>
                     </div>
-
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '24px' }}>{match.home_team?.flag_emoji || '🏳️'}</div>
-                        <div style={{ fontSize: '12px', fontWeight: '700' }}>{match.home_team?.short_code || match.home_team_placeholder || '?'}</div>
+                        <div style={{ fontSize: '24px' }}>{match.home_team?.flag_emoji}</div>
+                        <div style={{ fontSize: '12px', fontWeight: '700' }}>{match.home_team?.short_code}</div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {isEditing ? (
-                          <>
-                            <input
-                              type="number" min="0" max="99"
-                              className="score-input"
-                              value={s.home}
-                              onChange={e => setScores(prev => ({ ...prev, [match.id]: { ...s, home: e.target.value } }))}
-                            />
-                            <span className="score-divider">–</span>
-                            <input
-                              type="number" min="0" max="99"
-                              className="score-input"
-                              value={s.away}
-                              onChange={e => setScores(prev => ({ ...prev, [match.id]: { ...s, away: e.target.value } }))}
-                            />
-                          </>
-                        ) : (
-                          <div style={{ fontWeight: '800', fontSize: '20px', fontFamily: 'var(--font-mono)' }}>
-                            {match.home_score ?? '–'} – {match.away_score ?? '–'}
-                          </div>
-                        )}
+                      <div style={{ textAlign: 'center', fontSize: '20px', fontWeight: '800', fontFamily: 'var(--font-mono)' }}>
+                        {match.status === 'completed' || match.status === 'live'
+                          ? `${match.home_score ?? '?'} – ${match.away_score ?? '?'}`
+                          : 'vs'}
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '24px' }}>{match.away_team?.flag_emoji || '🏳️'}</div>
-                        <div style={{ fontSize: '12px', fontWeight: '700' }}>{match.away_team?.short_code || match.away_team_placeholder || '?'}</div>
+                        <div style={{ fontSize: '24px' }}>{match.away_team?.flag_emoji}</div>
+                        <div style={{ fontSize: '12px', fontWeight: '700' }}>{match.away_team?.short_code}</div>
                       </div>
                     </div>
-
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-                      {isEditing ? (
-                        <>
-                          <button
-                            onClick={() => saveMatchResult(match)}
-                            disabled={saving[match.id]}
-                            className="btn btn-green btn-sm"
-                          >
-                            {saving[match.id] ? '...' : '✓ Save Result'}
-                          </button>
-                          <button onClick={() => setEditingMatch(null)} className="btn btn-secondary btn-sm">Cancel</button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setEditingMatch(match.id)
-                            setScores(prev => ({ ...prev, [match.id]: { home: match.home_score ?? '', away: match.away_score ?? '' } }))
-                          }}
-                          className="btn btn-secondary btn-sm"
-                        >
-                          ✏️ Enter Result
+                    {isEditing && (
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px', padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                        <input type="number" min="0" max="20" value={s.home} onChange={e => setScores(prev => ({ ...prev, [match.id]: { ...s, home: e.target.value } }))}
+                          className="score-input" style={{ width: '52px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                        <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>–</span>
+                        <input type="number" min="0" max="20" value={s.away} onChange={e => setScores(prev => ({ ...prev, [match.id]: { ...s, away: e.target.value } }))}
+                          className="score-input" style={{ width: '52px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                        <button onClick={() => saveMatchResult(match)} disabled={saving[match.id]} className="btn btn-primary btn-sm">
+                          {saving[match.id] ? '...' : 'Save'}
                         </button>
-                      )}
+                        <button onClick={() => setEditingMatch(null)} className="btn btn-secondary btn-sm">Cancel</button>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <button onClick={() => { setEditingMatch(match.id); setScores(prev => ({ ...prev, [match.id]: { home: match.home_score ?? 0, away: match.away_score ?? 0 } })) }}
+                        className="btn btn-secondary btn-sm">✏️ Set Score</button>
+                      {match.status !== 'live' && <button onClick={() => setMatchLive(match.id)} className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>🔴 Set Live</button>}
+                      {match.use_manual_override && <button onClick={() => resetMatchOverride(match.id)} className="btn btn-sm" style={{ background: 'var(--accent-gold-light)', color: 'var(--accent-gold)', border: '1px solid var(--accent-gold)' }}>↺ Reset Override</button>}
                     </div>
                   </div>
                 )
@@ -234,72 +418,231 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* Users Tab */}
+        {/* ── USERS ── */}
         {activeTab === 'users' && (
-          <div className="card" style={{ padding: '8px' }}>
-            <div style={{ padding: '12px 16px', marginBottom: '8px' }}>
-              <button onClick={recalculateAllPoints} className="btn btn-primary btn-sm">
-                🔄 Recalculate All Points
-              </button>
+          <div>
+            <input className="input" placeholder="Search by username or email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} style={{ marginBottom: '16px' }} />
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>{filteredUsers.length} users</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {filteredUsers.map(u => (
+                <div key={u.id} className="card" style={{ opacity: u.is_banned ? 0.6 : 1, border: u.is_banned ? '1px solid #e53935' : '1px solid var(--border-light)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '800' }}>
+                        {(u.username || '?')[0].toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: '700', fontSize: '14px' }}>
+                          {u.username}
+                          {u.is_admin && <span style={{ marginLeft: '6px', fontSize: '10px', background: 'var(--accent-orange)', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>ADMIN</span>}
+                          {u.is_banned && <span style={{ marginLeft: '6px', fontSize: '10px', background: '#e53935', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>BANNED</span>}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{u.email}</div>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: '800', fontSize: '16px', color: 'var(--accent-green)', fontFamily: 'var(--font-mono)' }}>{u.total_points || 0} pts</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Joined {fmt(u.created_at)}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {u.is_banned
+                      ? <button onClick={() => unbanUser(u.id, u.username)} className="btn btn-sm" style={{ background: 'var(--accent-green)', color: 'white', border: 'none' }}>✓ Unban</button>
+                      : <button onClick={() => setConfirmAction({ type: 'ban', userId: u.id, username: u.username })} className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>🚫 Ban</button>
+                    }
+                    <button onClick={() => setConfirmAction({ type: 'reset', userId: u.id, username: u.username })} className="btn btn-secondary btn-sm">↺ Reset Predictions</button>
+                    {!u.is_admin && <button onClick={() => setConfirmAction({ type: 'makeAdmin', userId: u.id, username: u.username })} className="btn btn-sm" style={{ border: '1px solid var(--accent-orange)', color: 'var(--accent-orange)', background: 'none' }}>⭐ Make Admin</button>}
+                    <button onClick={() => setPointAdjUser(u.id)} className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none' }}>🎯 Adjust Points</button>
+                  </div>
+                  {pointAdjUser === u.id && (
+                    <div style={{ marginTop: '10px', padding: '12px', background: 'var(--accent-blue-light)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '600' }}>Adjust points for {u.username}</div>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input type="number" placeholder="+10 or -5" value={pointAdjAmount} onChange={e => setPointAdjAmount(e.target.value)}
+                          className="input" style={{ width: '100px' }} />
+                        <input type="text" placeholder="Reason..." value={pointAdjReason} onChange={e => setPointAdjReason(e.target.value)}
+                          className="input" style={{ flex: 1 }} />
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button onClick={applyPointAdjustment} className="btn btn-primary btn-sm">Apply</button>
+                        <button onClick={() => setPointAdjUser(null)} className="btn btn-secondary btn-sm">Cancel</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-            {users.map((u, i) => (
-              <div key={u.id} className="leaderboard-row">
-                <div className="rank-number">#{i + 1}</div>
-                <div>
-                  <div style={{ fontWeight: '600', fontSize: '14px' }}>{u.username}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {u.is_admin && <span style={{ color: 'var(--accent-orange)' }}>ADMIN · </span>}
-                    Streak: {u.streak_current || 0}
+          </div>
+        )}
+
+        {/* ── LEAGUES ── */}
+        {activeTab === 'leagues' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>{leagues.length} leagues total</div>
+            {leagues.map(league => (
+              <div key={league.id} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                  <div>
+                    <div style={{ fontWeight: '700', fontSize: '15px' }}>{league.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Created by {league.creator?.username || '?'} · {fmt(league.created_at)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Code: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: 'var(--text-primary)' }}>{league.invite_code}</span>
+                      {league.is_private && <span style={{ marginLeft: '6px' }}>🔒 Private</span>}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: '800', fontSize: '16px', fontFamily: 'var(--font-mono)' }}>
+                      {league.members?.[0]?.count ?? '?'} members
+                    </div>
                   </div>
                 </div>
-                <div style={{ fontWeight: '800', fontSize: '16px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)' }}>
-                  {u.total_points || 0} pts
-                </div>
+                <button onClick={() => setConfirmAction({ type: 'deleteLeague', leagueId: league.id, leagueName: league.name })}
+                  className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
+                  🗑️ Delete League
+                </button>
               </div>
             ))}
           </div>
         )}
 
-        {/* Settings Tab */}
+        {/* ── POINTS ── */}
+        {activeTab === 'points' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div className="card">
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '12px' }}>Leaderboard Overview</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {users.slice(0, 20).map((u, i) => (
+                  <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', width: '24px' }}>#{i + 1}</span>
+                    <span style={{ flex: 1, fontSize: '13px', fontWeight: '600' }}>{u.username}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '14px', color: 'var(--accent-green)' }}>{u.total_points || 0}</span>
+                    <button onClick={() => setPointAdjUser(u.id)} style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none', cursor: 'pointer' }}>
+                      Adjust
+                    </button>
+                    {pointAdjUser === u.id && (
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <input type="number" placeholder="±pts" value={pointAdjAmount} onChange={e => setPointAdjAmount(e.target.value)}
+                          style={{ width: '70px', padding: '3px 6px', border: '1px solid var(--border-medium)', borderRadius: '4px', fontSize: '12px' }} />
+                        <input type="text" placeholder="reason" value={pointAdjReason} onChange={e => setPointAdjReason(e.target.value)}
+                          style={{ width: '100px', padding: '3px 6px', border: '1px solid var(--border-medium)', borderRadius: '4px', fontSize: '12px' }} />
+                        <button onClick={applyPointAdjustment} style={{ padding: '3px 8px', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>✓</button>
+                        <button onClick={() => setPointAdjUser(null)} style={{ padding: '3px 8px', background: 'var(--bg-tertiary)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>×</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button onClick={recalcAllPoints} disabled={saving.recalc} className="btn btn-primary">
+              {saving.recalc ? '⏳ Recalculating...' : '🔄 Recalculate All Points'}
+            </button>
+          </div>
+        )}
+
+        {/* ── AUDIT LOG ── */}
+        {activeTab === 'audit' && (
+          <div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>Last 50 admin actions</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {auditLog.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>No admin actions yet</div>
+              ) : auditLog.map(log => (
+                <div key={log.id} style={{ padding: '10px 14px', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{log.action}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0, marginLeft: '8px' }}>{fmt(log.created_at)}</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                    By {log.admin?.username || 'unknown'} · {log.details}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── SETTINGS ── */}
         {activeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {[
-              { key: 'maintenance_mode', label: '🔧 Maintenance Mode', desc: 'Put the app in read-only mode' },
-              { key: 'predictions_enabled', label: '⚽ Predictions Enabled', desc: 'Allow users to submit predictions' },
-              { key: 'live_api_enabled', label: '📡 Live API Enabled', desc: 'Sync scores from football-data.org' },
-              { key: 'knockout_restart_unlocked', label: '🔄 Knockout Restart Unlocked', desc: 'Allow users to start a fresh knockout bracket' },
-            ].map(({ key, label, desc }) => (
-              <div key={key} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: '600', fontSize: '14px' }}>{label}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{desc}</div>
-                    <div style={{ fontSize: '11px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      Current: <strong>{settings[key]}</strong>
-                    </div>
+              { key: 'live_api_enabled', label: '🔄 Live Score Sync', desc: 'Enable automatic score syncing from football-data.org', type: 'toggle' },
+              { key: 'predictions_open', label: '⚽ Predictions Open', desc: 'Allow users to make/edit predictions', type: 'toggle' },
+              { key: 'show_odds', label: '📊 Show Betting Odds', desc: 'Display odds on prediction cards', type: 'toggle' },
+              { key: 'maintenance_mode', label: '🔧 Maintenance Mode', desc: 'Show maintenance page to all non-admin users', type: 'toggle' },
+              { key: 'tournament_phase', label: '🏆 Tournament Phase', desc: 'Current phase: pre_tournament, group_stage, knockout, complete', type: 'text' },
+            ].map(setting => (
+              <div key={setting.key} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '2px' }}>{setting.label}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{setting.desc}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', fontFamily: 'var(--font-mono)' }}>key: {setting.key}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  {setting.type === 'toggle' ? (
                     <button
-                      onClick={() => updateSetting(key, 'true')}
-                      className="btn btn-sm"
-                      style={{ background: settings[key] === 'true' ? 'var(--accent-green)' : 'var(--bg-tertiary)', color: settings[key] === 'true' ? 'white' : 'var(--text-secondary)' }}
+                      onClick={() => updateSetting(setting.key, settings[setting.key] === 'true' ? 'false' : 'true')}
+                      style={{
+                        width: '48px', height: '26px', borderRadius: '13px', border: 'none', cursor: 'pointer', flexShrink: 0,
+                        background: settings[setting.key] === 'true' ? 'var(--accent-green)' : 'var(--bg-tertiary)',
+                        position: 'relative', transition: 'background 0.2s',
+                      }}
                     >
-                      On
+                      <span style={{
+                        position: 'absolute', top: '3px',
+                        left: settings[setting.key] === 'true' ? '25px' : '3px',
+                        width: '20px', height: '20px', borderRadius: '50%',
+                        background: 'white', transition: 'left 0.2s',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                      }} />
                     </button>
-                    <button
-                      onClick={() => updateSetting(key, 'false')}
-                      className="btn btn-sm"
-                      style={{ background: settings[key] === 'false' ? 'var(--accent-red)' : 'var(--bg-tertiary)', color: settings[key] === 'false' ? 'white' : 'var(--text-secondary)' }}
-                    >
-                      Off
-                    </button>
-                  </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={settings[setting.key] || ''}
+                      onChange={e => setSettings(prev => ({ ...prev, [setting.key]: e.target.value }))}
+                      onBlur={e => updateSetting(setting.key, e.target.value)}
+                      className="input"
+                      style={{ width: '160px' }}
+                    />
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Confirm dialog */}
+      {confirmAction && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ maxWidth: '360px', width: '100%' }}>
+            <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>
+              {confirmAction.type === 'ban' ? '🚫 Ban User' :
+               confirmAction.type === 'reset' ? '↺ Reset Predictions' :
+               confirmAction.type === 'makeAdmin' ? '⭐ Make Admin' :
+               '🗑️ Delete League'}
+            </div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+              {confirmAction.type === 'ban' ? `Ban ${confirmAction.username}? They won't be able to sign in.` :
+               confirmAction.type === 'reset' ? `Delete all predictions for ${confirmAction.username}? This cannot be undone.` :
+               confirmAction.type === 'makeAdmin' ? `Give ${confirmAction.username} admin access?` :
+               `Delete league "${confirmAction.leagueName}"? All members will be removed.`}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => {
+                if (confirmAction.type === 'ban') banUser(confirmAction.userId, confirmAction.username)
+                else if (confirmAction.type === 'reset') resetUserPredictions(confirmAction.userId, confirmAction.username)
+                else if (confirmAction.type === 'makeAdmin') makeAdmin(confirmAction.userId, confirmAction.username)
+                else if (confirmAction.type === 'deleteLeague') deleteLeague(confirmAction.leagueId, confirmAction.leagueName)
+                setConfirmAction(null)
+              }} className="btn btn-primary" style={{ background: '#e53935', flex: 1 }}>Confirm</button>
+              <button onClick={() => setConfirmAction(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
