@@ -65,10 +65,12 @@ export const ALL_STAGES = [
 /**
  * Calculate predicted group standings from user's predictions
  * Returns { A: [{team, pts, gd, gf}, ...], B: [...], ... }
+ * Falls back to registration order if no predictions exist for a group
  */
 export function calcPredictedStandings(matches, predictions) {
   const groups = {}
 
+  // First pass — register all teams in each group (in match order = seeded order)
   for (const match of matches) {
     if (match.stage !== 'group') continue
     const groupName = match.group?.name
@@ -78,17 +80,30 @@ export function calcPredictedStandings(matches, predictions) {
 
     const homeId = match.home_team_id
     const awayId = match.away_team_id
-    const homeTeam = match.home_team
-    const awayTeam = match.away_team
 
     if (!groups[groupName][homeId]) {
-      groups[groupName][homeId] = { team: homeTeam, id: homeId, pts: 0, gd: 0, gf: 0, played: 0 }
+      groups[groupName][homeId] = {
+        team: match.home_team, id: homeId,
+        pts: 0, gd: 0, gf: 0, played: 0, order: Object.keys(groups[groupName]).length
+      }
     }
     if (!groups[groupName][awayId]) {
-      groups[groupName][awayId] = { team: awayTeam, id: awayId, pts: 0, gd: 0, gf: 0, played: 0 }
+      groups[groupName][awayId] = {
+        team: match.away_team, id: awayId,
+        pts: 0, gd: 0, gf: 0, played: 0, order: Object.keys(groups[groupName]).length
+      }
     }
+  }
 
-    // Use real score if match completed, otherwise use prediction
+  // Second pass — apply predictions/results
+  for (const match of matches) {
+    if (match.stage !== 'group') continue
+    const groupName = match.group?.name
+    if (!groupName) continue
+
+    const homeId = match.home_team_id
+    const awayId = match.away_team_id
+
     let homeScore, awayScore
     if (match.status === 'completed') {
       homeScore = match.home_score
@@ -96,12 +111,13 @@ export function calcPredictedStandings(matches, predictions) {
     } else {
       const pred = predictions[match.id]
       if (pred?.home === undefined || pred?.away === undefined) continue
-      homeScore = pred.home
-      awayScore = pred.away
+      homeScore = Number(pred.home)
+      awayScore = Number(pred.away)
     }
 
     const h = groups[groupName][homeId]
     const a = groups[groupName][awayId]
+    if (!h || !a) continue
 
     h.played++; a.played++
     h.gf += homeScore; h.gd += homeScore - awayScore
@@ -112,11 +128,11 @@ export function calcPredictedStandings(matches, predictions) {
     else { a.pts += 3 }
   }
 
-  // Sort each group: pts desc, gd desc, gf desc
+  // Sort each group: pts desc, gd desc, gf desc, then original order as tiebreak
   const standings = {}
   for (const [group, teams] of Object.entries(groups)) {
     standings[group] = Object.values(teams).sort((a, b) =>
-      b.pts - a.pts || b.gd - a.gd || b.gf - a.gf
+      b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.order - b.order
     )
   }
   return standings

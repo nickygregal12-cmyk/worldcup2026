@@ -226,6 +226,7 @@ export default function Knockout() {
       ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   }
 
+  const showGroupTables = activeStage === 'groups'
   const currentStage = ALL_STAGES.find(s => s.key === activeStage)
   const stageMatches = currentStage?.matches || []
 
@@ -307,12 +308,15 @@ export default function Knockout() {
             padding: '16px', textAlign: 'center', background: 'var(--bg-secondary)',
             borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '13px',
           }}>
-            {groupStageDone
-              ? 'Teams to be confirmed'
-              : isPreTournament
-              ? `Teams confirmed after group stage · ${matchDef.home_slot} vs ${matchDef.away_slot}`
-              : 'Teams TBC after group stage'
-            }
+            <div style={{ marginBottom: '6px' }}>
+              {matchDef.home_slot} vs {matchDef.away_slot}
+            </div>
+            <div style={{ fontSize: '11px' }}>
+              {groupStageDone
+                ? 'Waiting for real group results'
+                : 'Predict your group stage to see teams here'
+              }
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -490,6 +494,24 @@ export default function Knockout() {
         position: 'sticky', top: 'var(--nav-height)', zIndex: 50, overflowX: 'auto',
       }}>
         <div style={{ display: 'flex' }}>
+          {/* Group tables tab */}
+          <button
+            onClick={() => setActiveStage('groups')}
+            style={{
+              padding: '12px 14px', fontSize: '12px', whiteSpace: 'nowrap',
+              fontWeight: activeStage === 'groups' ? '700' : '400',
+              color: activeStage === 'groups' ? 'var(--text-primary)' : 'var(--text-muted)',
+              borderBottom: activeStage === 'groups' ? '2px solid var(--primary)' : '2px solid transparent',
+              background: 'none', border: 'none',
+              borderBottom: activeStage === 'groups' ? '2px solid var(--primary)' : '2px solid transparent',
+              cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+            }}
+          >
+            Group Tables
+            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>Predicted</span>
+          </button>
+
           {ALL_STAGES.map(stage => {
             const picks = stage.matches.filter(m => knockoutPicks[m.match_number]?.winner_id).length
             const complete = picks === stage.matches.length
@@ -533,12 +555,70 @@ export default function Knockout() {
         </span>
       </div>
 
+      {/* Group Tables */}
+      {showGroupTables && (
+        <div className="container" style={{ padding: '16px' }}>
+          <div style={{ marginBottom: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>
+            Based on your predictions — predict more group games to see updated standings
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+            {Object.entries(standings).sort(([a],[b]) => a.localeCompare(b)).map(([group, teams]) => (
+              <div key={group} className="card" style={{ padding: '12px' }}>
+                <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    background: 'var(--primary)', color: 'white',
+                    width: '22px', height: '22px', borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '11px', fontWeight: '800', flexShrink: 0,
+                  }}>{group}</span>
+                  Group {group}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  {teams.map((entry, i) => (
+                    <div key={entry.id} style={{
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '6px 8px', borderRadius: 'var(--radius-sm)',
+                      background: i < 2 ? 'var(--accent-green-light)' : i === 2 ? 'var(--accent-gold-light)' : 'var(--bg-secondary)',
+                      border: i < 2 ? '1px solid rgba(0,122,51,0.2)' : '1px solid transparent',
+                    }}>
+                      <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', width: '14px' }}>{i + 1}</span>
+                      <span style={{ fontSize: '18px' }}>{entry.team?.flag_emoji}</span>
+                      <span style={{ fontSize: '12px', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {entry.team?.short_code || entry.team?.name}
+                      </span>
+                      <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', minWidth: '20px', textAlign: 'right' }}>
+                        {entry.pts}
+                      </span>
+                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '28px', textAlign: 'right' }}>
+                        {entry.gd > 0 ? '+' : ''}{entry.gd}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-light)', fontSize: '10px', color: 'var(--text-muted)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block' }} />
+                    Advances
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-gold)', display: 'inline-block' }} />
+                    Possible 3rd
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Matches */}
+      {!showGroupTables && (
       <div className="container" style={{ padding: '16px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {stageMatches.map(renderMatch)}
         </div>
       </div>
+      )}
     </div>
   )
 }
