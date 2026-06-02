@@ -575,8 +575,8 @@ export default function Predictions() {
             <button
               onClick={() => savePrediction(match)}
               disabled={isSaving || pred.home === '' || pred.home === undefined}
-              className="btn btn-sm"
-              style={{ background: isSaved ? 'var(--accent-green)' : 'var(--primary)', color: 'white', minWidth: '80px' }}
+              className={`btn btn-sm ${isSaved ? 'btn-save-success' : 'btn-save'}`}
+              style={{ minWidth: '80px' }}
             >
               {isSaving
                 ? <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} />
@@ -636,39 +636,34 @@ export default function Predictions() {
 
       {/* Header */}
       <div style={{
-        background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)',
+        background: 'linear-gradient(135deg, #0a0a0a, #0a1a0a)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
         padding: '16px 20px', position: 'sticky', top: 'var(--nav-height)', zIndex: 50,
+        color: 'white',
       }}>
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><h1 style={{ fontSize: "20px", fontWeight: "800" }}>⚽ Predictions</h1><Link to="/how-to-play" style={{ width: "22px", height: "22px", borderRadius: "50%", background: "var(--bg-tertiary)", border: "1px solid var(--border-medium)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "700", color: "var(--text-muted)", flexShrink: 0 }}>?</Link></div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}><h1 style={{ fontSize: "20px", fontWeight: "800", color: 'white' }}>⚽ Predictions</h1><Link to="/how-to-play" style={{ width: "22px", height: "22px", borderRadius: "50%", background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: "700", color: "rgba(255,255,255,0.7)", flexShrink: 0 }}>?</Link></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {/* Joker counter */}
               {user && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '5px',
-                  padding: '5px 12px',
-                  borderRadius: 'var(--radius-full)',
-                  background: jokersRemaining === 0 ? 'var(--bg-tertiary)' : 'var(--accent-gold-light)',
-                  border: `1px solid ${jokersRemaining === 0 ? 'var(--border-light)' : 'var(--accent-gold)'}`,
-                  fontSize: '13px',
-                  fontWeight: '700',
-                  color: jokersRemaining === 0 ? 'var(--text-muted)' : '#b8860b',
-                  animation: jokersRemaining > 0 && showJokerReminder ? 'pulse 1.5s infinite' : 'none',
-                }}>
-                  🃏 {jokersRemaining} left
+                <div className={`joker-counter ${jokersRemaining === 0 ? 'joker-counter-empty' : jokersRemaining <= 2 ? 'joker-counter-low' : 'joker-counter-active'}`}
+                  style={{ animation: jokersRemaining > 0 && showJokerReminder ? 'pulse 1.5s infinite' : 'none' }}>
+                  <span>🃏</span>
+                  <span>{jokersRemaining}</span>
+                  <span style={{ fontSize: '11px', fontWeight: '500', opacity: 0.75 }}>joker{jokersRemaining !== 1 ? 's' : ''}</span>
                 </div>
               )}
 
               {/* View toggle */}
-              <div style={{ display: 'flex', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', padding: '3px', gap: '2px' }}>
+              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.1)', borderRadius: 'var(--radius-full)', padding: '3px', gap: '2px' }}>
                 <button
                   onClick={() => setViewMode('group')}
                   style={{
                     padding: '5px 12px', borderRadius: 'var(--radius-full)',
                     fontSize: '12px', fontWeight: '600', border: 'none', cursor: 'pointer',
-                    background: viewMode === 'group' ? 'var(--bg-card)' : 'transparent',
-                    color: viewMode === 'group' ? 'var(--text-primary)' : 'var(--text-muted)',
+                    background: viewMode === 'group' ? 'rgba(255,255,255,0.9)' : 'transparent',
+                    color: viewMode === 'group' ? '#0a0a0a' : 'rgba(255,255,255,0.6)',
                     boxShadow: viewMode === 'group' ? 'var(--shadow-sm)' : 'none',
                     transition: 'all 0.15s',
                   }}
@@ -678,8 +673,8 @@ export default function Predictions() {
                   style={{
                     padding: '5px 12px', borderRadius: 'var(--radius-full)',
                     fontSize: '12px', fontWeight: '600', border: 'none', cursor: 'pointer',
-                    background: viewMode === 'date' ? 'var(--bg-card)' : 'transparent',
-                    color: viewMode === 'date' ? 'var(--text-primary)' : 'var(--text-muted)',
+                    background: viewMode === 'date' ? 'rgba(255,255,255,0.9)' : 'transparent',
+                    color: viewMode === 'date' ? '#0a0a0a' : 'rgba(255,255,255,0.6)',
                     boxShadow: viewMode === 'date' ? 'var(--shadow-sm)' : 'none',
                     transition: 'all 0.15s',
                   }}
@@ -687,8 +682,8 @@ export default function Predictions() {
               </div>
 
               {user && (
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                  <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>{getPredictionCount()}</span>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+                  <span style={{ fontWeight: '700', color: '#4ade80' }}>{getPredictionCount()}</span>
                   <span> / {matches.length}</span>
                 </div>
               )}
@@ -706,8 +701,8 @@ export default function Predictions() {
                     style={{
                       padding: '6px 14px', borderRadius: 'var(--radius-full)',
                       fontSize: '13px', fontWeight: '700',
-                      background: activeGroup === g ? 'var(--primary)' : 'var(--bg-tertiary)',
-                      color: activeGroup === g ? 'var(--text-inverse)' : 'var(--text-muted)',
+                      background: activeGroup === g ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.1)',
+                      color: activeGroup === g ? '#0a0a0a' : 'rgba(255,255,255,0.65)',
                       border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
                       transition: 'all 0.15s', flexShrink: 0,
                     }}
@@ -723,9 +718,9 @@ export default function Predictions() {
                   style={{
                     padding: '6px 12px', borderRadius: 'var(--radius-full)',
                     fontSize: '12px', fontWeight: '700', flexShrink: 0,
-                    background: 'var(--accent-blue-light)',
-                    color: 'var(--accent-blue)',
-                    border: '1px solid var(--accent-blue)',
+                    background: 'rgba(255,255,255,0.15)',
+                    color: 'rgba(255,255,255,0.9)',
+                    border: '1px solid rgba(255,255,255,0.25)',
                     cursor: autoFilling ? 'wait' : 'pointer',
                     display: 'flex', alignItems: 'center', gap: '4px',
                     transition: 'all 0.15s',
@@ -741,8 +736,8 @@ export default function Predictions() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: '4px',
                     padding: '6px 10px', borderRadius: 'var(--radius-full)',
-                    fontSize: '12px', fontWeight: '600', border: '1px solid var(--border-medium)',
-                    background: 'var(--bg-card)', color: 'var(--text-muted)', cursor: 'pointer',
+                    fontSize: '12px', fontWeight: '600', border: '1px solid rgba(255,255,255,0.2)',
+                    background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.7)', cursor: 'pointer',
                     flexShrink: 0,
                   }}
                 >

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
-import ShareBracket from '../components/ShareBracket.jsx'
 
 export default function Profile() {
   const { user, profile, loadProfile, logout, isAdmin } = useAuthStore()
@@ -12,7 +11,6 @@ export default function Profile() {
   const [editing, setEditing] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [saving, setSaving] = useState(false)
-  const [showShare, setShowShare] = useState(false)
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -75,26 +73,6 @@ export default function Profile() {
         <div style={{ fontWeight: '800', fontSize: '22px' }}>{profile.display_name || profile.username}</div>
         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '4px' }}>@{profile.username}</div>
 
-        {/* Share button */}
-        <button
-          onClick={() => setShowShare(true)}
-          style={{
-            marginTop: '16px',
-            background: 'rgba(255,255,255,0.15)',
-            color: 'white',
-            border: '1px solid rgba(255,255,255,0.3)',
-            borderRadius: 'var(--radius-full)',
-            padding: '8px 20px',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          📤 Share my predictions
-        </button>
       </div>
 
       <div className="container" style={{ padding: '16px' }}>
@@ -214,7 +192,7 @@ export default function Profile() {
       </div>
 
       {/* Share modal */}
-      {showShare && <ShareBracket onClose={() => setShowShare(false)} />}
+
     </div>
   )
 }
