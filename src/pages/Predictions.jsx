@@ -101,8 +101,7 @@ export default function Predictions() {
   const [saving, setSaving] = useState({})
   const [saved, setSaved] = useState({})
   const [jokersRemaining, setJokersRemaining] = useState(8)
-  const [autoFilling, setAutoFilling] = useState(false)
-  const [autoFillingDate, setAutoFillingDate] = useState(null) // Item 2: date autofill
+  const [autoFillingDate, setAutoFillingDate] = useState(null)
   const [showJokerReminder, setShowJokerReminder] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [scoreWarning, setScoreWarning] = useState(null) // Item 8: {matchId, side, value}
@@ -780,22 +779,12 @@ export default function Predictions() {
                 ))}
               </div>
               {user && (
-                <>
-                  <button onClick={autoFillGroup} disabled={autoFilling} style={{
-                    padding: '6px 12px', borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '700', flexShrink: 0,
-                    background: 'rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.9)', border: '1px solid rgba(255,255,255,0.25)',
-                    cursor: autoFilling ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: '4px', transition: 'all 0.15s',
-                  }}>
-                    {autoFilling ? <div className="spinner" style={{ width: '12px', height: '12px', borderWidth: '2px' }} /> : '🎲'}
-                    {autoFilling ? 'Filling...' : 'Autofill'}
-                  </button>
-                  <button onClick={() => setShowClearConfirm('group')} style={{
-                    display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px',
-                    borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '600',
-                    border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
-                    color: 'rgba(255,255,255,0.7)', cursor: 'pointer', flexShrink: 0,
-                  }}>🗑️ Clear</button>
-                </>
+                <button onClick={() => setShowClearConfirm('group')} style={{
+                  display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px',
+                  borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '600',
+                  border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
+                  color: 'rgba(255,255,255,0.7)', cursor: 'pointer', flexShrink: 0,
+                }}>🗑️ Clear</button>
               )}
             </div>
           )}
@@ -830,18 +819,6 @@ export default function Predictions() {
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
                     <span>{date}</span>
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
-                    {/* Item 2: autofill per day */}
-                    {user && hasUnlocked && (
-                      <button onClick={() => autoFillDate(dayMatches)} disabled={isFillingThis} style={{
-                        fontSize: '11px', padding: '3px 8px', borderRadius: 'var(--radius-full)',
-                        border: '1px solid var(--border-medium)', background: 'var(--accent-blue-light)',
-                        color: 'var(--accent-blue)', cursor: 'pointer', fontWeight: '600',
-                        display: 'flex', alignItems: 'center', gap: '4px',
-                      }}>
-                        {isFillingThis ? <div className="spinner" style={{ width: '10px', height: '10px', borderWidth: '2px' }} /> : '🎲'}
-                        {isFillingThis ? '' : 'Autofill'}
-                      </button>
-                    )}
                     {/* Item 3: clear per day */}
                     {user && hasPreds && hasUnlocked && (
                       <button onClick={() => clearDatePredictions(dayMatches)} style={{
