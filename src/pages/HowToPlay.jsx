@@ -20,7 +20,6 @@ const SCORING = [
       { label: 'Team reaches Semi-finals', pts: '12pts' },
       { label: 'Team reaches the Final', pts: '16pts' },
       { label: 'Correct tournament winner', pts: '25pts' },
-      { label: 'Joker on winner pick (correct)', pts: '2x pts', highlight: true },
     ]
   },
   {
@@ -33,14 +32,22 @@ const SCORING = [
     ]
   },
   {
+    section: '🥅 Total Goals',
+    desc: 'Predict how many goals will be scored across the whole tournament. Locks at kickoff on 11 Jun.',
+    items: [
+      { label: 'Closest prediction', pts: '10pts' },
+      { label: 'Exact total', pts: '15pts' },
+      { label: 'Ties share points equally', pts: '' },
+    ]
+  },
+  {
     section: '🃏 Joker Rules',
     desc: 'Use jokers on predictions you\'re most confident about to double your points.',
     items: [
-      { label: 'Group stage jokers available', pts: '5 total' },
-      { label: 'Knockout jokers available', pts: '3 total' },
+      { label: 'Group stage jokers available', pts: '8 total' },
       { label: 'If your joker prediction is correct', pts: '2x pts' },
       { label: 'If your joker prediction is wrong', pts: '0pts' },
-      { label: 'Unused jokers', pts: '0pts' },
+      { label: 'Unused jokers at group stage end', pts: '0pts' },
     ]
   },
 ]
@@ -48,7 +55,7 @@ const SCORING = [
 const FAQS = [
   {
     q: 'When do predictions lock?',
-    a: 'Group stage predictions lock at the kickoff time of each individual match — so you can still predict later games even after earlier ones have started. Knockout picks lock when the group stage ends on 27 June. Award predictions lock at the tournament kickoff on 11 June.',
+    a: 'Group stage predictions lock at the kickoff time of each individual match — so you can still predict later games even after earlier ones have started. Knockout picks lock when the group stage ends on 27 June. Award and goals predictions lock at the tournament kickoff on 11 June.',
   },
   {
     q: 'What happens if I miss a prediction?',
@@ -64,11 +71,17 @@ const FAQS = [
   },
   {
     q: 'How do jokers work?',
-    a: "A joker doubles your points for that prediction if you get it right. You have 8 jokers for the group stage only. Knockout picks don't have jokers. Use them wisely — if your joker prediction is wrong, you score 0 (same as a normal wrong prediction). Jokers are not returned if wrong.",
+    a: 'A joker doubles your points for that prediction if you get it right. You have 8 jokers for the group stage. Use them wisely — if your joker prediction is wrong, you score 0 (same as a normal wrong prediction). Jokers are not returned if wrong.',
   },
   {
-    q: 'What is the Last 32?',
-    a: 'The Last 32 is a fresh mini-game that launches once the group stage ends on 28 June. It\'s a completely separate game — new leagues, new leaderboard, starting from 0 points. You pick scores for every knockout match, just like the group stage. It gives everyone a second chance regardless of how the group stage went.',
+    q: 'What is the Knockout Predictor?',
+    a: 'The Knockout Predictor launches on 27 June once the group stage ends. It\'s a separate mini-game where you predict scores for every knockout match, just like the group stage. It has its own leaderboard and leagues, so everyone gets a second chance regardless of how the group stage went. Predictions lock match by match from 28 June.',
+  },
+  {
+    q: 'Can I start again from scratch?',
+    a: 'Yes — go to your Profile page and scroll down to the Danger Zone. Tap "Clear all predictions & start again" to wipe everything and begin fresh. You can then use Feeling Lucky to fill everything in one go, or go through the groups manually. Note this cannot be undone.',
+  },
+    a: 'Feeling Lucky fills in any missing predictions automatically using betting odds and FIFA rankings as a guide — but with randomness built in so everyone gets different results. It only fills what\'s missing and never overwrites predictions you\'ve already made. Great if you\'re short on time or just want to dive in!',
   },
   {
     q: 'How do leagues work?',
