@@ -64,7 +64,7 @@ const FAQS = [
   },
   {
     q: 'How do jokers work?',
-    a: 'A joker doubles your points for that prediction if you get it right. You have 8 jokers for the group stage only. Knockout picks don't have jokers. Use them wisely — if your joker prediction is wrong, you score 0 (same as a normal wrong prediction). Jokers are not returned if wrong.',
+    a: "A joker doubles your points for that prediction if you get it right. You have 8 jokers for the group stage only. Knockout picks don't have jokers. Use them wisely — if your joker prediction is wrong, you score 0 (same as a normal wrong prediction). Jokers are not returned if wrong.",
   },
   {
     q: 'What is the Last 32?',
