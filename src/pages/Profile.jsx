@@ -11,6 +11,9 @@ export default function Profile() {
   const [editing, setEditing] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [clearing, setClearing] = useState(false)
+  const [clearDone, setClearDone] = useState(false)
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -48,6 +51,20 @@ export default function Profile() {
   const handleLogout = async () => {
     await logout()
     navigate('/')
+  }
+
+  const handleClearAll = async () => {
+    if (!user || clearing) return
+    setClearing(true)
+    await Promise.all([
+      supabase.from('predictions').delete().eq('user_id', user.id),
+      supabase.from('award_predictions').delete().eq('user_id', user.id),
+      supabase.from('tournament_predictions').delete().eq('user_id', user.id),
+    ])
+    setClearing(false)
+    setShowClearConfirm(false)
+    setClearDone(true)
+    setTimeout(() => setClearDone(false), 3000)
   }
 
   if (!profile) return <div className="loading-screen"><div className="spinner" /></div>
@@ -188,9 +205,54 @@ export default function Profile() {
             ⚙️ Admin Panel
           </Link>
         )}
+
+        {/* Danger zone */}
+        <div className="card" style={{ marginBottom: '12px', border: '1px solid rgba(229,57,53,0.2)' }}>
+          <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Danger Zone
+          </div>
+          {clearDone ? (
+            <div style={{ padding: '10px 14px', background: 'var(--accent-green-light)', borderRadius: 'var(--radius-md)', fontSize: '13px', color: 'var(--accent-green)', fontWeight: '600' }}>
+              ✓ All predictions cleared — you can start fresh!
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              className="btn btn-full"
+              style={{ background: 'none', border: '1px solid #e53935', color: '#e53935', fontWeight: '600' }}
+            >
+              🗑️ Clear all predictions & start again
+            </button>
+          )}
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
+            Removes all group, award and goals predictions
+          </div>
+        </div>
+
         <button onClick={handleLogout} className="btn btn-secondary btn-full" style={{ marginBottom: '24px' }}>
           Sign out
         </button>
+
+        {/* Clear All confirm modal */}
+        {showClearConfirm && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div className="card" style={{ maxWidth: '340px', width: '100%' }}>
+              <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>🗑️ Clear everything?</div>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
+                This will delete all your group predictions, award picks and goals predictions. This cannot be undone.
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={handleClearAll} disabled={clearing}
+                  className="btn btn-primary" style={{ background: '#e53935', flex: 1 }}>
+                  {clearing ? 'Clearing...' : 'Yes, clear everything'}
+                </button>
+                <button onClick={() => setShowClearConfirm(false)} className="btn btn-secondary" style={{ flex: 1 }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Share modal */}

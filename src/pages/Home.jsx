@@ -145,71 +145,64 @@ export default function Home() {
     setLuckyDipping(true)
 
     try {
-      // 1. Load all group matches + odds
-      const [matchesRes, oddsRes, playersRes] = await Promise.all([
+      const [matchesRes, oddsRes, playersRes, existingPredsRes, existingAwardsRes, existingGoalsRes] = await Promise.all([
         supabase.from('matches')
           .select('*, home_team:home_team_id(id,name,flag_emoji,short_code,fifa_ranking), away_team:away_team_id(id,name,flag_emoji,short_code,fifa_ranking)')
           .eq('stage', 'group').order('kickoff_time', { ascending: true }),
         fetch('/.netlify/functions/get-odds').then(r => r.ok ? r.json() : []).catch(() => []),
         supabase.from('players').select('*, team:team_id(id,name,flag_emoji,short_code)').order('name'),
+        supabase.from('predictions').select('match_id').eq('user_id', user.id),
+        supabase.from('award_predictions').select('award_type').eq('user_id', user.id),
+        supabase.from('tournament_predictions').select('prediction_type').eq('user_id', user.id),
       ])
 
       const matches = matchesRes.data || []
       const players = playersRes.data || []
       const now = new Date()
 
-      // Build odds map
+      const existingMatchIds = new Set((existingPredsRes.data || []).map(p => p.match_id))
+      const existingAwardTypes = new Set((existingAwardsRes.data || []).map(p => p.award_type))
+      const existingGoalTypes = new Set((existingGoalsRes.data || []).map(p => p.prediction_type))
+
       const oddsMap = {}
       oddsRes.forEach(g => { oddsMap[`${g.home_team}|${g.away_team}`] = g.odds })
 
-      // 2. Predict all unlocked group matches
-      const predUpserts = matches
-        .filter(m => new Date(m.kickoff_time) > now)
-        .map(m => {
-          const score = predictMatchOdds(m, oddsMap)
-          return {
-            user_id: user.id, match_id: m.id,
-            home_score: score.home, away_score: score.away,
-            is_confident: false, bracket_type: 'main',
-          }
-        })
-
-      // Batch in chunks of 50
+      // Only fill unlocked matches without an existing prediction
+      const toFill = matches.filter(m =>
+        new Date(m.kickoff_time) > now && !existingMatchIds.has(m.id)
+      )
+      const predUpserts = toFill.map(m => {
+        const score = predictMatchOdds(m, oddsMap)
+        return { user_id: user.id, match_id: m.id, home_score: score.home, away_score: score.away, is_confident: false, bracket_type: 'main' }
+      })
       for (let i = 0; i < predUpserts.length; i += 50) {
-        await supabase.from('predictions')
-          .upsert(predUpserts.slice(i, i + 50), { onConflict: 'user_id,match_id,bracket_type' })
+        await supabase.from('predictions').upsert(predUpserts.slice(i, i + 50), { onConflict: 'user_id,match_id,bracket_type' })
       }
 
-      // 3. Predict goals
+      // Only fill missing goal sections
       const goals = predictGoals()
-      await Promise.all([
-        supabase.from('tournament_predictions').upsert(
-          { user_id: user.id, prediction_type: 'group_goals', int_value: goals.groupGoals },
-          { onConflict: 'user_id,prediction_type,team_id' }
-        ),
-        supabase.from('tournament_predictions').upsert(
-          { user_id: user.id, prediction_type: 'knockout_goals', int_value: goals.knockoutGoals },
-          { onConflict: 'user_id,prediction_type,team_id' }
-        ),
-        supabase.from('tournament_predictions').upsert(
-          { user_id: user.id, prediction_type: 'total_goals', int_value: goals.totalGoals },
-          { onConflict: 'user_id,prediction_type,team_id' }
-        ),
-      ])
+      const goalUpserts = [
+        { prediction_type: 'group_goals', int_value: goals.groupGoals },
+        { prediction_type: 'knockout_goals', int_value: goals.knockoutGoals },
+        { prediction_type: 'total_goals', int_value: goals.totalGoals },
+      ].filter(g => !existingGoalTypes.has(g.prediction_type)).map(g => ({ user_id: user.id, ...g }))
+      if (goalUpserts.length) {
+        await Promise.all(goalUpserts.map(u =>
+          supabase.from('tournament_predictions').upsert(u, { onConflict: 'user_id,prediction_type,team_id' })
+        ))
+      }
 
-      // 4. Predict awards
+      // Only fill missing awards
       const awards = predictAwards(players)
       const awardUpserts = Object.entries(awards)
-        .filter(([, player]) => player)
+        .filter(([type, player]) => player && !existingAwardTypes.has(type))
         .map(([type, player]) => ({
           user_id: user.id, award_type: type,
-          predicted_player_name: player.name,
-          predicted_team_id: player.team_id,
+          predicted_player_name: player.name, predicted_team_id: player.team_id,
           bracket_type: 'main', is_locked: false,
         }))
       if (awardUpserts.length) {
-        await supabase.from('award_predictions')
-          .upsert(awardUpserts, { onConflict: 'user_id,award_type,bracket_type' })
+        await supabase.from('award_predictions').upsert(awardUpserts, { onConflict: 'user_id,award_type,bracket_type' })
       }
 
       setLuckyDone(true)
@@ -283,8 +276,8 @@ export default function Home() {
             )}
           </div>
 
-          {/* Lucky Dip — only show pre-tournament with 0 predictions */}
-          {user && !tournamentStarted && predictionCount === 0 && (
+          {/* Lucky Dip — show pre-tournament, adapts label based on how much is done */}
+          {user && !tournamentStarted && (
             <div style={{ marginTop: '12px' }}>
               <button
                 onClick={handleLuckyDip}
@@ -300,15 +293,19 @@ export default function Home() {
                 }}
               >
                 {luckyDipping ? (
-                  <><div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} /> Filling everything...</>
+                  <><div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} /> Filling the gaps...</>
                 ) : luckyDone ? (
                   <>✓ All done — good luck!</>
-                ) : (
+                ) : predictionCount === 0 ? (
                   <>🎲 Feeling Lucky? Fill everything in one tap</>
+                ) : (
+                  <>🎲 Feeling Lucky? Fill the rest</>
                 )}
               </button>
               <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '6px' }}>
-                Uses odds & rankings · everyone gets different results
+                {predictionCount === 0
+                  ? 'Uses odds & rankings · everyone gets different results'
+                  : 'Only fills what\'s missing · won\'t overwrite your picks'}
               </div>
             </div>
           )}
