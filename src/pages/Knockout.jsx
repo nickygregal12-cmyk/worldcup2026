@@ -64,12 +64,12 @@ export default function Knockout() {
         const koMap = {}
         koData?.forEach(p => {
           koMap[p.match_number] = {
-            winner_id: p.winner_team_id, home_id: p.home_team_id,
-            away_id: p.away_team_id, result_type: p.result_type || 'normal', is_joker: p.is_joker || false,
+            winner_id: p.winner_team_id,
+            home_id: p.home_team_id,
+            away_id: p.away_team_id,
           }
         })
         setKnockoutPicks(koMap)
-
       }
 
       setStandings(calcPredictedStandings(matchData || [], predMap))
@@ -104,7 +104,7 @@ export default function Knockout() {
     return { home: resolve(matchDef.home_slot), away: resolve(matchDef.away_slot) }
   }, [resolveTeam, resolveKnockoutWinner])
 
-  const savePick = async (matchDef, winnerId, resultType = 'normal') => {
+  const savePick = async (matchDef, winnerId) => {
     if (!user) return
     const { home, away } = getMatchTeams(matchDef)
     const mn = matchDef.match_number
@@ -122,21 +122,21 @@ export default function Knockout() {
     }
 
     setAffectedMatches(prev => prev.filter(n => n !== mn))
-    const newPick = { winner_id: winnerId, home_id: home?.id, away_id: away?.id, result_type: resultType }
+    const newPick = { winner_id: winnerId, home_id: home?.id, away_id: away?.id }
     setKnockoutPicks(prev => ({ ...prev, [mn]: newPick }))
     setSaving(prev => ({ ...prev, [mn]: true }))
 
     await supabase.from('knockout_picks').upsert({
-      user_id: user.id, match_number: mn, winner_team_id: winnerId,
-      home_team_id: home?.id, away_team_id: away?.id,
-      result_type: resultType,
+      user_id: user.id, match_number: mn,
+      winner_team_id: winnerId,
+      home_team_id: home?.id,
+      away_team_id: away?.id,
     }, { onConflict: 'user_id,match_number' })
 
     setSaving(prev => ({ ...prev, [mn]: false }))
     setSaved(prev => ({ ...prev, [mn]: true }))
     setTimeout(() => setSaved(prev => ({ ...prev, [mn]: false })), 1500)
   }
-
 
   const fmt = (time) => {
     const d = new Date(time)
@@ -169,14 +169,13 @@ export default function Knockout() {
     const mn = matchDef.match_number
     const pick = knockoutPicks[mn]
     const isAffected = affectedMatches.includes(mn)
-    const hasJoker = pick?.is_joker
     const locked = new Date() >= new Date(matchDef.kickoff)
     const canPick = !locked && !!user
     const teamsKnown = !!(home && away)
 
     return (
       <div key={mn} className="card" style={{
-        border: isAffected ? '2px solid var(--accent-gold)' : hasJoker ? '2px solid var(--accent-gold)' : pick?.winner_id ? '1.5px solid var(--accent-green)' : '1px solid var(--border-light)',
+        border: isAffected ? '2px solid var(--accent-gold)' : pick?.winner_id ? '1.5px solid var(--accent-green)' : '1px solid var(--border-light)',
         background: isAffected ? 'var(--accent-gold-light)' : 'var(--bg-card)',
       }}>
         {isAffected && (
@@ -184,6 +183,7 @@ export default function Knockout() {
             ⚠️ Your group predictions changed — please re-pick the winner
           </div>
         )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Match {mn} · {fmt(matchDef.kickoff)}{matchDef.venue ? ` · ${matchDef.venue}` : ''}
@@ -196,14 +196,13 @@ export default function Knockout() {
           </div>
         </div>
 
-        {/* Teams */}
         {teamsKnown ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {[{ team: home }, { team: away }].map(({ team }) => {
               if (!team) return null
               const isPicked = pick?.winner_id === team.id
               return (
-                <button key={team.id} onClick={() => canPick && savePick(matchDef, team.id, pick?.result_type || 'normal')} disabled={!canPick}
+                <button key={team.id} onClick={() => canPick && savePick(matchDef, team.id)} disabled={!canPick}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px',
                     borderRadius: 'var(--radius-md)', width: '100%', textAlign: 'left', transition: 'all 0.15s',
@@ -237,48 +236,6 @@ export default function Knockout() {
           </div>
         )}
 
-        {/* Result type + joker */}
-        {pick?.winner_id && teamsKnown && canPick && (
-          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
-            <div style={{ marginBottom: '10px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                How do they win? (bonus points)
-              </div>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                {RESULT_OPTIONS.map(opt => (
-                  <button key={opt.key} onClick={() => savePick(matchDef, pick.winner_id, opt.key)}
-                    style={{
-                      flex: 1, padding: '6px 4px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', textAlign: 'center',
-                      fontSize: '11px', fontWeight: '700',
-                      border: (pick.result_type || 'normal') === opt.key ? '2px solid var(--accent-blue)' : '1.5px solid var(--border-light)',
-                      background: (pick.result_type || 'normal') === opt.key ? 'var(--accent-blue-light)' : 'var(--bg-secondary)',
-                      color: (pick.result_type || 'normal') === opt.key ? 'var(--accent-blue)' : 'var(--text-muted)',
-                    }}>
-                    {opt.label}
-                    {opt.bonus > 0 && <div style={{ fontSize: '10px', color: 'var(--accent-gold)', fontWeight: '700' }}>+{opt.bonus}pts</div>}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <button onClick={() => toggleJoker(matchDef)} disabled={!hasJoker && jokersRemaining <= 0}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px',
-                  borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '700', border: 'none',
-                  background: hasJoker ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
-                  color: hasJoker ? 'white' : jokersRemaining > 0 ? 'var(--text-secondary)' : 'var(--text-muted)',
-                  cursor: (!hasJoker && jokersRemaining <= 0) ? 'not-allowed' : 'pointer',
-                  opacity: (!hasJoker && jokersRemaining <= 0) ? 0.5 : 1,
-                }}>
-                🃏 {hasJoker ? 'Joker ON' : 'Use Joker'}
-              </button>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {hasJoker ? '2x points if correct!' : `${jokersRemaining} jokers left`}
-              </span>
-            </div>
-          </div>
-        )}
-
         {!user && teamsKnown && (
           <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Sign in to pick a winner</span>
@@ -291,26 +248,12 @@ export default function Knockout() {
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
-      {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, #0a0a0a, #1a2a1a)', padding: '20px', color: 'white' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h1 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>🏆 Knockout Bracket</h1>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>
-              {isPreTournament ? 'Based on your predicted group results' : groupStageDone ? 'Real teams confirmed' : 'Mix of real results and your predictions'}
-            </p>
-          </div>
-          {user && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px',
-              borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '700',
-              background: jokersRemaining === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,215,0,0.2)',
-              border: `1px solid ${jokersRemaining === 0 ? 'rgba(255,255,255,0.2)' : 'rgba(255,215,0,0.5)'}`,
-              color: jokersRemaining === 0 ? 'rgba(255,255,255,0.5)' : '#ffd700',
-            }}>
-              🃏 {jokersRemaining} left
-            </div>
-          )}
+        <div>
+          <h1 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>🏆 Knockout Bracket</h1>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>
+            {isPreTournament ? 'Based on your predicted group results' : groupStageDone ? 'Real teams confirmed' : 'Mix of real results and your predictions'}
+          </p>
         </div>
         {isPreTournament && (
           <div style={{ marginTop: '10px', background: 'rgba(255,255,255,0.08)', borderRadius: '8px', padding: '8px 14px', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
@@ -319,7 +262,7 @@ export default function Knockout() {
         )}
         {affectedMatches.length > 0 && (
           <div style={{ marginTop: '10px', background: 'rgba(184,134,11,0.3)', borderRadius: '8px', padding: '8px 14px', fontSize: '12px', color: '#ffd700', fontWeight: '700' }}>
-            ⚠️ {affectedMatches.length} knockout pick{affectedMatches.length > 1 ? 's' : ''} affected by your group changes — review highlighted matches
+            ⚠️ {affectedMatches.length} knockout pick{affectedMatches.length > 1 ? 's' : ''} affected by your group changes
           </div>
         )}
       </div>
@@ -363,7 +306,6 @@ export default function Knockout() {
         <div style={{ background: 'var(--accent-blue-light)', padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
           <span style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>
             🏅 Correct pick = <strong>{currentStage?.points}pts</strong>
-            
           </span>
           <span style={{ fontSize: '12px', fontWeight: '700', color: stagePicks === stageMatches.length ? 'var(--accent-green)' : 'var(--text-muted)' }}>
             {stagePicks === stageMatches.length ? '✓ Complete' : `${stagePicks}/${stageMatches.length}`}
@@ -386,7 +328,6 @@ export default function Knockout() {
                   </span>
                   Group {group}
                 </div>
-                {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px 4px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '14px' }}>#</span>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', flex: 1 }}>Team</span>
@@ -394,7 +335,6 @@ export default function Knockout() {
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '20px', textAlign: 'center' }}>Pts</span>
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right' }}>GD</span>
                 </div>
-                {/* Rows */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {teams.map((entry, i) => {
                     const qualifies = i < 2
@@ -410,12 +350,8 @@ export default function Knockout() {
                         <span style={{ fontSize: '12px', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {entry.team?.short_code || entry.team?.name}
                         </span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '18px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>
-                          {entry.played || '–'}
-                        </span>
-                        <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', width: '20px', textAlign: 'center' }}>
-                          {entry.pts}
-                        </span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '18px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{entry.played || '–'}</span>
+                        <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', width: '20px', textAlign: 'center' }}>{entry.pts}</span>
                         <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
                           {entry.gd > 0 ? '+' : ''}{entry.gd}
                         </span>
@@ -425,25 +361,20 @@ export default function Knockout() {
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-light)', fontSize: '10px', color: 'var(--text-muted)' }}>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block' }} />
-                    Advances
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block' }} />Advances
                   </span>
                   <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-gold)', display: 'inline-block' }} />
-                    Qualifies as 3rd
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-gold)', display: 'inline-block' }} />Qualifies as 3rd
                   </span>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Best 3rd Place table */}
           {best3rd.length > 0 && (
             <div className="card" style={{ marginTop: '12px' }}>
               <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '6px' }}>🏅 Best 3rd Place Teams</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
-                The 8 best 3rd-place teams advance to the Round of 32
-              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>Top 8 advance to the Round of 32</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px 4px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
                 <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '20px' }}>#</span>
                 <span style={{ fontSize: '10px', color: 'var(--text-muted)', flex: 1 }}>Team</span>
@@ -453,20 +384,14 @@ export default function Knockout() {
                 <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right' }}>GD</span>
               </div>
               {best3rd.map((entry, i) => (
-                <div key={entry.id} style={{
-                  display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px',
-                  borderRadius: 'var(--radius-sm)', marginBottom: '4px',
-                  background: 'var(--accent-green-light)', border: '1px solid rgba(0,122,51,0.15)',
-                }}>
+                <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px', borderRadius: 'var(--radius-sm)', marginBottom: '4px', background: 'var(--accent-green-light)', border: '1px solid rgba(0,122,51,0.15)' }}>
                   <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', width: '20px' }}>{i + 1}</span>
                   <span style={{ fontSize: '18px' }}>{entry.team?.flag_emoji}</span>
                   <span style={{ fontSize: '12px', fontWeight: '600', flex: 1 }}>{entry.team?.short_code || entry.team?.name}</span>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '30px', textAlign: 'center', fontWeight: '700' }}>{entry.group}</span>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '18px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{entry.played || '–'}</span>
                   <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', width: '20px', textAlign: 'center' }}>{entry.pts}</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
-                    {entry.gd > 0 ? '+' : ''}{entry.gd}
-                  </span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gd > 0 ? '+' : ''}{entry.gd}</span>
                 </div>
               ))}
             </div>
