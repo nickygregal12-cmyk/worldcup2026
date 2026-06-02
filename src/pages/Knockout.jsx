@@ -92,7 +92,7 @@ export default function Knockout() {
     }
   }
 
-  const resolveTeam = useCallback((slot) => resolveSlot(slot, standings), [standings])
+  const resolveTeam = useCallback((slot) => resolveSlot(slot, standings, groupMatches, groupPredictions), [standings, groupMatches, groupPredictions])
 
   const resolveKnockoutWinner = useCallback((slot) => {
     const matchNum = parseInt(slot.replace('W', ''))
@@ -251,7 +251,7 @@ export default function Knockout() {
                 <div>
                   <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7 }}>
-                    {groupStageDone ? 'To be confirmed' : 'Based on your group predictions'}
+                    {groupStageDone ? 'To be confirmed' : 'Predict all 3 group games to confirm'}
                   </div>
                 </div>
               </div>
@@ -336,7 +336,7 @@ export default function Knockout() {
         </div>
         {isPreTournament && (
           <div style={{ marginTop: '10px', background: 'rgba(255,255,255,0.08)', borderRadius: '8px', padding: '8px 14px', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
-            💡 Teams shown based on your group predictions. Change a group score and your bracket updates.
+            💡 Predict all 3 games in a group to lock in those teams in the bracket.
           </div>
         )}
         {affectedMatches.length > 0 && (
