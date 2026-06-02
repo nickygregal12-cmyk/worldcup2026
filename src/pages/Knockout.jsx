@@ -1,157 +1,236 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
-import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
+import { SkeletonCard, ErrorState } from '../components/PageState.jsx'
+import {
+  ALL_STAGES, FINAL, THIRD_PLACE,
+  calcPredictedStandings, resolveSlot, findAffectedPicks
+} from '../lib/bracketUtils.js'
 
-const STAGES = [
-  { key: 'r16', label: 'Round of 16', slots: 16, points: 5, emoji: '🏟️' },
-  { key: 'qf', label: 'Quarter-finals', slots: 8, points: 8, emoji: '⚡' },
-  { key: 'sf', label: 'Semi-finals', slots: 4, points: 12, emoji: '🔥' },
-  { key: 'final', label: 'The Final', slots: 2, points: 16, emoji: '🌟' },
-  { key: 'winner', label: 'Tournament Winner', slots: 1, points: 25, emoji: '🏆' },
+const RESULT_OPTIONS = [
+  { key: 'normal', label: '90 mins', bonus: 0 },
+  { key: 'et',     label: 'Extra Time', bonus: 3 },
+  { key: 'pens',   label: 'Penalties', bonus: 5 },
 ]
 
 export default function Knockout() {
-  const { user, profile } = useAuthStore()
-  const [teams, setTeams] = useState([])
-  const [picks, setPicks] = useState({}) // { r16: [teamId, ...], qf: [...], ... }
-  const [activeStage, setActiveStage] = useState('r16')
+  const { user } = useAuthStore()
+  const [groupMatches, setGroupMatches] = useState([])
+  const [groupPredictions, setGroupPredictions] = useState({})
+  const [standings, setStandings] = useState({})
+  const [knockoutPicks, setKnockoutPicks] = useState({}) // { match_number: { winner_id, home_id, away_id, result_type, is_joker } }
+  const [affectedMatches, setAffectedMatches] = useState([]) // match_numbers with cascade warning
+  const [activeStage, setActiveStage] = useState('r32')
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [lastSaved, setLastSaved] = useState(null)
-  const [jokerPick, setJokerPick] = useState(null) // teamId for winner joker
+  const [loadError, setLoadError] = useState(false)
+  const [saving, setSaving] = useState({})
+  const [saved, setSaved] = useState({})
   const [jokersRemaining, setJokersRemaining] = useState(3)
 
-  const tournamentStarted = new Date() >= new Date('2026-06-11T23:00:00Z')
-  const knockoutDeadline = new Date('2026-06-28T20:00:00Z')
-  const isLocked = new Date() >= knockoutDeadline
+  const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
+  const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
 
   useEffect(() => {
-    loadTeams()
-    if (user) loadPicks()
+    loadData()
   }, [user])
 
-  useEffect(() => {
-    if (profile) setJokersRemaining(profile.jokers_knockout_remaining ?? 3)
-  }, [profile])
+  const loadData = async () => {
+    try {
+      setLoading(true)
 
-  const loadTeams = async () => {
-    const { data } = await supabase
-      .from('teams')
-      .select('id, name, flag_emoji, short_code, group:group_teams(group:group_id(name))')
-      .order('name')
-    setTeams(data || [])
-    setLoading(false)
-  }
+      // Load all group matches with full team/group data
+      const { data: matchData, error: matchError } = await supabase
+        .from('matches')
+        .select(`
+          *,
+          home_team:home_team_id(id,name,flag_emoji,short_code),
+          away_team:away_team_id(id,name,flag_emoji,short_code),
+          group:group_id(name)
+        `)
+        .eq('stage', 'group')
+        .order('kickoff_time', { ascending: true })
 
-  const loadPicks = async () => {
-    const { data } = await supabase
-      .from('knockout_picks')
-      .select('*')
-      .eq('user_id', user.id)
+      if (matchError) throw matchError
+      setGroupMatches(matchData || [])
 
-    if (data && data.length > 0) {
-      const pickMap = {}
-      let joker = null
-      data.forEach(p => {
-        if (!pickMap[p.stage]) pickMap[p.stage] = []
-        pickMap[p.stage].push(p.team_id)
-        if (p.is_joker) joker = p.team_id
-      })
-      setPicks(pickMap)
-      setJokerPick(joker)
+      // Load user's group predictions
+      let predMap = {}
+      if (user) {
+        const { data: predData } = await supabase
+          .from('predictions')
+          .select('match_id, home_score, away_score')
+          .eq('user_id', user.id)
+
+        predData?.forEach(p => {
+          predMap[p.match_id] = { home: p.home_score, away: p.away_score }
+        })
+        setGroupPredictions(predMap)
+
+        // Load knockout picks
+        const { data: koData } = await supabase
+          .from('knockout_picks')
+          .select('*')
+          .eq('user_id', user.id)
+
+        const koMap = {}
+        koData?.forEach(p => {
+          koMap[p.match_number] = {
+            winner_id: p.winner_team_id,
+            home_id: p.home_team_id,
+            away_id: p.away_team_id,
+            result_type: p.result_type || 'normal',
+            is_joker: p.is_joker || false,
+          }
+        })
+        setKnockoutPicks(koMap)
+
+        // Load jokers remaining
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('jokers_knockout_remaining')
+          .eq('id', user.id)
+          .single()
+
+        setJokersRemaining(profile?.jokers_knockout_remaining ?? 3)
+      }
+
+      // Calculate standings
+      const s = calcPredictedStandings(matchData || [], predMap)
+      setStandings(s)
+      setLoadError(false)
+    } catch (e) {
+      console.error('Failed to load knockout data:', e)
+      setLoadError(true)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const toggleTeam = async (teamId) => {
-    if (!user || isLocked) return
-    const stage = activeStage
-    const maxSlots = STAGES.find(s => s.key === stage)?.slots || 16
-    const current = picks[stage] || []
+  // Recalculate standings whenever group predictions change
+  const recalcStandings = useCallback((newPreds) => {
+    const s = calcPredictedStandings(groupMatches, newPreds)
+    setStandings(s)
+  }, [groupMatches])
 
-    let updated
-    if (current.includes(teamId)) {
-      updated = current.filter(id => id !== teamId)
-      // Remove joker if this team is deselected
-      if (jokerPick === teamId && stage === 'winner') setJokerPick(null)
-    } else {
-      if (current.length >= maxSlots) return // already at max
-      updated = [...current, teamId]
+  // Resolve a slot to actual team data
+  const resolveTeam = useCallback((slot) => {
+    return resolveSlot(slot, standings)
+  }, [standings])
+
+  // Resolve winner of a previous knockout match
+  const resolveKnockoutWinner = useCallback((slot) => {
+    const matchNum = parseInt(slot.replace('W', ''))
+    const pick = knockoutPicks[matchNum]
+    if (!pick?.winner_id) return null
+    // Find team from group matches
+    for (const m of groupMatches) {
+      if (m.home_team?.id === pick.winner_id) return m.home_team
+      if (m.away_team?.id === pick.winner_id) return m.away_team
+    }
+    return null
+  }, [knockoutPicks, groupMatches])
+
+  // Get both teams for a match slot
+  const getMatchTeams = useCallback((matchDef) => {
+    const resolveAny = (slot) => {
+      if (slot.startsWith('W')) return resolveKnockoutWinner(slot)
+      if (slot.startsWith('L')) return null // loser slots for 3rd place
+      return resolveTeam(slot)
+    }
+    return {
+      home: resolveAny(matchDef.home_slot),
+      away: resolveAny(matchDef.away_slot),
+    }
+  }, [resolveTeam, resolveKnockoutWinner])
+
+  const savePick = async (matchDef, winnerId, resultType = 'normal') => {
+    if (!user) return
+    const { home, away } = getMatchTeams(matchDef)
+    const mn = matchDef.match_number
+
+    // Check if this changes an existing pick and cascade
+    const existing = knockoutPicks[mn]
+    if (existing?.winner_id && existing.winner_id !== winnerId) {
+      // Find downstream matches affected
+      const affected = findAffectedPicks(existing.winner_id, knockoutPicks)
+      if (affected.length > 0) {
+        setAffectedMatches(prev => [...new Set([...prev, ...affected])])
+        // Clear downstream picks
+        const newPicks = { ...knockoutPicks }
+        affected.forEach(num => { delete newPicks[num] })
+        setKnockoutPicks(newPicks)
+        // Delete from DB
+        await supabase.from('knockout_picks')
+          .delete()
+          .eq('user_id', user.id)
+          .in('match_number', affected)
+      }
     }
 
-    const newPicks = { ...picks, [stage]: updated }
-    setPicks(newPicks)
+    // Clear warning for this match if it was affected
+    setAffectedMatches(prev => prev.filter(n => n !== mn))
 
-    // Auto-save
-    setSaving(true)
-    await supabase.from('knockout_picks').delete()
-      .eq('user_id', user.id).eq('stage', stage)
-
-    if (updated.length > 0) {
-      await supabase.from('knockout_picks').insert(
-        updated.map(tid => ({
-          user_id: user.id,
-          stage,
-          team_id: tid,
-          is_joker: tid === jokerPick && stage === 'winner',
-        }))
-      )
+    const newPick = {
+      winner_id: winnerId,
+      home_id: home?.id,
+      away_id: away?.id,
+      result_type: resultType,
+      is_joker: existing?.is_joker || false,
     }
-    setSaving(false)
-    setLastSaved(new Date())
+
+    setKnockoutPicks(prev => ({ ...prev, [mn]: newPick }))
+    setSaving(prev => ({ ...prev, [mn]: true }))
+
+    await supabase.from('knockout_picks').upsert({
+      user_id: user.id,
+      match_number: mn,
+      winner_team_id: winnerId,
+      home_team_id: home?.id,
+      away_team_id: away?.id,
+      result_type: resultType,
+      is_joker: newPick.is_joker,
+    }, { onConflict: 'user_id,match_number' })
+
+    setSaving(prev => ({ ...prev, [mn]: false }))
+    setSaved(prev => ({ ...prev, [mn]: true }))
+    setTimeout(() => setSaved(prev => ({ ...prev, [mn]: false })), 1500)
   }
 
-  const toggleJoker = async (teamId) => {
-    if (!user || isLocked) return
-    if (activeStage !== 'winner') return
-    const newJoker = jokerPick === teamId ? null : teamId
-    const newRemaining = newJoker ? (jokerPick ? jokersRemaining : jokersRemaining - 1) : jokersRemaining + 1
-    if (newJoker && !jokerPick && jokersRemaining <= 0) return
+  const toggleJoker = async (matchDef) => {
+    if (!user) return
+    const mn = matchDef.match_number
+    const pick = knockoutPicks[mn]
+    if (!pick?.winner_id) return
 
-    setJokerPick(newJoker)
+    const newJoker = !pick.is_joker
+    const newRemaining = newJoker ? jokersRemaining - 1 : jokersRemaining + 1
+    if (newJoker && jokersRemaining <= 0) return
+
+    setKnockoutPicks(prev => ({ ...prev, [mn]: { ...prev[mn], is_joker: newJoker } }))
     setJokersRemaining(newRemaining)
 
-    // Update DB
     await supabase.from('knockout_picks')
-      .update({ is_joker: false })
-      .eq('user_id', user.id).eq('stage', 'winner')
-
-    if (newJoker) {
-      await supabase.from('knockout_picks')
-        .update({ is_joker: true })
-        .eq('user_id', user.id).eq('stage', 'winner').eq('team_id', newJoker)
-    }
+      .update({ is_joker: newJoker })
+      .eq('user_id', user.id)
+      .eq('match_number', mn)
 
     await supabase.from('profiles')
       .update({ jokers_knockout_remaining: newRemaining })
       .eq('id', user.id)
   }
 
-  const autofill = () => {
-    if (!user || isLocked || teams.length === 0) return
-    const stage = activeStage
-    const maxSlots = STAGES.find(s => s.key === stage)?.slots || 16
-
-    // Pick random teams weighted by "strength" (just random for now)
-    const shuffled = [...teams].sort(() => Math.random() - 0.5)
-    const selected = shuffled.slice(0, maxSlots).map(t => t.id)
-    setPicks(prev => ({ ...prev, [stage]: selected }))
-
-    // Save all
-    setSaving(true)
-    supabase.from('knockout_picks').delete()
-      .eq('user_id', user.id).eq('stage', stage)
-      .then(() => {
-        supabase.from('knockout_picks').insert(
-          selected.map(tid => ({ user_id: user.id, stage, team_id: tid, is_joker: false }))
-        ).then(() => { setSaving(false); setLastSaved(new Date()) })
-      })
+  const formatDate = (time) => {
+    const d = new Date(time)
+    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
+      ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   }
 
-  const currentStage = STAGES.find(s => s.key === activeStage)
-  const currentPicks = picks[activeStage] || []
-  const slotsLeft = currentStage ? currentStage.slots - currentPicks.length : 0
+  const currentStage = ALL_STAGES.find(s => s.key === activeStage)
+  const stageMatches = currentStage?.matches || []
+
+  // Count completed picks for this stage
+  const stagePicks = stageMatches.filter(m => knockoutPicks[m.match_number]?.winner_id).length
 
   if (loading) return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh', padding: '16px' }}>
@@ -163,6 +242,191 @@ export default function Knockout() {
     </div>
   )
 
+  if (loadError) return (
+    <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+      <ErrorState message="Couldn't load bracket" onRetry={loadData} />
+    </div>
+  )
+
+  const renderMatch = (matchDef) => {
+    const { home, away } = getMatchTeams(matchDef)
+    const mn = matchDef.match_number
+    const pick = knockoutPicks[mn]
+    const isAffected = affectedMatches.includes(mn)
+    const isSaving = saving[mn]
+    const isSaved = saved[mn]
+    const hasJoker = pick?.is_joker
+    const locked = new Date() >= new Date(matchDef.kickoff)
+    const canPick = !locked && user
+    const teamsKnown = home && away
+
+    return (
+      <div
+        key={mn}
+        className="card"
+        style={{
+          border: isAffected
+            ? '2px solid var(--accent-gold)'
+            : hasJoker
+            ? '2px solid var(--accent-gold)'
+            : pick?.winner_id
+            ? '1.5px solid var(--accent-green)'
+            : '1px solid var(--border-light)',
+          background: isAffected ? 'var(--accent-gold-light)' : 'var(--bg-card)',
+        }}
+      >
+        {/* Cascade warning */}
+        {isAffected && (
+          <div style={{
+            marginBottom: '10px', padding: '8px 12px',
+            background: 'rgba(184,134,11,0.15)', borderRadius: 'var(--radius-sm)',
+            fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)',
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}>
+            ⚠️ Your group predictions changed — please re-pick the winner
+          </div>
+        )}
+
+        {/* Match header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Match {mn} · {formatDate(matchDef.kickoff)}
+            {matchDef.venue && ` · ${matchDef.venue}`}
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {locked && <span className="badge badge-red">🔒</span>}
+            {pick?.winner_id && !isAffected && <span className="badge badge-green">✓</span>}
+            {isSaved && <span className="badge badge-green">Saved!</span>}
+            {isSaving && <div className="spinner" style={{ width: '14px', height: '14px' }} />}
+          </div>
+        </div>
+
+        {/* Teams */}
+        {!teamsKnown ? (
+          <div style={{
+            padding: '16px', textAlign: 'center', background: 'var(--bg-secondary)',
+            borderRadius: 'var(--radius-md)', color: 'var(--text-muted)', fontSize: '13px',
+          }}>
+            {groupStageDone
+              ? 'Teams to be confirmed'
+              : isPreTournament
+              ? `Teams confirmed after group stage · ${matchDef.home_slot} vs ${matchDef.away_slot}`
+              : 'Teams TBC after group stage'
+            }
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {[
+              { team: home, slot: matchDef.home_slot },
+              { team: away, slot: matchDef.away_slot },
+            ].map(({ team }) => {
+              if (!team) return null
+              const isPicked = pick?.winner_id === team.id
+              return (
+                <button
+                  key={team.id}
+                  onClick={() => canPick && savePick(matchDef, team.id, pick?.result_type || 'normal')}
+                  disabled={!canPick}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '12px 14px', borderRadius: 'var(--radius-md)',
+                    border: isPicked ? '2px solid var(--accent-green)' : '1.5px solid var(--border-light)',
+                    background: isPicked ? 'var(--accent-green-light)' : 'var(--bg-secondary)',
+                    cursor: canPick ? 'pointer' : 'default',
+                    width: '100%', textAlign: 'left',
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <span style={{ fontSize: '28px' }}>{team.flag_emoji}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '700', fontSize: '15px', color: isPicked ? 'var(--accent-green)' : 'var(--text-primary)' }}>
+                      {team.name}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{team.short_code}</div>
+                  </div>
+                  {isPicked && <span style={{ color: 'var(--accent-green)', fontSize: '20px' }}>✓</span>}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Result type + joker — only shown after picking a winner */}
+        {pick?.winner_id && teamsKnown && canPick && (
+          <div style={{
+            marginTop: '12px', paddingTop: '12px',
+            borderTop: '1px solid var(--border-light)',
+          }}>
+            {/* Result type for bonus points */}
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                How do they win? (bonus points)
+              </div>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {RESULT_OPTIONS.map(opt => (
+                  <button
+                    key={opt.key}
+                    onClick={() => savePick(matchDef, pick.winner_id, opt.key)}
+                    style={{
+                      flex: 1, padding: '6px 4px',
+                      borderRadius: 'var(--radius-sm)',
+                      border: (pick.result_type || 'normal') === opt.key
+                        ? '2px solid var(--accent-blue)'
+                        : '1.5px solid var(--border-light)',
+                      background: (pick.result_type || 'normal') === opt.key
+                        ? 'var(--accent-blue-light)'
+                        : 'var(--bg-secondary)',
+                      cursor: 'pointer', textAlign: 'center',
+                      fontSize: '11px', fontWeight: '700',
+                      color: (pick.result_type || 'normal') === opt.key
+                        ? 'var(--accent-blue)'
+                        : 'var(--text-muted)',
+                    }}
+                  >
+                    {opt.label}
+                    {opt.bonus > 0 && (
+                      <div style={{ fontSize: '10px', color: 'var(--accent-gold)', fontWeight: '700' }}>+{opt.bonus}pts</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Joker */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                onClick={() => toggleJoker(matchDef)}
+                disabled={!hasJoker && jokersRemaining <= 0}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  padding: '6px 12px', borderRadius: 'var(--radius-full)',
+                  fontSize: '12px', fontWeight: '700',
+                  background: hasJoker ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
+                  color: hasJoker ? 'white' : jokersRemaining > 0 ? 'var(--text-secondary)' : 'var(--text-muted)',
+                  border: 'none', cursor: (!hasJoker && jokersRemaining <= 0) ? 'not-allowed' : 'pointer',
+                  opacity: (!hasJoker && jokersRemaining <= 0) ? 0.5 : 1,
+                }}
+              >
+                🃏 {hasJoker ? 'Joker ON' : 'Use Joker'}
+              </button>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                {hasJoker ? '2x points if correct!' : `${jokersRemaining} jokers left`}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Guest CTA */}
+        {!user && teamsKnown && (
+          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Sign in to pick a winner</span>
+            <Link to="/register" className="btn btn-primary btn-sm">Join free</Link>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
       {/* Header */}
@@ -172,9 +436,13 @@ export default function Knockout() {
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <h1 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>🏆 Knockout Picks</h1>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>🏆 Knockout Bracket</h1>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>
-              Pick which teams advance through each round
+              {isPreTournament
+                ? 'Based on your predicted group results'
+                : groupStageDone
+                ? 'Real teams confirmed — pick your winners'
+                : 'Mix of real results and your predictions'}
             </p>
           </div>
           {user && (
@@ -191,24 +459,27 @@ export default function Knockout() {
           )}
         </div>
 
-        {/* Points summary strip */}
-        <div style={{ display: 'flex', gap: '8px', marginTop: '12px', overflowX: 'auto', paddingBottom: '4px' }}>
-          {STAGES.map(s => (
-            <div key={s.key} style={{
-              background: 'rgba(255,255,255,0.08)',
-              borderRadius: '8px', padding: '6px 10px', flexShrink: 0,
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: '16px' }}>{s.emoji}</div>
-              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>{s.label}</div>
-              <div style={{ fontSize: '13px', fontWeight: '800', color: '#ffd700' }}>+{s.points}pts</div>
-            </div>
-          ))}
-        </div>
+        {/* Pre-tournament note */}
+        {isPreTournament && (
+          <div style={{
+            marginTop: '10px', background: 'rgba(255,255,255,0.08)',
+            borderRadius: '8px', padding: '8px 14px',
+            fontSize: '12px', color: 'rgba(255,255,255,0.7)',
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}>
+            💡 Teams shown are based on your group predictions. Change a group score and your bracket updates automatically.
+          </div>
+        )}
 
-        {isLocked && (
-          <div style={{ marginTop: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 16px', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
-            🔒 Knockout picks locked — group stage complete
+        {/* Cascade warning banner */}
+        {affectedMatches.length > 0 && (
+          <div style={{
+            marginTop: '10px', background: 'rgba(184,134,11,0.3)',
+            borderRadius: '8px', padding: '8px 14px',
+            fontSize: '12px', color: '#ffd700', fontWeight: '700',
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}>
+            ⚠️ {affectedMatches.length} knockout pick{affectedMatches.length > 1 ? 's' : ''} affected by your group changes — review highlighted matches
           </div>
         )}
       </div>
@@ -219,9 +490,9 @@ export default function Knockout() {
         position: 'sticky', top: 'var(--nav-height)', zIndex: 50, overflowX: 'auto',
       }}>
         <div style={{ display: 'flex' }}>
-          {STAGES.map(stage => {
-            const stagePicks = picks[stage.key] || []
-            const complete = stagePicks.length === stage.slots
+          {ALL_STAGES.map(stage => {
+            const picks = stage.matches.filter(m => knockoutPicks[m.match_number]?.winner_id).length
+            const complete = picks === stage.matches.length
             return (
               <button
                 key={stage.key}
@@ -238,11 +509,8 @@ export default function Knockout() {
                 }}
               >
                 {stage.label}
-                <span style={{
-                  fontSize: '10px', fontWeight: '600',
-                  color: complete ? 'var(--accent-green)' : 'var(--text-muted)',
-                }}>
-                  {complete ? '✓' : `${stagePicks.length}/${stage.slots}`}
+                <span style={{ fontSize: '10px', color: complete ? 'var(--accent-green)' : 'var(--text-muted)', fontWeight: '600' }}>
+                  {complete ? '✓' : `${picks}/${stage.matches.length}`}
                 </span>
               </button>
             )
@@ -250,161 +518,26 @@ export default function Knockout() {
         </div>
       </div>
 
-      {/* Stage info bar */}
+      {/* Points info bar */}
       <div style={{
         background: 'var(--accent-blue-light)', padding: '10px 20px',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        fontSize: '13px',
       }}>
-        <div style={{ fontSize: '13px', color: 'var(--accent-blue)', fontWeight: '600' }}>
-          {currentStage?.emoji} Pick <strong>{currentStage?.slots} team{currentStage?.slots > 1 ? 's' : ''}</strong> to reach the {currentStage?.label} · <strong>+{currentStage?.points}pts</strong> each
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {user && !isLocked && (
-            <button
-              onClick={autofill}
-              style={{
-                padding: '4px 10px', borderRadius: 'var(--radius-full)',
-                fontSize: '12px', fontWeight: '700',
-                background: 'var(--accent-blue-light)',
-                color: 'var(--accent-blue)',
-                border: '1px solid var(--accent-blue)',
-                cursor: 'pointer',
-              }}
-            >
-              🎲 Autofill
-            </button>
-          )}
-          <div style={{
-            fontSize: '12px', fontWeight: '700',
-            color: slotsLeft === 0 ? 'var(--accent-green)' : 'var(--text-muted)',
-          }}>
-            {slotsLeft === 0 ? '✓ Complete' : `${slotsLeft} left`}
-          </div>
-        </div>
+        <span style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>
+          🏅 Correct {currentStage?.label} pick = <strong>{currentStage?.points}pts</strong>
+          {activeStage !== 'r32' ? '' : ' · +3pts ET · +5pts Pens'}
+        </span>
+        <span style={{ fontSize: '12px', fontWeight: '700', color: stagePicks === stageMatches.length ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+          {stagePicks === stageMatches.length ? '✓ Complete' : `${stagePicks}/${stageMatches.length}`}
+        </span>
       </div>
 
-      {/* Team grid */}
+      {/* Matches */}
       <div className="container" style={{ padding: '16px' }}>
-        {!user ? (
-          <div className="card" style={{ textAlign: 'center', padding: '32px' }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏆</div>
-            <div style={{ fontWeight: '700', fontSize: '18px', marginBottom: '8px' }}>Pick your knockout teams</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '14px', marginBottom: '20px' }}>
-              Register to predict which teams will advance through each round
-            </div>
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-              <Link to="/register" className="btn btn-primary">Join free</Link>
-              <Link to="/login" className="btn btn-secondary">Sign in</Link>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* Winner joker banner */}
-            {activeStage === 'winner' && currentPicks.length > 0 && (
-              <div style={{
-                marginBottom: '12px', padding: '10px 14px',
-                background: 'var(--accent-gold-light)',
-                border: '1px solid var(--accent-gold)',
-                borderRadius: 'var(--radius-md)',
-                fontSize: '13px', color: 'var(--accent-gold)',
-                fontWeight: '600',
-              }}>
-                🃏 Tap "Joker" on your tournament winner pick to double your points!
-              </div>
-            )}
-
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(2, 1fr)',
-              gap: '8px',
-            }}>
-              {teams.map(team => {
-                const isPicked = currentPicks.includes(team.id)
-                const isJoker = jokerPick === team.id && activeStage === 'winner'
-                const atMax = currentPicks.length >= currentStage?.slots && !isPicked
-
-                return (
-                  <div
-                    key={team.id}
-                    style={{
-                      borderRadius: 'var(--radius-md)',
-                      border: isJoker
-                        ? '2px solid var(--accent-gold)'
-                        : isPicked
-                        ? '2px solid var(--accent-green)'
-                        : '1.5px solid var(--border-light)',
-                      background: isJoker
-                        ? 'var(--accent-gold-light)'
-                        : isPicked
-                        ? 'var(--accent-green-light)'
-                        : 'var(--bg-card)',
-                      overflow: 'hidden',
-                      opacity: atMax ? 0.4 : 1,
-                      transition: 'all 0.15s',
-                    }}
-                  >
-                    <button
-                      onClick={() => toggleTeam(team.id)}
-                      disabled={atMax || isLocked}
-                      style={{
-                        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '10px 12px', background: 'none', border: 'none',
-                        cursor: atMax || isLocked ? 'default' : 'pointer', textAlign: 'left',
-                      }}
-                    >
-                      <span style={{ fontSize: '26px' }}>{team.flag_emoji}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{
-                          fontWeight: '700', fontSize: '13px',
-                          color: isPicked ? 'var(--accent-green)' : 'var(--text-primary)',
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                        }}>
-                          {team.name}
-                        </div>
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                          {team.short_code}
-                        </div>
-                      </div>
-                      {isPicked && (
-                        <span style={{ color: isJoker ? 'var(--accent-gold)' : 'var(--accent-green)', fontSize: '16px', flexShrink: 0 }}>
-                          {isJoker ? '🃏' : '✓'}
-                        </span>
-                      )}
-                    </button>
-
-                    {/* Joker button for winner stage */}
-                    {activeStage === 'winner' && isPicked && (
-                      <button
-                        onClick={() => toggleJoker(team.id)}
-                        disabled={!isJoker && jokersRemaining <= 0}
-                        style={{
-                          width: '100%', padding: '6px 12px',
-                          background: isJoker ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
-                          color: isJoker ? 'white' : 'var(--text-muted)',
-                          border: 'none', borderTop: '1px solid var(--border-light)',
-                          cursor: (!isJoker && jokersRemaining <= 0) ? 'not-allowed' : 'pointer',
-                          fontSize: '11px', fontWeight: '700',
-                          opacity: (!isJoker && jokersRemaining <= 0) ? 0.5 : 1,
-                        }}
-                      >
-                        {isJoker ? '🃏 Joker ON — 2x pts!' : '🃏 Use Joker'}
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Save indicator */}
-            {(saving || lastSaved) && (
-              <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                {saving
-                  ? <><div className="spinner" style={{ width: '14px', height: '14px', display: 'inline-block', marginRight: '6px' }} />Saving...</>
-                  : lastSaved ? '✓ Picks saved' : ''}
-              </div>
-            )}
-          </>
-        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {stageMatches.map(renderMatch)}
+        </div>
       </div>
     </div>
   )
