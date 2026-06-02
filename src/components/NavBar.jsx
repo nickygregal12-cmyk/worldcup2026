@@ -81,7 +81,7 @@ export default function NavBar() {
               }}>
                 <div style={{
                   width: '24px', height: '24px', borderRadius: '50%',
-                  background: 'var(--primary)', color: 'white',
+                  background: '#007a33', color: 'white',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: '11px', fontWeight: '800',
                 }}>
@@ -132,7 +132,7 @@ export default function NavBar() {
             <Link to="/profile" style={{ textDecoration: 'none' }}>
               <div style={{
                 width: '32px', height: '32px', borderRadius: '50%',
-                background: 'var(--primary)', color: 'white',
+                background: '#007a33', color: 'white',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: '13px', fontWeight: '800',
               }}>
