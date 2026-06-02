@@ -1,19 +1,33 @@
 // Team name mappings from the-odds-api.com format to our DB format
-// Fix 3: Türkiye unicode, Fix 1: Bosnia variants, Fix 2: USA variants, Fix 5: full audit
 const API_TO_DB = {
+  // Bosnia
+  'Bosnia and Herzegovina': 'Bosnia-Herzegovina',
+  'Bosnia & Herzegovina': 'Bosnia-Herzegovina',
+  'Bosnia': 'Bosnia-Herzegovina',
+
+  // USA
+  'United States of America': 'United States',
+  'USA': 'United States',
+  'US': 'United States',
+
+  // Others
   'Czech Republic': 'Czechia',
   'Turkey': 'Türkiye',
-  'Bosnia and Herzegovina': 'Bosnia-Herzegovina',
-  'United States of America': 'United States',
   "Côte d'Ivoire": 'Ivory Coast',
+  "Cote d'Ivoire": 'Ivory Coast',
   'Curaçao': 'Curacao',
+  'Curacao': 'Curacao',
   'Cape Verde Islands': 'Cape Verde',
   'Korea Republic': 'South Korea',
   'Republic of Korea': 'South Korea',
+  'South Korea': 'South Korea',
   'DR Congo': 'DR Congo',
+  'Congo DR': 'DR Congo',
+  'Democratic Republic of Congo': 'DR Congo',
   'Macedonia': 'North Macedonia',
-  'Iran': 'Iran',
+  'North Macedonia': 'North Macedonia',
   'IR Iran': 'Iran',
+  'Iran': 'Iran',
 }
 
 // Fix 4: normalise() for fuzzy matching — strips accents, lowercases
@@ -87,9 +101,16 @@ export const handler = async (event, context) => {
       const away = h2h.outcomes.find(o => o.name === game.away_team)?.price
       const draw = h2h.outcomes.find(o => o.name === 'Draw')?.price
 
-      // Normalise team names to match our DB
       const homeDb = normaliseTeam(game.home_team)
       const awayDb = normaliseTeam(game.away_team)
+
+      // Debug: log any unmapped names so we can catch them
+      if (homeDb === game.home_team && !API_TO_DB[game.home_team]) {
+        console.log(`[odds] unmapped: "${game.home_team}"`)
+      }
+      if (awayDb === game.away_team && !API_TO_DB[game.away_team]) {
+        console.log(`[odds] unmapped: "${game.away_team}"`)
+      }
 
       return {
         home_team: homeDb,
