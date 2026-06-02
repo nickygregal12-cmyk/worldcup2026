@@ -18,6 +18,7 @@ import Profile from './pages/Profile.jsx'
 import AdminPanel from './pages/AdminPanel.jsx'
 import AuthCallback from './pages/AuthCallback.jsx'
 import HowToPlay from './pages/HowToPlay.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 
 function ProtectedRoute({ children }) {
   const { user, isLoading } = useAuthStore()
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
           <Route path="/how-to-play" element={<HowToPlay />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
