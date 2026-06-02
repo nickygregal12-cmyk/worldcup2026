@@ -144,7 +144,7 @@ export default function Predictions() {
     try {
       const { data, error } = await supabase
         .from('matches')
-        .select(`*, home_team:home_team_id(id,name,flag_emoji,short_code,fifa_ranking), away_team:away_team_id(id,name,flag_emoji,short_code,fifa_ranking), group:group_id(name), venue:venue_id(city,country)`)
+        .select(`*, stage, home_team:home_team_id(id,name,flag_emoji,short_code,fifa_ranking), away_team:away_team_id(id,name,flag_emoji,short_code,fifa_ranking), group:group_id(name), venue:venue_id(city,country)`)
         .eq('stage', 'group')
         .order('kickoff_time', { ascending: true })
       if (error) throw error
