@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
+import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
 
 const STAGES = [
   { key: 'r16', label: 'Round of 16', slots: 16, points: 5, emoji: '🏟️' },
@@ -152,7 +153,15 @@ export default function Knockout() {
   const currentPicks = picks[activeStage] || []
   const slotsLeft = currentStage ? currentStage.slots - currentPicks.length : 0
 
-  if (loading) return <div className="loading-screen"><div className="spinner" /></div>
+  if (loading) return (
+    <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh', padding: '16px' }}>
+      <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px' }}>
+        <SkeletonCard rows={2} />
+        <SkeletonCard rows={4} />
+        <SkeletonCard rows={4} />
+      </div>
+    </div>
+  )
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>

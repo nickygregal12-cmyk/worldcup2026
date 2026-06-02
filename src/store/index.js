@@ -9,6 +9,7 @@ export const useAuthStore = create(
       profile: null,
       isLoading: true,
       isAdmin: false,
+      initialized: false,
 
       setUser: (user) => set({ user }),
       setProfile: (profile) => set({ 
@@ -25,32 +26,55 @@ export const useAuthStore = create(
       },
 
       initialize: async () => {
-        set({ isLoading: true })
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
-          set({ user: session.user })
-          await get().loadProfile(session.user.id)
+        // If already initialized and we have persisted user, skip the spinner
+        const state = get()
+        if (state.initialized) {
+          set({ isLoading: false })
+          // Still refresh profile in background silently
+          if (state.user) {
+            get().loadProfile(state.user.id).catch(() => {})
+          }
+          return
         }
-        set({ isLoading: false })
+
+        set({ isLoading: true })
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user) {
+            set({ user: session.user })
+            await get().loadProfile(session.user.id)
+          } else {
+            set({ user: null, profile: null })
+          }
+        } catch (e) {
+          console.error('Auth init error:', e)
+        }
+        set({ isLoading: false, initialized: true })
 
         supabase.auth.onAuthStateChange(async (event, session) => {
           if (event === 'SIGNED_IN' && session?.user) {
             set({ user: session.user })
             await get().loadProfile(session.user.id)
           } else if (event === 'SIGNED_OUT') {
-            set({ user: null, profile: null, isAdmin: false })
+            set({ user: null, profile: null, isAdmin: false, initialized: false })
+          } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+            set({ user: session.user })
           }
         })
       },
 
       logout: async () => {
         await supabase.auth.signOut()
-        set({ user: null, profile: null, isAdmin: false })
+        set({ user: null, profile: null, isAdmin: false, initialized: false })
       },
     }),
     {
       name: 'wc26-auth',
-      partialize: (state) => ({ user: state.user, profile: state.profile }),
+      partialize: (state) => ({ 
+        user: state.user, 
+        profile: state.profile,
+        initialized: state.initialized,
+      }),
     }
   )
 )
