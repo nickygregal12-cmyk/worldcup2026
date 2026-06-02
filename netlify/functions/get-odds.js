@@ -1,4 +1,5 @@
 // Team name mappings from the-odds-api.com format to our DB format
+// Fix 3: Türkiye unicode, Fix 1: Bosnia variants, Fix 2: USA variants, Fix 5: full audit
 const API_TO_DB = {
   'Czech Republic': 'Czechia',
   'Turkey': 'Türkiye',
@@ -8,11 +9,37 @@ const API_TO_DB = {
   'Curaçao': 'Curacao',
   'Cape Verde Islands': 'Cape Verde',
   'Korea Republic': 'South Korea',
+  'Republic of Korea': 'South Korea',
   'DR Congo': 'DR Congo',
   'Macedonia': 'North Macedonia',
+  'Iran': 'Iran',
+  'IR Iran': 'Iran',
 }
 
-const normaliseTeam = (name) => API_TO_DB[name] || name
+// Fix 4: normalise() for fuzzy matching — strips accents, lowercases
+const normaliseStr = (name) => {
+  if (!name) return ''
+  return name
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9 ]/g, '')
+    .trim()
+}
+
+// Pre-build normalised lookup so we catch any variant not in the exact map
+const NORMALISED_API_TO_DB = {}
+for (const [api, db] of Object.entries(API_TO_DB)) {
+  NORMALISED_API_TO_DB[normaliseStr(api)] = db
+}
+
+// Fix 4: try exact match first, then normalised fuzzy match
+const normaliseTeam = (name) => {
+  if (API_TO_DB[name]) return API_TO_DB[name]
+  const norm = normaliseStr(name)
+  if (NORMALISED_API_TO_DB[norm]) return NORMALISED_API_TO_DB[norm]
+  return name
+}
 
 export const handler = async (event, context) => {
   const headers = {
