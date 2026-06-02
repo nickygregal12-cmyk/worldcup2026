@@ -117,7 +117,13 @@ export const handler = async (event, context) => {
       updated++
 
       if (match.status === 'FINISHED' && ourMatch.status !== 'completed') {
-        await supabase.rpc('calculate_prediction_points', { p_match_id: ourMatch.id })
+        // Use appropriate scoring function based on stage
+        const isKnockout = ['r32','r16','qf','sf','3rd','final'].includes(ourMatch.stage)
+        if (isKnockout) {
+          await supabase.rpc('calculate_knockout_points', { p_match_id: ourMatch.id })
+        } else {
+          await supabase.rpc('calculate_prediction_points', { p_match_id: ourMatch.id })
+        }
         pointsCalculated++
 
         const { data: preds } = await supabase
