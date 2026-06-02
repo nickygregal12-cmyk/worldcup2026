@@ -1,3 +1,19 @@
+// Team name mappings from the-odds-api.com format to our DB format
+const API_TO_DB = {
+  'Czech Republic': 'Czechia',
+  'Turkey': 'Türkiye',
+  'Bosnia and Herzegovina': 'Bosnia-Herzegovina',
+  'United States of America': 'United States',
+  "Côte d'Ivoire": 'Ivory Coast',
+  'Curaçao': 'Curacao',
+  'Cape Verde Islands': 'Cape Verde',
+  'Korea Republic': 'South Korea',
+  'DR Congo': 'DR Congo',
+  'Macedonia': 'North Macedonia',
+}
+
+const normaliseTeam = (name) => API_TO_DB[name] || name
+
 export const handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -44,9 +60,15 @@ export const handler = async (event, context) => {
       const away = h2h.outcomes.find(o => o.name === game.away_team)?.price
       const draw = h2h.outcomes.find(o => o.name === 'Draw')?.price
 
+      // Normalise team names to match our DB
+      const homeDb = normaliseTeam(game.home_team)
+      const awayDb = normaliseTeam(game.away_team)
+
       return {
-        home_team: game.home_team,
-        away_team: game.away_team,
+        home_team: homeDb,
+        away_team: awayDb,
+        home_team_api: game.home_team,
+        away_team_api: game.away_team,
         commence_time: game.commence_time,
         odds: {
           home: toFractional(home),

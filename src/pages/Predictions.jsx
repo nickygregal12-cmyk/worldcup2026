@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
+import { toApiName } from '../lib/teamNames.js'
+import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
@@ -42,6 +44,7 @@ export default function Predictions() {
   const [predictions, setPredictions] = useState({})
   const [odds, setOdds] = useState({})
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState({})
   const [saved, setSaved] = useState({})
   const [jokersRemaining, setJokersRemaining] = useState(5)
@@ -80,6 +83,7 @@ export default function Predictions() {
       const data = await response.json()
       const oddsMap = {}
       data.forEach(game => {
+        // Key uses DB names (already normalised in get-odds function)
         oddsMap[`${game.home_team}|${game.away_team}`] = game.odds
       })
       setOdds(oddsMap)
@@ -89,19 +93,27 @@ export default function Predictions() {
   }
 
   const loadMatches = async () => {
-    const { data } = await supabase
-      .from('matches')
-      .select(`
-        *,
-        home_team:home_team_id(id,name,flag_emoji,short_code,fifa_ranking),
-        away_team:away_team_id(id,name,flag_emoji,short_code,fifa_ranking),
-        group:group_id(name),
-        venue:venue_id(city,country)
-      `)
-      .eq('stage', 'group')
-      .order('kickoff_time', { ascending: true })
-    setMatches(data || [])
-    setLoading(false)
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select(`
+          *,
+          home_team:home_team_id(id,name,flag_emoji,short_code,fifa_ranking),
+          away_team:away_team_id(id,name,flag_emoji,short_code,fifa_ranking),
+          group:group_id(name),
+          venue:venue_id(city,country)
+        `)
+        .eq('stage', 'group')
+        .order('kickoff_time', { ascending: true })
+      if (error) throw error
+      setMatches(data || [])
+      setLoadError(false)
+    } catch (e) {
+      console.error('Failed to load matches:', e)
+      setLoadError(true)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const loadPredictions = async () => {
@@ -248,8 +260,19 @@ export default function Predictions() {
   }
 
   const getMatchOdds = (match) => {
-    const key = `${match.home_team?.name}|${match.away_team?.name}`
-    return odds[key] || null
+    const homeName = match.home_team?.name
+    const awayName = match.away_team?.name
+    if (!homeName || !awayName) return null
+
+    // Try exact DB name match first (get-odds normalises to DB names)
+    const key1 = `${homeName}|${awayName}`
+    if (odds[key1]) return odds[key1]
+
+    // Try API name variant
+    const key2 = `${toApiName(homeName)}|${toApiName(awayName)}`
+    if (odds[key2]) return odds[key2]
+
+    return null
   }
 
   const getPredictionCount = () => {
@@ -270,7 +293,24 @@ export default function Predictions() {
   const jokerColor = jokersRemaining <= 1 ? 'var(--accent-red)' : jokersRemaining <= 2 ? 'var(--accent-orange)' : 'var(--accent-green)'
 
   if (loading) {
-    return <div className="loading-screen"><div className="spinner" /></div>
+    return (
+      <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh', padding: '16px' }}>
+        <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px' }}>
+          <SkeletonCard rows={2} />
+          <SkeletonCard rows={4} />
+          <SkeletonCard rows={4} />
+          <SkeletonCard rows={4} />
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+        <ErrorState message="Couldn't load predictions" onRetry={() => { setLoading(true); setLoadError(false); loadMatches(); }} />
+      </div>
+    )
   }
 
   const renderMatch = (match) => {
