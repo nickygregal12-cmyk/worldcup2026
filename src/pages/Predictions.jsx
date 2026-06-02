@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
-import { toApiName } from '../lib/teamNames.js'
+import { toApiName, normalise } from '../lib/teamNames.js'
 import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
@@ -105,7 +105,7 @@ export default function Predictions() {
   const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState({})
   const [saved, setSaved] = useState({})
-  const [jokersRemaining, setJokersRemaining] = useState(5)
+  const [jokersRemaining, setJokersRemaining] = useState(8)
   const [autoFilling, setAutoFilling] = useState(false)
   const [showJokerReminder, setShowJokerReminder] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
@@ -121,7 +121,7 @@ export default function Predictions() {
 
   useEffect(() => {
     if (profile) {
-      setJokersRemaining(profile.jokers_group_remaining ?? 5)
+      setJokersRemaining(profile.jokers_group_remaining ?? 8)
     }
   }, [profile])
 
@@ -130,7 +130,7 @@ export default function Predictions() {
     const lastGroupMatch = new Date('2026-06-28T20:00:00Z')
     const now = new Date()
     const hoursUntilEnd = (lastGroupMatch - now) / (1000 * 60 * 60)
-    if (hoursUntilEnd > 0 && hoursUntilEnd < 24 && (profile?.jokers_group_remaining ?? 5) > 0) {
+    if (hoursUntilEnd > 0 && hoursUntilEnd < 24 && (profile?.jokers_group_remaining ?? 8) > 0) {
       setShowJokerReminder(true)
     }
   }
@@ -357,13 +357,23 @@ export default function Predictions() {
     const awayName = match.away_team?.name
     if (!homeName || !awayName) return null
 
-    // Try exact DB name match first (get-odds normalises to DB names)
+    // Try 1: exact DB name (get-odds normalises to DB names)
     const key1 = `${homeName}|${awayName}`
     if (odds[key1]) return odds[key1]
 
-    // Try API name variant
+    // Try 2: API name variant
     const key2 = `${toApiName(homeName)}|${toApiName(awayName)}`
     if (odds[key2]) return odds[key2]
+
+    // Try 3: normalised fuzzy match against all odds keys
+    const normHome = normalise(homeName)
+    const normAway = normalise(awayName)
+    for (const key of Object.keys(odds)) {
+      const [h, a] = key.split('|')
+      if (normalise(h) === normHome && normalise(a) === normAway) {
+        return odds[key]
+      }
+    }
 
     return null
   }
@@ -649,9 +659,9 @@ export default function Predictions() {
               {user && (
                 <div className={`joker-counter ${jokersRemaining === 0 ? 'joker-counter-empty' : jokersRemaining <= 2 ? 'joker-counter-low' : 'joker-counter-active'}`}
                   style={{ animation: jokersRemaining > 0 && showJokerReminder ? 'pulse 1.5s infinite' : 'none' }}>
-                  <span>🃏</span>
-                  <span>{jokersRemaining}</span>
-                  <span style={{ fontSize: '11px', fontWeight: '500', opacity: 0.75 }}>joker{jokersRemaining !== 1 ? 's' : ''}</span>
+                  <span style={{ fontSize: '14px', lineHeight: 1 }}>🃏</span>
+                  <span style={{ fontSize: '14px', fontWeight: '800' }}>{jokersRemaining}</span>
+                  <span style={{ fontSize: '11px', fontWeight: '500', opacity: 0.8 }}>left</span>
                 </div>
               )}
 

@@ -319,7 +319,7 @@ export default function Knockout() {
           <div style={{ marginBottom: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>
             Based on your predictions — predict more group games to see updated standings
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+          <div className="group-grid">
             {Object.entries(standings).sort(([a], [b]) => a.localeCompare(b)).map(([group, teams]) => (
               <div key={group} className="card" style={{ padding: '12px' }}>
                 <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>

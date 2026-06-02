@@ -703,34 +703,35 @@ img {
 
 /* ---- Joker Counter (redesigned) ---- */
 .joker-counter {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  gap: 5px;
+  padding: 5px 12px;
   border-radius: var(--radius-full);
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;
   transition: all 0.2s;
+  letter-spacing: -0.01em;
 }
 
 .joker-counter-active {
-  background: var(--accent-gold-light);
-  border: 1px solid var(--accent-gold);
+  background: rgba(184, 134, 11, 0.15);
+  border: 1.5px solid rgba(184, 134, 11, 0.5);
   color: #b8860b;
 }
 
 .joker-counter-empty {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-light);
-  color: var(--text-muted);
+  background: rgba(255,255,255,0.08);
+  border: 1.5px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.4);
 }
 
 .joker-counter-low {
-  background: var(--accent-red-light);
-  border: 1px solid var(--accent-red);
-  color: var(--accent-red);
+  background: rgba(198, 40, 40, 0.15);
+  border: 1.5px solid rgba(198, 40, 40, 0.4);
+  color: #ef5350;
 }
 
 /* Fix 3: Save button - visible in dark mode */
