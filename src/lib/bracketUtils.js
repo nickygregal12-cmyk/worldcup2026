@@ -139,26 +139,47 @@ export function calcPredictedStandings(matches, predictions) {
 }
 
 /**
- * Resolve a slot descriptor to a team from standings
+ * Get the 8 best 3rd place teams from predicted standings
+ * Returns array of { team, group, pts, gd, gf } sorted best first
+ */
+export function getBest3rdTeams(standings) {
+  const thirds = []
+  for (const [group, teams] of Object.entries(standings)) {
+    if (teams[2]) {
+      thirds.push({ ...teams[2], group })
+    }
+  }
+  // Sort by pts, then gd, then gf
+  return thirds.sort((a, b) =>
+    b.pts - a.pts || b.gd - a.gd || b.gf - a.gf
+  ).slice(0, 8)
+}
+
+/**
+ * Resolve a slot descriptor to a team object from standings
  * e.g. '1A' = winner of group A, '2B' = runner-up of group B
- * '3X' etc = best 3rd place (simplified - just return null for now)
+ * '3S'-'3Z' = best 3rd place teams (ranked 1st-8th)
  */
 export function resolveSlot(slot, standings) {
   if (!slot) return null
   
   // Winner/runner-up slots: '1A', '2B', etc
-  const match = slot.match(/^([12])([A-L])$/)
-  if (match) {
-    const pos = parseInt(match[1]) - 1
-    const group = match[2]
-    return standings[group]?.[pos] || null
+  const posMatch = slot.match(/^([12])([A-L])$/)
+  if (posMatch) {
+    const pos = parseInt(posMatch[1]) - 1
+    const group = posMatch[2]
+    const entry = standings[group]?.[pos]
+    return entry?.team || null
   }
   
-  // 3rd place slots — simplified: return null (TBC until group stage ends)
-  if (slot.startsWith('3')) return null
+  // 3rd place slots: '3S' = best 3rd, '3T' = 2nd best 3rd, etc
+  const thirdMatch = slot.match(/^3([S-Z])$/)
+  if (thirdMatch) {
+    const rank = thirdMatch[1].charCodeAt(0) - 'S'.charCodeAt(0) // 0=best, 7=8th best
+    const best3rd = getBest3rdTeams(standings)
+    return best3rd[rank]?.team || null
+  }
   
-  // Winner of previous match: 'W73', 'W74' etc
-  // These are resolved from knockout picks
   return null
 }
 
