@@ -547,6 +547,15 @@ export default function Predictions() {
       return s.pts === prev.pts && s.gd === prev.gd && s.gf === prev.gf
     })
 
+    // Work out where this group's 3rd place team ranks among all groups
+    const allStandings = calcPredictedStandings(matches, predictions)
+    const best3rd = getBest3rdTeams(allStandings) || []
+    const best3rdIds = new Set(best3rd.slice(0, 8).map(t => t?.id).filter(Boolean))
+    const this3rd = standings[2]
+    const this3rdRank = best3rd.findIndex(t => t?.id === this3rd?.id) + 1
+    const this3rdQualifies = best3rdIds.has(this3rd?.id)
+    const groupsWithPreds = Object.values(allStandings).filter(teams => teams.some(t => t.played > 0)).length
+
     return (
       <div className="card" style={{ marginTop: '4px' }}>
         <div style={{ fontWeight: '800', fontSize: '13px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -565,10 +574,33 @@ export default function Predictions() {
             entry={entry}
             position={i + 1}
             qualifies={i < 2}
-            qualifies3rd={i === 2 && allPredicted}
+            qualifies3rd={i === 2 && allPredicted && this3rdQualifies}
           />
         ))}
-        <StandingsLegend allPredicted={allPredicted} />
+        {/* 3rd place context across all groups */}
+        {allPredicted && this3rd && groupsWithPreds > 1 && (
+          <div style={{
+            marginTop: '8px', padding: '7px 10px',
+            background: this3rdQualifies ? 'var(--accent-gold-light)' : 'var(--bg-tertiary)',
+            borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: '600',
+            color: this3rdQualifies ? '#b8860b' : 'var(--text-muted)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            border: this3rdQualifies ? '1px solid rgba(184,134,11,0.3)' : '1px solid var(--border-light)',
+          }}>
+            <span>
+              {this3rd.team?.flag_emoji} {this3rd.team?.short_code} · {this3rdRank > 0 ? `${this3rdRank}${['st','nd','rd'][this3rdRank-1]||'th'} best 3rd` : 'unranked'} of {groupsWithPreds} groups
+            </span>
+            <span style={{ fontWeight: '800' }}>
+              {this3rdQualifies ? '🏅 On track' : 'Needs improvement'}
+            </span>
+          </div>
+        )}
+        {allPredicted && this3rd && groupsWithPreds <= 1 && (
+          <StandingsLegend allPredicted={allPredicted} />
+        )}
+        {!allPredicted && (
+          <StandingsLegend allPredicted={false} />
+        )}
       </div>
     )
   }
