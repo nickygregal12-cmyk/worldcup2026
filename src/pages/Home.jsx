@@ -137,19 +137,21 @@ export default function Home() {
       </div>
 
       {/* Stats Bar */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '16px 0' }}>
-        <div style={{ display: 'flex', gap: '24px', overflowX: 'auto', padding: '0 16px', scrollbarWidth: 'none' }}>
+      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '14px 16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', maxWidth: '500px', margin: '0 auto' }}>
           {[
             { label: 'Teams', value: '48' },
             { label: 'Matches', value: '104' },
-            { label: 'Groups', value: '12' },
-            { label: 'Hosts', value: 'USA · CAN · MEX' },
-            { label: 'Start', value: '11 Jun' },
+            { label: 'Kick off', value: '11 Jun' },
             { label: 'Final', value: '19 Jul' },
-          ].map(({ label, value }) => (
-            <div key={label} style={{ textAlign: 'center', minWidth: '60px', flexShrink: 0 }}>
-              <div style={{ fontWeight: '800', fontSize: '16px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{value}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+          ].map(({ label, value }, i, arr) => (
+            <div key={label} style={{
+              textAlign: 'center', flex: 1,
+              borderRight: i < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
+              padding: '0 8px',
+            }}>
+              <div style={{ fontWeight: '800', fontSize: '15px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{value}</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>{label}</div>
             </div>
           ))}
         </div>

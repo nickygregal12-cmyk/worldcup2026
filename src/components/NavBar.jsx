@@ -101,7 +101,7 @@ export default function NavBar() {
       </nav>
 
       {/* Mobile header — logo + dark mode + profile only, no nav links */}
-      <nav className="hide-desktop" style={{
+      <nav className="hide-desktop pwa-nav" style={{
         position: 'fixed', top: 0, left: 0, right: 0,
         height: 'var(--nav-height)',
         background: 'var(--bg-card)',

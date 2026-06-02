@@ -159,6 +159,23 @@ img {
   }
 }
 
+/* ---- PWA / Home Screen safe area ---- */
+/* When running as installed PWA on iPhone, add top safe area to navbar */
+@media all and (display-mode: standalone) {
+  :root {
+    --nav-height: calc(64px + env(safe-area-inset-top, 0px));
+  }
+  .main-content {
+    padding-top: var(--nav-height);
+  }
+  /* Push navbar content below the notch/dynamic island */
+  .pwa-nav {
+    height: var(--nav-height) !important;
+    padding-top: env(safe-area-inset-top, 0px) !important;
+    align-items: center !important;
+  }
+}
+
 /* ---- Cards ---- */
 .card {
   background: var(--bg-card);
@@ -762,4 +779,24 @@ img {
 ::-webkit-scrollbar-thumb {
   background: var(--border-medium);
   border-radius: 3px;
+}
+/* ---- PWA Standalone Mode (iPhone home screen) ---- */
+/* When running as installed PWA, iOS adds status bar space at the top.
+   Target standalone mode only so browser version is unaffected. */
+@media all and (display-mode: standalone) {
+  :root {
+    --nav-height: 84px; /* 64px nav + ~20px status bar */
+  }
+
+  /* Navbar needs padding at top to clear the status bar */
+  nav[class*="hide-desktop"],
+  nav[class*="hide-mobile"] {
+    padding-top: env(safe-area-inset-top, 20px);
+  }
+
+  /* Bottom nav needs padding for home indicator */
+  nav + nav,
+  .bottom-nav-standalone {
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
 }
