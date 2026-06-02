@@ -98,10 +98,10 @@ export default function Profile() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
             {[
               { label: 'Total Points', value: profile.total_points || 0, icon: '🏅' },
-              { label: 'Current Streak', value: profile.streak_current || 0, icon: '🔥' },
-              { label: 'Best Streak', value: profile.streak_best || 0, icon: '⚡' },
-              { label: 'Perfect Rounds', value: profile.perfect_rounds || 0, icon: '🎯' },
-            ].map(({ label, value, icon }) => (
+              { label: 'Current Streak', value: profile.streak_current || 0, icon: '🔥', desc: 'Correct results in a row' },
+              { label: 'Best Streak', value: profile.streak_best || 0, icon: '⚡', desc: 'Personal best streak' },
+              { label: 'Exact Scores', value: profile.exact_scores || 0, icon: '🎯', desc: 'Perfect score predictions' },
+            ].map(({ label, value, icon, desc }) => (
               <div key={label} style={{
                 background: 'var(--bg-secondary)',
                 borderRadius: 'var(--radius-md)',
@@ -111,6 +111,7 @@ export default function Profile() {
                 <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
                 <div style={{ fontWeight: '800', fontSize: '24px', fontFamily: 'var(--font-mono)' }}>{value}</div>
                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>{label}</div>
+                {desc && <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', opacity: 0.7, lineHeight: '1.3' }}>{desc}</div>}
               </div>
             ))}
           </div>
