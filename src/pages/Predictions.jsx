@@ -4,6 +4,8 @@ import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 import { toApiName, normalise } from '../lib/teamNames.js'
 import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
+import { StandingsRow, StandingsHeader, StandingsLegend } from '../components/GroupStandingsTable.jsx'
+import { calcPredictedStandings, getBest3rdTeams, groupFullyPredicted } from '../lib/bracketUtils.js'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 const TOTAL_GROUP_MATCHES = 72 // 12 groups × 6 matches
@@ -532,7 +534,7 @@ export default function Predictions() {
     )
   }
 
-  // Item 6: fair play warning only when all 6 matches in group predicted
+  // Single group standings (By Group view)
   const renderGroupStandings = () => {
     if (groupMatches.length === 0) return null
     const { standings, allPredicted } = calcGroupStandings(groupMatches, predictions)
@@ -556,44 +558,89 @@ export default function Predictions() {
             ⚠️ Teams are level on all criteria — FIFA would use fair play points or a draw of lots. You may want to adjust your predictions.
           </div>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px 4px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
-          <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '16px' }}>#</span>
-          <span style={{ fontSize: '10px', color: 'var(--text-muted)', flex: 1 }}>Team</span>
-          <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '18px', textAlign: 'center' }}>P</span>
-          <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '20px', textAlign: 'center' }}>Pts</span>
-          <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right' }}>GD</span>
-          <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '24px', textAlign: 'right' }}>GF</span>
-        </div>
+        <StandingsHeader />
         {standings.map((entry, i) => (
-          <div key={entry.id} style={{
-            display: 'flex', alignItems: 'center', gap: '8px',
-            padding: '6px 8px', borderRadius: 'var(--radius-sm)', marginBottom: '3px',
-            // Item 5: 3rd only highlighted when all games predicted
-            background: i < 2 ? 'var(--accent-green-light)' : (i === 2 && allPredicted) ? 'var(--accent-gold-light)' : 'var(--bg-secondary)',
-            border: i < 2 ? '1px solid rgba(0,122,51,0.15)' : '1px solid transparent',
-          }}>
-            <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', width: '16px' }}>{i + 1}</span>
-            <span style={{ fontSize: '18px' }}>{entry.team?.flag_emoji}</span>
-            <span style={{ fontSize: '12px', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.team?.short_code || entry.team?.name}</span>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '18px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{entry.played}</span>
-            <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', width: '20px', textAlign: 'center' }}>{entry.pts}</span>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gd > 0 ? '+' : ''}{entry.gd}</span>
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '24px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gf}</span>
-          </div>
+          <StandingsRow
+            key={entry.id}
+            entry={entry}
+            position={i + 1}
+            qualifies={i < 2}
+            qualifies3rd={i === 2 && allPredicted}
+          />
         ))}
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-light)', fontSize: '10px', color: 'var(--text-muted)' }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block' }} /> Advances
-          </span>
-          {allPredicted && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-gold)', display: 'inline-block' }} /> Possible 3rd
-            </span>
-          )}
-          {!allPredicted && (
-            <span style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Predict all 6 games to see 3rd place</span>
-          )}
+        <StandingsLegend allPredicted={allPredicted} />
+      </div>
+    )
+  }
+
+  // All-groups standings (By Date view)
+  const renderAllGroupsStandings = () => {
+    const allStandings = calcPredictedStandings(matches, predictions)
+    const hasPreds = Object.values(allStandings).some(teams => teams.some(t => t.played > 0))
+    if (!hasPreds) return null
+
+    const best3rd = getBest3rdTeams(allStandings) || []
+    const best3rdIds = new Set(best3rd.map(t => t?.id).filter(Boolean))
+    const allGroupsComplete = Object.keys(allStandings).every(g => groupFullyPredicted(g, matches, predictions))
+
+    return (
+      <div style={{ marginTop: '32px' }}>
+        <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '4px' }}>📊 All Group Standings</div>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+          Based on your predictions across all groups
         </div>
+
+        <div className="group-grid">
+          {Object.entries(allStandings).sort(([a], [b]) => a.localeCompare(b)).map(([group, teams]) => {
+            const groupComplete = groupFullyPredicted(group, matches, predictions)
+            const hasPred = teams.some(t => t.played > 0)
+            if (!hasPred) return null
+            return (
+              <div key={group} className="card" style={{ padding: '12px' }}>
+                <div style={{ fontWeight: '800', fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ background: 'var(--primary)', color: 'var(--text-inverse)', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', flexShrink: 0 }}>
+                    {group}
+                  </span>
+                  Group {group}
+                </div>
+                <StandingsHeader />
+                {teams.map((entry, i) => (
+                  <StandingsRow
+                    key={entry.id}
+                    entry={entry}
+                    position={i + 1}
+                    qualifies={i < 2}
+                    qualifies3rd={i === 2 && groupComplete && best3rdIds.has(entry.id)}
+                  />
+                ))}
+                <StandingsLegend allPredicted={groupComplete} />
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Best 3rd place summary */}
+        {best3rd.length > 0 && (
+          <div className="card" style={{ marginTop: '16px' }}>
+            <div style={{ fontWeight: '800', fontSize: '13px', marginBottom: '4px' }}>🏅 Best 3rd Place Teams</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+              Top 8 of 12 third-place teams advance to the Round of 32
+              {!allGroupsComplete && <span style={{ fontStyle: 'italic' }}> · predict all groups to see final ranking</span>}
+            </div>
+            <StandingsHeader />
+            {best3rd.map((entry, i) => (
+              <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: 'var(--radius-sm)', marginBottom: '2px', background: i < 8 ? 'var(--accent-green-light)' : 'var(--bg-secondary)', border: i < 8 ? '1px solid rgba(0,122,51,0.15)' : '1px solid transparent' }}>
+                <span style={{ width: '16px', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)' }}>{i + 1}</span>
+                <span style={{ fontSize: '18px' }}>{entry.team?.flag_emoji}</span>
+                <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.team?.short_code || entry.team?.name}</span>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', marginRight: '4px' }}>Grp {entry.group}</span>
+                <span style={{ width: '16px', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{entry.played ?? '–'}</span>
+                <span style={{ width: '28px', fontSize: '15px', fontWeight: '900', fontFamily: 'var(--font-mono)', textAlign: 'center', color: 'var(--text-primary)' }}>{entry.pts}</span>
+                <span style={{ width: '30px', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gd > 0 ? '+' : ''}{entry.gd}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     )
   }
@@ -778,6 +825,7 @@ export default function Predictions() {
                 </div>
               )
             })}
+            {renderAllGroupsStandings()}
           </div>
         )}
       </div>

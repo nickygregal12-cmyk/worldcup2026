@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 import { SkeletonCard, ErrorState } from '../components/PageState.jsx'
+import { StandingsRow, StandingsHeader, StandingsLegend } from '../components/GroupStandingsTable.jsx'
 import {
   ALL_STAGES,
-  calcPredictedStandings, resolveSlot, getBest3rdTeams, findAffectedPicks
+  calcPredictedStandings, resolveSlot, getBest3rdTeams, findAffectedPicks, groupFullyPredicted
 } from '../lib/bracketUtils.js'
 
 function slotLabel(slot) {
@@ -328,70 +329,49 @@ export default function Knockout() {
                   </span>
                   Group {group}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px 4px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '14px' }}>#</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', flex: 1 }}>Team</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '18px', textAlign: 'center' }}>P</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '20px', textAlign: 'center' }}>Pts</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right' }}>GD</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <StandingsHeader />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   {teams.map((entry, i) => {
                     const qualifies = i < 2
-                    const qualifies3rd = i === 2 && best3rdIds.has(entry.id)
+                    const groupComplete = groupFullyPredicted(group, groupMatches, groupPredictions)
+                    const qualifies3rd = i === 2 && groupComplete && best3rdIds.has(entry.id)
                     return (
-                      <div key={entry.id} style={{
-                        display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: 'var(--radius-sm)',
-                        background: qualifies ? 'var(--accent-green-light)' : qualifies3rd ? 'var(--accent-gold-light)' : 'var(--bg-secondary)',
-                        border: qualifies ? '1px solid rgba(0,122,51,0.2)' : qualifies3rd ? '1px solid rgba(184,134,11,0.2)' : '1px solid transparent',
-                      }}>
-                        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', width: '14px' }}>{i + 1}</span>
-                        <span style={{ fontSize: '18px' }}>{entry.team?.flag_emoji}</span>
-                        <span style={{ fontSize: '12px', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {entry.team?.short_code || entry.team?.name}
-                        </span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '18px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{entry.played || '–'}</span>
-                        <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', width: '20px', textAlign: 'center' }}>{entry.pts}</span>
-                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
-                          {entry.gd > 0 ? '+' : ''}{entry.gd}
-                        </span>
-                      </div>
+                      <StandingsRow
+                        key={entry.id}
+                        entry={entry}
+                        position={i + 1}
+                        qualifies={qualifies}
+                        qualifies3rd={qualifies3rd}
+                      />
                     )
                   })}
                 </div>
-                <div style={{ display: 'flex', gap: '12px', marginTop: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-light)', fontSize: '10px', color: 'var(--text-muted)' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-green)', display: 'inline-block' }} />Advances
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-gold)', display: 'inline-block' }} />Qualifies as 3rd
-                  </span>
-                </div>
+                <StandingsLegend allPredicted={groupFullyPredicted(group, groupMatches, groupPredictions)} />
               </div>
             ))}
           </div>
 
           {best3rd.length > 0 && (
             <div className="card" style={{ marginTop: '12px' }}>
-              <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '6px' }}>🏅 Best 3rd Place Teams</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>Top 8 advance to the Round of 32</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px 4px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '20px' }}>#</span>
+              <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '4px' }}>🏅 Best 3rd Place Teams</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>Top 8 of 12 advance to the Round of 32</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px 5px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
+                <span style={{ width: '16px', fontSize: '10px', color: 'var(--text-muted)' }}>#</span>
                 <span style={{ fontSize: '10px', color: 'var(--text-muted)', flex: 1 }}>Team</span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '30px', textAlign: 'center' }}>Grp</span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '18px', textAlign: 'center' }}>P</span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '20px', textAlign: 'center' }}>Pts</span>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right' }}>GD</span>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'center' }}>Grp</span>
+                <span style={{ width: '16px', fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center' }}>P</span>
+                <span style={{ width: '28px', fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', fontWeight: '700' }}>Pts</span>
+                <span style={{ width: '30px', fontSize: '10px', color: 'var(--text-muted)', textAlign: 'right' }}>GD</span>
               </div>
               {best3rd.map((entry, i) => (
-                <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px', borderRadius: 'var(--radius-sm)', marginBottom: '4px', background: 'var(--accent-green-light)', border: '1px solid rgba(0,122,51,0.15)' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', width: '20px' }}>{i + 1}</span>
+                <div key={entry.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', borderRadius: 'var(--radius-sm)', marginBottom: '2px', background: 'var(--accent-green-light)', border: '1px solid rgba(0,122,51,0.15)' }}>
+                  <span style={{ width: '16px', fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)' }}>{i + 1}</span>
                   <span style={{ fontSize: '18px' }}>{entry.team?.flag_emoji}</span>
-                  <span style={{ fontSize: '12px', fontWeight: '600', flex: 1 }}>{entry.team?.short_code || entry.team?.name}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '30px', textAlign: 'center', fontWeight: '700' }}>{entry.group}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '18px', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{entry.played || '–'}</span>
-                  <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', width: '20px', textAlign: 'center' }}>{entry.pts}</span>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', width: '28px', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gd > 0 ? '+' : ''}{entry.gd}</span>
+                  <span style={{ flex: 1, fontSize: '12px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.team?.short_code || entry.team?.name}</span>
+                  <span style={{ width: '28px', fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', fontWeight: '700' }}>{entry.group}</span>
+                  <span style={{ width: '16px', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', fontFamily: 'var(--font-mono)' }}>{entry.played || '–'}</span>
+                  <span style={{ width: '28px', fontSize: '15px', fontWeight: '900', fontFamily: 'var(--font-mono)', textAlign: 'center', color: 'var(--text-primary)' }}>{entry.pts}</span>
+                  <span style={{ width: '30px', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{entry.gd > 0 ? '+' : ''}{entry.gd}</span>
                 </div>
               ))}
             </div>
