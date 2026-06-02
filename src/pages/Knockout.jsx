@@ -144,12 +144,6 @@ export default function Knockout() {
       ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   }
 
-  const best3rd = getBest3rdTeams(standings)
-  const best3rdIds = new Set(best3rd.map(t => t.id))
-  const currentStage = ALL_STAGES.find(s => s.key === activeStage)
-  const stageMatches = currentStage?.matches || []
-  const stagePicks = stageMatches.filter(m => knockoutPicks[m.match_number]?.winner_id).length
-
   if (loading) return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh', padding: '16px' }}>
       <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px' }}>
@@ -157,6 +151,12 @@ export default function Knockout() {
       </div>
     </div>
   )
+
+  const best3rd = getBest3rdTeams(standings) || []
+  const best3rdIds = new Set(best3rd.map(t => t?.id).filter(Boolean))
+  const currentStage = ALL_STAGES.find(s => s.key === activeStage)
+  const stageMatches = currentStage?.matches || []
+  const stagePicks = stageMatches.filter(m => knockoutPicks[m.match_number]?.winner_id).length
 
   if (loadError) return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
