@@ -95,6 +95,13 @@ export default function AdminPanel() {
   const [actionResult, setActionResult] = useState('')
   const [awardResults, setAwardResults] = useState({})
   const [awardSaving, setAwardSaving] = useState({})
+  const [editingLeagueName, setEditingLeagueName] = useState(null) // leagueId
+  const [editingLeagueNameVal, setEditingLeagueNameVal] = useState('')
+  const [addingMemberTo, setAddingMemberTo] = useState(null) // leagueId
+  const [addMemberSearch, setAddMemberSearch] = useState('')
+  const [showCreateLeague, setShowCreateLeague] = useState(false)
+  const [newLeagueName, setNewLeagueName] = useState('')
+  const [newLeagueCreatingFor, setNewLeagueCreatingFor] = useState('')
 
   useEffect(() => {
     if (!user || !isAdmin) { navigate('/'); return }
@@ -200,14 +207,14 @@ export default function AdminPanel() {
   const prepopulateMatchIds = async () => {
     setSaving(prev => ({ ...prev, prepopulate: true }))
     try {
-      const res = await fetch('https://api.football-data.org/v4/competitions/WC/matches?season=2026', {
-        headers: { 'X-Auth-Token': '' } // Runs via proxy — actual key is server-side
-      })
-      // Trigger via sync-scores which handles the API key server-side
-      const syncRes = await fetch('/.netlify/functions/sync-scores', { method: 'POST' })
-      const data = await syncRes.json()
-      setActionResult(`Pre-populate complete — ${data.updated || 0} match IDs stored`)
-      await logAudit('PREPOPULATE_MATCH_IDS', { result: data })
+      const res = await fetch('/.netlify/functions/prepopulate-matches', { method: 'GET' })
+      const data = await res.json()
+      if (data.error) {
+        setActionResult(`Pre-populate error: ${data.error}`)
+      } else {
+        setActionResult(`Pre-populate complete — ${data.matched} IDs stored, ${data.skipped} already set, ${data.notFound?.length || 0} not found`)
+      }
+      await logAudit('PREPOPULATE_MATCH_IDS', { matched: data.matched, skipped: data.skipped })
     } catch (e) {
       setActionResult(`Pre-populate error: ${e.message}`)
     }
@@ -327,13 +334,26 @@ export default function AdminPanel() {
 
   // League actions
   const deleteLeague = async (leagueId, leagueName) => {
-    // Delete members first to avoid FK constraint error
-    const { error: membErr } = await supabase.from('league_members').delete().eq('league_id', leagueId)
-    if (membErr) { setActionResult(`Error removing members: ${membErr.message}`); return }
-    const { error: leagErr } = await supabase.from('leagues').delete().eq('id', leagueId)
-    if (leagErr) { setActionResult(`Error deleting league: ${leagErr.message}`); return }
+    // Step 1: delete members
+    const { error: membErr } = await supabase
+      .from('league_members')
+      .delete()
+      .eq('league_id', leagueId)
+    if (membErr) {
+      setActionResult(`❌ Error removing members: ${membErr.message} (code: ${membErr.code})`)
+      return
+    }
+    // Step 2: delete league
+    const { error: leagErr } = await supabase
+      .from('leagues')
+      .delete()
+      .eq('id', leagueId)
+    if (leagErr) {
+      setActionResult(`❌ Error deleting league: ${leagErr.message} (code: ${leagErr.code})`)
+      return
+    }
     await logAudit('DELETE_LEAGUE', { league_id: leagueId, name: leagueName })
-    setActionResult(`Deleted league: ${leagueName}`)
+    setActionResult(`✅ Deleted league: ${leagueName}`)
     loadLeagues()
   }
 
@@ -364,6 +384,55 @@ export default function AdminPanel() {
     if (error) { setActionResult(`Error removing member: ${error.message}`); return }
     await logAudit('REMOVE_LEAGUE_MEMBER', { league_id: leagueId, user_id: userId, username, league: leagueName })
     setActionResult(`Removed ${username} from ${leagueName}`)
+    loadLeagues()
+  }
+
+  const renameLeague = async (leagueId, newName) => {
+    if (!newName.trim()) return
+    const { error } = await supabase.from('leagues').update({ name: newName.trim() }).eq('id', leagueId)
+    if (error) { setActionResult(`❌ Error renaming: ${error.message}`); return }
+    await logAudit('RENAME_LEAGUE', { league_id: leagueId, new_name: newName })
+    setActionResult(`✅ League renamed to "${newName}"`)
+    setEditingLeagueName(null)
+    loadLeagues()
+  }
+
+  const addMemberToLeague = async (leagueId, leagueName, userId, username) => {
+    // Check not already a member
+    const { data: existing } = await supabase
+      .from('league_members')
+      .select('id')
+      .eq('league_id', leagueId)
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (existing) { setActionResult(`${username} is already in this league`); return }
+    const { error } = await supabase.from('league_members').insert({ league_id: leagueId, user_id: userId })
+    if (error) { setActionResult(`❌ Error adding member: ${error.message}`); return }
+    await logAudit('ADD_LEAGUE_MEMBER', { league_id: leagueId, user_id: userId, username, league: leagueName })
+    setActionResult(`✅ Added ${username} to ${leagueName}`)
+    setAddingMemberTo(null)
+    setAddMemberSearch('')
+    loadLeagues()
+  }
+
+  const createLeague = async () => {
+    if (!newLeagueName.trim()) return
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase()
+    const creatorUser = users.find(u => u.username?.toLowerCase() === newLeagueCreatingFor.toLowerCase())
+    const { data: league, error } = await supabase.from('leagues').insert({
+      name: newLeagueName.trim(),
+      invite_code: code,
+      created_by: creatorUser?.id || user.id,
+      is_private: false,
+    }).select().single()
+    if (error) { setActionResult(`❌ Error creating league: ${error.message}`); return }
+    // Add creator as member
+    await supabase.from('league_members').insert({ league_id: league.id, user_id: creatorUser?.id || user.id })
+    await logAudit('CREATE_LEAGUE', { league_id: league.id, name: newLeagueName, code })
+    setActionResult(`✅ Created league "${newLeagueName}" with code ${code}`)
+    setShowCreateLeague(false)
+    setNewLeagueName('')
+    setNewLeagueCreatingFor('')
     loadLeagues()
   }
 
@@ -630,12 +699,50 @@ export default function AdminPanel() {
         {/* ── LEAGUES ── */}
         {activeTab === 'leagues' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>{leagues.length} leagues total</div>
+
+            {/* Create League */}
+            <button onClick={() => setShowCreateLeague(!showCreateLeague)} className="btn btn-primary">
+              ➕ Create New League
+            </button>
+            {showCreateLeague && (
+              <div className="card" style={{ border: '1px solid var(--accent-green)' }}>
+                <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '12px' }}>Create League</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <input className="input" placeholder="League name e.g. Office WC26"
+                    value={newLeagueName} onChange={e => setNewLeagueName(e.target.value)} />
+                  <input className="input" placeholder="Created by username (leave blank for admin)"
+                    value={newLeagueCreatingFor} onChange={e => setNewLeagueCreatingFor(e.target.value)} />
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={createLeague} disabled={!newLeagueName.trim()} className="btn btn-primary btn-sm">Create</button>
+                    <button onClick={() => setShowCreateLeague(false)} className="btn btn-secondary btn-sm">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{leagues.length} leagues total</div>
+
             {leagues.map(league => (
               <div key={league.id} className="card">
+                {/* League header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <div>
-                    <div style={{ fontWeight: '700', fontSize: '15px' }}>{league.name}</div>
+                  <div style={{ flex: 1 }}>
+                    {/* Rename inline */}
+                    {editingLeagueName === league.id ? (
+                      <div style={{ display: 'flex', gap: '6px', marginBottom: '4px' }}>
+                        <input className="input" value={editingLeagueNameVal}
+                          onChange={e => setEditingLeagueNameVal(e.target.value)}
+                          style={{ fontSize: '14px', fontWeight: '700' }} />
+                        <button onClick={() => renameLeague(league.id, editingLeagueNameVal)} className="btn btn-primary btn-sm">Save</button>
+                        <button onClick={() => setEditingLeagueName(null)} className="btn btn-secondary btn-sm">✕</button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <div style={{ fontWeight: '700', fontSize: '15px' }}>{league.name}</div>
+                        <button onClick={() => { setEditingLeagueName(league.id); setEditingLeagueNameVal(league.name) }}
+                          style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>✏️</button>
+                      </div>
+                    )}
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                       Created by {league.creator?.username || '?'} · {fmt(league.created_at)}
                     </div>
@@ -644,14 +751,14 @@ export default function AdminPanel() {
                       {league.is_private && <span style={{ marginLeft: '6px' }}>🔒 Private</span>}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontWeight: '800', fontSize: '16px', fontFamily: 'var(--font-mono)' }}>
                       {league.members?.length ?? 0} members
                     </div>
                   </div>
                 </div>
 
-                {/* Member list with remove buttons */}
+                {/* Member list */}
                 {league.members?.length > 0 && (
                   <div style={{ marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {league.members.map(m => (
@@ -666,6 +773,42 @@ export default function AdminPanel() {
                   </div>
                 )}
 
+                {/* Add member */}
+                {addingMemberTo === league.id ? (
+                  <div style={{ marginBottom: '10px', padding: '10px', background: 'var(--accent-blue-light)', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', marginBottom: '8px' }}>Add member to {league.name}</div>
+                    <input className="input" placeholder="Search username..."
+                      value={addMemberSearch} onChange={e => setAddMemberSearch(e.target.value)}
+                      style={{ marginBottom: '8px' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '150px', overflowY: 'auto' }}>
+                      {users.filter(u =>
+                        addMemberSearch.length > 1 &&
+                        u.username?.toLowerCase().includes(addMemberSearch.toLowerCase()) &&
+                        !league.members?.find(m => m.user_id === u.id)
+                      ).map(u => (
+                        <div key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)' }}>
+                          <span style={{ fontSize: '13px' }}>{u.username}</span>
+                          <button onClick={() => addMemberToLeague(league.id, league.name, u.id, u.username)}
+                            className="btn btn-primary btn-sm">Add</button>
+                        </div>
+                      ))}
+                      {addMemberSearch.length > 1 && users.filter(u =>
+                        u.username?.toLowerCase().includes(addMemberSearch.toLowerCase()) &&
+                        !league.members?.find(m => m.user_id === u.id)
+                      ).length === 0 && (
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '8px' }}>No matching users found</div>
+                      )}
+                    </div>
+                    <button onClick={() => { setAddingMemberTo(null); setAddMemberSearch('') }} className="btn btn-secondary btn-sm" style={{ marginTop: '8px' }}>Cancel</button>
+                  </div>
+                ) : (
+                  <button onClick={() => { setAddingMemberTo(league.id); setAddMemberSearch('') }}
+                    className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none', marginBottom: '8px' }}>
+                    ➕ Add Member
+                  </button>
+                )}
+
+                {/* Delete */}
                 <button onClick={() => setConfirmAction({ type: 'deleteLeague', leagueId: league.id, leagueName: league.name })}
                   className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
                   🗑️ Delete League
