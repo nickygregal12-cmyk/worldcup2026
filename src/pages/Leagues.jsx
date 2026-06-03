@@ -185,18 +185,19 @@ export default function Leagues() {
 
   const loadMemberPredictions = async (userId, showFuture) => {
     setLoadingPreds(true)
-    const { data: preds } = await supabase
+    const { data: preds, error } = await supabase
       .from('predictions')
       .select(`*, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))`)
       .eq('user_id', userId)
       .order('match_id', { ascending: true })
 
-    // Show all predictions if user allows it OR tournament has started
-    // Otherwise show notice that picks are private
+    console.log('loadMemberPredictions:', { userId, showFuture, count: preds?.length, error })
+
     const filtered = (preds || []).filter(p => {
       const kicked = new Date(p.match?.kickoff_time) <= new Date()
       return kicked || showFuture
     })
+    console.log('filtered:', filtered.length)
     setMemberPredictions(filtered)
     setLoadingPreds(false)
   }
