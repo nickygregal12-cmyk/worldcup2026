@@ -586,21 +586,19 @@ export default function Predictions() {
 
   const handleScoreChange = (matchId, side, value) => {
     if (!user) return
-    const num = value === '' ? '' : Math.max(0, Math.min(99, parseInt(value) || 0))
+    const cleaned = value.replace(/[^0-9]/g, '')
+    const num = cleaned === '' ? '' : Math.min(99, parseInt(cleaned))
     setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], [side]: num, _dirty: true } }))
 
-    // Debounced save using captured values to avoid stale closure
     clearTimeout(saveTimers.current[matchId])
     saveTimers.current[matchId] = setTimeout(() => {
       const homeInput = inputRefs.current[`${matchId}-home`]
       const awayInput = inputRefs.current[`${matchId}-away`]
-      const homeVal = homeInput ? parseInt(homeInput.value) : undefined
-      const awayVal = awayInput ? parseInt(awayInput.value) : undefined
-
+      const homeVal = homeInput ? parseInt(homeInput.value.replace(/[^0-9]/g, '')) : NaN
+      const awayVal = awayInput ? parseInt(awayInput.value.replace(/[^0-9]/g, '')) : NaN
       if (isNaN(homeVal) || isNaN(awayVal)) return
       const match = matchesRef.current.find(m => m.id === matchId)
       if (!match || isLocked(match.kickoff_time)) return
-
       supabase.from('predictions').upsert({
         user_id: userRef.current.id,
         match_id: matchId,
@@ -915,7 +913,7 @@ export default function Predictions() {
                 </div>
               </div>
             ) : (
-            <input type="number" inputMode="numeric" pattern="[0-9]*" className="score-input" min="0" max="99"
+            <input type="text" inputMode="numeric" pattern="[0-9]*" className="score-input" min="0" max="99"
               ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
               value={pred.home ?? ''}
               onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
@@ -926,7 +924,7 @@ export default function Predictions() {
             )}
             <span className="score-divider">–</span>
             {resultColour ? null : (
-            <input type="number" inputMode="numeric" pattern="[0-9]*" className="score-input" min="0" max="99"
+            <input type="text" inputMode="numeric" pattern="[0-9]*" className="score-input"
               ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
               value={pred.away ?? ''}
               onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
