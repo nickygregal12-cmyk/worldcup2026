@@ -535,15 +535,7 @@ export default function Predictions() {
     if (data) {
       const predMap = {}
       data.forEach(p => { predMap[p.match_id] = { home: p.home_score, away: p.away_score, joker: p.is_confident } })
-      // Only update predictions that we don't have locally — never overwrite unsaved local changes
-      setPredictions(prev => {
-        const merged = { ...predMap }
-        // Keep any local values that differ from DB (unsaved edits in progress)
-        Object.entries(prev).forEach(([id, local]) => {
-          if (local._dirty) merged[id] = local // keep unsaved local edits
-        })
-        return merged
-      })
+      setPredictions(predMap)
     }
   }
 
