@@ -3,10 +3,13 @@ import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
+const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
 export default function Leagues() {
   const { user, isAdmin } = useAuthStore()
+  const [activeGame, setActiveGame] = useState('tournament')
   const [myLeagues, setMyLeagues] = useState([])
+  const [myKoLeagues, setMyKoLeagues] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
@@ -21,11 +24,12 @@ export default function Leagues() {
   const [memberModal, setMemberModal] = useState(null)
   const [memberPredictions, setMemberPredictions] = useState([])
   const [loadingPreds, setLoadingPreds] = useState(false)
-  const [matchOdds, setMatchOdds] = useState({}) // for pre-match %
+  const [matchOdds, setMatchOdds] = useState({})
 
   const tournamentLive = new Date() >= TOURNAMENT_START
+  const koLive = new Date() >= KO_OPEN_DATE
 
-  useEffect(() => { if (user) loadMyLeagues() }, [user])
+  useEffect(() => { if (user) { loadMyLeagues(); loadMyKoLeagues() } }, [user])
 
   const loadMyLeagues = async () => {
     // Fix 1: get real member count from league_members table
@@ -52,6 +56,62 @@ export default function Leagues() {
       memberCount: countMap[m.league_id] || 1,
     })))
     setLoading(false)
+  }
+
+  const loadMyKoLeagues = async () => {
+    const { data: memberships } = await supabase
+      .from('ko_league_members')
+      .select('league_id, league:league_id(id, name, invite_code, created_by)')
+      .eq('user_id', user.id)
+      .order('joined_at', { ascending: false })
+    if (!memberships) return
+    const leagueIds = memberships.map(m => m.league_id)
+    const { data: counts } = await supabase
+      .from('ko_league_members').select('league_id').in('league_id', leagueIds)
+    const countMap = {}
+    counts?.forEach(c => { countMap[c.league_id] = (countMap[c.league_id] || 0) + 1 })
+    setMyKoLeagues(memberships.map(m => ({ ...m, memberCount: countMap[m.league_id] || 1 })))
+  }
+
+  const createKoLeague = async () => {
+    if (!newLeagueName.trim()) { setError('Please enter a league name'); return }
+    setError('')
+    const code = generateCode()
+    const { data: league, error: err } = await supabase
+      .from('ko_leagues')
+      .insert({ name: newLeagueName.trim(), invite_code: code, created_by: user.id, is_global: false })
+      .select().single()
+    if (err) { setError(err.message); return }
+    await supabase.from('ko_league_members').insert({ league_id: league.id, user_id: user.id })
+    setSuccess(`KO League created! Share code: ${code}`)
+    setNewLeagueName(''); setShowCreate(false)
+    loadMyKoLeagues()
+  }
+
+  const joinKoLeague = async () => {
+    if (!joinCode.trim()) { setError('Enter an invite code'); return }
+    setError('')
+    const { data: league } = await supabase.from('ko_leagues').select('*').eq('invite_code', joinCode.toUpperCase().trim()).single()
+    if (!league) { setError('KO League not found — check the code'); return }
+    const { error: err } = await supabase.from('ko_league_members').insert({ league_id: league.id, user_id: user.id })
+    if (err?.code === '23505') { setError('You are already in this league'); return }
+    if (err) { setError(err.message); return }
+    setSuccess(`Joined KO league "${league.name}"!`)
+    setJoinCode(''); setShowJoin(false)
+    loadMyKoLeagues()
+  }
+
+  const leaveKoLeague = async (leagueId, leagueName) => {
+    await supabase.from('ko_league_members').delete().eq('league_id', leagueId).eq('user_id', user.id)
+    setSuccess(`Left "${leagueName}"`)
+    loadMyKoLeagues()
+  }
+
+  const deleteKoLeague = async (leagueId, leagueName) => {
+    await supabase.from('ko_league_members').delete().eq('league_id', leagueId)
+    await supabase.from('ko_leagues').delete().eq('id', leagueId)
+    setSuccess(`Deleted "${leagueName}"`)
+    loadMyKoLeagues()
   }
 
   const loadLeagueMembers = async (leagueId) => {
@@ -234,12 +294,34 @@ export default function Leagues() {
       {/* Header */}
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '20px' }}>
         <div className="container">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <h1 style={{ fontSize: '24px', fontWeight: '800' }}>👥 Leagues</h1>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => { setShowJoin(!showJoin); setShowCreate(false); setError('') }} className="btn btn-secondary btn-sm">Join</button>
-              <button onClick={() => { setShowCreate(!showCreate); setShowJoin(false); setError('') }} className="btn btn-primary btn-sm">+ Create</button>
+              <button onClick={() => { setShowCreate(!showCreate); setShowJoin(false); setError('') }}
+                className="btn btn-primary btn-sm"
+                style={{ background: activeGame === 'ko' ? '#e65100' : 'var(--scottish-navy)' }}>
+                + Create
+              </button>
             </div>
+          </div>
+
+          {/* Game toggle */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <button onClick={() => { setActiveGame('tournament'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
+              flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
+              background: activeGame === 'tournament' ? 'var(--scottish-navy)' : 'var(--bg-tertiary)',
+              color: activeGame === 'tournament' ? 'white' : 'var(--text-muted)',
+              border: activeGame === 'tournament' ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+              cursor: 'pointer',
+            }}>🌍 Tournament Leagues</button>
+            <button onClick={() => { setActiveGame('ko'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
+              flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
+              background: activeGame === 'ko' ? '#e65100' : 'var(--bg-tertiary)',
+              color: activeGame === 'ko' ? 'white' : 'var(--text-muted)',
+              border: activeGame === 'ko' ? '1px solid #e65100' : '1px solid var(--border-light)',
+              cursor: 'pointer',
+            }}>🔥 KO Predictor Leagues</button>
           </div>
 
           {success && (
@@ -250,13 +332,20 @@ export default function Leagues() {
           )}
 
           {showCreate && (
-            <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '12px' }}>
-              <div style={{ fontWeight: '700', marginBottom: '12px' }}>Create a League</div>
-              <input className="input" placeholder="League name e.g. Office 2026" value={newLeagueName}
+            <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '12px', border: `1px solid ${activeGame === 'ko' ? '#e65100' : 'var(--scottish-navy)'}` }}>
+              <div style={{ fontWeight: '700', marginBottom: '4px' }}>
+                {activeGame === 'ko' ? '🔥 Create a KO Predictor League' : '🌍 Create a Tournament League'}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                {activeGame === 'ko' ? 'Separate from Tournament leagues — KO points only' : 'Group + knockout + awards predictions'}
+              </div>
+              <input className="input" placeholder="League name e.g. Office WC26" value={newLeagueName}
                 onChange={e => setNewLeagueName(e.target.value)} style={{ marginBottom: '12px' }} />
               {error && <div style={{ color: 'var(--accent-red)', fontSize: '13px', marginBottom: '8px' }}>{error}</div>}
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={createLeague} className="btn btn-primary btn-sm">Create</button>
+                <button onClick={activeGame === 'ko' ? createKoLeague : createLeague}
+                  className="btn btn-primary btn-sm"
+                  style={{ background: activeGame === 'ko' ? '#e65100' : 'var(--scottish-navy)' }}>Create</button>
                 <button onClick={() => setShowCreate(false)} className="btn btn-secondary btn-sm">Cancel</button>
               </div>
             </div>
@@ -264,13 +353,15 @@ export default function Leagues() {
 
           {showJoin && (
             <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '12px' }}>
-              <div style={{ fontWeight: '700', marginBottom: '12px' }}>Join a League</div>
+              <div style={{ fontWeight: '700', marginBottom: '4px' }}>
+                {activeGame === 'ko' ? '🔥 Join a KO Predictor League' : '🌍 Join a Tournament League'}
+              </div>
               <input className="input" placeholder="Enter invite code e.g. AB1234" value={joinCode}
                 onChange={e => setJoinCode(e.target.value.toUpperCase())}
                 style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.1em', fontSize: '18px', fontWeight: '700', marginBottom: '12px' }} />
               {error && <div style={{ color: 'var(--accent-red)', fontSize: '13px', marginBottom: '8px' }}>{error}</div>}
               <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={joinLeague} className="btn btn-primary btn-sm">Join</button>
+                <button onClick={activeGame === 'ko' ? joinKoLeague : joinLeague} className="btn btn-primary btn-sm">Join</button>
                 <button onClick={() => setShowJoin(false)} className="btn btn-secondary btn-sm">Cancel</button>
               </div>
             </div>
@@ -281,6 +372,58 @@ export default function Leagues() {
       <div className="container" style={{ padding: '16px' }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><div className="spinner" /></div>
+        ) : activeGame === 'ko' ? (
+          /* ── KO Leagues section ── */
+          myKoLeagues.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">🔥</div>
+              <div className="empty-state-title">No KO Predictor leagues yet</div>
+              <div className="empty-state-desc">Create or join a KO Predictor league — completely separate from your Tournament leagues</div>
+              <button onClick={() => { setShowCreate(true); setShowJoin(false) }}
+                className="btn btn-primary" style={{ marginTop: '16px', background: '#e65100' }}>
+                + Create KO League
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {myKoLeagues.map(({ league_id, league, memberCount }) => {
+                const isCreator = league?.created_by === user?.id
+                return (
+                  <div key={league_id} className="card" style={{ border: '1px solid rgba(230,81,0,0.3)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '14px' }}>🔥</span>
+                          <span style={{ fontWeight: '700', fontSize: '15px' }}>{league?.name}</span>
+                          {isCreator && <span style={{ fontSize: '10px', background: '#e65100', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>CREATOR</span>}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          Code: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '0.1em' }}>{league?.invite_code}</span>
+                          · {memberCount} member{memberCount !== 1 ? 's' : ''}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#e65100' }}>KO Predictor</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <button onClick={() => navigator.clipboard?.writeText(league?.invite_code).then(() => setSuccess(`Copied: ${league?.invite_code}`))}
+                        className="btn btn-secondary btn-sm">📋 Copy Code</button>
+                      <button onClick={() => {
+                        const text = `Join my WC26 KO Predictor league "${league?.name}"! Code: ${league?.invite_code} at https://wc26predictor1.netlify.app`
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+                      }} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none' }}>WhatsApp</button>
+                      {isCreator ? (
+                        <button onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league_id, leagueName: league?.name })}
+                          className="btn btn-sm" style={{ background: 'none', border: '1px solid #e53935', color: '#e53935' }}>Delete</button>
+                      ) : (
+                        <button onClick={() => setConfirmAction({ type: 'leaveKoLeague', leagueId: league_id, leagueName: league?.name })}
+                          className="btn btn-secondary btn-sm">Leave</button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
         ) : myLeagues.length === 0 ? (
           <div className="empty-state">
             <div className="empty-state-icon">👥</div>
@@ -543,17 +686,25 @@ export default function Leagues() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="card" style={{ maxWidth: '340px', width: '100%' }}>
             <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>
-              {confirmAction.type === 'leave' ? 'Leave League?' : confirmAction.type === 'deleteLeague' ? 'Delete League?' : 'Remove Member?'}
+              {confirmAction.type === 'leave' ? 'Leave League?' :
+               confirmAction.type === 'deleteLeague' ? 'Delete League?' :
+               confirmAction.type === 'leaveKoLeague' ? 'Leave KO League?' :
+               confirmAction.type === 'deleteKoLeague' ? 'Delete KO League?' :
+               'Remove Member?'}
             </div>
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
               {confirmAction.type === 'leave' ? `Leave "${confirmAction.leagueName}"? You can rejoin with the invite code.` :
                confirmAction.type === 'deleteLeague' ? `Delete "${confirmAction.leagueName}"? This cannot be undone.` :
+               confirmAction.type === 'leaveKoLeague' ? `Leave KO league "${confirmAction.leagueName}"?` :
+               confirmAction.type === 'deleteKoLeague' ? `Delete KO league "${confirmAction.leagueName}"? This cannot be undone.` :
                `Remove ${confirmAction.memberName}? They can rejoin with the invite code.`}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => {
                 if (confirmAction.type === 'leave') leaveLeague(confirmAction.leagueId, confirmAction.leagueName)
                 else if (confirmAction.type === 'deleteLeague') deleteLeague(confirmAction.leagueId, confirmAction.leagueName)
+                else if (confirmAction.type === 'leaveKoLeague') leaveKoLeague(confirmAction.leagueId, confirmAction.leagueName)
+                else if (confirmAction.type === 'deleteKoLeague') deleteKoLeague(confirmAction.leagueId, confirmAction.leagueName)
                 else if (confirmAction.type === 'removeMember') removeMember(confirmAction.leagueId, confirmAction.memberId, confirmAction.memberName)
                 setConfirmAction(null)
               }} className="btn btn-primary" style={{ background: '#e53935', flex: 1 }}>Confirm</button>
