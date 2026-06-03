@@ -468,7 +468,21 @@ export default function Predictions() {
     setStandings(data || [])
   }
 
-  // Refetch matches every time this page is navigated to
+  // Auto-scroll to first unpredicted match on load
+  useEffect(() => {
+    if (!matches.length || loading) return
+    const firstUnpredicted = matches
+      .filter(m => m.group && !isLocked(m.kickoff_time) && predictions[m.id]?.home === undefined)
+      .sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))[0]
+    if (firstUnpredicted?.group?.name) {
+      setActiveGroup(firstUnpredicted.group.name)
+      setViewMode('group')
+      setTimeout(() => {
+        const el = document.getElementById(`match-${firstUnpredicted.id}`)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 300)
+    }
+  }, [matches.length, loading])
   // This picks up admin score changes immediately
   useEffect(() => {
     loadMatches()
@@ -733,7 +747,7 @@ export default function Predictions() {
       : 'var(--bg-card)'
 
     return (
-      <div key={match.id} className="card" style={{ opacity: locked && !hasPrediction ? 0.6 : 1, border: cardBorder, background: cardBg }}>
+      <div key={match.id} id={`match-${match.id}`} className="card" style={{ opacity: locked && !hasPrediction ? 0.6 : 1, border: cardBorder, background: cardBg }}>
 
         {/* Result badge */}
         {resultColour && (
@@ -1294,7 +1308,30 @@ export default function Predictions() {
                 <div className="empty-state-title">No matches in Group {activeGroup}</div>
               </div>
             )}
+            {/* Next group prompt */}
+            {groupMatches.length > 0 && (() => {
+              const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
+              const currentIdx = GROUPS.indexOf(activeGroup)
+              // Find next group with unpredicted matches
+              const nextGroup = GROUPS.slice(currentIdx + 1).find(g => {
+                const gMatches = matches.filter(m => m.group?.name === g && !isLocked(m.kickoff_time))
+                return gMatches.some(m => predictions[m.id]?.home === undefined)
+              })
+              if (!nextGroup) return null
+              return (
+                <button onClick={() => setActiveGroup(nextGroup)} style={{
+                  background: 'none', border: '1px dashed var(--border-medium)',
+                  borderRadius: 'var(--radius-md)', padding: '12px',
+                  cursor: 'pointer', color: 'var(--text-muted)', fontSize: '13px',
+                  fontWeight: '600', width: '100%', textAlign: 'center',
+                }}>
+                  Next unpredicted → Group {nextGroup}
+                </button>
+              )
+            })()}
           </div>
+        ) : activeGroup === 'FINAL' && viewMode === 'date' ? (
+          <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
         ) : (
           // Item 2 & 3: By Date view with autofill and clear per day
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

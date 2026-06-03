@@ -119,6 +119,15 @@ export default function Knockout() {
     const mn = matchDef.match_number
     const existing = knockoutPicks[mn]
 
+    // Click same team again = clear the pick
+    if (existing?.winner_id === winnerId) {
+      setKnockoutPicks(prev => { const n = { ...prev }; delete n[mn]; return n })
+      await supabase.from('knockout_picks').delete().eq('user_id', user.id).eq('match_number', mn)
+      const totalPicks = Object.keys({ ...knockoutPicks }).length - 1
+      await supabase.from('profiles').update({ knockout_picks_count: Math.max(0, totalPicks) }).eq('id', user.id)
+      return
+    }
+
     if (existing?.winner_id && existing.winner_id !== winnerId) {
       const affected = findAffectedPicks(existing.winner_id, knockoutPicks, mn)
       if (affected.length > 0) {
