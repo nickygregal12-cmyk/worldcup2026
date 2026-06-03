@@ -798,6 +798,19 @@ export default function AdminPanel() {
                 <button onClick={syncScoresNow} disabled={saving.sync} className="btn btn-primary" style={{ background: '#e53935' }}>
                   {saving.sync ? '⏳ Syncing...' : '🔄 Sync Scores Now'}
                 </button>
+                <button onClick={async () => {
+                  setSaving(prev => ({ ...prev, standings: true }))
+                  try {
+                    const res = await fetch('/.netlify/functions/sync-standings')
+                    const data = await res.json()
+                    setActionResult(`✅ Standings synced: ${data.updated} rows updated`)
+                  } catch (e) {
+                    setActionResult(`❌ Standings sync failed: ${e.message}`)
+                  }
+                  setSaving(prev => ({ ...prev, standings: false }))
+                }} disabled={saving.standings} className="btn btn-secondary">
+                  {saving.standings ? '⏳ Syncing...' : '📊 Sync Standings'}
+                </button>
                 <button onClick={prepopulateMatchIds} disabled={saving.prepopulate} className="btn btn-primary" style={{ background: 'var(--accent-orange)' }}>
                   {saving.prepopulate ? '⏳ Running...' : '🔗 Pre-populate Match IDs'}
                 </button>

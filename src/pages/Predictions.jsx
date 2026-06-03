@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { useAuthStore } from '../store/index.js'
+import { useAuthStore, useAppStore } from '../store/index.js'
 import { toApiName, normalise } from '../lib/teamNames.js'
 import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
 import { StandingsRow, StandingsHeader, StandingsLegend } from '../components/GroupStandingsTable.jsx'
@@ -88,11 +88,205 @@ const calcGroupStandings = (matches, predictions) => {
 // Item 8: Score validation
 const isHighScore = (val) => val !== '' && val !== undefined && Number(val) >= 7
 
+function StandingsView({ standings, activeGroup, matches, predictions, appSettings }) {
+  const groupStandings = standings.filter(s => {
+    // Match group name from API (e.g. "GROUP_A") to our group letter (e.g. "A")
+    const groupLetter = s.group_name?.replace('GROUP_', '').replace('Group ', '')
+    return groupLetter === activeGroup
+  })
+
+  const groupMatches = matches.filter(m => m.group?.name === activeGroup && m.status === 'completed')
+
+  // Calculate predicted standings from user's predictions
+  const predictedStandings = {}
+  const groupAllMatches = matches.filter(m => m.group?.name === activeGroup)
+
+  groupAllMatches.forEach(match => {
+    const pred = predictions[match.id]
+    const homeId = match.home_team_id
+    const awayId = match.away_team_id
+    const homeName = match.home_team?.short_code || match.home_team?.name || '?'
+    const awayName = match.away_team?.short_code || match.away_team?.name || '?'
+    const homeFlag = match.home_team?.flag_emoji || ''
+    const awayFlag = match.away_team?.flag_emoji || ''
+
+    if (!predictedStandings[homeId]) predictedStandings[homeId] = { id: homeId, name: homeName, flag: homeFlag, pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 }
+    if (!predictedStandings[awayId]) predictedStandings[awayId] = { id: awayId, name: awayName, flag: awayFlag, pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 }
+
+    if (pred?.home !== undefined && pred?.away !== undefined) {
+      const h = parseInt(pred.home), a = parseInt(pred.away)
+      predictedStandings[homeId].gf += h; predictedStandings[homeId].ga += a
+      predictedStandings[awayId].gf += a; predictedStandings[awayId].ga += h
+      if (h > a) { predictedStandings[homeId].pts += 3; predictedStandings[homeId].w++ ; predictedStandings[awayId].l++ }
+      else if (h === a) { predictedStandings[homeId].pts += 1; predictedStandings[awayId].pts += 1; predictedStandings[homeId].d++; predictedStandings[awayId].d++ }
+      else { predictedStandings[awayId].pts += 3; predictedStandings[awayId].w++; predictedStandings[homeId].l++ }
+    }
+  })
+
+  const predTable = Object.values(predictedStandings).sort((a, b) =>
+    b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf
+  )
+
+  const showReal = appSettings?.show_group_tables === 'true' && groupStandings.length > 0
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+      {/* Real standings */}
+      {showReal ? (
+        <div className="card">
+          <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '10px' }}>📊 Real Standings — Group {activeGroup}</div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600' }}>
+                  <th style={{ textAlign: 'left', padding: '4px 6px' }}>#</th>
+                  <th style={{ textAlign: 'left', padding: '4px 6px' }}>Team</th>
+                  <th style={{ textAlign: 'center', padding: '4px 6px' }}>P</th>
+                  <th style={{ textAlign: 'center', padding: '4px 6px' }}>W</th>
+                  <th style={{ textAlign: 'center', padding: '4px 6px' }}>D</th>
+                  <th style={{ textAlign: 'center', padding: '4px 6px' }}>L</th>
+                  <th style={{ textAlign: 'center', padding: '4px 6px' }}>GD</th>
+                  <th style={{ textAlign: 'center', padding: '4px 6px', fontWeight: '800', color: 'var(--text-primary)' }}>Pts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groupStandings.map((team, i) => {
+                  // Find their predicted position
+                  const predPos = predTable.findIndex(p => p.name === team.team_name?.substring(0, 3).toUpperCase() || p.id === team.team_id) + 1
+                  const qualifies = team.position <= 2
+                  return (
+                    <tr key={team.id} style={{
+                      borderTop: '1px solid var(--border-light)',
+                      background: qualifies ? 'rgba(0,122,51,0.05)' : 'transparent',
+                    }}>
+                      <td style={{ padding: '8px 6px', fontWeight: '700', color: qualifies ? 'var(--accent-green)' : 'var(--text-muted)' }}>{team.position}</td>
+                      <td style={{ padding: '8px 6px', fontWeight: '600' }}>{team.team_name}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.played}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.won}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.drawn}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.lost}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'center', color: team.goal_difference > 0 ? 'var(--accent-green)' : team.goal_difference < 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>
+                        {team.goal_difference > 0 ? '+' : ''}{team.goal_difference}
+                      </td>
+                      <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '800', fontSize: '14px' }}>{team.points}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>🟢 Top 2 qualify · Last synced from live data</div>
+        </div>
+      ) : (
+        <div className="card" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
+          <div style={{ fontWeight: '700', marginBottom: '4px' }}>Real standings coming 11 Jun</div>
+          <div style={{ fontSize: '13px' }}>Live group tables appear once matches kick off</div>
+        </div>
+      )}
+
+      {/* Your predicted standings */}
+      <div className="card">
+        <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '10px' }}>🔮 Your Predicted Standings — Group {activeGroup}</div>
+        {predTable.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-muted)', fontSize: '13px' }}>
+            Make your Group {activeGroup} predictions to see your predicted table
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600' }}>
+                  <th style={{ textAlign: 'left', padding: '4px 6px' }}>#</th>
+                  <th style={{ textAlign: 'left', padding: '4px 6px' }}>Team</th>
+                  <th style={{ textAlign: 'center', padding: '4px 6px' }}>GD</th>
+                  <th style={{ textAlign: 'center', padding: '4px 6px', fontWeight: '800', color: 'var(--text-primary)' }}>Pts</th>
+                  {showReal && <th style={{ textAlign: 'center', padding: '4px 6px' }}>vs Real</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {predTable.map((team, i) => {
+                  const pos = i + 1
+                  const qualifies = pos <= 2
+                  // Find real position for comparison
+                  const realEntry = groupStandings.find(s => s.team_id === team.id)
+                  const realPos = realEntry?.position
+                  const diff = realPos ? realPos - pos : null
+
+                  return (
+                    <tr key={team.id} style={{
+                      borderTop: '1px solid var(--border-light)',
+                      background: qualifies ? 'rgba(0,122,51,0.05)' : 'transparent',
+                    }}>
+                      <td style={{ padding: '8px 6px', fontWeight: '700', color: qualifies ? 'var(--accent-green)' : 'var(--text-muted)' }}>{pos}</td>
+                      <td style={{ padding: '8px 6px', fontWeight: '600' }}>{team.flag} {team.name}</td>
+                      <td style={{ padding: '8px 6px', textAlign: 'center', color: (team.gf - team.ga) > 0 ? 'var(--accent-green)' : (team.gf - team.ga) < 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>
+                        {(team.gf - team.ga) > 0 ? '+' : ''}{team.gf - team.ga}
+                      </td>
+                      <td style={{ padding: '8px 6px', textAlign: 'center', fontWeight: '800', fontSize: '14px' }}>{team.pts}</td>
+                      {showReal && (
+                        <td style={{ padding: '8px 6px', textAlign: 'center', fontSize: '12px', fontWeight: '700' }}>
+                          {diff === null ? '—' : diff === 0 ? <span style={{ color: 'var(--accent-green)' }}>✅ Match</span>
+                            : diff > 0 ? <span style={{ color: 'var(--accent-orange)' }}>▼{Math.abs(diff)}</span>
+                            : <span style={{ color: '#e53935' }}>▲{Math.abs(diff)}</span>}
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>Based on your predicted scores for this group</div>
+      </div>
+
+      {/* Recent results */}
+      {groupMatches.length > 0 && (
+        <div className="card">
+          <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '10px' }}>📋 Results — Group {activeGroup}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {groupMatches.map(match => {
+              const pred = predictions[match.id]
+              const predHome = pred?.home !== undefined ? parseInt(pred.home) : null
+              const predAway = pred?.away !== undefined ? parseInt(pred.away) : null
+              const exact = predHome === match.home_score && predAway === match.away_score
+              const correctResult = predHome !== null && (
+                (predHome > predAway && match.home_score > match.away_score) ||
+                (predHome === predAway && match.home_score === match.away_score) ||
+                (predHome < predAway && match.home_score < match.away_score)
+              )
+              return (
+                <div key={match.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)' }}>
+                  <span style={{ fontSize: '14px' }}>{match.home_team?.flag_emoji}</span>
+                  <span style={{ fontSize: '12px', fontWeight: '600', flex: 1 }}>{match.home_team?.short_code}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '15px', minWidth: '48px', textAlign: 'center' }}>
+                    {match.home_score} – {match.away_score}
+                  </span>
+                  <span style={{ fontSize: '12px', fontWeight: '600', flex: 1, textAlign: 'right' }}>{match.away_team?.short_code}</span>
+                  <span style={{ fontSize: '14px' }}>{match.away_team?.flag_emoji}</span>
+                  <span style={{ fontSize: '12px', marginLeft: '4px' }}>
+                    {exact ? '🎯' : correctResult ? '✅' : predHome !== null ? '❌' : '—'}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Predictions() {
   const { user, profile, loadProfile } = useAuthStore()
+  const { appSettings } = useAppStore()
   const navigate = useNavigate()
   const [activeGroup, setActiveGroup] = useState('A')
   const [viewMode, setViewMode] = useState('group')
+  const [activeTab, setActiveTab] = useState('picks') // picks | standings
+  const [standings, setStandings] = useState([])
   const [matches, setMatches] = useState([])
   const [predictions, setPredictions] = useState({})
   const [odds, setOdds] = useState({})
@@ -110,6 +304,7 @@ export default function Predictions() {
   useEffect(() => {
     loadMatches()
     loadOdds()
+    loadStandings()
     if (user) {
       loadPredictions()
       checkJokerReminder()
@@ -117,6 +312,14 @@ export default function Predictions() {
   }, [user])
 
   const location = useLocation()
+
+  const loadStandings = async () => {
+    const { data } = await supabase
+      .from('group_standings')
+      .select('*')
+      .order('group_name').order('position')
+    setStandings(data || [])
+  }
 
   // Refetch matches every time this page is navigated to
   // This picks up admin score changes immediately
@@ -790,8 +993,21 @@ export default function Predictions() {
               <h1 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)' }}>⚽ Predictions</h1>
               <Link to="/how-to-play" style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', flexShrink: 0, textDecoration: 'none' }}>?</Link>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {user && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {/* Picks / Standings switcher */}
+              {appSettings?.show_group_tables === 'true' && (
+                <div style={{ display: 'flex', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', padding: '2px', gap: '2px' }}>
+                  {[{ key: 'picks', label: '⚽ Picks' }, { key: 'standings', label: '📊 Standings' }].map(tab => (
+                    <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
+                      padding: '4px 10px', borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: activeTab === tab.key ? '700' : '500',
+                      background: activeTab === tab.key ? 'var(--bg-card)' : 'transparent',
+                      color: activeTab === tab.key ? 'var(--text-primary)' : 'var(--text-muted)',
+                      border: 'none', cursor: 'pointer', boxShadow: activeTab === tab.key ? 'var(--shadow-sm)' : 'none',
+                    }}>{tab.label}</button>
+                  ))}
+                </div>
+              )}
+              {user && activeTab === 'picks' && (
                 <div className={`joker-counter ${jokersRemaining === 0 ? 'joker-counter-empty' : jokersRemaining <= 2 ? 'joker-counter-low' : 'joker-counter-active'}`}
                   style={{ animation: jokersRemaining > 0 && showJokerReminder ? 'pulse 1.5s infinite' : 'none' }}>
                   <span style={{ fontSize: '13px', lineHeight: 1 }}>🃏</span>
@@ -799,7 +1015,7 @@ export default function Predictions() {
                   <span style={{ fontSize: '10px', fontWeight: '500', opacity: 0.8 }}>left</span>
                 </div>
               )}
-              {user && (
+              {user && activeTab === 'picks' && (
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                   <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>{getPredictionCount()}</span>
                   <span> / {matches.length}</span>
@@ -894,9 +1110,17 @@ export default function Predictions() {
 
       <style>{`@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }`}</style>
 
-      {/* Matches */}
+      {/* Matches / Standings */}
       <div className="container" style={{ padding: '16px' }}>
-        {viewMode === 'group' ? (
+        {activeTab === 'standings' ? (
+          <StandingsView
+            standings={standings}
+            activeGroup={activeGroup}
+            matches={matches}
+            predictions={predictions}
+            appSettings={appSettings}
+          />
+        ) : viewMode === 'group' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {groupMatches.map(renderMatch)}
             {groupMatches.length === 0 && (
