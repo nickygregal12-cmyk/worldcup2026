@@ -550,6 +550,37 @@ export default function Predictions() {
   const isLocked = (kickoffTime) => new Date() >= new Date(kickoffTime)
 
   const saveTimers = useRef({})
+  const predictionsRef = useRef(predictions)
+  const matchesRef = useRef(matches)
+  const userRef = useRef(user)
+
+  useEffect(() => { predictionsRef.current = predictions }, [predictions])
+  useEffect(() => { matchesRef.current = matches }, [matches])
+  useEffect(() => { userRef.current = user }, [user])
+
+  // Save all dirty predictions when navigating away
+  useEffect(() => {
+    return () => {
+      Object.values(saveTimers.current).forEach(t => clearTimeout(t))
+      const currentUser = userRef.current
+      if (!currentUser) return
+      const dirtyPreds = Object.entries(predictionsRef.current)
+        .filter(([, pred]) => pred._dirty && pred.home !== '' && pred.home !== undefined && pred.away !== '' && pred.away !== undefined)
+      for (const [matchId, pred] of dirtyPreds) {
+        const match = matchesRef.current.find(m => m.id === matchId)
+        if (match && !isLocked(match.kickoff_time)) {
+          supabase.from('predictions').upsert({
+            user_id: currentUser.id,
+            match_id: matchId,
+            home_score: pred.home,
+            away_score: pred.away,
+            is_confident: pred.joker ?? false,
+            bracket_type: 'main',
+          }, { onConflict: 'user_id,match_id,bracket_type' })
+        }
+      }
+    }
+  }, [])
 
   const handleScoreChange = (matchId, side, value) => {
     if (!user) return
