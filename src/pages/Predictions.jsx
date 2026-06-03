@@ -1013,8 +1013,30 @@ export default function Predictions() {
                 >Clear</button>
               )}
               <button
-                onClick={() => savePrediction(match)}
-                disabled={isSaving || pred.home === '' || pred.home === undefined}
+                onClick={() => {
+                  // Read directly from DOM refs for iOS reliability
+                  const homeInput = inputRefs.current[`${match.id}-home`]
+                  const awayInput = inputRefs.current[`${match.id}-away`]
+                  const homeVal = homeInput ? parseInt(homeInput.value.replace(/[^0-9]/g, '')) : NaN
+                  const awayVal = awayInput ? parseInt(awayInput.value.replace(/[^0-9]/g, '')) : NaN
+                  if (!isNaN(homeVal) && !isNaN(awayVal)) {
+                    // Update state first then save
+                    setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], home: homeVal, away: awayVal } }))
+                    supabase.from('predictions').upsert({
+                      user_id: user.id, match_id: match.id,
+                      home_score: homeVal, away_score: awayVal,
+                      is_confident: pred.joker ?? false, bracket_type: 'main',
+                    }, { onConflict: 'user_id,match_id,bracket_type' }).then(({ error }) => {
+                      if (!error) {
+                        setSaved(prev => ({ ...prev, [match.id]: true }))
+                        setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
+                      } else console.error('Save error:', error)
+                    })
+                  } else {
+                    savePrediction(match)
+                  }
+                }}
+                disabled={isSaving}
                 className={`btn btn-sm ${isSaved ? 'btn-save-success' : 'btn-save'}`}
                 style={{ minWidth: '80px' }}
               >
