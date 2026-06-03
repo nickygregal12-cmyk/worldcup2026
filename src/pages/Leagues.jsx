@@ -310,16 +310,16 @@ export default function Leagues() {
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
             <button onClick={() => { setActiveGame('tournament'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
               flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
-              background: activeGame === 'tournament' ? 'var(--scottish-navy)' : 'var(--bg-tertiary)',
-              color: activeGame === 'tournament' ? 'white' : 'var(--text-muted)',
-              border: activeGame === 'tournament' ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+              background: activeGame === 'tournament' ? 'var(--scottish-navy)' : 'rgba(255,255,255,0.15)',
+              color: activeGame === 'tournament' ? 'white' : 'rgba(255,255,255,0.8)',
+              border: activeGame === 'tournament' ? '1px solid var(--scottish-navy)' : '1px solid rgba(255,255,255,0.3)',
               cursor: 'pointer',
             }}>🌍 Tournament Leagues</button>
             <button onClick={() => { setActiveGame('ko'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
               flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
-              background: activeGame === 'ko' ? '#e65100' : 'var(--bg-tertiary)',
-              color: activeGame === 'ko' ? 'white' : 'var(--text-muted)',
-              border: activeGame === 'ko' ? '1px solid #e65100' : '1px solid var(--border-light)',
+              background: activeGame === 'ko' ? '#e65100' : 'rgba(255,255,255,0.15)',
+              color: activeGame === 'ko' ? 'white' : 'rgba(255,255,255,0.8)',
+              border: activeGame === 'ko' ? '1px solid #e65100' : '1px solid rgba(255,255,255,0.3)',
               cursor: 'pointer',
             }}>🔥 KO Predictor Leagues</button>
           </div>

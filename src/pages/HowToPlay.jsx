@@ -111,7 +111,7 @@ export default function HowToPlay() {
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(0,30,80,0.80) 0%, rgba(0,94,184,0.75) 100%), url(/howtoplay-bg.jpg) center/cover no-repeat',
+        background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/howtoplay-bg.jpg) center bottom/cover no-repeat',
         padding: '20px', color: 'white',
       }}>
         <button
