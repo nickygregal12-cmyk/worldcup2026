@@ -1014,11 +1014,15 @@ export default function Predictions() {
               )}
               <button
                 onClick={() => {
-                  // Read directly from DOM refs for iOS reliability
                   const homeInput = inputRefs.current[`${match.id}-home`]
                   const awayInput = inputRefs.current[`${match.id}-away`]
+                  console.log('Save clicked:', match.id)
+                  console.log('homeInput:', homeInput, 'value:', homeInput?.value)
+                  console.log('awayInput:', awayInput, 'value:', awayInput?.value)
+                  console.log('pred state:', predictions[match.id])
                   const homeVal = homeInput ? parseInt(homeInput.value.replace(/[^0-9]/g, '')) : NaN
                   const awayVal = awayInput ? parseInt(awayInput.value.replace(/[^0-9]/g, '')) : NaN
+                  console.log('homeVal:', homeVal, 'awayVal:', awayVal)
                   if (!isNaN(homeVal) && !isNaN(awayVal)) {
                     // Update state first then save
                     setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], home: homeVal, away: awayVal } }))
