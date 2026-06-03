@@ -136,12 +136,18 @@ export default function Knockout() {
     setKnockoutPicks(prev => ({ ...prev, [mn]: newPick }))
     setSaving(prev => ({ ...prev, [mn]: true }))
 
-    await supabase.from('knockout_picks').upsert({
+    const { error: upsertErr } = await supabase.from('knockout_picks').upsert({
       user_id: user.id, match_number: mn,
       winner_team_id: winnerId,
       home_team_id: home?.id,
       away_team_id: away?.id,
     }, { onConflict: 'user_id,match_number' })
+
+    if (upsertErr) {
+      console.error('Knockout save error:', upsertErr)
+      setSaving(prev => ({ ...prev, [mn]: false }))
+      return
+    }
 
     setSaving(prev => ({ ...prev, [mn]: false }))
     setSaved(prev => ({ ...prev, [mn]: true }))
