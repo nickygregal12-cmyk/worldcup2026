@@ -292,10 +292,10 @@ export default function Leagues() {
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
       {/* Header */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '20px' }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(0,30,80,0.88) 0%, rgba(0,94,184,0.82) 100%), url(/leagues-bg.jpg) center/cover no-repeat', padding: '20px' }}>
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: '800' }}>👥 Leagues</h1>
+            <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'white' }}>👥 Leagues</h1>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => { setShowJoin(!showJoin); setShowCreate(false); setError('') }} className="btn btn-secondary btn-sm">Join</button>
               <button onClick={() => { setShowCreate(!showCreate); setShowJoin(false); setError('') }}

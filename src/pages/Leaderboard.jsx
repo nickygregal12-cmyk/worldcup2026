@@ -80,10 +80,10 @@ export default function Leaderboard() {
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
       {/* Header */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '20px' }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(0,30,80,0.88) 0%, rgba(0,94,184,0.85) 100%), url(/leaderboard-bg.jpg) center/cover no-repeat', padding: '20px', color: 'white' }}>
         <div className="container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h1 style={{ fontSize: '22px', fontWeight: '800' }}>🏆 Leaderboard</h1>
+            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white' }}>🏆 Leaderboard</h1>
             <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
               {currentPlayers.length} player{currentPlayers.length !== 1 ? 's' : ''}
             </span>
@@ -123,7 +123,7 @@ export default function Leaderboard() {
             </div>
           )}
 
-          <input className="input" placeholder="Search players..."
+          <input className="input" placeholder="Search players..." style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "white" }}
             value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} />
         </div>
       </div>

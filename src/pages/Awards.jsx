@@ -197,7 +197,7 @@ export default function Awards() {
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #003087, #005eb8)', padding: '24px 20px', color: 'white', textAlign: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(0,30,80,0.85) 0%, rgba(0,60,140,0.80) 100%), url(/awards-bg.jpg) center/cover no-repeat', padding: '24px 20px', color: 'white', textAlign: 'center' }}>
         <h1 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>🏅 Tournament Predictions</h1>
         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '16px' }}>
           {tournamentStarted ? 'Predictions locked at tournament kickoff' : 'Lock at kickoff · 11 Jun 20:00 BST'}
