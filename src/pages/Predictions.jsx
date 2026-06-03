@@ -640,10 +640,23 @@ export default function Predictions() {
 
   const clearGroupPredictions = async () => {
     if (!user) return
-    const groupMatchIds = groupMatches.map(m => m.id)
+    const groupMatchIds = groupMatches.map(m => m.id).filter(id => {
+      const m = matches.find(m => m.id === id)
+      return m && !isLocked(m.kickoff_time)
+    })
     setPredictions(prev => { const next = { ...prev }; groupMatchIds.forEach(id => delete next[id]); return next })
     await supabase.from('predictions').delete().in('match_id', groupMatchIds).eq('user_id', user.id)
     setShowClearConfirm(false)
+    loadProfile(user.id)
+  }
+
+  const clearAllPredictions = async () => {
+    if (!user) return
+    const unlockedIds = matches.filter(m => !isLocked(m.kickoff_time)).map(m => m.id)
+    setPredictions(prev => { const next = { ...prev }; unlockedIds.forEach(id => delete next[id]); return next })
+    await supabase.from('predictions').delete().in('match_id', unlockedIds).eq('user_id', user.id)
+    setShowClearConfirm(false)
+    loadProfile(user.id)
   }
 
   const clearDatePredictions = async (dateMatches) => {
@@ -1347,7 +1360,7 @@ export default function Predictions() {
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
                     {/* Item 3: clear per day */}
                     {user && hasPreds && hasUnlocked && (
-                      <button onClick={() => clearDatePredictions(dayMatches)} style={{
+                      <button onClick={() => setShowClearConfirm(dayMatches)} style={{
                         fontSize: '11px', padding: '3px 8px', borderRadius: 'var(--radius-full)',
                         border: '1px solid var(--border-medium)', background: 'var(--bg-card)',
                         color: 'var(--text-muted)', cursor: 'pointer',
@@ -1398,10 +1411,16 @@ export default function Predictions() {
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
               {showClearConfirm === 'group'
                 ? `Clear all unlocked predictions in Group ${activeGroup}? This cannot be undone.`
-                : 'Clear all unlocked predictions for this date? This cannot be undone.'}
+                : Array.isArray(showClearConfirm)
+                ? 'Clear all unlocked predictions for this date? This cannot be undone.'
+                : 'Clear ALL unlocked predictions? This cannot be undone.'}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => showClearConfirm === 'group' ? clearGroupPredictions() : clearDatePredictions([])} className="btn btn-primary" style={{ background: '#e53935', flex: 1 }}>Clear</button>
+              <button onClick={() => {
+                if (showClearConfirm === 'group') clearGroupPredictions()
+                else if (Array.isArray(showClearConfirm)) clearDatePredictions(showClearConfirm)
+                else clearAllPredictions()
+              }} className="btn btn-primary" style={{ background: '#e53935', flex: 1 }}>Clear</button>
               <button onClick={() => setShowClearConfirm(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
             </div>
           </div>
