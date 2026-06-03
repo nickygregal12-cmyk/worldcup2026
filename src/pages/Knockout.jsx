@@ -148,14 +148,27 @@ export default function Knockout() {
     if (existingDb) {
       const { error } = await supabase
         .from('knockout_picks')
-        .update({ winner_team_id: winnerId, home_team_id: home?.id, away_team_id: away?.id })
+        .update({
+          winner_team_id: winnerId,
+          team_id: winnerId,
+          home_team_id: home?.id,
+          away_team_id: away?.id,
+        })
         .eq('user_id', user.id)
         .eq('match_number', mn)
       upsertErr = error
     } else {
       const { error } = await supabase
         .from('knockout_picks')
-        .insert({ user_id: user.id, match_number: mn, winner_team_id: winnerId, home_team_id: home?.id, away_team_id: away?.id })
+        .insert({
+          user_id: user.id,
+          match_number: mn,
+          stage: matchDef.stage || activeStage || 'r32',
+          team_id: winnerId,
+          winner_team_id: winnerId,
+          home_team_id: home?.id,
+          away_team_id: away?.id,
+        })
       upsertErr = error
     }
 
