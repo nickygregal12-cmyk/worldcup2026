@@ -116,6 +116,15 @@ export default function Predictions() {
     }
   }, [user])
 
+  // Re-fetch match data when returning to tab (picks up admin score changes)
+  useEffect(() => {
+    const handleVisibility = () => { if (!document.hidden) loadMatches() }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [])
+    }
+  }, [user])
+
   useEffect(() => {
     if (profile) setJokersRemaining(profile.jokers_group_remaining ?? 8)
   }, [profile])
@@ -328,7 +337,7 @@ export default function Predictions() {
 
   // Item 7: colour coding for completed match result vs prediction
   const getResultColour = (match, pred) => {
-    if (match.status !== 'completed' || pred?.home === undefined) return null
+    if ((!match.home_score && match.home_score !== 0) || pred?.home === undefined) return null
     const predHome = Number(pred.home), predAway = Number(pred.away)
     const actHome = match.home_score, actAway = match.away_score
     if (predHome === actHome && predAway === actAway) return 'gold'   // exact score
@@ -409,7 +418,7 @@ export default function Predictions() {
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {locked && <span className="badge badge-red">🔒</span>}
             {!locked && hasPrediction && !hasJoker && <span className="badge badge-green">✓</span>}
-            {match.status === 'completed' && (
+            {(match.home_score !== null && match.home_score !== undefined) && (
               <span className="badge badge-gray">{match.home_score}–{match.away_score}</span>
             )}
           </div>
@@ -531,7 +540,7 @@ export default function Predictions() {
         )}
 
         {/* Completed match — prediction vs result */}
-        {locked && match.status === 'completed' && hasPrediction && (
+        {locked && (match.home_score !== null && match.home_score !== undefined) && hasPrediction && (
           <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
             <span style={{ color: 'var(--text-muted)' }}>
               Your pick: <strong>{pred.home} – {pred.away}</strong>
