@@ -572,11 +572,13 @@ export default function AdminPanel() {
 
   // Settings
   const updateSetting = async (key, value) => {
-    await supabase.from('app_settings').upsert({ key, value, updated_by: user.id }, { onConflict: 'key' })
+    const { error } = await supabase.from('app_settings').upsert({ key, value, updated_by: user.id }, { onConflict: 'key' })
+    if (error) { setActionResult(`❌ Error saving setting: ${error.message}`); return }
     setSettings(prev => ({ ...prev, [key]: value }))
     await logAudit('SETTING_CHANGE', { key, value })
-    // Reload app settings in global store so changes take effect immediately
-    useAppStore.getState().loadAppSettings()
+    // Reload app settings in global store so phase changes take effect immediately
+    await useAppStore.getState().loadAppSettings()
+    setActionResult(`✅ Setting saved: ${key} = ${value}`)
   }
 
   const recalcAllPoints = async () => {

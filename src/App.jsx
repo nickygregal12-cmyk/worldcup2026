@@ -38,9 +38,15 @@ function AdminRoute({ children }) {
 
 export default function App() {
   const { initialize, isLoading } = useAuthStore()
-  const { darkMode } = useAppStore()
+  const { darkMode, loadAppSettings } = useAppStore()
 
   useEffect(() => { initialize() }, [])
+  useEffect(() => { loadAppSettings() }, [])
+  // Refresh settings every 30 seconds so phase changes propagate
+  useEffect(() => {
+    const interval = setInterval(() => loadAppSettings(), 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     if (darkMode) {
