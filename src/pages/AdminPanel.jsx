@@ -753,9 +753,6 @@ export default function AdminPanel() {
           />
         )}
 
-          />
-        )}
-
         {/* ── KO PREDICTOR ── */}
         {activeTab === 'ko' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
