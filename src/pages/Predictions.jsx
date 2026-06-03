@@ -399,14 +399,17 @@ export default function Predictions() {
         {/* Match info row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {viewMode === 'date' ? `Group ${match.group?.name} · ${formatTime(match.kickoff_time)}` : `${formatDate(match.kickoff_time)} · ${formatTime(match.kickoff_time)}`}
+            {match.match_number && <span style={{ marginRight: '6px' }}>Match {match.match_number} ·</span>}
+            {viewMode === 'date'
+              ? `Grp ${match.group?.name} · ${formatTime(match.kickoff_time)}`
+              : `${formatDate(match.kickoff_time)} · ${formatTime(match.kickoff_time)}`}
             {match.venue?.city && <span style={{ marginLeft: '6px' }}>· {match.venue.city} {VENUE_FLAGS[match.venue.city] || ''}</span>}
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            {locked && <span className="badge badge-red">🔒 Locked</span>}
-            {!locked && hasPrediction && !hasJoker && <span className="badge badge-green">✓ Saved</span>}
+            {locked && <span className="badge badge-red">🔒</span>}
+            {!locked && hasPrediction && !hasJoker && <span className="badge badge-green">✓</span>}
             {match.status === 'completed' && (
-              <span className="badge badge-gray">{match.home_score} – {match.away_score}</span>
+              <span className="badge badge-gray">{match.home_score}–{match.away_score}</span>
             )}
           </div>
         </div>
@@ -728,36 +731,27 @@ export default function Predictions() {
         </div>
       )}
 
-      {/* Sticky header */}
-      <div style={{ background: 'linear-gradient(135deg, #0a0a0a, #0a1a0a)', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '16px 20px', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, color: 'white' }}>
+      {/* Sticky header — Knockout-style tab bar */}
+      <div style={{ background: 'linear-gradient(135deg, #0a0a0a, #0a1a0a)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, color: 'white' }}>
         <div className="container">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+
+          {/* Row 1: Title + joker + count */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h1 style={{ fontSize: '20px', fontWeight: '800', color: 'white' }}>⚽ Predictions</h1>
-              <Link to="/how-to-play" style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.7)', flexShrink: 0 }}>?</Link>
+              <h1 style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>⚽ Predictions</h1>
+              <Link to="/how-to-play" style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.6)', flexShrink: 0, textDecoration: 'none' }}>?</Link>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {user && (
                 <div className={`joker-counter ${jokersRemaining === 0 ? 'joker-counter-empty' : jokersRemaining <= 2 ? 'joker-counter-low' : 'joker-counter-active'}`}
                   style={{ animation: jokersRemaining > 0 && showJokerReminder ? 'pulse 1.5s infinite' : 'none' }}>
-                  <span style={{ fontSize: '14px', lineHeight: 1 }}>🃏</span>
-                  <span style={{ fontSize: '14px', fontWeight: '800' }}>{jokersRemaining}</span>
-                  <span style={{ fontSize: '11px', fontWeight: '500', opacity: 0.8 }}>left</span>
+                  <span style={{ fontSize: '13px', lineHeight: 1 }}>🃏</span>
+                  <span style={{ fontSize: '13px', fontWeight: '800' }}>{jokersRemaining}</span>
+                  <span style={{ fontSize: '10px', fontWeight: '500', opacity: 0.8 }}>left</span>
                 </div>
               )}
-              <div style={{ display: 'flex', background: 'rgba(255,255,255,0.1)', borderRadius: 'var(--radius-full)', padding: '3px', gap: '2px' }}>
-                {['group', 'date'].map(mode => (
-                  <button key={mode} onClick={() => setViewMode(mode)} style={{
-                    padding: '5px 12px', borderRadius: 'var(--radius-full)',
-                    fontSize: '12px', fontWeight: '600', border: 'none', cursor: 'pointer',
-                    background: viewMode === mode ? 'rgba(255,255,255,0.9)' : 'transparent',
-                    color: viewMode === mode ? '#0a0a0a' : 'rgba(255,255,255,0.6)',
-                    transition: 'all 0.15s',
-                  }}>{mode === 'group' ? 'By Group' : 'By Date'}</button>
-                ))}
-              </div>
               {user && (
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
                   <span style={{ fontWeight: '700', color: '#4ade80' }}>{getPredictionCount()}</span>
                   <span> / {matches.length}</span>
                 </div>
@@ -765,29 +759,61 @@ export default function Predictions() {
             </div>
           </div>
 
-          {/* Group tabs row */}
-          {viewMode === 'group' && (
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', flex: 1 }}>
-                {GROUPS.map(g => (
-                  <button key={g} onClick={() => setActiveGroup(g)} style={{
-                    padding: '6px 14px', borderRadius: 'var(--radius-full)', fontSize: '13px', fontWeight: '700',
-                    background: activeGroup === g ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.1)',
-                    color: activeGroup === g ? '#0a0a0a' : 'rgba(255,255,255,0.65)',
-                    border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s', flexShrink: 0,
-                  }}>Group {g}</button>
-                ))}
-              </div>
-              {user && (
-                <button onClick={() => setShowClearConfirm('group')} style={{
-                  display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 10px',
-                  borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '600',
-                  border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)',
-                  color: 'rgba(255,255,255,0.7)', cursor: 'pointer', flexShrink: 0,
-                }}>🗑️ Clear</button>
-              )}
-            </div>
-          )}
+          {/* Row 2: Tab bar — Groups A-L + By Date, Knockout style */}
+          <div style={{ display: 'flex', overflowX: 'auto', marginTop: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', scrollbarWidth: 'none' }}>
+
+            {/* By Date tab first */}
+            <button onClick={() => setViewMode('date')} style={{
+              padding: '10px 14px', fontSize: '12px', fontWeight: viewMode === 'date' ? '700' : '400',
+              color: viewMode === 'date' ? 'white' : 'rgba(255,255,255,0.45)',
+              borderBottom: viewMode === 'date' ? '2px solid #4ade80' : '2px solid transparent',
+              background: 'none', border: 'none', borderBottom: viewMode === 'date' ? '2px solid #4ade80' : '2px solid transparent',
+              cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+            }}>
+              By Date
+              <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', fontWeight: '500' }}>All groups</span>
+            </button>
+
+            {/* Divider */}
+            <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 2px', flexShrink: 0 }} />
+
+            {/* Group tabs */}
+            {GROUPS.map(g => {
+              const gMatches = matches.filter(m => m.group?.name === g)
+              const gDone = gMatches.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
+              const gComplete = gDone === gMatches.length && gMatches.length > 0
+              const isActive = viewMode === 'group' && activeGroup === g
+              return (
+                <button key={g} onClick={() => { setViewMode('group'); setActiveGroup(g) }} style={{
+                  padding: '10px 12px', fontSize: '12px', fontWeight: isActive ? '700' : '400',
+                  color: isActive ? 'white' : 'rgba(255,255,255,0.45)',
+                  borderBottom: isActive ? '2px solid #4ade80' : '2px solid transparent',
+                  background: 'none', border: 'none',
+                  cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                }}>
+                  Grp {g}
+                  <span style={{ fontSize: '10px', color: gComplete ? '#4ade80' : 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
+                    {gComplete ? '✓' : `${gDone}/${gMatches.length}`}
+                  </span>
+                </button>
+              )
+            })}
+
+            {/* Clear button — only in group mode */}
+            {viewMode === 'group' && user && (
+              <button onClick={() => setShowClearConfirm('group')} style={{
+                padding: '10px 10px', fontSize: '11px', fontWeight: '500',
+                color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none',
+                borderBottom: '2px solid transparent', cursor: 'pointer', flexShrink: 0,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+              }}>
+                🗑️
+                <span style={{ fontSize: '10px' }}>Clear</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
