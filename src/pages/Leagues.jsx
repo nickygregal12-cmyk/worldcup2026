@@ -1,9 +1,88 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
+
+function KnockoutPicksView({ userId }) {
+  const [picks, setPicks] = React.useState([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    supabase.from('knockout_picks')
+      .select('match_number, stage, winner_team_id, is_joker, winner:winner_team_id(name, flag_emoji, short_code)')
+      .eq('user_id', userId)
+      .order('match_number', { ascending: true })
+      .then(({ data }) => { setPicks(data || []); setLoading(false) })
+  }, [userId])
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
+  if (picks.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+      <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏆</div>
+      <div style={{ fontWeight: '700' }}>No knockout picks yet</div>
+    </div>
+  )
+
+  const stages = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-Finals', sf: 'Semi-Finals', final: 'Final' }
+  const grouped = picks.reduce((acc, p) => { const s = p.stage || 'r32'; if (!acc[s]) acc[s] = []; acc[s].push(p); return acc }, {})
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      {Object.entries(grouped).map(([stage, stagePicks]) => (
+        <div key={stage}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+            {stages[stage] || stage}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {stagePicks.map(pick => (
+              <div key={pick.match_number} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '24px' }}>#{pick.match_number}</span>
+                <span style={{ fontSize: '18px' }}>{pick.winner?.flag_emoji}</span>
+                <span style={{ fontSize: '13px', fontWeight: '700' }}>{pick.winner?.name || '?'}</span>
+                {pick.is_joker && <span style={{ marginLeft: 'auto', fontSize: '12px' }}>🃏</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function AwardPredsView({ userId }) {
+  const [preds, setPreds] = React.useState([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    supabase.from('award_predictions')
+      .select('award_type, predicted_player_name, predicted_team_id')
+      .eq('user_id', userId)
+      .then(({ data }) => { setPreds(data || []); setLoading(false) })
+  }, [userId])
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
+  if (preds.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+      <div style={{ fontSize: '32px', marginBottom: '8px' }}>🥇</div>
+      <div style={{ fontWeight: '700' }}>No award predictions yet</div>
+    </div>
+  )
+
+  const labels = { golden_boot: '⚽ Golden Boot', golden_glove: '🧤 Golden Glove', player_of_tournament: '🌟 Player of the Tournament', total_goals: '🎯 Total Goals' }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {preds.map(pred => (
+        <div key={pred.award_type} style={{ padding: '12px 14px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '4px' }}>{labels[pred.award_type] || pred.award_type}</div>
+          <div style={{ fontSize: '14px', fontWeight: '700' }}>{pred.predicted_player_name || '—'}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function Leagues() {
   const { user, isAdmin } = useAuthStore()
@@ -37,7 +116,6 @@ export default function Leagues() {
   useEffect(() => { if (user) { loadMyLeagues(); loadMyKoLeagues() } }, [user])
 
   const loadMyLeagues = async () => {
-    // Fix 1: get real member count from league_members table
     const { data: memberships } = await supabase
       .from('league_members')
       .select('league_id, league:league_id(id, name, invite_code, is_global, created_by)')
@@ -46,7 +124,6 @@ export default function Leagues() {
 
     if (!memberships) { setLoading(false); return }
 
-    // Get real counts for each league
     const leagueIds = memberships.map(m => m.league_id)
     const { data: counts } = await supabase
       .from('league_members')
@@ -60,10 +137,16 @@ export default function Leagues() {
       ...m,
       memberCount: countMap[m.league_id] || 1,
     }))
-    // Pin global leagues to top
     leagues.sort((a, b) => (b.league?.is_global ? 1 : 0) - (a.league?.is_global ? 1 : 0))
     setMyLeagues(leagues)
     setLoading(false)
+
+    // Auto-expand global league and load its members
+    const globalLeague = leagues.find(m => m.league?.is_global)
+    if (globalLeague && !expandedLeague) {
+      setExpandedLeague(globalLeague.league_id)
+      loadLeagueMembers(globalLeague.league_id)
+    }
   }
 
   const loadMyKoLeagues = async () => {
@@ -668,51 +751,72 @@ export default function Leagues() {
               </div>
               <button onClick={() => setMemberModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
             </div>
+
+            {/* Tabs */}
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)' }}>
+              {['group', 'knockout', 'awards'].map(tab => (
+                <button key={tab} onClick={() => setMemberModal(prev => ({ ...prev, tab }))} style={{
+                  flex: 1, padding: '10px', fontSize: '12px', fontWeight: memberModal.tab === tab || (!memberModal.tab && tab === 'group') ? '700' : '400',
+                  color: memberModal.tab === tab || (!memberModal.tab && tab === 'group') ? 'var(--text-primary)' : 'var(--text-muted)',
+                  borderBottom: memberModal.tab === tab || (!memberModal.tab && tab === 'group') ? '2px solid var(--scottish-navy)' : '2px solid transparent',
+                  background: 'none', border: 'none', cursor: 'pointer', textTransform: 'capitalize',
+                }}>
+                  {tab === 'group' ? '⚽ Groups' : tab === 'knockout' ? '🏆 Knockout' : '🥇 Awards'}
+                </button>
+              ))}
+            </div>
+
             <div style={{ overflowY: 'auto', padding: '16px', flex: 1 }}>
               {loadingPreds ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-              ) : memberPredictions.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
-                  <div style={{ fontWeight: '700', marginBottom: '4px' }}>Picks are private</div>
-                  <div style={{ fontSize: '13px' }}>
-                    {tournamentLive
-                      ? 'This user has chosen to keep their predictions private'
-                      : 'Picks become visible once matches kick off on 11 Jun — unless the user enables "Show Future Predictions" in their profile'}
+              ) : (!memberModal.tab || memberModal.tab === 'group') ? (
+                memberPredictions.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
+                    <div style={{ fontWeight: '700', marginBottom: '4px' }}>Picks are private</div>
+                    <div style={{ fontSize: '13px' }}>
+                      {tournamentLive
+                        ? 'This user has chosen to keep their predictions private'
+                        : 'Picks become visible once matches kick off on 11 Jun — unless the user enables "Show Future Predictions" in their profile'}
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {memberPredictions.map(pred => {
-                    const result = getPredResult(pred)
-                    const match = pred.match
-                    const kicked = new Date(match?.kickoff_time) <= new Date()
-                    return (
-                      <div key={pred.id} style={{
-                        display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '10px 12px', borderRadius: 'var(--radius-md)',
-                        background: result === 'exact' ? 'var(--accent-green-light)' : result === 'correct' ? 'var(--accent-blue-light)' : result === 'wrong' ? 'var(--accent-red-light)' : 'var(--bg-secondary)',
-                        border: `1px solid ${result === 'exact' ? 'rgba(0,122,51,0.2)' : result === 'correct' ? 'rgba(21,88,176,0.2)' : result === 'wrong' ? 'rgba(198,40,40,0.2)' : 'var(--border-light)'}`,
-                      }}>
-                        <span style={{ fontSize: '18px' }}>{match?.home_team?.flag_emoji}</span>
-                        <span style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>{match?.home_team?.short_code} vs {match?.away_team?.short_code}</span>
-                        <span style={{ fontSize: '18px' }}>{match?.away_team?.flag_emoji}</span>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '14px', minWidth: '48px', textAlign: 'center' }}>
-                          {pred.home_score} – {pred.away_score}
-                        </div>
-                        {match?.status === 'completed' && (
-                          <div style={{ fontSize: '11px', minWidth: '32px', textAlign: 'right' }}>
-                            {result === 'exact' ? '🎯' : result === 'correct' ? '✓' : '✗'}
-                            <div style={{ fontWeight: '700', color: result === 'exact' ? 'var(--accent-green)' : result === 'correct' ? 'var(--accent-blue)' : 'var(--accent-red)' }}>
-                              {pred.points_awarded || 0}pts
-                            </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {memberPredictions.map(pred => {
+                      const result = getPredResult(pred)
+                      const match = pred.match
+                      const kicked = new Date(match?.kickoff_time) <= new Date()
+                      return (
+                        <div key={pred.id} style={{
+                          display: 'flex', alignItems: 'center', gap: '10px',
+                          padding: '10px 12px', borderRadius: 'var(--radius-md)',
+                          background: result === 'exact' ? 'var(--accent-green-light)' : result === 'correct' ? 'var(--accent-blue-light)' : result === 'wrong' ? 'var(--accent-red-light)' : 'var(--bg-secondary)',
+                          border: `1px solid ${result === 'exact' ? 'rgba(0,122,51,0.2)' : result === 'correct' ? 'rgba(21,88,176,0.2)' : result === 'wrong' ? 'rgba(198,40,40,0.2)' : 'var(--border-light)'}`,
+                        }}>
+                          <span style={{ fontSize: '18px' }}>{match?.home_team?.flag_emoji}</span>
+                          <span style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>{match?.home_team?.short_code} vs {match?.away_team?.short_code}</span>
+                          <span style={{ fontSize: '18px' }}>{match?.away_team?.flag_emoji}</span>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '14px', minWidth: '48px', textAlign: 'center' }}>
+                            {pred.home_score} – {pred.away_score}
                           </div>
-                        )}
-                        {!kicked && <span style={{ fontSize: '10px', color: 'var(--accent-blue)', fontWeight: '700' }}>🔮</span>}
-                      </div>
-                    )
-                  })}
-                </div>
+                          {match?.status === 'completed' && (
+                            <div style={{ fontSize: '11px', minWidth: '32px', textAlign: 'right' }}>
+                              {result === 'exact' ? '🎯' : result === 'correct' ? '✓' : '✗'}
+                              <div style={{ fontWeight: '700', color: result === 'exact' ? 'var(--accent-green)' : result === 'correct' ? 'var(--accent-blue)' : 'var(--accent-red)' }}>
+                                {pred.points_awarded || 0}pts
+                              </div>
+                            </div>
+                          )}
+                          {!kicked && <span style={{ fontSize: '10px', color: 'var(--accent-blue)', fontWeight: '700' }}>🔮</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              ) : memberModal.tab === 'knockout' ? (
+                <KnockoutPicksView userId={memberModal.userId} />
+              ) : (
+                <AwardPredsView userId={memberModal.userId} />
               )}
             </div>
           </div>
