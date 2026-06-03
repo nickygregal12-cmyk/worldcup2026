@@ -7,6 +7,7 @@ const TABS = [
   { key: 'health',   label: '🩺 Health' },
   { key: 'matches',  label: '⚽ Matches' },
   { key: 'awards',   label: '🥇 Awards' },
+  { key: 'ko',       label: '🔥 KO Predictor' },
   { key: 'users',    label: '👥 Users' },
   { key: 'leagues',  label: '🏆 Leagues' },
   { key: 'points',   label: '🎯 Points' },
@@ -95,6 +96,18 @@ export default function AdminPanel() {
   const [actionResult, setActionResult] = useState('')
   const [awardResults, setAwardResults] = useState({})
   const [awardSaving, setAwardSaving] = useState({})
+
+  // KO Predictor state
+  const [koMatches, setKoMatches] = useState([])
+  const [koLeagues, setKoLeagues] = useState([])
+  const [koUsers, setKoUsers] = useState([])
+  const [koEditingMatch, setKoEditingMatch] = useState(null)
+  const [koScores, setKoScores] = useState({})
+  const [koSaving, setKoSaving] = useState({})
+  const [koStageFilter, setKoStageFilter] = useState('r32')
+  const [koPointAdjUser, setKoPointAdjUser] = useState(null)
+  const [koPointAdjAmount, setKoPointAdjAmount] = useState('')
+  const [koPointAdjReason, setKoPointAdjReason] = useState('')
   const [editingLeagueName, setEditingLeagueName] = useState(null) // leagueId
   const [editingLeagueNameVal, setEditingLeagueNameVal] = useState('')
   const [addingMemberTo, setAddingMemberTo] = useState(null) // leagueId
@@ -108,6 +121,10 @@ export default function AdminPanel() {
     if (!user || !isAdmin) { navigate('/'); return }
     loadAll()
   }, [user, isAdmin])
+
+  useEffect(() => {
+    if (activeTab === 'ko') loadKoData()
+  }, [activeTab])
 
   const loadAll = async () => {
     setLoading(true)
@@ -233,6 +250,101 @@ export default function AdminPanel() {
     setActionResult(`${awardType} result saved — points being awarded`)
     loadAwardResults()
     setAwardSaving(prev => ({ ...prev, [awardType]: false }))
+  }
+
+  // ── KO Predictor functions ──────────────────────────────────
+
+  const loadKoData = async () => {
+    const [matchRes, leagueRes, userRes] = await Promise.all([
+      supabase.from('matches')
+        .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code)')
+        .in('stage', ['r32','r16','qf','sf','3rd','final'])
+        .order('kickoff_time', { ascending: true }),
+      supabase.from('ko_leagues')
+        .select('*, creator:created_by(username), members:ko_league_members(user_id, profile:user_id(username))')
+        .order('created_at', { ascending: false }),
+      supabase.from('profiles')
+        .select('id, username, ko_points, ko_streak_current, ko_exact_scores, ko_jokers_remaining')
+        .order('ko_points', { ascending: false })
+        .limit(100),
+    ])
+    setKoMatches(matchRes.data || [])
+    setKoLeagues(leagueRes.data || [])
+    setKoUsers(userRes.data || [])
+  }
+
+  const saveKoMatchResult = async (match) => {
+    const s = koScores[match.id] || {}
+    if (s.home === undefined || s.away === undefined) return
+    setKoSaving(prev => ({ ...prev, [match.id]: true }))
+    const homeScore = parseInt(s.home)
+    const awayScore = parseInt(s.away)
+    const outcomeType = s.outcome_type || '90mins'
+    const winnerId = s.winner_id ||
+      (homeScore > awayScore ? match.home_team_id :
+       awayScore > homeScore ? match.away_team_id : null)
+
+    const { error } = await supabase.from('matches').update({
+      home_score: homeScore,
+      away_score: awayScore,
+      winner_team_id: winnerId,
+      outcome_type: outcomeType,
+      aet_home_score: s.aet_home ? parseInt(s.aet_home) : null,
+      aet_away_score: s.aet_away ? parseInt(s.aet_away) : null,
+      first_goal_band: s.first_goal_band || null,
+      status: 'completed',
+      use_manual_override: true,
+    }).eq('id', match.id)
+
+    if (error) { setActionResult(`❌ Error: ${error.message}`); setKoSaving(prev => ({ ...prev, [match.id]: false })); return }
+
+    const { error: rpcErr } = await supabase.rpc('calculate_ko_prediction_points', { p_match_id: match.id })
+    if (rpcErr) setActionResult(`⚠️ Score saved but KO points calc failed: ${rpcErr.message}`)
+    else setActionResult(`✅ KO Match ${match.match_number} result saved — points calculated`)
+
+    await logAudit('KO_SCORE_ENTRY', { match_id: match.id, match_number: match.match_number, home: homeScore, away: awayScore, outcome: outcomeType })
+    setKoEditingMatch(null)
+    loadKoData()
+    setKoSaving(prev => ({ ...prev, [match.id]: false }))
+  }
+
+  const recalcAllKoPoints = async () => {
+    setKoSaving(prev => ({ ...prev, recalc: true }))
+    const { data: userList } = await supabase.from('profiles').select('id')
+    let failed = 0
+    for (const u of userList || []) {
+      const { error } = await supabase.rpc('recalculate_user_ko_points', { p_user_id: u.id })
+      if (error) failed++
+    }
+    await logAudit('KO_RECALC_ALL', { user_count: userList?.length, failed })
+    setKoSaving(prev => ({ ...prev, recalc: false }))
+    setActionResult(`✅ KO points recalculated for ${userList?.length} users${failed > 0 ? ` (${failed} failed)` : ''}`)
+    loadKoData()
+  }
+
+  const applyKoPointAdjustment = async () => {
+    if (!koPointAdjUser || !koPointAdjAmount || !koPointAdjReason) {
+      setActionResult('Please fill in amount and reason'); return
+    }
+    const amount = parseInt(koPointAdjAmount)
+    if (isNaN(amount)) { setActionResult('Amount must be a number'); return }
+    const u = koUsers.find(u => u.id === koPointAdjUser)
+    const newPoints = (u?.ko_points || 0) + amount
+    const { error } = await supabase.from('profiles').update({ ko_points: newPoints }).eq('id', koPointAdjUser)
+    if (error) { setActionResult(`❌ Error: ${error.message}`); return }
+    await logAudit('KO_POINT_ADJUSTMENT', { user_id: koPointAdjUser, username: u?.username, amount, reason: koPointAdjReason, new_total: newPoints })
+    setActionResult(`✅ Adjusted ${u?.username} KO points by ${amount > 0 ? '+' : ''}${amount}`)
+    setKoPointAdjUser(null); setKoPointAdjAmount(''); setKoPointAdjReason('')
+    loadKoData()
+  }
+
+  const deleteKoLeague = async (leagueId, leagueName) => {
+    await supabase.from('ko_league_members').delete().eq('league_id', leagueId)
+    const { error } = await supabase.from('ko_leagues').delete().eq('id', leagueId)
+    if (error) { setActionResult(`❌ Error: ${error.message}`); return }
+    await logAudit('DELETE_KO_LEAGUE', { league_id: leagueId, name: leagueName })
+    setActionResult(`✅ Deleted KO league: ${leagueName}`)
+    loadKoData()
   }
 
   const logAudit = async (action, details) => {
@@ -641,6 +753,274 @@ export default function AdminPanel() {
           />
         )}
 
+          />
+        )}
+
+        {/* ── KO PREDICTOR ── */}
+        {activeTab === 'ko' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            {/* Info banner */}
+            <div className="card" style={{ background: '#fff3e0', border: '1px solid #ff9800' }}>
+              <div style={{ fontSize: '13px', color: '#e65100', fontWeight: '600' }}>
+                🔥 Knockout Predictor — "Your Second Chance" launches 27 Jun 23:00 BST when all teams are confirmed.
+                Use this panel to enter match results, manage leagues, and adjust points.
+              </div>
+            </div>
+
+            {/* Quick actions */}
+            <div className="card">
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '12px' }}>Quick Actions</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <button onClick={recalcAllKoPoints} disabled={koSaving.recalc} className="btn btn-primary" style={{ background: '#e65100' }}>
+                  {koSaving.recalc ? '⏳ Recalculating...' : '🔄 Recalculate All KO Points'}
+                </button>
+                <button onClick={loadKoData} className="btn btn-secondary">🔃 Refresh KO Data</button>
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+              {[
+                { label: 'KO Leagues', value: koLeagues.length, icon: '🏆' },
+                { label: 'Players', value: koUsers.length, icon: '👥' },
+                { label: 'Predictions', value: '—', icon: '🎯' },
+              ].map(s => (
+                <div key={s.label} className="card" style={{ textAlign: 'center', padding: '14px' }}>
+                  <div style={{ fontSize: '24px' }}>{s.icon}</div>
+                  <div style={{ fontWeight: '800', fontSize: '20px', fontFamily: 'var(--font-mono)' }}>{s.value}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Match results entry */}
+            <div className="card">
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '12px' }}>🔥 KO Match Results</div>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                {['r32','r16','qf','sf','3rd','final'].map(stage => (
+                  <button key={stage} onClick={() => setKoStageFilter(stage)} className="btn btn-sm" style={{
+                    background: koStageFilter === stage ? '#e65100' : 'var(--bg-card)',
+                    color: koStageFilter === stage ? 'white' : 'var(--text-secondary)',
+                    border: '1px solid var(--border-light)',
+                  }}>
+                    {stage.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {koMatches.filter(m => m.stage === koStageFilter).map(match => {
+                  const isEditing = koEditingMatch === match.id
+                  const s = koScores[match.id] || {}
+                  const isDraw = parseInt(s.home) === parseInt(s.away) && s.home !== '' && s.away !== ''
+                  return (
+                    <div key={match.id} className="card" style={{ border: match.status === 'completed' ? '1px solid var(--accent-green)' : '1px solid var(--border-light)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase' }}>
+                          Match #{match.match_number} · {fmt(match.kickoff_time)}
+                          {match.use_manual_override && <span style={{ marginLeft: '6px', color: 'var(--accent-orange)' }}>MANUAL</span>}
+                        </div>
+                        <span className={`badge ${match.status === 'completed' ? 'badge-green' : match.status === 'live' ? 'badge-red' : 'badge-gray'}`}>
+                          {match.status}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '22px' }}>{match.home_team?.flag_emoji || '🏳️'}</div>
+                          <div style={{ fontSize: '12px', fontWeight: '700' }}>{match.home_team?.short_code || '?'}</div>
+                        </div>
+                        <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: '800', fontFamily: 'var(--font-mono)' }}>
+                          {match.status === 'completed' ? `${match.home_score ?? '?'} – ${match.away_score ?? '?'}` : 'vs'}
+                          {match.outcome_type && match.outcome_type !== '90mins' && (
+                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                              {match.outcome_type === 'et' ? 'AET' : 'PENS'}
+                            </div>
+                          )}
+                        </div>
+                        <div style={{ textAlign: 'center' }}>
+                          <div style={{ fontSize: '22px' }}>{match.away_team?.flag_emoji || '🏳️'}</div>
+                          <div style={{ fontSize: '12px', fontWeight: '700' }}>{match.away_team?.short_code || '?'}</div>
+                        </div>
+                      </div>
+
+                      {isEditing && (
+                        <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', marginBottom: '10px' }}>
+                          {/* Score */}
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
+                            <input type="number" min="0" max="20" placeholder="H"
+                              value={s.home || ''}
+                              onChange={e => setKoScores(p => ({ ...p, [match.id]: { ...s, home: e.target.value } }))}
+                              style={{ width: '52px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                            <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>–</span>
+                            <input type="number" min="0" max="20" placeholder="A"
+                              value={s.away || ''}
+                              onChange={e => setKoScores(p => ({ ...p, [match.id]: { ...s, away: e.target.value } }))}
+                              style={{ width: '52px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>90 min score</span>
+                          </div>
+
+                          {/* Outcome type */}
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>How did it end?</div>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              {['90mins', 'et', 'penalties'].map(ot => (
+                                <button key={ot} onClick={() => setKoScores(p => ({ ...p, [match.id]: { ...s, outcome_type: ot } }))}
+                                  style={{
+                                    padding: '5px 10px', fontSize: '12px', fontWeight: '600', borderRadius: '6px', cursor: 'pointer',
+                                    background: (s.outcome_type || '90mins') === ot ? '#e65100' : 'var(--bg-card)',
+                                    color: (s.outcome_type || '90mins') === ot ? 'white' : 'var(--text-secondary)',
+                                    border: '1px solid var(--border-light)',
+                                  }}>
+                                  {ot === '90mins' ? '90 mins' : ot === 'et' ? 'Extra Time' : 'Penalties'}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Winner picker (ET or Pens) */}
+                          {(s.outcome_type === 'et' || s.outcome_type === 'penalties') && (
+                            <div style={{ marginBottom: '10px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>Winner</div>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                {[
+                                  { id: match.home_team_id, label: match.home_team?.short_code },
+                                  { id: match.away_team_id, label: match.away_team?.short_code },
+                                ].map(team => (
+                                  <button key={team.id} onClick={() => setKoScores(p => ({ ...p, [match.id]: { ...s, winner_id: team.id } }))}
+                                    style={{
+                                      padding: '5px 14px', fontSize: '13px', fontWeight: '700', borderRadius: '6px', cursor: 'pointer',
+                                      background: s.winner_id === team.id ? '#e65100' : 'var(--bg-card)',
+                                      color: s.winner_id === team.id ? 'white' : 'var(--text-secondary)',
+                                      border: '1px solid var(--border-light)',
+                                    }}>
+                                    {team.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* First goal band */}
+                          <div style={{ marginBottom: '10px' }}>
+                            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>First Goal Minute (optional)</div>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {['1-15','16-30','31-45','46-60','61-75','76-90','et','no_goals'].map(band => (
+                                <button key={band} onClick={() => setKoScores(p => ({ ...p, [match.id]: { ...s, first_goal_band: s.first_goal_band === band ? null : band } }))}
+                                  style={{
+                                    padding: '3px 8px', fontSize: '11px', borderRadius: '4px', cursor: 'pointer',
+                                    background: s.first_goal_band === band ? 'var(--accent-blue)' : 'var(--bg-card)',
+                                    color: s.first_goal_band === band ? 'white' : 'var(--text-muted)',
+                                    border: '1px solid var(--border-light)',
+                                  }}>
+                                  {band}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => saveKoMatchResult(match)} disabled={koSaving[match.id]} className="btn btn-primary btn-sm" style={{ background: '#e65100' }}>
+                              {koSaving[match.id] ? '...' : 'Save & Calculate Points'}
+                            </button>
+                            <button onClick={() => setKoEditingMatch(null)} className="btn btn-secondary btn-sm">Cancel</button>
+                          </div>
+                        </div>
+                      )}
+
+                      {!isEditing && (
+                        <button onClick={() => {
+                          setKoEditingMatch(match.id)
+                          setKoScores(p => ({ ...p, [match.id]: {
+                            home: match.home_score ?? '',
+                            away: match.away_score ?? '',
+                            outcome_type: match.outcome_type || '90mins',
+                            winner_id: match.winner_team_id || null,
+                            first_goal_band: match.first_goal_band || null,
+                          }}))
+                        }} className="btn btn-secondary btn-sm">
+                          ✏️ {match.status === 'completed' ? 'Edit Result' : 'Enter Result'}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+                {koMatches.filter(m => m.stage === koStageFilter).length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    No matches found for this stage
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* KO Leaderboard */}
+            <div className="card">
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '12px' }}>🔥 KO Leaderboard</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {koUsers.filter(u => u.ko_points > 0).slice(0, 20).map((u, i) => (
+                  <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
+                    <span style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-muted)', width: '24px' }}>#{i + 1}</span>
+                    <span style={{ flex: 1, fontSize: '13px', fontWeight: '600' }}>{u.username}</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '14px', color: '#e65100' }}>{u.ko_points}</span>
+                    <button onClick={() => setKoPointAdjUser(u.id)}
+                      style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none', cursor: 'pointer' }}>
+                      Adjust
+                    </button>
+                    {koPointAdjUser === u.id && (
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <input type="number" placeholder="±pts" value={koPointAdjAmount} onChange={e => setKoPointAdjAmount(e.target.value)}
+                          style={{ width: '70px', padding: '3px 6px', border: '1px solid var(--border-medium)', borderRadius: '4px', fontSize: '12px' }} />
+                        <input type="text" placeholder="reason" value={koPointAdjReason} onChange={e => setKoPointAdjReason(e.target.value)}
+                          style={{ width: '100px', padding: '3px 6px', border: '1px solid var(--border-medium)', borderRadius: '4px', fontSize: '12px' }} />
+                        <button onClick={applyKoPointAdjustment} style={{ padding: '3px 8px', background: '#e65100', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>✓</button>
+                        <button onClick={() => setKoPointAdjUser(null)} style={{ padding: '3px 8px', background: 'var(--bg-tertiary)', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>×</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {koUsers.filter(u => u.ko_points > 0).length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                    No KO points awarded yet — launches 27 Jun
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* KO Leagues */}
+            <div className="card">
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '12px' }}>🏆 KO Leagues ({koLeagues.length})</div>
+              {koLeagues.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                  No KO leagues created yet
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {koLeagues.map(league => (
+                    <div key={league.id} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <div>
+                          <div style={{ fontWeight: '700', fontSize: '14px' }}>{league.name}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                            Code: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700' }}>{league.invite_code}</span>
+                            · Created by {league.creator?.username || '?'}
+                            · {league.members?.length || 0} members
+                          </div>
+                        </div>
+                        <button onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league.id, leagueName: league.name })}
+                          className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
         {/* ── USERS ── */}
         {activeTab === 'users' && (
           <div>
@@ -899,6 +1279,12 @@ export default function AdminPanel() {
               { section: '🔧 Platform' },
               { key: 'maintenance_mode', label: 'Maintenance Mode', desc: 'Show maintenance message to all non-admin users', type: 'toggle' },
               { key: 'registration_open', label: 'Registration Open', desc: 'Allow new user registrations', type: 'toggle' },
+              { section: '🔥 Knockout Predictor' },
+              { key: 'ko_predictor_enabled', label: 'KO Predictor Enabled', desc: 'Show KO Predictor to users (launches 27 Jun)', type: 'toggle' },
+              { key: 'ko_predictions_open', label: 'KO Predictions Open', desc: 'Allow users to make/edit KO predictions', type: 'toggle' },
+              { key: 'ko_banner_visible', label: 'KO Banner Visible', desc: 'Show "Coming 28 Jun" banner on home page', type: 'toggle' },
+              { key: 'ko_autofill_enabled', label: 'KO Autofill Enabled', desc: 'Allow lucky dip autofill for KO predictions', type: 'toggle' },
+              { key: 'ko_first_goal_scorer_enabled', label: 'First Goal Scorer', desc: 'Enable first goal scorer predictions (post-launch)', type: 'toggle' },
             ].map((setting, idx) => (
               setting.section ? (
                 <div key={idx} style={{ fontWeight: '800', fontSize: '13px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: idx > 0 ? '8px' : 0 }}>
@@ -971,6 +1357,7 @@ export default function AdminPanel() {
                 else if (confirmAction.type === 'makeAdmin') makeAdmin(confirmAction.userId, confirmAction.username)
                 else if (confirmAction.type === 'removeMember') removeMemberFromLeague(confirmAction.leagueId, confirmAction.userId, confirmAction.username, confirmAction.leagueName)
                 else if (confirmAction.type === 'deleteLeague') deleteLeague(confirmAction.leagueId, confirmAction.leagueName)
+                else if (confirmAction.type === 'deleteKoLeague') deleteKoLeague(confirmAction.leagueId, confirmAction.leagueName)
                 setConfirmAction(null)
               }} className="btn btn-primary" style={{ background: '#e53935', flex: 1 }}>Confirm</button>
               <button onClick={() => setConfirmAction(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
