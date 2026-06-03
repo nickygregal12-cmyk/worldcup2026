@@ -122,8 +122,6 @@ export default function Predictions() {
     document.addEventListener('visibilitychange', handleVisibility)
     return () => document.removeEventListener('visibilitychange', handleVisibility)
   }, [])
-    }
-  }, [user])
 
   useEffect(() => {
     if (profile) setJokersRemaining(profile.jokers_group_remaining ?? 8)
