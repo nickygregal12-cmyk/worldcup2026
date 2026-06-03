@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 import { toApiName, normalise } from '../lib/teamNames.js'
@@ -116,12 +116,13 @@ export default function Predictions() {
     }
   }, [user])
 
-  // Re-fetch match data when returning to tab (picks up admin score changes)
+  const location = useLocation()
+
+  // Refetch matches every time this page is navigated to
+  // This picks up admin score changes immediately
   useEffect(() => {
-    const handleVisibility = () => { if (!document.hidden) loadMatches() }
-    document.addEventListener('visibilitychange', handleVisibility)
-    return () => document.removeEventListener('visibilitychange', handleVisibility)
-  }, [])
+    loadMatches()
+  }, [location.key])
 
   useEffect(() => {
     if (profile) setJokersRemaining(profile.jokers_group_remaining ?? 8)
