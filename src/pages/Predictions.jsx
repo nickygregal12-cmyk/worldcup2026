@@ -105,6 +105,7 @@ export default function Predictions() {
   const [showJokerReminder, setShowJokerReminder] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [scoreWarning, setScoreWarning] = useState(null) // Item 8: {matchId, side, value}
+  const [jokerConfirm, setJokerConfirm] = useState(null) // { matchId, currentJoker }
 
   useEffect(() => {
     loadMatches()
@@ -480,7 +481,14 @@ export default function Predictions() {
         {!isGuest && !locked && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: `1px solid ${hasJoker ? 'rgba(255,215,0,0.4)' : 'var(--border-light)'}` }}>
             <button
-              onClick={() => hasPrediction && canUseJoker && handleJoker(match.id, hasJoker)}
+              onClick={() => {
+                if (!hasPrediction || !canUseJoker) return
+                if (!hasJoker) {
+                  setJokerConfirm({ matchId: match.id, currentJoker: hasJoker })
+                } else {
+                  handleJoker(match.id, hasJoker) // removing joker needs no confirm
+                }
+              }}
               disabled={!hasPrediction || (!canUseJoker && !hasJoker)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '6px',
@@ -892,6 +900,31 @@ export default function Predictions() {
       </div>
 
       {/* Clear confirm modal */}
+      {/* Joker confirm modal */}
+      {jokerConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ maxWidth: '340px', width: '100%' }}>
+            <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>🃏 Use a Joker?</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              This doubles your points for this match if you get the result right.
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              You have <strong>{jokersRemaining}</strong> joker{jokersRemaining !== 1 ? 's' : ''} remaining. This cannot be undone once the match kicks off.
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => { handleJoker(jokerConfirm.matchId, jokerConfirm.currentJoker); setJokerConfirm(null) }}
+                className="btn btn-primary" style={{ flex: 1 }}>
+                Yes, use joker
+              </button>
+              <button onClick={() => setJokerConfirm(null)} className="btn btn-secondary" style={{ flex: 1 }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showClearConfirm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="card" style={{ maxWidth: '340px', width: '100%' }}>
