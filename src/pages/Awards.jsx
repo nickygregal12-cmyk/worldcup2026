@@ -138,6 +138,13 @@ export default function Awards() {
       await supabase.from('tournament_predictions')
         .upsert(upsert, { onConflict: 'user_id,prediction_type,team_id' })
     }
+
+    // Update awards_done — count player awards + 1 if any goals entered
+    const goalsEntered = groupGoals || knockoutGoals || totalGoals ? 1 : 0
+    const { data: awardPreds } = await supabase.from('award_predictions').select('award_type').eq('user_id', user.id)
+    const playerAwardsDone = awardPreds?.length || 0
+    await supabase.from('profiles').update({ awards_done: playerAwardsDone + goalsEntered }).eq('id', user.id)
+
     setGoalsSaving(false)
     setGoalsSaved(true)
     setTimeout(() => setGoalsSaved(false), 2000)

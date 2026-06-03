@@ -53,24 +53,30 @@ function KnockoutPicksView({ userId }) {
 
 function AwardPredsView({ userId }) {
   const [preds, setPreds] = React.useState([])
+  const [goals, setGoals] = React.useState([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
-    supabase.from('award_predictions')
-      .select('award_type, predicted_player_name, predicted_team_id')
-      .eq('user_id', userId)
-      .then(({ data }) => { setPreds(data || []); setLoading(false) })
+    Promise.all([
+      supabase.from('award_predictions').select('award_type, predicted_player_name').eq('user_id', userId),
+      supabase.from('tournament_predictions').select('prediction_type, int_value').eq('user_id', userId).in('prediction_type', ['group_goals', 'knockout_goals', 'total_goals'])
+    ]).then(([{ data: awardData }, { data: goalData }]) => {
+      setPreds(awardData || [])
+      setGoals(goalData || [])
+      setLoading(false)
+    })
   }, [userId])
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-  if (preds.length === 0) return (
+  if (preds.length === 0 && goals.length === 0) return (
     <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
       <div style={{ fontSize: '32px', marginBottom: '8px' }}>🥇</div>
       <div style={{ fontWeight: '700' }}>No award predictions yet</div>
     </div>
   )
 
-  const labels = { golden_boot: '⚽ Golden Boot', golden_glove: '🧤 Golden Glove', player_of_tournament: '🌟 Player of the Tournament', total_goals: '🎯 Total Goals' }
+  const labels = { golden_boot: '⚽ Golden Boot', golden_glove: '🧤 Golden Glove', player_of_tournament: '🌟 Player of the Tournament' }
+  const goalLabels = { group_goals: '⚽ Group Stage Goals', knockout_goals: '🏆 Knockout Goals', total_goals: '🌍 Tournament Total Goals' }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -78,6 +84,12 @@ function AwardPredsView({ userId }) {
         <div key={pred.award_type} style={{ padding: '12px 14px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '4px' }}>{labels[pred.award_type] || pred.award_type}</div>
           <div style={{ fontSize: '14px', fontWeight: '700' }}>{pred.predicted_player_name || '—'}</div>
+        </div>
+      ))}
+      {goals.map(g => (
+        <div key={g.prediction_type} style={{ padding: '12px 14px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '4px' }}>{goalLabels[g.prediction_type] || g.prediction_type}</div>
+          <div style={{ fontSize: '14px', fontWeight: '700' }}>{g.int_value} goals</div>
         </div>
       ))}
     </div>
