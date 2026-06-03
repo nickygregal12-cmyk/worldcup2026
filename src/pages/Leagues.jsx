@@ -418,7 +418,7 @@ export default function Leagues() {
                                   <span style={{ fontSize: '12px', fontWeight: '800', color: i < 3 ? ['var(--accent-gold)','var(--text-muted)','#cd7f32'][i] : 'var(--text-muted)', width: '20px' }}>
                                     #{i + 1}
                                   </span>
-                                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isMe ? '#007a33' : 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', color: isMe ? 'white' : 'var(--text-secondary)', flexShrink: 0 }}>
+                                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', color: isMe ? 'white' : 'var(--text-secondary)', flexShrink: 0 }}>
                                     {(member.profile?.username || '?')[0].toUpperCase()}
                                   </div>
                                   <div style={{ flex: 1, minWidth: 0 }}>

@@ -5,6 +5,7 @@ import { useAuthStore, useAppStore } from './store/index.js'
 import NavBar from './components/NavBar.jsx'
 import BottomNav from './components/BottomNav.jsx'
 import PWAInstall from './components/PWAInstall.jsx'
+import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
@@ -53,6 +54,7 @@ export default function App() {
   }
 
   return (
+    <ErrorBoundary>
     <div className="app-container">
       <NavBar />
       <main className="main-content">
@@ -76,5 +78,6 @@ export default function App() {
       <BottomNav />
       <PWAInstall />
     </div>
+    </ErrorBoundary>
   )
 }

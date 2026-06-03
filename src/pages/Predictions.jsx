@@ -909,7 +909,7 @@ export default function Predictions() {
               This doubles your points for this match if you get the result right.
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              You have <strong>{jokersRemaining}</strong> joker{jokersRemaining !== 1 ? 's' : ''} remaining. This cannot be undone once the match kicks off.
+              You have <strong>{jokersRemaining}</strong> joker{jokersRemaining !== 1 ? 's' : ''} remaining. You can remove it before kickoff, but not after.
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
