@@ -483,10 +483,16 @@ export default function AdminPanel() {
   }
 
   const resetMatchOverride = async (matchId) => {
-    const { error } = await supabase.from('matches').update({ use_manual_override: false, status: 'scheduled' }).eq('id', matchId)
-    if (error) { setActionResult(`Error: ${error.message}`); return }
+    const { error } = await supabase.from('matches').update({
+      use_manual_override: false,
+      status: 'scheduled',
+      home_score: null,
+      away_score: null,
+      winner_team_id: null,
+    }).eq('id', matchId)
+    if (error) { setActionResult(`❌ Error: ${error.message}`); return }
     await logAudit('RESET_OVERRIDE', { match_id: matchId })
-    setActionResult('Match override reset')
+    setActionResult('✅ Match fully reverted — score cleared, status back to scheduled')
     loadMatches()
   }
 
@@ -819,8 +825,22 @@ export default function AdminPanel() {
                         <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>–</span>
                         <input type="number" min="0" max="20" value={s.away} onChange={e => setScores(prev => ({ ...prev, [match.id]: { ...s, away: e.target.value } }))}
                           className="score-input" style={{ width: '52px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                        <button onClick={async () => {
+                          // Preview only — set score but keep scheduled, no points
+                          const homeScore = parseInt(s.home)
+                          const awayScore = parseInt(s.away)
+                          await supabase.from('matches').update({
+                            home_score: homeScore, away_score: awayScore,
+                            use_manual_override: true,
+                          }).eq('id', match.id)
+                          setActionResult('👁 Preview score set — status still scheduled, no points awarded. Use Revert to API to undo.')
+                          setEditingMatch(null)
+                          loadMatches()
+                        }} disabled={saving[match.id]} className="btn btn-sm" style={{ background: 'var(--accent-orange)', color: 'white', border: 'none' }}>
+                          👁 Preview Only
+                        </button>
                         <button onClick={() => saveMatchResult(match)} disabled={saving[match.id]} className="btn btn-primary btn-sm">
-                          {saving[match.id] ? '...' : 'Save'}
+                          {saving[match.id] ? '...' : '✅ Save & Award Points'}
                         </button>
                         <button onClick={() => setEditingMatch(null)} className="btn btn-secondary btn-sm">Cancel</button>
                       </div>
