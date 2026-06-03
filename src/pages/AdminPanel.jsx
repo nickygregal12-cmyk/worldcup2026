@@ -386,11 +386,12 @@ export default function AdminPanel() {
     setUserPredictions(predData || [])
 
     // Load knockout picks
-    const { data: koData } = await supabase
+    const { data: koData, error: koErr } = await supabase
       .from('knockout_picks')
-      .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), winner:winner_team_id(name,flag_emoji,short_code)')
+      .select('*')
       .eq('user_id', userId)
       .order('match_number', { ascending: true })
+    if (koErr) console.error('KO picks error:', koErr)
     setUserKoPicks(koData || [])
 
     // Load award predictions
@@ -1732,13 +1733,10 @@ export default function AdminPanel() {
                   ) : userKoPicks.map(pick => (
                     <div key={pick.id} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
                       <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
-                        Match #{pick.match_number} · Stage: {pick.stage?.toUpperCase()}
+                        Match #{pick.match_number} · {pick.stage?.toUpperCase()}
                       </div>
-                      <div style={{ fontSize: '13px' }}>
-                        {pick.home_team?.flag_emoji} {pick.home_team?.short_code} vs {pick.away_team?.flag_emoji} {pick.away_team?.short_code}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--accent-green)', marginTop: '4px' }}>
-                        Winner pick: {pick.winner?.flag_emoji} <strong>{pick.winner?.short_code || '?'}</strong>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                        Winner ID: <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>{pick.winner_team_id?.slice(-8)}</span>
                         {pick.is_joker && <span style={{ marginLeft: '6px', color: '#ff9800' }}>🃏 Joker</span>}
                       </div>
                     </div>
