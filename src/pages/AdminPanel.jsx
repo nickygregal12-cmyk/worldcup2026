@@ -117,10 +117,14 @@ export default function AdminPanel() {
   const [testLoading, setTestLoading] = useState(false)
 
   // Edit user predictions state
-  const [editingUserPreds, setEditingUserPreds] = useState(null) // userId
+  const [editingUserPreds, setEditingUserPreds] = useState(null)
   const [userPredictions, setUserPredictions] = useState([])
+  const [userKoPicks, setUserKoPicks] = useState([])
+  const [userAwardPreds, setUserAwardPreds] = useState([])
+  const [allMatches, setAllMatches] = useState([])
   const [loadingUserPreds, setLoadingUserPreds] = useState(false)
-  const [editedPreds, setEditedPreds] = useState({}) // matchId → {home, away}
+  const [editedPreds, setEditedPreds] = useState({})
+  const [editModalTab, setEditModalTab] = useState('group') // group | knockout | awards
   const [editingLeagueName, setEditingLeagueName] = useState(null) // leagueId
   const [editingLeagueNameVal, setEditingLeagueNameVal] = useState('')
   const [addingMemberTo, setAddingMemberTo] = useState(null) // leagueId
@@ -364,36 +368,80 @@ export default function AdminPanel() {
   const loadUserPredictions = async (userId) => {
     setLoadingUserPreds(true)
     setEditedPreds({})
-    const { data } = await supabase
+
+    // Load all group matches
+    const { data: allMatchData } = await supabase
+      .from('matches')
+      .select('id, match_number, kickoff_time, status, home_score, away_score, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code)')
+      .eq('stage', 'group')
+      .order('match_number', { ascending: true })
+    setAllMatches(allMatchData || [])
+
+    // Load user's existing group predictions
+    const { data: predData } = await supabase
       .from('predictions')
-      .select(`*, match:match_id(id, match_number, kickoff_time, status,
-        home_team:home_team_id(name, flag_emoji, short_code),
-        away_team:away_team_id(name, flag_emoji, short_code))`)
+      .select('*, match:match_id(id, match_number, kickoff_time, status, home_score, away_score, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))')
       .eq('user_id', userId)
       .order('match(match_number)', { ascending: true })
-    setUserPredictions(data || [])
+    setUserPredictions(predData || [])
+
+    // Load knockout picks
+    const { data: koData } = await supabase
+      .from('knockout_picks')
+      .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), winner:winner_team_id(name,flag_emoji,short_code)')
+      .eq('user_id', userId)
+      .order('match_number', { ascending: true })
+    setUserKoPicks(koData || [])
+
+    // Load award predictions
+    const { data: awardData } = await supabase
+      .from('award_predictions')
+      .select('*')
+      .eq('user_id', userId)
+    setUserAwardPreds(awardData || [])
+
     setLoadingUserPreds(false)
   }
 
-  const saveEditedPrediction = async (pred, userId) => {
-    const edited = editedPreds[pred.match_id]
-    if (!edited) return
-    const homeScore = parseInt(edited.home ?? pred.home_score)
-    const awayScore = parseInt(edited.away ?? pred.away_score)
-    const { error } = await supabase
-      .from('predictions')
-      .update({ home_score: homeScore, away_score: awayScore })
-      .eq('user_id', userId)
-      .eq('match_id', pred.match_id)
+  const saveEditedPrediction = async (matchId, homeScore, awayScore, userId, isNew = false) => {
+    const h = parseInt(homeScore)
+    const a = parseInt(awayScore)
+    if (isNaN(h) || isNaN(a)) return
+
+    let error
+    if (isNew) {
+      const { error: e } = await supabase.from('predictions').insert({
+        user_id: userId, match_id: matchId,
+        home_score: h, away_score: a,
+        bracket_type: 'main', is_confident: false,
+      })
+      error = e
+    } else {
+      const { error: e } = await supabase.from('predictions')
+        .update({ home_score: h, away_score: a })
+        .eq('user_id', userId).eq('match_id', matchId)
+      error = e
+    }
+
     if (error) { setActionResult(`❌ Error: ${error.message}`); return }
-    // Recalculate points for this match if completed
-    if (pred.match?.status === 'completed') {
-      await supabase.rpc('calculate_prediction_points', { p_match_id: pred.match_id })
+
+    // Check if match is completed and recalculate
+    const match = allMatches.find(m => m.id === matchId)
+    if (match?.status === 'completed') {
+      await supabase.rpc('calculate_prediction_points', { p_match_id: matchId })
       await supabase.rpc('recalculate_user_total_points', { p_user_id: userId })
     }
-    await logAudit('EDIT_USER_PREDICTION', { user_id: userId, match_id: pred.match_id, old_home: pred.home_score, old_away: pred.away_score, new_home: homeScore, new_away: awayScore })
-    setActionResult(`✅ Prediction updated`)
-    setEditedPreds(prev => { const n = { ...prev }; delete n[pred.match_id]; return n })
+
+    // Send admin notification to user
+    const username = users.find(u => u.id === userId)?.username
+    await supabase.from('profiles').update({
+      admin_message: `An admin updated your prediction for Match ${match?.match_number || ''} (${match?.home_team?.short_code} vs ${match?.away_team?.short_code}) to ${h}–${a}`,
+      admin_message_read: false,
+    }).eq('id', userId)
+
+    await logAudit('ADMIN_EDIT_PREDICTION', { user_id: userId, match_id: matchId, home: h, away: a, is_new: isNew })
+    setActionResult(`✅ Prediction ${isNew ? 'added' : 'updated'} for ${username}`)
+    setEditedPreds(prev => { const n = { ...prev }; delete n[matchId]; return n })
     loadUserPredictions(userId)
   }
 
@@ -1594,72 +1642,127 @@ export default function AdminPanel() {
       {/* Edit User Predictions Modal */}
       {editingUserPreds && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 300, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '20px', overflowY: 'auto' }}>
-          <div className="card" style={{ maxWidth: '500px', width: '100%', marginTop: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div className="card" style={{ maxWidth: '560px', width: '100%', marginTop: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div style={{ fontWeight: '800', fontSize: '16px' }}>
                 ✏️ Edit Predictions — {users.find(u => u.id === editingUserPreds)?.username}
               </div>
-              <button onClick={() => { setEditingUserPreds(null); setUserPredictions([]) }}
-                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
+              <button onClick={() => { setEditingUserPreds(null); setUserPredictions([]); setAllMatches([]) }}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>×</button>
             </div>
 
-            <div style={{ fontSize: '12px', color: 'var(--accent-orange)', background: '#fff3e0', padding: '8px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '14px', fontWeight: '600' }}>
-              ⚠️ Only edit completed match predictions — changes will trigger points recalculation
+            {/* Tabs */}
+            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', marginBottom: '14px' }}>
+              {[
+                { key: 'group', label: '⚽ Group (72)' },
+                { key: 'knockout', label: '🏆 Knockout' },
+                { key: 'awards', label: '🥇 Awards' },
+              ].map(tab => (
+                <button key={tab.key} onClick={() => setEditModalTab(tab.key)} style={{
+                  padding: '8px 14px', fontSize: '12px', fontWeight: editModalTab === tab.key ? '700' : '400',
+                  color: editModalTab === tab.key ? 'var(--text-primary)' : 'var(--text-muted)',
+                  borderBottom: editModalTab === tab.key ? '2px solid var(--scottish-navy)' : '2px solid transparent',
+                  background: 'none', border: 'none', cursor: 'pointer',
+                }}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ fontSize: '12px', color: '#e65100', background: '#fff3e0', padding: '8px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '12px', fontWeight: '600' }}>
+              ⚠️ User will be notified of any changes. All edits are logged.
             </div>
 
             {loadingUserPreds ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '60vh', overflowY: 'auto' }}>
-                {userPredictions.map(pred => {
-                  const match = pred.match
-                  if (!match) return null
-                  const isCompleted = match.status === 'completed'
-                  const edited = editedPreds[pred.match_id]
-                  const currentHome = edited?.home ?? pred.home_score
-                  const currentAway = edited?.away ?? pred.away_score
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '65vh', overflowY: 'auto' }}>
+
+                {/* GROUP PREDICTIONS */}
+                {editModalTab === 'group' && allMatches.map(match => {
+                  const existing = userPredictions.find(p => p.match_id === match.id)
+                  const edited = editedPreds[match.id]
+                  const currentHome = edited?.home ?? existing?.home_score ?? ''
+                  const currentAway = edited?.away ?? existing?.away_score ?? ''
                   const isDirty = edited !== undefined
+                  const isNew = !existing
 
                   return (
-                    <div key={pred.match_id} style={{
-                      padding: '10px 12px', background: isCompleted ? 'var(--bg-secondary)' : 'var(--bg-tertiary)',
-                      borderRadius: 'var(--radius-md)', opacity: isCompleted ? 1 : 0.5,
-                      border: isDirty ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                    <div key={match.id} style={{
+                      padding: '8px 12px', borderRadius: 'var(--radius-md)',
+                      background: isNew ? 'var(--accent-blue-light)' : 'var(--bg-secondary)',
+                      border: isDirty ? '1px solid var(--scottish-navy)' : isNew ? '1px solid var(--accent-blue)' : '1px solid var(--border-light)',
                     }}>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '6px' }}>
-                        Match {match.match_number} · {match.home_team?.short_code} vs {match.away_team?.short_code}
-                        {isCompleted && <span style={{ marginLeft: '6px', color: 'var(--accent-green)' }}>● Completed</span>}
-                        {!isCompleted && <span style={{ marginLeft: '6px', color: 'var(--text-muted)' }}>● {match.status}</span>}
-                        {pred.is_confident && <span style={{ marginLeft: '6px', color: '#ff9800' }}>🃏 Joker</span>}
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '5px' }}>
+                        M{match.match_number} · {match.home_team?.flag_emoji} {match.home_team?.short_code} vs {match.away_team?.short_code} {match.away_team?.flag_emoji}
+                        {isNew && <span style={{ marginLeft: '6px', color: 'var(--accent-blue)', fontWeight: '700' }}>NO PICK</span>}
+                        {match.status === 'completed' && <span style={{ marginLeft: '6px', color: 'var(--accent-green)' }}>● Done</span>}
+                        {existing?.is_confident && <span style={{ marginLeft: '6px', color: '#ff9800' }}>🃏</span>}
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', fontWeight: '600', minWidth: '60px' }}>{match.home_team?.flag_emoji} {match.home_team?.short_code}</span>
-                        <input type="number" min="0" max="20" value={currentHome ?? ''}
-                          disabled={!isCompleted}
-                          onChange={e => setEditedPreds(prev => ({ ...prev, [pred.match_id]: { home: e.target.value, away: prev[pred.match_id]?.away ?? pred.away_score } }))}
-                          style={{ width: '48px', height: '32px', textAlign: 'center', fontWeight: '700', fontSize: '16px', border: `2px solid ${isDirty ? 'var(--scottish-navy)' : 'var(--border-medium)'}`, borderRadius: 'var(--radius-sm)' }} />
+                        <input type="number" min="0" max="20" value={currentHome}
+                          onChange={e => setEditedPreds(prev => ({ ...prev, [match.id]: { home: e.target.value, away: prev[match.id]?.away ?? existing?.away_score ?? '' } }))}
+                          style={{ width: '44px', height: '30px', textAlign: 'center', fontWeight: '700', fontSize: '15px', border: `2px solid ${isDirty ? 'var(--scottish-navy)' : 'var(--border-medium)'}`, borderRadius: 'var(--radius-sm)' }} />
                         <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>–</span>
-                        <input type="number" min="0" max="20" value={currentAway ?? ''}
-                          disabled={!isCompleted}
-                          onChange={e => setEditedPreds(prev => ({ ...prev, [pred.match_id]: { away: e.target.value, home: prev[pred.match_id]?.home ?? pred.home_score } }))}
-                          style={{ width: '48px', height: '32px', textAlign: 'center', fontWeight: '700', fontSize: '16px', border: `2px solid ${isDirty ? 'var(--scottish-navy)' : 'var(--border-medium)'}`, borderRadius: 'var(--radius-sm)' }} />
-                        <span style={{ fontSize: '12px', fontWeight: '600', minWidth: '60px' }}>{match.away_team?.flag_emoji} {match.away_team?.short_code}</span>
+                        <input type="number" min="0" max="20" value={currentAway}
+                          onChange={e => setEditedPreds(prev => ({ ...prev, [match.id]: { away: e.target.value, home: prev[match.id]?.home ?? existing?.home_score ?? '' } }))}
+                          style={{ width: '44px', height: '30px', textAlign: 'center', fontWeight: '700', fontSize: '15px', border: `2px solid ${isDirty ? 'var(--scottish-navy)' : 'var(--border-medium)'}`, borderRadius: 'var(--radius-sm)' }} />
                         {isDirty && (
-                          <button onClick={() => saveEditedPrediction(pred, editingUserPreds)}
+                          <button onClick={() => saveEditedPrediction(match.id, editedPreds[match.id].home, editedPreds[match.id].away, editingUserPreds, isNew)}
                             className="btn btn-primary btn-sm" style={{ background: 'var(--scottish-navy)', marginLeft: 'auto' }}>
-                            Save
+                            {isNew ? '+ Add' : 'Save'}
                           </button>
                         )}
-                        {pred.points_awarded > 0 && !isDirty && (
-                          <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '700', color: 'var(--accent-green)', fontFamily: 'var(--font-mono)' }}>+{pred.points_awarded}pts</span>
+                        {existing && !isDirty && (
+                          <span style={{ marginLeft: 'auto', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                            {existing.points_awarded > 0 ? `+${existing.points_awarded}pts` : ''}
+                          </span>
                         )}
                       </div>
                     </div>
                   )
                 })}
-                {userPredictions.length === 0 && (
-                  <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '13px' }}>No predictions found for this user</div>
+
+                {/* KNOCKOUT PICKS */}
+                {editModalTab === 'knockout' && (
+                  userKoPicks.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                      No knockout picks made yet
+                    </div>
+                  ) : userKoPicks.map(pick => (
+                    <div key={pick.id} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
+                        Match #{pick.match_number} · Stage: {pick.stage?.toUpperCase()}
+                      </div>
+                      <div style={{ fontSize: '13px' }}>
+                        {pick.home_team?.flag_emoji} {pick.home_team?.short_code} vs {pick.away_team?.flag_emoji} {pick.away_team?.short_code}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--accent-green)', marginTop: '4px' }}>
+                        Winner pick: {pick.winner?.flag_emoji} <strong>{pick.winner?.short_code || '?'}</strong>
+                        {pick.is_joker && <span style={{ marginLeft: '6px', color: '#ff9800' }}>🃏 Joker</span>}
+                      </div>
+                    </div>
+                  ))
                 )}
+
+                {/* AWARD PREDICTIONS */}
+                {editModalTab === 'awards' && (
+                  userAwardPreds.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '13px' }}>
+                      No award predictions made yet
+                    </div>
+                  ) : userAwardPreds.map(award => (
+                    <div key={award.id} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>
+                        {award.award_type?.replace(/_/g, ' ')}
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: '700' }}>
+                        {award.predicted_player_name || '—'}
+                      </div>
+                    </div>
+                  ))
+                )}
+
               </div>
             )}
           </div>

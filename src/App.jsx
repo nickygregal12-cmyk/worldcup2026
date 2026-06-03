@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore, useAppStore } from './store/index.js'
+import { supabase } from './lib/supabase.js'
 
 import NavBar from './components/NavBar.jsx'
 import BottomNav from './components/BottomNav.jsx'
@@ -37,8 +38,9 @@ function AdminRoute({ children }) {
 }
 
 export default function App() {
-  const { initialize, isLoading } = useAuthStore()
+  const { initialize, isLoading, profile } = useAuthStore()
   const { darkMode, loadAppSettings } = useAppStore()
+  const [showAdminMsg, setShowAdminMsg] = useState(true)
 
   useEffect(() => { initialize() }, [])
   useEffect(() => { loadAppSettings() }, [])
@@ -63,6 +65,21 @@ export default function App() {
   return (
     <ErrorBoundary>
     <div className="app-container">
+      {/* Admin message banner */}
+      {profile?.admin_message && !profile?.admin_message_read && showAdminMsg && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 999,
+          background: '#e65100', color: 'white',
+          padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          fontSize: '13px', fontWeight: '600',
+        }}>
+          <span>⚠️ Admin update: {profile.admin_message}</span>
+          <button onClick={async () => {
+            setShowAdminMsg(false)
+            await supabase.from('profiles').update({ admin_message_read: true }).eq('id', profile.id)
+          }} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '18px', marginLeft: '12px' }}>×</button>
+        </div>
+      )}
       <NavBar />
       <main className="main-content">
         <Routes>
