@@ -1,17 +1,27 @@
 import { Link, useLocation } from 'react-router-dom'
-import { useAuthStore } from '../store/index.js'
+import { useAuthStore, useAppStore } from '../store/index.js'
 
-const navItems = [
-  { to: '/', icon: '🏠', label: 'Home' },
-  { to: '/predictions', icon: '⚽', label: 'Groups' },
-  { to: '/knockout', icon: '🏆', label: 'Knockout' },
-  { to: '/awards', icon: '🏅', label: 'Awards' },
-  { to: '/leagues', icon: '👥', label: 'Leagues' },
-]
+const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
 export default function BottomNav() {
   const location = useLocation()
   const { user } = useAuthStore()
+  const koLive = new Date() >= KO_OPEN_DATE
+
+  // Post 27 Jun: swap Knockout tab for KO Predictor
+  const navItems = koLive ? [
+    { to: '/',            icon: '🏠',  label: 'Home' },
+    { to: '/predictions', icon: '⚽',  label: 'Tournament' },
+    { to: '/ko-predictor',icon: '🔥',  label: 'KO Pred', highlight: true },
+    { to: '/awards',      icon: '🏅',  label: 'Awards' },
+    { to: '/leagues',     icon: '👥',  label: 'Leagues', protected: true },
+  ] : [
+    { to: '/',            icon: '🏠',  label: 'Home' },
+    { to: '/predictions', icon: '⚽',  label: 'Groups' },
+    { to: '/knockout',    icon: '🏆',  label: 'Knockout' },
+    { to: '/awards',      icon: '🏅',  label: 'Awards' },
+    { to: '/leagues',     icon: '👥',  label: 'Leagues', protected: true },
+  ]
 
   return (
     <nav className="hide-desktop" style={{
@@ -26,11 +36,13 @@ export default function BottomNav() {
       padding: '0 4px',
       zIndex: 100,
       boxShadow: '0 -4px 12px rgba(0,0,0,0.06)',
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
-      {navItems.map(({ to, icon, label }) => {
-        const isActive = location.pathname === to
-        const isProtected = ['/leagues'].includes(to)
-        const href = isProtected && !user ? '/login' : to
+      {navItems.map(({ to, icon, label, protected: prot, highlight }) => {
+        const isActive = to === '/'
+          ? location.pathname === '/'
+          : location.pathname.startsWith(to)
+        const href = prot && !user ? '/login' : to
 
         return (
           <Link key={to} to={href} style={{
@@ -40,7 +52,9 @@ export default function BottomNav() {
             gap: '2px',
             padding: '6px 8px',
             borderRadius: 'var(--radius-md)',
-            background: isActive ? 'var(--bg-tertiary)' : 'transparent',
+            background: isActive
+              ? (highlight ? 'rgba(230,81,0,0.1)' : 'var(--bg-tertiary)')
+              : 'transparent',
             minWidth: '52px',
             transition: 'all 0.15s',
           }}>
@@ -48,7 +62,9 @@ export default function BottomNav() {
             <span style={{
               fontSize: '9px',
               fontWeight: isActive ? '700' : '400',
-              color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+              color: isActive
+                ? (highlight ? '#e65100' : 'var(--text-primary)')
+                : 'var(--text-muted)',
               letterSpacing: '0.02em',
             }}>
               {label}
