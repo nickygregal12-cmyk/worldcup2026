@@ -732,14 +732,14 @@ export default function Predictions() {
       )}
 
       {/* Sticky header — Knockout-style tab bar */}
-      <div style={{ background: 'linear-gradient(135deg, #0a0a0a, #0a1a0a)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, color: 'white' }}>
+      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50 }}>
         <div className="container">
 
           {/* Row 1: Title + joker + count */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h1 style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>⚽ Predictions</h1>
-              <Link to="/how-to-play" style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.6)', flexShrink: 0, textDecoration: 'none' }}>?</Link>
+              <h1 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)' }}>⚽ Predictions</h1>
+              <Link to="/how-to-play" style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', flexShrink: 0, textDecoration: 'none' }}>?</Link>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {user && (
@@ -751,8 +751,8 @@ export default function Predictions() {
                 </div>
               )}
               {user && (
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-                  <span style={{ fontWeight: '700', color: '#4ade80' }}>{getPredictionCount()}</span>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>{getPredictionCount()}</span>
                   <span> / {matches.length}</span>
                 </div>
               )}
@@ -760,20 +760,20 @@ export default function Predictions() {
           </div>
 
           {/* Row 2: Adaptive tab bar */}
-          <div style={{ display: 'flex', overflowX: 'auto', marginTop: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', scrollbarWidth: 'none' }}>
+          <div style={{ display: 'flex', overflowX: 'auto', marginTop: '4px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none' }}>
 
             {viewMode === 'group' ? (
               <>
                 <button onClick={() => setViewMode('date')} style={{
                   padding: '10px 14px', fontSize: '12px', fontWeight: '400',
-                  color: 'rgba(255,255,255,0.45)', borderBottom: '2px solid transparent',
+                  color: 'var(--text-muted)', borderBottom: '2px solid transparent',
                   background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                 }}>
                   By Date
-                  <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>All groups</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>All groups</span>
                 </button>
-                <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 2px', flexShrink: 0 }} />
+                <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 2px', flexShrink: 0 }} />
                 {GROUPS.map(g => {
                   const gMatches = matches.filter(m => m.group?.name === g)
                   const gDone = gMatches.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
@@ -782,13 +782,13 @@ export default function Predictions() {
                   return (
                     <button key={g} onClick={() => setActiveGroup(g)} style={{
                       padding: '10px 12px', fontSize: '12px', fontWeight: isActive ? '700' : '400',
-                      color: isActive ? 'white' : 'rgba(255,255,255,0.45)',
-                      borderBottom: isActive ? '2px solid #4ade80' : '2px solid transparent',
+                      color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
+                      borderBottom: isActive ? '2px solid var(--accent-green)' : '2px solid transparent',
                       background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                     }}>
                       Grp {g}
-                      <span style={{ fontSize: '10px', color: gComplete ? '#4ade80' : 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
+                      <span style={{ fontSize: '10px', color: gComplete ? 'var(--accent-green)' : 'var(--text-muted)', fontWeight: '600' }}>
                         {gComplete ? '✓' : `${gDone}/${gMatches.length}`}
                       </span>
                     </button>
@@ -807,14 +807,14 @@ export default function Predictions() {
               <>
                 <button onClick={() => setViewMode('group')} style={{
                   padding: '10px 14px', fontSize: '12px', fontWeight: '400',
-                  color: 'rgba(255,255,255,0.45)', borderBottom: '2px solid transparent',
+                  color: 'var(--text-muted)', borderBottom: '2px solid transparent',
                   background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                 }}>
                   By Group
-                  <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>A – L</span>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>A – L</span>
                 </button>
-                <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 2px', flexShrink: 0 }} />
+                <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 2px', flexShrink: 0 }} />
                 {Object.entries(matchesByDate).map(([dateKey, dayMatches]) => {
                   const firstMatch = dayMatches[0]
                   const shortDate = new Date(firstMatch.kickoff_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -826,12 +826,12 @@ export default function Predictions() {
                       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                     }} style={{
                       padding: '10px 12px', fontSize: '11px', fontWeight: '500',
-                      color: 'rgba(255,255,255,0.6)', borderBottom: '2px solid transparent',
+                      color: 'var(--text-muted)', borderBottom: '2px solid transparent',
                       background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                     }}>
                       {shortDate}
-                      <span style={{ fontSize: '10px', color: complete ? '#4ade80' : 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
+                      <span style={{ fontSize: '10px', color: complete ? 'var(--accent-green)' : 'var(--text-muted)', fontWeight: '600' }}>
                         {complete ? '✓' : `${donePreds}/${dayMatches.length}`}
                       </span>
                     </button>
