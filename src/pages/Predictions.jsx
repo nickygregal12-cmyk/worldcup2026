@@ -917,6 +917,7 @@ export default function Predictions() {
               ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
               value={pred.home ?? ''}
               onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
+              onInput={e => handleScoreChange(match.id, 'home', e.target.value)}
               onBlur={() => handleScoreBlur(match, 'home')}
               disabled={locked || isGuest} placeholder="?"
               style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
@@ -928,6 +929,7 @@ export default function Predictions() {
               ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
               value={pred.away ?? ''}
               onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
+              onInput={e => handleScoreChange(match.id, 'away', e.target.value)}
               onBlur={() => handleScoreBlur(match, 'away')}
               disabled={locked || isGuest} placeholder="?"
               style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
