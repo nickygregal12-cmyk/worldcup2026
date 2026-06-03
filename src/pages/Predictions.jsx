@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
@@ -549,10 +549,25 @@ export default function Predictions() {
 
   const isLocked = (kickoffTime) => new Date() >= new Date(kickoffTime)
 
+  const saveTimers = useRef({})
+
   const handleScoreChange = (matchId, side, value) => {
     if (!user) return
     const num = value === '' ? '' : Math.max(0, Math.min(99, parseInt(value) || 0))
     setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], [side]: num, _dirty: true } }))
+
+    // Debounced auto-save — saves 800ms after user stops typing
+    clearTimeout(saveTimers.current[matchId])
+    saveTimers.current[matchId] = setTimeout(() => {
+      setPredictions(prev => {
+        const pred = prev[matchId]
+        if (pred?.home !== undefined && pred?.home !== '' && pred?.away !== undefined && pred?.away !== '') {
+          const match = matches.find(m => m.id === matchId)
+          if (match && !isLocked(match.kickoff_time)) savePrediction(match)
+        }
+        return prev
+      })
+    }, 800)
   }
 
   // Item 8: blur handler — check for high score before saving
