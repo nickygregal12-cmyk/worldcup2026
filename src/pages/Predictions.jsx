@@ -88,69 +88,144 @@ const calcGroupStandings = (matches, predictions) => {
 // Item 8: Score validation
 const isHighScore = (val) => val !== '' && val !== undefined && Number(val) >= 7
 
-function FinalStandingsView({ standings, appSettings }) {
+function FinalStandingsView({ standings, matches, predictions, appSettings }) {
   const showReal = appSettings?.show_group_tables === 'true' && standings.length > 0
   const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
-  if (!showReal) return (
-    <div className="card" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
-      <div style={{ fontSize: '48px', marginBottom: '12px' }}>📊</div>
-      <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>Final Standings available from 11 Jun</div>
-      <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
-        Real group tables will appear here once the tournament starts and matches are played.
-        Your predicted final table is on the Knockout page under Groups.
-      </div>
-    </div>
-  )
+  const getPredictedTable = (group) => {
+    const gMatches = matches.filter(m => m.group?.name === group)
+    const completed = gMatches.filter(m => m.status === 'completed')
+    const table = {}
+    gMatches.forEach(m => {
+      if (!table[m.home_team_id]) table[m.home_team_id] = { id: m.home_team_id, name: m.home_team?.short_code, flag: m.home_team?.flag_emoji, pts: 0, gf: 0, ga: 0, played: 0 }
+      if (!table[m.away_team_id]) table[m.away_team_id] = { id: m.away_team_id, name: m.away_team?.short_code, flag: m.away_team?.flag_emoji, pts: 0, gf: 0, ga: 0, played: 0 }
+    })
+    completed.forEach(m => {
+      const pred = predictions[m.id]
+      if (pred?.home === undefined) return
+      const h = parseInt(pred.home), a = parseInt(pred.away)
+      table[m.home_team_id].gf += h; table[m.home_team_id].ga += a; table[m.home_team_id].played++
+      table[m.away_team_id].gf += a; table[m.away_team_id].ga += h; table[m.away_team_id].played++
+      if (h > a) { table[m.home_team_id].pts += 3 }
+      else if (h === a) { table[m.home_team_id].pts += 1; table[m.away_team_id].pts += 1 }
+      else { table[m.away_team_id].pts += 3 }
+    })
+    return Object.values(table).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga))
+  }
 
-  // Find best 3rd place teams
+  const getAccuracy = (group) => {
+    const real = standings.filter(s => s.group_name?.includes(group)).sort((a, b) => a.position - b.position)
+    const pred = getPredictedTable(group).filter(t => t.played > 0)
+    if (!real.length || !pred.length) return null
+    let correct = 0
+    real.forEach((r, i) => { if (pred[i]?.id === r.team_id) correct++ })
+    return { correct, perfect: correct === 4 }
+  }
+
   const thirdPlace = GROUPS.map(g => {
-    const groupTeams = standings.filter(s => s.group_name?.includes(g)).sort((a, b) => b.points - a.points || b.goal_difference - a.goal_difference)
-    return groupTeams[2] ? { ...groupTeams[2], group: g } : null
+    const gTeams = standings.filter(s => s.group_name?.includes(g)).sort((a, b) => a.position - b.position)
+    return gTeams[2] ? { ...gTeams[2], group: g } : null
   }).filter(Boolean).sort((a, b) => b.points - a.points || b.goal_difference - a.goal_difference)
 
-  const best3rd = thirdPlace.slice(0, 8)
+  // Pre-tournament — show predicted overview
+  if (!showReal) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div className="card" style={{ background: 'var(--accent-blue-light)', border: '1px solid rgba(21,88,176,0.2)', padding: '14px 16px' }}>
+          <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent-blue)', marginBottom: '4px' }}>🌍 Your Predicted Groups</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Based on your picks so far. Real standings + accuracy tracking unlocks 11 Jun.</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '8px' }}>
+          {GROUPS.map(g => {
+            const predTable = getPredictedTable(g)
+            return (
+              <div key={g} className="card" style={{ padding: '10px 12px' }}>
+                <div style={{ fontWeight: '800', fontSize: '12px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ background: 'var(--scottish-navy)', color: 'white', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: '800' }}>{g}</span>
+                  Group {g}
+                </div>
+                {predTable.length === 0 ? (
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No picks yet</div>
+                ) : predTable.map((team, i) => (
+                  <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '700', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', width: '10px' }}>{i + 1}</span>
+                    <span style={{ fontSize: '12px' }}>{team.flag}</span>
+                    <span style={{ fontSize: '11px', flex: 1, color: i >= 2 ? 'var(--text-muted)' : 'var(--text-primary)', fontWeight: i < 2 ? '600' : '400' }}>{team.name}</span>
+                    <span style={{ fontSize: '10px', fontWeight: '700', fontFamily: 'var(--font-mono)', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{team.pts}</span>
+                  </div>
+                ))}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    )
+  }
 
+  // Tournament live — real standings with accuracy
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>
-        🌍 All group standings — top 2 from each group qualify automatically
+      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', padding: '4px 0' }}>
+        ✅ = correct position · 5pts each · +10 bonus for perfect group (all 4 correct)
       </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '10px' }}>
         {GROUPS.map(g => {
-          const groupTeams = standings.filter(s => s.group_name?.includes(g)).sort((a, b) => b.points - a.points || b.goal_difference - a.goal_difference)
+          const groupTeams = standings.filter(s => s.group_name?.includes(g)).sort((a, b) => a.position - b.position)
+          const predTable = getPredictedTable(g)
+          const accuracy = getAccuracy(g)
           if (groupTeams.length === 0) return null
           return (
             <div key={g} className="card" style={{ padding: '10px 12px' }}>
-              <div style={{ fontWeight: '800', fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span style={{ background: 'var(--scottish-navy)', color: 'white', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800', flexShrink: 0 }}>{g}</span>
-                Group {g}
-              </div>
-              {groupTeams.map((team, i) => (
-                <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
-                  <span style={{ fontSize: '11px', fontWeight: '700', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', width: '14px' }}>{i + 1}</span>
-                  <span style={{ fontSize: '13px', flex: 1, fontWeight: i < 2 ? '600' : '400', color: i >= 2 ? 'var(--text-muted)' : 'var(--text-primary)' }}>{team.team_name}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', minWidth: '40px', textAlign: 'right' }}>{team.played}G</span>
-                  <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', minWidth: '28px', textAlign: 'right', color: i < 2 ? 'var(--accent-green)' : 'var(--text-primary)' }}>{team.points}pts</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ fontWeight: '800', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <span style={{ background: 'var(--scottish-navy)', color: 'white', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800' }}>{g}</span>
+                  Group {g}
                 </div>
-              ))}
+                {accuracy && (
+                  <span style={{
+                    fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: 'var(--radius-full)',
+                    background: accuracy.perfect ? 'var(--accent-green-light)' : accuracy.correct >= 2 ? '#fff3e0' : 'var(--bg-tertiary)',
+                    color: accuracy.perfect ? 'var(--accent-green)' : accuracy.correct >= 2 ? '#e65100' : 'var(--text-muted)',
+                  }}>
+                    {accuracy.perfect ? '🌟 Perfect!' : `${accuracy.correct}/4 · +${accuracy.correct * 5}pts`}
+                  </span>
+                )}
+              </div>
+              {groupTeams.map((team, i) => {
+                const predTeam = predTable[i]
+                const correct = predTeam?.id === team.team_id
+                return (
+                  <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: team.position <= 2 ? 'var(--accent-green)' : 'var(--text-muted)', width: '14px' }}>{team.position}</span>
+                    <span style={{ fontSize: '13px', flex: 1, fontWeight: team.position <= 2 ? '600' : '400' }}>{team.team_name}</span>
+                    <span style={{ fontWeight: '800', fontSize: '12px', fontFamily: 'var(--font-mono)', minWidth: '28px', textAlign: 'right' }}>{team.points}pts</span>
+                    <span style={{ fontSize: '13px', minWidth: '18px', textAlign: 'center' }}>
+                      {predTeam ? (correct ? '✅' : '❌') : '—'}
+                    </span>
+                  </div>
+                )
+              })}
+              {predTable.length > 0 && (
+                <div style={{ marginTop: '5px', paddingTop: '5px', borderTop: '1px solid var(--border-light)', fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '4px' }}>
+                  <span>Your pick:</span>
+                  {predTable.map(t => <span key={t.id}>{t.flag}</span>)}
+                </div>
+              )}
             </div>
           )
         })}
       </div>
-
-      {best3rd.length > 0 && (
+      {thirdPlace.length > 0 && (
         <div className="card">
           <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '4px' }}>🏅 Best 3rd Place Teams</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>Top 8 of 12 third-place teams advance to Round of 32</div>
-          {best3rd.map((team, i) => (
-            <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', borderRadius: 'var(--radius-sm)', marginBottom: '4px', background: i < 8 ? 'var(--accent-green-light)' : 'var(--bg-secondary)', border: i < 8 ? '1px solid rgba(0,122,51,0.15)' : 'none' }}>
-              <span style={{ fontWeight: '700', fontSize: '12px', width: '16px', color: 'var(--text-muted)' }}>{i + 1}</span>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>Top 8 of 12 advance · No points for predicting these</div>
+          {thirdPlace.map((team, i) => (
+            <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px', borderRadius: 'var(--radius-sm)', marginBottom: '3px', background: i < 8 ? 'var(--accent-green-light)' : 'var(--bg-secondary)', border: i < 8 ? '1px solid rgba(0,122,51,0.15)' : 'none' }}>
+              <span style={{ fontWeight: '700', fontSize: '11px', width: '16px', color: 'var(--text-muted)' }}>{i + 1}</span>
               <span style={{ fontSize: '13px', flex: 1, fontWeight: '600' }}>{team.team_name}</span>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Grp {team.group}</span>
-              <span style={{ fontWeight: '800', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>{team.points}pts</span>
-              {i < 8 && <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700' }}>✓ Q</span>}
+              <span style={{ fontWeight: '800', fontFamily: 'var(--font-mono)' }}>{team.points}pts</span>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: i < 8 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{i < 8 ? '✓' : '✗'}</span>
             </div>
           ))}
         </div>
@@ -1139,7 +1214,7 @@ export default function Predictions() {
                   }}>🗑️<span style={{ fontSize: '10px' }}>Clear</span>
                   </button>
                 )}
-                {/* Final tab — all groups + best 3rd */}
+                {/* Overview tab — all groups + accuracy */}
                 <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 2px', flexShrink: 0 }} />
                 <button onClick={() => setActiveGroup('FINAL')} style={{
                   padding: '10px 12px', fontSize: '12px', fontWeight: activeGroup === 'FINAL' ? '700' : '400',
@@ -1148,7 +1223,7 @@ export default function Predictions() {
                   background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                 }}>
-                  📊 Final
+                  🌍 Overview
                   <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>All groups</span>
                 </button>
               </>
@@ -1198,7 +1273,7 @@ export default function Predictions() {
       <div className="container" style={{ padding: '16px' }}>
         {activeTab === 'standings' ? (
           activeGroup === 'FINAL' ? (
-            <FinalStandingsView standings={standings} appSettings={appSettings} />
+            <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
           ) : (
           <StandingsView
             standings={standings}
@@ -1209,7 +1284,7 @@ export default function Predictions() {
           />
           )
         ) : activeGroup === 'FINAL' ? (
-          <FinalStandingsView standings={standings} appSettings={appSettings} />
+          <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
         ) : viewMode === 'group' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {groupMatches.map(renderMatch)}
@@ -1219,7 +1294,6 @@ export default function Predictions() {
                 <div className="empty-state-title">No matches in Group {activeGroup}</div>
               </div>
             )}
-            {renderGroupStandings()}
           </div>
         ) : (
           // Item 2 & 3: By Date view with autofill and clear per day
