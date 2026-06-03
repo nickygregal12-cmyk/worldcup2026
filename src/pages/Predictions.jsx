@@ -582,43 +582,41 @@ export default function Predictions() {
     }
   }, [])
 
+  const inputRefs = useRef({}) // store refs to all score inputs
+
   const handleScoreChange = (matchId, side, value) => {
     if (!user) return
     const num = value === '' ? '' : Math.max(0, Math.min(99, parseInt(value) || 0))
-    
-    setPredictions(prev => {
-      const updated = { ...prev, [matchId]: { ...prev[matchId], [side]: num, _dirty: true } }
-      
-      // Debounced save using the updated values directly
-      clearTimeout(saveTimers.current[matchId])
-      const home = side === 'home' ? num : updated[matchId]?.home
-      const away = side === 'away' ? num : updated[matchId]?.away
-      
-      if (home !== '' && home !== undefined && away !== '' && away !== undefined) {
-        const match = matchesRef.current.find(m => m.id === matchId)
-        if (match && !isLocked(match.kickoff_time)) {
-          saveTimers.current[matchId] = setTimeout(() => {
-            supabase.from('predictions').upsert({
-              user_id: userRef.current.id,
-              match_id: matchId,
-              home_score: parseInt(home),
-              away_score: parseInt(away),
-              is_confident: updated[matchId]?.joker ?? false,
-              bracket_type: 'main',
-            }, { onConflict: 'user_id,match_id,bracket_type' }).then(({ error }) => {
-              if (error) console.error('Save error:', error)
-              else {
-                setSaved(prev => ({ ...prev, [matchId]: true }))
-                setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], _dirty: false } }))
-                setTimeout(() => setSaved(prev => ({ ...prev, [matchId]: false })), 2000)
-              }
-            })
-          }, 600)
+    setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], [side]: num, _dirty: true } }))
+
+    // Debounced save using captured values to avoid stale closure
+    clearTimeout(saveTimers.current[matchId])
+    saveTimers.current[matchId] = setTimeout(() => {
+      const homeInput = inputRefs.current[`${matchId}-home`]
+      const awayInput = inputRefs.current[`${matchId}-away`]
+      const homeVal = homeInput ? parseInt(homeInput.value) : undefined
+      const awayVal = awayInput ? parseInt(awayInput.value) : undefined
+
+      if (isNaN(homeVal) || isNaN(awayVal)) return
+      const match = matchesRef.current.find(m => m.id === matchId)
+      if (!match || isLocked(match.kickoff_time)) return
+
+      supabase.from('predictions').upsert({
+        user_id: userRef.current.id,
+        match_id: matchId,
+        home_score: homeVal,
+        away_score: awayVal,
+        is_confident: predictionsRef.current[matchId]?.joker ?? false,
+        bracket_type: 'main',
+      }, { onConflict: 'user_id,match_id,bracket_type' }).then(({ error }) => {
+        if (error) console.error('Save error:', error)
+        else {
+          setSaved(prev => ({ ...prev, [matchId]: true }))
+          setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], _dirty: false } }))
+          setTimeout(() => setSaved(prev => ({ ...prev, [matchId]: false })), 2000)
         }
-      }
-      
-      return updated
-    })
+      })
+    }, 600)
   }
 
   // Item 8: blur handler — check for high score before saving
@@ -918,6 +916,7 @@ export default function Predictions() {
               </div>
             ) : (
             <input type="number" className="score-input" min="0" max="99"
+              ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
               value={pred.home ?? ''}
               onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
               onBlur={() => handleScoreBlur(match, 'home')}
@@ -928,6 +927,7 @@ export default function Predictions() {
             <span className="score-divider">–</span>
             {resultColour ? null : (
             <input type="number" className="score-input" min="0" max="99"
+              ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
               value={pred.away ?? ''}
               onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
               onBlur={() => handleScoreBlur(match, 'away')}
