@@ -115,6 +115,12 @@ export default function AdminPanel() {
   const [testAway, setTestAway] = useState('')
   const [testResult, setTestResult] = useState(null)
   const [testLoading, setTestLoading] = useState(false)
+
+  // Edit user predictions state
+  const [editingUserPreds, setEditingUserPreds] = useState(null) // userId
+  const [userPredictions, setUserPredictions] = useState([])
+  const [loadingUserPreds, setLoadingUserPreds] = useState(false)
+  const [editedPreds, setEditedPreds] = useState({}) // matchId → {home, away}
   const [editingLeagueName, setEditingLeagueName] = useState(null) // leagueId
   const [editingLeagueNameVal, setEditingLeagueNameVal] = useState('')
   const [addingMemberTo, setAddingMemberTo] = useState(null) // leagueId
@@ -131,7 +137,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (activeTab === 'ko') loadKoData()
-    if (activeTab === 'settings') loadSettings()
+    if (activeTab === 'settings') { loadSettings(); if (matches.length === 0) loadMatches() }
   }, [activeTab])
 
   const loadAll = async () => {
@@ -353,6 +359,51 @@ export default function AdminPanel() {
     await logAudit('DELETE_KO_LEAGUE', { league_id: leagueId, name: leagueName })
     setActionResult(`✅ Deleted KO league: ${leagueName}`)
     loadKoData()
+  }
+
+  const loadUserPredictions = async (userId) => {
+    setLoadingUserPreds(true)
+    setEditedPreds({})
+    const { data } = await supabase
+      .from('predictions')
+      .select(`*, match:match_id(id, match_number, kickoff_time, status,
+        home_team:home_team_id(name, flag_emoji, short_code),
+        away_team:away_team_id(name, flag_emoji, short_code))`)
+      .eq('user_id', userId)
+      .order('match(match_number)', { ascending: true })
+    setUserPredictions(data || [])
+    setLoadingUserPreds(false)
+  }
+
+  const saveEditedPrediction = async (pred, userId) => {
+    const edited = editedPreds[pred.match_id]
+    if (!edited) return
+    const homeScore = parseInt(edited.home ?? pred.home_score)
+    const awayScore = parseInt(edited.away ?? pred.away_score)
+    const { error } = await supabase
+      .from('predictions')
+      .update({ home_score: homeScore, away_score: awayScore })
+      .eq('user_id', userId)
+      .eq('match_id', pred.match_id)
+    if (error) { setActionResult(`❌ Error: ${error.message}`); return }
+    // Recalculate points for this match if completed
+    if (pred.match?.status === 'completed') {
+      await supabase.rpc('calculate_prediction_points', { p_match_id: pred.match_id })
+      await supabase.rpc('recalculate_user_total_points', { p_user_id: userId })
+    }
+    await logAudit('EDIT_USER_PREDICTION', { user_id: userId, match_id: pred.match_id, old_home: pred.home_score, old_away: pred.away_score, new_home: homeScore, new_away: awayScore })
+    setActionResult(`✅ Prediction updated`)
+    setEditedPreds(prev => { const n = { ...prev }; delete n[pred.match_id]; return n })
+    loadUserPredictions(userId)
+  }
+
+  const sendBanWarning = async (userId, username) => {
+    // Store a notification in profiles for the user to see on next login
+    await supabase.from('profiles').update({
+      admin_message: 'Your account has been flagged by an administrator. Please review the rules.'
+    }).eq('id', userId)
+    await logAudit('BAN_WARNING_SENT', { user_id: userId, username })
+    setActionResult(`✅ Warning sent to ${username}`)
   }
 
   const runTestPreview = async () => {
@@ -1134,9 +1185,13 @@ export default function AdminPanel() {
                       ? <button onClick={() => unbanUser(u.id, u.username)} className="btn btn-sm" style={{ background: 'var(--accent-green)', color: 'white', border: 'none' }}>✓ Unban</button>
                       : <button onClick={() => setConfirmAction({ type: 'ban', userId: u.id, username: u.username })} className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>🚫 Ban</button>
                     }
-                    <button onClick={() => setConfirmAction({ type: 'reset', userId: u.id, username: u.username })} className="btn btn-secondary btn-sm">↺ Reset Predictions</button>
-                    {!u.is_admin && <button onClick={() => setConfirmAction({ type: 'makeAdmin', userId: u.id, username: u.username })} className="btn btn-sm" style={{ border: '1px solid var(--accent-orange)', color: 'var(--accent-orange)', background: 'none' }}>⭐ Make Admin</button>}
-                    <button onClick={() => setPointAdjUser(u.id)} className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none' }}>🎯 Adjust Points</button>
+                    {!u.is_banned && (
+                      <button onClick={() => sendBanWarning(u.id, u.username)} className="btn btn-sm" style={{ border: '1px solid #e53935', color: '#e53935', background: 'none' }}>⚠️ Warn</button>
+                    )}
+                    <button onClick={() => setConfirmAction({ type: 'reset', userId: u.id, username: u.username })} className="btn btn-secondary btn-sm">↺ Reset</button>
+                    {!u.is_admin && <button onClick={() => setConfirmAction({ type: 'makeAdmin', userId: u.id, username: u.username })} className="btn btn-sm" style={{ border: '1px solid var(--accent-orange)', color: 'var(--accent-orange)', background: 'none' }}>⭐ Admin</button>}
+                    <button onClick={() => setPointAdjUser(u.id)} className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none' }}>🎯 Points</button>
+                    <button onClick={() => { setEditingUserPreds(u.id); loadUserPredictions(u.id) }} className="btn btn-sm" style={{ border: '1px solid var(--scottish-navy)', color: 'var(--scottish-navy)', background: 'none' }}>✏️ Predictions</button>
                   </div>
                   {pointAdjUser === u.id && (
                     <div style={{ marginTop: '10px', padding: '12px', background: 'var(--accent-blue-light)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1512,6 +1567,81 @@ export default function AdminPanel() {
       </div>
 
       {/* Confirm dialog */}
+      {/* Edit User Predictions Modal */}
+      {editingUserPreds && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 300, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '20px', overflowY: 'auto' }}>
+          <div className="card" style={{ maxWidth: '500px', width: '100%', marginTop: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ fontWeight: '800', fontSize: '16px' }}>
+                ✏️ Edit Predictions — {users.find(u => u.id === editingUserPreds)?.username}
+              </div>
+              <button onClick={() => { setEditingUserPreds(null); setUserPredictions([]) }}
+                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
+            </div>
+
+            <div style={{ fontSize: '12px', color: 'var(--accent-orange)', background: '#fff3e0', padding: '8px 12px', borderRadius: 'var(--radius-sm)', marginBottom: '14px', fontWeight: '600' }}>
+              ⚠️ Only edit completed match predictions — changes will trigger points recalculation
+            </div>
+
+            {loadingUserPreds ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '60vh', overflowY: 'auto' }}>
+                {userPredictions.map(pred => {
+                  const match = pred.match
+                  if (!match) return null
+                  const isCompleted = match.status === 'completed'
+                  const edited = editedPreds[pred.match_id]
+                  const currentHome = edited?.home ?? pred.home_score
+                  const currentAway = edited?.away ?? pred.away_score
+                  const isDirty = edited !== undefined
+
+                  return (
+                    <div key={pred.match_id} style={{
+                      padding: '10px 12px', background: isCompleted ? 'var(--bg-secondary)' : 'var(--bg-tertiary)',
+                      borderRadius: 'var(--radius-md)', opacity: isCompleted ? 1 : 0.5,
+                      border: isDirty ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                    }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '6px' }}>
+                        Match {match.match_number} · {match.home_team?.short_code} vs {match.away_team?.short_code}
+                        {isCompleted && <span style={{ marginLeft: '6px', color: 'var(--accent-green)' }}>● Completed</span>}
+                        {!isCompleted && <span style={{ marginLeft: '6px', color: 'var(--text-muted)' }}>● {match.status}</span>}
+                        {pred.is_confident && <span style={{ marginLeft: '6px', color: '#ff9800' }}>🃏 Joker</span>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '600', minWidth: '60px' }}>{match.home_team?.flag_emoji} {match.home_team?.short_code}</span>
+                        <input type="number" min="0" max="20" value={currentHome ?? ''}
+                          disabled={!isCompleted}
+                          onChange={e => setEditedPreds(prev => ({ ...prev, [pred.match_id]: { home: e.target.value, away: prev[pred.match_id]?.away ?? pred.away_score } }))}
+                          style={{ width: '48px', height: '32px', textAlign: 'center', fontWeight: '700', fontSize: '16px', border: `2px solid ${isDirty ? 'var(--scottish-navy)' : 'var(--border-medium)'}`, borderRadius: 'var(--radius-sm)' }} />
+                        <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>–</span>
+                        <input type="number" min="0" max="20" value={currentAway ?? ''}
+                          disabled={!isCompleted}
+                          onChange={e => setEditedPreds(prev => ({ ...prev, [pred.match_id]: { away: e.target.value, home: prev[pred.match_id]?.home ?? pred.home_score } }))}
+                          style={{ width: '48px', height: '32px', textAlign: 'center', fontWeight: '700', fontSize: '16px', border: `2px solid ${isDirty ? 'var(--scottish-navy)' : 'var(--border-medium)'}`, borderRadius: 'var(--radius-sm)' }} />
+                        <span style={{ fontSize: '12px', fontWeight: '600', minWidth: '60px' }}>{match.away_team?.flag_emoji} {match.away_team?.short_code}</span>
+                        {isDirty && (
+                          <button onClick={() => saveEditedPrediction(pred, editingUserPreds)}
+                            className="btn btn-primary btn-sm" style={{ background: 'var(--scottish-navy)', marginLeft: 'auto' }}>
+                            Save
+                          </button>
+                        )}
+                        {pred.points_awarded > 0 && !isDirty && (
+                          <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '700', color: 'var(--accent-green)', fontFamily: 'var(--font-mono)' }}>+{pred.points_awarded}pts</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+                {userPredictions.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '13px' }}>No predictions found for this user</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {confirmAction && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="card" style={{ maxWidth: '360px', width: '100%' }}>
