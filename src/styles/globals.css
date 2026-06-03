@@ -317,11 +317,9 @@ img {
   transition: border-color 0.15s, box-shadow 0.15s;
   font-family: var(--font-mono);
   padding: 0;
-  appearance: textfield;
+  -webkit-appearance: none;
   -moz-appearance: textfield;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   line-height: 52px;
 }
 

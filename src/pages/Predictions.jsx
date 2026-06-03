@@ -915,7 +915,7 @@ export default function Predictions() {
                 </div>
               </div>
             ) : (
-            <input type="number" className="score-input" min="0" max="99"
+            <input type="number" inputMode="numeric" pattern="[0-9]*" className="score-input" min="0" max="99"
               ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
               value={pred.home ?? ''}
               onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
@@ -926,7 +926,7 @@ export default function Predictions() {
             )}
             <span className="score-divider">–</span>
             {resultColour ? null : (
-            <input type="number" className="score-input" min="0" max="99"
+            <input type="number" inputMode="numeric" pattern="[0-9]*" className="score-input" min="0" max="99"
               ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
               value={pred.away ?? ''}
               onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
