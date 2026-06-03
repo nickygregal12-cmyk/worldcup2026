@@ -315,11 +315,11 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
       </div>
 
       {/* Recent results */}
-      {groupMatches.length > 0 && (
+      {completedGroupMatches.length > 0 && (
         <div className="card">
           <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '10px' }}>📋 Results — Group {activeGroup}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {groupMatches.map(match => {
+            {completedGroupMatches.map(match => {
               const pred = predictions[match.id]
               const predHome = pred?.home !== undefined ? parseInt(pred.home) : null
               const predAway = pred?.away !== undefined ? parseInt(pred.away) : null
@@ -504,6 +504,8 @@ export default function Predictions() {
   }
 
   // Item 2: autofill for By Date view
+  const groupMatches = matches.filter(m => m.group?.name === activeGroup && activeGroup !== 'FINAL')
+
   const autoFillGroup = async () => {
     if (!user || autoFilling) return
     setAutoFilling(true)
@@ -588,8 +590,6 @@ export default function Predictions() {
     acc[key].push(match)
     return acc
   }, {})
-
-  const groupMatches = matches.filter(m => m.group?.name === activeGroup)
 
   if (loading) {
     return (
