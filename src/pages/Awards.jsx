@@ -135,8 +135,12 @@ export default function Awards() {
       { user_id: user.id, prediction_type: 'total_goals', int_value: parseInt(totalGoals) || null },
     ].filter(u => u.int_value !== null)
     for (const upsert of upserts) {
+      // Delete existing then insert to avoid conflict key issues with null team_id
       await supabase.from('tournament_predictions')
-        .upsert(upsert, { onConflict: 'user_id,prediction_type,team_id' })
+        .delete()
+        .eq('user_id', user.id)
+        .eq('prediction_type', upsert.prediction_type)
+      await supabase.from('tournament_predictions').insert(upsert)
     }
 
     // Update awards_done — count player awards + 1 if any goals entered
