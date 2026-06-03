@@ -585,20 +585,40 @@ export default function Predictions() {
   const handleScoreChange = (matchId, side, value) => {
     if (!user) return
     const num = value === '' ? '' : Math.max(0, Math.min(99, parseInt(value) || 0))
-    setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], [side]: num, _dirty: true } }))
-
-    // Debounced auto-save — saves 800ms after user stops typing
-    clearTimeout(saveTimers.current[matchId])
-    saveTimers.current[matchId] = setTimeout(() => {
-      setPredictions(prev => {
-        const pred = prev[matchId]
-        if (pred?.home !== undefined && pred?.home !== '' && pred?.away !== undefined && pred?.away !== '') {
-          const match = matches.find(m => m.id === matchId)
-          if (match && !isLocked(match.kickoff_time)) savePrediction(match)
+    
+    setPredictions(prev => {
+      const updated = { ...prev, [matchId]: { ...prev[matchId], [side]: num, _dirty: true } }
+      
+      // Debounced save using the updated values directly
+      clearTimeout(saveTimers.current[matchId])
+      const home = side === 'home' ? num : updated[matchId]?.home
+      const away = side === 'away' ? num : updated[matchId]?.away
+      
+      if (home !== '' && home !== undefined && away !== '' && away !== undefined) {
+        const match = matchesRef.current.find(m => m.id === matchId)
+        if (match && !isLocked(match.kickoff_time)) {
+          saveTimers.current[matchId] = setTimeout(() => {
+            supabase.from('predictions').upsert({
+              user_id: userRef.current.id,
+              match_id: matchId,
+              home_score: parseInt(home),
+              away_score: parseInt(away),
+              is_confident: updated[matchId]?.joker ?? false,
+              bracket_type: 'main',
+            }, { onConflict: 'user_id,match_id,bracket_type' }).then(({ error }) => {
+              if (error) console.error('Save error:', error)
+              else {
+                setSaved(prev => ({ ...prev, [matchId]: true }))
+                setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], _dirty: false } }))
+                setTimeout(() => setSaved(prev => ({ ...prev, [matchId]: false })), 2000)
+              }
+            })
+          }, 600)
         }
-        return prev
-      })
-    }, 800)
+      }
+      
+      return updated
+    })
   }
 
   // Item 8: blur handler — check for high score before saving
