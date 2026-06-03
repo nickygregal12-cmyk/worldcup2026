@@ -385,16 +385,34 @@ export default function Predictions() {
     return (
       <div key={match.id} className="card" style={{ opacity: locked && !hasPrediction ? 0.6 : 1, border: cardBorder, background: cardBg }}>
 
-        {/* Result badge for completed */}
+        {/* Result badge */}
         {resultColour && (
           <div style={{
-            display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px',
-            padding: '5px 10px', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '700',
-            background: resultColour === 'gold' ? 'rgba(255,215,0,0.2)' : resultColour === 'green' ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.1)',
-            color: resultColour === 'gold' ? '#b8860b' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: '12px', padding: '10px 14px', borderRadius: 'var(--radius-md)',
+            background: resultColour === 'gold' ? 'rgba(255,193,7,0.15)' : resultColour === 'green' ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.08)',
+            border: `1px solid ${resultColour === 'gold' ? 'rgba(255,193,7,0.4)' : resultColour === 'green' ? 'rgba(0,122,51,0.3)' : 'rgba(198,40,40,0.2)'}`,
           }}>
-            {resultColour === 'gold' ? '🎯 Exact score!' : resultColour === 'green' ? '✅ Correct result' : '❌ Wrong result'}
-            {hasJoker && ' · 🃏 Joker'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '20px' }}>
+                {resultColour === 'gold' ? '🎯' : resultColour === 'green' ? '✅' : '❌'}
+              </span>
+              <div>
+                <div style={{ fontWeight: '800', fontSize: '14px',
+                  color: resultColour === 'gold' ? '#b8860b' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+                  {resultColour === 'gold' ? 'Exact score!' : resultColour === 'green' ? 'Correct result' : 'Wrong result'}
+                  {hasJoker && <span style={{ marginLeft: '6px', fontSize: '12px' }}>🃏 Joker</span>}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '1px' }}>
+                  Result: <strong style={{ fontFamily: 'var(--font-mono)' }}>{match.home_team?.short_code} {match.home_score} – {match.away_score} {match.away_team?.short_code}</strong>
+                </div>
+              </div>
+            </div>
+            <div style={{ fontWeight: '900', fontSize: '22px', fontFamily: 'var(--font-mono)',
+              color: resultColour === 'gold' ? '#b8860b' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+              {pred.points_awarded !== undefined ? `+${pred.points_awarded}` : resultColour === 'gold' ? '+10' : resultColour === 'green' ? '+5' : '+0'}
+              <span style={{ fontSize: '12px', fontWeight: '600' }}>pts</span>
+            </div>
           </div>
         )}
 
@@ -432,6 +450,18 @@ export default function Predictions() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {resultColour ? (
+              // Show your prediction score when result is in
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '900', fontFamily: 'var(--font-mono)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)' }}>
+                  {pred.home}
+                </div>
+                <span className="score-divider">–</span>
+                <div style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '900', fontFamily: 'var(--font-mono)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)' }}>
+                  {pred.away}
+                </div>
+              </div>
+            ) : (
             <input type="number" className="score-input" min="0" max="99"
               value={pred.home ?? ''}
               onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
@@ -439,7 +469,9 @@ export default function Predictions() {
               disabled={locked || isGuest} placeholder="?"
               style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
             />
+            )}
             <span className="score-divider">–</span>
+            {resultColour ? null : (
             <input type="number" className="score-input" min="0" max="99"
               value={pred.away ?? ''}
               onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
@@ -447,6 +479,7 @@ export default function Predictions() {
               disabled={locked || isGuest} placeholder="?"
               style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
             />
+            )}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
@@ -456,8 +489,8 @@ export default function Predictions() {
           </div>
         </div>
 
-        {/* Odds */}
-        {matchOdds && !locked && (
+        {/* Odds — hide when result is in */}
+        {matchOdds && !locked && !resultColour && (
           <div className="odds-row">
             <div className={`odds-item ${favourite === 'home' ? 'odds-favourite' : ''}`}>
               <span className="odds-label">{match.home_team?.short_code}</span>
@@ -485,8 +518,8 @@ export default function Predictions() {
           </div>
         )}
 
-        {/* Joker + Save */}
-        {!isGuest && !locked && (
+        {/* Joker + Save — hide when result is in */}
+        {!isGuest && !locked && !resultColour && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: `1px solid ${hasJoker ? 'rgba(255,215,0,0.4)' : 'var(--border-light)'}` }}>
             <button
               onClick={() => {
