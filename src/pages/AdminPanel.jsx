@@ -155,7 +155,7 @@ export default function AdminPanel() {
   const loadLeagues = async () => {
     const { data } = await supabase
       .from('leagues')
-      .select('*, creator:created_by(username), members:league_members(count)')
+      .select('*, creator:created_by(username), members:league_members(user_id, profile:user_id(username))')
       .order('created_at', { ascending: false })
     setLeagues(data || [])
   }
@@ -235,7 +235,6 @@ export default function AdminPanel() {
     })
   }
 
-  // Match score save
   const saveMatchResult = async (match) => {
     const s = scores[match.id] || {}
     if (s.home === undefined || s.away === undefined) return
@@ -249,44 +248,53 @@ export default function AdminPanel() {
       winner_team_id: winnerId, status: 'completed', use_manual_override: true,
     }).eq('id', match.id)
 
-    if (!error) {
-      await supabase.rpc('calculate_prediction_points', { p_match_id: match.id })
-      await logAudit('SCORE_OVERRIDE', { match_id: match.id, match_number: match.match_number, home: homeScore, away: awayScore })
-      setEditingMatch(null)
-      loadMatches()
-    }
+    if (error) { setActionResult(`Error saving score: ${error.message}`); setSaving(prev => ({ ...prev, [match.id]: false })); return }
+
+    const { error: rpcErr } = await supabase.rpc('calculate_prediction_points', { p_match_id: match.id })
+    if (rpcErr) setActionResult(`Score saved but points calc failed: ${rpcErr.message}`)
+    else setActionResult(`Score saved — points calculated for match #${match.match_number}`)
+
+    await logAudit('SCORE_OVERRIDE', { match_id: match.id, match_number: match.match_number, home: homeScore, away: awayScore })
+    setEditingMatch(null)
+    loadMatches()
     setSaving(prev => ({ ...prev, [match.id]: false }))
   }
 
   const setMatchLive = async (matchId) => {
-    await supabase.from('matches').update({ status: 'live' }).eq('id', matchId)
+    const { error } = await supabase.from('matches').update({ status: 'live' }).eq('id', matchId)
+    if (error) { setActionResult(`Error: ${error.message}`); return }
     await logAudit('SET_LIVE', { match_id: matchId })
+    setActionResult('Match set to live')
     loadMatches()
   }
 
   const resetMatchOverride = async (matchId) => {
-    await supabase.from('matches').update({ use_manual_override: false, status: 'scheduled' }).eq('id', matchId)
+    const { error } = await supabase.from('matches').update({ use_manual_override: false, status: 'scheduled' }).eq('id', matchId)
+    if (error) { setActionResult(`Error: ${error.message}`); return }
     await logAudit('RESET_OVERRIDE', { match_id: matchId })
+    setActionResult('Match override reset')
     loadMatches()
   }
 
-  // User actions
   const banUser = async (userId, username) => {
-    await supabase.from('profiles').update({ is_banned: true }).eq('id', userId)
+    const { error } = await supabase.from('profiles').update({ is_banned: true }).eq('id', userId)
+    if (error) { setActionResult(`Error banning user: ${error.message}`); return }
     await logAudit('BAN_USER', { user_id: userId, username })
     setActionResult(`Banned ${username}`)
     loadUsers()
   }
 
   const unbanUser = async (userId, username) => {
-    await supabase.from('profiles').update({ is_banned: false }).eq('id', userId)
+    const { error } = await supabase.from('profiles').update({ is_banned: false }).eq('id', userId)
+    if (error) { setActionResult(`Error unbanning user: ${error.message}`); return }
     await logAudit('UNBAN_USER', { user_id: userId, username })
     setActionResult(`Unbanned ${username}`)
     loadUsers()
   }
 
   const resetUserPredictions = async (userId, username) => {
-    await supabase.from('predictions').delete().eq('user_id', userId)
+    const { error: predErr } = await supabase.from('predictions').delete().eq('user_id', userId)
+    if (predErr) { setActionResult(`Error resetting predictions: ${predErr.message}`); return }
     await supabase.from('profiles').update({ total_points: 0, streak_current: 0 }).eq('id', userId)
     await logAudit('RESET_PREDICTIONS', { user_id: userId, username })
     setActionResult(`Reset predictions for ${username}`)
@@ -294,29 +302,36 @@ export default function AdminPanel() {
   }
 
   const makeAdmin = async (userId, username) => {
-    await supabase.from('profiles').update({ is_admin: true }).eq('id', userId)
+    const { error } = await supabase.from('profiles').update({ is_admin: true }).eq('id', userId)
+    if (error) { setActionResult(`Error: ${error.message}`); return }
     await logAudit('MAKE_ADMIN', { user_id: userId, username })
     setActionResult(`Made ${username} an admin`)
     loadUsers()
   }
 
-  // Point adjustment
   const applyPointAdjustment = async () => {
-    if (!pointAdjUser || !pointAdjAmount || !pointAdjReason) return
+    if (!pointAdjUser || !pointAdjAmount || !pointAdjReason) {
+      setActionResult('Please fill in amount and reason'); return
+    }
     const amount = parseInt(pointAdjAmount)
+    if (isNaN(amount)) { setActionResult('Amount must be a number'); return }
     const u = users.find(u => u.id === pointAdjUser)
     const newPoints = (u?.total_points || 0) + amount
-
-    await supabase.from('profiles').update({ total_points: newPoints }).eq('id', pointAdjUser)
+    const { error } = await supabase.from('profiles').update({ total_points: newPoints }).eq('id', pointAdjUser)
+    if (error) { setActionResult(`Error adjusting points: ${error.message}`); return }
     await logAudit('POINT_ADJUSTMENT', { user_id: pointAdjUser, username: u?.username, amount, reason: pointAdjReason, new_total: newPoints })
-    setActionResult(`Adjusted ${u?.username} points by ${amount > 0 ? '+' : ''}${amount}`)
+    setActionResult(`Adjusted ${u?.username} points by ${amount > 0 ? '+' : ''}${amount} — new total: ${newPoints}`)
     setPointAdjUser(null); setPointAdjAmount(''); setPointAdjReason('')
     loadUsers()
   }
 
   // League actions
   const deleteLeague = async (leagueId, leagueName) => {
-    await supabase.from('leagues').delete().eq('id', leagueId)
+    // Delete members first to avoid FK constraint error
+    const { error: membErr } = await supabase.from('league_members').delete().eq('league_id', leagueId)
+    if (membErr) { setActionResult(`Error removing members: ${membErr.message}`); return }
+    const { error: leagErr } = await supabase.from('leagues').delete().eq('id', leagueId)
+    if (leagErr) { setActionResult(`Error deleting league: ${leagErr.message}`); return }
     await logAudit('DELETE_LEAGUE', { league_id: leagueId, name: leagueName })
     setActionResult(`Deleted league: ${leagueName}`)
     loadLeagues()
@@ -331,14 +346,25 @@ export default function AdminPanel() {
 
   const recalcAllPoints = async () => {
     setSaving(prev => ({ ...prev, recalc: true }))
-    const { data: userList } = await supabase.from('profiles').select('id')
+    const { data: userList, error } = await supabase.from('profiles').select('id')
+    if (error) { setActionResult(`Error: ${error.message}`); setSaving(prev => ({ ...prev, recalc: false })); return }
+    let failed = 0
     for (const u of userList || []) {
-      await supabase.rpc('recalculate_user_total_points', { p_user_id: u.id })
+      const { error: rpcErr } = await supabase.rpc('recalculate_user_total_points', { p_user_id: u.id })
+      if (rpcErr) failed++
     }
-    await logAudit('RECALC_ALL_POINTS', { user_count: userList?.length })
+    await logAudit('RECALC_ALL_POINTS', { user_count: userList?.length, failed })
     setSaving(prev => ({ ...prev, recalc: false }))
-    setActionResult('Points recalculated for all users!')
+    setActionResult(`Points recalculated for ${userList?.length} users${failed > 0 ? ` (${failed} failed)` : ''}`)
     loadUsers()
+  }
+
+  const removeMemberFromLeague = async (leagueId, userId, username, leagueName) => {
+    const { error } = await supabase.from('league_members').delete().eq('league_id', leagueId).eq('user_id', userId)
+    if (error) { setActionResult(`Error removing member: ${error.message}`); return }
+    await logAudit('REMOVE_LEAGUE_MEMBER', { league_id: leagueId, user_id: userId, username, league: leagueName })
+    setActionResult(`Removed ${username} from ${leagueName}`)
+    loadLeagues()
   }
 
   const filteredUsers = users.filter(u =>
@@ -620,10 +646,26 @@ export default function AdminPanel() {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontWeight: '800', fontSize: '16px', fontFamily: 'var(--font-mono)' }}>
-                      {league.members?.[0]?.count ?? '?'} members
+                      {league.members?.length ?? 0} members
                     </div>
                   </div>
                 </div>
+
+                {/* Member list with remove buttons */}
+                {league.members?.length > 0 && (
+                  <div style={{ marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    {league.members.map(m => (
+                      <div key={m.user_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '600' }}>{m.profile?.username || 'Unknown'}</span>
+                        <button
+                          onClick={() => setConfirmAction({ type: 'removeMember', leagueId: league.id, userId: m.user_id, username: m.profile?.username, leagueName: league.name })}
+                          style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px', border: '1px solid #e53935', color: '#e53935', background: 'none', cursor: 'pointer' }}
+                        >Remove</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 <button onClick={() => setConfirmAction({ type: 'deleteLeague', leagueId: league.id, leagueName: league.name })}
                   className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
                   🗑️ Delete League
@@ -763,12 +805,14 @@ export default function AdminPanel() {
               {confirmAction.type === 'ban' ? '🚫 Ban User' :
                confirmAction.type === 'reset' ? '↺ Reset Predictions' :
                confirmAction.type === 'makeAdmin' ? '⭐ Make Admin' :
+               confirmAction.type === 'removeMember' ? '👤 Remove Member' :
                '🗑️ Delete League'}
             </div>
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
               {confirmAction.type === 'ban' ? `Ban ${confirmAction.username}? They won't be able to sign in.` :
                confirmAction.type === 'reset' ? `Delete all predictions for ${confirmAction.username}? This cannot be undone.` :
                confirmAction.type === 'makeAdmin' ? `Give ${confirmAction.username} admin access?` :
+               confirmAction.type === 'removeMember' ? `Remove ${confirmAction.username} from "${confirmAction.leagueName}"?` :
                `Delete league "${confirmAction.leagueName}"? All members will be removed.`}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -776,6 +820,7 @@ export default function AdminPanel() {
                 if (confirmAction.type === 'ban') banUser(confirmAction.userId, confirmAction.username)
                 else if (confirmAction.type === 'reset') resetUserPredictions(confirmAction.userId, confirmAction.username)
                 else if (confirmAction.type === 'makeAdmin') makeAdmin(confirmAction.userId, confirmAction.username)
+                else if (confirmAction.type === 'removeMember') removeMemberFromLeague(confirmAction.leagueId, confirmAction.userId, confirmAction.username, confirmAction.leagueName)
                 else if (confirmAction.type === 'deleteLeague') deleteLeague(confirmAction.leagueId, confirmAction.leagueName)
                 setConfirmAction(null)
               }} className="btn btn-primary" style={{ background: '#e53935', flex: 1 }}>Confirm</button>
