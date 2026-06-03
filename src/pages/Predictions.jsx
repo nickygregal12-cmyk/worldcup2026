@@ -88,39 +88,111 @@ const calcGroupStandings = (matches, predictions) => {
 // Item 8: Score validation
 const isHighScore = (val) => val !== '' && val !== undefined && Number(val) >= 7
 
+function FinalStandingsView({ standings, appSettings }) {
+  const showReal = appSettings?.show_group_tables === 'true' && standings.length > 0
+  const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
+
+  if (!showReal) return (
+    <div className="card" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }}>
+      <div style={{ fontSize: '48px', marginBottom: '12px' }}>📊</div>
+      <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>Final Standings available from 11 Jun</div>
+      <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+        Real group tables will appear here once the tournament starts and matches are played.
+        Your predicted final table is on the Knockout page under Groups.
+      </div>
+    </div>
+  )
+
+  // Find best 3rd place teams
+  const thirdPlace = GROUPS.map(g => {
+    const groupTeams = standings.filter(s => s.group_name?.includes(g)).sort((a, b) => b.points - a.points || b.goal_difference - a.goal_difference)
+    return groupTeams[2] ? { ...groupTeams[2], group: g } : null
+  }).filter(Boolean).sort((a, b) => b.points - a.points || b.goal_difference - a.goal_difference)
+
+  const best3rd = thirdPlace.slice(0, 8)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600' }}>
+        🌍 All group standings — top 2 from each group qualify automatically
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '10px' }}>
+        {GROUPS.map(g => {
+          const groupTeams = standings.filter(s => s.group_name?.includes(g)).sort((a, b) => b.points - a.points || b.goal_difference - a.goal_difference)
+          if (groupTeams.length === 0) return null
+          return (
+            <div key={g} className="card" style={{ padding: '10px 12px' }}>
+              <div style={{ fontWeight: '800', fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ background: 'var(--scottish-navy)', color: 'white', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800', flexShrink: 0 }}>{g}</span>
+                Group {g}
+              </div>
+              {groupTeams.map((team, i) => (
+                <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
+                  <span style={{ fontSize: '11px', fontWeight: '700', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', width: '14px' }}>{i + 1}</span>
+                  <span style={{ fontSize: '13px', flex: 1, fontWeight: i < 2 ? '600' : '400', color: i >= 2 ? 'var(--text-muted)' : 'var(--text-primary)' }}>{team.team_name}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', minWidth: '40px', textAlign: 'right' }}>{team.played}G</span>
+                  <span style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)', minWidth: '28px', textAlign: 'right', color: i < 2 ? 'var(--accent-green)' : 'var(--text-primary)' }}>{team.points}pts</span>
+                </div>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+
+      {best3rd.length > 0 && (
+        <div className="card">
+          <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '4px' }}>🏅 Best 3rd Place Teams</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>Top 8 of 12 third-place teams advance to Round of 32</div>
+          {best3rd.map((team, i) => (
+            <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px', borderRadius: 'var(--radius-sm)', marginBottom: '4px', background: i < 8 ? 'var(--accent-green-light)' : 'var(--bg-secondary)', border: i < 8 ? '1px solid rgba(0,122,51,0.15)' : 'none' }}>
+              <span style={{ fontWeight: '700', fontSize: '12px', width: '16px', color: 'var(--text-muted)' }}>{i + 1}</span>
+              <span style={{ fontSize: '13px', flex: 1, fontWeight: '600' }}>{team.team_name}</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Grp {team.group}</span>
+              <span style={{ fontWeight: '800', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>{team.points}pts</span>
+              {i < 8 && <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700' }}>✓ Q</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function StandingsView({ standings, activeGroup, matches, predictions, appSettings }) {
   const groupStandings = standings.filter(s => {
-    // Match group name from API (e.g. "GROUP_A") to our group letter (e.g. "A")
     const groupLetter = s.group_name?.replace('GROUP_', '').replace('Group ', '')
     return groupLetter === activeGroup
   })
 
-  const groupMatches = matches.filter(m => m.group?.name === activeGroup && m.status === 'completed')
+  // Only count COMPLETED matches for predicted standings (apples to apples with real table)
+  const completedGroupMatches = matches.filter(m => m.group?.name === activeGroup && m.status === 'completed')
+  const allGroupMatches = matches.filter(m => m.group?.name === activeGroup)
 
-  // Calculate predicted standings from user's predictions
   const predictedStandings = {}
-  const groupAllMatches = matches.filter(m => m.group?.name === activeGroup)
-
-  groupAllMatches.forEach(match => {
-    const pred = predictions[match.id]
+  allGroupMatches.forEach(match => {
     const homeId = match.home_team_id
     const awayId = match.away_team_id
-    const homeName = match.home_team?.short_code || match.home_team?.name || '?'
-    const awayName = match.away_team?.short_code || match.away_team?.name || '?'
+    const homeName = match.home_team?.short_code || '?'
+    const awayName = match.away_team?.short_code || '?'
     const homeFlag = match.home_team?.flag_emoji || ''
     const awayFlag = match.away_team?.flag_emoji || ''
+    if (!predictedStandings[homeId]) predictedStandings[homeId] = { id: homeId, name: homeName, flag: homeFlag, pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, played: 0 }
+    if (!predictedStandings[awayId]) predictedStandings[awayId] = { id: awayId, name: awayName, flag: awayFlag, pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, played: 0 }
+  })
 
-    if (!predictedStandings[homeId]) predictedStandings[homeId] = { id: homeId, name: homeName, flag: homeFlag, pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 }
-    if (!predictedStandings[awayId]) predictedStandings[awayId] = { id: awayId, name: awayName, flag: awayFlag, pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0 }
-
-    if (pred?.home !== undefined && pred?.away !== undefined) {
-      const h = parseInt(pred.home), a = parseInt(pred.away)
-      predictedStandings[homeId].gf += h; predictedStandings[homeId].ga += a
-      predictedStandings[awayId].gf += a; predictedStandings[awayId].ga += h
-      if (h > a) { predictedStandings[homeId].pts += 3; predictedStandings[homeId].w++ ; predictedStandings[awayId].l++ }
-      else if (h === a) { predictedStandings[homeId].pts += 1; predictedStandings[awayId].pts += 1; predictedStandings[homeId].d++; predictedStandings[awayId].d++ }
-      else { predictedStandings[awayId].pts += 3; predictedStandings[awayId].w++; predictedStandings[homeId].l++ }
-    }
+  // Only simulate completed matches
+  completedGroupMatches.forEach(match => {
+    const pred = predictions[match.id]
+    if (pred?.home === undefined || pred?.away === undefined) return
+    const h = parseInt(pred.home), a = parseInt(pred.away)
+    const homeId = match.home_team_id, awayId = match.away_team_id
+    if (!predictedStandings[homeId] || !predictedStandings[awayId]) return
+    predictedStandings[homeId].gf += h; predictedStandings[homeId].ga += a; predictedStandings[homeId].played++
+    predictedStandings[awayId].gf += a; predictedStandings[awayId].ga += h; predictedStandings[awayId].played++
+    if (h > a) { predictedStandings[homeId].pts += 3; predictedStandings[homeId].w++; predictedStandings[awayId].l++ }
+    else if (h === a) { predictedStandings[homeId].pts += 1; predictedStandings[awayId].pts += 1; predictedStandings[homeId].d++; predictedStandings[awayId].d++ }
+    else { predictedStandings[awayId].pts += 3; predictedStandings[awayId].w++; predictedStandings[homeId].l++ }
   })
 
   const predTable = Object.values(predictedStandings).sort((a, b) =>
@@ -1067,6 +1139,18 @@ export default function Predictions() {
                   }}>🗑️<span style={{ fontSize: '10px' }}>Clear</span>
                   </button>
                 )}
+                {/* Final tab — all groups + best 3rd */}
+                <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 2px', flexShrink: 0 }} />
+                <button onClick={() => setActiveGroup('FINAL')} style={{
+                  padding: '10px 12px', fontSize: '12px', fontWeight: activeGroup === 'FINAL' ? '700' : '400',
+                  color: activeGroup === 'FINAL' ? 'var(--scottish-navy)' : 'var(--text-muted)',
+                  borderBottom: activeGroup === 'FINAL' ? '2px solid var(--scottish-navy)' : '2px solid transparent',
+                  background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                }}>
+                  📊 Final
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>All groups</span>
+                </button>
               </>
             ) : (
               <>
@@ -1113,6 +1197,9 @@ export default function Predictions() {
       {/* Matches / Standings */}
       <div className="container" style={{ padding: '16px' }}>
         {activeTab === 'standings' ? (
+          activeGroup === 'FINAL' ? (
+            <FinalStandingsView standings={standings} appSettings={appSettings} />
+          ) : (
           <StandingsView
             standings={standings}
             activeGroup={activeGroup}
@@ -1120,6 +1207,9 @@ export default function Predictions() {
             predictions={predictions}
             appSettings={appSettings}
           />
+          )
+        ) : activeGroup === 'FINAL' ? (
+          <FinalStandingsView standings={standings} appSettings={appSettings} />
         ) : viewMode === 'group' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {groupMatches.map(renderMatch)}
