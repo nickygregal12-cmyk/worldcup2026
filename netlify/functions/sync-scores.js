@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
-  process.env.VITE_SUPABASE_URL,
+  process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 )
 
@@ -14,12 +14,16 @@ const API_TO_DB = {
   'United States of America': 'United States',
   "Côte d'Ivoire": 'Ivory Coast',
   'Curaçao': 'Curacao',
+  'Curacao': 'Curacao',
   'Cape Verde Islands': 'Cape Verde',
+  'Cape Verde': 'Cape Verde',
   'Korea Republic': 'South Korea',
   'Republic of Korea': 'South Korea',
+  'South Korea': 'South Korea',
   'DR Congo': 'DR Congo',
   'Congo DR': 'DR Congo',
   'Democratic Republic of Congo': 'DR Congo',
+  'Congo, DR': 'DR Congo',
   'North Macedonia': 'North Macedonia',
   'Macedonia': 'North Macedonia',
 }
@@ -47,7 +51,7 @@ export const handler = async (event, context) => {
   try {
     const response = await fetch(
       'https://api.football-data.org/v4/competitions/WC/matches?season=2026',
-      { headers: { 'X-Auth-Token': process.env.VITE_FOOTBALL_DATA_KEY } }
+      { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY } }
     )
 
     if (!response.ok) throw new Error(`API error: ${response.status}`)

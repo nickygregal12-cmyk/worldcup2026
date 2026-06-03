@@ -13,12 +13,16 @@ const API_TO_DB = {
   'United States of America': 'United States',
   "Côte d'Ivoire": 'Ivory Coast',
   'Curaçao': 'Curacao',
+  'Curacao': 'Curacao',
   'Cape Verde Islands': 'Cape Verde',
+  'Cape Verde': 'Cape Verde',
   'Korea Republic': 'South Korea',
   'Republic of Korea': 'South Korea',
+  'South Korea': 'South Korea',
   'DR Congo': 'DR Congo',
   'Congo DR': 'DR Congo',
   'Democratic Republic of Congo': 'DR Congo',
+  'Congo, DR': 'DR Congo',
   'North Macedonia': 'North Macedonia',
   'Macedonia': 'North Macedonia',
 }
@@ -55,11 +59,17 @@ export const handler = async (event, context) => {
       const matchDate = apiMatch.utcDate?.substring(0, 10)
 
       // Find our match by team names + date
+      // Use ±1 day window to handle timezone differences between API and our DB
+      const dayBefore = new Date(matchDate)
+      dayBefore.setDate(dayBefore.getDate() - 1)
+      const dayAfter = new Date(matchDate)
+      dayAfter.setDate(dayAfter.getDate() + 1)
+
       const { data: candidates } = await supabase
         .from('matches')
         .select('id, external_match_id, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
-        .gte('kickoff_time', `${matchDate}T00:00:00Z`)
-        .lte('kickoff_time', `${matchDate}T23:59:59Z`)
+        .gte('kickoff_time', `${dayBefore.toISOString().substring(0, 10)}T00:00:00Z`)
+        .lte('kickoff_time', `${dayAfter.toISOString().substring(0, 10)}T23:59:59Z`)
 
       const ourMatch = candidates?.find(c => {
         const h = stripAccents(c.home_team?.name || '')
