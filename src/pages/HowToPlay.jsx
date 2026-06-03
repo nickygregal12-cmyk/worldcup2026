@@ -81,6 +81,8 @@ const FAQS = [
     q: 'Can I start again from scratch?',
     a: 'Yes — go to your Profile page and scroll down to the Danger Zone. Tap "Clear all predictions & start again" to wipe everything and begin fresh. You can then use Feeling Lucky to fill everything in one go, or go through the groups manually. Note this cannot be undone.',
   },
+  {
+    q: 'What is Feeling Lucky?',
     a: 'Feeling Lucky fills in any missing predictions automatically using betting odds and FIFA rankings as a guide — but with randomness built in so everyone gets different results. It only fills what\'s missing and never overwrites predictions you\'ve already made. Great if you\'re short on time or just want to dive in!',
   },
   {
