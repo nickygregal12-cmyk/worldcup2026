@@ -479,8 +479,8 @@ export default function Leagues() {
                       <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
                         {memberCount} {memberCount === 1 ? 'member' : 'members'}
                       </div>
-                      {leagueMembers[league_id] && (() => {
-                        const sorted = [...(leagueMembers[league_id] || [])].sort((a, b) => (b.profile?.total_points || 0) - (a.profile?.total_points || 0))
+                      {leagueMembers[league.id] && (() => {
+                        const sorted = [...(leagueMembers[league.id] || [])].sort((a, b) => (b.profile?.total_points || 0) - (a.profile?.total_points || 0))
                         const myRank = sorted.findIndex(m => m.user_id === user?.id) + 1
                         return myRank > 0 ? (
                           <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--scottish-navy)', marginTop: '2px' }}>
