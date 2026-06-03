@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { useAuthStore } from '../store/index.js'
+import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TABS = [
   { key: 'health',   label: '🩺 Health' },
@@ -575,6 +575,8 @@ export default function AdminPanel() {
     await supabase.from('app_settings').upsert({ key, value, updated_by: user.id }, { onConflict: 'key' })
     setSettings(prev => ({ ...prev, [key]: value }))
     await logAudit('SETTING_CHANGE', { key, value })
+    // Reload app settings in global store so changes take effect immediately
+    useAppStore.getState().loadAppSettings()
   }
 
   const recalcAllPoints = async () => {

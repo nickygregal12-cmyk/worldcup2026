@@ -71,11 +71,23 @@ export default function Home() {
   const countdown = useCountdown(nextMatch?.kickoff_time)
 
   const now               = new Date()
-  const tournamentStarted = now >= TOURNAMENT_START
-  const groupStageDone    = now >= GROUP_STAGE_END
-  const showKnockoutBanner = now >= KNOCKOUT_BANNER
-  const knockoutLive      = now >= KNOCKOUT_LIVE
-  const tournamentOver    = now >= TOURNAMENT_END
+  const { appSettings } = useAppStore()
+  const phaseOverride = appSettings.game_phase_override || ''
+  
+  const tournamentStarted = phaseOverride
+    ? ['group_stage','knockout_banner','ko_predictor','post_tournament'].includes(phaseOverride)
+    : now >= TOURNAMENT_START
+  const groupStageDone = phaseOverride
+    ? ['ko_predictor','post_tournament'].includes(phaseOverride)
+    : now >= GROUP_STAGE_END
+  const showKnockoutBanner = phaseOverride
+    ? ['knockout_banner','ko_predictor','post_tournament'].includes(phaseOverride)
+    : now >= KNOCKOUT_BANNER
+  const knockoutLive = phaseOverride === 'ko_predictor'
+    ? true
+    : phaseOverride && phaseOverride !== 'ko_predictor' ? false
+    : now >= KNOCKOUT_LIVE
+  const tournamentOver = phaseOverride === 'post_tournament' ? true : now >= TOURNAMENT_END
 
   useEffect(() => { loadData() }, [user])
 

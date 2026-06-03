@@ -6,7 +6,12 @@ const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 export default function BottomNav() {
   const location = useLocation()
   const { user } = useAuthStore()
-  const koLive = new Date() >= KO_OPEN_DATE
+  const { appSettings } = useAppStore()
+  const phaseOverride = appSettings?.game_phase_override || ''
+  const koLive = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
+    ? true
+    : phaseOverride && phaseOverride !== 'ko_predictor' ? false
+    : new Date() >= KO_OPEN_DATE
 
   // Post 27 Jun: swap Knockout tab for KO Predictor
   const navItems = koLive ? [

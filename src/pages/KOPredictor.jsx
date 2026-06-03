@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { useAuthStore } from '../store/index.js'
+import { useAuthStore, useAppStore } from '../store/index.js'
 
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z') // 27 Jun 23:00 BST
 const STAGES = [
@@ -35,6 +35,7 @@ const VENUE_FLAGS = {
 
 export default function KOPredictor() {
   const { user, profile } = useAuthStore()
+  const { appSettings } = useAppStore()
   const [matches, setMatches] = useState([])
   const [predictions, setPredictions] = useState({})
   const [odds, setOdds] = useState({})
@@ -46,7 +47,11 @@ export default function KOPredictor() {
   const [jokerConfirm, setJokerConfirm] = useState(null)
   const [scoreWarning, setScoreWarning] = useState(null)
 
-  const isOpen = new Date() >= KO_OPEN_DATE
+  const phaseOverride = appSettings?.game_phase_override || ''
+  const isOpen = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
+    ? true
+    : phaseOverride && phaseOverride !== 'ko_predictor' ? false
+    : new Date() >= KO_OPEN_DATE
   const isLocked = (kickoffTime) => new Date() >= new Date(kickoffTime)
 
   useEffect(() => {

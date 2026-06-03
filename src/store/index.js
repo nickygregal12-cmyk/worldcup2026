@@ -86,12 +86,20 @@ export const useAppStore = create(
       showFuturePredictions: true,
       mobileMenuOpen: false,
       activeTab: 'home',
+      appSettings: {}, // loaded from app_settings table
 
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
       setShowFuturePredictions: (val) => set({ showFuturePredictions: val }),
       toggleShowFuturePredictions: () => set((state) => ({ showFuturePredictions: !state.showFuturePredictions })),
       setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
       setActiveTab: (tab) => set({ activeTab: tab }),
+
+      loadAppSettings: async () => {
+        const { data } = await supabase.from('app_settings').select('key, value')
+        const settings = {}
+        data?.forEach(s => { settings[s.key] = s.value })
+        set({ appSettings: settings })
+      },
     }),
     {
       name: 'wc26-app',
