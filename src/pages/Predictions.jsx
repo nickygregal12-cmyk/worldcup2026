@@ -468,9 +468,10 @@ export default function Predictions() {
     setStandings(data || [])
   }
 
-  // Auto-scroll to first unpredicted match on load
+  // Auto-scroll to first unpredicted match — runs once when matches first load
+  const [hasAutoScrolled, setHasAutoScrolled] = useState(false)
   useEffect(() => {
-    if (!matches.length || loading) return
+    if (!matches.length || loading || hasAutoScrolled) return
     const firstUnpredicted = matches
       .filter(m => m.group && !isLocked(m.kickoff_time) && predictions[m.id]?.home === undefined)
       .sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))[0]
@@ -482,6 +483,7 @@ export default function Predictions() {
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }, 300)
     }
+    setHasAutoScrolled(true)
   }, [matches.length, loading])
   // This picks up admin score changes immediately
   useEffect(() => {
@@ -533,7 +535,15 @@ export default function Predictions() {
     if (data) {
       const predMap = {}
       data.forEach(p => { predMap[p.match_id] = { home: p.home_score, away: p.away_score, joker: p.is_confident } })
-      setPredictions(predMap)
+      // Only update predictions that we don't have locally — never overwrite unsaved local changes
+      setPredictions(prev => {
+        const merged = { ...predMap }
+        // Keep any local values that differ from DB (unsaved edits in progress)
+        Object.entries(prev).forEach(([id, local]) => {
+          if (local._dirty) merged[id] = local // keep unsaved local edits
+        })
+        return merged
+      })
     }
   }
 
@@ -542,7 +552,7 @@ export default function Predictions() {
   const handleScoreChange = (matchId, side, value) => {
     if (!user) return
     const num = value === '' ? '' : Math.max(0, Math.min(99, parseInt(value) || 0))
-    setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], [side]: num } }))
+    setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], [side]: num, _dirty: true } }))
   }
 
   // Item 8: blur handler — check for high score before saving
@@ -588,6 +598,8 @@ export default function Predictions() {
     setSaving(prev => ({ ...prev, [match.id]: false }))
     if (!error) {
       setSaved(prev => ({ ...prev, [match.id]: true }))
+      // Clear dirty flag — prediction is now saved to DB
+      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _dirty: false } }))
       setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
     }
   }
