@@ -131,6 +131,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (activeTab === 'ko') loadKoData()
+    if (activeTab === 'settings') loadSettings()
   }, [activeTab])
 
   const loadAll = async () => {
@@ -774,10 +775,51 @@ export default function AdminPanel() {
                       </div>
                     )}
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      <button onClick={() => { setEditingMatch(match.id); setScores(prev => ({ ...prev, [match.id]: { home: match.home_score ?? 0, away: match.away_score ?? 0 } })) }}
+                      {/* Set Score */}
+                      <button onClick={() => { setEditingMatch(match.id); setScores(prev => ({ ...prev, [match.id]: { home: match.home_score ?? '', away: match.away_score ?? '' } })) }}
                         className="btn btn-secondary btn-sm">✏️ Set Score</button>
-                      {match.status !== 'live' && <button onClick={() => setMatchLive(match.id)} className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>🔴 Set Live</button>}
-                      {match.use_manual_override && <button onClick={() => resetMatchOverride(match.id)} className="btn btn-sm" style={{ background: 'var(--accent-gold-light)', color: 'var(--accent-gold)', border: '1px solid var(--accent-gold)' }}>↺ Reset Override</button>}
+
+                      {/* Set Live */}
+                      {match.status !== 'live' && match.status !== 'completed' && (
+                        <button onClick={() => setMatchLive(match.id)}
+                          className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
+                          🔴 Set Live
+                        </button>
+                      )}
+
+                      {/* Set Scheduled (revert from live) */}
+                      {match.status === 'live' && (
+                        <button onClick={async () => {
+                          await supabase.from('matches').update({ status: 'scheduled' }).eq('id', match.id)
+                          await logAudit('SET_SCHEDULED', { match_id: match.id })
+                          setActionResult('Match set back to scheduled')
+                          loadMatches()
+                        }} className="btn btn-sm" style={{ background: 'var(--accent-blue)', color: 'white', border: 'none' }}>
+                          📅 Set Scheduled
+                        </button>
+                      )}
+
+                      {/* Revert to API */}
+                      {match.use_manual_override && (
+                        <button onClick={() => resetMatchOverride(match.id)}
+                          className="btn btn-sm" style={{ background: '#fff3e0', color: '#e65100', border: '1px solid #e65100' }}>
+                          🔄 Revert to API
+                        </button>
+                      )}
+
+                      {/* Mark completed (for testing) */}
+                      {match.status !== 'completed' && match.home_score !== null && (
+                        <button onClick={async () => {
+                          const winnerId = match.home_score > match.away_score ? match.home_team_id : match.away_score > match.home_score ? match.away_team_id : null
+                          await supabase.from('matches').update({ status: 'completed', winner_team_id: winnerId, use_manual_override: true }).eq('id', match.id)
+                          await supabase.rpc('calculate_prediction_points', { p_match_id: match.id })
+                          await logAudit('MARK_COMPLETED', { match_id: match.id })
+                          setActionResult(`✅ Match ${match.match_number} marked complete — points calculated`)
+                          loadMatches()
+                        }} className="btn btn-sm" style={{ background: 'var(--accent-green)', color: 'white', border: 'none' }}>
+                          ✅ Mark Complete
+                        </button>
+                      )}
                     </div>
                   </div>
                 )
@@ -1406,15 +1448,10 @@ export default function AdminPanel() {
 
             {/* ── EXISTING SETTINGS ── */}
             {[
-              { section: '🏆 Tournament State' },
-              { key: 'tournament_phase', label: 'Tournament Phase', desc: 'pre_tournament → group_stage → knockout → complete', type: 'text' },
-              { key: 'group_stage_complete', label: 'Group Stage Complete', desc: 'Override: marks group stage as done, unlocks knockout bracket', type: 'toggle' },
-              { key: 'knockout_picks_open', label: 'Knockout Picks Open', desc: 'Allow users to make/edit knockout picks', type: 'toggle' },
-              { key: 'last32_banner_visible', label: 'Last 32 Banner Visible', desc: 'Show "Last 32 is coming" banner on home page', type: 'toggle' },
-              { key: 'last32_predictions_open', label: 'Last 32 Predictions Open', desc: 'Unlock Last 32 mini-game predictions', type: 'toggle' },
               { section: '⚽ Predictions' },
               { key: 'predictions_open', label: 'Group Predictions Open', desc: 'Allow users to make/edit group stage predictions', type: 'toggle' },
               { key: 'awards_locked', label: 'Awards Locked', desc: 'Override: lock award predictions early', type: 'toggle' },
+              { key: 'knockout_picks_open', label: 'Knockout Picks Open', desc: 'Allow users to make/edit knockout bracket picks', type: 'toggle' },
               { section: '🔄 Live Data' },
               { key: 'live_api_enabled', label: 'Live Score Sync', desc: 'Enable automatic score syncing from football-data.org', type: 'toggle' },
               { key: 'show_odds', label: 'Show Betting Odds', desc: 'Display odds on prediction cards', type: 'toggle' },
