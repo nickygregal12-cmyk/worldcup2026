@@ -423,7 +423,6 @@ export default function AdminPanel() {
       name: newLeagueName.trim(),
       invite_code: code,
       created_by: creatorUser?.id || user.id,
-      is_private: false,
     }).select().single()
     if (error) { setActionResult(`❌ Error creating league: ${error.message}`); return }
     // Add creator as member
@@ -748,7 +747,6 @@ export default function AdminPanel() {
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                       Code: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: 'var(--text-primary)' }}>{league.invite_code}</span>
-                      {league.is_private && <span style={{ marginLeft: '6px' }}>🔒 Private</span>}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
