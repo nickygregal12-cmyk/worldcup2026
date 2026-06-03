@@ -461,11 +461,11 @@ export default function Predictions() {
   const location = useLocation()
 
   const loadStandings = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('group_standings')
       .select('*')
-      .order('group_name').order('position')
-    setStandings(data || [])
+      .order('group_name')
+    if (!error) setStandings(data || [])
   }
 
   // Auto-scroll to first unpredicted match — runs once when matches first load
