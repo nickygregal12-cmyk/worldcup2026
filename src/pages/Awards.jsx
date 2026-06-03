@@ -175,6 +175,11 @@ export default function Awards() {
       predicted_player_name: player.name, predicted_team_id: player.team_id,
       bracket_type: 'main', is_locked: false,
     }, { onConflict: 'user_id,award_type,bracket_type' })
+
+    // Update awards_done count on profile
+    const newPreds = { ...predictions, [awardType]: { player_name: player.name } }
+    const doneCount = AWARDS.filter(a => newPreds[a.type]?.player_name).length
+    await supabase.from('profiles').update({ awards_done: doneCount }).eq('id', user.id)
     setSaving(prev => ({ ...prev, [awardType]: false }))
     setSaved(prev => ({ ...prev, [awardType]: true }))
     setTimeout(() => setSaved(prev => ({ ...prev, [awardType]: false })), 2000)

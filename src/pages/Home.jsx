@@ -38,7 +38,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
   if (!user) return { label: '🏆 Join Free', to: '/register' }
 
   const groupsDone  = predictionCount >= 72
-  const knockoutsDone = (profile?.knockout_picks_count || 0) >= 5
+  const knockoutsDone = (profile?.knockout_picks_count || 0) >= 16
   const awardsDone  = profile?.awards_complete || false
 
   if (!tournamentStarted) {
@@ -216,8 +216,8 @@ export default function Home() {
   // ── Progress bar data ────────────────────────────────────────────────────
   const progressItems = user ? [
     { label: 'Groups', done: Math.min(predictionCount, 72), total: 72, to: '/predictions' },
-    { label: 'Knockouts', done: profile?.knockout_picks_count || 0, total: 5, to: '/knockout' },
-    { label: 'Awards', done: profile?.awards_complete ? 4 : 0, total: 4, to: '/awards' },
+    { label: 'Knockouts', done: profile?.knockout_picks_count || 0, total: 32, to: '/knockout' },
+    { label: 'Awards', done: profile?.awards_done || 0, total: 4, to: '/awards' },
   ] : []
 
   // ── Hero subtitle ─────────────────────────────────────────────────────────
