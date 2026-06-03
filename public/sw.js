@@ -5,6 +5,7 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
+  '/offline.html',
 ]
 
 // Install — cache static assets
@@ -41,10 +42,10 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Navigation requests: network first, fall back to cached index
+  // Navigation requests: network first, fall back to offline page
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => caches.match('/'))
+      fetch(request).catch(() => caches.match('/offline.html'))
     )
     return
   }

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WC26 Predictor — Offline</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, 'DM Sans', sans-serif;
+      background: #f8f9fa;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; padding: 24px; text-align: center;
+    }
+    .card {
+      background: white; border-radius: 16px;
+      padding: 40px 32px; max-width: 360px; width: 100%;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .icon { font-size: 56px; margin-bottom: 16px; }
+    h1 { font-size: 22px; font-weight: 800; color: #003087; margin-bottom: 8px; }
+    p { font-size: 14px; color: #636363; line-height: 1.6; margin-bottom: 24px; }
+    .note {
+      background: #e8eef8; border-radius: 10px;
+      padding: 12px 16px; font-size: 13px; color: #003087;
+      font-weight: 600; margin-bottom: 20px;
+    }
+    button {
+      background: #003087; color: white; border: none;
+      padding: 12px 28px; border-radius: 10px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      font-family: inherit;
+    }
+    button:hover { background: #00206b; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">📡</div>
+    <h1>You're offline</h1>
+    <p>No internet connection detected. Check your connection and try again.</p>
+    <div class="note">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Your predictions are saved — nothing has been lost!</div>
+    <button onclick="window.location.reload()">Try again</button>
+  </div>
+</body>
+</html>

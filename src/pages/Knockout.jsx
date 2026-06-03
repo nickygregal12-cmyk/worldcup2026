@@ -9,6 +9,15 @@ import {
   calcPredictedStandings, resolveSlot, getBest3rdTeams, findAffectedPicks, groupFullyPredicted
 } from '../lib/bracketUtils.js'
 
+const VENUE_FLAGS = {
+  'New York': '🇺🇸', 'New Jersey': '🇺🇸', 'Los Angeles': '🇺🇸',
+  'Dallas': '🇺🇸', 'San Francisco': '🇺🇸', 'Seattle': '🇺🇸',
+  'Miami': '🇺🇸', 'Atlanta': '🇺🇸', 'Boston': '🇺🇸', 'Houston': '🇺🇸',
+  'Philadelphia': '🇺🇸', 'Kansas City': '🇺🇸',
+  'Toronto': '🇨🇦', 'Vancouver': '🇨🇦',
+  'Mexico City': '🇲🇽', 'Guadalajara': '🇲🇽', 'Monterrey': '🇲🇽',
+}
+
 function slotLabel(slot) {
   const posMatch = slot.match(/^([12])([A-L])$/)
   if (posMatch) {
@@ -187,7 +196,7 @@ export default function Knockout() {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Match {mn} · {fmt(matchDef.kickoff)}{matchDef.venue ? ` · ${matchDef.venue}` : ''}
+            Match {mn} · {fmt(matchDef.kickoff)}{matchDef.venue ? ` · ${VENUE_FLAGS[matchDef.venue] || ''} ${matchDef.venue}` : ''}
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {locked && <span className="badge badge-red">🔒</span>}
@@ -249,7 +258,7 @@ export default function Knockout() {
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
-      <div style={{ background: 'linear-gradient(135deg, #0a0a0a, #1a2a1a)', padding: '20px', color: 'white' }}>
+      <div style={{ background: 'linear-gradient(135deg, #003087, #005eb8)', padding: '20px', color: 'white' }}>
         <div>
           <h1 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>🏆 Knockout Bracket</h1>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>

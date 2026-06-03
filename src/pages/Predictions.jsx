@@ -727,7 +727,7 @@ export default function Predictions() {
 
       {/* Guest banner */}
       {!user && (
-        <div style={{ background: 'linear-gradient(135deg, #0a0a0a, #1a2a1a)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ background: 'linear-gradient(135deg, #003087, #005eb8)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
           <div style={{ color: 'white', fontSize: '14px' }}>
             <strong>👋 Browsing as guest</strong>
             <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: '8px' }}>Register free to save predictions & compete</span>

@@ -31,9 +31,9 @@ export default function NavBar() {
       }}>
         {/* Logo */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', flexShrink: 0, marginRight: '16px' }}>
-          <span style={{ fontSize: '20px' }}>⚽</span>
+          <span style={{ fontSize: '20px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>
           <span style={{ fontWeight: '800', fontSize: '16px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            WC26 <span style={{ color: 'var(--accent-green)' }}>Predictor</span>
+            WC26 <span style={{ color: 'var(--scottish-navy)' }}>Predictor</span>
           </span>
         </Link>
 
@@ -112,9 +112,9 @@ export default function NavBar() {
       }}>
         {/* Logo */}
         <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-          <span style={{ fontSize: '18px' }}>⚽</span>
+          <span style={{ fontSize: '18px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>
           <span style={{ fontWeight: '800', fontSize: '15px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            WC26 <span style={{ color: 'var(--accent-green)' }}>Predictor</span>
+            WC26 <span style={{ color: 'var(--scottish-navy)' }}>Predictor</span>
           </span>
         </Link>
 

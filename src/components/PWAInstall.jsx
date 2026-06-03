@@ -59,7 +59,7 @@ export default function PWAInstall() {
       bottom: '80px',
       left: '16px',
       right: '16px',
-      background: '#0a0a0a',
+      background: '#003087',
       color: 'white',
       borderRadius: '16px',
       padding: '16px',

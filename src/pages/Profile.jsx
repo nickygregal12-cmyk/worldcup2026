@@ -121,7 +121,7 @@ export default function Profile() {
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #0a0a0a, #1a2a1a)',
+        background: 'linear-gradient(135deg, #003087, #005eb8)',
         padding: '32px 20px 24px',
         color: 'white',
         textAlign: 'center',
