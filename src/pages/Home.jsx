@@ -361,26 +361,26 @@ export default function Home() {
           {showKnockoutBanner && (
             <div style={{
               background: knockoutLive
-                ? 'linear-gradient(135deg, #1a0a2a, #2a1a3a)'
-                : 'linear-gradient(135deg, #0a1a2a, #1a2a3a)',
+                ? 'linear-gradient(135deg, #e65100, #ff9800)'
+                : 'linear-gradient(135deg, #1a0800, #2a1400)',
               borderRadius: 'var(--radius-lg)', padding: '16px 20px',
-              border: `1px solid ${knockoutLive ? 'rgba(139,92,246,0.4)' : 'rgba(99,102,241,0.3)'}`,
+              border: `1px solid ${knockoutLive ? 'rgba(255,152,0,0.5)' : 'rgba(230,81,0,0.3)'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
             }}>
               <div>
-                <div style={{ fontSize: '13px', fontWeight: '800', color: knockoutLive ? '#c084fc' : '#818cf8', marginBottom: '2px' }}>
-                  🏆 {knockoutLive ? 'Knockout Predictor is LIVE!' : `Knockout Predictor unlocks ${Math.ceil((KNOCKOUT_LIVE - now) / (1000 * 60 * 60 * 24))} days`}
+                <div style={{ fontSize: '13px', fontWeight: '800', color: knockoutLive ? 'white' : '#ff9800', marginBottom: '2px' }}>
+                  🔥 {knockoutLive ? 'KO Predictor is LIVE!' : `KO Predictor launches in ${Math.ceil((KNOCKOUT_LIVE - now) / (1000 * 60 * 60 * 24))} days`}
                 </div>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
-                  {knockoutLive ? 'Predict the Last 32 — picks lock match by match' : 'Predict the entire Last 32 bracket · Coming 27 Jun'}
+                <div style={{ fontSize: '12px', color: knockoutLive ? 'rgba(255,255,255,0.8)' : 'rgba(255,152,0,0.6)' }}>
+                  {knockoutLive ? 'Your Second Chance — predict all 32 knockout matches' : 'Fresh start, separate leaderboard · Coming 27 Jun 23:00 BST'}
                 </div>
               </div>
               {knockoutLive && (
-                <Link to="/knockout" style={{
-                  background: '#7c3aed', color: 'white', padding: '8px 14px',
-                  borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '700',
+                <Link to="/ko-predictor" style={{
+                  background: 'white', color: '#e65100', padding: '8px 14px',
+                  borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '800',
                   textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
-                }}>Pick now →</Link>
+                }}>Play now →</Link>
               )}
             </div>
           )}
@@ -408,19 +408,47 @@ export default function Home() {
                 <span className="section-title">👋 Your Stats</span>
                 <Link to="/profile" className="section-link">View profile →</Link>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+
+              {/* Tournament stats */}
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+                🌍 Tournament Predictor
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: knockoutLive ? '14px' : '0' }}>
                 {[
                   { label: 'Points', value: profile.total_points || 0, icon: '🏅' },
                   { label: 'Streak', value: profile.streak_current || 0, icon: '🔥' },
                   { label: 'Exact Scores', value: profile.exact_scores || 0, icon: '🎯' },
                 ].map(({ label, value, icon }) => (
-                  <div key={label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '16px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '24px', marginBottom: '4px' }}>{icon}</div>
-                    <div style={{ fontWeight: '800', fontSize: '22px', fontFamily: 'var(--font-mono)' }}>{value}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>{label}</div>
+                  <div key={label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
+                    <div style={{ fontWeight: '800', fontSize: '20px', fontFamily: 'var(--font-mono)' }}>{value}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>{label}</div>
                   </div>
                 ))}
               </div>
+
+              {/* KO stats — only show once live */}
+              {knockoutLive && (
+                <>
+                  <div style={{ height: '1px', background: 'var(--border-light)', margin: '4px 0 12px' }} />
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+                    🔥 KO Predictor
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                    {[
+                      { label: 'KO Points', value: profile.ko_points || 0, icon: '🔥' },
+                      { label: 'KO Streak', value: profile.ko_streak_current || 0, icon: '⚡' },
+                      { label: 'Exact Scores', value: profile.ko_exact_scores || 0, icon: '🎯' },
+                    ].map(({ label, value, icon }) => (
+                      <div key={label} style={{ background: '#fff3e0', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center', border: '1px solid rgba(230,81,0,0.2)' }}>
+                        <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
+                        <div style={{ fontWeight: '800', fontSize: '20px', fontFamily: 'var(--font-mono)', color: '#e65100' }}>{value}</div>
+                        <div style={{ fontSize: '10px', color: '#e65100', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px', opacity: 0.7 }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           )}
 

@@ -192,22 +192,19 @@ export default function Profile() {
           <>
             {/* Stats grid */}
             <div className="card" style={{ marginBottom: '16px' }}>
-              <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '14px' }}>📊 Your Stats</div>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+                🌍 Tournament Predictor
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
                 {[
                   { label: 'Total Points', value: profile.total_points || 0, icon: '🏅' },
                   { label: 'Accuracy', value: `${accuracy}%`, icon: '🎯', desc: 'Correct results' },
-                  { label: 'Current Streak', value: profile.streak_current || 0, icon: '🔥', desc: 'Correct results in a row' },
+                  { label: 'Current Streak', value: profile.streak_current || 0, icon: '🔥', desc: 'Correct in a row' },
                   { label: 'Best Streak', value: profile.streak_best || 0, icon: '⚡', desc: 'Personal best' },
                   { label: 'Exact Scores', value: profile.exact_scores || 0, icon: '💎', desc: 'Perfect predictions' },
                   { label: 'Jokers Left', value: profile.jokers_group_remaining ?? 8, icon: '🃏', desc: 'Double points remaining' },
                 ].map(({ label, value, icon, desc }) => (
-                  <div key={label} style={{
-                    background: 'var(--bg-secondary)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '14px',
-                    textAlign: 'center',
-                  }}>
+                  <div key={label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center' }}>
                     <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
                     <div style={{ fontWeight: '800', fontSize: '24px', fontFamily: 'var(--font-mono)' }}>{value}</div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>{label}</div>
@@ -215,6 +212,31 @@ export default function Profile() {
                   </div>
                 ))}
               </div>
+
+              {/* KO stats */}
+              {(profile.ko_points > 0 || profile.ko_jokers_remaining !== undefined) && (
+                <>
+                  <div style={{ height: '1px', background: 'var(--border-light)', margin: '14px 0 12px' }} />
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+                    🔥 KO Predictor
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                    {[
+                      { label: 'KO Points', value: profile.ko_points || 0, icon: '🔥' },
+                      { label: 'KO Exact', value: profile.ko_exact_scores || 0, icon: '🎯', desc: 'Perfect KO scores' },
+                      { label: 'KO Streak', value: profile.ko_streak_current || 0, icon: '⚡', desc: 'Current KO streak' },
+                      { label: 'KO Jokers', value: profile.ko_jokers_remaining ?? 5, icon: '🃏', desc: 'KO jokers left' },
+                    ].map(({ label, value, icon, desc }) => (
+                      <div key={label} style={{ background: '#fff3e0', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center', border: '1px solid rgba(230,81,0,0.15)' }}>
+                        <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
+                        <div style={{ fontWeight: '800', fontSize: '24px', fontFamily: 'var(--font-mono)', color: '#e65100' }}>{value}</div>
+                        <div style={{ fontSize: '11px', color: '#e65100', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px', opacity: 0.8 }}>{label}</div>
+                        {desc && <div style={{ fontSize: '10px', color: '#e65100', marginTop: '2px', opacity: 0.6, lineHeight: '1.3' }}>{desc}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Badges */}
