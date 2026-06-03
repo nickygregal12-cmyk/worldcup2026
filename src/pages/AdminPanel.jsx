@@ -102,6 +102,7 @@ export default function AdminPanel() {
   const [showCreateLeague, setShowCreateLeague] = useState(false)
   const [newLeagueName, setNewLeagueName] = useState('')
   const [newLeagueCreatingFor, setNewLeagueCreatingFor] = useState('')
+  const [newLeagueIsGlobal, setNewLeagueIsGlobal] = useState(false)
 
   useEffect(() => {
     if (!user || !isAdmin) { navigate('/'); return }
@@ -423,6 +424,7 @@ export default function AdminPanel() {
       name: newLeagueName.trim(),
       invite_code: code,
       created_by: creatorUser?.id || user.id,
+      is_global: newLeagueIsGlobal || false,
     }).select().single()
     if (error) { setActionResult(`❌ Error creating league: ${error.message}`); return }
     // Add creator as member
@@ -432,6 +434,7 @@ export default function AdminPanel() {
     setShowCreateLeague(false)
     setNewLeagueName('')
     setNewLeagueCreatingFor('')
+    setNewLeagueIsGlobal(false)
     loadLeagues()
   }
 
@@ -711,6 +714,11 @@ export default function AdminPanel() {
                     value={newLeagueName} onChange={e => setNewLeagueName(e.target.value)} />
                   <input className="input" placeholder="Created by username (leave blank for admin)"
                     value={newLeagueCreatingFor} onChange={e => setNewLeagueCreatingFor(e.target.value)} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={newLeagueIsGlobal || false}
+                      onChange={e => setNewLeagueIsGlobal(e.target.checked)} />
+                    🌍 Global league (visible to all users on Leagues page)
+                  </label>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={createLeague} disabled={!newLeagueName.trim()} className="btn btn-primary btn-sm">Create</button>
                     <button onClick={() => setShowCreateLeague(false)} className="btn btn-secondary btn-sm">Cancel</button>
