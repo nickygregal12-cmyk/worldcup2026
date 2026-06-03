@@ -759,59 +759,85 @@ export default function Predictions() {
             </div>
           </div>
 
-          {/* Row 2: Tab bar — Groups A-L + By Date, Knockout style */}
+          {/* Row 2: Adaptive tab bar */}
           <div style={{ display: 'flex', overflowX: 'auto', marginTop: '4px', borderBottom: '1px solid rgba(255,255,255,0.1)', scrollbarWidth: 'none' }}>
 
-            {/* By Date tab first */}
-            <button onClick={() => setViewMode('date')} style={{
-              padding: '10px 14px', fontSize: '12px', fontWeight: viewMode === 'date' ? '700' : '400',
-              color: viewMode === 'date' ? 'white' : 'rgba(255,255,255,0.45)',
-              borderBottom: viewMode === 'date' ? '2px solid #4ade80' : '2px solid transparent',
-              background: 'none', border: 'none', borderBottom: viewMode === 'date' ? '2px solid #4ade80' : '2px solid transparent',
-              cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-            }}>
-              By Date
-              <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', fontWeight: '500' }}>All groups</span>
-            </button>
-
-            {/* Divider */}
-            <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 2px', flexShrink: 0 }} />
-
-            {/* Group tabs */}
-            {GROUPS.map(g => {
-              const gMatches = matches.filter(m => m.group?.name === g)
-              const gDone = gMatches.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
-              const gComplete = gDone === gMatches.length && gMatches.length > 0
-              const isActive = viewMode === 'group' && activeGroup === g
-              return (
-                <button key={g} onClick={() => { setViewMode('group'); setActiveGroup(g) }} style={{
-                  padding: '10px 12px', fontSize: '12px', fontWeight: isActive ? '700' : '400',
-                  color: isActive ? 'white' : 'rgba(255,255,255,0.45)',
-                  borderBottom: isActive ? '2px solid #4ade80' : '2px solid transparent',
-                  background: 'none', border: 'none',
-                  cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+            {viewMode === 'group' ? (
+              <>
+                <button onClick={() => setViewMode('date')} style={{
+                  padding: '10px 14px', fontSize: '12px', fontWeight: '400',
+                  color: 'rgba(255,255,255,0.45)', borderBottom: '2px solid transparent',
+                  background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                 }}>
-                  Grp {g}
-                  <span style={{ fontSize: '10px', color: gComplete ? '#4ade80' : 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
-                    {gComplete ? '✓' : `${gDone}/${gMatches.length}`}
-                  </span>
+                  By Date
+                  <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>All groups</span>
                 </button>
-              )
-            })}
-
-            {/* Clear button — only in group mode */}
-            {viewMode === 'group' && user && (
-              <button onClick={() => setShowClearConfirm('group')} style={{
-                padding: '10px 10px', fontSize: '11px', fontWeight: '500',
-                color: 'rgba(255,255,255,0.4)', background: 'none', border: 'none',
-                borderBottom: '2px solid transparent', cursor: 'pointer', flexShrink: 0,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-              }}>
-                🗑️
-                <span style={{ fontSize: '10px' }}>Clear</span>
-              </button>
+                <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 2px', flexShrink: 0 }} />
+                {GROUPS.map(g => {
+                  const gMatches = matches.filter(m => m.group?.name === g)
+                  const gDone = gMatches.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
+                  const gComplete = gDone === gMatches.length && gMatches.length > 0
+                  const isActive = activeGroup === g
+                  return (
+                    <button key={g} onClick={() => setActiveGroup(g)} style={{
+                      padding: '10px 12px', fontSize: '12px', fontWeight: isActive ? '700' : '400',
+                      color: isActive ? 'white' : 'rgba(255,255,255,0.45)',
+                      borderBottom: isActive ? '2px solid #4ade80' : '2px solid transparent',
+                      background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                    }}>
+                      Grp {g}
+                      <span style={{ fontSize: '10px', color: gComplete ? '#4ade80' : 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
+                        {gComplete ? '✓' : `${gDone}/${gMatches.length}`}
+                      </span>
+                    </button>
+                  )
+                })}
+                {user && (
+                  <button onClick={() => setShowClearConfirm('group')} style={{
+                    padding: '10px 10px', fontSize: '11px', color: 'rgba(255,255,255,0.4)',
+                    background: 'none', border: 'none', borderBottom: '2px solid transparent',
+                    cursor: 'pointer', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                  }}>🗑️<span style={{ fontSize: '10px' }}>Clear</span>
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <button onClick={() => setViewMode('group')} style={{
+                  padding: '10px 14px', fontSize: '12px', fontWeight: '400',
+                  color: 'rgba(255,255,255,0.45)', borderBottom: '2px solid transparent',
+                  background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                }}>
+                  By Group
+                  <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>A – L</span>
+                </button>
+                <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 2px', flexShrink: 0 }} />
+                {Object.entries(matchesByDate).map(([dateKey, dayMatches]) => {
+                  const firstMatch = dayMatches[0]
+                  const shortDate = new Date(firstMatch.kickoff_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+                  const donePreds = dayMatches.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
+                  const complete = donePreds === dayMatches.length
+                  return (
+                    <button key={dateKey} onClick={() => {
+                      const el = document.getElementById(`date-${dateKey.replace(/[^a-z0-9]/gi, '-')}`)
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }} style={{
+                      padding: '10px 12px', fontSize: '11px', fontWeight: '500',
+                      color: 'rgba(255,255,255,0.6)', borderBottom: '2px solid transparent',
+                      background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                    }}>
+                      {shortDate}
+                      <span style={{ fontSize: '10px', color: complete ? '#4ade80' : 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
+                        {complete ? '✓' : `${donePreds}/${dayMatches.length}`}
+                      </span>
+                    </button>
+                  )
+                })}
+              </>
             )}
           </div>
         </div>
@@ -840,7 +866,7 @@ export default function Predictions() {
               const hasPreds = dayMatches.some(m => predictions[m.id])
               const isFillingThis = autoFillingDate === dayMatches[0]?.kickoff_time
               return (
-                <div key={date}>
+                <div key={date} id={`date-${date.replace(/[^a-z0-9]/gi, '-')}`}>
                   <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
                     <span>{date}</span>
