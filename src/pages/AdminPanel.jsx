@@ -1599,6 +1599,8 @@ export default function AdminPanel() {
               { section: '🔧 Platform' },
               { key: 'maintenance_mode', label: 'Maintenance Mode', desc: 'Show maintenance message to all non-admin users', type: 'toggle' },
               { key: 'registration_open', label: 'Registration Open', desc: 'Allow new user registrations', type: 'toggle' },
+              { section: '📊 Group Standings' },
+              { key: 'show_group_tables', label: 'Show Group Tables', desc: 'Show real vs predicted standings tab on predictions page', type: 'toggle' },
               { section: '🔥 Knockout Predictor' },
               { key: 'ko_predictor_enabled', label: 'KO Predictor Enabled', desc: 'Show KO Predictor to users (launches 27 Jun)', type: 'toggle' },
               { key: 'ko_predictions_open', label: 'KO Predictions Open', desc: 'Allow users to make/edit KO predictions', type: 'toggle' },
