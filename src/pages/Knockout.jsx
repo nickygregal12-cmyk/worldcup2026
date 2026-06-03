@@ -47,7 +47,6 @@ export default function Knockout() {
 
   const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
   const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
-  const showGroupTables = activeStage === 'groups'
 
   useEffect(() => { loadData() }, [user])
 
@@ -319,16 +318,6 @@ export default function Knockout() {
       {/* Stage tabs */}
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, overflowX: 'auto' }}>
         <div style={{ display: 'flex' }}>
-          <button onClick={() => setActiveStage('groups')} style={{
-            padding: '12px 14px', fontSize: '12px', whiteSpace: 'nowrap', background: 'none', border: 'none',
-            fontWeight: activeStage === 'groups' ? '700' : '400',
-            color: activeStage === 'groups' ? 'var(--text-primary)' : 'var(--text-muted)',
-            borderBottom: activeStage === 'groups' ? '2px solid var(--primary)' : '2px solid transparent',
-            cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-          }}>
-            Group Tables
-            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>Predicted</span>
-          </button>
           {ALL_STAGES.map(stage => {
             const picks = stage.matches.filter(m => knockoutPicks[m.match_number]?.winner_id).length
             const complete = picks === stage.matches.length
@@ -351,7 +340,7 @@ export default function Knockout() {
       </div>
 
       {/* Points bar */}
-      {!showGroupTables && (
+      {(
         <div style={{ background: 'var(--accent-blue-light)', padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
           <span style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>
             🏅 Correct pick = <strong>{currentStage?.points}pts</strong>
@@ -362,8 +351,8 @@ export default function Knockout() {
         </div>
       )}
 
-      {/* Group Tables */}
-      {showGroupTables && (
+      {/* Group Tables removed - now on Predictions Overview tab */}
+      {false && (
         <div className="container" style={{ padding: '16px' }}>
           <div style={{ marginBottom: '12px', fontSize: '13px', color: 'var(--text-muted)' }}>
             Based on your predictions — predict more group games to see updated standings
@@ -428,13 +417,11 @@ export default function Knockout() {
       )}
 
       {/* Knockout matches */}
-      {!showGroupTables && (
-        <div className="container" style={{ padding: '16px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {stageMatches.map(renderMatch)}
-          </div>
+      <div className="container" style={{ padding: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {stageMatches.map(renderMatch)}
         </div>
-      )}
+      </div>
     </div>
   )
 }
