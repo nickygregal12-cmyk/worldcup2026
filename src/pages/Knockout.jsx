@@ -136,8 +136,8 @@ export default function Knockout() {
     setKnockoutPicks(prev => ({ ...prev, [mn]: newPick }))
     setSaving(prev => ({ ...prev, [mn]: true }))
 
-    // Check if prediction already exists
-    const { data: existing } = await supabase
+    // Check if prediction already exists in DB
+    const { data: existingDb } = await supabase
       .from('knockout_picks')
       .select('id')
       .eq('user_id', user.id)
@@ -145,7 +145,7 @@ export default function Knockout() {
       .maybeSingle()
 
     let upsertErr
-    if (existing) {
+    if (existingDb) {
       const { error } = await supabase
         .from('knockout_picks')
         .update({ winner_team_id: winnerId, home_team_id: home?.id, away_team_id: away?.id })
