@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { useAuthStore } from '../store/index.js'
+import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
@@ -26,8 +26,13 @@ export default function Leagues() {
   const [loadingPreds, setLoadingPreds] = useState(false)
   const [matchOdds, setMatchOdds] = useState({})
 
+  const { appSettings } = useAppStore()
+  const phaseOverride = appSettings?.game_phase_override || ''
   const tournamentLive = new Date() >= TOURNAMENT_START
-  const koLive = new Date() >= KO_OPEN_DATE
+  const koLive = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
+    ? true
+    : phaseOverride && phaseOverride !== 'ko_predictor' ? false
+    : new Date() >= KO_OPEN_DATE
 
   useEffect(() => { if (user) { loadMyLeagues(); loadMyKoLeagues() } }, [user])
 
@@ -51,10 +56,13 @@ export default function Leagues() {
     const countMap = {}
     counts?.forEach(c => { countMap[c.league_id] = (countMap[c.league_id] || 0) + 1 })
 
-    setMyLeagues(memberships.map(m => ({
+    const leagues = memberships.map(m => ({
       ...m,
       memberCount: countMap[m.league_id] || 1,
-    })))
+    }))
+    // Pin global leagues to top
+    leagues.sort((a, b) => (b.league?.is_global ? 1 : 0) - (a.league?.is_global ? 1 : 0))
+    setMyLeagues(leagues)
     setLoading(false)
   }
 
@@ -183,6 +191,8 @@ export default function Leagues() {
       .eq('user_id', userId)
       .order('match_id', { ascending: true })
 
+    // Show all predictions if user allows it OR tournament has started
+    // Otherwise show notice that picks are private
     const filtered = (preds || []).filter(p => {
       const kicked = new Date(p.match?.kickoff_time) <= new Date()
       return kicked || showFuture
@@ -192,7 +202,6 @@ export default function Leagues() {
   }
 
   const openMemberModal = async (member, leagueId) => {
-    if (!tournamentLive) return // Item 3: locked pre-tournament
     setMemberModal({ userId: member.user_id, username: member.profile?.username, leagueId })
     const { data: profile } = await supabase
       .from('profiles').select('show_future_predictions').eq('id', member.user_id).single()
@@ -315,13 +324,13 @@ export default function Leagues() {
               border: activeGame === 'tournament' ? '1px solid var(--scottish-navy)' : '1px solid rgba(255,255,255,0.3)',
               cursor: 'pointer',
             }}>🌍 Tournament Leagues</button>
-            <button onClick={() => { setActiveGame('ko'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
+            <button onClick={() => { if (koLive) { setActiveGame('ko'); setShowCreate(false); setShowJoin(false); setError('') } }} style={{
               flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
               background: activeGame === 'ko' ? '#e65100' : 'rgba(255,255,255,0.15)',
               color: activeGame === 'ko' ? 'white' : 'rgba(255,255,255,0.8)',
               border: activeGame === 'ko' ? '1px solid #e65100' : '1px solid rgba(255,255,255,0.3)',
               cursor: 'pointer',
-            }}>🔥 KO Predictor Leagues</button>
+            }}>🔥 KO Predictor {!koLive && <span style={{ fontSize: '10px', opacity: 0.7 }}>· 28 Jun</span>}</button>
           </div>
 
           {success && (
@@ -372,7 +381,19 @@ export default function Leagues() {
       <div className="container" style={{ padding: '16px' }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><div className="spinner" /></div>
-        ) : activeGame === 'ko' ? (
+        ) : activeGame === 'ko' && !koLive ? (
+          /* KO not live yet */
+          <div className="card" style={{ textAlign: 'center', padding: '48px 24px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔥</div>
+            <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>KO Predictor Leagues launch 27 Jun</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
+              Once the group stage finishes you can create or join KO Predictor leagues — completely separate from your Tournament leagues with a fresh start.
+            </div>
+            <button onClick={() => setActiveGame('tournament')} className="btn btn-secondary">
+              ← Back to Tournament Leagues
+            </button>
+          </div>
+        ) : activeGame === 'ko' && koLive ? (
           /* ── KO Leagues section ── */
           myKoLeagues.length === 0 ? (
             <div className="empty-state">
@@ -432,7 +453,11 @@ export default function Leagues() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {myLeagues.map(({ league, memberCount }) => {
+            {[...myLeagues].sort((a, b) => {
+              if (a.league?.is_global && !b.league?.is_global) return -1
+              if (!a.league?.is_global && b.league?.is_global) return 1
+              return 0
+            }).map(({ league, memberCount }) => {
               if (!league) return null
               const isCreator = league.created_by === user.id
               const isExpanded = expandedLeague === league.id
@@ -444,15 +469,25 @@ export default function Leagues() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                     <div>
                       <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '4px' }}>
-                        {league.is_global ? '🌍 ' : isCreator ? '👑 ' : '👥 '}{league.name}
+                        {league.is_global ? '🌍 ' : isCreator ? '👑 ' : '👥 '}{league.is_global ? 'WC26 Overall' : league.name}
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                         {isCreator ? 'You created this league' : 'Member'}
                       </div>
                     </div>
-                    {/* Fix 1: real member count */}
-                    <div style={{ fontSize: '13px', color: 'var(--text-muted)', flexShrink: 0 }}>
-                      {memberCount} {memberCount === 1 ? 'member' : 'members'}
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
+                        {memberCount} {memberCount === 1 ? 'member' : 'members'}
+                      </div>
+                      {leagueMembers[league_id] && (() => {
+                        const sorted = [...(leagueMembers[league_id] || [])].sort((a, b) => (b.profile?.total_points || 0) - (a.profile?.total_points || 0))
+                        const myRank = sorted.findIndex(m => m.user_id === user?.id) + 1
+                        return myRank > 0 ? (
+                          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--scottish-navy)', marginTop: '2px' }}>
+                            You #{myRank}
+                          </div>
+                        ) : null
+                      })()}
                     </div>
                   </div>
 
@@ -593,12 +628,10 @@ export default function Leagues() {
                                     {/* Fix 3: picks button only live from 11 Jun */}
                                     <button
                                       onClick={() => openMemberModal(member, league.id)}
-                                      disabled={!tournamentLive}
                                       className="btn btn-sm"
-                                      style={{ fontSize: '11px', padding: '3px 8px', opacity: tournamentLive ? 1 : 0.4, cursor: tournamentLive ? 'pointer' : 'default' }}
-                                      title={tournamentLive ? '' : 'Available from 11 Jun'}
+                                      style={{ fontSize: '11px', padding: '3px 8px' }}
                                     >
-                                      👁 Picks
+                                      👁 View Picks
                                     </button>
                                     {canRemove && (
                                       <button onClick={() => setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username })}
@@ -639,9 +672,13 @@ export default function Leagues() {
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
               ) : memberPredictions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>⚽</div>
-                  <div style={{ fontWeight: '700', marginBottom: '4px' }}>No results yet</div>
-                  <div style={{ fontSize: '13px' }}>Predictions appear here once matches kick off</div>
+                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
+                  <div style={{ fontWeight: '700', marginBottom: '4px' }}>Picks are private</div>
+                  <div style={{ fontSize: '13px' }}>
+                    {tournamentLive
+                      ? 'This user has chosen to keep their predictions private'
+                      : 'Picks become visible once matches kick off on 11 Jun — unless the user enables "Show Future Predictions" in their profile'}
+                  </div>
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
