@@ -121,7 +121,7 @@ export default function Knockout() {
     const existing = knockoutPicks[mn]
 
     if (existing?.winner_id && existing.winner_id !== winnerId) {
-      const affected = findAffectedPicks(existing.winner_id, knockoutPicks)
+      const affected = findAffectedPicks(existing.winner_id, knockoutPicks, mn)
       if (affected.length > 0) {
         setAffectedMatches(prev => [...new Set([...prev, ...affected])])
         const newPicks = { ...knockoutPicks }
@@ -177,6 +177,10 @@ export default function Knockout() {
       setSaving(prev => ({ ...prev, [mn]: false }))
       return
     }
+
+    // Update cached count on profile
+    const totalPicks = Object.keys({ ...knockoutPicks, [mn]: { winner_id: winnerId } }).length
+    await supabase.from('profiles').update({ knockout_picks_count: totalPicks }).eq('id', user.id)
 
     setSaving(prev => ({ ...prev, [mn]: false }))
     setSaved(prev => ({ ...prev, [mn]: true }))

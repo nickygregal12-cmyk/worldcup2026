@@ -207,14 +207,18 @@ export function resolveSlot(slot, standings, matches = [], predictions = {}) {
 /**
  * Find all knockout picks affected by a team change
  * Returns array of match_numbers that need warning
+ * Only cascades FORWARD — higher match numbers only (never earlier rounds)
  */
-export function findAffectedPicks(changedTeamId, knockoutPicks) {
+export function findAffectedPicks(changedTeamId, knockoutPicks, changedMatchNumber = 0) {
   const affected = []
   for (const [matchNum, pick] of Object.entries(knockoutPicks)) {
+    const mn = parseInt(matchNum)
+    // Only flag matches that come AFTER the changed match (forward cascade only)
+    if (mn <= changedMatchNumber) continue
     if (pick?.winner_id === changedTeamId || 
         pick?.home_id === changedTeamId || 
         pick?.away_id === changedTeamId) {
-      affected.push(parseInt(matchNum))
+      affected.push(mn)
     }
   }
   return affected
