@@ -13,6 +13,7 @@ export default function BottomNav() {
     : phaseOverride && phaseOverride !== 'ko_predictor' ? false
     : new Date() >= KO_OPEN_DATE
 
+  // Post 27 Jun: swap Knockout tab for KO Predictor
   const navItems = koLive ? [
     { to: '/',            icon: '🏠',  label: 'Home' },
     { to: '/predictions', icon: '⚽',  label: 'Tournament' },
@@ -42,8 +43,40 @@ export default function BottomNav() {
       boxShadow: '0 -4px 12px rgba(0,0,0,0.06)',
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
     }}>
-      {navItems.map(({ to, icon, label, protect
-cd ~/Desktop/worldcup26
-git add src/components/BottomNav.jsx
-git commit -m "Fix BottomNav - wire appSettings for game phase control"
-git push
+      {navItems.map(({ to, icon, label, protected: prot, highlight }) => {
+        const isActive = to === '/'
+          ? location.pathname === '/'
+          : location.pathname.startsWith(to)
+        const href = prot && !user ? '/login' : to
+
+        return (
+          <Link key={to} to={href} style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '2px',
+            padding: '6px 8px',
+            borderRadius: 'var(--radius-md)',
+            background: isActive
+              ? (highlight ? 'rgba(230,81,0,0.1)' : 'var(--bg-tertiary)')
+              : 'transparent',
+            minWidth: '52px',
+            transition: 'all 0.15s',
+          }}>
+            <span style={{ fontSize: '18px', lineHeight: 1 }}>{icon}</span>
+            <span style={{
+              fontSize: '9px',
+              fontWeight: isActive ? '700' : '400',
+              color: isActive
+                ? (highlight ? '#e65100' : 'var(--text-primary)')
+                : 'var(--text-muted)',
+              letterSpacing: '0.02em',
+            }}>
+              {label}
+            </span>
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
