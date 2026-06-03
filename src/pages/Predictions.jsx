@@ -538,8 +538,8 @@ export default function Predictions() {
           </div>
         )}
 
-        {/* Completed match — prediction vs result */}
-        {locked && (match.home_score !== null && match.home_score !== undefined) && hasPrediction && (
+        {/* Match result vs prediction — shows whenever score is set (including admin preview) */}
+        {(match.home_score !== null && match.home_score !== undefined) && hasPrediction && (
           <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
             <span style={{ color: 'var(--text-muted)' }}>
               Your pick: <strong>{pred.home} – {pred.away}</strong>
