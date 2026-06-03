@@ -183,10 +183,14 @@ export default function Awards() {
       bracket_type: 'main', is_locked: false,
     }, { onConflict: 'user_id,award_type,bracket_type' })
 
-    // Update awards_done count on profile
+    // Update awards_done — player awards + 1 if any goals entered
     const newPreds = { ...predictions, [awardType]: { player_name: player.name } }
-    const doneCount = AWARDS.filter(a => newPreds[a.type]?.player_name).length
-    await supabase.from('profiles').update({ awards_done: doneCount }).eq('id', user.id)
+    const playerCount = AWARDS.filter(a => newPreds[a.type]?.player_name).length
+    const { data: goalData } = await supabase.from('tournament_predictions')
+      .select('prediction_type').eq('user_id', user.id)
+      .in('prediction_type', ['group_goals', 'knockout_goals', 'total_goals'])
+    const goalsEntered = goalData && goalData.length > 0 ? 1 : 0
+    await supabase.from('profiles').update({ awards_done: playerCount + goalsEntered }).eq('id', user.id)
     setSaving(prev => ({ ...prev, [awardType]: false }))
     setSaved(prev => ({ ...prev, [awardType]: true }))
     setTimeout(() => setSaved(prev => ({ ...prev, [awardType]: false })), 2000)

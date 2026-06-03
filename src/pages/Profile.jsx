@@ -241,28 +241,44 @@ export default function Profile() {
 
             {/* Badges */}
             <div className="card" style={{ marginBottom: '16px' }}>
-              <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '14px' }}>🏆 Badges</div>
-              {badges.length === 0 ? (
-                <div className="empty-state" style={{ padding: '24px' }}>
-                  <div className="empty-state-icon">🎖️</div>
-                  <div className="empty-state-title">No badges yet</div>
-                  <div className="empty-state-desc">Start predicting to earn badges!</div>
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-                  {badges.map(({ badge }) => (
+              <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '4px' }}>🏆 Badges</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>Earn badges by hitting milestones</div>
+
+              {/* All available badges — earned in colour, locked greyed out */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                {[
+                  { code: 'first_prediction', icon: '⚽', name: 'First Kick', desc: 'Make your first prediction', check: () => (profile?.total_predictions || 0) >= 1 },
+                  { code: 'all_groups', icon: '📋', name: 'Full House', desc: 'Predict all 72 group matches', check: () => (profile?.total_predictions || 0) >= 72 },
+                  { code: 'knockout_done', icon: '🏆', name: 'Bracket Builder', desc: 'Complete your knockout picks', check: () => (profile?.knockout_picks_count || 0) >= 16 },
+                  { code: 'awards_done', icon: '🥇', name: 'Award Season', desc: 'Complete all award predictions', check: () => (profile?.awards_done || 0) >= 4 },
+                  { code: 'exact_score', icon: '🎯', name: 'Sniper', desc: 'Get your first exact score', check: () => (profile?.exact_scores || 0) >= 1 },
+                  { code: 'five_exact', icon: '💎', name: 'Diamond Eye', desc: 'Get 5 exact scores', check: () => (profile?.exact_scores || 0) >= 5 },
+                  { code: 'streak_5', icon: '🔥', name: 'On Fire', desc: '5 correct results in a row', check: () => (profile?.streak_best || 0) >= 5 },
+                  { code: 'streak_10', icon: '⚡', name: 'Lightning', desc: '10 correct results in a row', check: () => (profile?.streak_best || 0) >= 10 },
+                  { code: 'joker_used', icon: '🃏', name: 'Wild Card', desc: 'Use your first joker', check: () => (profile?.jokers_group_remaining || 8) < 8 },
+                  { code: 'top_3', icon: '🏅', name: 'Podium', desc: 'Reach top 3 on leaderboard', check: () => false }, // checked server-side
+                  { code: 'ko_predictor', icon: '🔥', name: 'KO Warrior', desc: 'Make 10+ KO Predictor picks', check: () => (profile?.ko_points || 0) > 0 },
+                  { code: 'perfect_group', icon: '🌟', name: 'Group Genius', desc: 'Predict an entire group correctly', check: () => false },
+                ].map(badge => {
+                  const earned = badges.find(b => b.badge?.code === badge.code) || badge.check()
+                  return (
                     <div key={badge.code} style={{
-                      background: 'var(--bg-secondary)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '12px 8px',
-                      textAlign: 'center',
+                      display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 12px', borderRadius: 'var(--radius-md)',
+                      background: earned ? 'var(--bg-secondary)' : 'var(--bg-tertiary)',
+                      border: earned ? '1px solid var(--border-medium)' : '1px solid var(--border-light)',
+                      opacity: earned ? 1 : 0.5,
                     }}>
-                      <div style={{ fontSize: '28px', marginBottom: '4px' }}>{badge.icon}</div>
-                      <div style={{ fontSize: '11px', fontWeight: '700' }}>{badge.name}</div>
+                      <div style={{ fontSize: '24px', filter: earned ? 'none' : 'grayscale(1)' }}>{badge.icon}</div>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: '700' }}>{badge.name}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: '1.3' }}>{badge.desc}</div>
+                      </div>
+                      {earned && <div style={{ marginLeft: 'auto', fontSize: '14px' }}>✅</div>}
                     </div>
-                  ))}
-                </div>
-              )}
+                  )
+                })}
+              </div>
             </div>
 
             {/* Settings */}

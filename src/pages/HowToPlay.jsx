@@ -1,53 +1,61 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 
 const SCORING = [
   {
-    section: '⚽ Group Stage',
-    items: [
-      { label: 'Correct result (win/draw/loss)', pts: '3pts' },
-      { label: 'Exact score', pts: '5pts' },
-      { label: 'Joker (correct result)', pts: '2x pts', highlight: true },
+    section: '⚽ Group Stage Predictions',
+    desc: 'Predict the exact score for all 72 group stage matches. Picks lock at kickoff.',
+    rows: [
+      { label: 'Correct result (win/draw/loss)', pts: '5pts' },
+      { label: 'Exact score', pts: '10pts' },
+      { label: 'Joker on correct result', pts: '2x pts', highlight: true },
+      { label: 'Joker on exact score', pts: '2x pts', highlight: true },
+      { label: 'Wrong prediction', pts: '0pts' },
       { label: 'Missed prediction', pts: '0pts' },
     ]
   },
   {
     section: '🏆 Knockout Picks',
-    desc: 'Pick which teams advance through each round. Points awarded as teams progress — it doesn\'t matter which route they take.',
-    items: [
+    desc: 'Pick which teams advance through each round. Picks lock when the round begins.',
+    rows: [
       { label: 'Team reaches Round of 16', pts: '5pts' },
-      { label: 'Team reaches Quarter-finals', pts: '8pts' },
-      { label: 'Team reaches Semi-finals', pts: '12pts' },
-      { label: 'Team reaches the Final', pts: '16pts' },
+      { label: 'Team reaches Quarter-Finals', pts: '10pts' },
+      { label: 'Team reaches Semi-Finals', pts: '15pts' },
+      { label: 'Team reaches Final', pts: '20pts' },
       { label: 'Correct tournament winner', pts: '25pts' },
     ]
   },
   {
-    section: '🏅 Award Predictions',
-    desc: 'Predict before the tournament starts. Locks at kickoff on 11 Jun.',
-    items: [
+    section: '🥇 Award Predictions',
+    desc: 'Predict the individual award winners and tournament goal totals.',
+    rows: [
       { label: 'Golden Boot (top scorer)', pts: '15pts' },
-      { label: 'Golden Glove (best goalkeeper)', pts: '10pts' },
-      { label: 'Player of the Tournament', pts: '10pts' },
-    ]
-  },
-  {
-    section: '🥅 Total Goals',
-    desc: 'Predict how many goals will be scored across the whole tournament. Locks at kickoff on 11 Jun.',
-    items: [
-      { label: 'Closest prediction', pts: '10pts' },
-      { label: 'Exact total', pts: '15pts' },
-      { label: 'Ties share points equally', pts: '' },
+      { label: 'Golden Glove (best goalkeeper)', pts: '15pts' },
+      { label: 'Player of the Tournament', pts: '15pts' },
+      { label: 'Total goals — within 5', pts: '5pts' },
+      { label: 'Total goals — within 10', pts: '3pts' },
+      { label: 'Exact group stage goals', pts: '15pts' },
     ]
   },
   {
     section: '🃏 Joker Rules',
     desc: 'Use jokers on predictions you\'re most confident about to double your points.',
-    items: [
+    rows: [
       { label: 'Group stage jokers available', pts: '8 total' },
-      { label: 'If your joker prediction is correct', pts: '2x pts' },
-      { label: 'If your joker prediction is wrong', pts: '0pts' },
-      { label: 'Unused jokers at group stage end', pts: '0pts' },
+      { label: 'Joker on correct result', pts: '2x pts' },
+      { label: 'Joker on exact score', pts: '2x pts' },
+      { label: 'Joker on wrong prediction', pts: '0pts' },
+    ]
+  },
+  {
+    section: '🔥 KO Predictor — Your Second Chance',
+    desc: 'A fresh game starting 27 Jun. Predict scores for all 32 knockout matches. Separate leaderboard, fresh start — everyone is equal.',
+    rows: [
+      { label: 'Correct result', pts: '5pts' },
+      { label: 'Exact score', pts: '10pts' },
+      { label: 'Correct after extra time (+3)', pts: '+3pts' },
+      { label: 'Correct penalty shootout winner (+5)', pts: '+5pts' },
+      { label: 'KO Predictor jokers available', pts: '5 total' },
     ]
   },
 ]
@@ -55,177 +63,118 @@ const SCORING = [
 const FAQS = [
   {
     q: 'When do predictions lock?',
-    a: 'Group stage predictions lock at the kickoff time of each individual match — so you can still predict later games even after earlier ones have started. Knockout picks lock when the group stage ends on 27 June. Award and goals predictions lock at the tournament kickoff on 11 June.',
-  },
-  {
-    q: 'What happens if I miss a prediction?',
-    a: 'You simply score 0 points for that match. Missed predictions never hurt your score — you just miss the opportunity.',
-  },
-  {
-    q: 'Can I change my predictions?',
-    a: 'Yes — you can update any prediction right up until it locks at kickoff. Once a match has kicked off, that prediction is final.',
-  },
-  {
-    q: 'How do knockout picks work?',
-    a: 'You pick which teams you think will reach each round — Round of 16, Quarter-finals, Semi-finals, Final, and the Winner. Points are awarded as teams actually progress, regardless of which route they took. So if you pick Brazil to reach the Quarter-finals, it doesn\'t matter which teams they beat to get there.',
+    a: 'Group stage predictions lock at the kickoff time of each individual match. So you can update your prediction for a 9pm match right up until 9pm, even if earlier matches in that group have already started.',
   },
   {
     q: 'How do jokers work?',
-    a: 'A joker doubles your points for that prediction if you get it right. You have 8 jokers for the group stage. Use them wisely — if your joker prediction is wrong, you score 0 (same as a normal wrong prediction). Jokers are not returned if wrong.',
+    a: 'A joker doubles your points for that prediction if you get it right. You have 8 jokers for the group stage and 5 for the KO Predictor. Use them wisely — if your joker prediction is wrong, you score 0 (same as a normal wrong prediction).',
   },
   {
-    q: 'What is the Knockout Predictor?',
-    a: 'The Knockout Predictor launches on 27 June once the group stage ends. It\'s a separate mini-game where you predict scores for every knockout match, just like the group stage. It has its own leaderboard and leagues, so everyone gets a second chance regardless of how the group stage went. Predictions lock match by match from 28 June.',
+    q: 'What is the KO Predictor?',
+    a: 'The KO Predictor is a second game that launches on 27 Jun once all group stage teams are confirmed. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance.',
   },
   {
-    q: 'Can I start again from scratch?',
-    a: 'Yes — go to your Profile page and scroll down to the Danger Zone. Tap "Clear all predictions & start again" to wipe everything and begin fresh. You can then use Feeling Lucky to fill everything in one go, or go through the groups manually. Note this cannot be undone.',
+    q: 'How does the leaderboard work?',
+    a: 'Ranked by total points. Ties are broken first by exact scores, then by correct results. The KO Predictor has its own separate leaderboard.',
   },
   {
-    q: 'What is Feeling Lucky?',
-    a: 'Feeling Lucky fills in any missing predictions automatically using betting odds and FIFA rankings as a guide — but with randomness built in so everyone gets different results. It only fills what\'s missing and never overwrites predictions you\'ve already made. Great if you\'re short on time or just want to dive in!',
+    q: 'Can I change my predictions?',
+    a: 'Yes — you can change any prediction right up until that match kicks off. Once the match starts, your prediction is locked.',
   },
   {
-    q: 'How do leagues work?',
-    a: 'Create a private league and share your invite code with friends. Everyone\'s predictions are scored the same way, but you see a separate leaderboard just for your league. You can join multiple leagues. There\'s also a Global League everyone is automatically entered into.',
+    q: 'What are leagues?',
+    a: 'Leagues let you compete against specific friends. Create a league, share your invite code, and see a private leaderboard just for your group. You can be in multiple leagues at once.',
   },
   {
-    q: 'What are the award predictions?',
-    a: 'Before the tournament starts you can predict the Golden Boot (top scorer), Golden Glove (best goalkeeper), and Player of the Tournament. These lock at kickoff on 11 June and are scored once the tournament ends.',
+    q: 'What happens if I miss a prediction?',
+    a: 'You score 0 points for that match. There\'s no penalty for missing predictions — you just miss out on the points.',
   },
   {
-    q: 'What time zone are kick-off times shown in?',
-    a: 'All times are shown in UK time (BST — British Summer Time, UTC+1). This applies to kick-off times, prediction deadlines, and countdown timers.',
-  },
-  {
-    q: 'How is the leaderboard ranked?',
-    a: 'By total points. If two players have the same points, the player with more exact score predictions ranks higher. Further ties are broken by the number of correct results.',
+    q: 'How are award predictions scored?',
+    a: 'You pick the Golden Boot, Golden Glove, and Player of the Tournament winners before the tournament starts. You also predict total goals — scored based on how close you get.',
   },
 ]
 
 export default function HowToPlay() {
-  const navigate = useNavigate()
   const [openFaq, setOpenFaq] = useState(null)
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/howtoplay-bg.jpg) center bottom/cover no-repeat',
-        padding: '20px', color: 'white',
+        padding: '28px 20px 32px', color: 'white',
       }}>
-        <button
-          onClick={() => navigate(-1)}
-          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: '14px', marginBottom: '12px', padding: 0 }}
-        >
+        <Link to="/" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '16px' }}>
           ← Back
-        </button>
-        <h1 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '4px' }}>How to Play</h1>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>
-          Everything you need to know about WC26 Predictor
-        </p>
+        </Link>
+        <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '6px' }}>How to Play</div>
+        <div style={{ fontSize: '14px', opacity: 0.8 }}>Everything you need to know about WC26 Predictor</div>
       </div>
 
-      <div className="container" style={{ padding: '16px' }}>
+      <div className="container" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-        {/* Scoring */}
-        <div style={{ marginBottom: '8px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '12px', marginTop: '8px' }}>
-            📊 Points System
-          </h2>
+        {/* Points System */}
+        <div style={{ fontWeight: '800', fontSize: '18px', marginTop: '4px' }}>📊 Points System</div>
 
-          {SCORING.map(section => (
-            <div key={section.section} className="card" style={{ marginBottom: '12px' }}>
-              <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: section.desc ? '6px' : '12px' }}>
-                {section.section}
-              </div>
-              {section.desc && (
-                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.5' }}>
-                  {section.desc}
-                </div>
-              )}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                {section.items.map((item, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '10px 0',
-                      borderBottom: i < section.items.length - 1 ? '1px solid var(--border-light)' : 'none',
-                      background: item.highlight ? 'transparent' : 'transparent',
-                    }}
-                  >
-                    <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
-                      {item.label}
-                    </span>
-                    <span style={{
-                      fontSize: '14px', fontWeight: '800',
-                      color: item.highlight ? 'var(--accent-gold)' : 'var(--text-primary)',
-                      background: item.highlight ? 'var(--accent-gold-light)' : 'transparent',
-                      padding: item.highlight ? '2px 8px' : '0',
-                      borderRadius: 'var(--radius-full)',
-                      flexShrink: 0, marginLeft: '8px',
-                    }}>
-                      {item.pts}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* FAQs */}
-        <h2 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '12px', marginTop: '8px' }}>
-          ❓ Frequently Asked Questions
-        </h2>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
-          {FAQS.map((faq, i) => (
-            <div
-              key={i}
-              className="card"
-              style={{ cursor: 'pointer', padding: '0', overflow: 'hidden' }}
-              onClick={() => setOpenFaq(openFaq === i ? null : i)}
-            >
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '14px 16px',
-              }}>
-                <span style={{ fontWeight: '600', fontSize: '14px', color: 'var(--text-primary)', flex: 1, paddingRight: '12px' }}>
-                  {faq.q}
-                </span>
-                <span style={{
-                  fontSize: '18px', color: 'var(--text-muted)', flexShrink: 0,
-                  transform: openFaq === i ? 'rotate(180deg)' : 'none',
-                  transition: 'transform 0.2s',
+        {SCORING.map((section, i) => (
+          <div key={i} className="card">
+            <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '4px' }}>{section.section}</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.5' }}>{section.desc}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              {section.rows.map((row, j) => (
+                <div key={j} style={{
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  padding: '10px 0',
+                  borderBottom: j < section.rows.length - 1 ? '1px solid var(--border-light)' : 'none',
                 }}>
-                  ↓
-                </span>
-              </div>
-              {openFaq === i && (
-                <div style={{
-                  padding: '0 16px 14px',
-                  fontSize: '14px', color: 'var(--text-secondary)',
-                  lineHeight: '1.6',
-                  borderTop: '1px solid var(--border-light)',
-                  paddingTop: '12px',
-                }}>
-                  {faq.a}
+                  <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{row.label}</span>
+                  <span style={{
+                    fontWeight: '800', fontSize: '14px', fontFamily: 'var(--font-mono)',
+                    color: row.highlight ? 'var(--accent-gold)' : 'var(--text-primary)',
+                    background: row.highlight ? 'var(--accent-gold-light)' : 'transparent',
+                    padding: row.highlight ? '2px 8px' : '0',
+                    borderRadius: row.highlight ? 'var(--radius-full)' : '0',
+                  }}>{row.pts}</span>
                 </div>
-              )}
+              ))}
             </div>
-          ))}
-        </div>
-
-        {/* Still confused */}
-        <div className="card" style={{ textAlign: 'center', padding: '24px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>💬</div>
-          <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '4px' }}>Still have questions?</div>
-          <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
-            The best way to learn is to dive in — predictions take seconds and you can change them right up until kickoff!
           </div>
+        ))}
+
+        {/* FAQ */}
+        <div style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>❓ FAQ</div>
+
+        {FAQS.map((faq, i) => (
+          <div key={i} className="card" style={{ cursor: 'pointer' }} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+              <div style={{ fontWeight: '700', fontSize: '14px' }}>{faq.q}</div>
+              <div style={{ fontSize: '18px', color: 'var(--text-muted)', flexShrink: 0, transition: 'transform 0.2s', transform: openFaq === i ? 'rotate(180deg)' : 'none' }}>⌄</div>
+            </div>
+            {openFaq === i && (
+              <div style={{ marginTop: '10px', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.6', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
+                {faq.a}
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* CTA */}
+        <div className="card" style={{ background: 'var(--scottish-navy)', color: 'white', textAlign: 'center', padding: '24px' }}>
+          <div style={{ fontSize: '22px', marginBottom: '8px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</div>
+          <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>Ready to predict?</div>
+          <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '16px' }}>Tournament kicks off 11 Jun · All picks lock at kickoff</div>
+          <Link to="/predictions" style={{
+            display: 'inline-block', background: 'white', color: 'var(--scottish-navy)',
+            padding: '12px 28px', borderRadius: 'var(--radius-full)',
+            fontWeight: '800', fontSize: '14px', textDecoration: 'none',
+          }}>
+            Make your predictions →
+          </Link>
         </div>
+
+        <div style={{ height: '16px' }} />
       </div>
     </div>
   )

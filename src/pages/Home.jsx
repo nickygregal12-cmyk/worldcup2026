@@ -34,27 +34,31 @@ function useCountdown(targetDate) {
 }
 
 // ── Smart CTA logic ──────────────────────────────────────────────────────────
-function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone) {
-  if (!user) return { label: '🏆 Join Free', to: '/register' }
+function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, koLive) {
+  if (!user) return { label: '🏆 Join Free — it\'s free!', to: '/register', secondary: { label: 'How does it work?', to: '/how-to-play' } }
 
-  const groupsDone  = predictionCount >= 72
+  const groupsDone    = predictionCount >= 72
   const knockoutsDone = (profile?.knockout_picks_count || 0) >= 16
-  const awardsDone  = profile?.awards_complete || false
+  const awardsDone    = (profile?.awards_done || 0) >= 4
 
   if (!tournamentStarted) {
-    if (predictionCount === 0)   return { label: '⚽ Start predicting', to: '/predictions' }
-    if (!groupsDone)             return { label: '⚽ Continue group predictions', to: '/predictions' }
-    if (!knockoutsDone)          return { label: '🏆 Pick your knockout teams', to: '/knockout' }
-    if (!awardsDone)             return { label: '🏅 Make your award predictions', to: '/awards' }
-    return { label: '✅ All predictions done!', to: '/predictions' }
+    if (predictionCount === 0)  return { label: '⚽ Start predicting', to: '/predictions', secondary: { label: 'Read the rules →', to: '/how-to-play' } }
+    if (!groupsDone)            return { label: '⚽ Continue group predictions', to: '/predictions', secondary: { label: 'Read the rules →', to: '/how-to-play' } }
+    if (!knockoutsDone)         return { label: '🏆 Pick your knockout teams', to: '/knockout' }
+    if (!awardsDone)            return { label: '🏅 Make your award predictions', to: '/awards' }
+    return { label: '✅ All done — view leaderboard', to: '/leaderboard' }
+  }
+
+  if (koLive) {
+    return { label: '🔥 Play KO Predictor', to: '/ko-predictor' }
   }
 
   if (!groupStageDone) {
-    if (predictionCount === 0)   return { label: '⚽ Predict today\'s matches', to: '/predictions' }
+    if (predictionCount === 0)  return { label: '⚽ Predict today\'s matches', to: '/predictions' }
     return { label: '⚽ Continue predicting', to: '/predictions' }
   }
 
-  return { label: '📊 View your bracket', to: '/knockout' }
+  return { label: '📊 View leaderboard', to: '/leaderboard' }
 }
 
 export default function Home() {
@@ -158,7 +162,7 @@ export default function Home() {
       ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...tz }) + ' BST'
   }
 
-  const cta = getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone)
+  const cta = getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, knockoutLive)
 
   // ── Lucky Dip — fill everything in one tap ───────────────────────────────
   const handleLuckyDip = async () => {
@@ -283,6 +287,11 @@ export default function Home() {
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
             {user ? (
               <Link to={cta.to} className="btn btn-green btn-lg">{cta.label}</Link>
+              {cta.secondary && (
+                <Link to={cta.secondary.to} style={{ color: 'rgba(255,255,255,0.75)', fontSize: '13px', textDecoration: 'none', marginTop: '8px', display: 'block' }}>
+                  {cta.secondary.label}
+                </Link>
+              )}
             ) : (
               <>
                 <Link to="/register" className="btn btn-green btn-lg">🏆 Join Free</Link>
