@@ -6,12 +6,67 @@ import { useAuthStore } from '../store/index.js'
 const TABS = [
   { key: 'health',   label: '🩺 Health' },
   { key: 'matches',  label: '⚽ Matches' },
+  { key: 'awards',   label: '🥇 Awards' },
   { key: 'users',    label: '👥 Users' },
   { key: 'leagues',  label: '🏆 Leagues' },
   { key: 'points',   label: '🎯 Points' },
   { key: 'audit',    label: '📋 Audit Log' },
   { key: 'settings', label: '⚙️ Settings' },
 ]
+
+const AWARD_DEFS = [
+  { key: 'golden_boot', label: '👟 Golden Boot', desc: 'Top scorer of the tournament', pts: 15, placeholder: 'e.g. Kylian Mbappé' },
+  { key: 'golden_glove', label: '🧤 Golden Glove', desc: 'Best goalkeeper', pts: 10, placeholder: 'e.g. Yann Sommer' },
+  { key: 'player_of_tournament', label: '🏅 Player of the Tournament', desc: 'Best overall player', pts: 10, placeholder: 'e.g. Jude Bellingham' },
+  { key: 'total_goals', label: '⚽ Total Goals', desc: 'Total goals scored in tournament', pts: 15, placeholder: 'e.g. 142' },
+]
+
+function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
+  const [inputs, setInputs] = useState(() => {
+    const init = {}
+    AWARD_DEFS.forEach(a => { init[a.key] = awardResults[a.key]?.winner_name || '' })
+    return init
+  })
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="card" style={{ background: 'var(--accent-blue-light)', border: '1px solid var(--accent-blue)' }}>
+        <div style={{ fontSize: '13px', color: 'var(--accent-blue)', fontWeight: '600' }}>
+          ℹ️ Enter the actual tournament award winners after they are announced. Points will be automatically awarded to users who picked correctly.
+        </div>
+      </div>
+      {AWARD_DEFS.map(award => {
+        const existing = awardResults[award.key]
+        return (
+          <div key={award.key} className="card">
+            <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '4px' }}>{award.label}</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>{award.desc} · {award.pts}pts for correct pick</div>
+            {existing && (
+              <div style={{ padding: '8px 12px', background: 'var(--accent-green-light)', borderRadius: 'var(--radius-sm)', marginBottom: '10px', fontSize: '13px', color: 'var(--accent-green)', fontWeight: '600' }}>
+                ✓ Result recorded: {existing.winner_name}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                className="input" style={{ flex: 1 }}
+                placeholder={award.placeholder}
+                value={inputs[award.key] || ''}
+                onChange={e => setInputs(prev => ({ ...prev, [award.key]: e.target.value }))}
+              />
+              <button
+                onClick={() => saveAwardResult(award.key, inputs[award.key], award.pts)}
+                disabled={!inputs[award.key] || awardSaving[award.key]}
+                className="btn btn-primary btn-sm"
+              >
+                {awardSaving[award.key] ? '...' : existing ? 'Update' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 export default function AdminPanel() {
   const { user, isAdmin } = useAuthStore()
@@ -38,6 +93,8 @@ export default function AdminPanel() {
   const [pointAdjReason, setPointAdjReason] = useState('')
   const [confirmAction, setConfirmAction] = useState(null)
   const [actionResult, setActionResult] = useState('')
+  const [awardResults, setAwardResults] = useState({})
+  const [awardSaving, setAwardSaving] = useState({})
 
   useEffect(() => {
     if (!user || !isAdmin) { navigate('/'); return }
@@ -46,7 +103,7 @@ export default function AdminPanel() {
 
   const loadAll = async () => {
     setLoading(true)
-    await Promise.all([loadHealth(), loadMatches(), loadUsers(), loadLeagues(), loadAudit(), loadSettings()])
+    await Promise.all([loadHealth(), loadMatches(), loadUsers(), loadLeagues(), loadAudit(), loadSettings(), loadAwardResults()])
     setLoading(false)
   }
 
@@ -117,6 +174,57 @@ export default function AdminPanel() {
     const sMap = {}
     data?.forEach(s => { sMap[s.key] = s.value })
     setSettings(sMap)
+  }
+
+  const loadAwardResults = async () => {
+    const { data } = await supabase.from('award_results').select('*')
+    const map = {}
+    data?.forEach(r => { map[r.award_type] = r })
+    setAwardResults(map)
+  }
+
+  const syncScoresNow = async () => {
+    setSaving(prev => ({ ...prev, sync: true }))
+    try {
+      const res = await fetch('/.netlify/functions/sync-scores', { method: 'POST' })
+      const data = await res.json()
+      setActionResult(`Sync complete — ${data.updated || 0} matches updated, ${data.pointsCalculated || 0} points calculated`)
+      await logAudit('MANUAL_SYNC', { updated: data.updated, pointsCalculated: data.pointsCalculated })
+      loadHealth()
+    } catch (e) {
+      setActionResult(`Sync error: ${e.message}`)
+    }
+    setSaving(prev => ({ ...prev, sync: false }))
+  }
+
+  const prepopulateMatchIds = async () => {
+    setSaving(prev => ({ ...prev, prepopulate: true }))
+    try {
+      const res = await fetch('https://api.football-data.org/v4/competitions/WC/matches?season=2026', {
+        headers: { 'X-Auth-Token': '' } // Runs via proxy — actual key is server-side
+      })
+      // Trigger via sync-scores which handles the API key server-side
+      const syncRes = await fetch('/.netlify/functions/sync-scores', { method: 'POST' })
+      const data = await syncRes.json()
+      setActionResult(`Pre-populate complete — ${data.updated || 0} match IDs stored`)
+      await logAudit('PREPOPULATE_MATCH_IDS', { result: data })
+    } catch (e) {
+      setActionResult(`Pre-populate error: ${e.message}`)
+    }
+    setSaving(prev => ({ ...prev, prepopulate: false }))
+  }
+
+  const saveAwardResult = async (awardType, winner, pts) => {
+    setAwardSaving(prev => ({ ...prev, [awardType]: true }))
+    await supabase.from('award_results').upsert(
+      { award_type: awardType, winner_name: winner, points_value: parseInt(pts) },
+      { onConflict: 'award_type' }
+    )
+    await supabase.rpc('calculate_award_points', { p_award_type: awardType }).catch(() => {})
+    await logAudit('AWARD_RESULT', { award_type: awardType, winner })
+    setActionResult(`${awardType} result saved — points being awarded`)
+    loadAwardResults()
+    setAwardSaving(prev => ({ ...prev, [awardType]: false }))
   }
 
   const logAudit = async (action, details) => {
@@ -325,10 +433,19 @@ export default function AdminPanel() {
             <div className="card">
               <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '12px' }}>Quick Actions</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button onClick={recalcAllPoints} disabled={saving.recalc} className="btn btn-primary">
+                <button onClick={syncScoresNow} disabled={saving.sync} className="btn btn-primary" style={{ background: '#e53935' }}>
+                  {saving.sync ? '⏳ Syncing...' : '🔄 Sync Scores Now'}
+                </button>
+                <button onClick={prepopulateMatchIds} disabled={saving.prepopulate} className="btn btn-primary" style={{ background: 'var(--accent-orange)' }}>
+                  {saving.prepopulate ? '⏳ Running...' : '🔗 Pre-populate Match IDs'}
+                </button>
+                <button onClick={recalcAllPoints} disabled={saving.recalc} className="btn btn-secondary">
                   {saving.recalc ? 'Recalculating...' : '🔄 Recalculate All Points'}
                 </button>
                 <button onClick={loadAll} className="btn btn-secondary">🔃 Refresh All Data</button>
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                ⚠️ Run "Pre-populate Match IDs" once before 11 Jun to ensure score sync works reliably
               </div>
             </div>
 
@@ -342,7 +459,7 @@ export default function AdminPanel() {
                 </span>}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                Sync runs every 5 minutes via Netlify scheduled function. Enable/disable in Settings tab.
+                Free tier: trigger sync manually using "Sync Scores Now" above. Run after each match finishes.
               </div>
             </div>
           </div>
@@ -416,6 +533,15 @@ export default function AdminPanel() {
               })}
             </div>
           </div>
+        )}
+
+        {/* ── AWARDS ── */}
+        {activeTab === 'awards' && (
+          <AwardsTab
+            awardResults={awardResults}
+            awardSaving={awardSaving}
+            saveAwardResult={saveAwardResult}
+          />
         )}
 
         {/* ── USERS ── */}
