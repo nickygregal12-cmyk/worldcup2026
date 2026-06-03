@@ -284,14 +284,16 @@ export default function Home() {
           </p>
 
           {/* Smart CTA */}
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
             {user ? (
-              <Link to={cta.to} className="btn btn-green btn-lg">{cta.label}</Link>
-              {cta.secondary && (
-                <Link to={cta.secondary.to} style={{ color: 'rgba(255,255,255,0.75)', fontSize: '13px', textDecoration: 'none', marginTop: '8px', display: 'block' }}>
-                  {cta.secondary.label}
-                </Link>
-              )}
+              <>
+                <Link to={cta.to} className="btn btn-green btn-lg">{cta.label}</Link>
+                {cta.secondary && (
+                  <Link to={cta.secondary.to} style={{ color: 'rgba(255,255,255,0.75)', fontSize: '13px', textDecoration: 'none' }}>
+                    {cta.secondary.label}
+                  </Link>
+                )}
+              </>
             ) : (
               <>
                 <Link to="/register" className="btn btn-green btn-lg">🏆 Join Free</Link>
