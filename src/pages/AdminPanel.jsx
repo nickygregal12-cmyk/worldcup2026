@@ -108,6 +108,13 @@ export default function AdminPanel() {
   const [koPointAdjUser, setKoPointAdjUser] = useState(null)
   const [koPointAdjAmount, setKoPointAdjAmount] = useState('')
   const [koPointAdjReason, setKoPointAdjReason] = useState('')
+
+  // Test mode state
+  const [testMatchId, setTestMatchId] = useState('')
+  const [testHome, setTestHome] = useState('')
+  const [testAway, setTestAway] = useState('')
+  const [testResult, setTestResult] = useState(null)
+  const [testLoading, setTestLoading] = useState(false)
   const [editingLeagueName, setEditingLeagueName] = useState(null) // leagueId
   const [editingLeagueNameVal, setEditingLeagueNameVal] = useState('')
   const [addingMemberTo, setAddingMemberTo] = useState(null) // leagueId
@@ -345,6 +352,41 @@ export default function AdminPanel() {
     await logAudit('DELETE_KO_LEAGUE', { league_id: leagueId, name: leagueName })
     setActionResult(`✅ Deleted KO league: ${leagueName}`)
     loadKoData()
+  }
+
+  const runTestPreview = async () => {
+    if (!testMatchId || testHome === '' || testAway === '') return
+    setTestLoading(true)
+    setTestResult(null)
+
+    const homeScore = parseInt(testHome)
+    const awayScore = parseInt(testAway)
+    const actualResult = homeScore > awayScore ? 'H' : awayScore > homeScore ? 'A' : 'D'
+
+    // Get all predictions for this match
+    const { data: preds } = await supabase
+      .from('predictions')
+      .select('user_id, home_score, away_score, is_confident, profiles:user_id(username)')
+      .eq('match_id', testMatchId)
+
+    const results = (preds || []).map(p => {
+      const predResult = p.home_score > p.away_score ? 'H' : p.away_score > p.home_score ? 'A' : 'D'
+      const exact = p.home_score === homeScore && p.away_score === awayScore
+      const correct = predResult === actualResult
+      const base = exact ? 10 : correct ? 5 : 0
+      const joker = p.is_confident ? 2 : 1
+      return {
+        username: p.profiles?.username || 'Unknown',
+        home: p.home_score,
+        away: p.away_score,
+        exact,
+        correct,
+        points: base * joker,
+      }
+    }).sort((a, b) => b.points - a.points)
+
+    setTestResult(results)
+    setTestLoading(false)
   }
 
   const logAudit = async (action, details) => {
@@ -1260,6 +1302,109 @@ export default function AdminPanel() {
         {/* ── SETTINGS ── */}
         {activeTab === 'settings' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+            {/* ── GAME PHASE CONTROL ── */}
+            <div className="card" style={{ border: '2px solid var(--scottish-navy)' }}>
+              <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '4px' }}>🎮 Game Phase Control</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                Override the automatic date-based phase for testing. Set to "Auto" to use real dates.
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
+                {[
+                  { key: 'auto', label: '🔄 Auto (use real dates)', desc: `Currently: ${new Date() < new Date('2026-06-11T19:00:00Z') ? 'Pre-Tournament' : new Date() < new Date('2026-06-27T22:00:00Z') ? 'Group Stage' : 'KO Predictor'}` },
+                  { key: 'pre_tournament', label: '⏳ Pre-Tournament', desc: 'Before 11 Jun — predictions open, no scores yet' },
+                  { key: 'group_stage', label: '⚽ Group Stage', desc: '11–27 Jun — matches live, scores coming in' },
+                  { key: 'knockout_banner', label: '📣 KO Banner Live', desc: '20 Jun+ — teaser banner showing on home' },
+                  { key: 'ko_predictor', label: '🔥 KO Predictor Live', desc: '27 Jun+ — second game fully open' },
+                  { key: 'post_tournament', label: '🏆 Post Tournament', desc: 'After 19 Jul — all results locked' },
+                ].map(phase => {
+                  const currentVal = settings.game_phase_override || 'auto'
+                  const isActive = currentVal === phase.key
+                  return (
+                    <button key={phase.key} onClick={() => updateSetting('game_phase_override', phase.key === 'auto' ? '' : phase.key)} style={{
+                      padding: '10px 14px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      background: isActive ? 'var(--scottish-navy)' : 'var(--bg-secondary)',
+                      border: isActive ? '2px solid var(--scottish-navy)' : '2px solid var(--border-light)',
+                      color: isActive ? 'white' : 'var(--text-primary)',
+                      textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '2px',
+                    }}>
+                      <span style={{ fontWeight: '700', fontSize: '13px' }}>{phase.label}</span>
+                      <span style={{ fontSize: '11px', opacity: isActive ? 0.8 : 0.6 }}>{phase.desc}</span>
+                    </button>
+                  )
+                })}
+              </div>
+
+              {settings.game_phase_override && (
+                <div style={{ padding: '8px 12px', background: '#fff3e0', borderRadius: 'var(--radius-sm)', fontSize: '12px', color: '#e65100', fontWeight: '600' }}>
+                  ⚠️ Phase override active: <strong>{settings.game_phase_override}</strong> — real dates are ignored. Set to Auto to restore.
+                </div>
+              )}
+            </div>
+
+            {/* ── TEST MODE ── */}
+            <div className="card" style={{ border: '1px solid var(--accent-orange)' }}>
+              <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '4px' }}>🧪 Test Mode</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                Preview how a match result will look without writing to the database or awarding points.
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* Match picker */}
+                <div>
+                  <label className="label">Pick a match to preview</label>
+                  <select className="input" value={testMatchId || ''} onChange={e => setTestMatchId(e.target.value)}>
+                    <option value="">Select a match...</option>
+                    {matches.filter(m => m.stage === 'group').slice(0, 20).map(m => (
+                      <option key={m.id} value={m.id}>
+                        Match {m.match_number} · {m.home_team?.short_code} vs {m.away_team?.short_code}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {testMatchId && (
+                  <>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input type="number" min="0" max="20" placeholder="Home" value={testHome}
+                        onChange={e => setTestHome(e.target.value)}
+                        style={{ width: '60px', height: '40px', fontSize: '20px', fontWeight: '800', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                      <span style={{ fontWeight: '800', color: 'var(--text-muted)', fontSize: '20px' }}>–</span>
+                      <input type="number" min="0" max="20" placeholder="Away" value={testAway}
+                        onChange={e => setTestAway(e.target.value)}
+                        style={{ width: '60px', height: '40px', fontSize: '20px', fontWeight: '800', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                      <button onClick={runTestPreview} disabled={!testHome || !testAway || testLoading}
+                        className="btn btn-primary btn-sm" style={{ background: 'var(--accent-orange)' }}>
+                        {testLoading ? '⏳' : '👁 Preview'}
+                      </button>
+                    </div>
+
+                    {testResult && (
+                      <div style={{ padding: '14px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '13px' }}>
+                        <div style={{ fontWeight: '700', marginBottom: '8px' }}>Preview Result (no DB changes)</div>
+                        {testResult.map((r, i) => (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-light)' }}>
+                            <span>{r.username}</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                              picked {r.home}–{r.away}
+                            </span>
+                            <span style={{ fontWeight: '700', color: r.points > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                              +{r.points}pts {r.exact ? '🎯' : r.correct ? '✅' : '❌'}
+                            </span>
+                          </div>
+                        ))}
+                        <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                          This is a preview only — no points have been awarded
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* ── EXISTING SETTINGS ── */}
             {[
               { section: '🏆 Tournament State' },
               { key: 'tournament_phase', label: 'Tournament Phase', desc: 'pre_tournament → group_stage → knockout → complete', type: 'text' },

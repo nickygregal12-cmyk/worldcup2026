@@ -78,6 +78,15 @@ export default function Home() {
   const tournamentOver    = now >= TOURNAMENT_END
 
   useEffect(() => { loadData() }, [user])
+
+  // Re-fetch when returning to tab so progress bars update immediately
+  useEffect(() => {
+    if (!user) return
+    const handleVisibility = () => { if (!document.hidden) loadData() }
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => document.removeEventListener('visibilitychange', handleVisibility)
+  }, [user])
+
   useEffect(() => {
     const interval = setInterval(loadData, 60000)
     return () => clearInterval(interval)
