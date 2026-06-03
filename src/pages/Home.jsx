@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { useAuthStore } from '../store/index.js'
+import { useAuthStore, useAppStore } from '../store/index.js'
 import { predictMatchOdds, predictGoals, predictAwards } from '../lib/luckyDip.js'
 
 // ── Tournament phase dates ───────────────────────────────────────────────────
