@@ -136,12 +136,28 @@ export default function Knockout() {
     setKnockoutPicks(prev => ({ ...prev, [mn]: newPick }))
     setSaving(prev => ({ ...prev, [mn]: true }))
 
-    const { error: upsertErr } = await supabase.from('knockout_picks').upsert({
-      user_id: user.id, match_number: mn,
-      winner_team_id: winnerId,
-      home_team_id: home?.id,
-      away_team_id: away?.id,
-    }, { onConflict: 'user_id,match_number' })
+    // Check if prediction already exists
+    const { data: existing } = await supabase
+      .from('knockout_picks')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('match_number', mn)
+      .maybeSingle()
+
+    let upsertErr
+    if (existing) {
+      const { error } = await supabase
+        .from('knockout_picks')
+        .update({ winner_team_id: winnerId, home_team_id: home?.id, away_team_id: away?.id })
+        .eq('user_id', user.id)
+        .eq('match_number', mn)
+      upsertErr = error
+    } else {
+      const { error } = await supabase
+        .from('knockout_picks')
+        .insert({ user_id: user.id, match_number: mn, winner_team_id: winnerId, home_team_id: home?.id, away_team_id: away?.id })
+      upsertErr = error
+    }
 
     if (upsertErr) {
       console.error('Knockout save error:', upsertErr)
