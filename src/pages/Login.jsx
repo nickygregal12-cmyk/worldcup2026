@@ -61,7 +61,7 @@ export default function Login() {
   // Forgot password view
   if (showForgot) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', background: 'var(--bg-secondary)' }}>
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', background: 'linear-gradient(135deg, rgba(0,30,80,0.88) 0%, rgba(0,60,140,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat' }}>
         <div style={{ width: '100%', maxWidth: '400px' }} className="fade-in">
           <div style={{ textAlign: 'center', marginBottom: '32px' }}>
             <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔑</div>
@@ -113,7 +113,7 @@ export default function Login() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', background: 'var(--bg-secondary)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', background: 'linear-gradient(135deg, rgba(0,30,80,0.88) 0%, rgba(0,60,140,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat' }}>
       <div style={{ width: '100%', maxWidth: '400px' }} className="fade-in">
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚽</div>

@@ -239,7 +239,7 @@ export default function Home() {
 
       {/* ── Hero ── */}
       <div style={{
-        background: 'linear-gradient(135deg, #003087 0%, #005eb8 60%, #003087 100%)',
+        background: 'linear-gradient(135deg, rgba(0,30,80,0.82) 0%, rgba(0,60,140,0.78) 60%, rgba(0,30,80,0.82) 100%), url(/hero-bg.jpg) center/cover no-repeat',
         padding: '36px 20px 32px', textAlign: 'center', color: 'white',
       }}>
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
