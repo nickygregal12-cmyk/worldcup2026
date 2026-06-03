@@ -61,7 +61,7 @@ export const useAuthStore = create(
         set({ isLoading: false, initialized: true })
 
         supabase.auth.onAuthStateChange(async (event, session) => {
-          if (event === 'SIGNED_IN' && session?.user) {
+          if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
             set({ user: session.user })
             await get().loadProfile(session.user.id)
           } else if (event === 'SIGNED_OUT') {

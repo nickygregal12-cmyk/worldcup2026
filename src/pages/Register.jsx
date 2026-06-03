@@ -34,13 +34,14 @@ export default function Register() {
     setError('')
     if (!email.includes('@')) { setError('Please enter a valid email'); return }
     setLoading(true)
-    const { error } = await signUpWithEmail(email, password, username)
+    const { data, error } = await signUpWithEmail(email, password, username)
     if (error) {
       setError(error.message)
+      setLoading(false)
     } else {
-      setSuccess(true)
+      // Signed in immediately — navigate to predictions
+      navigate('/predictions')
     }
-    setLoading(false)
   }
 
   const handleGoogle = async () => {

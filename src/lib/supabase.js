@@ -23,14 +23,23 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Auth helpers
 export const signUpWithEmail = async (email, password, username) => {
+  // Sign up the user
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { username, full_name: username },
+      emailRedirectTo: window.location.origin,
     },
   })
-  return { data, error }
+  if (error) return { data, error }
+
+  // Sign in immediately so session is active without email confirmation
+  const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+  return { data: signInData, error: signInError }
 }
 
 export const signInWithEmail = async (email, password) => {
