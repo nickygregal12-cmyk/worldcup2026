@@ -12,10 +12,8 @@ export default function ClaimAccount() {
   const [error, setError] = useState('')
 
   useEffect(() => { validateToken() }, [token])
-  useEffect(() => {
-    // If user logs in while on this page, auto-claim
-    if (user && offlinePlayer && status === 'valid') claimPredictions()
-  }, [user, offlinePlayer])
+  // Don't auto-claim — always require explicit button press
+  // useEffect removed to prevent accidental claims by wrong account
 
   const validateToken = async () => {
     const { data, error } = await supabase
@@ -111,20 +109,29 @@ export default function ClaimAccount() {
               <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎉</div>
               <div style={{ fontWeight: '800', fontSize: '20px', marginBottom: '8px' }}>You've been invited!</div>
               <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '8px', lineHeight: 1.6 }}>
-                Your predictions as <strong>{offlinePlayer.display_name}</strong> in{' '}
+                Predictions for <strong>{offlinePlayer.display_name}</strong> in{' '}
                 <strong>{offlinePlayer.leagues?.name}</strong> are ready to be claimed.
               </div>
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px', padding: '10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                Sign up or sign in to transfer your predictions to your account. Your picks, jokers and league membership will all carry over.
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px', padding: '10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                Sign up or sign in to transfer these predictions to your account. Your picks, jokers and league membership will all carry over.
               </div>
               {user ? (
-                <button onClick={claimPredictions} className="btn btn-primary btn-full">
-                  ✅ Claim as {user.email}
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ padding: '10px', background: 'rgba(184,134,11,0.1)', borderRadius: 'var(--radius-md)', fontSize: '13px', color: '#b8860b', border: '1px solid rgba(184,134,11,0.3)' }}>
+                    ⚠️ You're signed in as <strong>{user.email}</strong>. These predictions will be claimed by this account. If this isn't you, sign out first.
+                  </div>
+                  <button onClick={claimPredictions} className="btn btn-primary btn-full">
+                    ✅ Claim as {user.email}
+                  </button>
+                  <button onClick={async () => { await supabase.auth.signOut(); window.location.reload() }}
+                    className="btn btn-secondary btn-full">
+                    Sign out & use different account
+                  </button>
+                </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <Link to={`/register?claim=${token}`} className="btn btn-primary btn-full">🚀 Join free & claim predictions</Link>
-                  <Link to={`/login?claim=${token}`} className="btn btn-secondary btn-full">Sign in & claim</Link>
+                  <Link to={`/login?claim=${token}`} className="btn btn-secondary btn-full">Already have an account? Sign in</Link>
                 </div>
               )}
             </>
