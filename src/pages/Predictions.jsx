@@ -171,18 +171,26 @@ function FinalStandingsView({ standings, matches, predictions, appSettings }) {
                 </div>
                 {!hasPicks ? (
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>No picks yet</div>
-                ) : predTable.map((team, i) => (
-                  <div key={team.id} style={{
-                    display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 0',
-                    borderTop: i > 0 ? '1px solid var(--border-light)' : 'none',
-                    opacity: team.played === 0 ? 0.4 : 1,
-                  }}>
-                    <span style={{ fontSize: '11px', fontWeight: '700', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', width: '12px', flexShrink: 0 }}>{i + 1}</span>
-                    <span style={{ fontSize: '14px', lineHeight: 1, flexShrink: 0 }}>{team.flag}</span>
-                    <span style={{ fontSize: '12px', flex: 1, color: i < 2 ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: i < 2 ? '700' : '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{team.name}</span>
-                    <span style={{ fontSize: '11px', fontWeight: '800', fontFamily: 'var(--font-mono)', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', flexShrink: 0 }}>{team.played > 0 ? `${team.pts}pt` : '–'}</span>
-                  </div>
-                ))}
+                ) : predTable.map((team, i) => {
+                  const qualifies3rd = i === 2 && pred3rds.some((t, ri) => t.id === team.id && ri < 8)
+                  const rowBg = i < 2 ? 'var(--accent-green-light)' : qualifies3rd ? 'var(--accent-gold-light)' : 'transparent'
+                  const textColor = i < 2 ? 'var(--accent-green)' : qualifies3rd ? 'var(--accent-gold)' : 'var(--text-muted)'
+                  return (
+                    <div key={team.id} style={{
+                      display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 5px',
+                      borderTop: i > 0 ? '1px solid var(--border-light)' : 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      background: rowBg,
+                      opacity: team.played === 0 ? 0.4 : 1,
+                    }}>
+                      <span style={{ fontSize: '11px', fontWeight: '700', color: textColor, width: '12px', flexShrink: 0 }}>{i + 1}</span>
+                      <span style={{ fontSize: '14px', lineHeight: 1, flexShrink: 0 }}>{team.flag}</span>
+                      <span style={{ fontSize: '12px', flex: 1, color: i < 2 ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: i < 2 ? '700' : '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{team.name}</span>
+                      <span style={{ fontSize: '11px', fontWeight: '800', fontFamily: 'var(--font-mono)', color: textColor, flexShrink: 0 }}>{team.played > 0 ? `${team.pts}pt` : '–'}</span>
+                      {qualifies3rd && <span style={{ fontSize: '9px', color: 'var(--accent-gold)', fontWeight: '700', flexShrink: 0 }}>🏅</span>}
+                    </div>
+                  )
+                })}
               </div>
             )
           })}
@@ -1192,9 +1200,14 @@ export default function Predictions() {
 
     return (
       <div className="card" style={{ marginTop: '4px' }}>
-        <div style={{ fontWeight: '800', fontSize: '13px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>📊 Predicted Group {activeGroup} Standings</span>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '400' }}>Based on your picks</span>
+        <div style={{ marginBottom: '10px' }}>
+          <div style={{ fontWeight: '800', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>🔮 Your Predicted Standings</span>
+            <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'var(--scottish-navy-light)', color: 'var(--scottish-navy)' }}>Group {activeGroup}</span>
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+            Based on your score picks · not live data
+          </div>
         </div>
         {hasFairPlayTie && (
           <div style={{ marginBottom: '8px', padding: '6px 10px', background: 'var(--accent-gold-light)', borderRadius: 'var(--radius-sm)', fontSize: '11px', color: 'var(--accent-gold)', fontWeight: '600' }}>
@@ -1367,37 +1380,57 @@ export default function Predictions() {
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, boxShadow: 'var(--shadow-sm)' }}>
         <div className="container">
 
-          {/* Title row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0 0' }}>
-            <div>
-              <h1 style={{ fontSize: '22px', fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>⚽ Predictions</h1>
-              {user && (
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ color: getPredictionCount() === matches.length ? 'var(--accent-green)' : 'var(--text-muted)', fontWeight: '700' }}>
-                    {getPredictionCount()}/{matches.length} picks
-                  </span>
-                  <span>·</span>
-                  <span style={{ color: jokersRemaining <= 2 ? 'var(--accent-red)' : 'var(--accent-gold)', fontWeight: '700' }}>
-                    🃏 {jokersRemaining} left
-                  </span>
+          {/* Title row — centred */}
+          <div style={{ textAlign: 'center', padding: '14px 0 0', position: 'relative' }}>
+            <h1 style={{ fontSize: '20px', fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+              ⚽ Group Predictions
+            </h1>
+            {user && (() => {
+              const count = getPredictionCount()
+              const total = matches.length || 72
+              const pct = Math.round((count / total) * 100)
+              const complete = count === total
+              const barColor = complete ? 'var(--accent-green)' : count < 24 ? 'var(--accent-red)' : count < total ? '#f59e0b' : 'var(--accent-green)'
+              return (
+                <div style={{ marginTop: '8px' }}>
+                  {/* Progress bar */}
+                  <div style={{ height: '5px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', overflow: 'hidden', margin: '0 4px 6px' }}>
+                    <div style={{
+                      height: '100%', width: `${pct}%`,
+                      background: barColor,
+                      borderRadius: 'var(--radius-full)',
+                      transition: 'width 0.5s ease, background 0.3s ease',
+                      boxShadow: complete ? `0 0 6px ${barColor}` : 'none',
+                    }} />
+                  </div>
+                  {/* Subtitle */}
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                    <span style={{ color: complete ? 'var(--accent-green)' : 'var(--text-primary)', fontWeight: '700' }}>
+                      {count}/{total} {complete ? '✓ complete' : 'picks'}
+                    </span>
+                    <span style={{ color: 'var(--border-medium)' }}>·</span>
+                    <span style={{ color: jokersRemaining <= 2 ? 'var(--accent-red)' : 'var(--accent-gold)', fontWeight: '700' }}>
+                      🃏 {jokersRemaining} joker{jokersRemaining !== 1 ? 's' : ''} left
+                    </span>
+                  </div>
                 </div>
-              )}
-            </div>
-            <Link to="/how-to-play" style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', flexShrink: 0, textDecoration: 'none' }}>?</Link>
-          </div>
-
-          {/* Picks / Tables switcher — own row, left aligned */}
-          {appSettings?.show_group_tables === 'true' && (
-            <div style={{ marginTop: '10px' }}>
-              <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px' }}>
-                {[{ key: 'picks', label: '⚽ Picks' }, { key: 'standings', label: '📊 Tables' }].map(tab => (
-                  <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`} style={{ fontSize: '13px', padding: '7px 16px' }}>
-                    {tab.label}
-                  </button>
-                ))}
+              )
+            })()}
+            {/* Picks / Tables switcher */}
+            {appSettings?.show_group_tables === 'true' && (
+              <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px' }}>
+                  {[{ key: 'picks', label: '⚽ Picks' }, { key: 'standings', label: '📊 Tables' }].map(tab => (
+                    <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`} style={{ fontSize: '13px', padding: '7px 16px' }}>
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+            {/* ? help link */}
+            <Link to="/how-to-play" style={{ position: 'absolute', right: 0, top: '14px', width: '26px', height: '26px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textDecoration: 'none' }}>?</Link>
+          </div>
 
           {/* Row 2: Group / Date tabs */}
           <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
