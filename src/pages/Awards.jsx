@@ -110,18 +110,22 @@ export default function Awards() {
       .select('home_score, away_score, match:match_id(stage)')
       .eq('user_id', user.id)
     if (!preds) return
-    const groupPreds = preds.filter(p => p.match?.stage === 'group')
-    const allDone = groupPreds.length === 72
+    // Only count predictions that actually have scores entered
+    const groupPreds = preds.filter(p => p.match?.stage === 'group' && p.home_score !== null && p.away_score !== null)
+    const allDone = groupPreds.length >= 72
     if (allDone) {
       const total = groupPreds.reduce((sum, p) => sum + (Number(p.home_score) || 0) + (Number(p.away_score) || 0), 0)
       setPredictedGroupGoals(total)
       setAllGroupPredicted(true)
-      if (!groupGoals) setGroupGoals(total.toString())
+      // Only auto-fill if user hasn't already saved a value
+      setGroupGoals(prev => prev ? prev : total.toString())
     } else {
       setAllGroupPredicted(false)
       if (groupPreds.length > 0) {
         const partial = groupPreds.reduce((sum, p) => sum + (Number(p.home_score) || 0) + (Number(p.away_score) || 0), 0)
         setPredictedGroupGoals(partial)
+      } else {
+        setPredictedGroupGoals(null)
       }
     }
   }
