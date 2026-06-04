@@ -67,7 +67,7 @@ export const handler = async (event, context) => {
     return { statusCode: 200, headers, body: '' }
   }
 
-  const apiKey = process.env.VITE_ODDS_API_KEY
+  const apiKey = process.env.ODDS_API_KEY || process.env.VITE_ODDS_API_KEY
   if (!apiKey) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Odds API key not configured' }) }
   }
