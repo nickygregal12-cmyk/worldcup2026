@@ -25,7 +25,7 @@ const FIRST_GOAL_BANDS = [
 ]
 
 const VENUE_FLAGS = {
-  'New York': '🇺🇸', 'New Jersey': '🇺🇸', 'Los Angeles': '🇺🇸',
+  'New York': '🇺🇸', 'New Jersey': '🇺🇸', 'New York/NJ': '🇺🇸', 'Los Angeles': '🇺🇸',
   'Dallas': '🇺🇸', 'San Francisco': '🇺🇸', 'Seattle': '🇺🇸',
   'Miami': '🇺🇸', 'Atlanta': '🇺🇸', 'Boston': '🇺🇸', 'Houston': '🇺🇸',
   'Philadelphia': '🇺🇸', 'Kansas City': '🇺🇸',
@@ -59,9 +59,17 @@ export default function KOPredictor() {
     loadOdds()
   }, [user])
 
-  useEffect(() => {
-    if (profile) setJokersRemaining(profile.ko_jokers_remaining ?? 5)
-  }, [profile])
+  useEffect(() => { loadFreshJokerCount() }, [user])
+
+  const loadFreshJokerCount = async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('profiles')
+      .select('ko_jokers_remaining')
+      .eq('id', user.id)
+      .single()
+    if (data) setJokersRemaining(data.ko_jokers_remaining ?? 5)
+  }
 
   const loadData = async () => {
     setLoading(true)
@@ -188,6 +196,7 @@ export default function KOPredictor() {
       is_joker: newJoker, bracket_type: 'main',
     }, { onConflict: 'user_id,match_id,bracket_type' })
     await supabase.from('profiles').update({ ko_jokers_remaining: newRemaining }).eq('id', user.id)
+    await loadFreshJokerCount()
   }
 
   const formatTime = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
