@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, signInWithEmail, signInWithGoogle } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 
@@ -22,6 +22,8 @@ export default function Login() {
   const [forgotSent, setForgotSent] = useState(false)
   const [forgotLoading, setForgotLoading] = useState(false)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const claimToken = searchParams.get('claim')
   const { loadProfile } = useAuthStore()
 
   const handleLogin = async (e) => {
@@ -33,7 +35,7 @@ export default function Login() {
       setError(error.message)
     } else {
       await loadProfile(data.user.id)
-      navigate('/')
+      navigate(claimToken ? `/claim/${claimToken}` : '/')
     }
     setLoading(false)
   }

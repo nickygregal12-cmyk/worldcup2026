@@ -759,6 +759,18 @@ export default function AdminPanel() {
     loadOfflinePlayers()
   }
 
+  const generateInviteLink = async (playerId, displayName) => {
+    const token = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2)
+    const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
+    const { error } = await supabase.from('offline_players')
+      .update({ claim_token: token, claim_token_expires: expires.toISOString() })
+      .eq('id', playerId)
+    if (error) { setActionResult(`❌ Error: ${error.message}`); return }
+    const link = `${window.location.origin}/claim/${token}`
+    await navigator.clipboard.writeText(link).catch(() => {})
+    setActionResult(`✅ Invite link for "${displayName}" copied to clipboard! Valid for 7 days.`)
+  }
+
   const saveManualScore = async (playerId, matchId, home, away) => {
     if (home === '' || away === '' || isNaN(parseInt(home)) || isNaN(parseInt(away))) return
     await supabase.from('offline_predictions').upsert({
@@ -1743,10 +1755,16 @@ export default function AdminPanel() {
                       League: {player.league?.name || '—'}
                     </div>
                   </div>
-                  <button onClick={() => setConfirmAction({ type: 'deleteOfflinePlayer', playerId: player.id, displayName: player.display_name })}
-                    className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
-                    🗑️
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button onClick={() => generateInviteLink(player.id, player.display_name)}
+                      className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', fontSize: '12px' }}>
+                      📧 Invite
+                    </button>
+                    <button onClick={() => setConfirmAction({ type: 'deleteOfflinePlayer', playerId: player.id, displayName: player.display_name })}
+                      className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
+                      🗑️
+                    </button>
+                  </div>
                 </div>
 
                 {/* Excel upload */}

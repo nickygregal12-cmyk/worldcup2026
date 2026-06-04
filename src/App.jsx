@@ -10,6 +10,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx'
 
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
+import ClaimAccount from './pages/ClaimAccount.jsx'
 import Register from './pages/Register.jsx'
 import Predictions from './pages/Predictions.jsx'
 import Knockout from './pages/Knockout.jsx'
@@ -86,6 +87,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/claim/:token" element={<ClaimAccount />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/predictions" element={<Predictions />} />
           <Route path="/knockout" element={<Knockout />} />
