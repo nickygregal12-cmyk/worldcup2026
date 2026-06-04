@@ -593,7 +593,7 @@ export default function Predictions() {
     const urgent = hoursUntilEnd > 0 && hoursUntilEnd < 24
 
     if (jokersRemaining === 8) return {
-      text: '🃏 You haven't used any jokers yet! Apply them to matches you're confident about to double your points.',
+      text: "🃏 You haven't used any jokers yet! Apply them to matches you're confident about to double your points.",
       color: 'var(--scottish-navy)',
       urgent: false,
     }
