@@ -309,7 +309,7 @@ export default function Home() {
           </div>
 
           {/* Lucky Dip — show pre-tournament only when predictions incomplete */}
-          {user && !tournamentStarted && !groupsDone && (
+          {user && !tournamentStarted && predictionCount < 72 && (
             <div style={{ marginTop: '12px' }}>
               <button
                 onClick={handleLuckyDip}
