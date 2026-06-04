@@ -10,6 +10,7 @@ const TABS = [
   { key: 'ko',       label: '🔥 KO Predictor' },
   { key: 'users',    label: '👥 Users' },
   { key: 'leagues',  label: '🏆 Leagues' },
+  { key: 'offline',  label: '👤 Offline' },
   { key: 'points',   label: '🎯 Points' },
   { key: 'audit',    label: '📋 Audit Log' },
   { key: 'settings', label: '⚙️ Settings' },
@@ -133,6 +134,17 @@ export default function AdminPanel() {
   const [newLeagueName, setNewLeagueName] = useState('')
   const [newLeagueCreatingFor, setNewLeagueCreatingFor] = useState('')
   const [newLeagueIsGlobal, setNewLeagueIsGlobal] = useState(false)
+  const [newLeaguePreset, setNewLeaguePreset] = useState('standard')
+
+  // Offline players state
+  const [offlinePlayers, setOfflinePlayers] = useState([])
+  const [offlineLeagueId, setOfflineLeagueId] = useState('')
+  const [offlineDisplayName, setOfflineDisplayName] = useState('')
+  const [offlineCreating, setOfflineCreating] = useState(false)
+  const [offlineImporting, setOfflineImporting] = useState(false)
+  const [offlineImportPreview, setOfflineImportPreview] = useState(null)
+  const [offlineSelectedPlayer, setOfflineSelectedPlayer] = useState(null)
+  const [offlineManualScores, setOfflineManualScores] = useState({})
 
   useEffect(() => {
     if (!user || !isAdmin) { navigate('/'); return }
@@ -142,6 +154,7 @@ export default function AdminPanel() {
   useEffect(() => {
     if (activeTab === 'ko') loadKoData()
     if (activeTab === 'settings') { loadSettings(); if (matches.length === 0) loadMatches() }
+    if (activeTab === 'offline') loadOfflinePlayers()
   }, [activeTab])
 
   const loadAll = async () => {
@@ -690,17 +703,208 @@ export default function AdminPanel() {
       invite_code: code,
       created_by: creatorUser?.id || user.id,
       is_global: newLeagueIsGlobal || false,
+      scoring_preset: newLeaguePreset || 'standard',
     }).select().single()
     if (error) { setActionResult(`❌ Error creating league: ${error.message}`); return }
-    // Add creator as member
     await supabase.from('league_members').insert({ league_id: league.id, user_id: creatorUser?.id || user.id })
-    await logAudit('CREATE_LEAGUE', { league_id: league.id, name: newLeagueName, code })
+    await logAudit('CREATE_LEAGUE', { league_id: league.id, name: newLeagueName, code, preset: newLeaguePreset })
     setActionResult(`✅ Created league "${newLeagueName}" with code ${code}`)
     setShowCreateLeague(false)
     setNewLeagueName('')
     setNewLeagueCreatingFor('')
     setNewLeagueIsGlobal(false)
+    setNewLeaguePreset('standard')
     loadLeagues()
+  }
+
+  const loadOfflinePlayers = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, display_name, offline_league_id, leagues:offline_league_id(name)')
+      .eq('is_offline', true)
+      .order('created_at', { ascending: false })
+    setOfflinePlayers(data || [])
+  }
+
+  const createOfflinePlayer = async () => {
+    if (!offlineDisplayName.trim() || !offlineLeagueId) return
+    setOfflineCreating(true)
+    try {
+      // Create a profile for the offline player
+      const username = `offline_${Date.now()}`
+      const { data: profile, error } = await supabase.from('profiles').insert({
+        username,
+        display_name: offlineDisplayName.trim(),
+        is_offline: true,
+        offline_league_id: offlineLeagueId,
+      }).select().single()
+      if (error) throw error
+
+      // Add to league
+      await supabase.from('league_members').insert({ league_id: offlineLeagueId, user_id: profile.id })
+      await logAudit('CREATE_OFFLINE_PLAYER', { profile_id: profile.id, display_name: offlineDisplayName, league_id: offlineLeagueId })
+      setActionResult(`✅ Offline player "${offlineDisplayName}" created and added to league`)
+      setOfflineDisplayName('')
+      setOfflineLeagueId('')
+      setOfflineSelectedPlayer(profile)
+      loadOfflinePlayers()
+    } catch (e) {
+      setActionResult(`❌ Error: ${e.message}`)
+    }
+    setOfflineCreating(false)
+  }
+
+  const deleteOfflinePlayer = async (playerId, displayName) => {
+    await supabase.from('predictions').delete().eq('user_id', playerId)
+    await supabase.from('league_members').delete().eq('user_id', playerId)
+    await supabase.from('profiles').delete().eq('id', playerId)
+    await logAudit('DELETE_OFFLINE_PLAYER', { profile_id: playerId, display_name: displayName })
+    setActionResult(`✅ Offline player "${displayName}" deleted`)
+    loadOfflinePlayers()
+  }
+
+  const saveManualScore = async (playerId, matchId, home, away) => {
+    if (home === '' || away === '' || isNaN(parseInt(home)) || isNaN(parseInt(away))) return
+    await supabase.from('predictions').upsert({
+      user_id: playerId,
+      match_id: matchId,
+      home_score: parseInt(home),
+      away_score: parseInt(away),
+      bracket_type: 'main',
+    }, { onConflict: 'user_id,match_id,bracket_type' })
+    setOfflineManualScores(prev => ({ ...prev, [`${playerId}-${matchId}`]: { home, away, saved: true } }))
+    setTimeout(() => setOfflineManualScores(prev => ({ ...prev, [`${playerId}-${matchId}`]: { home, away, saved: false } })), 1500)
+  }
+
+  // Team name fuzzy matching for Excel import
+  const TEAM_ALIASES = {
+    'holland': 'Netherlands', 'the netherlands': 'Netherlands',
+    'korea republic': 'South Korea', 'republic of korea': 'South Korea', 'korea': 'South Korea',
+    'cabo verde': 'Cape Verde', 'cape verde islands': 'Cape Verde',
+    "cote d'ivoire": 'Ivory Coast', 'ivory coast': 'Ivory Coast', 'côte d\'ivoire': 'Ivory Coast',
+    'usa': 'United States', 'united states of america': 'United States', 'america': 'United States',
+    'türkiye': 'Türkiye', 'turkey': 'Türkiye',
+    'bosnia': 'Bosnia-Herzegovina', 'bosnia and herzegovina': 'Bosnia-Herzegovina',
+    'czech republic': 'Czechia',
+    'dr congo': 'DR Congo', 'congo dr': 'DR Congo', 'democratic republic of congo': 'DR Congo',
+    'north macedonia': 'North Macedonia', 'macedonia': 'North Macedonia',
+    'curacao': 'Curacao', 'curaçao': 'Curacao',
+    'ir iran': 'Iran', 'islamic republic of iran': 'Iran',
+  }
+
+  const normaliseTeam = (name) => {
+    if (!name) return ''
+    const lower = name.toLowerCase().trim()
+    return TEAM_ALIASES[lower] || name.trim()
+  }
+
+  const parseExcelFile = async (file, targetPlayerId) => {
+    setOfflineImporting(true)
+    try {
+      const XLSX = await import('xlsx')
+      const buffer = await file.arrayBuffer()
+      const wb = XLSX.read(buffer, { type: 'array' })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+
+      // Find header row with match data
+      let headerRow = -1
+      let homeScoreCol = -1, awayScoreCol = -1, jokerCol = -1
+      let homeTeamCol = -1, awayTeamCol = -1
+
+      for (let i = 0; i < Math.min(rows.length, 20); i++) {
+        const row = rows[i].map(c => String(c).toLowerCase().trim())
+        if (row.some(c => c.includes('home') || c.includes('score'))) {
+          headerRow = i
+          row.forEach((c, j) => {
+            if (c.includes('home') && c.includes('score')) homeScoreCol = j
+            if (c.includes('away') && c.includes('score')) awayScoreCol = j
+            if (c.includes('joker')) jokerCol = j
+            if ((c.includes('home') || c.includes('team 1')) && !c.includes('score')) homeTeamCol = j
+            if ((c.includes('away') || c.includes('team 2')) && !c.includes('score')) awayTeamCol = j
+          })
+          break
+        }
+      }
+
+      if (headerRow === -1 || homeScoreCol === -1 || awayScoreCol === -1) {
+        setActionResult('❌ Could not find score columns in spreadsheet. Make sure columns are labelled "Home Score" and "Away Score"')
+        setOfflineImporting(false)
+        return
+      }
+
+      // Load all matches for matching
+      const { data: allMatches } = await supabase
+        .from('matches')
+        .select('id, kickoff_time, home_team:home_team_id(name, short_code), away_team:away_team_id(name, short_code)')
+        .eq('stage', 'group')
+        .order('kickoff_time')
+
+      const predictions = []
+      const unmatched = []
+      let jokersFound = 0
+
+      for (let i = headerRow + 1; i < rows.length; i++) {
+        const row = rows[i]
+        const homeScore = parseInt(String(row[homeScoreCol]).trim())
+        const awayScore = parseInt(String(row[awayScoreCol]).trim())
+        if (isNaN(homeScore) || isNaN(awayScore)) continue
+
+        const isJoker = jokerCol >= 0 && String(row[jokerCol]).trim().toUpperCase() === 'X'
+        if (isJoker) jokersFound++
+
+        // Match by team names if available, otherwise by row order
+        let match = null
+        if (homeTeamCol >= 0 && awayTeamCol >= 0) {
+          const homeTeam = normaliseTeam(String(row[homeTeamCol]))
+          const awayTeam = normaliseTeam(String(row[awayTeamCol]))
+          match = allMatches.find(m =>
+            (m.home_team?.name?.toLowerCase() === homeTeam.toLowerCase() ||
+             m.home_team?.short_code?.toLowerCase() === homeTeam.toLowerCase()) &&
+            (m.away_team?.name?.toLowerCase() === awayTeam.toLowerCase() ||
+             m.away_team?.short_code?.toLowerCase() === awayTeam.toLowerCase())
+          )
+          if (!match) unmatched.push(`${homeTeam} vs ${awayTeam}`)
+        } else {
+          // Fall back to row order
+          const idx = predictions.length
+          match = allMatches[idx]
+        }
+
+        if (match) {
+          predictions.push({
+            user_id: targetPlayerId,
+            match_id: match.id,
+            home_score: homeScore,
+            away_score: awayScore,
+            is_confident: isJoker,
+            bracket_type: 'main',
+          })
+        }
+      }
+
+      setOfflineImportPreview({ predictions, unmatched, jokersFound, targetPlayerId })
+      setOfflineImporting(false)
+    } catch (e) {
+      setActionResult(`❌ Parse error: ${e.message}`)
+      setOfflineImporting(false)
+    }
+  }
+
+  const confirmImport = async () => {
+    if (!offlineImportPreview) return
+    setOfflineImporting(true)
+    const { predictions, targetPlayerId } = offlineImportPreview
+    const { error } = await supabase.from('predictions')
+      .upsert(predictions, { onConflict: 'user_id,match_id,bracket_type' })
+    if (error) {
+      setActionResult(`❌ Import failed: ${error.message}`)
+    } else {
+      await logAudit('IMPORT_OFFLINE_PREDICTIONS', { player_id: targetPlayerId, count: predictions.length })
+      setActionResult(`✅ Imported ${predictions.length} predictions successfully`)
+      setOfflineImportPreview(null)
+    }
+    setOfflineImporting(false)
   }
 
   const filteredUsers = users.filter(u =>
@@ -1321,6 +1525,15 @@ export default function AdminPanel() {
                       onChange={e => setNewLeagueIsGlobal(e.target.checked)} />
                     🌍 Global league (visible to all users on Leagues page)
                   </label>
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: 'var(--text-muted)' }}>Scoring Preset</div>
+                    <select className="input" value={newLeaguePreset || 'standard'} onChange={e => setNewLeaguePreset(e.target.value)}>
+                      <option value="standard">⚽ Standard (3pts correct / 5pts exact)</option>
+                      <option value="high_stakes">🔥 High Stakes (5pts correct / 10pts exact)</option>
+                      <option value="exact_only">🎯 Exact Only (0pts correct / 8pts exact)</option>
+                      <option value="excel">📊 Excel Import Format (matches external predictor)</option>
+                    </select>
+                  </div>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={createLeague} disabled={!newLeagueName.trim()} className="btn btn-primary btn-sm">Create</button>
                     <button onClick={() => setShowCreateLeague(false)} className="btn btn-secondary btn-sm">Cancel</button>
@@ -1423,6 +1636,133 @@ export default function AdminPanel() {
                 </button>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* ── OFFLINE PLAYERS ── */}
+        {activeTab === 'offline' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+            {/* Create new offline player */}
+            <div className="card" style={{ border: '1px solid var(--scottish-navy)' }}>
+              <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '12px' }}>👤 Add Offline Player</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <input className="input" placeholder="Display name (e.g. Dave's Picks)"
+                  value={offlineDisplayName} onChange={e => setOfflineDisplayName(e.target.value)} />
+                <select className="input" value={offlineLeagueId} onChange={e => setOfflineLeagueId(e.target.value)}>
+                  <option value="">Select a league...</option>
+                  {leagues.filter(l => !l.is_global).map(l => (
+                    <option key={l.id} value={l.id}>{l.name} ({l.members?.length || 0} members)</option>
+                  ))}
+                </select>
+                <button onClick={createOfflinePlayer}
+                  disabled={offlineCreating || !offlineDisplayName.trim() || !offlineLeagueId}
+                  className="btn btn-primary">
+                  {offlineCreating ? '⏳ Creating...' : '➕ Create Offline Player'}
+                </button>
+              </div>
+            </div>
+
+            {/* Import preview */}
+            {offlineImportPreview && (
+              <div className="card" style={{ border: '2px solid var(--accent-green)' }}>
+                <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '10px' }}>📋 Import Preview</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '14px' }}>✅ <strong>{offlineImportPreview.predictions.length}</strong> predictions found</div>
+                  <div style={{ fontSize: '14px' }}>🃏 <strong>{offlineImportPreview.jokersFound}</strong> jokers applied</div>
+                  {offlineImportPreview.unmatched.length > 0 && (
+                    <div style={{ padding: '8px', background: 'var(--accent-red-light)', borderRadius: 'var(--radius-md)', fontSize: '12px' }}>
+                      ⚠️ <strong>{offlineImportPreview.unmatched.length} unmatched teams:</strong> {offlineImportPreview.unmatched.join(', ')}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button onClick={confirmImport} disabled={offlineImporting} className="btn btn-primary btn-sm">
+                    {offlineImporting ? '⏳ Saving...' : '✅ Confirm Import'}
+                  </button>
+                  <button onClick={() => setOfflineImportPreview(null)} className="btn btn-secondary btn-sm">Cancel</button>
+                </div>
+              </div>
+            )}
+
+            {/* Existing offline players */}
+            <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>
+              {offlinePlayers.length} offline player{offlinePlayers.length !== 1 ? 's' : ''}
+            </div>
+
+            {offlinePlayers.map(player => (
+              <div key={player.id} className="card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '15px' }}>👤 {player.display_name}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      League: {player.leagues?.name || 'Unknown'}
+                    </div>
+                  </div>
+                  <button onClick={() => setConfirmAction({ type: 'deleteOfflinePlayer', playerId: player.id, displayName: player.display_name })}
+                    className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
+                    🗑️
+                  </button>
+                </div>
+
+                {/* Excel upload */}
+                <div style={{ marginBottom: '10px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                    📊 Import predictions from Excel
+                  </div>
+                  <input type="file" accept=".xlsx,.xls,.csv"
+                    onChange={e => { if (e.target.files[0]) parseExcelFile(e.target.files[0], player.id) }}
+                    style={{ fontSize: '12px', width: '100%' }} />
+                  {offlineImporting && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>⏳ Parsing spreadsheet...</div>}
+                </div>
+
+                {/* Manual score entry toggle */}
+                <button onClick={() => setOfflineSelectedPlayer(offlineSelectedPlayer?.id === player.id ? null : player)}
+                  className="btn btn-sm" style={{ border: '1px solid var(--scottish-navy)', color: 'var(--scottish-navy)', background: 'none', width: '100%' }}>
+                  {offlineSelectedPlayer?.id === player.id ? '▲ Hide manual entry' : '⌨️ Enter scores manually'}
+                </button>
+
+                {/* Manual score entry */}
+                {offlineSelectedPlayer?.id === player.id && (
+                  <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                      Enter scores manually — saves automatically
+                    </div>
+                    {matches.filter(m => m.stage === 'group').map(match => {
+                      const key = `${player.id}-${match.id}`
+                      const val = offlineManualScores[key] || {}
+                      return (
+                        <div key={match.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
+                          <span style={{ fontSize: '11px', flex: 1, color: 'var(--text-muted)' }}>
+                            {match.home_team?.short_code} vs {match.away_team?.short_code}
+                          </span>
+                          <input type="number" min="0" max="20" placeholder="H"
+                            value={val.home ?? ''}
+                            onChange={e => setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], home: e.target.value } }))}
+                            onBlur={() => saveManualScore(player.id, match.id, val.home, val.away)}
+                            style={{ width: '40px', textAlign: 'center', padding: '4px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '13px' }} />
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>–</span>
+                          <input type="number" min="0" max="20" placeholder="A"
+                            value={val.away ?? ''}
+                            onChange={e => setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], away: e.target.value } }))}
+                            onBlur={() => saveManualScore(player.id, match.id, val.home, val.away)}
+                            style={{ width: '40px', textAlign: 'center', padding: '4px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '13px' }} />
+                          {val.saved && <span style={{ fontSize: '11px', color: 'var(--accent-green)' }}>✓</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {offlinePlayers.length === 0 && (
+              <div className="card" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '32px', marginBottom: '8px' }}>👤</div>
+                <div style={{ fontWeight: '700' }}>No offline players yet</div>
+                <div style={{ fontSize: '13px', marginTop: '4px' }}>Add one above to include non-registered players in a mini league</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1790,6 +2130,7 @@ export default function AdminPanel() {
                confirmAction.type === 'reset' ? '↺ Reset Predictions' :
                confirmAction.type === 'makeAdmin' ? '⭐ Make Admin' :
                confirmAction.type === 'removeMember' ? '👤 Remove Member' :
+               confirmAction.type === 'deleteOfflinePlayer' ? '🗑️ Delete Offline Player' :
                '🗑️ Delete League'}
             </div>
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
@@ -1797,6 +2138,7 @@ export default function AdminPanel() {
                confirmAction.type === 'reset' ? `Delete all predictions for ${confirmAction.username}? This cannot be undone.` :
                confirmAction.type === 'makeAdmin' ? `Give ${confirmAction.username} admin access?` :
                confirmAction.type === 'removeMember' ? `Remove ${confirmAction.username} from "${confirmAction.leagueName}"?` :
+               confirmAction.type === 'deleteOfflinePlayer' ? `Delete offline player "${confirmAction.displayName}" and all their predictions? This cannot be undone.` :
                `Delete league "${confirmAction.leagueName}"? All members will be removed.`}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -1807,6 +2149,7 @@ export default function AdminPanel() {
                 else if (confirmAction.type === 'removeMember') removeMemberFromLeague(confirmAction.leagueId, confirmAction.userId, confirmAction.username, confirmAction.leagueName)
                 else if (confirmAction.type === 'deleteLeague') deleteLeague(confirmAction.leagueId, confirmAction.leagueName)
                 else if (confirmAction.type === 'deleteKoLeague') deleteKoLeague(confirmAction.leagueId, confirmAction.leagueName)
+                else if (confirmAction.type === 'deleteOfflinePlayer') deleteOfflinePlayer(confirmAction.playerId, confirmAction.displayName)
                 setConfirmAction(null)
               }} className="btn btn-primary" style={{ background: '#e53935', flex: 1 }}>Confirm</button>
               <button onClick={() => setConfirmAction(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>

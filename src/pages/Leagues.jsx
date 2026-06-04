@@ -391,6 +391,49 @@ export default function Leagues() {
     return 'wrong'
   }
 
+  // Guest view
+  if (!user) {
+    return (
+      <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat',
+          padding: '40px 20px 32px', color: 'white', textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '48px', marginBottom: '12px' }}>👥</div>
+          <h1 style={{ fontSize: '26px', fontWeight: '900', marginBottom: '8px' }}>Mini Leagues</h1>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>
+            Compete against your friends in a private league
+          </p>
+        </div>
+        <div className="container" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="card" style={{ textAlign: 'center', padding: '32px 24px' }}>
+            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🏆</div>
+            <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>Create your own league</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '20px' }}>
+              Set up a private league, share your invite code with friends, and see who predicted the tournament best. Up to unlimited members per league.
+            </div>
+            <Link to="/register" className="btn btn-primary btn-full" style={{ marginBottom: '10px' }}>🚀 Join free to create a league</Link>
+            <Link to="/login" className="btn btn-secondary btn-full">Sign in</Link>
+          </div>
+          {[
+            { icon: '🔒', title: 'Private & invite-only', desc: 'Only people with your code can join' },
+            { icon: '📊', title: 'Your own leaderboard', desc: 'See exactly where you rank vs friends' },
+            { icon: '💬', title: 'Share via WhatsApp', desc: 'One tap to invite your mates' },
+            { icon: '🌍', title: 'Global leaderboard too', desc: 'Compete with everyone on the overall table' },
+          ].map(item => (
+            <div key={item.title} className="card" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ fontSize: '28px', flexShrink: 0 }}>{item.icon}</div>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '14px' }}>{item.title}</div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '2px' }}>{item.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
@@ -579,9 +622,15 @@ export default function Leagues() {
                           <div style={{ fontWeight: '800', fontSize: '15px', color: 'var(--text-primary)' }}>
                             {league.is_global ? 'WC26 Overall' : league.name}
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>
-                            {memberCount} {memberCount === 1 ? 'member' : 'members'}
-                            {!league.is_global && ` · ${isCreator ? 'Creator' : 'Member'}`}
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>{memberCount} {memberCount === 1 ? 'member' : 'members'}{!league.is_global && ` · ${isCreator ? 'Creator' : 'Member'}`}</span>
+                            {league.scoring_preset && league.scoring_preset !== 'standard' && (
+                              <span style={{ fontSize: '10px', fontWeight: '700', padding: '1px 5px', borderRadius: 'var(--radius-full)', background: 'var(--scottish-navy-light)', color: 'var(--scottish-navy)' }}>
+                                {league.scoring_preset === 'high_stakes' ? '🔥 High Stakes' :
+                                 league.scoring_preset === 'exact_only' ? '🎯 Exact Only' :
+                                 league.scoring_preset === 'excel' ? '📊 Excel Format' : ''}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -642,6 +691,7 @@ export default function Leagues() {
                                   </span>
                                   {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '1px 5px', borderRadius: '3px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
                                   {isLeagueCreator && !league.is_global && <span style={{ fontSize: '11px' }}>👑</span>}
+                                  {member.profile?.is_offline && <span style={{ fontSize: '9px', background: 'var(--bg-tertiary)', color: 'var(--text-muted)', padding: '1px 5px', borderRadius: '3px', fontWeight: '700', flexShrink: 0, border: '1px solid var(--border-light)' }}>👤 Offline</span>}
                                 </div>
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '6px', marginTop: '1px' }}>
                                   {gap !== null && pts !== leaderPts && <span>-{gap}pts</span>}
@@ -801,6 +851,19 @@ export default function Leagues() {
       )}
 
       {/* Confirm dialog */}
+      {/* Global leaderboard link */}
+      <div className="container" style={{ padding: '0 16px 16px' }}>
+        <Link to="/leaderboard" style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+          padding: '14px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--border-light)', textDecoration: 'none',
+          color: 'var(--scottish-navy)', fontWeight: '700', fontSize: '14px',
+          boxShadow: 'var(--shadow-sm)',
+        }}>
+          🌍 View global leaderboard →
+        </Link>
+      </div>
+
       {confirmAction && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
           <div className="card" style={{ maxWidth: '340px', width: '100%' }}>

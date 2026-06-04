@@ -22,6 +22,8 @@ export default function Profile() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [showShareCard, setShowShareCard] = useState(false)
+  const [importPreview, setImportPreview] = useState(null)
+  const [importLoading, setImportLoading] = useState(false)
   const [selectedAvatar, setSelectedAvatar] = useState('')
 
   useEffect(() => {
@@ -120,6 +122,143 @@ export default function Profile() {
   const accuracy = profile?.prediction_accuracy || 0
 
   if (!profile) return <div className="loading-screen"><div className="spinner" /></div>
+
+  // Team name aliases for import
+  const TEAM_ALIASES = {
+    'holland': 'Netherlands', 'the netherlands': 'Netherlands',
+    'korea republic': 'South Korea', 'republic of korea': 'South Korea',
+    'cabo verde': 'Cape Verde', 'cape verde islands': 'Cape Verde',
+    "cote d'ivoire": 'Ivory Coast', 'ivory coast': 'Ivory Coast',
+    'usa': 'United States', 'united states of america': 'United States',
+    'turkey': 'Türkiye', 'bosnia': 'Bosnia-Herzegovina',
+    'bosnia and herzegovina': 'Bosnia-Herzegovina',
+    'czech republic': 'Czechia', 'dr congo': 'DR Congo',
+  }
+  const normaliseTeam = (name) => {
+    if (!name) return ''
+    const lower = name.toLowerCase().trim()
+    return TEAM_ALIASES[lower] || name.trim()
+  }
+
+  const handleExportPredictions = async () => {
+    if (!user) return
+    const XLSX = await import('xlsx')
+    const { data: matches } = await supabase
+      .from('matches')
+      .select('id, kickoff_time, home_team:home_team_id(name, short_code), away_team:away_team_id(name, short_code), group:group_id(name)')
+      .eq('stage', 'group').order('kickoff_time')
+    const { data: preds } = await supabase
+      .from('predictions').select('match_id, home_score, away_score, is_confident').eq('user_id', user.id)
+    const predMap = {}
+    preds?.forEach(p => { predMap[p.match_id] = p })
+
+    const rows = [['Match', 'Group', 'Date', 'Home Team', 'Away Team', 'Home Score', 'Away Score', 'Joker']]
+    matches?.forEach((m, i) => {
+      const pred = predMap[m.id]
+      const date = new Date(m.kickoff_time).toLocaleDateString('en-GB')
+      rows.push([
+        `M${i + 1}`,
+        m.group?.name || '',
+        date,
+        m.home_team?.name || '',
+        m.away_team?.name || '',
+        pred?.home_score ?? '',
+        pred?.away_score ?? '',
+        pred?.is_confident ? 'X' : '',
+      ])
+    })
+
+    const ws = XLSX.utils.aoa_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Predictions')
+    XLSX.writeFile(wb, `wc26-predictions-${profile?.display_name || 'export'}.xlsx`)
+  }
+
+  const handleImportPredictions = async (file) => {
+    if (!user) return
+    setImportLoading(true)
+    try {
+      const XLSX = await import('xlsx')
+      const buffer = await file.arrayBuffer()
+      const wb = XLSX.read(buffer, { type: 'array' })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
+
+      let headerRow = -1, homeScoreCol = -1, awayScoreCol = -1, jokerCol = -1, homeTeamCol = -1, awayTeamCol = -1
+      for (let i = 0; i < Math.min(rows.length, 20); i++) {
+        const row = rows[i].map(c => String(c).toLowerCase().trim())
+        if (row.some(c => c.includes('score'))) {
+          headerRow = i
+          row.forEach((c, j) => {
+            if (c.includes('home') && c.includes('score')) homeScoreCol = j
+            if (c.includes('away') && c.includes('score')) awayScoreCol = j
+            if (c.includes('joker')) jokerCol = j
+            if (c.includes('home') && !c.includes('score')) homeTeamCol = j
+            if (c.includes('away') && !c.includes('score')) awayTeamCol = j
+          })
+          break
+        }
+      }
+
+      if (headerRow === -1 || homeScoreCol === -1) {
+        alert('Could not find score columns. Make sure columns are labelled "Home Score" and "Away Score"')
+        setImportLoading(false)
+        return
+      }
+
+      const { data: allMatches } = await supabase
+        .from('matches').select('id, home_team:home_team_id(name, short_code), away_team:away_team_id(name, short_code)')
+        .eq('stage', 'group').order('kickoff_time')
+
+      const predictions = []
+      const unmatched = []
+      let jokersFound = 0
+
+      for (let i = headerRow + 1; i < rows.length; i++) {
+        const row = rows[i]
+        const homeScore = parseInt(String(row[homeScoreCol]).trim())
+        const awayScore = parseInt(String(row[awayScoreCol]).trim())
+        if (isNaN(homeScore) || isNaN(awayScore)) continue
+        const isJoker = jokerCol >= 0 && String(row[jokerCol]).trim().toUpperCase() === 'X'
+        if (isJoker) jokersFound++
+
+        let match = null
+        if (homeTeamCol >= 0 && awayTeamCol >= 0) {
+          const homeTeam = normaliseTeam(String(row[homeTeamCol]))
+          const awayTeam = normaliseTeam(String(row[awayTeamCol]))
+          match = allMatches.find(m =>
+            m.home_team?.name?.toLowerCase() === homeTeam.toLowerCase() &&
+            m.away_team?.name?.toLowerCase() === awayTeam.toLowerCase()
+          )
+          if (!match) unmatched.push(`${homeTeam} vs ${awayTeam}`)
+        } else {
+          match = allMatches[predictions.length]
+        }
+
+        if (match) {
+          predictions.push({ match_id: match.id, home_score: homeScore, away_score: awayScore, is_confident: isJoker })
+        }
+      }
+
+      setImportPreview({ predictions, unmatched, jokersFound })
+    } catch (e) {
+      alert(`Import failed: ${e.message}`)
+    }
+    setImportLoading(false)
+  }
+
+  const confirmImport = async () => {
+    if (!importPreview || !user) return
+    setImportLoading(true)
+    const toSave = importPreview.predictions.map(p => ({
+      user_id: user.id, match_id: p.match_id, home_score: p.home_score,
+      away_score: p.away_score, is_confident: p.is_confident, bracket_type: 'main',
+    }))
+    const { error } = await supabase.from('predictions').upsert(toSave, { onConflict: 'user_id,match_id,bracket_type' })
+    if (error) { alert(`Save failed: ${error.message}`) }
+    else { setImportPreview(null); alert(`✅ ${toSave.length} predictions imported successfully!`) }
+    setImportLoading(false)
+  }
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
@@ -387,6 +526,21 @@ export default function Profile() {
               className="btn btn-full" style={{ marginBottom: '12px', background: 'var(--scottish-navy)', color: 'white', fontWeight: '700' }}>
               📤 Share my predictions
             </button>
+            <button onClick={handleExportPredictions}
+              className="btn btn-full" style={{ marginBottom: '8px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontWeight: '700', border: '1px solid var(--border-medium)' }}>
+              📥 Export my predictions (Excel)
+            </button>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                📊 Import predictions from Excel
+              </label>
+              <input type="file" accept=".xlsx,.xls,.csv"
+                onChange={e => { if (e.target.files[0]) handleImportPredictions(e.target.files[0]) }}
+                style={{ fontSize: '12px', width: '100%', marginBottom: '4px' }} />
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                💡 Fill in the template from another predictor and import here. Your existing predictions will be overwritten.
+              </div>
+            </div>
             <button onClick={handleLogout} className="btn btn-secondary btn-full" style={{ marginBottom: '24px' }}>
               Sign out
             </button>
@@ -443,6 +597,31 @@ export default function Profile() {
       </div>
 
       {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
+
+      {/* Import preview modal */}
+      {importPreview && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ maxWidth: '400px', width: '100%' }}>
+            <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '12px' }}>📋 Import Preview</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+              <div>✅ <strong>{importPreview.predictions.length}</strong> predictions found</div>
+              <div>🃏 <strong>{importPreview.jokersFound}</strong> jokers</div>
+              {importPreview.unmatched.length > 0 && (
+                <div style={{ padding: '8px', background: 'var(--accent-red-light)', borderRadius: 'var(--radius-md)', fontSize: '12px' }}>
+                  ⚠️ <strong>{importPreview.unmatched.length} unmatched:</strong> {importPreview.unmatched.join(', ')}
+                </div>
+              )}
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>⚠️ This will overwrite your existing predictions</div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={confirmImport} disabled={importLoading} className="btn btn-primary" style={{ flex: 1 }}>
+                {importLoading ? '⏳ Saving...' : '✅ Confirm Import'}
+              </button>
+              <button onClick={() => setImportPreview(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Avatar picker modal */}
       {showAvatarPicker && (
