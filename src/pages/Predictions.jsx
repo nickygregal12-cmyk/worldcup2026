@@ -1419,6 +1419,7 @@ export default function Predictions() {
                 <div className="empty-state-title">No matches in Group {activeGroup}</div>
               </div>
             )}
+            {renderGroupStandings()}
             {/* Next group prompt */}
             {groupMatches.length > 0 && (() => {
               const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
