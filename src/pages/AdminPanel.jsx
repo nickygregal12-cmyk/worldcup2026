@@ -721,7 +721,7 @@ export default function AdminPanel() {
     const { data, error } = await supabase
       .from('offline_players')
       .select(`
-        id, display_name, league_id, total_points, created_at,
+        id, display_name, league_id, created_at,
         league:league_id(id, name)
       `)
       .order('created_at', { ascending: false })
