@@ -420,7 +420,7 @@ export default function Home() {
           )}
 
           {/* ── Share predictions card ── */}
-          {user && groupsDone && !tournamentStarted && (
+          {user && predictionCount >= 72 && !tournamentStarted && (
             <div className="card fade-in" style={{ overflow: 'hidden' }}>
               <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
