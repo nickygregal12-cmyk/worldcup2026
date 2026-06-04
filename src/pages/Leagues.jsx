@@ -6,29 +6,33 @@ import { useAuthStore, useAppStore } from '../store/index.js'
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
-const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
-
 function MemberStandingsView({ predictions }) {
-  // Build predicted standings from predictions array
   const standings = {}
 
   predictions.forEach(pred => {
     const match = pred.match
-    if (!match || pred.home_score === null || pred.away_score === null) return
+    if (!match) return
+    const h = pred.home_score ?? pred.home_score
+    const a = pred.away_score ?? pred.away_score
+    if (h === null || h === undefined || a === null || a === undefined) return
+
+    // Handle both data structures — offline has group.name, real users have stage only
+    const group = match.group?.name || match.group_name
+    if (!group || (match.stage && match.stage !== 'group')) return
+
     const homeId = match.home_team?.name
     const awayId = match.away_team?.name
-    const group = match.group?.name
-    if (!group) return
+    if (!homeId || !awayId) return
 
     if (!standings[group]) standings[group] = {}
     if (!standings[group][homeId]) standings[group][homeId] = { name: homeId, flag: match.home_team?.flag_emoji, pts: 0, gf: 0, ga: 0, played: 0 }
     if (!standings[group][awayId]) standings[group][awayId] = { name: awayId, flag: match.away_team?.flag_emoji, pts: 0, gf: 0, ga: 0, played: 0 }
 
-    const h = pred.home_score, a = pred.away_score
-    standings[group][homeId].gf += h; standings[group][homeId].ga += a; standings[group][homeId].played++
-    standings[group][awayId].gf += a; standings[group][awayId].ga += h; standings[group][awayId].played++
-    if (h > a) { standings[group][homeId].pts += 3 }
-    else if (h === a) { standings[group][homeId].pts += 1; standings[group][awayId].pts += 1 }
+    const hs = Number(h), as = Number(a)
+    standings[group][homeId].gf += hs; standings[group][homeId].ga += as; standings[group][homeId].played++
+    standings[group][awayId].gf += as; standings[group][awayId].ga += hs; standings[group][awayId].played++
+    if (hs > as) { standings[group][homeId].pts += 3 }
+    else if (hs === as) { standings[group][homeId].pts += 1; standings[group][awayId].pts += 1 }
     else { standings[group][awayId].pts += 3 }
   })
 
@@ -38,6 +42,7 @@ function MemberStandingsView({ predictions }) {
     <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
       <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
       <div style={{ fontWeight: '700' }}>No predictions to show standings</div>
+      <div style={{ fontSize: '12px', marginTop: '4px' }}>Predictions must be visible to calculate standings</div>
     </div>
   )
 
@@ -375,7 +380,7 @@ export default function Leagues() {
     setLoadingPreds(true)
     const { data: preds, error } = await supabase
       .from('predictions')
-      .select(`*, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))`)
+      .select(`*, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, group:group_id(name), home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))`)
       .eq('user_id', userId)
       .order('match_id', { ascending: true })
 
@@ -884,7 +889,7 @@ export default function Leagues() {
       {memberModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
           onClick={() => setMemberModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0', width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0', width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontWeight: '800', fontSize: '16px' }}>
