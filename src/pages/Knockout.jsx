@@ -222,15 +222,22 @@ export default function Knockout() {
     const teamsKnown = !!(home && away)
     const isPicked = !!pick?.winner_id
 
+    const isFinalMatch = matchDef.match_number === 104
+
     const accentColor = isAffected ? 'var(--accent-gold)'
+      : isFinalMatch ? 'var(--accent-gold)'
       : isPicked ? 'var(--accent-green)'
       : 'transparent'
 
     const cardBorder = isAffected ? '2px solid var(--accent-gold)'
+      : isFinalMatch && isPicked ? '2px solid var(--accent-gold)'
+      : isFinalMatch ? '1.5px solid rgba(184,134,11,0.4)'
       : isPicked ? '1.5px solid var(--accent-green)'
       : '1.5px solid var(--border-light)'
 
-    const cardBg = isAffected ? 'var(--accent-gold-light)' : 'var(--bg-card)'
+    const cardBg = isAffected ? 'var(--accent-gold-light)'
+      : isFinalMatch ? 'var(--accent-gold-light)'
+      : 'var(--bg-card)'
 
     return (
       <div key={mn} style={{
@@ -244,10 +251,18 @@ export default function Knockout() {
         <div style={{ height: '4px', background: accentColor, flexShrink: 0 }} />
 
         <div style={{ padding: '14px 16px 16px' }}>
+          {/* Final special header */}
+          {matchDef.match_number === 104 && (
+            <div style={{ textAlign: 'center', marginBottom: '14px', padding: '12px', background: 'linear-gradient(135deg, rgba(184,134,11,0.1), rgba(184,134,11,0.05))', borderRadius: 'var(--radius-md)', border: '1px solid rgba(184,134,11,0.2)' }}>
+              <div style={{ fontSize: '28px', marginBottom: '4px' }}>🏆</div>
+              <div style={{ fontWeight: '900', fontSize: '16px', color: 'var(--accent-gold)', letterSpacing: '-0.02em' }}>The World Cup Final</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Pick your World Cup winner · Worth <strong style={{ color: 'var(--accent-gold)' }}>20 pts</strong></div>
+            </div>
+          )}
           {/* Affected warning */}
           {isAffected && (
             <div style={{ marginBottom: '12px', padding: '8px 12px', background: 'rgba(184,134,11,0.15)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)', border: '1px solid rgba(184,134,11,0.25)' }}>
-              ⚠️ Your group predictions changed — please re-pick the winner
+              ⚠️ Your earlier pick changed — please re-pick the winner for this match
             </div>
           )}
 
@@ -267,40 +282,57 @@ export default function Knockout() {
 
           {/* Teams or placeholder slots */}
           {teamsKnown ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {[home, away].map((team) => {
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+              {[home, away].map((team, idx) => {
                 if (!team) return null
                 const isPickedTeam = pick?.winner_id === team.id
+                const isFinal = matchDef.match_number === 104
                 return (
-                  <button key={team.id}
-                    onClick={() => canPick && savePick(matchDef, team.id)}
-                    disabled={!canPick}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '14px',
-                      padding: '14px 16px',
-                      borderRadius: 'var(--radius-md)',
-                      width: '100%', textAlign: 'left',
-                      transition: 'all 0.15s',
-                      border: isPickedTeam ? '2px solid var(--accent-green)' : '1.5px solid var(--border-light)',
-                      background: isPickedTeam ? 'var(--accent-green-light)' : 'var(--bg-secondary)',
-                      cursor: canPick ? 'pointer' : 'default',
-                      boxShadow: isPickedTeam ? '0 0 0 3px rgba(0,122,51,0.1)' : 'none',
-                    }}>
-                    <span style={{ fontSize: '40px', lineHeight: 1, flexShrink: 0 }}>{team.flag_emoji}</span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: '800', fontSize: '16px', letterSpacing: '-0.01em', color: isPickedTeam ? 'var(--accent-green)' : 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {team.name}
+                  <div key={team.id}>
+                    <button
+                      onClick={() => canPick && savePick(matchDef, team.id)}
+                      disabled={!canPick}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '14px',
+                        padding: '14px 16px',
+                        borderRadius: 'var(--radius-md)',
+                        width: '100%', textAlign: 'left',
+                        transition: 'all 0.15s',
+                        border: isPickedTeam
+                          ? `2px solid ${isFinal ? 'var(--accent-gold)' : 'var(--accent-green)'}`
+                          : '1.5px solid var(--border-light)',
+                        background: isPickedTeam
+                          ? (isFinal ? 'var(--accent-gold-light)' : 'var(--accent-green-light)')
+                          : 'var(--bg-secondary)',
+                        cursor: canPick ? 'pointer' : 'default',
+                        boxShadow: isPickedTeam ? `0 0 0 3px ${isFinal ? 'rgba(184,134,11,0.12)' : 'rgba(0,122,51,0.1)'}` : 'none',
+                      }}>
+                      <span style={{ fontSize: '40px', lineHeight: 1, flexShrink: 0 }}>{team.flag_emoji}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: '800', fontSize: '16px', letterSpacing: '-0.01em',
+                          color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : 'var(--accent-green)') : 'var(--text-primary)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {team.name}
+                        </div>
+                        <div style={{ fontSize: '11px', color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : 'var(--accent-green)') : 'var(--text-muted)', fontWeight: '600', marginTop: '2px', opacity: 0.8 }}>
+                          {team.short_code}
+                        </div>
                       </div>
-                      <div style={{ fontSize: '11px', color: isPickedTeam ? 'var(--accent-green)' : 'var(--text-muted)', fontWeight: '600', marginTop: '2px', opacity: 0.8 }}>
-                        {team.short_code}
-                      </div>
-                    </div>
-                    {isPickedTeam && (
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--accent-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <span style={{ color: 'white', fontSize: '14px', fontWeight: '900' }}>✓</span>
+                      {isPickedTeam && (
+                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isFinal ? 'var(--accent-gold)' : 'var(--accent-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ color: 'white', fontSize: '14px', fontWeight: '900' }}>✓</span>
+                        </div>
+                      )}
+                    </button>
+                    {/* VS divider between the two teams */}
+                    {idx === 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '6px 0' }}>
+                        <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', letterSpacing: '0.08em', padding: '2px 8px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-full)', background: 'var(--bg-secondary)' }}>VS</span>
+                        <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
                       </div>
                     )}
-                  </button>
+                  </div>
                 )
               })}
             </div>
