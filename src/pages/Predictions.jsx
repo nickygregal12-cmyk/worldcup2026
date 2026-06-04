@@ -657,13 +657,14 @@ export default function Predictions() {
   const inputRefs = useRef({}) // store refs to all score inputs
 
   const handleScoreChange = (matchId, side, value) => {
-    if (!user) return
+    // Allow local state update for guests — just skip the DB save below
     const cleaned = value.replace(/[^0-9]/g, '')
     const num = cleaned === '' ? '' : Math.min(99, parseInt(cleaned))
     setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], [side]: num, _dirty: true } }))
 
     clearTimeout(saveTimers.current[matchId])
     saveTimers.current[matchId] = setTimeout(() => {
+      if (!userRef.current) return // guest — local state only, no DB save
       const homeInput = inputRefs.current[`${matchId}-home`]
       const awayInput = inputRefs.current[`${matchId}-away`]
       const homeVal = homeInput ? parseInt(homeInput.value.replace(/[^0-9]/g, '')) : NaN
@@ -1042,8 +1043,7 @@ export default function Predictions() {
                     onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
                     onInput={e => handleScoreChange(match.id, 'home', e.target.value)}
                     onBlur={() => handleScoreBlur(match, 'home')}
-                    disabled={locked || isGuest} placeholder="?"
-                    style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
+                    disabled={locked} placeholder="?"
                   />
                   <span style={{ fontSize: '20px', color: 'var(--text-muted)', fontWeight: '300', fontFamily: 'var(--font-mono)' }}>–</span>
                   <input type="text" inputMode="numeric" pattern="[0-9]*" className="score-input"
@@ -1052,8 +1052,7 @@ export default function Predictions() {
                     onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
                     onInput={e => handleScoreChange(match.id, 'away', e.target.value)}
                     onBlur={() => handleScoreBlur(match, 'away')}
-                    disabled={locked || isGuest} placeholder="?"
-                    style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
+                    disabled={locked} placeholder="?"
                   />
                 </>
               )}
@@ -1085,16 +1084,7 @@ export default function Predictions() {
             </div>
           )}
 
-          {/* Guest CTA */}
-          {isGuest && !locked && (
-            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Register to save your predictions</span>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <Link to="/register" className="btn btn-primary btn-sm">Join free</Link>
-                <Link to="/login" className="btn btn-secondary btn-sm">Sign in</Link>
-              </div>
-            </div>
-          )}
+          {/* Guest — no per-card CTA, handled by sticky banner */}
 
           {/* Joker + Clear + Save */}
           {!isGuest && !locked && !resultColour && (
@@ -1375,14 +1365,14 @@ export default function Predictions() {
         </div>
       )}
 
-      {/* Guest banner */}
+      {/* Guest banner — friendly, not a wall */}
       {!user && (
-        <div style={{ background: 'linear-gradient(135deg, #003087, #005eb8)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={{ color: 'white', fontSize: '14px' }}>
-            <strong>👋 Browsing as guest</strong>
-            <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: '8px' }}>Register free to save predictions & compete</span>
+        <div style={{ background: 'var(--scottish-navy)', padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ color: 'white', fontSize: '13px', lineHeight: 1.4 }}>
+            <span style={{ fontWeight: '700' }}>👋 Try it out!</span>
+            <span style={{ color: 'rgba(255,255,255,0.65)', marginLeft: '6px' }}>Picks are local only — join to save & compete</span>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
             <Link to="/register" className="btn btn-green btn-sm">Join free</Link>
             <Link to="/login" className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>Sign in</Link>
           </div>
@@ -1628,6 +1618,27 @@ export default function Predictions() {
           )
         )}
       </div>
+
+      {/* ── Sticky guest save banner ── */}
+      {!user && (
+        <div style={{
+          position: 'fixed', bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+          left: 0, right: 0, zIndex: 90,
+          background: 'var(--scottish-navy)',
+          padding: '12px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+          boxShadow: '0 -4px 16px rgba(0,0,0,0.15)',
+        }}>
+          <div style={{ color: 'white', fontSize: '13px', lineHeight: 1.4 }}>
+            <span style={{ fontWeight: '700' }}>💾 Save your picks</span>
+            <span style={{ color: 'rgba(255,255,255,0.65)', marginLeft: '6px' }}>Join free to compete</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+            <Link to="/register" className="btn btn-green btn-sm">Join free</Link>
+            <Link to="/login" className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>Sign in</Link>
+          </div>
+        </div>
+      )}
 
       {/* Clear confirm modal */}
       {/* Joker confirm modal */}
