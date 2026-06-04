@@ -891,9 +891,11 @@ export default function AdminPanel() {
           const homeTeam = normaliseTeam(String(row[homeTeamCol]))
           const awayTeam = normaliseTeam(String(row[awayTeamCol]))
           match = allMatches.find(m =>
-            (m.home_team?.name?.toLowerCase() === homeTeam.toLowerCase() ||
+            (m.home_team?.name === homeTeam ||
+             m.home_team?.name?.toLowerCase() === homeTeam.toLowerCase() ||
              m.home_team?.short_code?.toLowerCase() === homeTeam.toLowerCase()) &&
-            (m.away_team?.name?.toLowerCase() === awayTeam.toLowerCase() ||
+            (m.away_team?.name === awayTeam ||
+             m.away_team?.name?.toLowerCase() === awayTeam.toLowerCase() ||
              m.away_team?.short_code?.toLowerCase() === awayTeam.toLowerCase())
           )
           if (!match) unmatched.push(`${homeTeam} vs ${awayTeam}`)
