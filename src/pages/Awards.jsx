@@ -380,7 +380,7 @@ export default function Awards() {
               <div style={{ marginBottom: '12px', padding: '10px 14px', background: allGroupPredicted ? 'var(--accent-green-light)' : 'var(--accent-blue-light)', borderRadius: 'var(--radius-md)', fontSize: '13px', color: allGroupPredicted ? 'var(--accent-green)' : 'var(--accent-blue)', fontWeight: '600' }}>
                 {allGroupPredicted
                   ? `✓ Auto-calculated from your predictions: ${predictedGroupGoals} group goals`
-                  : `📊 ${Math.round(groupPreds?.length / 72 * 100) || '?'}% predicted so far · ~${predictedGroupGoals} group goals`
+                  : `📊 Based on your picks so far · ~${predictedGroupGoals} group goals estimated`
                 }
               </div>
             )}
