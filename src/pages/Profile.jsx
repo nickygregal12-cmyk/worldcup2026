@@ -154,7 +154,31 @@ export default function Profile() {
           }}>✏️</div>
         </div>
 
-        <div style={{ fontWeight: '800', fontSize: '22px' }}>{profile.display_name || profile.username}</div>
+        {editing ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
+            <input
+              className="input"
+              value={displayName}
+              onChange={e => setDisplayName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveProfile(); if (e.key === 'Escape') setEditing(false) }}
+              autoFocus
+              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', textAlign: 'center', fontWeight: '800', fontSize: '18px', maxWidth: '200px' }}
+            />
+            <button onClick={saveProfile} disabled={saving}
+              style={{ background: 'var(--accent-green)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '6px 12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+              {saving ? '...' : '✓'}
+            </button>
+            <button onClick={() => setEditing(false)}
+              style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '6px 12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div onClick={() => setEditing(true)} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+            <span style={{ fontWeight: '800', fontSize: '22px' }}>{profile.display_name || profile.username}</span>
+            <span style={{ fontSize: '13px', opacity: 0.5 }}>✏️</span>
+          </div>
+        )}
         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '4px' }}>@{profile.username}</div>
 
         {/* Accuracy bar */}
