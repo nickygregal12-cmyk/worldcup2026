@@ -1,9 +1,9 @@
 /* ============================================================
    WorldCup26 Predictor — Global Styles
-   Clean & Modern, data-forward design
+   Scottish Navy · Clean · Data-forward
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;0,9..40,900;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
 
 /* ---- CSS Variables ---- */
 :root {
@@ -11,85 +11,90 @@
   --font-mono: 'DM Mono', monospace;
 
   /* Colors - Light Mode */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --bg-tertiary: #f0f2f5;
-  --bg-card: #ffffff;
-  --bg-hover: #f0f2f5;
+  --bg-primary:   #ffffff;
+  --bg-secondary: #f3f5f8;
+  --bg-tertiary:  #eaecf0;
+  --bg-card:      #ffffff;
+  --bg-hover:     #f0f2f5;
 
-  --text-primary: #0a0a0a;
-  --text-secondary: #4a4a4a;
-  --text-muted: #636363; /* darkened from #8a8a8a for WCAG AA contrast */
-  --text-inverse: #ffffff;
+  --text-primary:   #0a0e1a;
+  --text-secondary: #3d4455;
+  --text-muted:     #6b7280;
+  --text-inverse:   #ffffff;
 
-  --border-light: #e8e8e8;
-  --border-medium: #d0d0d0;
+  --border-light:  #e4e7ec;
+  --border-medium: #cdd2da;
 
   /* Scottish theme */
-  --scottish-navy: #003087;
-  --scottish-navy-dark: #00206b;
+  --scottish-navy:       #003087;
+  --scottish-navy-dark:  #00206b;
   --scottish-navy-light: #e8eef8;
-  --scottish-blue: #005eb8;
-  --scottish-cross: #ffffff;
-  --header-gradient: linear-gradient(135deg, #003087 0%, #005eb8 60%, #003087 100%);
+  --scottish-blue:       #005eb8;
+  --scottish-cross:      #ffffff;
+  --header-gradient: linear-gradient(135deg, #001f5c 0%, #003087 50%, #005eb8 100%);
 
-  --accent-green: #007a33; /* darkened from #00c853 for WCAG AA contrast */
-  --accent-green-light: #e8faf0;
-  --accent-red: #c62828; /* darkened for contrast */
-  --accent-red-light: #ffeaea;
-  --accent-gold: #b8860b; /* darkened from #ffd700 for WCAG AA contrast */
-  --accent-gold-light: #fffbe6;
-  --accent-blue: #1558b0; /* darkened for contrast */
-  --accent-blue-light: #e8f0fe;
-  --accent-orange: #c94f00; /* darkened for contrast */
+  --accent-green:       #007a33;
+  --accent-green-light: #e6f5ed;
+  --accent-red:         #c62828;
+  --accent-red-light:   #fde8e8;
+  --accent-gold:        #b8860b;
+  --accent-gold-light:  #fef9e7;
+  --accent-blue:        #1558b0;
+  --accent-blue-light:  #e8f0fe;
+  --accent-orange:      #c94f00;
 
-  --primary: #003087;
+  --primary:       #003087;
   --primary-hover: #00206b;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.10);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+  /* Shadows — slightly richer */
+  --shadow-sm: 0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.06);
+  --shadow-lg: 0 8px 28px rgba(0,0,0,0.13), 0 4px 10px rgba(0,0,0,0.07);
+  --shadow-card: 0 2px 8px rgba(0,48,135,0.06), 0 1px 3px rgba(0,0,0,0.05);
 
-  /* Border radius */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
-  --radius-xl: 24px;
+  /* Border radius — bumped up */
+  --radius-sm:   8px;
+  --radius-md:   12px;
+  --radius-lg:   20px;
+  --radius-xl:   28px;
   --radius-full: 9999px;
 
   /* Spacing */
-  --nav-height: 64px;
+  --nav-height:        64px;
   --bottom-nav-height: 64px;
+  --card-padding:      20px;
 }
 
 /* Dark Mode */
 .dark {
-  --bg-primary: #0d0d0d;
-  --bg-secondary: #161616;
-  --bg-tertiary: #1e1e1e;
-  --bg-card: #161616;
-  --bg-hover: #1e1e1e;
+  --bg-primary:   #0d1117;
+  --bg-secondary: #131920;
+  --bg-tertiary:  #1c2330;
+  --bg-card:      #161d27;
+  --bg-hover:     #1c2330;
 
-  --text-primary: #f5f5f5;
-  --text-secondary: #a0a0a0;
-  --text-muted: #606060;
-  --text-inverse: #0a0a0a;
+  --text-primary:   #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted:     #5a6474;
+  --text-inverse:   #0d1117;
 
-  --border-light: #2a2a2a;
-  --border-medium: #3a3a3a;
+  --border-light:  #21282f;
+  --border-medium: #2d3748;
 
-  --accent-green-light: #0a2a18;
-  --accent-red-light: #2a0a0a;
-  --accent-gold-light: #2a2400;
-  --accent-blue-light: #0a1a3a;
+  --accent-green-light: #0a2218;
+  --accent-red-light:   #2a0e0e;
+  --accent-gold-light:  #231c00;
+  --accent-blue-light:  #0d1e3a;
 
-  --primary: #4a90d9;
+  --scottish-navy-light: #0d1e3a;
+
+  --primary:       #4a8fd9;
   --primary-hover: #6aaee8;
 
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-lg: 0 8px 24px rgba(0,0,0,0.5);
+  --shadow-sm:   0 1px 4px rgba(0,0,0,0.4);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:   0 8px 28px rgba(0,0,0,0.6);
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 /* ---- Reset & Base ---- */
@@ -107,12 +112,13 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-primary);
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
   transition: background-color 0.2s, color 0.2s;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
@@ -168,7 +174,6 @@ img {
 }
 
 /* ---- PWA / Home Screen safe area ---- */
-/* When running as installed PWA on iPhone, add top safe area to navbar */
 @media all and (display-mode: standalone) {
   :root {
     --nav-height: calc(64px + env(safe-area-inset-top, 0px));
@@ -176,7 +181,6 @@ img {
   .main-content {
     padding-top: var(--nav-height);
   }
-  /* Push navbar content below the notch/dynamic island */
   .pwa-nav {
     height: var(--nav-height) !important;
     padding-top: env(safe-area-inset-top, 0px) !important;
@@ -189,8 +193,8 @@ img {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
+  padding: var(--card-padding);
+  box-shadow: var(--shadow-card);
 }
 
 .card-hover {
@@ -211,9 +215,10 @@ img {
   padding: 10px 20px;
   border-radius: var(--radius-md);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   transition: all 0.15s;
   white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 .btn-primary {
@@ -224,6 +229,7 @@ img {
 .btn-primary:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
@@ -247,13 +253,14 @@ img {
 }
 
 .btn-sm {
-  padding: 6px 14px;
+  padding: 7px 14px;
   font-size: 13px;
 }
 
 .btn-lg {
-  padding: 14px 28px;
+  padding: 15px 28px;
   font-size: 16px;
+  font-weight: 800;
   border-radius: var(--radius-lg);
 }
 
@@ -270,18 +277,19 @@ img {
 /* ---- Form Elements ---- */
 .input {
   width: 100%;
-  padding: 10px 14px;
+  padding: 11px 14px;
   border: 1.5px solid var(--border-medium);
   border-radius: var(--radius-md);
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-size: 14px;
-  transition: border-color 0.15s;
+  font-size: 15px;
+  transition: border-color 0.15s, box-shadow 0.15s;
   outline: none;
 }
 
 .input:focus {
-  border-color: var(--primary);
+  border-color: var(--scottish-navy);
+  box-shadow: 0 0 0 3px rgba(0, 48, 135, 0.1);
 }
 
 .input::placeholder {
@@ -290,25 +298,25 @@ img {
 
 .label {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
   margin-bottom: 6px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
 }
 
 .form-group {
   margin-bottom: 16px;
 }
 
-/* ---- Score Input ---- */
+/* ---- Score Input — bigger for mobile thumbs ---- */
 .score-input {
-  width: 52px;
-  height: 52px;
+  width: 58px;
+  height: 58px;
   text-align: center;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 800;
   border: 2px solid var(--border-medium);
   border-radius: var(--radius-md);
   background: var(--bg-primary);
@@ -320,10 +328,9 @@ img {
   -webkit-appearance: none;
   -moz-appearance: textfield;
   display: block;
-  line-height: 52px;
+  line-height: 58px;
 }
 
-/* Remove number input arrows */
 .score-input::-webkit-outer-spin-button,
 .score-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -331,8 +338,8 @@ img {
 }
 
 .score-input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+  border-color: var(--scottish-navy);
+  box-shadow: 0 0 0 3px rgba(0, 48, 135, 0.12);
 }
 
 .score-input:disabled {
@@ -348,8 +355,9 @@ img {
   gap: 4px;
   padding: 3px 10px;
   border-radius: var(--radius-full);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .badge-green {
@@ -403,33 +411,57 @@ img {
 .tabs {
   display: flex;
   border-bottom: 1px solid var(--border-light);
-  gap: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.tabs::-webkit-scrollbar {
-  display: none;
 }
 
 .tab {
-  padding: 12px 20px;
+  padding: 10px 16px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-muted);
   border-bottom: 2px solid transparent;
-  white-space: nowrap;
   transition: all 0.15s;
+  margin-bottom: -1px;
+  white-space: nowrap;
 }
 
 .tab.active {
   color: var(--text-primary);
   border-bottom-color: var(--primary);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .tab:hover:not(.active) {
   color: var(--text-secondary);
+}
+
+/* ---- Pill Tabs (new) ---- */
+.pill-tabs {
+  display: flex;
+  gap: 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+  padding: 4px;
+}
+
+.pill-tab {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pill-tab.active {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ---- Points Display ---- */
@@ -442,7 +474,7 @@ img {
 }
 
 .points-positive { color: var(--accent-green); }
-.points-zero { color: var(--text-muted); }
+.points-zero     { color: var(--text-muted); }
 
 /* ---- Flag ---- */
 .flag {
@@ -453,14 +485,20 @@ img {
 /* ---- Match Card ---- */
 .match-card {
   background: var(--bg-card);
-  border: 1px solid var(--border-light);
+  border: 1.5px solid var(--border-light);
   border-radius: var(--radius-lg);
-  padding: 16px;
+  padding: 18px;
   transition: all 0.15s;
+  box-shadow: var(--shadow-card);
 }
 
 .match-card:hover {
   box-shadow: var(--shadow-md);
+}
+
+/* Green left accent when saved */
+.match-card-saved {
+  border-left: 4px solid var(--accent-green);
 }
 
 .match-teams {
@@ -479,19 +517,19 @@ img {
 }
 
 .match-team-name {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
 .match-score-area {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .score-divider {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 300;
   color: var(--text-muted);
   font-family: var(--font-mono);
@@ -529,18 +567,18 @@ img {
 .rank-3 { color: #cd7f32; }
 
 /* ---- Responsive Utilities ---- */
-.hide-mobile { display: none; }
+.hide-mobile  { display: none; }
 .hide-desktop { display: block; }
 
 @media (min-width: 768px) {
-  .hide-mobile { display: block; }
+  .hide-mobile  { display: block; }
   .hide-desktop { display: none; }
 }
 
 /* ---- Animations ---- */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .fade-in {
@@ -549,14 +587,14 @@ img {
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .slide-up {
   animation: slideUp 0.4s ease forwards;
 }
 
-/* ---- Toast / Notification ---- */
+/* ---- Toast ---- */
 .toast {
   position: fixed;
   bottom: 80px;
@@ -567,7 +605,7 @@ img {
   padding: 12px 24px;
   border-radius: var(--radius-full);
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   z-index: 1000;
   animation: slideUp 0.3s ease forwards;
   box-shadow: var(--shadow-lg);
@@ -575,9 +613,7 @@ img {
 }
 
 @media (min-width: 768px) {
-  .toast {
-    bottom: 24px;
-  }
+  .toast { bottom: 24px; }
 }
 
 /* ---- Empty State ---- */
@@ -591,22 +627,9 @@ img {
   gap: 12px;
 }
 
-.empty-state-icon {
-  font-size: 48px;
-  line-height: 1;
-}
-
-.empty-state-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.empty-state-desc {
-  font-size: 14px;
-  color: var(--text-muted);
-  max-width: 280px;
-}
+.empty-state-icon  { font-size: 48px; line-height: 1; }
+.empty-state-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.empty-state-desc  { font-size: 14px; color: var(--text-muted); max-width: 280px; }
 
 /* ---- Divider ---- */
 .divider {
@@ -624,9 +647,10 @@ img {
 }
 
 .section-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 17px;
+  font-weight: 800;
   color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .section-link {
@@ -666,29 +690,31 @@ img {
   display: flex;
   gap: 6px;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .odds-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-tertiary);
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
   border: 1px solid var(--border-light);
-  min-width: 52px;
+  min-width: 56px;
+  transition: all 0.15s;
 }
 
 .odds-label {
   font-size: 10px;
   color: var(--text-muted);
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .odds-value {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text-primary);
   font-family: var(--font-mono);
@@ -703,7 +729,7 @@ img {
   color: var(--accent-green);
 }
 
-/* ---- Joker Counter (redesigned) ---- */
+/* ---- Joker Counter ---- */
 .joker-counter {
   display: inline-flex;
   align-items: center;
@@ -719,34 +745,32 @@ img {
 }
 
 .joker-counter-active {
-  background: rgba(184, 134, 11, 0.15);
-  border: 1.5px solid rgba(184, 134, 11, 0.5);
+  background: rgba(184,134,11,0.12);
+  border: 1.5px solid rgba(184,134,11,0.45);
   color: #b8860b;
 }
 
 .joker-counter-empty {
-  background: rgba(255,255,255,0.08);
-  border: 1.5px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.4);
+  background: var(--bg-tertiary);
+  border: 1.5px solid var(--border-medium);
+  color: var(--text-muted);
 }
 
 .joker-counter-low {
-  background: rgba(198, 40, 40, 0.15);
-  border: 1.5px solid rgba(198, 40, 40, 0.4);
-  color: #ef5350;
+  background: rgba(198,40,40,0.1);
+  border: 1.5px solid rgba(198,40,40,0.35);
+  color: var(--accent-red);
 }
 
-/* Fix 3: Save button - visible in dark mode */
-/* In dark mode --primary is near-white, so 'white' text becomes invisible.
-   Use a fixed dark background instead of var(--primary) for action buttons. */
+/* ---- Save Button ---- */
 .btn-save {
-  background: #003087;
+  background: var(--scottish-navy);
   color: #ffffff;
   border: none;
 }
 
 .dark .btn-save {
-  background: #4a90d9;
+  background: #4a8fd9;
   color: #ffffff;
 }
 
@@ -755,7 +779,7 @@ img {
   color: #ffffff !important;
 }
 
-/* Fix 6: Group table cards — single column on mobile, two column on desktop */
+/* ---- Group Grid ---- */
 .group-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -763,69 +787,65 @@ img {
 }
 
 @media (min-width: 640px) {
-  .group-grid {
-    grid-template-columns: 1fr 1fr;
-  }
+  .group-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (min-width: 1024px) {
-  .group-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  .group-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+/* ---- Scrollbar ---- */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
   background: var(--border-medium);
   border-radius: 3px;
 }
-/* ---- PWA Standalone Mode (iPhone home screen) ---- */
-/* When running as installed PWA, iOS adds status bar space at the top.
-   Target standalone mode only so browser version is unaffected. */
-@media all and (display-mode: standalone) {
-  :root {
-    --nav-height: 84px; /* 64px nav + ~20px status bar */
-  }
 
-  /* Navbar needs padding at top to clear the status bar */
+/* ---- PWA Standalone ---- */
+@media all and (display-mode: standalone) {
+  :root { --nav-height: 84px; }
+
   nav[class*="hide-desktop"],
   nav[class*="hide-mobile"] {
     padding-top: env(safe-area-inset-top, 20px);
   }
-
-  /* Bottom nav needs padding for home indicator */
-  nav + nav,
-  .bottom-nav-standalone {
-    padding-bottom: env(safe-area-inset-bottom, 16px);
-  }
 }
 
-/* ---- Scottish Theme ---- */
+/* ---- Scottish Theme Helpers ---- */
 .scottish-header {
   background: var(--header-gradient);
   color: white;
 }
 
-/* Subtle tartan stripe accent - used on key UI elements */
 .tartan-accent {
   border-left: 3px solid var(--scottish-navy);
 }
 
-/* Scottish nav active indicator */
 .nav-active-scottish {
   color: var(--scottish-navy) !important;
   border-bottom-color: var(--scottish-navy) !important;
 }
 
-/* input focus Scottish blue */
-.input:focus {
-  border-color: var(--scottish-navy);
-  box-shadow: 0 0 0 3px rgba(0, 48, 135, 0.1);
+/* ---- Page hero (used across all pages) ---- */
+.page-hero {
+  background:
+    linear-gradient(180deg, rgba(0,20,60,0.72) 0%, rgba(0,48,135,0.82) 100%),
+    center/cover no-repeat;
+  color: white;
+  padding: 28px 20px 24px;
+}
+
+.page-hero-title {
+  font-size: clamp(22px, 5vw, 32px);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.page-hero-sub {
+  font-size: 14px;
+  color: rgba(255,255,255,0.65);
+  font-weight: 500;
 }

@@ -833,256 +833,280 @@ export default function Predictions() {
     }
     const favourite = getFavourite()
 
-    // Item 7: border/bg for completed matches
-    const cardBorder = resultColour === 'gold' ? '2px solid var(--accent-gold)'
-      : resultColour === 'green' ? '2px solid var(--accent-green)'
-      : resultColour === 'red' ? '2px solid var(--accent-red)'
-      : hasJoker ? '2px solid var(--accent-gold)'
-      : hasPrediction ? '1px solid var(--accent-green)'
-      : '1px solid var(--border-light)'
+    // Card border & background based on state
+    const cardBorderColor = resultColour === 'gold' ? 'var(--accent-gold)'
+      : resultColour === 'green' ? 'var(--accent-green)'
+      : resultColour === 'red'  ? 'var(--accent-red)'
+      : hasJoker      ? 'var(--accent-gold)'
+      : hasPrediction ? 'var(--accent-green)'
+      : 'var(--border-light)'
+
+    const cardBorderWidth = resultColour || hasJoker || hasPrediction ? '2px' : '1.5px'
 
     const cardBg = resultColour === 'gold' ? 'var(--accent-gold-light)'
       : resultColour === 'green' ? 'var(--accent-green-light)'
-      : resultColour === 'red' ? 'var(--accent-red-light)'
+      : resultColour === 'red'   ? 'var(--accent-red-light)'
       : hasJoker ? 'var(--accent-gold-light)'
       : 'var(--bg-card)'
 
+    // Left accent strip colour
+    const accentColor = resultColour === 'gold' ? 'var(--accent-gold)'
+      : resultColour === 'green' ? 'var(--accent-green)'
+      : resultColour === 'red'   ? 'var(--accent-red)'
+      : hasJoker      ? 'var(--accent-gold)'
+      : hasPrediction ? 'var(--accent-green)'
+      : 'transparent'
+
     return (
-      <div key={match.id} id={`match-${match.id}`} className="card" style={{ opacity: locked && !hasPrediction ? 0.6 : 1, border: cardBorder, background: cardBg }}>
+      <div key={match.id} id={`match-${match.id}`} style={{
+        background: cardBg,
+        border: `${cardBorderWidth} solid ${cardBorderColor}`,
+        borderRadius: 'var(--radius-lg)',
+        overflow: 'hidden',
+        opacity: locked && !hasPrediction ? 0.65 : 1,
+        boxShadow: 'var(--shadow-card)',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
 
-        {/* Result badge */}
-        {resultColour && (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            marginBottom: '12px', padding: '10px 14px', borderRadius: 'var(--radius-md)',
-            background: resultColour === 'gold' ? 'rgba(255,193,7,0.15)' : resultColour === 'green' ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.08)',
-            border: `1px solid ${resultColour === 'gold' ? 'rgba(255,193,7,0.4)' : resultColour === 'green' ? 'rgba(0,122,51,0.3)' : 'rgba(198,40,40,0.2)'}`,
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '20px' }}>
-                {resultColour === 'gold' ? '🎯' : resultColour === 'green' ? '✅' : '❌'}
-              </span>
-              <div>
-                <div style={{ fontWeight: '800', fontSize: '14px',
-                  color: resultColour === 'gold' ? '#b8860b' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                  {resultColour === 'gold' ? 'Exact score!' : resultColour === 'green' ? 'Correct result' : 'Wrong result'}
-                  {hasJoker && <span style={{ marginLeft: '6px', fontSize: '12px' }}>🃏 Joker</span>}
-                </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '1px' }}>
-                  Result: <strong style={{ fontFamily: 'var(--font-mono)' }}>{match.home_team?.short_code} {match.home_score} – {match.away_score} {match.away_team?.short_code}</strong>
-                </div>
-              </div>
-            </div>
-            <div style={{ fontWeight: '900', fontSize: '22px', fontFamily: 'var(--font-mono)',
-              color: resultColour === 'gold' ? '#b8860b' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-              {pred.points_awarded !== undefined ? `+${pred.points_awarded}` : resultColour === 'gold' ? '+10' : resultColour === 'green' ? '+5' : '+0'}
-              <span style={{ fontSize: '12px', fontWeight: '600' }}>pts</span>
-            </div>
-          </div>
-        )}
+        {/* Coloured top accent strip */}
+        <div style={{ height: '4px', background: accentColor, flexShrink: 0 }} />
 
-        {/* Joker indicator (non-completed) */}
-        {hasJoker && !resultColour && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', padding: '6px 10px', background: 'rgba(255,215,0,0.2)', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '700', color: '#b8860b' }}>
-            🃏 Joker applied — 2x points if correct!
-          </div>
-        )}
+        <div style={{ padding: '16px 18px 18px' }}>
 
-        {/* Match info row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {match.match_number && <span style={{ marginRight: '6px' }}>Match {match.match_number} ·</span>}
-            {viewMode === 'date'
-              ? `Grp ${match.group?.name} · ${formatTime(match.kickoff_time)}`
-              : `${formatDate(match.kickoff_time)} · ${formatTime(match.kickoff_time)}`}
-            {match.venue?.city && <span style={{ marginLeft: '6px' }}>· {match.venue.city} {VENUE_FLAGS[match.venue.city] || ''}</span>}
-          </div>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            {locked && <span className="badge badge-red">🔒</span>}
-            {!locked && hasPrediction && !hasJoker && <span className="badge badge-green">✓</span>}
-            {(match.home_score !== null && match.home_score !== undefined) && (
-              <span className="badge badge-gray">{match.home_score}–{match.away_score}</span>
-            )}
-          </div>
-        </div>
-
-        {/* Teams + inputs */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '36px' }}>{match.home_team?.flag_emoji}</span>
-            <span style={{ fontWeight: '700', fontSize: '13px', textAlign: 'center' }}>{match.home_team?.name}</span>
-            {favourite === 'home' && matchOdds && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {resultColour ? (
-              // Show your prediction score when result is in
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '900', fontFamily: 'var(--font-mono)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)' }}>
-                  {pred.home}
-                </div>
-                <span className="score-divider">–</span>
-                <div style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '900', fontFamily: 'var(--font-mono)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)' }}>
-                  {pred.away}
+          {/* Result badge */}
+          {resultColour && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: '14px', padding: '10px 14px', borderRadius: 'var(--radius-md)',
+              background: resultColour === 'gold' ? 'rgba(184,134,11,0.12)' : resultColour === 'green' ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.08)',
+              border: `1px solid ${resultColour === 'gold' ? 'rgba(184,134,11,0.35)' : resultColour === 'green' ? 'rgba(0,122,51,0.25)' : 'rgba(198,40,40,0.2)'}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '22px' }}>
+                  {resultColour === 'gold' ? '🎯' : resultColour === 'green' ? '✅' : '❌'}
+                </span>
+                <div>
+                  <div style={{ fontWeight: '800', fontSize: '14px',
+                    color: resultColour === 'gold' ? 'var(--accent-gold)' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+                    {resultColour === 'gold' ? 'Exact score!' : resultColour === 'green' ? 'Correct result' : 'Wrong result'}
+                    {hasJoker && <span style={{ marginLeft: '6px', fontSize: '12px' }}>🃏</span>}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Result: <strong style={{ fontFamily: 'var(--font-mono)' }}>{match.home_team?.short_code} {match.home_score}–{match.away_score} {match.away_team?.short_code}</strong>
+                  </div>
                 </div>
               </div>
-            ) : (
-            <input type="text" inputMode="numeric" pattern="[0-9]*" className="score-input" min="0" max="99"
-              ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
-              value={pred.home ?? ''}
-              onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
-              onInput={e => handleScoreChange(match.id, 'home', e.target.value)}
-              onBlur={() => handleScoreBlur(match, 'home')}
-              disabled={locked || isGuest} placeholder="?"
-              style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
-            />
-            )}
-            <span className="score-divider">–</span>
-            {resultColour ? null : (
-            <input type="text" inputMode="numeric" pattern="[0-9]*" className="score-input"
-              ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
-              value={pred.away ?? ''}
-              onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
-              onInput={e => handleScoreChange(match.id, 'away', e.target.value)}
-              onBlur={() => handleScoreBlur(match, 'away')}
-              disabled={locked || isGuest} placeholder="?"
-              style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
-            />
-            )}
-          </div>
-
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '36px' }}>{match.away_team?.flag_emoji}</span>
-            <span style={{ fontWeight: '700', fontSize: '13px', textAlign: 'center' }}>{match.away_team?.name}</span>
-            {favourite === 'away' && matchOdds && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
-          </div>
-        </div>
-
-        {/* Odds — hide when result is in */}
-        {matchOdds && !locked && !resultColour && (
-          <div className="odds-row">
-            <div className={`odds-item ${favourite === 'home' ? 'odds-favourite' : ''}`}>
-              <span className="odds-label">{match.home_team?.short_code}</span>
-              <span className="odds-value">{matchOdds.home}</span>
+              <div style={{ fontWeight: '900', fontSize: '24px', fontFamily: 'var(--font-mono)', lineHeight: 1,
+                color: resultColour === 'gold' ? 'var(--accent-gold)' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+                {pred.points_awarded !== undefined ? `+${pred.points_awarded}` : resultColour === 'gold' ? '+10' : resultColour === 'green' ? '+5' : '+0'}
+                <span style={{ fontSize: '11px', fontWeight: '600' }}>pts</span>
+              </div>
             </div>
-            <div className={`odds-item ${favourite === 'draw' ? 'odds-favourite' : ''}`}>
-              <span className="odds-label">Draw</span>
-              <span className="odds-value">{matchOdds.draw}</span>
-            </div>
-            <div className={`odds-item ${favourite === 'away' ? 'odds-favourite' : ''}`}>
-              <span className="odds-label">{match.away_team?.short_code}</span>
-              <span className="odds-value">{matchOdds.away}</span>
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* Guest CTA */}
-        {isGuest && !locked && (
-          <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-            <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Register to save your predictions</span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <Link to="/register" className="btn btn-primary btn-sm">Join free</Link>
-              <Link to="/login" className="btn btn-secondary btn-sm">Sign in</Link>
+          {/* Joker indicator (non-completed) */}
+          {hasJoker && !resultColour && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', padding: '7px 12px', background: 'rgba(184,134,11,0.1)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)', border: '1px solid rgba(184,134,11,0.2)' }}>
+              🃏 Joker applied — 2× points if correct!
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Joker + Save — hide when result is in */}
-        {!isGuest && !locked && !resultColour && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: `1px solid ${hasJoker ? 'rgba(255,215,0,0.4)' : 'var(--border-light)'}` }}>
-            <button
-              onClick={() => {
-                if (!hasPrediction || !canUseJoker) return
-                if (!hasJoker) {
-                  setJokerConfirm({ matchId: match.id, currentJoker: hasJoker })
-                } else {
-                  handleJoker(match.id, hasJoker) // removing joker needs no confirm
-                }
-              }}
-              disabled={!hasPrediction || (!canUseJoker && !hasJoker)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '6px',
-                padding: '6px 12px', borderRadius: 'var(--radius-full)',
-                fontSize: '12px', fontWeight: '700',
-                background: hasJoker ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
-                color: hasJoker ? 'white' : jokersRemaining > 0 ? 'var(--text-secondary)' : 'var(--text-muted)',
-                border: hasJoker ? '1px solid var(--accent-gold)' : '1px solid var(--border-light)',
-                transition: 'all 0.15s', cursor: hasPrediction && (canUseJoker || hasJoker) ? 'pointer' : 'not-allowed',
-                opacity: !hasPrediction ? 0.5 : 1,
-              }}
-            >
-              🃏 {hasJoker ? 'Joker ON' : 'Use Joker'}
-            </button>
-
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {/* Item 4: Clear button on individual card */}
-              {hasPrediction && (
-                <button
-                  onClick={() => clearPick(match.id)}
-                  style={{
-                    padding: '6px 10px', borderRadius: 'var(--radius-full)',
-                    fontSize: '12px', fontWeight: '600', border: '1px solid var(--border-light)',
-                    background: 'var(--bg-tertiary)', color: 'var(--text-muted)', cursor: 'pointer',
-                  }}
-                >Clear</button>
+          {/* Match meta row */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.4 }}>
+              {match.match_number && <span>M{match.match_number} · </span>}
+              {viewMode === 'date'
+                ? `Grp ${match.group?.name} · ${formatTime(match.kickoff_time)}`
+                : `${formatDate(match.kickoff_time)} · ${formatTime(match.kickoff_time)}`}
+              {match.venue?.city && <span> · {match.venue.city} {VENUE_FLAGS[match.venue.city] || ''}</span>}
+            </div>
+            <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+              {locked && <span className="badge badge-red">🔒 Locked</span>}
+              {!locked && hasPrediction && !hasJoker && <span className="badge badge-green">✓ Saved</span>}
+              {(match.home_score !== null && match.home_score !== undefined) && (
+                <span className="badge badge-gray">{match.home_score}–{match.away_score}</span>
               )}
+            </div>
+          </div>
+
+          {/* Teams + score inputs */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '10px', marginBottom: matchOdds && !locked && !resultColour ? '12px' : '0' }}>
+            {/* Home team */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '42px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</span>
+              <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', letterSpacing: '-0.01em' }}>{match.home_team?.name}</span>
+              {favourite === 'home' && matchOdds && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700', letterSpacing: '0.02em' }}>⭐ FAV</span>}
+            </div>
+
+            {/* Score area */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {resultColour ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '58px', height: '58px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '900', fontFamily: 'var(--font-mono)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)' }}>
+                    {pred.home}
+                  </div>
+                  <span style={{ fontSize: '20px', color: 'var(--text-muted)', fontWeight: '300' }}>–</span>
+                  <div style={{ width: '58px', height: '58px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '900', fontFamily: 'var(--font-mono)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)' }}>
+                    {pred.away}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" className="score-input"
+                    ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
+                    value={pred.home ?? ''}
+                    onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
+                    onInput={e => handleScoreChange(match.id, 'home', e.target.value)}
+                    onBlur={() => handleScoreBlur(match, 'home')}
+                    disabled={locked || isGuest} placeholder="?"
+                    style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
+                  />
+                  <span style={{ fontSize: '20px', color: 'var(--text-muted)', fontWeight: '300', fontFamily: 'var(--font-mono)' }}>–</span>
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" className="score-input"
+                    ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
+                    value={pred.away ?? ''}
+                    onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
+                    onInput={e => handleScoreChange(match.id, 'away', e.target.value)}
+                    onBlur={() => handleScoreBlur(match, 'away')}
+                    disabled={locked || isGuest} placeholder="?"
+                    style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
+                  />
+                </>
+              )}
+            </div>
+
+            {/* Away team */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '42px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</span>
+              <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', letterSpacing: '-0.01em' }}>{match.away_team?.name}</span>
+              {favourite === 'away' && matchOdds && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700', letterSpacing: '0.02em' }}>⭐ FAV</span>}
+            </div>
+          </div>
+
+          {/* Odds */}
+          {matchOdds && !locked && !resultColour && (
+            <div className="odds-row">
+              <div className={`odds-item ${favourite === 'home' ? 'odds-favourite' : ''}`}>
+                <span className="odds-label">{match.home_team?.short_code}</span>
+                <span className="odds-value">{matchOdds.home}</span>
+              </div>
+              <div className={`odds-item ${favourite === 'draw' ? 'odds-favourite' : ''}`}>
+                <span className="odds-label">Draw</span>
+                <span className="odds-value">{matchOdds.draw}</span>
+              </div>
+              <div className={`odds-item ${favourite === 'away' ? 'odds-favourite' : ''}`}>
+                <span className="odds-label">{match.away_team?.short_code}</span>
+                <span className="odds-value">{matchOdds.away}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Guest CTA */}
+          {isGuest && !locked && (
+            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Register to save your predictions</span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <Link to="/register" className="btn btn-primary btn-sm">Join free</Link>
+                <Link to="/login" className="btn btn-secondary btn-sm">Sign in</Link>
+              </div>
+            </div>
+          )}
+
+          {/* Joker + Clear + Save */}
+          {!isGuest && !locked && !resultColour && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '14px', borderTop: `1px solid ${hasJoker ? 'rgba(184,134,11,0.25)' : 'var(--border-light)'}` }}>
               <button
-                onClick={(e) => {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  const homeInput = inputRefs.current[`${match.id}-home`]
-                  const awayInput = inputRefs.current[`${match.id}-away`]
-                  console.log('Save clicked:', match.id)
-                  console.log('homeInput:', homeInput, 'value:', homeInput?.value)
-                  console.log('awayInput:', awayInput, 'value:', awayInput?.value)
-                  console.log('pred state:', predictions[match.id])
-                  const homeVal = homeInput ? parseInt(homeInput.value.replace(/[^0-9]/g, '')) : NaN
-                  const awayVal = awayInput ? parseInt(awayInput.value.replace(/[^0-9]/g, '')) : NaN
-                  console.log('homeVal:', homeVal, 'awayVal:', awayVal)
-                  if (!isNaN(homeVal) && !isNaN(awayVal)) {
-                    // Update state first then save
-                    setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], home: homeVal, away: awayVal } }))
-                    supabase.from('predictions').upsert({
-                      user_id: user.id, match_id: match.id,
-                      home_score: homeVal, away_score: awayVal,
-                      is_confident: pred.joker ?? false, bracket_type: 'main',
-                    }, { onConflict: 'user_id,match_id,bracket_type' }).then(({ error }) => {
-                      if (!error) {
-                        setSaved(prev => ({ ...prev, [match.id]: true }))
-                        setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
-                      } else console.error('Save error:', error)
-                    })
+                onClick={() => {
+                  if (!hasPrediction || !canUseJoker) return
+                  if (!hasJoker) {
+                    setJokerConfirm({ matchId: match.id, currentJoker: hasJoker })
                   } else {
-                    savePrediction(match)
+                    handleJoker(match.id, hasJoker)
                   }
                 }}
-                disabled={isSaving}
-                className={`btn btn-sm ${isSaved ? 'btn-save-success' : 'btn-save'}`}
-                style={{ minWidth: '80px' }}
+                disabled={!hasPrediction || (!canUseJoker && !hasJoker)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '5px',
+                  padding: '8px 14px', borderRadius: 'var(--radius-full)',
+                  fontSize: '13px', fontWeight: '700',
+                  background: hasJoker ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
+                  color: hasJoker ? 'white' : jokersRemaining > 0 ? 'var(--text-secondary)' : 'var(--text-muted)',
+                  border: hasJoker ? '1px solid var(--accent-gold)' : '1px solid var(--border-light)',
+                  transition: 'all 0.15s',
+                  cursor: hasPrediction && (canUseJoker || hasJoker) ? 'pointer' : 'not-allowed',
+                  opacity: !hasPrediction ? 0.45 : 1,
+                }}
               >
-                {isSaving
-                  ? <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} />
-                  : isSaved ? '✓ Saved' : 'Save'}
+                🃏 {hasJoker ? 'Joker ON' : 'Joker'}
               </button>
-            </div>
-          </div>
-        )}
 
-        {/* Match result vs prediction — shows whenever score is set (including admin preview) */}
-        {(match.home_score !== null && match.home_score !== undefined) && hasPrediction && (
-          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>
-              Your pick: <strong>{pred.home} – {pred.away}</strong>
-              {hasJoker && <span style={{ marginLeft: '6px', color: '#b8860b' }}>🃏</span>}
-            </span>
-            <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>+{predictions[match.id]?.points_total || 0} pts</span>
-          </div>
-        )}
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {hasPrediction && (
+                  <button
+                    onClick={() => clearPick(match.id)}
+                    style={{
+                      padding: '8px 14px', borderRadius: 'var(--radius-full)',
+                      fontSize: '13px', fontWeight: '600',
+                      border: '1px solid var(--border-medium)',
+                      background: 'var(--bg-tertiary)', color: 'var(--text-muted)', cursor: 'pointer',
+                    }}
+                  >Clear</button>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    const homeInput = inputRefs.current[`${match.id}-home`]
+                    const awayInput = inputRefs.current[`${match.id}-away`]
+                    const homeVal = homeInput ? parseInt(homeInput.value.replace(/[^0-9]/g, '')) : NaN
+                    const awayVal = awayInput ? parseInt(awayInput.value.replace(/[^0-9]/g, '')) : NaN
+                    if (!isNaN(homeVal) && !isNaN(awayVal)) {
+                      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], home: homeVal, away: awayVal } }))
+                      supabase.from('predictions').upsert({
+                        user_id: user.id, match_id: match.id,
+                        home_score: homeVal, away_score: awayVal,
+                        is_confident: pred.joker ?? false, bracket_type: 'main',
+                      }, { onConflict: 'user_id,match_id,bracket_type' }).then(({ error }) => {
+                        if (!error) {
+                          setSaved(prev => ({ ...prev, [match.id]: true }))
+                          setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
+                        } else console.error('Save error:', error)
+                      })
+                    } else {
+                      savePrediction(match)
+                    }
+                  }}
+                  disabled={isSaving}
+                  className={`btn btn-sm ${isSaved ? 'btn-save-success' : 'btn-save'}`}
+                  style={{ minWidth: '80px', borderRadius: 'var(--radius-full)' }}
+                >
+                  {isSaving
+                    ? <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} />
+                    : isSaved ? '✓ Saved' : 'Save'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Points summary after result */}
+          {(match.home_score !== null && match.home_score !== undefined) && hasPrediction && (
+            <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>
+                Your pick: <strong style={{ fontFamily: 'var(--font-mono)' }}>{pred.home}–{pred.away}</strong>
+                {hasJoker && <span style={{ marginLeft: '6px', color: 'var(--accent-gold)' }}>🃏</span>}
+              </span>
+              <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>+{predictions[match.id]?.points_total || 0} pts</span>
+            </div>
+          )}
+
+        </div>
       </div>
     )
   }
 
   // Single group standings (By Group view)
+
   const renderGroupStandings = () => {
     if (groupMatches.length === 0) return null
     const { standings, allPredicted } = calcGroupStandings(groupMatches, predictions)
@@ -1277,27 +1301,24 @@ export default function Predictions() {
         </div>
       )}
 
-      {/* Sticky header — Knockout-style tab bar */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50 }}>
+      {/* Sticky header */}
+      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, boxShadow: 'var(--shadow-sm)' }}>
         <div className="container">
 
-          {/* Row 1: Title + joker + count */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0 0' }}>
+          {/* Row 1: Title + controls */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 0' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h1 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)' }}>⚽ Predictions</h1>
-              <Link to="/how-to-play" style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', flexShrink: 0, textDecoration: 'none' }}>?</Link>
+              <h1 style={{ fontSize: '19px', fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>⚽ Predictions</h1>
+              <Link to="/how-to-play" style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', flexShrink: 0, textDecoration: 'none' }}>?</Link>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {/* Picks / Standings switcher */}
+              {/* Picks / Standings pill switcher */}
               {appSettings?.show_group_tables === 'true' && (
-                <div style={{ display: 'flex', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', padding: '2px', gap: '2px' }}>
-                  {[{ key: 'picks', label: '⚽ Picks' }, { key: 'standings', label: '📊 Standings' }].map(tab => (
-                    <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
-                      padding: '4px 10px', borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: activeTab === tab.key ? '700' : '500',
-                      background: activeTab === tab.key ? 'var(--bg-card)' : 'transparent',
-                      color: activeTab === tab.key ? 'var(--text-primary)' : 'var(--text-muted)',
-                      border: 'none', cursor: 'pointer', boxShadow: activeTab === tab.key ? 'var(--shadow-sm)' : 'none',
-                    }}>{tab.label}</button>
+                <div className="pill-tabs" style={{ padding: '3px' }}>
+                  {[{ key: 'picks', label: '⚽ Picks' }, { key: 'standings', label: '📊 Tables' }].map(tab => (
+                    <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`} style={{ fontSize: '12px', padding: '6px 10px' }}>
+                      {tab.label}
+                    </button>
                   ))}
                 </div>
               )}
@@ -1306,33 +1327,32 @@ export default function Predictions() {
                   style={{ animation: jokersRemaining > 0 && showJokerReminder ? 'pulse 1.5s infinite' : 'none' }}>
                   <span style={{ fontSize: '13px', lineHeight: 1 }}>🃏</span>
                   <span style={{ fontSize: '13px', fontWeight: '800' }}>{jokersRemaining}</span>
-                  <span style={{ fontSize: '10px', fontWeight: '500', opacity: 0.8 }}>left</span>
                 </div>
               )}
               {user && activeTab === 'picks' && (
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>{getPredictionCount()}</span>
-                  <span> / {matches.length}</span>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: '600' }}>
+                  <span style={{ color: 'var(--accent-green)', fontWeight: '800' }}>{getPredictionCount()}</span>/{matches.length}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Row 2: Adaptive tab bar */}
-          <div style={{ display: 'flex', overflowX: 'auto', marginTop: '4px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none' }}>
+          {/* Row 2: Group / Date tabs */}
+          <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
             {viewMode === 'group' ? (
               <>
+                {/* By Date switcher */}
                 <button onClick={() => setViewMode('date')} style={{
-                  padding: '10px 14px', fontSize: '12px', fontWeight: '400',
+                  padding: '10px 12px', fontSize: '12px', fontWeight: '600',
                   color: 'var(--text-muted)', borderBottom: '2px solid transparent',
-                  background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                  background: 'none', border: 'none', borderBottom: '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                 }}>
-                  By Date
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>All groups</span>
+                  📅 By Date
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '500' }}>All groups</span>
                 </button>
-                <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 2px', flexShrink: 0 }} />
+                <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 4px', flexShrink: 0 }} />
                 {GROUPS.map(g => {
                   const gMatches = matches.filter(m => m.group?.name === g)
                   const gDone = gMatches.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
@@ -1340,14 +1360,14 @@ export default function Predictions() {
                   const isActive = activeGroup === g
                   return (
                     <button key={g} onClick={() => setActiveGroup(g)} style={{
-                      padding: '10px 12px', fontSize: '12px', fontWeight: isActive ? '700' : '400',
-                      color: isActive ? 'var(--text-primary)' : 'var(--text-muted)',
-                      borderBottom: isActive ? '2px solid var(--accent-green)' : '2px solid transparent',
+                      padding: '10px 11px', fontSize: '12px', fontWeight: isActive ? '800' : '500',
+                      color: isActive ? 'var(--scottish-navy)' : 'var(--text-muted)',
+                      borderBottom: isActive ? '2px solid var(--scottish-navy)' : '2px solid transparent',
                       background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                     }}>
-                      Grp {g}
-                      <span style={{ fontSize: '10px', color: gComplete ? 'var(--accent-green)' : 'var(--text-muted)', fontWeight: '600' }}>
+                      {g}
+                      <span style={{ fontSize: '9px', color: gComplete ? 'var(--accent-green)' : 'var(--text-muted)', fontWeight: '700' }}>
                         {gComplete ? '✓' : `${gDone}/${gMatches.length}`}
                       </span>
                     </button>
@@ -1355,23 +1375,23 @@ export default function Predictions() {
                 })}
                 {user && (
                   <button onClick={() => setShowClearConfirm('group')} style={{
-                    padding: '10px 10px', fontSize: '11px', color: 'rgba(255,255,255,0.4)',
+                    padding: '10px 10px', fontSize: '11px', color: 'var(--text-muted)',
                     background: 'none', border: 'none', borderBottom: '2px solid transparent',
                     cursor: 'pointer', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                  }}>🗑️<span style={{ fontSize: '10px' }}>Clear</span>
+                    opacity: 0.6,
+                  }}>🗑️<span style={{ fontSize: '9px', fontWeight: '600' }}>Clear</span>
                   </button>
                 )}
-                {/* Overview tab — all groups + accuracy */}
-                <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 2px', flexShrink: 0 }} />
+                <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 4px', flexShrink: 0 }} />
                 <button onClick={() => setActiveGroup('FINAL')} style={{
-                  padding: '10px 12px', fontSize: '12px', fontWeight: activeGroup === 'FINAL' ? '700' : '400',
+                  padding: '10px 12px', fontSize: '12px', fontWeight: activeGroup === 'FINAL' ? '800' : '500',
                   color: activeGroup === 'FINAL' ? 'var(--scottish-navy)' : 'var(--text-muted)',
                   borderBottom: activeGroup === 'FINAL' ? '2px solid var(--scottish-navy)' : '2px solid transparent',
                   background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                 }}>
-                  🌍 Overview
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>All groups</span>
+                  🌍
+                  <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: '700' }}>Overview</span>
                 </button>
               </>
             ) : (
