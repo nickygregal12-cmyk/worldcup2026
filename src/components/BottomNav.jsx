@@ -32,16 +32,16 @@ export default function BottomNav() {
     <nav className="hide-desktop" style={{
       position: 'fixed',
       bottom: 0, left: 0, right: 0,
-      height: 'var(--bottom-nav-height)',
       background: 'var(--bg-card)',
       borderTop: '1px solid var(--border-light)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-around',
       padding: '0 4px',
+      paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
       zIndex: 100,
       boxShadow: '0 -4px 12px rgba(0,0,0,0.06)',
-      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      minHeight: 'calc(56px + env(safe-area-inset-bottom, 0px))',
     }}>
       {navItems.map(({ to, icon, label, protected: prot, highlight }) => {
         const isActive = to === '/'

@@ -146,7 +146,7 @@ img {
 .main-content {
   flex: 1;
   padding-top: var(--nav-height);
-  padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
 }
 
 @media (min-width: 768px) {

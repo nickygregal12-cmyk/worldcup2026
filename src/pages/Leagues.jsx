@@ -587,37 +587,30 @@ export default function Leagues() {
                     </div>
                   </div>
 
+                  {/* Invite code + actions */}
                   {!league.is_global && (
-                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <div style={{ background: 'var(--bg-tertiary)', padding: '6px 14px', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '16px', letterSpacing: '0.12em' }}>
-                        {league.invite_code}
-                      </div>
-                      <button onClick={() => copyInviteCode(league.invite_code)} className="btn btn-secondary btn-sm">📋 Copy</button>
-                      <button onClick={() => shareWhatsApp(league.name, league.invite_code)}
-                        className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none' }}>
-                        💬 WhatsApp
-                      </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '15px', letterSpacing: '0.12em', flex: 1 }}>{league.invite_code}</span>
+                      <button onClick={() => copyInviteCode(league.invite_code)} style={{ fontSize: '12px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)', background: 'var(--bg-card)', cursor: 'pointer' }}>📋</button>
+                      <button onClick={() => shareWhatsApp(league.name, league.invite_code)} style={{ fontSize: '12px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: 'none', background: '#25d366', color: 'white', cursor: 'pointer' }}>💬</button>
+                      {isCreator ? (
+                        <button onClick={() => setConfirmAction({ type: 'deleteLeague', leagueId: league.id, leagueName: league.name })}
+                          style={{ fontSize: '12px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid #e53935', color: '#e53935', background: 'none', cursor: 'pointer' }}>🗑️</button>
+                      ) : (
+                        <button onClick={() => setConfirmAction({ type: 'leave', leagueId: league.id, leagueName: league.name })}
+                          style={{ fontSize: '12px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)', color: 'var(--text-muted)', background: 'none', cursor: 'pointer' }}>Leave</button>
+                      )}
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', borderTop: '1px solid var(--border-light)', paddingTop: '12px' }}>
-                    <button onClick={() => toggleExpand(league.id)} className="btn btn-secondary btn-sm">
-                      {isExpanded ? '▲ Hide Members' : '▼ View Members'}
-                    </button>
-                    {!league.is_global && (
-                      isCreator ? (
-                        <button onClick={() => setConfirmAction({ type: 'deleteLeague', leagueId: league.id, leagueName: league.name })}
-                          className="btn btn-sm" style={{ border: '1px solid #e53935', color: '#e53935', background: 'none' }}>
-                          🗑️ Delete
-                        </button>
-                      ) : (
-                        <button onClick={() => setConfirmAction({ type: 'leave', leagueId: league.id, leagueName: league.name })}
-                          className="btn btn-sm" style={{ border: '1px solid var(--text-muted)', color: 'var(--text-muted)', background: 'none' }}>
-                          Leave
-                        </button>
-                      )
-                    )}
-                  </div>
+                  <button onClick={() => toggleExpand(league.id)} style={{
+                    width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)',
+                    border: '1px solid var(--border-light)', background: 'none',
+                    fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
+                  }}>
+                    {isExpanded ? '▲ Hide table' : '▼ Show table'}
+                  </button>
 
                   {/* Members list */}
                   {isExpanded && (
@@ -672,68 +665,68 @@ export default function Leagues() {
                             </div>
                           )}
 
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {/* FPL-style table header */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 48px 32px', gap: '4px', padding: '4px 8px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rank</span>
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Player</span>
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Total</span>
+                            <span></span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
                             {members.map((member, i) => {
                               const isMe = member.user_id === user.id
                               const isLeagueCreator = league.created_by === member.user_id
-                              const canRemove = (isCreator || isAdmin) && !isMe && !isLeagueCreator
+                              const canRemove = (isCreator || isAdmin) && !isMe && !isLeagueCreator && !league.is_global
                               const pts = member.profile?.total_points || 0
                               const leaderPts = members[0]?.profile?.total_points || 0
-                              // Fix 2: hide gap when equal or 0
                               const gap = i > 0 && pts !== leaderPts ? leaderPts - pts : null
+                              const rankColour = i === 0 ? '#f59e0b' : i === 1 ? '#9ca3af' : i === 2 ? '#cd7f32' : 'var(--text-muted)'
 
                               return (
                                 <div key={member.user_id} style={{
-                                  display: 'flex', alignItems: 'center', gap: '8px',
-                                  padding: '8px 10px', borderRadius: 'var(--radius-sm)',
-                                  background: isMe ? 'var(--accent-blue-light)' : 'var(--bg-secondary)',
-                                  border: isMe ? '1px solid rgba(21,88,176,0.2)' : '1px solid transparent',
+                                  display: 'grid', gridTemplateColumns: '32px 1fr 48px 32px',
+                                  gap: '4px', alignItems: 'center',
+                                  padding: '9px 8px',
+                                  borderBottom: '1px solid var(--border-light)',
+                                  background: isMe ? 'rgba(0,48,135,0.06)' : 'transparent',
+                                  borderLeft: isMe ? '3px solid var(--scottish-navy)' : '3px solid transparent',
                                 }}>
-                                  <span style={{ fontSize: '12px', fontWeight: '800', color: i < 3 ? ['var(--accent-gold)','var(--text-muted)','#cd7f32'][i] : 'var(--text-muted)', width: '20px' }}>
-                                    #{i + 1}
+                                  {/* Rank */}
+                                  <span style={{ fontSize: '13px', fontWeight: '800', color: rankColour }}>
+                                    {i + 1}
                                   </span>
-                                  <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '800', color: isMe ? 'white' : 'var(--text-secondary)', flexShrink: 0 }}>
-                                    {(member.profile?.username || '?')[0].toUpperCase()}
-                                  </div>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: '13px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                      {member.profile?.display_name || member.profile?.username || 'Unknown'}
-                                      {isMe && <span style={{ fontSize: '10px', color: 'var(--accent-blue)', fontWeight: '700' }}>YOU</span>}
-                                      {isLeagueCreator && <span style={{ fontSize: '10px' }}>👑</span>}
+
+                                  {/* Name + sub info */}
+                                  <div style={{ minWidth: 0 }}>
+                                    <div style={{ fontSize: '13px', fontWeight: isMe ? '700' : '500', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden' }}>
+                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                        {member.profile?.display_name || member.profile?.username || 'Unknown'}
+                                      </span>
+                                      {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
+                                      {isLeagueCreator && !isMe && <span style={{ fontSize: '11px', flexShrink: 0 }}>👑</span>}
                                     </div>
-                                    <div style={{ display: 'flex', gap: '8px', marginTop: '2px' }}>
-                                      {member.profile?.streak_current > 0 && (
-                                        <span style={{ fontSize: '10px', color: 'var(--accent-orange)' }}>🔥 {member.profile.streak_current}</span>
-                                      )}
-                                      {member.profile?.exact_scores > 0 && (
-                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>🎯 {member.profile.exact_scores}</span>
-                                      )}
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '6px', marginTop: '1px' }}>
+                                      {gap !== null && <span>-{gap}pts</span>}
+                                      {member.profile?.streak_current > 0 && <span>🔥{member.profile.streak_current}</span>}
+                                      {member.profile?.exact_scores > 0 && <span>🎯{member.profile.exact_scores}</span>}
                                     </div>
                                   </div>
-                                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                                    {/* Fix 4: only green when pts > 0 */}
-                                    <div style={{ fontWeight: '800', fontSize: '14px', fontFamily: 'var(--font-mono)', color: pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                                      {pts}pts
-                                    </div>
-                                    {/* Fix 2: only show gap when genuinely behind */}
-                                    {gap !== null && (
-                                      <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>-{gap}pts</div>
-                                    )}
+
+                                  {/* Points */}
+                                  <div style={{ textAlign: 'right' }}>
+                                    <span style={{ fontWeight: '800', fontSize: '14px', fontFamily: 'var(--font-mono)', color: pts > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                                      {pts}
+                                    </span>
                                   </div>
-                                  <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                                    {/* Fix 3: picks button only live from 11 Jun */}
-                                    <button
-                                      onClick={() => openMemberModal(member, league.id)}
-                                      className="btn btn-sm"
-                                      style={{ fontSize: '11px', padding: '3px 8px' }}
-                                    >
-                                      👁 View Picks
-                                    </button>
+
+                                  {/* Actions */}
+                                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '3px' }}>
+                                    <button onClick={() => openMemberModal(member, league.id)}
+                                      style={{ fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, padding: '2px' }}
+                                      title="View picks">👁</button>
                                     {canRemove && (
                                       <button onClick={() => setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username })}
-                                        style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', border: '1px solid #e53935', color: '#e53935', background: 'none', cursor: 'pointer' }}>
-                                        ×
-                                      </button>
+                                        style={{ fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#e53935', padding: '2px' }}>×</button>
                                     )}
                                   </div>
                                 </div>

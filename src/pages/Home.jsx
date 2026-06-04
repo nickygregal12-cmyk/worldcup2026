@@ -46,7 +46,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
     if (!groupsDone)            return { label: '⚽ Continue group predictions', to: '/predictions', secondary: { label: 'Read the rules →', to: '/how-to-play' } }
     if (!knockoutsDone)         return { label: '🏆 Pick your knockout teams', to: '/knockout' }
     if (!awardsDone)            return { label: '🏅 Make your award predictions', to: '/awards' }
-    return { label: '✅ All done — view leaderboard', to: '/leaderboard' }
+    return { label: '🃏 Use your jokers before it\'s too late!', to: '/predictions', secondary: { label: 'View leaderboard →', to: '/leaderboard' } }
   }
 
   if (koLive) {
@@ -308,8 +308,8 @@ export default function Home() {
             )}
           </div>
 
-          {/* Lucky Dip — show pre-tournament, adapts label based on how much is done */}
-          {user && !tournamentStarted && (
+          {/* Lucky Dip — show pre-tournament only when predictions incomplete */}
+          {user && !tournamentStarted && !groupsDone && (
             <div style={{ marginTop: '12px' }}>
               <button
                 onClick={handleLuckyDip}
