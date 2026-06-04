@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
+import ShareCard from '../components/ShareCard.jsx'
 
 const AVATARS = ['⚽','🏆','🥅','🧤','👟','🎯','🔥','⚡','🦁','🐯','🦅','🏴󠁧󠁢󠁳󠁣󠁴󠁿']
 
@@ -20,6 +21,7 @@ export default function Profile() {
   const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [showShareCard, setShowShareCard] = useState(false)
   const [selectedAvatar, setSelectedAvatar] = useState('')
 
   useEffect(() => {
@@ -357,6 +359,10 @@ export default function Profile() {
               </div>
             </div>
 
+            <button onClick={() => setShowShareCard(true)}
+              className="btn btn-full" style={{ marginBottom: '12px', background: 'var(--scottish-navy)', color: 'white', fontWeight: '700' }}>
+              📤 Share my predictions
+            </button>
             <button onClick={handleLogout} className="btn btn-secondary btn-full" style={{ marginBottom: '24px' }}>
               Sign out
             </button>
@@ -411,6 +417,8 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
 
       {/* Avatar picker modal */}
       {showAvatarPicker && (

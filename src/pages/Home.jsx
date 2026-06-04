@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import { predictMatchOdds, predictGoals, predictAwards } from '../lib/luckyDip.js'
+import ShareCard from '../components/ShareCard.jsx'
 
 // ── Tournament phase dates ───────────────────────────────────────────────────
 const TOURNAMENT_START   = new Date('2026-06-11T19:00:00Z') // first kickoff
@@ -74,6 +75,7 @@ export default function Home() {
   const [leaderPosition, setLeaderPosition]   = useState(null)
   const [loading, setLoading]             = useState(true)
   const [luckyDipping, setLuckyDipping]   = useState(false)
+  const [showShareCard, setShowShareCard] = useState(false)
   const [luckyDone, setLuckyDone]         = useState(false)
   const [recentResults, setRecentResults] = useState([])
   const countdown = useCountdown(nextMatch?.kickoff_time)
@@ -538,6 +540,24 @@ export default function Home() {
             </div>
           )}
 
+          {/* ── Share predictions card ── */}
+          {user && groupsDone && !tournamentStarted && (
+            <div className="card fade-in" style={{ overflow: 'hidden' }}>
+              <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ fontSize: '32px', flexShrink: 0 }}>📤</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '3px' }}>Share your predictions</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Show your mates who you think will win</div>
+                </div>
+                <button onClick={() => setShowShareCard(true)}
+                  style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', flexShrink: 0 }}>
+                  Share 🏆
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ── "You're X pts behind 1st" nudge ── */}
           {user && profile && leaderPosition && leaderPosition > 1 && topPredictors.length > 0 && (
             <div style={{
@@ -822,5 +842,6 @@ export default function Home() {
         </div>
       </div>
     </div>
+    {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
   )
 }
