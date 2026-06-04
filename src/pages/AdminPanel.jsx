@@ -719,9 +719,8 @@ export default function AdminPanel() {
 
   const loadOfflinePlayers = async () => {
     const { data } = await supabase
-      .from('profiles')
-      .select('id, display_name, offline_league_id, leagues:offline_league_id(name)')
-      .eq('is_offline', true)
+      .from('offline_players')
+      .select('id, display_name, league_id, leagues:league_id(name)')
       .order('created_at', { ascending: false })
     setOfflinePlayers(data || [])
   }
@@ -730,23 +729,17 @@ export default function AdminPanel() {
     if (!offlineDisplayName.trim() || !offlineLeagueId) return
     setOfflineCreating(true)
     try {
-      // Create a profile for the offline player
-      const username = `offline_${Date.now()}`
-      const { data: profile, error } = await supabase.from('profiles').insert({
-        username,
+      const { data: player, error } = await supabase.from('offline_players').insert({
         display_name: offlineDisplayName.trim(),
-        is_offline: true,
-        offline_league_id: offlineLeagueId,
+        league_id: offlineLeagueId,
+        created_by: user.id,
       }).select().single()
       if (error) throw error
-
-      // Add to league
-      await supabase.from('league_members').insert({ league_id: offlineLeagueId, user_id: profile.id })
-      await logAudit('CREATE_OFFLINE_PLAYER', { profile_id: profile.id, display_name: offlineDisplayName, league_id: offlineLeagueId })
-      setActionResult(`✅ Offline player "${offlineDisplayName}" created and added to league`)
+      await logAudit('CREATE_OFFLINE_PLAYER', { player_id: player.id, display_name: offlineDisplayName, league_id: offlineLeagueId })
+      setActionResult(`✅ Offline player "${offlineDisplayName}" created`)
       setOfflineDisplayName('')
       setOfflineLeagueId('')
-      setOfflineSelectedPlayer(profile)
+      setOfflineSelectedPlayer(player)
       loadOfflinePlayers()
     } catch (e) {
       setActionResult(`❌ Error: ${e.message}`)
@@ -755,23 +748,21 @@ export default function AdminPanel() {
   }
 
   const deleteOfflinePlayer = async (playerId, displayName) => {
-    await supabase.from('predictions').delete().eq('user_id', playerId)
-    await supabase.from('league_members').delete().eq('user_id', playerId)
-    await supabase.from('profiles').delete().eq('id', playerId)
-    await logAudit('DELETE_OFFLINE_PLAYER', { profile_id: playerId, display_name: displayName })
+    await supabase.from('offline_predictions').delete().eq('offline_player_id', playerId)
+    await supabase.from('offline_players').delete().eq('id', playerId)
+    await logAudit('DELETE_OFFLINE_PLAYER', { player_id: playerId, display_name: displayName })
     setActionResult(`✅ Offline player "${displayName}" deleted`)
     loadOfflinePlayers()
   }
 
   const saveManualScore = async (playerId, matchId, home, away) => {
     if (home === '' || away === '' || isNaN(parseInt(home)) || isNaN(parseInt(away))) return
-    await supabase.from('predictions').upsert({
-      user_id: playerId,
+    await supabase.from('offline_predictions').upsert({
+      offline_player_id: playerId,
       match_id: matchId,
       home_score: parseInt(home),
       away_score: parseInt(away),
-      bracket_type: 'main',
-    }, { onConflict: 'user_id,match_id,bracket_type' })
+    }, { onConflict: 'offline_player_id,match_id' })
     setOfflineManualScores(prev => ({ ...prev, [`${playerId}-${matchId}`]: { home, away, saved: true } }))
     setTimeout(() => setOfflineManualScores(prev => ({ ...prev, [`${playerId}-${matchId}`]: { home, away, saved: false } })), 1500)
   }
@@ -873,17 +864,15 @@ export default function AdminPanel() {
 
         if (match) {
           predictions.push({
-            user_id: targetPlayerId,
             match_id: match.id,
             home_score: homeScore,
             away_score: awayScore,
             is_confident: isJoker,
-            bracket_type: 'main',
           })
         }
       }
 
-      setOfflineImportPreview({ predictions, unmatched, jokersFound, targetPlayerId })
+      setOfflineImportPreview({ predictions, unmatched, jokersFound, targetPlayerId, isOffline: true })
       setOfflineImporting(false)
     } catch (e) {
       setActionResult(`❌ Parse error: ${e.message}`)
@@ -895,13 +884,21 @@ export default function AdminPanel() {
     if (!offlineImportPreview) return
     setOfflineImporting(true)
     const { predictions, targetPlayerId } = offlineImportPreview
-    const { error } = await supabase.from('predictions')
-      .upsert(predictions, { onConflict: 'user_id,match_id,bracket_type' })
+    // Map to offline_predictions format
+    const toSave = predictions.map(p => ({
+      offline_player_id: targetPlayerId,
+      match_id: p.match_id,
+      home_score: p.home_score,
+      away_score: p.away_score,
+      is_confident: p.is_confident || false,
+    }))
+    const { error } = await supabase.from('offline_predictions')
+      .upsert(toSave, { onConflict: 'offline_player_id,match_id' })
     if (error) {
       setActionResult(`❌ Import failed: ${error.message}`)
     } else {
-      await logAudit('IMPORT_OFFLINE_PREDICTIONS', { player_id: targetPlayerId, count: predictions.length })
-      setActionResult(`✅ Imported ${predictions.length} predictions successfully`)
+      await logAudit('IMPORT_OFFLINE_PREDICTIONS', { player_id: targetPlayerId, count: toSave.length })
+      setActionResult(`✅ Imported ${toSave.length} predictions successfully`)
       setOfflineImportPreview(null)
     }
     setOfflineImporting(false)
