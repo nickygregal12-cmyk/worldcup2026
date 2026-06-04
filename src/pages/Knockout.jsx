@@ -10,7 +10,7 @@ import {
 } from '../lib/bracketUtils.js'
 
 const VENUE_FLAGS = {
-  'New York': '🇺🇸', 'New Jersey': '🇺🇸', 'Los Angeles': '🇺🇸',
+  'New York': '🇺🇸', 'New Jersey': '🇺🇸', 'New York/NJ': '🇺🇸', 'Los Angeles': '🇺🇸',
   'Dallas': '🇺🇸', 'San Francisco': '🇺🇸', 'Seattle': '🇺🇸',
   'Miami': '🇺🇸', 'Atlanta': '🇺🇸', 'Boston': '🇺🇸', 'Houston': '🇺🇸',
   'Philadelphia': '🇺🇸', 'Kansas City': '🇺🇸',

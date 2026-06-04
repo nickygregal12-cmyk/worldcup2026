@@ -442,6 +442,7 @@ export default function Predictions() {
   const [saving, setSaving] = useState({})
   const [saved, setSaved] = useState({})
   const [jokersRemaining, setJokersRemaining] = useState(8)
+  const [autoFilling, setAutoFilling] = useState(false)
   const [autoFillingDate, setAutoFillingDate] = useState(null)
   const [showJokerReminder, setShowJokerReminder] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
@@ -1463,10 +1464,11 @@ export default function Predictions() {
               )
             })()}
           </div>
-        ) : activeGroup === 'FINAL' && viewMode === 'date' ? (
-          <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
         ) : (
-          // Item 2 & 3: By Date view with autofill and clear per day
+          // By Date view — Overview tab check first
+          activeGroup === 'FINAL' ? (
+            <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
+          ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {Object.entries(matchesByDate).map(([date, dayMatches]) => {
               const hasUnlocked = dayMatches.some(m => !isLocked(m.kickoff_time))
@@ -1495,6 +1497,7 @@ export default function Predictions() {
             })}
             {renderAllGroupsStandings()}
           </div>
+          )
         )}
       </div>
 
