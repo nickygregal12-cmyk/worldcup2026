@@ -100,6 +100,10 @@ export default function Home() {
 
   useEffect(() => { loadData() }, [user])
 
+  useEffect(() => {
+    if (nextMatch?.venue?.city && tournamentStarted) fetchWeather(nextMatch.venue.city)
+  }, [nextMatch?.id])
+
   // Re-fetch when returning to tab so progress bars update immediately
   useEffect(() => {
     if (!user) return
@@ -637,6 +641,13 @@ export default function Home() {
                 </div>
               </div>
               {nextMatch.venue?.city && <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>📍 {nextMatch.venue.city}</div>}
+              {weather && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {weather.icon && <img src={`https://openweathermap.org/img/wn/${weather.icon}.png`} alt="" style={{ width: '24px', height: '24px' }} />}
+                  <span>{weather.temp}°C · {weather.desc}</span>
+                  <span>💨 {weather.wind}km/h</span>
+                </div>
+              )}
             </div>
           )}
 

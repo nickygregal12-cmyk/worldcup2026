@@ -1085,6 +1085,7 @@ export default function Predictions() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '42px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</span>
               <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', letterSpacing: '-0.01em' }}>{match.home_team?.name}</span>
+              {match.home_team?.fifa_ranking && <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>#{match.home_team.fifa_ranking}</span>}
               {favourite === 'home' && matchOdds && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700', letterSpacing: '0.02em' }}>⭐ FAV</span>}
             </div>
 
@@ -1127,6 +1128,7 @@ export default function Predictions() {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '42px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</span>
               <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', letterSpacing: '-0.01em' }}>{match.away_team?.name}</span>
+              {match.away_team?.fifa_ranking && <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>#{match.away_team.fifa_ranking}</span>}
               {favourite === 'away' && matchOdds && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700', letterSpacing: '0.02em' }}>⭐ FAV</span>}
             </div>
           </div>

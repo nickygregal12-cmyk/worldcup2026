@@ -141,6 +141,33 @@ export const handler = async (event, context) => {
       }
     }
 
+    // Sync top scorers
+    try {
+      const scorersRes = await fetch(
+        'https://api.football-data.org/v4/competitions/WC/scorers?season=2026&limit=10',
+        { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY } }
+      )
+      if (scorersRes.ok) {
+        const scorersData = await scorersRes.json()
+        const scorers = scorersData.scorers || []
+        // Delete existing and re-insert fresh
+        await supabase.from('tournament_scorers').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+        if (scorers.length > 0) {
+          await supabase.from('tournament_scorers').insert(
+            scorers.map(s => ({
+              player_name: s.player?.name || '',
+              player_id: s.player?.id || null,
+              team_name: normalise(s.team?.name || ''),
+              goals: s.goals || 0,
+              assists: s.assists || 0,
+              penalties: s.penalties || 0,
+              updated_at: new Date().toISOString(),
+            }))
+          )
+        }
+      }
+    } catch(e) { errors.push(`Scorers sync failed: ${e.message}`) }
+
     // Update last sync time
     await supabase.from('app_settings')
       .upsert({ key: 'last_sync_at', value: new Date().toISOString() }, { onConflict: 'key' })

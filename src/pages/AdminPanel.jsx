@@ -29,6 +29,15 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
     AWARD_DEFS.forEach(a => { init[a.key] = awardResults[a.key]?.winner_name || '' })
     return init
   })
+  const [topScorers, setTopScorers] = useState([])
+  const [loadingScorers, setLoadingScorers] = useState(false)
+
+  const loadTopScorers = async () => {
+    setLoadingScorers(true)
+    const { data } = await supabase.from('tournament_scorers').select('*').order('goals', { ascending: false }).limit(5)
+    setTopScorers(data || [])
+    setLoadingScorers(false)
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -37,6 +46,37 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
           ℹ️ Enter the actual tournament award winners after they are announced. Points will be automatically awarded to users who picked correctly.
         </div>
       </div>
+
+      {/* Golden Boot helper — load from live scorers */}
+      <div className="card" style={{ border: '1px solid var(--accent-gold)' }}>
+        <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '8px' }}>🥇 Live Top Scorers</div>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+          Load current top scorers from the synced data to quickly set the Golden Boot winner.
+        </div>
+        <button onClick={loadTopScorers} disabled={loadingScorers} className="btn btn-sm" style={{ marginBottom: '10px', background: 'var(--accent-gold)', color: 'white', border: 'none' }}>
+          {loadingScorers ? '⏳ Loading...' : '🔄 Load Top Scorers'}
+        </button>
+        {topScorers.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {topScorers.map((s, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
+                <span style={{ fontWeight: '800', fontSize: '13px', width: '20px' }}>{i + 1}</span>
+                <span style={{ flex: 1, fontSize: '13px', fontWeight: '600' }}>{s.player_name}</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.team_name}</span>
+                <span style={{ fontWeight: '800', fontSize: '13px', color: 'var(--accent-gold)' }}>{s.goals}⚽</span>
+                <button onClick={() => setInputs(prev => ({ ...prev, golden_boot: s.player_name }))}
+                  className="btn btn-sm" style={{ fontSize: '11px', padding: '3px 8px' }}>
+                  Use
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {topScorers.length === 0 && !loadingScorers && (
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No scorer data yet — data syncs once tournament starts.</div>
+        )}
+      </div>
+
       {AWARD_DEFS.map(award => {
         const existing = awardResults[award.key]
         return (
@@ -145,6 +185,13 @@ export default function AdminPanel() {
   const [offlineImportPreview, setOfflineImportPreview] = useState(null)
   const [offlineSelectedPlayer, setOfflineSelectedPlayer] = useState(null)
   const [offlineManualScores, setOfflineManualScores] = useState({})
+  const [offlineSearch, setOfflineSearch] = useState('')
+  const [offlineLeagueFilter, setOfflineLeagueFilter] = useState('')
+  const [collapsedPlayers, setCollapsedPlayers] = useState({})
+  const [leagueAmendLeagueId, setLeagueAmendLeagueId] = useState('')
+  const [leagueAmendAmount, setLeagueAmendAmount] = useState('')
+  const [leagueAmendReason, setLeagueAmendReason] = useState('')
+  const [leagueAmendSaving, setLeagueAmendSaving] = useState(false)
 
   useEffect(() => {
     if (!user || !isAdmin) { navigate('/'); return }
@@ -1699,7 +1746,7 @@ export default function AdminPanel() {
         {activeTab === 'offline' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-            {/* Create new offline player */}
+            {/* Add + Search controls */}
             <div className="card" style={{ border: '1px solid var(--scottish-navy)' }}>
               <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '12px' }}>👤 Add Offline Player</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1717,6 +1764,19 @@ export default function AdminPanel() {
                   {offlineCreating ? '⏳ Creating...' : '➕ Create Offline Player'}
                 </button>
               </div>
+            </div>
+
+            {/* Filter controls */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input className="input" placeholder="🔍 Search by name..." style={{ flex: 1 }}
+                value={offlineSearch} onChange={e => setOfflineSearch(e.target.value)} />
+              <select className="input" style={{ flex: 1 }}
+                value={offlineLeagueFilter} onChange={e => setOfflineLeagueFilter(e.target.value)}>
+                <option value="">All leagues</option>
+                {leagues.filter(l => !l.is_global).map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
             </div>
 
             {/* Import preview */}
@@ -1746,19 +1806,31 @@ export default function AdminPanel() {
               {offlinePlayers.length} offline player{offlinePlayers.length !== 1 ? 's' : ''}
             </div>
 
-            {offlinePlayers.map(player => (
+            {offlinePlayers
+              .filter(p => {
+                const matchSearch = !offlineSearch || p.display_name?.toLowerCase().includes(offlineSearch.toLowerCase())
+                const matchLeague = !offlineLeagueFilter || p.league_id === offlineLeagueFilter
+                return matchSearch && matchLeague
+              })
+              .map(player => {
+              const isCollapsed = collapsedPlayers[player.id] !== false // default collapsed
+              return (
               <div key={player.id} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                  <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '800', fontSize: '15px' }}>👤 {player.display_name}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      League: {player.league?.name || '—'}
+                      {player.league?.name || '—'}
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                     <button onClick={() => generateInviteLink(player.id, player.display_name)}
-                      className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', fontSize: '12px' }}>
-                      📧 Invite
+                      className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', fontSize: '11px' }}>
+                      📧
+                    </button>
+                    <button onClick={() => setCollapsedPlayers(prev => ({ ...prev, [player.id]: isCollapsed ? false : true }))}
+                      className="btn btn-sm" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', fontSize: '11px' }}>
+                      {isCollapsed ? '▼ Expand' : '▲ Collapse'}
                     </button>
                     <button onClick={() => setConfirmAction({ type: 'deleteOfflinePlayer', playerId: player.id, displayName: player.display_name })}
                       className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
@@ -1766,6 +1838,7 @@ export default function AdminPanel() {
                     </button>
                   </div>
                 </div>
+                {!isCollapsed && <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-light)', paddingTop: '12px' }}>
 
                 {/* Excel upload */}
                 <div style={{ marginBottom: '10px' }}>
@@ -1815,10 +1888,15 @@ export default function AdminPanel() {
                     })}
                   </div>
                 )}
+              </div>}
               </div>
-            ))}
+            )})}
 
-            {offlinePlayers.length === 0 && (
+            {offlinePlayers.filter(p => {
+              const matchSearch = !offlineSearch || p.display_name?.toLowerCase().includes(offlineSearch.toLowerCase())
+              const matchLeague = !offlineLeagueFilter || p.league_id === offlineLeagueFilter
+              return matchSearch && matchLeague
+            }).length === 0 && (
               <div className="card" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                 <div style={{ fontSize: '32px', marginBottom: '8px' }}>👤</div>
                 <div style={{ fontWeight: '700' }}>No offline players yet</div>
@@ -1831,6 +1909,48 @@ export default function AdminPanel() {
         {/* ── POINTS ── */}
         {activeTab === 'points' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            {/* League points amendment — based on Excel scoring */}
+            <div className="card" style={{ border: '1px solid var(--scottish-navy)' }}>
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '4px' }}>📊 League Points Amendment</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                Adjust points for all members of a specific league — useful for applying Excel-format scoring corrections.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <select className="input" value={leagueAmendLeagueId} onChange={e => setLeagueAmendLeagueId(e.target.value)}>
+                  <option value="">Select league...</option>
+                  {leagues.filter(l => !l.is_global).map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="number" className="input" placeholder="±pts per member" style={{ flex: 1 }}
+                    value={leagueAmendAmount} onChange={e => setLeagueAmendAmount(e.target.value)} />
+                  <input type="text" className="input" placeholder="Reason (e.g. Excel bonus)" style={{ flex: 2 }}
+                    value={leagueAmendReason} onChange={e => setLeagueAmendReason(e.target.value)} />
+                </div>
+                <button className="btn btn-primary" disabled={leagueAmendSaving || !leagueAmendLeagueId || !leagueAmendAmount || !leagueAmendReason}
+                  onClick={async () => {
+                    const amount = parseInt(leagueAmendAmount)
+                    if (isNaN(amount)) { setActionResult('❌ Invalid amount'); return }
+                    setLeagueAmendSaving(true)
+                    const { data: members } = await supabase.from('league_members').select('user_id').eq('league_id', leagueAmendLeagueId)
+                    if (!members?.length) { setActionResult('❌ No members found'); setLeagueAmendSaving(false); return }
+                    for (const m of members) {
+                      const { data: profile } = await supabase.from('profiles').select('total_points').eq('id', m.user_id).single()
+                      await supabase.from('profiles').update({ total_points: (profile?.total_points || 0) + amount }).eq('id', m.user_id)
+                      await logAudit('LEAGUE_POINTS_AMENDMENT', { league_id: leagueAmendLeagueId, user_id: m.user_id, amount, reason: leagueAmendReason })
+                    }
+                    setActionResult(`✅ Applied ${amount > 0 ? '+' : ''}${amount}pts to ${members.length} members · ${leagueAmendReason}`)
+                    setLeagueAmendAmount('')
+                    setLeagueAmendReason('')
+                    setLeagueAmendSaving(false)
+                  }}>
+                  {leagueAmendSaving ? '⏳ Applying...' : 'Apply to all league members'}
+                </button>
+              </div>
+            </div>
+
             <div className="card">
               <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '12px' }}>Leaderboard Overview</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
