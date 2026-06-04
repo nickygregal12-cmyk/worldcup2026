@@ -146,6 +146,11 @@ export default function Leagues() {
     const countMap = {}
     counts?.forEach(c => { countMap[c.league_id] = (countMap[c.league_id] || 0) + 1 })
 
+    // Add offline players to counts
+    const { data: offlineCounts } = await supabase
+      .from('offline_players').select('league_id').in('league_id', leagueIds)
+    offlineCounts?.forEach(c => { countMap[c.league_id] = (countMap[c.league_id] || 0) + 1 })
+
     const leagues = memberships.map(m => ({
       ...m,
       memberCount: countMap[m.league_id] || 1,

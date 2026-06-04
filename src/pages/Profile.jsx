@@ -129,15 +129,21 @@ export default function Profile() {
     'korea republic': 'South Korea', 'republic of korea': 'South Korea',
     'cabo verde': 'Cape Verde', 'cape verde islands': 'Cape Verde',
     "cote d'ivoire": 'Ivory Coast', 'ivory coast': 'Ivory Coast',
+    "côte d'ivoire": 'Ivory Coast',
     'usa': 'United States', 'united states of america': 'United States',
-    'turkey': 'Türkiye', 'bosnia': 'Bosnia-Herzegovina',
+    'turkey': 'Türkiye', 'türkiye': 'Türkiye', 'turkiye': 'Türkiye',
+    'bosnia': 'Bosnia-Herzegovina', 'bosnia ': 'Bosnia-Herzegovina',
     'bosnia and herzegovina': 'Bosnia-Herzegovina',
     'czech republic': 'Czechia', 'dr congo': 'DR Congo',
+    'curacao': 'Curacao', 'curaçao': 'Curacao',
   }
   const normaliseTeam = (name) => {
     if (!name) return ''
-    const lower = name.toLowerCase().trim()
-    return TEAM_ALIASES[lower] || name.trim()
+    const trimmed = name.trim()
+    const lower = trimmed.toLowerCase()
+    if (TEAM_ALIASES[lower]) return TEAM_ALIASES[lower]
+    if (TEAM_ALIASES[lower.trim()]) return TEAM_ALIASES[lower.trim()]
+    return trimmed
   }
 
   const handleExportPredictions = async () => {

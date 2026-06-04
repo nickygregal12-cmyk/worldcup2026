@@ -772,10 +772,10 @@ export default function AdminPanel() {
     'holland': 'Netherlands', 'the netherlands': 'Netherlands',
     'korea republic': 'South Korea', 'republic of korea': 'South Korea', 'korea': 'South Korea',
     'cabo verde': 'Cape Verde', 'cape verde islands': 'Cape Verde',
-    "cote d'ivoire": 'Ivory Coast', 'ivory coast': 'Ivory Coast', 'côte d\'ivoire': 'Ivory Coast',
+    "cote d'ivoire": 'Ivory Coast', 'ivory coast': 'Ivory Coast', "côte d'ivoire": 'Ivory Coast',
     'usa': 'United States', 'united states of america': 'United States', 'america': 'United States',
-    'türkiye': 'Türkiye', 'turkey': 'Türkiye',
-    'bosnia': 'Bosnia-Herzegovina', 'bosnia and herzegovina': 'Bosnia-Herzegovina',
+    'türkiye': 'Türkiye', 'turkey': 'Türkiye', 'turkiye': 'Türkiye',
+    'bosnia': 'Bosnia-Herzegovina', 'bosnia ': 'Bosnia-Herzegovina', 'bosnia and herzegovina': 'Bosnia-Herzegovina',
     'czech republic': 'Czechia',
     'dr congo': 'DR Congo', 'congo dr': 'DR Congo', 'democratic republic of congo': 'DR Congo',
     'north macedonia': 'North Macedonia', 'macedonia': 'North Macedonia',
@@ -785,8 +785,11 @@ export default function AdminPanel() {
 
   const normaliseTeam = (name) => {
     if (!name) return ''
-    const lower = name.toLowerCase().trim()
-    return TEAM_ALIASES[lower] || name.trim()
+    const trimmed = name.trim()
+    const lower = trimmed.toLowerCase()
+    if (TEAM_ALIASES[lower]) return TEAM_ALIASES[lower]
+    if (TEAM_ALIASES[trimmed.toLowerCase().trim()]) return TEAM_ALIASES[trimmed.toLowerCase().trim()]
+    return trimmed
   }
 
   const parseExcelFile = async (file, targetPlayerId) => {
