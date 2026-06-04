@@ -333,10 +333,29 @@ export default function Leagues() {
   }
 
   const openMemberModal = async (member, leagueId) => {
-    setMemberModal({ userId: member.user_id, username: member.profile?.username, leagueId })
-    const { data: profile } = await supabase
-      .from('profiles').select('show_future_predictions').eq('id', member.user_id).single()
-    await loadMemberPredictions(member.user_id, profile?.show_future_predictions || false)
+    const isOffline = member.profile?.is_offline || member.is_offline
+    const displayName = member.profile?.display_name || member.profile?.username || 'Unknown'
+    setMemberModal({ userId: member.user_id, username: displayName, leagueId, isOffline })
+
+    if (isOffline) {
+      // Load from offline_predictions table
+      const { data: preds } = await supabase
+        .from('offline_predictions')
+        .select(`
+          home_score, away_score, is_confident,
+          match:match_id(id, kickoff_time, home_score, away_score, status,
+            home_team:home_team_id(name, flag_emoji, short_code),
+            away_team:away_team_id(name, flag_emoji, short_code),
+            group:group_id(name))
+        `)
+        .eq('offline_player_id', member.user_id)
+        .order('match_id')
+      setMemberPredictions(preds || [])
+    } else {
+      const { data: profile } = await supabase
+        .from('profiles').select('show_future_predictions').eq('id', member.user_id).single()
+      await loadMemberPredictions(member.user_id, profile?.show_future_predictions || false)
+    }
   }
 
   const toggleExpand = async (leagueId) => {
@@ -745,8 +764,8 @@ export default function Leagues() {
                               {/* Actions */}
                               <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                                 <button onClick={() => openMemberModal(member, league.id)}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', opacity: 0.5, padding: '2px 4px' }}
-                                  title="View picks">👁</button>
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', opacity: member.profile?.is_offline ? 1 : 0.5, padding: '2px 4px' }}
+                                  title={member.profile?.is_offline ? "View offline picks" : "View picks"}>👁</button>
                                 {canRemove && (
                                   <button onClick={() => setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username })}
                                     style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#e53935', padding: '2px 4px' }}>×</button>
@@ -836,12 +855,14 @@ export default function Leagues() {
               ) : (!memberModal.tab || memberModal.tab === 'group') ? (
                 memberPredictions.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
-                    <div style={{ fontWeight: '700', marginBottom: '4px' }}>Picks are private</div>
+                    <div style={{ fontSize: '32px', marginBottom: '8px' }}>{memberModal.isOffline ? '👤' : '🔒'}</div>
+                    <div style={{ fontWeight: '700', marginBottom: '4px' }}>{memberModal.isOffline ? 'No predictions entered yet' : 'Picks are private'}</div>
                     <div style={{ fontSize: '13px' }}>
-                      {tournamentLive
-                        ? 'This user has chosen to keep their predictions private'
-                        : 'Picks become visible once matches kick off on 11 Jun — unless the user enables "Show Future Predictions" in their profile'}
+                      {memberModal.isOffline
+                        ? 'Admin can enter predictions via the Offline tab in Admin Panel'
+                        : tournamentLive
+                          ? 'This user has chosen to keep their predictions private'
+                          : 'Picks become visible once matches kick off on 11 Jun — unless the user enables "Show Future Predictions" in their profile'}
                     </div>
                   </div>
                 ) : (
@@ -851,7 +872,7 @@ export default function Leagues() {
                       const match = pred.match
                       const kicked = new Date(match?.kickoff_time) <= new Date()
                       return (
-                        <div key={pred.id} style={{
+                        <div key={pred.id || pred.match?.id} style={{
                           display: 'flex', alignItems: 'center', gap: '10px',
                           padding: '10px 12px', borderRadius: 'var(--radius-md)',
                           background: result === 'exact' ? 'var(--accent-green-light)' : result === 'correct' ? 'var(--accent-blue-light)' : result === 'wrong' ? 'var(--accent-red-light)' : 'var(--bg-secondary)',
