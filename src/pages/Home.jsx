@@ -277,9 +277,10 @@ export default function Home() {
     : 'Predict every match. Compete with friends. Glory awaits.'
 
   // ── Countdown target ──────────────────────────────────────────────────────
-  // Pre-tournament: count down to tournament start, not just next match
   const countdownTarget = !tournamentStarted ? TOURNAMENT_START.toISOString() : nextMatch?.kickoff_time
   const mainCountdown = useCountdown(countdownTarget)
+  const heroCountdown = !tournamentStarted ? mainCountdown : (liveMatches.length === 0 ? countdown : null)
+  const showHeroCountdown = !tournamentOver && !loading && !!heroCountdown && !heroCountdown.started
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
@@ -305,48 +306,44 @@ export default function Home() {
             {heroSubtitle}
           </p>
 
-          {/* ── Countdown in hero — pre-tournament or next match ── */}
-          {!tournamentOver && !loading && (() => {
-            const cd = !tournamentStarted ? mainCountdown : (liveMatches.length === 0 ? countdown : null)
-            if (!cd || cd.started) return null
-            return (
-              <div style={{ marginBottom: '20px' }}>
-                {!tournamentStarted && (
-                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '10px' }}>
-                    🇲🇽 Mexico vs South Africa 🇿🇦 · Thu 11 Jun · 20:00 BST
-                  </div>
-                )}
-                {tournamentStarted && nextMatch && liveMatches.length === 0 && (
-                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '10px' }}>
-                    {nextMatch.home_team?.flag_emoji} {nextMatch.home_team?.short_code} vs {nextMatch.away_team?.short_code} {nextMatch.away_team?.flag_emoji}
-                    {nextMatch.venue?.city && ` · ${nextMatch.venue.city}`}
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                  {[
-                    { value: cd.days,    label: 'Days' },
-                    { value: cd.hours,   label: 'Hrs' },
-                    { value: cd.minutes, label: 'Mins' },
-                    { value: cd.seconds, label: 'Secs' },
-                  ].map(({ value, label }) => (
-                    <div key={label} style={{
-                      background: 'rgba(255,255,255,0.12)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '10px 8px', minWidth: '56px', textAlign: 'center',
-                    }}>
-                      <div style={{ fontSize: '26px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1, color: 'white' }}>
-                        {String(value ?? 0).padStart(2, '0')}
-                      </div>
-                      <div style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px', color: 'rgba(255,255,255,0.5)' }}>
-                        {label}
-                      </div>
-                    </div>
-                  ))}
+          {/* ── Countdown in hero ── */}
+          {showHeroCountdown && (
+            <div style={{ marginBottom: '20px' }}>
+              {!tournamentStarted && (
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '10px' }}>
+                  🇲🇽 Mexico vs South Africa 🇿🇦 · Thu 11 Jun · 20:00 BST
                 </div>
+              )}
+              {tournamentStarted && nextMatch && liveMatches.length === 0 && (
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '10px' }}>
+                  {nextMatch.home_team?.flag_emoji} {nextMatch.home_team?.short_code} vs {nextMatch.away_team?.short_code} {nextMatch.away_team?.flag_emoji}
+                  {nextMatch.venue?.city && ` · ${nextMatch.venue.city}`}
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                {[
+                  { value: heroCountdown.days,    label: 'Days' },
+                  { value: heroCountdown.hours,   label: 'Hrs' },
+                  { value: heroCountdown.minutes, label: 'Mins' },
+                  { value: heroCountdown.seconds, label: 'Secs' },
+                ].map(({ value, label }) => (
+                  <div key={label} style={{
+                    background: 'rgba(255,255,255,0.12)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '10px 8px', minWidth: '56px', textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: '26px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1, color: 'white' }}>
+                      {String(value ?? 0).padStart(2, '0')}
+                    </div>
+                    <div style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px', color: 'rgba(255,255,255,0.5)' }}>
+                      {label}
+                    </div>
+                  </div>
+                ))}
               </div>
-            )
-          })()}
+            </div>
+          )}
 
           {/* Smart CTA */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
