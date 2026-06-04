@@ -20,12 +20,23 @@ export default function ShareCard({ onClose }) {
     if (!user) return
     setLoading(true)
 
-    // Load group predictions
-    const { data: matches } = await supabase
+    // Fetch groups separately since FK join may not be registered in Supabase schema
+    const { data: groups } = await supabase.from('groups').select('id, name')
+    const groupMap = {}
+    groups?.forEach(g => { groupMap[g.id] = g.name })
+
+    // Load group matches — no group join needed
+    const { data: matchesRaw } = await supabase
       .from('matches')
-      .select('*, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code), group:group_id(name)')
+      .select('*, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
       .eq('stage', 'group')
       .order('kickoff_time', { ascending: true })
+
+    // Attach group name manually
+    const matches = (matchesRaw || []).map(m => ({
+      ...m,
+      group: { name: groupMap[m.group_id] || null }
+    }))
 
     const { data: preds } = await supabase
       .from('predictions')
@@ -175,8 +186,8 @@ export default function ShareCard({ onClose }) {
                       <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', fontWeight: '700', marginBottom: '3px' }}>GRP {g}</div>
                       {winner ? (
                         <>
-                          <div style={{ fontSize: '20px', lineHeight: 1, marginBottom: '2px' }}>{winner.flag}</div>
-                          <div style={{ fontSize: '9px', fontWeight: '700', color: 'rgba(255,255,255,0.9)', lineHeight: 1.2 }}>{winner.name?.substring(0, 6)}</div>
+                          <div style={{ fontSize: '20px', lineHeight: 1, marginBottom: '2px' }}>{winner.team?.flag_emoji}</div>
+                          <div style={{ fontSize: '9px', fontWeight: '700', color: 'rgba(255,255,255,0.9)', lineHeight: 1.2 }}>{(winner.team?.short_code || winner.team?.name || '').substring(0, 6)}</div>
                         </>
                       ) : (
                         <div style={{ fontSize: '16px', opacity: 0.3 }}>🏳️</div>
