@@ -284,7 +284,8 @@ export default function Home() {
   const showHeroCountdown = !tournamentOver && !loading && !!heroCountdown && !heroCountdown.started
 
   return (
-    <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+    <>
+      <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
       {/* ── Hero ── */}
       <div style={{
@@ -841,7 +842,7 @@ export default function Home() {
 
         </div>
       </div>
-    </div>
-    {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
+      {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
+    </>
   )
 }
