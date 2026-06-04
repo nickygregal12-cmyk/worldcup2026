@@ -2,6 +2,10 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { supabase, getProfile } from '../lib/supabase'
 
+// Track whether listeners have been set up — only do it once
+let authListenerSetUp = false
+let visibilityListenerSetUp = false
+
 export const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -21,7 +25,6 @@ export const useAuthStore = create(
       loadProfile: async (userId) => {
         const { data } = await getProfile(userId)
         if (data) {
-          // Calculate awards_done dynamically from both tables
           const [{ data: awardPreds }, { data: goalPreds }] = await Promise.all([
             supabase.from('award_predictions').select('award_type').eq('user_id', userId),
             supabase.from('tournament_predictions').select('prediction_type').eq('user_id', userId)
@@ -37,70 +40,73 @@ export const useAuthStore = create(
       initialize: async () => {
         const state = get()
 
-        // If already initialized, skip the loading spinner but ALWAYS
-        // refresh the session in the background — stale JWT causes silent
-        // save failures on iOS/Safari after the app has been backgrounded.
-        if (state.initialized) {
-          set({ isLoading: false })
-          // Force a fresh session + token refresh silently
-          supabase.auth.getSession().then(({ data: { session } }) => {
-            if (session?.user) {
-              set({ user: session.user }) // update with fresh JWT
+        // ── Set up auth state listener ONCE ─────────────────────────────
+        if (!authListenerSetUp) {
+          authListenerSetUp = true
+          supabase.auth.onAuthStateChange(async (event, session) => {
+            if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+              set({ user: session.user, initialized: true })
               get().loadProfile(session.user.id).catch(() => {})
-            } else {
-              // Session truly expired — log out cleanly
+            } else if (event === 'SIGNED_OUT') {
               set({ user: null, profile: null, isAdmin: false, initialized: false })
-            }
-          }).catch(() => {})
-          // Still set up auth listener below
-        } else {
-          set({ isLoading: true })
-          try {
-            const { data: { session } } = await supabase.auth.getSession()
-            if (session?.user) {
+            } else if (event === 'TOKEN_REFRESHED' && session?.user) {
               set({ user: session.user })
-              await get().loadProfile(session.user.id)
-            } else {
-              set({ user: null, profile: null })
             }
-          } catch (e) {
-            console.error('Auth init error:', e)
-          }
-          set({ isLoading: false, initialized: true })
+          })
         }
 
-        // Listen for auth events (token refresh, sign in/out)
-        supabase.auth.onAuthStateChange(async (event, session) => {
-          if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
-            set({ user: session.user })
-            await get().loadProfile(session.user.id)
-          } else if (event === 'SIGNED_OUT') {
-            set({ user: null, profile: null, isAdmin: false, initialized: false })
-          } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-            // Always update user with the refreshed JWT
-            set({ user: session.user })
-          }
-        })
-
-        // iOS/Safari fix: refresh session when user returns to the tab/app
-        // This prevents the "saves work after sign out/in" bug on mobile
-        if (typeof document !== 'undefined') {
+        // ── iOS/Safari: refresh session when returning to app ONCE ───────
+        if (!visibilityListenerSetUp && typeof document !== 'undefined') {
+          visibilityListenerSetUp = true
           document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-              supabase.auth.getSession().then(({ data: { session } }) => {
+              // Force a real network refresh — not just the local cache
+              supabase.auth.refreshSession().then(({ data: { session }, error }) => {
                 if (session?.user) {
                   set({ user: session.user })
-                } else {
+                } else if (!error) {
+                  // Session genuinely gone
                   const currentState = get()
                   if (currentState.user) {
-                    // Had a user but session gone — clear it
                     set({ user: null, profile: null, isAdmin: false, initialized: false })
                   }
                 }
+                // If error (e.g. network offline), keep existing session
               }).catch(() => {})
             }
           })
         }
+
+        // ── Already initialized — force refresh then return ──────────────
+        if (state.initialized) {
+          set({ isLoading: false })
+          // Force a real token refresh (not just cache read)
+          supabase.auth.refreshSession().then(({ data: { session }, error }) => {
+            if (session?.user) {
+              set({ user: session.user })
+              get().loadProfile(session.user.id).catch(() => {})
+            } else if (!error) {
+              set({ user: null, profile: null, isAdmin: false, initialized: false })
+            }
+            // If network error, silently keep existing session
+          }).catch(() => {})
+          return
+        }
+
+        // ── First init ───────────────────────────────────────────────────
+        set({ isLoading: true })
+        try {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.user) {
+            set({ user: session.user })
+            await get().loadProfile(session.user.id)
+          } else {
+            set({ user: null, profile: null })
+          }
+        } catch (e) {
+          console.error('Auth init error:', e)
+        }
+        set({ isLoading: false, initialized: true })
       },
 
       logout: async () => {
@@ -126,7 +132,7 @@ export const useAppStore = create(
       showFuturePredictions: true,
       mobileMenuOpen: false,
       activeTab: 'home',
-      appSettings: {}, // loaded from app_settings table
+      appSettings: {},
 
       toggleDarkMode: () => set((state) => ({ darkMode: !state.darkMode })),
       setShowFuturePredictions: (val) => set({ showFuturePredictions: val }),
