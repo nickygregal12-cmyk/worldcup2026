@@ -38,7 +38,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
   if (!user) return { label: '🏆 Join Free — it\'s free!', to: '/register', secondary: { label: 'How does it work?', to: '/how-to-play' } }
 
   const groupsDone    = predictionCount >= 72
-  const knockoutsDone = (profile?.knockout_picks_count || 0) >= 16
+  const knockoutsDone = (profile?.knockout_picks_count || 0) >= 32
   const awardsDone    = (profile?.awards_done || 0) >= 4
 
   const jokersLeft = profile?.jokers_group_remaining ?? 8
@@ -65,7 +65,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
 }
 
 export default function Home() {
-  const { user, profile } = useAuthStore()
+  const { user, profile, loadProfile } = useAuthStore()
   const [nextMatch, setNextMatch]         = useState(null)
   const [liveMatches, setLiveMatches]     = useState([])
   const [upcomingMatches, setUpcomingMatches] = useState([])
@@ -97,7 +97,10 @@ export default function Home() {
     : now >= KNOCKOUT_LIVE
   const tournamentOver = phaseOverride === 'post_tournament' ? true : now >= TOURNAMENT_END
 
-  useEffect(() => { loadData() }, [user])
+  useEffect(() => {
+    loadData()
+    if (user) loadProfile(user.id).catch(() => {})
+  }, [user])
 
   // Re-fetch when returning to tab so progress bars update immediately
   useEffect(() => {
