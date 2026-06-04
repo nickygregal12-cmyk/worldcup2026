@@ -39,18 +39,15 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
   if (!user) return { label: '🏆 Join Free — it\'s free!', to: '/register', secondary: { label: 'How does it work?', to: '/how-to-play' } }
 
   const groupsDone    = predictionCount >= 72
-  const knockoutsDone = (profile?.knockout_picks_count || 0) >= 32
+  const knockoutsDone = (profile?.knockout_picks_count || 0) >= 16
   const awardsDone    = (profile?.awards_done || 0) >= 4
-
-  const jokersLeft = profile?.jokers_group_remaining ?? 8
 
   if (!tournamentStarted) {
     if (predictionCount === 0)  return { label: '⚽ Start predicting', to: '/predictions', secondary: { label: 'Read the rules →', to: '/how-to-play' } }
     if (!groupsDone)            return { label: '⚽ Continue group predictions', to: '/predictions', secondary: { label: 'Read the rules →', to: '/how-to-play' } }
-    if (!knockoutsDone)         return { label: '🏆 Pick your knockout teams', to: '/knockout', secondary: { label: 'Read the rules →', to: '/how-to-play' } }
+    if (!knockoutsDone)         return { label: '🏆 Pick your knockout teams', to: '/knockout' }
     if (!awardsDone)            return { label: '🏅 Make your award predictions', to: '/awards' }
-    if (jokersLeft > 0)         return { label: '🃏 Use your jokers before kickoff!', to: '/predictions', secondary: { label: '👥 Invite friends →', to: '/leagues' } }
-    return { label: '👥 Invite friends to your league', to: '/leagues', secondary: { label: '📊 View leaderboard →', to: '/leaderboard' } }
+    return { label: '🃏 Use your jokers before it\'s too late!', to: '/predictions', secondary: { label: 'View leaderboard →', to: '/leaderboard' } }
   }
 
   if (koLive) {
@@ -66,7 +63,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
 }
 
 export default function Home() {
-  const { user, profile, loadProfile } = useAuthStore()
+  const { user, profile } = useAuthStore()
   const [nextMatch, setNextMatch]         = useState(null)
   const [liveMatches, setLiveMatches]     = useState([])
   const [upcomingMatches, setUpcomingMatches] = useState([])
@@ -77,7 +74,6 @@ export default function Home() {
   const [luckyDipping, setLuckyDipping]   = useState(false)
   const [showShareCard, setShowShareCard] = useState(false)
   const [luckyDone, setLuckyDone]         = useState(false)
-  const [recentResults, setRecentResults] = useState([])
   const countdown = useCountdown(nextMatch?.kickoff_time)
 
   const now               = new Date()
@@ -99,10 +95,7 @@ export default function Home() {
     : now >= KNOCKOUT_LIVE
   const tournamentOver = phaseOverride === 'post_tournament' ? true : now >= TOURNAMENT_END
 
-  useEffect(() => {
-    loadData()
-    if (user) loadProfile(user.id).catch(() => {})
-  }, [user])
+  useEffect(() => { loadData() }, [user])
 
   // Re-fetch when returning to tab so progress bars update immediately
   useEffect(() => {
@@ -145,7 +138,7 @@ export default function Home() {
     setUpcomingMatches(upcomingRes.data || [])
     setTopPredictors(predictorRes.data || [])
 
-    // Load user prediction count + leaderboard position + recent results
+    // Load user prediction count + leaderboard position
     if (user) {
       const { count } = await supabase.from('predictions')
         .select('*', { count: 'exact', head: true })
@@ -159,20 +152,6 @@ export default function Home() {
           .gt('total_points', profile.total_points || 0)
         setLeaderPosition((ahead || 0) + 1)
       }
-
-      // Recent results
-      const { data: recentData } = await supabase
-        .from('predictions')
-        .select(`
-          home_score, away_score, points_awarded, is_confident,
-          match:match_id(id, kickoff_time, home_score, away_score, status,
-            home_team:home_team_id(name, flag_emoji, short_code),
-            away_team:away_team_id(name, flag_emoji, short_code))
-        `)
-        .eq('user_id', user.id)
-        .order('match_id', { ascending: false })
-        .limit(10)
-      setRecentResults((recentData || []).filter(p => p.match?.status === 'completed').slice(0, 5))
     }
 
     setLoading(false)
@@ -278,14 +257,12 @@ export default function Home() {
     : 'Predict every match. Compete with friends. Glory awaits.'
 
   // ── Countdown target ──────────────────────────────────────────────────────
+  // Pre-tournament: count down to tournament start, not just next match
   const countdownTarget = !tournamentStarted ? TOURNAMENT_START.toISOString() : nextMatch?.kickoff_time
   const mainCountdown = useCountdown(countdownTarget)
-  const heroCountdown = !tournamentStarted ? mainCountdown : (liveMatches.length === 0 ? countdown : null)
-  const showHeroCountdown = !tournamentOver && !loading && !!heroCountdown && !heroCountdown.started
 
   return (
-    <>
-      <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+    <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
       {/* ── Hero ── */}
       <div style={{
@@ -304,48 +281,9 @@ export default function Home() {
             WC26 Predictor
           </h1>
 
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '20px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px' }}>
             {heroSubtitle}
           </p>
-
-          {/* ── Countdown in hero ── */}
-          {showHeroCountdown && (
-            <div style={{ marginBottom: '20px' }}>
-              {!tournamentStarted && (
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '10px' }}>
-                  🇲🇽 Mexico vs South Africa 🇿🇦 · Thu 11 Jun · 20:00 BST
-                </div>
-              )}
-              {tournamentStarted && nextMatch && liveMatches.length === 0 && (
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.5)', marginBottom: '10px' }}>
-                  {nextMatch.home_team?.flag_emoji} {nextMatch.home_team?.short_code} vs {nextMatch.away_team?.short_code} {nextMatch.away_team?.flag_emoji}
-                  {nextMatch.venue?.city && ` · ${nextMatch.venue.city}`}
-                </div>
-              )}
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                {[
-                  { value: heroCountdown.days,    label: 'Days' },
-                  { value: heroCountdown.hours,   label: 'Hrs' },
-                  { value: heroCountdown.minutes, label: 'Mins' },
-                  { value: heroCountdown.seconds, label: 'Secs' },
-                ].map(({ value, label }) => (
-                  <div key={label} style={{
-                    background: 'rgba(255,255,255,0.12)',
-                    border: '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: 'var(--radius-md)',
-                    padding: '10px 8px', minWidth: '56px', textAlign: 'center',
-                  }}>
-                    <div style={{ fontSize: '26px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1, color: 'white' }}>
-                      {String(value ?? 0).padStart(2, '0')}
-                    </div>
-                    <div style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '4px', color: 'rgba(255,255,255,0.5)' }}>
-                      {label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Smart CTA */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
@@ -429,23 +367,15 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Stats Bar — tournament facts, always shown ── */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '10px 16px' }}>
+      {/* ── Stats Bar ── */}
+      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '14px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', maxWidth: '500px', margin: '0 auto' }}>
-          {(tournamentStarted
-            ? [
-                { label: 'My Points', value: profile?.total_points || 0 },
-                { label: 'Streak', value: profile?.streak_current || 0 },
-                { label: 'Exact', value: profile?.exact_scores || 0 },
-                { label: 'Picks', value: predictionCount },
-              ]
-            : [
-                { label: 'Teams', value: '48' },
-                { label: 'Matches', value: '104' },
-                { label: 'Kick off', value: '11 Jun' },
-                { label: 'Final', value: '19 Jul' },
-              ]
-          ).map(({ label, value }, i, arr) => (
+          {[
+            { label: 'Teams', value: '48' },
+            { label: 'Matches', value: '104' },
+            { label: 'Kick off', value: '11 Jun' },
+            { label: 'Final', value: '19 Jul' },
+          ].map(({ label, value }, i, arr) => (
             <div key={label} style={{
               textAlign: 'center', flex: 1,
               borderRight: i < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
@@ -489,58 +419,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Recent Results ── */}
-          {tournamentStarted && recentResults.length > 0 && (
-            <div className="card fade-in" style={{ overflow: 'hidden' }}>
-              <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '16px', borderRadius: 'var(--radius-full)' }} />
-              <div className="section-header" style={{ marginBottom: '12px' }}>
-                <span className="section-title">📋 Recent Results</span>
-                <Link to="/profile" className="section-link">All history →</Link>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {recentResults.map((pred, idx) => {
-                  const match = pred.match
-                  if (!match) return null
-                  const exact = pred.home_score === match.home_score && pred.away_score === match.away_score
-                  const predResult = pred.home_score > pred.away_score ? 'H' : pred.home_score < pred.away_score ? 'A' : 'D'
-                  const actResult  = match.home_score > match.away_score ? 'H' : match.home_score < match.away_score ? 'A' : 'D'
-                  const correct = predResult === actResult
-                  const outcome = exact ? 'exact' : correct ? 'correct' : 'wrong'
-                  const accentColor = exact ? 'var(--accent-gold)' : correct ? 'var(--accent-green)' : 'var(--accent-red)'
-                  const bgColor = exact ? 'var(--accent-gold-light)' : correct ? 'var(--accent-green-light)' : 'var(--accent-red-light)'
-                  const icon = exact ? '🎯' : correct ? '✅' : '❌'
-                  return (
-                    <div key={idx} style={{
-                      display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 12px', borderRadius: 'var(--radius-md)',
-                      background: bgColor,
-                      borderLeft: `4px solid ${accentColor}`,
-                    }}>
-                      <span style={{ fontSize: '20px' }}>{icon}</span>
-                      <span style={{ fontSize: '18px' }}>{match.home_team?.flag_emoji}</span>
-                      <span style={{ fontWeight: '700', fontSize: '13px', flex: 1 }}>
-                        {match.home_team?.short_code} vs {match.away_team?.short_code}
-                      </span>
-                      <span style={{ fontSize: '18px' }}>{match.away_team?.flag_emoji}</span>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '14px', color: accentColor }}>
-                          {match.home_score}–{match.away_score}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>
-                          Your: {pred.home_score}–{pred.away_score}
-                          {pred.is_confident && ' 🃏'}
-                        </div>
-                      </div>
-                      <div style={{ fontWeight: '900', fontSize: '15px', fontFamily: 'var(--font-mono)', color: accentColor, minWidth: '36px', textAlign: 'right' }}>
-                        +{pred.points_awarded || 0}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
           {/* ── Share predictions card ── */}
           {user && groupsDone && !tournamentStarted && (
             <div className="card fade-in" style={{ overflow: 'hidden' }}>
@@ -575,11 +453,11 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── User Stats — only show once tournament is live ── */}
-          {user && profile && tournamentStarted && (
+          {/* ── User Stats ── */}
+          {user && profile && (
             <div className="card fade-in">
               <div className="section-header">
-                <span className="section-title">📊 Your Stats</span>
+                <span className="section-title">👋 Your Stats</span>
                 <Link to="/profile" className="section-link">View profile →</Link>
               </div>
 
@@ -676,47 +554,108 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Next match card (tournament live, no live matches) ── */}
-          {!loading && tournamentStarted && !tournamentOver && nextMatch && liveMatches.length === 0 && (
-            <div className="card fade-in" style={{ overflow: 'hidden' }}>
-              <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '16px', borderRadius: 'var(--radius-full)' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
-                <div>
-                  <div style={{ fontWeight: '800', fontSize: '15px', letterSpacing: '-0.01em' }}>⏱️ Next Match</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
-                </div>
-                {nextMatch.venue?.city && (
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right' }}>📍 {nextMatch.venue.city}</div>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1 }}>
-                  <span style={{ fontSize: '40px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
-                  <span style={{ fontWeight: '800', fontSize: '14px' }}>{nextMatch.home_team?.name}</span>
-                </div>
-                <div style={{ fontSize: '18px', color: 'var(--text-muted)', fontWeight: '300' }}>vs</div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1 }}>
-                  <span style={{ fontSize: '40px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
-                  <span style={{ fontWeight: '800', fontSize: '14px' }}>{nextMatch.away_team?.name}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Next up (compact, when live matches are on) ── */}
-          {!loading && tournamentStarted && liveMatches.length > 0 && nextMatch && (
+          {/* ── Countdown Card ── */}
+          {!loading && !tournamentOver && (
             <div className="card fade-in">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: '700', fontSize: '14px' }}>📅 Next Up</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
-                <span style={{ fontSize: '24px' }}>{nextMatch.home_team?.flag_emoji}</span>
-                <span style={{ fontWeight: '700', fontSize: '14px' }}>{nextMatch.home_team?.short_code}</span>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)', flex: 1, textAlign: 'center' }}>vs</span>
-                <span style={{ fontWeight: '700', fontSize: '14px' }}>{nextMatch.away_team?.short_code}</span>
-                <span style={{ fontSize: '24px' }}>{nextMatch.away_team?.flag_emoji}</span>
-              </div>
+              {!tournamentStarted ? (
+                // Pre-tournament: count down to tournament start
+                <>
+                  <div className="section-header">
+                    <span className="section-title">⏱️ Tournament kicks off in</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>All times UK</span>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                      🇲🇽 Mexico vs South Africa 🇿🇦 · Thu 11 Jun · 20:00 BST · Mexico City
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                      {[
+                        { value: mainCountdown.days,    label: 'Days' },
+                        { value: mainCountdown.hours,   label: 'Hours' },
+                        { value: mainCountdown.minutes, label: 'Mins' },
+                        { value: mainCountdown.seconds, label: 'Secs' },
+                      ].map(({ value, label }) => (
+                        <div key={label} style={{
+                          background: 'var(--primary)', color: 'var(--text-inverse)',
+                          borderRadius: 'var(--radius-md)', padding: '14px 10px', minWidth: '60px', textAlign: 'center',
+                        }}>
+                          <div style={{ fontSize: '30px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+                            {String(value ?? 0).padStart(2, '0')}
+                          </div>
+                          <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '6px', opacity: 0.6 }}>
+                            {label}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: '20px' }}>
+                      <Link to={cta.to} className="btn btn-primary">{cta.label}</Link>
+                    </div>
+                  </div>
+                </>
+              ) : nextMatch && liveMatches.length === 0 ? (
+                // Tournament started — show next match countdown
+                <>
+                  <div className="section-header">
+                    <span className="section-title">⏱️ Next Match</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>All times UK</span>
+                  </div>
+                  <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
+                    <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                      {formatKickoff(nextMatch.kickoff_time)}
+                    </div>
+                    <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '4px' }}>
+                      {nextMatch.home_team?.flag_emoji} {nextMatch.home_team?.name} vs {nextMatch.away_team?.name} {nextMatch.away_team?.flag_emoji}
+                    </div>
+                    {nextMatch.venue?.city && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '20px' }}>📍 {nextMatch.venue.city}</div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                      {[
+                        { value: countdown.days,    label: 'Days' },
+                        { value: countdown.hours,   label: 'Hours' },
+                        { value: countdown.minutes, label: 'Mins' },
+                        { value: countdown.seconds, label: 'Secs' },
+                      ].map(({ value, label }) => (
+                        <div key={label} style={{
+                          background: 'var(--primary)', color: 'var(--text-inverse)',
+                          borderRadius: 'var(--radius-md)', padding: '14px 10px', minWidth: '60px', textAlign: 'center',
+                        }}>
+                          <div style={{ fontSize: '30px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+                            {String(value ?? 0).padStart(2, '0')}
+                          </div>
+                          <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '6px', opacity: 0.6 }}>
+                            {label}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ marginTop: '20px' }}>
+                      <Link to="/predictions" className="btn btn-primary">⚽ Predict this match</Link>
+                    </div>
+                  </div>
+                </>
+              ) : liveMatches.length > 0 && nextMatch ? (
+                // Live games on — compact next match
+                <>
+                  <div className="section-header">
+                    <span className="section-title">📅 Next Up</span>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>All times UK</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                      <span style={{ fontSize: '22px' }}>{nextMatch.home_team?.flag_emoji}</span>
+                      <span style={{ fontSize: '13px', fontWeight: '700' }}>{nextMatch.home_team?.short_code}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>vs</span>
+                      <span style={{ fontSize: '13px', fontWeight: '700' }}>{nextMatch.away_team?.short_code}</span>
+                      <span style={{ fontSize: '22px' }}>{nextMatch.away_team?.flag_emoji}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right', flexShrink: 0 }}>
+                      {formatKickoff(nextMatch.kickoff_time)}
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
           )}
 
@@ -842,7 +781,7 @@ export default function Home() {
 
         </div>
       </div>
-      {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
-    </>
+    </div>
+    {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
   )
 }
