@@ -140,7 +140,7 @@ export default function Home() {
     setUpcomingMatches(upcomingRes.data || [])
     setTopPredictors(predictorRes.data || [])
 
-    // Load user prediction count + leaderboard position
+    // Load user prediction count + leaderboard position + recent results
     if (user) {
       const { count } = await supabase.from('predictions')
         .select('*', { count: 'exact', head: true })
@@ -154,24 +154,20 @@ export default function Home() {
           .gt('total_points', profile.total_points || 0)
         setLeaderPosition((ahead || 0) + 1)
       }
-    }
 
-      // Recent results with user's predictions
-      if (user) {
-        const { data: recentData } = await supabase
-          .from('predictions')
-          .select(`
-            home_score, away_score, points_awarded, is_confident,
-            match:match_id(id, kickoff_time, home_score, away_score, status,
-              home_team:home_team_id(name, flag_emoji, short_code),
-              away_team:away_team_id(name, flag_emoji, short_code))
-          `)
-          .eq('user_id', user.id)
-          .eq('match.status', 'completed')
-          .order('match_id', { ascending: false })
-          .limit(5)
-        setRecentResults((recentData || []).filter(p => p.match?.status === 'completed'))
-      }
+      // Recent results
+      const { data: recentData } = await supabase
+        .from('predictions')
+        .select(`
+          home_score, away_score, points_awarded, is_confident,
+          match:match_id(id, kickoff_time, home_score, away_score, status,
+            home_team:home_team_id(name, flag_emoji, short_code),
+            away_team:away_team_id(name, flag_emoji, short_code))
+        `)
+        .eq('user_id', user.id)
+        .order('match_id', { ascending: false })
+        .limit(10)
+      setRecentResults((recentData || []).filter(p => p.match?.status === 'completed').slice(0, 5))
     }
 
     setLoading(false)
