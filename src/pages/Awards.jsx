@@ -330,8 +330,8 @@ export default function Awards() {
                       onChange={e => { setSearch(prev => ({ ...prev, [award.type]: e.target.value })); setShowDropdown(prev => ({ ...prev, [award.type]: true })) }}
                       onFocus={() => setShowDropdown(prev => ({ ...prev, [award.type]: true }))}
                       onBlur={() => setTimeout(() => setShowDropdown(prev => ({ ...prev, [award.type]: false })), 200)}
-                      disabled={!user} style={{ opacity: !user ? 0.6 : 1 }} />
-                    {isOpen && filtered.length > 0 && user && (
+                    />
+                    {isOpen && filtered.length > 0 && (
                       <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border-medium)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 100, maxHeight: '280px', overflowY: 'auto', marginTop: '4px' }}>
                         {filtered.map(player => {
                           const posStyle = POSITION_COLORS[player.position] || {}
@@ -357,11 +357,7 @@ export default function Awards() {
                   </div>
                 )}
 
-                {!user && (
-                  <div style={{ textAlign: 'center', padding: '16px 0', color: 'var(--text-muted)', fontSize: '13px' }}>
-                    <Link to="/register" style={{ color: 'var(--accent-blue)', fontWeight: '600' }}>Register</Link> to make award predictions
-                  </div>
-                )}
+                {/* Guest — sticky banner handles CTA */}
               </div>
             )
           })}
@@ -406,7 +402,7 @@ export default function Awards() {
                       if (item.key === 'group' && knockoutGoals) setTotalGoals((parseInt(e.target.value || 0) + parseInt(knockoutGoals || 0)).toString())
                       if (item.key === 'knockout' && groupGoals) setTotalGoals((parseInt(groupGoals || 0) + parseInt(e.target.value || 0)).toString())
                     }}
-                    disabled={!user || item.locked}
+                    disabled={item.locked}
                     placeholder="Enter number..."
                     className="input"
                     style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', fontSize: '16px', opacity: item.locked ? 0.6 : 1 }}
@@ -415,8 +411,9 @@ export default function Awards() {
               ))}
             </div>
 
-            {user && !tournamentStarted && (
-              <button onClick={saveGoals} disabled={goalsSaving || (!groupGoals && !knockoutGoals && !totalGoals)}
+            {!tournamentStarted && (
+              <button onClick={user ? saveGoals : () => alert('Sign up free to save your predictions!')}
+                disabled={goalsSaving || (!groupGoals && !knockoutGoals && !totalGoals)}
                 className="btn btn-primary btn-full" style={{ marginTop: '14px' }}>
                 {goalsSaving ? 'Saving...' : '💾 Save Goals Predictions'}
               </button>
@@ -425,6 +422,27 @@ export default function Awards() {
 
         </div>
       </div>
+
+      {/* Sticky guest save banner */}
+      {!user && (
+        <div style={{
+          position: 'fixed', bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+          left: 0, right: 0, zIndex: 90,
+          background: 'var(--scottish-navy)',
+          padding: '12px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+          boxShadow: '0 -4px 16px rgba(0,0,0,0.15)',
+        }}>
+          <div style={{ color: 'white', fontSize: '13px', lineHeight: 1.4 }}>
+            <span style={{ fontWeight: '700' }}>💾 Save your picks</span>
+            <span style={{ color: 'rgba(255,255,255,0.65)', marginLeft: '6px' }}>Join free to compete</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+            <Link to="/register" className="btn btn-green btn-sm">Join free</Link>
+            <Link to="/login" className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>Sign in</Link>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

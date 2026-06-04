@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import { predictMatchOdds, predictGoals, predictAwards } from '../lib/luckyDip.js'
+import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
 import ShareCard from '../components/ShareCard.jsx'
 
 // ── Tournament phase dates ───────────────────────────────────────────────────
@@ -39,7 +40,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
   if (!user) return { label: '🏆 Join Free — it\'s free!', to: '/register', secondary: { label: 'How does it work?', to: '/how-to-play' } }
 
   const groupsDone    = predictionCount >= 72
-  const knockoutsDone = (profile?.knockout_picks_count || 0) >= 16
+  const knockoutsDone = (profile?.knockout_picks_count || 0) >= 32
   const awardsDone    = (profile?.awards_done || 0) >= 4
 
   if (!tournamentStarted) {
@@ -230,6 +231,66 @@ export default function Home() {
         }))
       if (awardUpserts.length) {
         await supabase.from('award_predictions').upsert(awardUpserts, { onConflict: 'user_id,award_type,bracket_type' })
+      }
+
+      // Fill knockout picks if not already done
+      const { data: existingKoPicks } = await supabase
+        .from('knockout_picks').select('match_number').eq('user_id', user.id)
+      const existingKoNums = new Set((existingKoPicks || []).map(p => p.match_number))
+
+      if (existingKoNums.size < 32) {
+        // Build predicted standings from group predictions
+        const allGroupMatches = matches
+        const { data: allPreds } = await supabase
+          .from('predictions').select('match_id, home_score, away_score').eq('user_id', user.id)
+        const predMap = {}
+        ;(allPreds || []).forEach(p => { predMap[p.match_id] = { home: p.home_score, away: p.away_score } })
+        const standings = calcPredictedStandings(allGroupMatches, predMap)
+        const best3rd = getBest3rdTeams(standings) || []
+
+        // Simulate knockout bracket randomly
+        const koResults = {} // match_number -> winner team_id
+        const getTeam = (slot) => {
+          if (!slot) return null
+          if (slot.startsWith('W')) {
+            const num = parseInt(slot.replace('W', ''))
+            return koResults[num] || null
+          }
+          return resolveSlot(slot, standings, allGroupMatches, predMap)
+        }
+
+        const koUpserts = []
+        for (const stage of ALL_STAGES) {
+          for (const matchDef of stage.matches) {
+            if (existingKoNums.has(matchDef.match_number)) continue
+            const home = getTeam(matchDef.home_slot)
+            const away = getTeam(matchDef.away_slot)
+            if (!home || !away) continue
+            // Pick randomly weighted slightly toward home
+            const winner = Math.random() > 0.5 ? home : away
+            const winnerId = winner?.id
+            if (!winnerId) continue
+            koResults[matchDef.match_number] = winner
+            koUpserts.push({
+              user_id: user.id,
+              match_number: matchDef.match_number,
+              stage: matchDef.stage || stage.key,
+              team_id: winnerId,
+              winner_team_id: winnerId,
+              home_team_id: home?.id,
+              away_team_id: away?.id,
+            })
+          }
+        }
+        if (koUpserts.length) {
+          for (let i = 0; i < koUpserts.length; i += 20) {
+            await supabase.from('knockout_picks')
+              .upsert(koUpserts.slice(i, i + 20), { onConflict: 'user_id,match_number' })
+          }
+          await supabase.from('profiles')
+            .update({ knockout_picks_count: (existingKoNums.size + koUpserts.length) })
+            .eq('id', user.id)
+        }
       }
 
       setLuckyDone(true)
@@ -698,7 +759,8 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Top Predictors ── */}
+          {/* ── Top Predictors — only show during tournament ── */}
+          {tournamentStarted && (
           <div className="card fade-in">
             <div className="section-header">
               <span className="section-title">🏆 Top Predictors</span>
@@ -707,8 +769,8 @@ export default function Home() {
             {topPredictors.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">🏅</div>
-                <div className="empty-state-title">No predictions yet</div>
-                <div className="empty-state-desc">Be the first to predict!</div>
+                <div className="empty-state-title">No scores yet</div>
+                <div className="empty-state-desc">Leaderboard updates after first matches</div>
               </div>
             ) : (
               <div>
@@ -741,6 +803,7 @@ export default function Home() {
               </div>
             )}
           </div>
+          )}
 
           {/* ── How it works (guest only) ── */}
           {!user && (
