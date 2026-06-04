@@ -609,14 +609,35 @@ export default function Predictions() {
     }, 600)
   }
 
-  // Item 8: blur handler — check for high score before saving
   const handleScoreBlur = (match, side) => {
-    const pred = predictions[match.id] || {}
-    const val = pred[side]
-    if (isHighScore(val)) {
-      setScoreWarning({ matchId: match.id, match, side, value: val })
-    } else {
-      savePrediction(match)
+    // Read from DOM ref for iOS reliability
+    const homeInput = inputRefs.current[`${match.id}-home`]
+    const awayInput = inputRefs.current[`${match.id}-away`]
+    const homeVal = homeInput ? homeInput.value.replace(/[^0-9]/g, '') : ''
+    const awayVal = awayInput ? awayInput.value.replace(/[^0-9]/g, '') : ''
+
+    // Update state with DOM values
+    if (homeVal !== '' && awayVal !== '') {
+      const h = parseInt(homeVal)
+      const a = parseInt(awayVal)
+      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], home: h, away: a } }))
+
+      if (isHighScore(side === 'home' ? h : a)) {
+        setScoreWarning({ matchId: match.id, match, side, value: side === 'home' ? h : a })
+      } else {
+        // Save directly from DOM values
+        supabase.from('predictions').upsert({
+          user_id: user.id, match_id: match.id,
+          home_score: h, away_score: a,
+          is_confident: predictions[match.id]?.joker ?? false,
+          bracket_type: 'main',
+        }, { onConflict: 'user_id,match_id,bracket_type' }).then(({ error }) => {
+          if (!error) {
+            setSaved(prev => ({ ...prev, [match.id]: true }))
+            setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
+          }
+        })
+      }
     }
   }
 
