@@ -1005,7 +1005,9 @@ export default function Predictions() {
                 >Clear</button>
               )}
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
                   const homeInput = inputRefs.current[`${match.id}-home`]
                   const awayInput = inputRefs.current[`${match.id}-away`]
                   console.log('Save clicked:', match.id)
