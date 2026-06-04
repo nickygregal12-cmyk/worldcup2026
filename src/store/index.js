@@ -35,31 +35,41 @@ export const useAuthStore = create(
       },
 
       initialize: async () => {
-        // If already initialized and we have persisted user, skip the spinner
         const state = get()
+
+        // If already initialized, skip the loading spinner but ALWAYS
+        // refresh the session in the background — stale JWT causes silent
+        // save failures on iOS/Safari after the app has been backgrounded.
         if (state.initialized) {
           set({ isLoading: false })
-          // Still refresh profile in background silently
-          if (state.user) {
-            get().loadProfile(state.user.id).catch(() => {})
+          // Force a fresh session + token refresh silently
+          supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session?.user) {
+              set({ user: session.user }) // update with fresh JWT
+              get().loadProfile(session.user.id).catch(() => {})
+            } else {
+              // Session truly expired — log out cleanly
+              set({ user: null, profile: null, isAdmin: false, initialized: false })
+            }
+          }).catch(() => {})
+          // Still set up auth listener below
+        } else {
+          set({ isLoading: true })
+          try {
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session?.user) {
+              set({ user: session.user })
+              await get().loadProfile(session.user.id)
+            } else {
+              set({ user: null, profile: null })
+            }
+          } catch (e) {
+            console.error('Auth init error:', e)
           }
-          return
+          set({ isLoading: false, initialized: true })
         }
 
-        set({ isLoading: true })
-        try {
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session?.user) {
-            set({ user: session.user })
-            await get().loadProfile(session.user.id)
-          } else {
-            set({ user: null, profile: null })
-          }
-        } catch (e) {
-          console.error('Auth init error:', e)
-        }
-        set({ isLoading: false, initialized: true })
-
+        // Listen for auth events (token refresh, sign in/out)
         supabase.auth.onAuthStateChange(async (event, session) => {
           if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
             set({ user: session.user })
@@ -67,9 +77,30 @@ export const useAuthStore = create(
           } else if (event === 'SIGNED_OUT') {
             set({ user: null, profile: null, isAdmin: false, initialized: false })
           } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+            // Always update user with the refreshed JWT
             set({ user: session.user })
           }
         })
+
+        // iOS/Safari fix: refresh session when user returns to the tab/app
+        // This prevents the "saves work after sign out/in" bug on mobile
+        if (typeof document !== 'undefined') {
+          document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+              supabase.auth.getSession().then(({ data: { session } }) => {
+                if (session?.user) {
+                  set({ user: session.user })
+                } else {
+                  const currentState = get()
+                  if (currentState.user) {
+                    // Had a user but session gone — clear it
+                    set({ user: null, profile: null, isAdmin: false, initialized: false })
+                  }
+                }
+              }).catch(() => {})
+            }
+          })
+        }
       },
 
       logout: async () => {
