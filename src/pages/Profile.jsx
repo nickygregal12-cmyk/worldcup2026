@@ -131,7 +131,7 @@ export default function Profile() {
     "cote d'ivoire": 'Ivory Coast', 'ivory coast': 'Ivory Coast',
     "côte d'ivoire": 'Ivory Coast',
     'usa': 'United States', 'united states of america': 'United States',
-    'turkey': 'Türkiye', 'türkiye': 'Türkiye', 'turkiye': 'Türkiye',
+    'turkey': 'Turkiye', 'türkiye': 'Turkiye', 'turkiye': 'Turkiye',
     'bosnia': 'Bosnia-Herzegovina', 'bosnia ': 'Bosnia-Herzegovina',
     'bosnia and herzegovina': 'Bosnia-Herzegovina',
     'czech republic': 'Czechia', 'dr congo': 'DR Congo',

@@ -154,7 +154,7 @@ export default function AdminPanel() {
   useEffect(() => {
     if (activeTab === 'ko') loadKoData()
     if (activeTab === 'settings') { loadSettings(); if (matches.length === 0) loadMatches() }
-    if (activeTab === 'offline') loadOfflinePlayers()
+    if (activeTab === 'offline') { if (leagues.length === 0) loadLeagues(); loadOfflinePlayers() }
   }, [activeTab])
 
   const loadAll = async () => {
@@ -718,10 +718,14 @@ export default function AdminPanel() {
   }
 
   const loadOfflinePlayers = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('offline_players')
-      .select('id, display_name, league_id, leagues:league_id(name)')
+      .select(`
+        id, display_name, league_id, total_points, created_at,
+        league:league_id(id, name)
+      `)
       .order('created_at', { ascending: false })
+    if (error) { console.error('loadOfflinePlayers error:', error); return }
     setOfflinePlayers(data || [])
   }
 
@@ -774,7 +778,7 @@ export default function AdminPanel() {
     'cabo verde': 'Cape Verde', 'cape verde islands': 'Cape Verde',
     "cote d'ivoire": 'Ivory Coast', 'ivory coast': 'Ivory Coast', "côte d'ivoire": 'Ivory Coast',
     'usa': 'United States', 'united states of america': 'United States', 'america': 'United States',
-    'türkiye': 'Türkiye', 'turkey': 'Türkiye', 'turkiye': 'Türkiye',
+    'türkiye': 'Turkiye', 'turkey': 'Turkiye', 'turkiye': 'Turkiye',
     'bosnia': 'Bosnia-Herzegovina', 'bosnia ': 'Bosnia-Herzegovina', 'bosnia and herzegovina': 'Bosnia-Herzegovina',
     'czech republic': 'Czechia',
     'dr congo': 'DR Congo', 'congo dr': 'DR Congo', 'democratic republic of congo': 'DR Congo',
@@ -1736,7 +1740,7 @@ export default function AdminPanel() {
                   <div>
                     <div style={{ fontWeight: '800', fontSize: '15px' }}>👤 {player.display_name}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      League: {player.leagues?.name || 'Unknown'}
+                      League: {player.league?.name || '—'}
                     </div>
                   </div>
                   <button onClick={() => setConfirmAction({ type: 'deleteOfflinePlayer', playerId: player.id, displayName: player.display_name })}
