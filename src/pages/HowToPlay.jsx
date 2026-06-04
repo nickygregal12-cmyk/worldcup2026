@@ -6,8 +6,8 @@ const SCORING = [
     section: '⚽ Group Stage Predictions',
     desc: 'Predict the exact score for all 72 group stage matches. Picks lock at kickoff.',
     rows: [
-      { label: 'Correct result (win/draw/loss)', pts: '5pts' },
-      { label: 'Exact score', pts: '10pts' },
+      { label: 'Correct result (win/draw/loss)', pts: '3pts' },
+      { label: 'Exact score', pts: '5pts' },
       { label: 'Joker on correct result', pts: '2x pts', highlight: true },
       { label: 'Joker on exact score', pts: '2x pts', highlight: true },
       { label: 'Wrong prediction', pts: '0pts' },
@@ -30,11 +30,11 @@ const SCORING = [
     desc: 'Predict the individual award winners and tournament goal totals.',
     rows: [
       { label: 'Golden Boot (top scorer)', pts: '15pts' },
-      { label: 'Golden Glove (best goalkeeper)', pts: '15pts' },
-      { label: 'Player of the Tournament', pts: '15pts' },
+      { label: 'Golden Glove (best goalkeeper)', pts: '10pts' },
+      { label: 'Player of the Tournament', pts: '10pts' },
+      { label: 'Total goals — exact', pts: '15pts' },
       { label: 'Total goals — within 5', pts: '5pts' },
       { label: 'Total goals — within 10', pts: '3pts' },
-      { label: 'Exact group stage goals', pts: '15pts' },
     ]
   },
   {
