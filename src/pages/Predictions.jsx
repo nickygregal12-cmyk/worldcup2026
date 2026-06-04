@@ -154,9 +154,12 @@ function FinalStandingsView({ standings, matches, predictions, appSettings }) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div className="card" style={{ background: 'var(--scottish-navy-light)', border: '1px solid rgba(0,48,135,0.15)', padding: '14px 16px' }}>
-          <div style={{ fontWeight: '800', fontSize: '14px', color: 'var(--scottish-navy)', marginBottom: '4px' }}>🔮 Your Predicted Standings</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            Based on your score picks · <strong style={{ color: 'var(--accent-green)' }}>Green = qualifies</strong> · Real standings + accuracy tracking unlocks 11 Jun
+          <div style={{ fontWeight: '800', fontSize: '14px', color: 'var(--scottish-navy)', marginBottom: '4px' }}>🔮 Your Predicted Standings — All Groups</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            Based on your score picks · <strong style={{ color: 'var(--accent-green)' }}>Green = qualifies top 2</strong> · <strong style={{ color: 'var(--accent-gold)' }}>Gold 🏅 = qualifying 3rd</strong>
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', padding: '6px 10px', background: 'rgba(0,48,135,0.06)', borderRadius: 'var(--radius-sm)' }}>
+            💡 See your full predicted table for each group in the <strong>Picks tab</strong> — scroll to the bottom of any group's matches
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
@@ -299,24 +302,23 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
     return groupLetter === activeGroup
   })
 
-  // Only count COMPLETED matches for predicted standings (apples to apples with real table)
-  const completedGroupMatches = matches.filter(m => m.group?.name === activeGroup && m.status === 'completed')
   const allGroupMatches = matches.filter(m => m.group?.name === activeGroup)
+  const completedGroupMatches = allGroupMatches.filter(m => m.status === 'completed')
+  const showReal = appSettings?.show_group_tables === 'true' && groupStandings.length > 0
+
+  // Pre-tournament: use ALL predicted matches to build table
+  // Live: use only completed matches (apples-to-apples with real table)
+  const matchesToSimulate = showReal ? completedGroupMatches : allGroupMatches
 
   const predictedStandings = {}
   allGroupMatches.forEach(match => {
     const homeId = match.home_team_id
     const awayId = match.away_team_id
-    const homeName = match.home_team?.short_code || '?'
-    const awayName = match.away_team?.short_code || '?'
-    const homeFlag = match.home_team?.flag_emoji || ''
-    const awayFlag = match.away_team?.flag_emoji || ''
-    if (!predictedStandings[homeId]) predictedStandings[homeId] = { id: homeId, name: homeName, flag: homeFlag, pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, played: 0 }
-    if (!predictedStandings[awayId]) predictedStandings[awayId] = { id: awayId, name: awayName, flag: awayFlag, pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, played: 0 }
+    if (!predictedStandings[homeId]) predictedStandings[homeId] = { id: homeId, name: match.home_team?.short_code || '?', flag: match.home_team?.flag_emoji || '', pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, played: 0 }
+    if (!predictedStandings[awayId]) predictedStandings[awayId] = { id: awayId, name: match.away_team?.short_code || '?', flag: match.away_team?.flag_emoji || '', pts: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, played: 0 }
   })
 
-  // Only simulate completed matches
-  completedGroupMatches.forEach(match => {
+  matchesToSimulate.forEach(match => {
     const pred = predictions[match.id]
     if (pred?.home === undefined || pred?.away === undefined) return
     const h = parseInt(pred.home), a = parseInt(pred.away)
@@ -333,19 +335,22 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
     b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf
   )
 
-  const showReal = appSettings?.show_group_tables === 'true' && groupStandings.length > 0
+  const hasPredictions = predTable.some(t => t.played > 0)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-      {/* Real standings */}
-      {showReal ? (
+      {/* Real standings — only shown once tournament is live */}
+      {showReal && (
         <div className="card">
-          <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '10px' }}>📊 Real Standings — Group {activeGroup}</div>
+          <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>📊 Live Standings — Group {activeGroup}</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500' }}>🟢 Top 2 qualify</span>
+          </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '600' }}>
+                <tr style={{ color: 'var(--text-muted)', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   <th style={{ textAlign: 'left', padding: '4px 6px' }}>#</th>
                   <th style={{ textAlign: 'left', padding: '4px 6px' }}>Team</th>
                   <th style={{ textAlign: 'center', padding: '4px 6px' }}>P</th>
@@ -357,9 +362,7 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
                 </tr>
               </thead>
               <tbody>
-                {groupStandings.map((team, i) => {
-                  // Find their predicted position
-                  const predPos = predTable.findIndex(p => p.name === team.team_name?.substring(0, 3).toUpperCase() || p.id === team.team_id) + 1
+                {groupStandings.map((team) => {
                   const qualifies = team.position <= 2
                   return (
                     <tr key={team.id} style={{
@@ -382,22 +385,32 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
               </tbody>
             </table>
           </div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>🟢 Top 2 qualify · Last synced from live data</div>
-        </div>
-      ) : (
-        <div className="card" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-          <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
-          <div style={{ fontWeight: '700', marginBottom: '4px' }}>Real standings coming 11 Jun</div>
-          <div style={{ fontSize: '13px' }}>Live group tables appear once matches kick off</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>Last synced from live data</div>
         </div>
       )}
 
-      {/* Your predicted standings */}
-      <div className="card">
-        <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '10px' }}>🔮 Your Predicted Standings — Group {activeGroup}</div>
-        {predTable.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '16px', color: 'var(--text-muted)', fontSize: '13px' }}>
-            Make your Group {activeGroup} predictions to see your predicted table
+      {/* Predicted standings — always shown, prominent pre-tournament */}
+      <div className="card" style={{ border: showReal ? '1px solid var(--border-light)' : '1.5px solid var(--scottish-navy)' }}>
+        <div style={{ marginBottom: '10px' }}>
+          <div style={{ fontWeight: '800', fontSize: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>🔮 Your Predicted Table</span>
+            <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'var(--scottish-navy-light)', color: 'var(--scottish-navy)' }}>Group {activeGroup}</span>
+          </div>
+          {!showReal && (
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+              Based on your score picks · Live standings unlock 11 Jun · <strong style={{ color: 'var(--accent-green)' }}>Green = qualifies</strong>
+            </div>
+          )}
+          {showReal && (
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+              Based on completed matches you predicted · vs Real column shows position difference
+            </div>
+          )}
+        </div>
+        {!hasPredictions ? (
+          <div style={{ textAlign: 'center', padding: '20px 16px', color: 'var(--text-muted)', fontSize: '13px' }}>
+            <div style={{ fontSize: '28px', marginBottom: '8px' }}>🔮</div>
+            Make your Group {activeGroup} picks to see your predicted table
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
