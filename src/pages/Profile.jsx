@@ -171,7 +171,15 @@ export default function Profile() {
     const ws = XLSX.utils.aoa_to_sheet(rows)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Predictions')
-    XLSX.writeFile(wb, `wc26-predictions-${profile?.display_name || 'export'}.xlsx`)
+    // Browser-safe download
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+    const blob = new Blob([wbout], { type: 'application/octet-stream' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `wc26-predictions-${profile?.display_name || 'export'}.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleImportPredictions = async (file) => {

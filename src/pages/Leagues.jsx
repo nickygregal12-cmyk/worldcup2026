@@ -223,10 +223,30 @@ export default function Leagues() {
       .select('*, profile:user_id(id, username, total_points, display_name, streak_current, exact_scores)')
       .eq('league_id', leagueId)
       .order('joined_at', { ascending: true })
-    setLeagueMembers(prev => ({ ...prev, [leagueId]: data || [] }))
+
+    // Also fetch offline players for this league
+    const { data: offlinePlayers } = await supabase
+      .from('offline_players')
+      .select('id, display_name, total_points')
+      .eq('league_id', leagueId)
+
+    // Merge offline players as pseudo-members
+    const offlineMembers = (offlinePlayers || []).map(p => ({
+      user_id: p.id,
+      league_id: leagueId,
+      is_offline: true,
+      profile: {
+        id: p.id,
+        display_name: p.display_name,
+        username: p.display_name,
+        total_points: p.total_points || 0,
+        is_offline: true,
+      }
+    }))
+
+    setLeagueMembers(prev => ({ ...prev, [leagueId]: [...(data || []), ...offlineMembers] }))
     setLoadingMembers(prev => ({ ...prev, [leagueId]: false }))
 
-    // Fix 5: load upcoming matches for pre-match % if tournament is live
     if (tournamentLive) {
       loadPreMatchStats(leagueId, data || [])
     }
