@@ -42,13 +42,16 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
   const groupsDone    = predictionCount >= 72
   const knockoutsDone = (profile?.knockout_picks_count || 0) >= 32
   const awardsDone    = (profile?.awards_done || 0) >= 4
+  const jokersLeft    = profile?.jokers_group_remaining ?? 8
 
   if (!tournamentStarted) {
-    if (predictionCount === 0)  return { label: '⚽ Start predicting', to: '/predictions', secondary: { label: 'Read the rules →', to: '/how-to-play' } }
-    if (!groupsDone)            return { label: '⚽ Continue group predictions', to: '/predictions', secondary: { label: 'Read the rules →', to: '/how-to-play' } }
-    if (!knockoutsDone)         return { label: '🏆 Pick your knockout teams', to: '/knockout' }
-    if (!awardsDone)            return { label: '🏅 Make your award predictions', to: '/awards' }
-    return { label: '🃏 Use your jokers before it\'s too late!', to: '/predictions', secondary: { label: 'View leaderboard →', to: '/leaderboard' } }
+    if (predictionCount === 0)  return { label: '⚽ Start predicting', to: '/predictions', secondary: { label: 'How to play →', to: '/how-to-play' } }
+    if (!groupsDone)            return { label: '⚽ Continue group predictions', to: '/predictions', secondary: { label: 'How to play →', to: '/how-to-play' } }
+    if (!knockoutsDone)         return { label: '🏆 Pick your knockout teams', to: '/knockout', secondary: { label: 'How to play →', to: '/how-to-play' } }
+    if (!awardsDone)            return { label: '🏅 Make your award predictions', to: '/awards', secondary: { label: 'How to play →', to: '/how-to-play' } }
+    if (jokersLeft > 0)         return { label: '🃏 Use your jokers before kickoff!', to: '/predictions', secondary: { label: '👥 Invite friends →', to: '/leagues' } }
+    // Everything done — all predictions, knockouts, awards AND jokers used
+    return { label: '✏️ Edit your predictions', to: '/predictions', secondary: { label: '👥 Invite friends →', to: '/leagues' } }
   }
 
   if (koLive) {
@@ -60,7 +63,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
     return { label: '⚽ Continue predicting', to: '/predictions' }
   }
 
-  return { label: '📊 View leaderboard', to: '/leaderboard' }
+  return { label: '📊 View leaderboard', to: '/leaderboard', secondary: { label: 'How to get points →', to: '/how-to-play' } }
 }
 
 export default function Home() {
