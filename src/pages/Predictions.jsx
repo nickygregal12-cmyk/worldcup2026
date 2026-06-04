@@ -806,8 +806,14 @@ export default function Predictions() {
 
   const clearPick = async (matchId) => {
     if (!user) return
+    const hadJoker = predictions[matchId]?.joker === true
     setPredictions(prev => { const next = { ...prev }; delete next[matchId]; return next })
     await supabase.from('predictions').delete().eq('match_id', matchId).eq('user_id', user.id)
+    if (hadJoker) {
+      const newRemaining = jokersRemaining + 1
+      setJokersRemaining(newRemaining)
+      await supabase.from('profiles').update({ jokers_group_remaining: newRemaining }).eq('id', user.id)
+    }
   }
 
   const clearGroupPredictions = async () => {
@@ -816,8 +822,14 @@ export default function Predictions() {
       const m = matches.find(m => m.id === id)
       return m && !isLocked(m.kickoff_time)
     })
+    const jokersToRefund = groupMatchIds.filter(id => predictions[id]?.joker === true).length
     setPredictions(prev => { const next = { ...prev }; groupMatchIds.forEach(id => delete next[id]); return next })
     await supabase.from('predictions').delete().in('match_id', groupMatchIds).eq('user_id', user.id)
+    if (jokersToRefund > 0) {
+      const newRemaining = Math.min(8, jokersRemaining + jokersToRefund)
+      setJokersRemaining(newRemaining)
+      await supabase.from('profiles').update({ jokers_group_remaining: newRemaining }).eq('id', user.id)
+    }
     setShowClearConfirm(false)
     loadProfile(user.id)
   }
@@ -825,8 +837,14 @@ export default function Predictions() {
   const clearAllPredictions = async () => {
     if (!user) return
     const unlockedIds = matches.filter(m => !isLocked(m.kickoff_time)).map(m => m.id)
+    const jokersToRefund = unlockedIds.filter(id => predictions[id]?.joker === true).length
     setPredictions(prev => { const next = { ...prev }; unlockedIds.forEach(id => delete next[id]); return next })
     await supabase.from('predictions').delete().in('match_id', unlockedIds).eq('user_id', user.id)
+    if (jokersToRefund > 0) {
+      const newRemaining = Math.min(8, jokersRemaining + jokersToRefund)
+      setJokersRemaining(newRemaining)
+      await supabase.from('profiles').update({ jokers_group_remaining: newRemaining }).eq('id', user.id)
+    }
     setShowClearConfirm(false)
     loadProfile(user.id)
   }
