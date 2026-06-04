@@ -829,16 +829,14 @@ export default function AdminPanel() {
           if (countryIndices.length >= 2) {
             homeTeamCol = countryIndices[0]
             awayTeamCol = countryIndices[1]
-            // Score cols are between the two country cols — find blank cols
-            homeScoreCol = homeTeamCol + 1
-            awayScoreCol = awayTeamCol - 1
-            // Joker is right after the away team
+            // WC26 template: Country(4) | blank(5) | HomeScore(6) | AwayScore(7) | blank(8) | Country(9) | Joker(10)
+            homeScoreCol = homeTeamCol + 2
+            awayScoreCol = homeTeamCol + 3
             jokerCol = awayTeamCol + 1
           } else if (row.some(c => c.includes('score'))) {
-            // Fallback: find Score column and use ±1
             const scoreIdx = row.findIndex(c => c.includes('score'))
-            homeScoreCol = scoreIdx - 1
-            awayScoreCol = scoreIdx + 1
+            homeScoreCol = scoreIdx + 1
+            awayScoreCol = scoreIdx + 2
           }
           break
         }
@@ -852,7 +850,7 @@ export default function AdminPanel() {
           if (!isNaN(parseInt(String(row[0]))) && row.length > 8) {
             headerRow = i - 1 // header is previous row
             // Assume standard col positions from the WC26 template
-            homeTeamCol = 4; homeScoreCol = 5; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
+            homeTeamCol = 4; homeScoreCol = 6; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
             break
           }
         }

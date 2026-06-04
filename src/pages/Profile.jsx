@@ -217,11 +217,11 @@ export default function Profile() {
           if (countryIndices.length >= 2) {
             homeTeamCol = countryIndices[0]
             awayTeamCol = countryIndices[1]
-            homeScoreCol = homeTeamCol + 1
-            awayScoreCol = awayTeamCol - 1
+            homeScoreCol = homeTeamCol + 2
+            awayScoreCol = homeTeamCol + 3
             jokerCol = awayTeamCol + 1
           } else {
-            homeTeamCol = 4; homeScoreCol = 5; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
+            homeTeamCol = 4; homeScoreCol = 6; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
           }
           break
         }
@@ -232,7 +232,7 @@ export default function Profile() {
         for (let i = 0; i < Math.min(rows.length, 20); i++) {
           if (!isNaN(parseInt(String(rows[i][0]))) && rows[i].length > 8) {
             headerRow = i - 1
-            homeTeamCol = 4; homeScoreCol = 5; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
+            homeTeamCol = 4; homeScoreCol = 6; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
             break
           }
         }
