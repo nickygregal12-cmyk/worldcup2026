@@ -38,12 +38,20 @@ const SCORING = [
     ]
   },
   {
+    section: '📊 Group Position Points',
+    desc: 'Awarded automatically when all 6 matches in a group are complete.',
+    rows: [
+      { label: 'Correct team position (per position)', pts: '2pts' },
+      { label: 'All 4 positions correct (bonus)', pts: '+5pts', highlight: true },
+      { label: 'Perfect group max', pts: '13pts' },
+    ]
+  },
+  {
     section: '🃏 Joker Rules',
     desc: 'Use jokers on predictions you\'re most confident about to double your points.',
     rows: [
       { label: 'Group stage jokers available', pts: '8 total' },
-      { label: 'Joker on correct result', pts: '2x pts' },
-      { label: 'Joker on exact score', pts: '2x pts' },
+      { label: 'Joker doubles all points if correct', pts: '2× pts', highlight: true },
       { label: 'Joker on wrong prediction', pts: '0pts' },
     ]
   },
