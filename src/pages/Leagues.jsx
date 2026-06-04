@@ -6,6 +6,64 @@ import { useAuthStore, useAppStore } from '../store/index.js'
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
+const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
+
+function MemberStandingsView({ predictions }) {
+  // Build predicted standings from predictions array
+  const standings = {}
+
+  predictions.forEach(pred => {
+    const match = pred.match
+    if (!match || pred.home_score === null || pred.away_score === null) return
+    const homeId = match.home_team?.name
+    const awayId = match.away_team?.name
+    const group = match.group?.name
+    if (!group) return
+
+    if (!standings[group]) standings[group] = {}
+    if (!standings[group][homeId]) standings[group][homeId] = { name: homeId, flag: match.home_team?.flag_emoji, pts: 0, gf: 0, ga: 0, played: 0 }
+    if (!standings[group][awayId]) standings[group][awayId] = { name: awayId, flag: match.away_team?.flag_emoji, pts: 0, gf: 0, ga: 0, played: 0 }
+
+    const h = pred.home_score, a = pred.away_score
+    standings[group][homeId].gf += h; standings[group][homeId].ga += a; standings[group][homeId].played++
+    standings[group][awayId].gf += a; standings[group][awayId].ga += h; standings[group][awayId].played++
+    if (h > a) { standings[group][homeId].pts += 3 }
+    else if (h === a) { standings[group][homeId].pts += 1; standings[group][awayId].pts += 1 }
+    else { standings[group][awayId].pts += 3 }
+  })
+
+  const groupKeys = Object.keys(standings).sort()
+
+  if (groupKeys.length === 0) return (
+    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+      <div style={{ fontSize: '32px', marginBottom: '8px' }}>📊</div>
+      <div style={{ fontWeight: '700' }}>No predictions to show standings</div>
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+      {groupKeys.map(group => {
+        const teams = Object.values(standings[group])
+          .sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf)
+        return (
+          <div key={group} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '8px', border: '1px solid var(--border-light)' }}>
+            <div style={{ fontWeight: '800', fontSize: '11px', color: 'var(--scottish-navy)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Group {group}</div>
+            {teams.map((team, i) => (
+              <div key={team.name} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
+                <span style={{ fontSize: '9px', fontWeight: '700', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', width: '10px' }}>{i + 1}</span>
+                <span style={{ fontSize: '13px', lineHeight: 1 }}>{team.flag}</span>
+                <span style={{ fontSize: '10px', flex: 1, color: i < 2 ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: i < 2 ? '700' : '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{team.name}</span>
+                <span style={{ fontSize: '10px', fontWeight: '800', fontFamily: 'monospace', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{team.pts}pt</span>
+              </div>
+            ))}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 function KnockoutPicksView({ userId }) {
   const [picks, setPicks] = React.useState([])
   const [loading, setLoading] = React.useState(true)
@@ -829,22 +887,26 @@ export default function Leagues() {
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0', width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <div style={{ fontWeight: '800', fontSize: '16px' }}>{memberModal.username}'s Predictions</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Past picks always visible · Future picks if they've enabled sharing</div>
+                <div style={{ fontWeight: '800', fontSize: '16px' }}>
+                  {memberModal.isOffline ? '👤 ' : ''}{memberModal.username}'s Predictions
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  {memberModal.isOffline ? 'Offline player · imported predictions' : 'Past picks always visible · Future picks if they\'ve enabled sharing'}
+                </div>
               </div>
               <button onClick={() => setMemberModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
             </div>
 
             {/* Tabs */}
             <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)' }}>
-              {['group', 'knockout', 'awards'].map(tab => (
+              {(memberModal.isOffline ? ['group', 'standings'] : ['group', 'knockout', 'awards', 'standings']).map(tab => (
                 <button key={tab} onClick={() => setMemberModal(prev => ({ ...prev, tab }))} style={{
                   flex: 1, padding: '10px', fontSize: '12px', fontWeight: memberModal.tab === tab || (!memberModal.tab && tab === 'group') ? '700' : '400',
                   color: memberModal.tab === tab || (!memberModal.tab && tab === 'group') ? 'var(--text-primary)' : 'var(--text-muted)',
                   borderBottom: memberModal.tab === tab || (!memberModal.tab && tab === 'group') ? '2px solid var(--scottish-navy)' : '2px solid transparent',
                   background: 'none', border: 'none', cursor: 'pointer', textTransform: 'capitalize',
                 }}>
-                  {tab === 'group' ? '⚽ Groups' : tab === 'knockout' ? '🏆 Knockout' : '🥇 Awards'}
+                  {tab === 'group' ? '⚽ Groups' : tab === 'knockout' ? '🏆 Knockout' : tab === 'awards' ? '🥇 Awards' : '📊 Standings'}
                 </button>
               ))}
             </div>
@@ -900,9 +962,11 @@ export default function Leagues() {
                 )
               ) : memberModal.tab === 'knockout' ? (
                 <KnockoutPicksView userId={memberModal.userId} />
-              ) : (
+              ) : memberModal.tab === 'awards' ? (
                 <AwardPredsView userId={memberModal.userId} />
-              )}
+              ) : memberModal.tab === 'standings' ? (
+                <MemberStandingsView predictions={memberPredictions} />
+              ) : null}
             </div>
           </div>
         </div>
