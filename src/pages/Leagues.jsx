@@ -153,12 +153,10 @@ export default function Leagues() {
     setMyLeagues(leagues)
     setLoading(false)
 
-    // Auto-expand global league and load its members
-    const globalLeague = leagues.find(m => m.league?.is_global)
-    if (globalLeague && !expandedLeague) {
-      setExpandedLeague(globalLeague.league_id)
-      loadLeagueMembers(globalLeague.league_id)
-    }
+    // Auto-load all league members
+    leagues.forEach(m => {
+      if (m.league_id) loadLeagueMembers(m.league_id)
+    })
   }
 
   const loadMyKoLeagues = async () => {
@@ -560,32 +558,132 @@ export default function Leagues() {
               const members = sortedMembers(league.id)
               const leagueStats = matchOdds[league.id] || {}
 
+              const myRank = members.findIndex(m => m.user_id === user?.id) + 1
+              const showAll = expandedLeague === `${league.id}-all`
+              const visibleMembers = league.is_global && !showAll ? members.slice(0, 5) : members
+
               return (
-                <div key={league.id} className="card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                    <div>
-                      <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '4px' }}>
-                        {league.is_global ? '🌍 ' : isCreator ? '👑 ' : '👥 '}{league.is_global ? 'WC26 Overall' : league.name}
-                      </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                        {isCreator ? 'You created this league' : 'Member'}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                        {memberCount} {memberCount === 1 ? 'member' : 'members'}
-                      </div>
-                      {leagueMembers[league.id] && (() => {
-                        const sorted = [...(leagueMembers[league.id] || [])].sort((a, b) => (b.profile?.total_points || 0) - (a.profile?.total_points || 0))
-                        const myRank = sorted.findIndex(m => m.user_id === user?.id) + 1
-                        return myRank > 0 ? (
-                          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--scottish-navy)', marginTop: '2px' }}>
-                            You #{myRank}
+                <div key={league.id} style={{
+                  background: 'var(--bg-card)',
+                  borderRadius: 'var(--radius-lg)',
+                  overflow: 'hidden',
+                  boxShadow: 'var(--shadow-sm)',
+                  border: '1px solid var(--border-light)',
+                }}>
+                  {/* League header */}
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '18px' }}>{league.is_global ? '🌍' : isCreator ? '👑' : '👥'}</span>
+                        <div>
+                          <div style={{ fontWeight: '800', fontSize: '15px', color: 'var(--text-primary)' }}>
+                            {league.is_global ? 'WC26 Overall' : league.name}
                           </div>
-                        ) : null
-                      })()}
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>
+                            {memberCount} {memberCount === 1 ? 'member' : 'members'}
+                            {!league.is_global && ` · ${isCreator ? 'Creator' : 'Member'}`}
+                          </div>
+                        </div>
+                      </div>
+                      {myRank > 0 && (
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Your rank</div>
+                          <div style={{ fontSize: '18px', fontWeight: '900', color: myRank <= 3 ? ['#f59e0b','#9ca3af','#cd7f32'][myRank-1] : 'var(--scottish-navy)' }}>#{myRank}</div>
+                        </div>
+                      )}
                     </div>
+
+
+                  {/* Pre-tournament notice */}
+                  {!tournamentLive && (
+                    <div style={{ padding: '8px 16px', background: 'rgba(21,88,176,0.06)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '600' }}>
+                      🗓️ Points go live 11 Jun — make sure everyone joins before then!
+                    </div>
+                  )}
+
+                  {/* League table — always visible */}
+                  <div>
+                    {loadingMembers[league.id] ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: '24px' }}><div className="spinner" /></div>
+                    ) : (
+                      <>
+                        {visibleMembers.map((member, i) => {
+                          const isMe = member.user_id === user.id
+                          const isLeagueCreator = league.created_by === member.user_id
+                          const canRemove = (isCreator || isAdmin) && !isMe && !isLeagueCreator && !league.is_global
+                          const pts = member.profile?.total_points || 0
+                          const leaderPts = members[0]?.profile?.total_points || 0
+                          const gap = i > 0 && pts !== leaderPts ? leaderPts - pts : null
+                          const rankColours = ['#f59e0b', '#9ca3af', '#cd7f32']
+
+                          return (
+                            <div key={member.user_id} style={{
+                              display: 'flex', alignItems: 'center', gap: '10px',
+                              padding: '11px 16px',
+                              borderBottom: '1px solid var(--border-light)',
+                              background: isMe ? 'rgba(0,48,135,0.05)' : 'transparent',
+                              borderLeft: isMe ? '3px solid var(--scottish-navy)' : '3px solid transparent',
+                            }}>
+                              {/* Rank */}
+                              <span style={{ fontSize: '13px', fontWeight: '800', width: '20px', flexShrink: 0, color: i < 3 ? rankColours[i] : 'var(--text-muted)' }}>
+                                {i + 1}
+                              </span>
+
+                              {/* Avatar */}
+                              <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: isMe ? 'white' : 'var(--text-secondary)', flexShrink: 0 }}>
+                                {(member.profile?.display_name || member.profile?.username || '?')[0].toUpperCase()}
+                              </div>
+
+                              {/* Name + sub */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: '13px', fontWeight: isMe ? '700' : '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {member.profile?.display_name || member.profile?.username || 'Unknown'}
+                                  </span>
+                                  {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '1px 5px', borderRadius: '3px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
+                                  {isLeagueCreator && !league.is_global && <span style={{ fontSize: '11px' }}>👑</span>}
+                                </div>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '6px', marginTop: '1px' }}>
+                                  {gap !== null && pts !== leaderPts && <span>-{gap}pts</span>}
+                                  {member.profile?.streak_current > 0 && <span>🔥{member.profile.streak_current}</span>}
+                                  {member.profile?.exact_scores > 0 && <span>🎯{member.profile.exact_scores}</span>}
+                                </div>
+                              </div>
+
+                              {/* Points */}
+                              <span style={{ fontWeight: '800', fontSize: '15px', fontFamily: 'var(--font-mono)', color: pts > 0 ? 'var(--text-primary)' : 'var(--text-muted)', flexShrink: 0 }}>
+                                {pts}<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--text-muted)' }}>pts</span>
+                              </span>
+
+                              {/* Actions */}
+                              <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                                <button onClick={() => openMemberModal(member, league.id)}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', opacity: 0.5, padding: '2px 4px' }}
+                                  title="View picks">👁</button>
+                                {canRemove && (
+                                  <button onClick={() => setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username })}
+                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#e53935', padding: '2px 4px' }}>×</button>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })}
+
+                        {/* Show more / less for global league */}
+                        {league.is_global && members.length > 5 && (
+                          <button onClick={() => setExpandedLeague(showAll ? null : `${league.id}-all`)} style={{
+                            width: '100%', padding: '12px', background: 'none', border: 'none',
+                            fontSize: '13px', fontWeight: '600', color: 'var(--accent-blue)',
+                            cursor: 'pointer', borderTop: showAll ? '1px solid var(--border-light)' : 'none',
+                          }}>
+                            {showAll ? '▲ Show less' : `▼ Show all ${members.length} members`}
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
+                </div>
+              )
 
                   {/* Invite code + actions */}
                   {!league.is_global && (
@@ -603,140 +701,6 @@ export default function Leagues() {
                     </div>
                   )}
 
-                  <button onClick={() => toggleExpand(league.id)} style={{
-                    width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)',
-                    border: '1px solid var(--border-light)', background: 'none',
-                    fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)',
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px',
-                  }}>
-                    {isExpanded ? '▲ Hide table' : '▼ Show table'}
-                  </button>
-
-                  {/* Members list */}
-                  {isExpanded && (
-                    <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
-                      {loadingMembers[league.id] ? (
-                        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px' }}><div className="spinner" /></div>
-                      ) : (
-                        <>
-                          {/* Item 5: Pre-match % breakdown — live from 11 Jun */}
-                          {tournamentLive && Object.keys(leagueStats).length > 0 && (
-                            <div style={{ marginBottom: '16px' }}>
-                              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                                🔮 League Predictions — Upcoming Matches
-                              </div>
-                              {Object.values(leagueStats).map(({ match, total, home, draw, away }) => (
-                                <div key={match.id} style={{ marginBottom: '10px', padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                    <span style={{ fontSize: '12px', fontWeight: '700' }}>
-                                      {match.home_team?.flag_emoji} {match.home_team?.short_code} vs {match.away_team?.short_code} {match.away_team?.flag_emoji}
-                                    </span>
-                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{total} picks</span>
-                                  </div>
-                                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' }}>
-                                    {[
-                                      { label: match.home_team?.short_code, pct: home },
-                                      { label: 'Draw', pct: draw },
-                                      { label: match.away_team?.short_code, pct: away },
-                                    ].map(({ label, pct }) => (
-                                      <div key={label} style={{ textAlign: 'center' }}>
-                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '3px', fontWeight: '600' }}>{label}</div>
-                                        <div style={{ height: '4px', background: 'var(--border-light)', borderRadius: '2px', overflow: 'hidden', marginBottom: '3px' }}>
-                                          <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent-green)', borderRadius: '2px', transition: 'width 0.4s' }} />
-                                        </div>
-                                        <div style={{ fontSize: '12px', fontWeight: '800', fontFamily: 'var(--font-mono)' }}>{pct}%</div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Leaderboard */}
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>
-                            Leaderboard
-                          </div>
-
-                          {/* Item 3 & 4: Pre-tournament message when no points yet */}
-                          {!tournamentLive && (
-                            <div style={{ padding: '12px 14px', background: 'var(--accent-blue-light)', borderRadius: 'var(--radius-md)', marginBottom: '12px', fontSize: '13px', color: 'var(--accent-blue)', fontWeight: '600' }}>
-                              🗓️ Leaderboard goes live on 11 Jun when the tournament kicks off — make sure everyone has joined before then!
-                            </div>
-                          )}
-
-                          {/* FPL-style table header */}
-                          <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 48px 32px', gap: '4px', padding: '4px 8px', borderBottom: '1px solid var(--border-light)', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rank</span>
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Player</span>
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', textAlign: 'right' }}>Total</span>
-                            <span></span>
-                          </div>
-                          <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            {members.map((member, i) => {
-                              const isMe = member.user_id === user.id
-                              const isLeagueCreator = league.created_by === member.user_id
-                              const canRemove = (isCreator || isAdmin) && !isMe && !isLeagueCreator && !league.is_global
-                              const pts = member.profile?.total_points || 0
-                              const leaderPts = members[0]?.profile?.total_points || 0
-                              const gap = i > 0 && pts !== leaderPts ? leaderPts - pts : null
-                              const rankColour = i === 0 ? '#f59e0b' : i === 1 ? '#9ca3af' : i === 2 ? '#cd7f32' : 'var(--text-muted)'
-
-                              return (
-                                <div key={member.user_id} style={{
-                                  display: 'grid', gridTemplateColumns: '32px 1fr 48px 32px',
-                                  gap: '4px', alignItems: 'center',
-                                  padding: '9px 8px',
-                                  borderBottom: '1px solid var(--border-light)',
-                                  background: isMe ? 'rgba(0,48,135,0.06)' : 'transparent',
-                                  borderLeft: isMe ? '3px solid var(--scottish-navy)' : '3px solid transparent',
-                                }}>
-                                  {/* Rank */}
-                                  <span style={{ fontSize: '13px', fontWeight: '800', color: rankColour }}>
-                                    {i + 1}
-                                  </span>
-
-                                  {/* Name + sub info */}
-                                  <div style={{ minWidth: 0 }}>
-                                    <div style={{ fontSize: '13px', fontWeight: isMe ? '700' : '500', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '5px', overflow: 'hidden' }}>
-                                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {member.profile?.display_name || member.profile?.username || 'Unknown'}
-                                      </span>
-                                      {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '1px 4px', borderRadius: '3px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
-                                      {isLeagueCreator && !isMe && <span style={{ fontSize: '11px', flexShrink: 0 }}>👑</span>}
-                                    </div>
-                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '6px', marginTop: '1px' }}>
-                                      {gap !== null && <span>-{gap}pts</span>}
-                                      {member.profile?.streak_current > 0 && <span>🔥{member.profile.streak_current}</span>}
-                                      {member.profile?.exact_scores > 0 && <span>🎯{member.profile.exact_scores}</span>}
-                                    </div>
-                                  </div>
-
-                                  {/* Points */}
-                                  <div style={{ textAlign: 'right' }}>
-                                    <span style={{ fontWeight: '800', fontSize: '14px', fontFamily: 'var(--font-mono)', color: pts > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>
-                                      {pts}
-                                    </span>
-                                  </div>
-
-                                  {/* Actions */}
-                                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '3px' }}>
-                                    <button onClick={() => openMemberModal(member, league.id)}
-                                      style={{ fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer', opacity: 0.6, padding: '2px' }}
-                                      title="View picks">👁</button>
-                                    {canRemove && (
-                                      <button onClick={() => setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username })}
-                                        style={{ fontSize: '12px', background: 'none', border: 'none', cursor: 'pointer', color: '#e53935', padding: '2px' }}>×</button>
-                                    )}
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  )}
                 </div>
               )
             })}
