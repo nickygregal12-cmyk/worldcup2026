@@ -592,7 +592,7 @@ export default function Leagues() {
                         </div>
                       )}
                     </div>
-
+                  </div>
 
                   {/* Pre-tournament notice */}
                   {!tournamentLive && (
@@ -682,12 +682,10 @@ export default function Leagues() {
                       </>
                     )}
                   </div>
-                </div>
-              )
 
                   {/* Invite code + actions */}
                   {!league.is_global && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-light)' }}>
                       <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '15px', letterSpacing: '0.12em', flex: 1 }}>{league.invite_code}</span>
                       <button onClick={() => copyInviteCode(league.invite_code)} style={{ fontSize: '12px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)', background: 'var(--bg-card)', cursor: 'pointer' }}>📋</button>
                       <button onClick={() => shareWhatsApp(league.name, league.invite_code)} style={{ fontSize: '12px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: 'none', background: '#25d366', color: 'white', cursor: 'pointer' }}>💬</button>
