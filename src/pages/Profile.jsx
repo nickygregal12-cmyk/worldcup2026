@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
-import ShareCard from '../components/ShareCard.jsx'
 
 const AVATARS = ['⚽','🏆','🥅','🧤','👟','🎯','🔥','⚡','🦁','🐯','🦅','🏴󠁧󠁢󠁳󠁣󠁴󠁿']
 
@@ -21,9 +20,6 @@ export default function Profile() {
   const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
-  const [showShareCard, setShowShareCard] = useState(false)
-  const [importPreview, setImportPreview] = useState(null)
-  const [importLoading, setImportLoading] = useState(false)
   const [selectedAvatar, setSelectedAvatar] = useState('')
 
   useEffect(() => {
@@ -123,192 +119,11 @@ export default function Profile() {
 
   if (!profile) return <div className="loading-screen"><div className="spinner" /></div>
 
-  // Team name aliases for import
-  const TEAM_ALIASES = {
-    'holland': 'Netherlands', 'the netherlands': 'Netherlands',
-    'korea republic': 'South Korea', 'republic of korea': 'South Korea',
-    'cabo verde': 'Cape Verde', 'cape verde islands': 'Cape Verde',
-    "cote d'ivoire": 'Ivory Coast', 'ivory coast': 'Ivory Coast',
-    "côte d'ivoire": 'Ivory Coast',
-    'usa': 'United States', 'united states of america': 'United States',
-    'turkey': 'Turkiye', 'türkiye': 'Turkiye', 'turkiye': 'Turkiye',
-    'bosnia': 'Bosnia-Herzegovina', 'bosnia ': 'Bosnia-Herzegovina',
-    'bosnia and herzegovina': 'Bosnia-Herzegovina',
-    'czech republic': 'Czechia', 'dr congo': 'DR Congo',
-    'curacao': 'Curacao', 'curaçao': 'Curacao',
-  }
-  const normaliseTeam = (name) => {
-    if (!name) return ''
-    const trimmed = name.trim()
-    const lower = trimmed.toLowerCase()
-    if (TEAM_ALIASES[lower]) return TEAM_ALIASES[lower]
-    if (TEAM_ALIASES[lower.trim()]) return TEAM_ALIASES[lower.trim()]
-    return trimmed
-  }
-
-  const handleExportPredictions = async () => {
-    if (!user) return
-    const XLSX = await import('xlsx')
-    const { data: matches } = await supabase
-      .from('matches')
-      .select('id, kickoff_time, home_team:home_team_id(name, short_code), away_team:away_team_id(name, short_code), group:group_id(name)')
-      .eq('stage', 'group').order('kickoff_time')
-    const { data: preds } = await supabase
-      .from('predictions').select('match_id, home_score, away_score, is_confident').eq('user_id', user.id)
-    const predMap = {}
-    preds?.forEach(p => { predMap[p.match_id] = p })
-
-    const rows = [['Match', 'Group', 'Date', 'Home Team', 'Away Team', 'Home Score', 'Away Score', 'Joker']]
-    matches?.forEach((m, i) => {
-      const pred = predMap[m.id]
-      const date = new Date(m.kickoff_time).toLocaleDateString('en-GB')
-      rows.push([
-        `M${i + 1}`,
-        m.group?.name || '',
-        date,
-        m.home_team?.name || '',
-        m.away_team?.name || '',
-        pred?.home_score ?? '',
-        pred?.away_score ?? '',
-        pred?.is_confident ? 'X' : '',
-      ])
-    })
-
-    const ws = XLSX.utils.aoa_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Predictions')
-    // Browser-safe download
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
-    const blob = new Blob([wbout], { type: 'application/octet-stream' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `wc26-predictions-${profile?.display_name || 'export'}.xlsx`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const handleImportPredictions = async (file) => {
-    if (!user) return
-    setImportLoading(true)
-    try {
-      const XLSX = await import('xlsx')
-      const buffer = await file.arrayBuffer()
-      const wb = XLSX.read(buffer, { type: 'array' })
-      const ws = wb.Sheets[wb.SheetNames[0]]
-      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
-
-      let headerRow = -1, homeScoreCol = -1, awayScoreCol = -1, jokerCol = -1, homeTeamCol = -1, awayTeamCol = -1
-      for (let i = 0; i < Math.min(rows.length, 20); i++) {
-        const row = rows[i].map(c => String(c).toLowerCase().trim())
-
-        // Standard format
-        if (row.some(c => c.includes('home') && c.includes('score'))) {
-          headerRow = i
-          row.forEach((c, j) => {
-            if (c.includes('home') && c.includes('score')) homeScoreCol = j
-            if (c.includes('away') && c.includes('score')) awayScoreCol = j
-            if (c.includes('joker')) jokerCol = j
-            if (c.includes('home') && !c.includes('score')) homeTeamCol = j
-            if (c.includes('away') && !c.includes('score')) awayTeamCol = j
-          })
-          break
-        }
-
-        // WC26 Entry Sheet template format: Match # | Group | Date | NY Time | Country | blank | Score | blank | blank | Country | Joker
-        if (row.some(c => c.includes('match') && (c.includes('#') || c.includes('no') || c === 'match'))) {
-          headerRow = i
-          const countryIndices = []
-          row.forEach((c, j) => { if (c === 'country') countryIndices.push(j) })
-          if (countryIndices.length >= 2) {
-            homeTeamCol = countryIndices[0]
-            awayTeamCol = countryIndices[1]
-            homeScoreCol = homeTeamCol + 2
-            awayScoreCol = homeTeamCol + 3
-            jokerCol = awayTeamCol + 1
-          } else {
-            homeTeamCol = 4; homeScoreCol = 6; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
-          }
-          break
-        }
-      }
-
-      // Last resort: detect by numeric first column (match number rows)
-      if (headerRow === -1 || homeScoreCol === -1) {
-        for (let i = 0; i < Math.min(rows.length, 20); i++) {
-          if (!isNaN(parseInt(String(rows[i][0]))) && rows[i].length > 8) {
-            headerRow = i - 1
-            homeTeamCol = 4; homeScoreCol = 6; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
-            break
-          }
-        }
-      }
-
-      if (headerRow === -1 || homeScoreCol === -1) {
-        alert('Could not detect spreadsheet format. Supported: "Home Score"/"Away Score" headers, or the WC26 Entry Sheet template.')
-        setImportLoading(false)
-        return
-      }
-
-      const { data: allMatches } = await supabase
-        .from('matches').select('id, home_team:home_team_id(name, short_code), away_team:away_team_id(name, short_code)')
-        .eq('stage', 'group').order('kickoff_time')
-
-      const predictions = []
-      const unmatched = []
-      let jokersFound = 0
-
-      for (let i = headerRow + 1; i < rows.length; i++) {
-        const row = rows[i]
-        const homeScore = parseInt(String(row[homeScoreCol]).trim())
-        const awayScore = parseInt(String(row[awayScoreCol]).trim())
-        if (isNaN(homeScore) || isNaN(awayScore)) continue
-        const isJoker = jokerCol >= 0 && String(row[jokerCol]).trim().toUpperCase() === 'X'
-        if (isJoker) jokersFound++
-
-        let match = null
-        if (homeTeamCol >= 0 && awayTeamCol >= 0) {
-          const homeTeam = normaliseTeam(String(row[homeTeamCol]))
-          const awayTeam = normaliseTeam(String(row[awayTeamCol]))
-          match = allMatches.find(m =>
-            m.home_team?.name?.toLowerCase() === homeTeam.toLowerCase() &&
-            m.away_team?.name?.toLowerCase() === awayTeam.toLowerCase()
-          )
-          if (!match) unmatched.push(`${homeTeam} vs ${awayTeam}`)
-        } else {
-          match = allMatches[predictions.length]
-        }
-
-        if (match) {
-          predictions.push({ match_id: match.id, home_score: homeScore, away_score: awayScore, is_confident: isJoker })
-        }
-      }
-
-      setImportPreview({ predictions, unmatched, jokersFound })
-    } catch (e) {
-      alert(`Import failed: ${e.message}`)
-    }
-    setImportLoading(false)
-  }
-
-  const confirmImport = async () => {
-    if (!importPreview || !user) return
-    setImportLoading(true)
-    const toSave = importPreview.predictions.map(p => ({
-      user_id: user.id, match_id: p.match_id, home_score: p.home_score,
-      away_score: p.away_score, is_confident: p.is_confident, bracket_type: 'main',
-    }))
-    const { error } = await supabase.from('predictions').upsert(toSave, { onConflict: 'user_id,match_id,bracket_type' })
-    if (error) { alert(`Save failed: ${error.message}`) }
-    else { setImportPreview(null); alert(`✅ ${toSave.length} predictions imported successfully!`) }
-    setImportLoading(false)
-  }
-
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat',
+        background: 'linear-gradient(135deg, #003087, #005eb8)',
         padding: '32px 20px 24px',
         color: 'white',
         textAlign: 'center',
@@ -337,31 +152,7 @@ export default function Profile() {
           }}>✏️</div>
         </div>
 
-        {editing ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-            <input
-              className="input"
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveProfile(); if (e.key === 'Escape') setEditing(false) }}
-              autoFocus
-              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', textAlign: 'center', fontWeight: '800', fontSize: '18px', maxWidth: '200px' }}
-            />
-            <button onClick={saveProfile} disabled={saving}
-              style={{ background: 'var(--accent-green)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '6px 12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-              {saving ? '...' : '✓'}
-            </button>
-            <button onClick={() => setEditing(false)}
-              style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '6px 12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-              ✕
-            </button>
-          </div>
-        ) : (
-          <div onClick={() => setEditing(true)} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
-            <span style={{ fontWeight: '800', fontSize: '22px' }}>{profile.display_name || profile.username}</span>
-            <span style={{ fontSize: '13px', opacity: 0.5 }}>✏️</span>
-          </div>
-        )}
+        <div style={{ fontWeight: '800', fontSize: '22px' }}>{profile.display_name || profile.username}</div>
         <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '14px', marginTop: '4px' }}>@{profile.username}</div>
 
         {/* Accuracy bar */}
@@ -378,18 +169,21 @@ export default function Profile() {
       </div>
 
       {/* Tabs */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', display: 'flex', padding: '8px 16px', gap: '8px' }}>
-        {[{ key: 'stats', label: '📊 Stats' }, { key: 'history', label: '📋 History' }].map(tab => (
-          <button key={tab.key} onClick={() => handleTabChange(tab.key)} style={{
-            flex: 1, padding: '8px 12px',
-            fontSize: '13px', fontWeight: '700',
-            color: activeTab === tab.key ? 'white' : 'var(--text-muted)',
-            background: activeTab === tab.key ? 'var(--scottish-navy)' : 'var(--bg-secondary)',
-            borderRadius: 'var(--radius-full)',
-            border: 'none', cursor: 'pointer',
-            transition: 'all 0.15s',
+      <div style={{
+        background: 'var(--bg-card)',
+        borderBottom: '1px solid var(--border-light)',
+        display: 'flex',
+      }}>
+        {['stats', 'history'].map(tab => (
+          <button key={tab} onClick={() => handleTabChange(tab)} style={{
+            flex: 1, padding: '12px',
+            fontSize: '13px', fontWeight: activeTab === tab ? '700' : '500',
+            color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
+            borderBottom: activeTab === tab ? '2px solid var(--accent-green)' : '2px solid transparent',
+            background: 'none', border: 'none', cursor: 'pointer',
+            textTransform: 'capitalize',
           }}>
-            {tab.label}
+            {tab === 'stats' ? '📊 Stats' : '📋 History'}
           </button>
         ))}
       </div>
@@ -399,8 +193,7 @@ export default function Profile() {
         {activeTab === 'stats' && (
           <>
             {/* Stats grid */}
-            <div className="card" style={{ marginBottom: '16px', overflow: 'hidden' }}>
-              <div style={{ height: '4px', background: 'var(--scottish-navy)', margin: '-16px -16px 14px' }} />
+            <div className="card" style={{ marginBottom: '16px' }}>
               <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
                 🌍 Tournament Predictor
               </div>
@@ -566,25 +359,6 @@ export default function Profile() {
               </div>
             </div>
 
-            <button onClick={() => setShowShareCard(true)}
-              className="btn btn-full" style={{ marginBottom: '12px', background: 'var(--scottish-navy)', color: 'white', fontWeight: '700' }}>
-              📤 Share my predictions
-            </button>
-            <button onClick={handleExportPredictions}
-              className="btn btn-full" style={{ marginBottom: '8px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontWeight: '700', border: '1px solid var(--border-medium)' }}>
-              📥 Export my predictions (Excel)
-            </button>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                📊 Import predictions from Excel
-              </label>
-              <input type="file" accept=".xlsx,.xls,.csv"
-                onChange={e => { if (e.target.files[0]) handleImportPredictions(e.target.files[0]) }}
-                style={{ fontSize: '12px', width: '100%', marginBottom: '4px' }} />
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                💡 Fill in the template from another predictor and import here. Your existing predictions will be overwritten.
-              </div>
-            </div>
             <button onClick={handleLogout} className="btn btn-secondary btn-full" style={{ marginBottom: '24px' }}>
               Sign out
             </button>
@@ -639,33 +413,6 @@ export default function Profile() {
           </div>
         )}
       </div>
-
-      {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
-
-      {/* Import preview modal */}
-      {importPreview && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div className="card" style={{ maxWidth: '400px', width: '100%' }}>
-            <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '12px' }}>📋 Import Preview</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
-              <div>✅ <strong>{importPreview.predictions.length}</strong> predictions found</div>
-              <div>🃏 <strong>{importPreview.jokersFound}</strong> jokers</div>
-              {importPreview.unmatched.length > 0 && (
-                <div style={{ padding: '8px', background: 'var(--accent-red-light)', borderRadius: 'var(--radius-md)', fontSize: '12px' }}>
-                  ⚠️ <strong>{importPreview.unmatched.length} unmatched:</strong> {importPreview.unmatched.join(', ')}
-                </div>
-              )}
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>⚠️ This will overwrite your existing predictions</div>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={confirmImport} disabled={importLoading} className="btn btn-primary" style={{ flex: 1 }}>
-                {importLoading ? '⏳ Saving...' : '✅ Confirm Import'}
-              </button>
-              <button onClick={() => setImportPreview(null)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Avatar picker modal */}
       {showAvatarPicker && (
