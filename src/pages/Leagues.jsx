@@ -230,10 +230,12 @@ export default function Leagues() {
       .order('joined_at', { ascending: true })
 
     // Also fetch offline players for this league
-    const { data: offlinePlayers } = await supabase
+    const { data: offlinePlayers, error: offlineError } = await supabase
       .from('offline_players')
-      .select('id, display_name, total_points')
+      .select('id, display_name, total_points, league_id')
       .eq('league_id', leagueId)
+
+    if (offlineError) console.error('Offline players error:', offlineError)
 
     // Merge offline players as pseudo-members
     const offlineMembers = (offlinePlayers || []).map(p => ({
@@ -256,6 +258,15 @@ export default function Leagues() {
       loadPreMatchStats(leagueId, data || [])
     }
   }
+
+  // Reload league members when leagues change to pick up offline players
+  useEffect(() => {
+    if (myLeagues.length > 0) {
+      myLeagues.forEach(m => {
+        if (m.league_id) loadLeagueMembers(m.league_id)
+      })
+    }
+  }, [myLeagues.length])
 
   // Item 5: Pre-match % — what % of league picked each outcome for next matches
   const loadPreMatchStats = async (leagueId, members) => {
