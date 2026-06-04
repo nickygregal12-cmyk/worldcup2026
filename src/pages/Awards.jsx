@@ -374,7 +374,7 @@ export default function Awards() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: '800', fontSize: '16px' }}>Total Goals</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Closest prediction = 10pts · Exact = 15pts</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Exact = 15pts · Within 5 = 5pts · Within 10 = 3pts</div>
               </div>
               {goalsLocked && <span className="badge badge-red">🔒 Locked</span>}
               {goalsSaved && <span className="badge badge-green">Saved!</span>}
@@ -383,8 +383,8 @@ export default function Awards() {
             {predictedGroupGoals !== null && (
               <div style={{ marginBottom: '12px', padding: '10px 14px', background: allGroupPredicted ? 'var(--accent-green-light)' : 'var(--accent-blue-light)', borderRadius: 'var(--radius-md)', fontSize: '13px', color: allGroupPredicted ? 'var(--accent-green)' : 'var(--accent-blue)', fontWeight: '600' }}>
                 {allGroupPredicted
-                  ? `✓ Auto-calculated from your predictions: ${predictedGroupGoals} group goals`
-                  : `📊 Based on your picks so far · ~${predictedGroupGoals} group goals estimated`
+                  ? <>✓ Your predictions total <strong>{predictedGroupGoals} group goals</strong> · update your saved value below if you want to change it</>
+                  : <>📊 Based on your picks so far · ~<strong>{predictedGroupGoals} group goals</strong> estimated · complete all 72 to auto-fill</>
                 }
               </div>
             )}
