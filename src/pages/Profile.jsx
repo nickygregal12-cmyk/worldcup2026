@@ -43,7 +43,7 @@ export default function Profile() {
     const { data } = await supabase
       .from('predictions')
       .select(`
-        id, home_score, away_score, points_awarded, is_joker,
+        id, home_score, away_score, points_awarded, is_confident,
         match:match_id(id, kickoff_time, home_score, away_score, status,
           home_team:home_team_id(name, flag_emoji, short_code),
           away_team:away_team_id(name, flag_emoji, short_code))
@@ -97,7 +97,9 @@ export default function Profile() {
       supabase.from('predictions').delete().eq('user_id', user.id),
       supabase.from('award_predictions').delete().eq('user_id', user.id),
       supabase.from('tournament_predictions').delete().eq('user_id', user.id),
+      supabase.from('knockout_picks').delete().eq('user_id', user.id),
     ])
+    await supabase.from('profiles').update({ knockout_picks_count: 0, jokers_group_remaining: 8 }).eq('id', user.id)
     setClearing(false)
     setShowClearConfirm(false)
     setClearDone(true)
@@ -121,7 +123,7 @@ export default function Profile() {
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
       {/* Header */}
       <div style={{
-        background: 'linear-gradient(135deg, #003087, #005eb8)',
+        background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat',
         padding: '32px 20px 24px',
         color: 'white',
         textAlign: 'center',
@@ -167,21 +169,18 @@ export default function Profile() {
       </div>
 
       {/* Tabs */}
-      <div style={{
-        background: 'var(--bg-card)',
-        borderBottom: '1px solid var(--border-light)',
-        display: 'flex',
-      }}>
-        {['stats', 'history'].map(tab => (
-          <button key={tab} onClick={() => handleTabChange(tab)} style={{
-            flex: 1, padding: '12px',
-            fontSize: '13px', fontWeight: activeTab === tab ? '700' : '500',
-            color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
-            borderBottom: activeTab === tab ? '2px solid var(--accent-green)' : '2px solid transparent',
-            background: 'none', border: 'none', cursor: 'pointer',
-            textTransform: 'capitalize',
+      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', display: 'flex', padding: '8px 16px', gap: '8px' }}>
+        {[{ key: 'stats', label: '📊 Stats' }, { key: 'history', label: '📋 History' }].map(tab => (
+          <button key={tab.key} onClick={() => handleTabChange(tab.key)} style={{
+            flex: 1, padding: '8px 12px',
+            fontSize: '13px', fontWeight: '700',
+            color: activeTab === tab.key ? 'white' : 'var(--text-muted)',
+            background: activeTab === tab.key ? 'var(--scottish-navy)' : 'var(--bg-secondary)',
+            borderRadius: 'var(--radius-full)',
+            border: 'none', cursor: 'pointer',
+            transition: 'all 0.15s',
           }}>
-            {tab === 'stats' ? '📊 Stats' : '📋 History'}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -191,7 +190,8 @@ export default function Profile() {
         {activeTab === 'stats' && (
           <>
             {/* Stats grid */}
-            <div className="card" style={{ marginBottom: '16px' }}>
+            <div className="card" style={{ marginBottom: '16px', overflow: 'hidden' }}>
+              <div style={{ height: '4px', background: 'var(--scottish-navy)', margin: '-16px -16px 14px' }} />
               <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
                 🌍 Tournament Predictor
               </div>
@@ -392,7 +392,7 @@ export default function Profile() {
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '2px' }}>
                         {match.home_team?.flag_emoji} {match.home_team?.short_code} vs {match.away_team?.short_code} {match.away_team?.flag_emoji}
-                        {pred.is_joker && <span style={{ marginLeft: '4px', fontSize: '10px' }}>🃏</span>}
+                        {pred.is_confident && <span style={{ marginLeft: '4px', fontSize: '10px' }}>🃏</span>}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                         Your pick: {pred.home_score}–{pred.away_score} · Actual: {match.home_score}–{match.away_score}
@@ -440,7 +440,7 @@ export default function Profile() {
           <div className="card" style={{ maxWidth: '340px', width: '100%' }}>
             <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>🗑️ Clear everything?</div>
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
-              This will delete all your group predictions, award picks and goals predictions. This cannot be undone.
+              This will delete all your group predictions, knockout picks, award picks and goals predictions. This cannot be undone.
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={handleClearAll} disabled={clearing}

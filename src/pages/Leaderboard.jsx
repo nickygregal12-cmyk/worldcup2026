@@ -80,50 +80,49 @@ export default function Leaderboard() {
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(0,30,80,0.88) 0%, rgba(0,94,184,0.85) 100%), url(/leaderboard-bg.jpg) center/cover no-repeat', padding: '20px', color: 'white' }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/leaderboard-bg.jpg) center/cover no-repeat', padding: '28px 20px 20px', color: 'white', textAlign: 'center' }}>
         <div className="container">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white' }}>🏆 Leaderboard</h1>
-            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
-              {currentPlayers.length} player{currentPlayers.length !== 1 ? 's' : ''}
-            </span>
+          <div style={{ fontSize: '12px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>FIFA World Cup 2026</div>
+          <h1 style={{ fontSize: '26px', fontWeight: '900', letterSpacing: '-0.03em', marginBottom: '4px' }}>🏆 Leaderboard</h1>
+          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '16px' }}>
+            {currentPlayers.length} player{currentPlayers.length !== 1 ? 's' : ''} competing
           </div>
 
-          {/* Game tabs */}
-          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-            <button onClick={() => { setActiveGame('tournament'); setPage(0); setSearch('') }} style={{
-              flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', fontSize: '13px', fontWeight: '700',
-              background: isTournament ? 'var(--scottish-navy)' : 'var(--bg-tertiary)',
-              color: isTournament ? 'white' : 'var(--text-muted)',
-              border: isTournament ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
-              cursor: 'pointer',
-            }}>
-              🌍 Tournament
-            </button>
-            <button onClick={() => { setActiveGame('ko'); setPage(0); setSearch('') }} style={{
-              flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', fontSize: '13px', fontWeight: '700',
-              background: !isTournament ? '#e65100' : 'var(--bg-tertiary)',
-              color: !isTournament ? 'white' : koLive ? 'var(--text-muted)' : 'var(--text-muted)',
-              border: !isTournament ? '1px solid #e65100' : '1px solid var(--border-light)',
-              cursor: 'pointer', opacity: !koLive && isTournament ? 0.6 : 1,
-            }}>
-              🔥 KO Predictor {!koLive && <span style={{ fontSize: '10px' }}>· 28 Jun</span>}
-            </button>
-          </div>
-
-          {/* Your position */}
+          {/* Your position pill */}
           {user && userRank > 0 && !preTournament && (
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px',
-              background: accentLight, borderRadius: 'var(--radius-full)',
-              padding: '4px 10px', marginBottom: '12px', fontSize: '12px', fontWeight: '700',
-              color: accentColour,
+              background: 'rgba(255,255,255,0.15)', borderRadius: 'var(--radius-full)',
+              padding: '6px 14px', marginBottom: '16px', fontSize: '13px', fontWeight: '700', color: 'white',
+              border: '1px solid rgba(255,255,255,0.25)',
             }}>
               You are #{userRank} · {userPoints} pts
             </div>
           )}
 
-          <input className="input" placeholder="Search players..." style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "white" }}
+          {/* Game tabs */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+            <button onClick={() => { setActiveGame('tournament'); setPage(0); setSearch('') }} style={{
+              flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', fontSize: '13px', fontWeight: '700',
+              background: isTournament ? 'white' : 'rgba(255,255,255,0.1)',
+              color: isTournament ? 'var(--scottish-navy)' : 'rgba(255,255,255,0.7)',
+              border: 'none', cursor: 'pointer',
+            }}>
+              🌍 Tournament
+            </button>
+            <button onClick={() => { setActiveGame('ko'); setPage(0); setSearch('') }} style={{
+              flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', fontSize: '13px', fontWeight: '700',
+              background: !isTournament ? 'white' : 'rgba(255,255,255,0.1)',
+              color: !isTournament ? '#e65100' : 'rgba(255,255,255,0.7)',
+              border: 'none', cursor: 'pointer', opacity: !koLive && isTournament ? 0.6 : 1,
+            }}>
+              🔥 KO Predictor {!koLive && <span style={{ fontSize: '10px' }}>· 27 Jun</span>}
+            </button>
+          </div>
+
+          {/* Search — white text on dark bg */}
+          <input className="input" placeholder="🔍 Search players..."
+            style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', color: 'white', caretColor: 'white' }}
             value={search} onChange={e => { setSearch(e.target.value); setPage(0) }} />
         </div>
       </div>
@@ -165,8 +164,9 @@ export default function Leaderboard() {
                   <div key={player.id} className="leaderboard-row" style={{
                     background: isCurrentUser ? accentLight : 'transparent',
                     borderRadius: 'var(--radius-md)',
-                    border: isCurrentUser ? `1px solid ${accentColour}` : '1px solid transparent',
+                    border: isCurrentUser ? `1.5px solid ${accentColour}` : '1px solid transparent',
                     marginBottom: '2px',
+                    borderLeft: isCurrentUser ? `4px solid ${accentColour}` : rank <= 3 ? '4px solid var(--accent-gold)' : '4px solid transparent',
                   }}>
                     {/* Rank */}
                     <div style={{
