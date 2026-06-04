@@ -455,11 +455,22 @@ export default function Predictions() {
     loadStandings()
     if (user) {
       loadPredictions()
+      loadFreshJokerCount()
       checkJokerReminder()
     }
   }, [user])
 
   const location = useLocation()
+
+  // Always fetch joker count fresh from DB — never trust stale persisted profile
+  const loadFreshJokerCount = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('jokers_group_remaining')
+      .eq('id', user.id)
+      .single()
+    if (data) setJokersRemaining(data.jokers_group_remaining ?? 8)
+  }
 
   const loadStandings = async () => {
     const { data, error } = await supabase
@@ -490,10 +501,6 @@ export default function Predictions() {
   useEffect(() => {
     loadMatches()
   }, [location.key])
-
-  useEffect(() => {
-    if (profile) setJokersRemaining(profile.jokers_group_remaining ?? 8)
-  }, [profile])
 
   const checkJokerReminder = async () => {
     const lastGroupMatch = new Date('2026-06-28T20:00:00Z')
@@ -649,14 +656,18 @@ export default function Predictions() {
     if (!currentJoker && jokersRemaining <= 0) return
     const newJoker = !currentJoker
     const newRemaining = newJoker ? jokersRemaining - 1 : jokersRemaining + 1
+    // Optimistic update
     setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], joker: newJoker } }))
     setJokersRemaining(newRemaining)
+    // Save prediction joker flag
     await supabase.from('predictions').upsert({
       user_id: user.id, match_id: matchId,
       home_score: pred.home ?? 0, away_score: pred.away ?? 0,
       is_confident: newJoker, bracket_type: 'main',
     }, { onConflict: 'user_id,match_id,bracket_type' })
+    // Save count to DB and refresh store profile so it's never stale
     await supabase.from('profiles').update({ jokers_group_remaining: newRemaining }).eq('id', user.id)
+    loadProfile(user.id)
   }
 
   const savePrediction = async (match, jokerOverride) => {
