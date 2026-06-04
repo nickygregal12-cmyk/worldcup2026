@@ -505,6 +505,7 @@ export default function Predictions() {
   const [activeGroup, setActiveGroup] = useState('A')
   const [viewMode, setViewMode] = useState('group')
   const [activeTab, setActiveTab] = useState('picks') // picks | standings
+  const [teamSearch, setTeamSearch] = useState('')
   const [standings, setStandings] = useState([])
   const [matches, setMatches] = useState([])
   const [predictions, setPredictions] = useState({})
@@ -800,7 +801,18 @@ export default function Predictions() {
   }
 
   // Item 2: autofill for By Date view
-  const groupMatches = matches.filter(m => m.group?.name === activeGroup && activeGroup !== 'FINAL')
+  const teamSearchLower = teamSearch.toLowerCase().trim()
+  const searchMatches = teamSearchLower
+    ? matches.filter(m =>
+        m.home_team?.name?.toLowerCase().includes(teamSearchLower) ||
+        m.away_team?.name?.toLowerCase().includes(teamSearchLower) ||
+        m.home_team?.short_code?.toLowerCase().includes(teamSearchLower) ||
+        m.away_team?.short_code?.toLowerCase().includes(teamSearchLower)
+      )
+    : []
+  const groupMatches = teamSearchLower
+    ? searchMatches
+    : matches.filter(m => m.group?.name === activeGroup && activeGroup !== 'FINAL')
 
   const autoFillGroup = async () => {
     if (!user || autoFilling) return
@@ -1499,8 +1511,34 @@ export default function Predictions() {
             <Link to="/how-to-play" style={{ position: 'absolute', right: 0, top: '14px', width: '26px', height: '26px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textDecoration: 'none' }}>?</Link>
           </div>
 
-          {/* Row 2: Group / Date tabs */}
-          <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {/* Team search */}
+          <div style={{ padding: '6px 0' }}>
+            <div style={{ position: 'relative' }}>
+              <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'var(--text-muted)' }}>🔍</span>
+              <input
+                type="text"
+                placeholder="Search teams..."
+                value={teamSearch}
+                onChange={e => setTeamSearch(e.target.value)}
+                style={{
+                  width: '100%', padding: '7px 10px 7px 30px',
+                  fontSize: '13px', borderRadius: 'var(--radius-full)',
+                  border: teamSearch ? '1.5px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                  background: 'var(--bg-secondary)', color: 'var(--text-primary)',
+                  outline: 'none', boxSizing: 'border-box',
+                }}
+              />
+              {teamSearch && (
+                <button onClick={() => setTeamSearch('')} style={{
+                  position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: 'var(--text-muted)', padding: 0,
+                }}>✕</button>
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: Group / Date tabs — hidden when searching */}
+          {!teamSearch && <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
             {viewMode === 'group' ? (
               <>
@@ -1592,7 +1630,7 @@ export default function Predictions() {
                 })}
               </>
             )}
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -1612,8 +1650,17 @@ export default function Predictions() {
             appSettings={appSettings}
           />
           )
-        ) : activeGroup === 'FINAL' ? (
+        ) : activeGroup === 'FINAL' && !teamSearch ? (
           <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
+        ) : teamSearch ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)', paddingTop: '4px' }}>
+              {groupMatches.length > 0
+                ? `${groupMatches.length} match${groupMatches.length !== 1 ? 'es' : ''} found`
+                : `No matches found for "${teamSearch}"`}
+            </div>
+            {groupMatches.map(renderMatch)}
+          </div>
         ) : viewMode === 'group' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {groupMatches.map(renderMatch)}
