@@ -195,7 +195,9 @@ export default function Profile() {
       let headerRow = -1, homeScoreCol = -1, awayScoreCol = -1, jokerCol = -1, homeTeamCol = -1, awayTeamCol = -1
       for (let i = 0; i < Math.min(rows.length, 20); i++) {
         const row = rows[i].map(c => String(c).toLowerCase().trim())
-        if (row.some(c => c.includes('score'))) {
+
+        // Standard format
+        if (row.some(c => c.includes('home') && c.includes('score'))) {
           headerRow = i
           row.forEach((c, j) => {
             if (c.includes('home') && c.includes('score')) homeScoreCol = j
@@ -206,10 +208,38 @@ export default function Profile() {
           })
           break
         }
+
+        // WC26 Entry Sheet template format: Match # | Group | Date | NY Time | Country | blank | Score | blank | blank | Country | Joker
+        if (row.some(c => c.includes('match') && (c.includes('#') || c.includes('no') || c === 'match'))) {
+          headerRow = i
+          const countryIndices = []
+          row.forEach((c, j) => { if (c === 'country') countryIndices.push(j) })
+          if (countryIndices.length >= 2) {
+            homeTeamCol = countryIndices[0]
+            awayTeamCol = countryIndices[1]
+            homeScoreCol = homeTeamCol + 1
+            awayScoreCol = awayTeamCol - 1
+            jokerCol = awayTeamCol + 1
+          } else {
+            homeTeamCol = 4; homeScoreCol = 5; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
+          }
+          break
+        }
+      }
+
+      // Last resort: detect by numeric first column (match number rows)
+      if (headerRow === -1 || homeScoreCol === -1) {
+        for (let i = 0; i < Math.min(rows.length, 20); i++) {
+          if (!isNaN(parseInt(String(rows[i][0]))) && rows[i].length > 8) {
+            headerRow = i - 1
+            homeTeamCol = 4; homeScoreCol = 5; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
+            break
+          }
+        }
       }
 
       if (headerRow === -1 || homeScoreCol === -1) {
-        alert('Could not find score columns. Make sure columns are labelled "Home Score" and "Away Score"')
+        alert('Could not detect spreadsheet format. Supported: "Home Score"/"Away Score" headers, or the WC26 Entry Sheet template.')
         setImportLoading(false)
         return
       }

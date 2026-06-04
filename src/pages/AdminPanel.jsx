@@ -798,28 +798,68 @@ export default function AdminPanel() {
       const ws = wb.Sheets[wb.SheetNames[0]]
       const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })
 
-      // Find header row with match data
       let headerRow = -1
       let homeScoreCol = -1, awayScoreCol = -1, jokerCol = -1
       let homeTeamCol = -1, awayTeamCol = -1
 
       for (let i = 0; i < Math.min(rows.length, 20); i++) {
         const row = rows[i].map(c => String(c).toLowerCase().trim())
-        if (row.some(c => c.includes('home') || c.includes('score'))) {
+
+        // Standard format: "Home Score" / "Away Score" headers
+        if (row.some(c => c.includes('home') && c.includes('score'))) {
           headerRow = i
           row.forEach((c, j) => {
             if (c.includes('home') && c.includes('score')) homeScoreCol = j
             if (c.includes('away') && c.includes('score')) awayScoreCol = j
             if (c.includes('joker')) jokerCol = j
-            if ((c.includes('home') || c.includes('team 1')) && !c.includes('score')) homeTeamCol = j
-            if ((c.includes('away') || c.includes('team 2')) && !c.includes('score')) awayTeamCol = j
+            if (c.includes('home') && !c.includes('score')) homeTeamCol = j
+            if (c.includes('away') && !c.includes('score')) awayTeamCol = j
           })
+          break
+        }
+
+        // Excel template format: "Match #" header row with Country | blank | Score | blank | blank | Country | Joker
+        if (row.some(c => c.includes('match') && (c.includes('#') || c.includes('no') || c === 'match'))) {
+          headerRow = i
+          // Find the two 'country' columns
+          const countryIndices = []
+          row.forEach((c, j) => {
+            if (c === 'country') countryIndices.push(j)
+          })
+          if (countryIndices.length >= 2) {
+            homeTeamCol = countryIndices[0]
+            awayTeamCol = countryIndices[1]
+            // Score cols are between the two country cols — find blank cols
+            homeScoreCol = homeTeamCol + 1
+            awayScoreCol = awayTeamCol - 1
+            // Joker is right after the away team
+            jokerCol = awayTeamCol + 1
+          } else if (row.some(c => c.includes('score'))) {
+            // Fallback: find Score column and use ±1
+            const scoreIdx = row.findIndex(c => c.includes('score'))
+            homeScoreCol = scoreIdx - 1
+            awayScoreCol = scoreIdx + 1
+          }
           break
         }
       }
 
+      // Last resort: try to detect by finding numeric data rows
+      if (headerRow === -1 || homeScoreCol === -1) {
+        // Look for rows that start with a number (match number)
+        for (let i = 0; i < Math.min(rows.length, 20); i++) {
+          const row = rows[i]
+          if (!isNaN(parseInt(String(row[0]))) && row.length > 8) {
+            headerRow = i - 1 // header is previous row
+            // Assume standard col positions from the WC26 template
+            homeTeamCol = 4; homeScoreCol = 5; awayScoreCol = 7; awayTeamCol = 9; jokerCol = 10
+            break
+          }
+        }
+      }
+
       if (headerRow === -1 || homeScoreCol === -1 || awayScoreCol === -1) {
-        setActionResult('❌ Could not find score columns in spreadsheet. Make sure columns are labelled "Home Score" and "Away Score"')
+        setActionResult('❌ Could not detect spreadsheet format. Supported: "Home Score"/"Away Score" headers, or the WC26 Entry Sheet template format.')
         setOfflineImporting(false)
         return
       }
