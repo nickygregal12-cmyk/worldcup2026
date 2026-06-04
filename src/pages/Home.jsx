@@ -49,9 +49,8 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
     if (!groupsDone)            return { label: '⚽ Continue group predictions', to: '/predictions', secondary: { label: 'How to play →', to: '/how-to-play' } }
     if (!knockoutsDone)         return { label: '🏆 Pick your knockout teams', to: '/knockout', secondary: { label: 'How to play →', to: '/how-to-play' } }
     if (!awardsDone)            return { label: '🏅 Make your award predictions', to: '/awards', secondary: { label: 'How to play →', to: '/how-to-play' } }
-    if (jokersLeft > 0)         return { label: '🃏 Use your jokers before kickoff!', to: '/predictions', secondary: { label: '👥 Invite friends →', to: '/leagues' } }
-    // Everything done — all predictions, knockouts, awards AND jokers used
-    return { label: '✏️ Edit your predictions', to: '/predictions', secondary: { label: '👥 Invite friends →', to: '/leagues' } }
+    if (jokersLeft > 0)         return { label: '🃏 Use your jokers before kickoff!', to: '/predictions', secondary: { label: '👥 Invite a friend to compete →', to: '/leagues' } }
+    return { label: '✏️ Edit your predictions', to: '/predictions', secondary: { label: '👥 Invite a friend to compete →', to: '/leagues' } }
   }
 
   if (koLive) {
@@ -618,108 +617,43 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Countdown Card ── */}
-          {!loading && !tournamentOver && (
+          {/* ── Next match card (tournament live only) ── */}
+          {!loading && tournamentStarted && !tournamentOver && nextMatch && liveMatches.length === 0 && (
+            <div className="card fade-in" style={{ overflow: 'hidden' }}>
+              <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                <div style={{ fontWeight: '800', fontSize: '14px' }}>⏱️ Next Match</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                  <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
+                  <span style={{ fontWeight: '800', fontSize: '13px' }}>{nextMatch.home_team?.name}</span>
+                </div>
+                <div style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: '300' }}>vs</div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                  <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
+                  <span style={{ fontWeight: '800', fontSize: '13px' }}>{nextMatch.away_team?.name}</span>
+                </div>
+              </div>
+              {nextMatch.venue?.city && <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>📍 {nextMatch.venue.city}</div>}
+            </div>
+          )}
+
+          {/* ── Next up compact (when live matches on) ── */}
+          {!loading && tournamentStarted && liveMatches.length > 0 && nextMatch && (
             <div className="card fade-in">
-              {!tournamentStarted ? (
-                // Pre-tournament: count down to tournament start
-                <>
-                  <div className="section-header">
-                    <span className="section-title">⏱️ Tournament kicks off in</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>All times UK</span>
-                  </div>
-                  <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
-                    <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '16px' }}>
-                      🇲🇽 Mexico vs South Africa 🇿🇦 · Thu 11 Jun · 20:00 BST · Mexico City
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                      {[
-                        { value: mainCountdown.days,    label: 'Days' },
-                        { value: mainCountdown.hours,   label: 'Hours' },
-                        { value: mainCountdown.minutes, label: 'Mins' },
-                        { value: mainCountdown.seconds, label: 'Secs' },
-                      ].map(({ value, label }) => (
-                        <div key={label} style={{
-                          background: 'var(--primary)', color: 'var(--text-inverse)',
-                          borderRadius: 'var(--radius-md)', padding: '14px 10px', minWidth: '60px', textAlign: 'center',
-                        }}>
-                          <div style={{ fontSize: '30px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
-                            {String(value ?? 0).padStart(2, '0')}
-                          </div>
-                          <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '6px', opacity: 0.6 }}>
-                            {label}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ marginTop: '20px' }}>
-                      <Link to={cta.to} className="btn btn-primary">{cta.label}</Link>
-                    </div>
-                  </div>
-                </>
-              ) : nextMatch && liveMatches.length === 0 ? (
-                // Tournament started — show next match countdown
-                <>
-                  <div className="section-header">
-                    <span className="section-title">⏱️ Next Match</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>All times UK</span>
-                  </div>
-                  <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
-                    <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                      {formatKickoff(nextMatch.kickoff_time)}
-                    </div>
-                    <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '4px' }}>
-                      {nextMatch.home_team?.flag_emoji} {nextMatch.home_team?.name} vs {nextMatch.away_team?.name} {nextMatch.away_team?.flag_emoji}
-                    </div>
-                    {nextMatch.venue?.city && (
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '20px' }}>📍 {nextMatch.venue.city}</div>
-                    )}
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-                      {[
-                        { value: countdown.days,    label: 'Days' },
-                        { value: countdown.hours,   label: 'Hours' },
-                        { value: countdown.minutes, label: 'Mins' },
-                        { value: countdown.seconds, label: 'Secs' },
-                      ].map(({ value, label }) => (
-                        <div key={label} style={{
-                          background: 'var(--primary)', color: 'var(--text-inverse)',
-                          borderRadius: 'var(--radius-md)', padding: '14px 10px', minWidth: '60px', textAlign: 'center',
-                        }}>
-                          <div style={{ fontSize: '30px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
-                            {String(value ?? 0).padStart(2, '0')}
-                          </div>
-                          <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '6px', opacity: 0.6 }}>
-                            {label}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div style={{ marginTop: '20px' }}>
-                      <Link to="/predictions" className="btn btn-primary">⚽ Predict this match</Link>
-                    </div>
-                  </div>
-                </>
-              ) : liveMatches.length > 0 && nextMatch ? (
-                // Live games on — compact next match
-                <>
-                  <div className="section-header">
-                    <span className="section-title">📅 Next Up</span>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>All times UK</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                      <span style={{ fontSize: '22px' }}>{nextMatch.home_team?.flag_emoji}</span>
-                      <span style={{ fontSize: '13px', fontWeight: '700' }}>{nextMatch.home_team?.short_code}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>vs</span>
-                      <span style={{ fontSize: '13px', fontWeight: '700' }}>{nextMatch.away_team?.short_code}</span>
-                      <span style={{ fontSize: '22px' }}>{nextMatch.away_team?.flag_emoji}</span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'right', flexShrink: 0 }}>
-                      {formatKickoff(nextMatch.kickoff_time)}
-                    </div>
-                  </div>
-                </>
-              ) : null}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontWeight: '700', fontSize: '14px' }}>📅 Next Up</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
+                <span style={{ fontSize: '22px' }}>{nextMatch.home_team?.flag_emoji}</span>
+                <span style={{ fontWeight: '700', fontSize: '14px' }}>{nextMatch.home_team?.short_code}</span>
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', flex: 1, textAlign: 'center' }}>vs</span>
+                <span style={{ fontWeight: '700', fontSize: '14px' }}>{nextMatch.away_team?.short_code}</span>
+                <span style={{ fontSize: '22px' }}>{nextMatch.away_team?.flag_emoji}</span>
+              </div>
             </div>
           )}
 

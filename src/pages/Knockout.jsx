@@ -113,7 +113,17 @@ export default function Knockout() {
   }, [resolveTeam, resolveKnockoutWinner])
 
   const savePick = async (matchDef, winnerId) => {
-    if (!user) return
+    // Guests: update local state only, no DB save
+    if (!user) {
+      const mn = matchDef.match_number
+      const existing = knockoutPicks[mn]
+      if (existing?.winner_id === winnerId) {
+        setKnockoutPicks(prev => { const n = { ...prev }; delete n[mn]; return n })
+      } else {
+        setKnockoutPicks(prev => ({ ...prev, [mn]: { winner_id: winnerId } }))
+      }
+      return
+    }
     const { home, away } = getMatchTeams(matchDef)
     const mn = matchDef.match_number
     const existing = knockoutPicks[mn]
@@ -121,6 +131,8 @@ export default function Knockout() {
     // Click same team = clear the pick
     if (existing?.winner_id === winnerId) {
       setKnockoutPicks(prev => { const n = { ...prev }; delete n[mn]; return n })
+      setSaved(prev => ({ ...prev, [mn]: false }))
+      setSaving(prev => ({ ...prev, [mn]: false }))
       await supabase.from('knockout_picks').delete().eq('user_id', user.id).eq('match_number', mn)
       const totalPicks = Object.keys({ ...knockoutPicks }).length - 1
       await supabase.from('profiles').update({ knockout_picks_count: Math.max(0, totalPicks) }).eq('id', user.id)
@@ -218,7 +230,7 @@ export default function Knockout() {
     const pick = knockoutPicks[mn]
     const isAffected = affectedMatches.includes(mn)
     const locked = new Date() >= new Date(matchDef.kickoff)
-    const canPick = !locked && !!user
+    const canPick = !locked  // guests can pick locally too
     const teamsKnown = !!(home && away)
     const isPicked = !!pick?.winner_id
 
@@ -240,7 +252,7 @@ export default function Knockout() {
       : 'var(--bg-card)'
 
     return (
-      <div key={mn} style={{
+      <div key={`${mn}-${isPicked ? pick?.winner_id : 'empty'}`} style={{
         background: cardBg,
         border: cardBorder,
         borderRadius: 'var(--radius-lg)',
@@ -360,13 +372,7 @@ export default function Knockout() {
             </div>
           )}
 
-          {/* Guest CTA */}
-          {!user && teamsKnown && (
-            <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Sign in to pick a winner</span>
-              <Link to="/register" className="btn btn-primary btn-sm">Join free</Link>
-            </div>
-          )}
+          {/* Guest — no per-card CTA, handled by sticky banner */}
         </div>
       </div>
     )
@@ -471,6 +477,27 @@ export default function Knockout() {
           {stageMatches.map(renderMatch)}
         </div>
       </div>
+
+      {/* ── Sticky guest save banner ── */}
+      {!user && (
+        <div style={{
+          position: 'fixed', bottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+          left: 0, right: 0, zIndex: 90,
+          background: 'var(--scottish-navy)',
+          padding: '12px 16px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+          boxShadow: '0 -4px 16px rgba(0,0,0,0.15)',
+        }}>
+          <div style={{ color: 'white', fontSize: '13px', lineHeight: 1.4 }}>
+            <span style={{ fontWeight: '700' }}>💾 Save your picks</span>
+            <span style={{ color: 'rgba(255,255,255,0.65)', marginLeft: '6px' }}>Join free to compete</span>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+            <Link to="/register" className="btn btn-green btn-sm">Join free</Link>
+            <Link to="/login" className="btn btn-sm" style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }}>Sign in</Link>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -713,7 +713,7 @@ export default function Leagues() {
               if (a.league?.is_global && !b.league?.is_global) return -1
               if (!a.league?.is_global && b.league?.is_global) return 1
               return 0
-            }).map(({ league, memberCount }) => {
+            }).filter(({ league }) => !league?.is_global).map(({ league, memberCount }) => {
               if (!league) return null
               const isCreator = league.created_by === user.id
               const isExpanded = expandedLeague === league.id
@@ -825,13 +825,13 @@ export default function Leagues() {
                               </span>
 
                               {/* Actions */}
-                              <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                              <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
                                 <button onClick={() => openMemberModal(member, league.id)}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', opacity: member.profile?.is_offline ? 1 : 0.5, padding: '2px 4px' }}
+                                  style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', cursor: 'pointer', fontSize: '14px', opacity: member.profile?.is_offline ? 1 : 0.7, padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}
                                   title={member.profile?.is_offline ? "View offline picks" : "View picks"}>👁</button>
                                 {canRemove && (
                                   <button onClick={() => setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username })}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#e53935', padding: '2px 4px' }}>×</button>
+                                    style={{ background: '#ffebee', border: '1px solid #ffcdd2', cursor: 'pointer', fontSize: '14px', color: '#e53935', padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}>×</button>
                                 )}
                               </div>
                             </div>

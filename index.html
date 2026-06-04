@@ -34,5 +34,24 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <!-- Twemoji: renders flag emojis on Windows -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
+    <script>
+      // Parse emojis after each React render
+      const observer = new MutationObserver(() => {
+        twemoji.parse(document.body, {
+          folder: 'svg', ext: '.svg',
+          base: 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/',
+          callback: (icon, options) => {
+            // Only replace flag emojis (regional indicator sequences)
+            if (icon.length === 4 && icon.startsWith('1f1')) return `${options.base}${options.size}/${icon}${options.ext}`
+            return false // don't replace other emojis
+          }
+        })
+      })
+      document.addEventListener('DOMContentLoaded', () => {
+        observer.observe(document.getElementById('root'), { childList: true, subtree: true })
+      })
+    </script>
   </body>
 </html>
