@@ -62,9 +62,13 @@ export default function Leaderboard() {
 
   const isTournament = activeGame === 'tournament'
   const currentPlayers = isTournament ? players : koPlayers
-  const filtered = currentPlayers.filter(p =>
-    p.username?.toLowerCase().includes(search.toLowerCase())
-  )
+  const filtered = currentPlayers.filter(p => {
+    const matchesSearch = p.username?.toLowerCase().includes(search.toLowerCase())
+    const pts = isTournament ? p.total_points : p.ko_points
+    // Pre-tournament: only show players with points or the current user
+    if (preTournament && isTournament && pts === 0 && p.id !== user?.id) return false
+    return matchesSearch
+  })
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const userRank = currentPlayers.findIndex(p => p.id === user?.id) + 1
