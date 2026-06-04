@@ -781,7 +781,7 @@ export default function Home() {
 
         </div>
       </div>
+      {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
     </div>
-    {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
   )
 }
