@@ -578,8 +578,43 @@ export default function Predictions() {
     const lastGroupMatch = new Date('2026-06-28T20:00:00Z')
     const now = new Date()
     const hoursUntilEnd = (lastGroupMatch - now) / (1000 * 60 * 60)
-    if (hoursUntilEnd > 0 && hoursUntilEnd < 24 && (profile?.jokers_group_remaining ?? 8) > 0) {
+    const jokers = profile?.jokers_group_remaining ?? 8
+    // Show reminder if jokers unused and within 24hrs of group stage end
+    if (hoursUntilEnd > 0 && hoursUntilEnd < 24 && jokers > 0) {
       setShowJokerReminder(true)
+    }
+  }
+
+  const getJokerMessage = () => {
+    const used = 8 - jokersRemaining
+    const lastGroupMatch = new Date('2026-06-28T20:00:00Z')
+    const hoursUntilEnd = (lastGroupMatch - new Date()) / (1000 * 60 * 60)
+    const urgent = hoursUntilEnd > 0 && hoursUntilEnd < 24
+
+    if (jokersRemaining === 8) return {
+      text: '🃏 You haven't used any jokers yet! Apply them to matches you're confident about to double your points.',
+      color: 'var(--scottish-navy)',
+      urgent: false,
+    }
+    if (jokersRemaining === 0) return {
+      text: '🃏 All 8 jokers used — nice work! Good luck with your picks.',
+      color: 'var(--accent-green)',
+      urgent: false,
+    }
+    if (urgent) return {
+      text: `⚠️ Group stage ends in less than 24hrs! You have ${jokersRemaining} joker${jokersRemaining > 1 ? 's' : ''} left — use them before they expire!`,
+      color: '#b8860b',
+      urgent: true,
+    }
+    if (jokersRemaining <= 2) return {
+      text: `🃏 Only ${jokersRemaining} joker${jokersRemaining > 1 ? 's' : ''} left — save them for your most confident picks!`,
+      color: 'var(--accent-red)',
+      urgent: false,
+    }
+    return {
+      text: `🃏 You've used ${used} of 8 jokers — ${jokersRemaining} remaining. Apply them to your most confident picks!`,
+      color: 'var(--scottish-navy)',
+      urgent: false,
     }
   }
 
@@ -1374,14 +1409,25 @@ export default function Predictions() {
       )}
 
       {/* Joker reminder */}
-      {showJokerReminder && user && jokersRemaining > 0 && (
-        <div style={{ background: 'linear-gradient(135deg, #b8860b, #ffd700)', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-          <div style={{ color: 'white', fontSize: '13px', fontWeight: '600' }}>
-            ⚠️ Group stage ends in less than 24hrs! You have <strong>{jokersRemaining} joker{jokersRemaining > 1 ? 's' : ''}</strong> left — use them!
+      {user && activeTab === 'picks' && (() => {
+        const msg = getJokerMessage()
+        if (!msg) return null
+        return (
+          <div style={{
+            background: msg.urgent ? 'linear-gradient(135deg, #b8860b, #ffd700)' : msg.color === 'var(--accent-green)' ? 'var(--accent-green-light)' : 'var(--scottish-navy-light)',
+            padding: '10px 16px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+            borderBottom: `2px solid ${msg.urgent ? '#b8860b' : msg.color}`,
+          }}>
+            <div style={{
+              color: msg.urgent ? 'white' : msg.color === 'var(--accent-green)' ? 'var(--accent-green)' : 'var(--scottish-navy)',
+              fontSize: '13px', fontWeight: '600', lineHeight: 1.4,
+            }}>
+              {msg.text}
+            </div>
           </div>
-          <button onClick={() => setShowJokerReminder(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '16px' }}>✕</button>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Guest banner — friendly, not a wall */}
       {!user && (
