@@ -94,16 +94,21 @@ function FinalStandingsView({ standings, matches, predictions, appSettings }) {
 
   const getPredictedTable = (group) => {
     const gMatches = matches.filter(m => m.group?.name === group)
-    const completed = gMatches.filter(m => m.status === 'completed')
     const table = {}
     gMatches.forEach(m => {
       if (!table[m.home_team_id]) table[m.home_team_id] = { id: m.home_team_id, name: m.home_team?.short_code, flag: m.home_team?.flag_emoji, pts: 0, gf: 0, ga: 0, played: 0 }
       if (!table[m.away_team_id]) table[m.away_team_id] = { id: m.away_team_id, name: m.away_team?.short_code, flag: m.away_team?.flag_emoji, pts: 0, gf: 0, ga: 0, played: 0 }
     })
-    completed.forEach(m => {
-      const pred = predictions[m.id]
-      if (pred?.home === undefined) return
-      const h = parseInt(pred.home), a = parseInt(pred.away)
+    // Use actual scores for completed matches, predictions for upcoming
+    gMatches.forEach(m => {
+      let h, a
+      if (m.status === 'completed' && m.home_score !== null) {
+        h = m.home_score; a = m.away_score
+      } else {
+        const pred = predictions[m.id]
+        if (pred?.home === undefined || pred?.home === '') return
+        h = parseInt(pred.home); a = parseInt(pred.away)
+      }
       table[m.home_team_id].gf += h; table[m.home_team_id].ga += a; table[m.home_team_id].played++
       table[m.away_team_id].gf += a; table[m.away_team_id].ga += h; table[m.away_team_id].played++
       if (h > a) { table[m.home_team_id].pts += 3 }
@@ -122,42 +127,88 @@ function FinalStandingsView({ standings, matches, predictions, appSettings }) {
     return { correct, perfect: correct === 4 }
   }
 
-  const thirdPlace = GROUPS.map(g => {
-    const gTeams = standings.filter(s => s.group_name?.includes(g)).sort((a, b) => a.position - b.position)
-    return gTeams[2] ? { ...gTeams[2], group: g } : null
-  }).filter(Boolean).sort((a, b) => b.points - a.points || b.goal_difference - a.goal_difference)
+  // thirdPlace: use real standings if available, otherwise predictions-based
+  const thirdPlace = showReal
+    ? GROUPS.map(g => {
+        const gTeams = standings.filter(s => s.group_name?.includes(g)).sort((a, b) => a.position - b.position)
+        return gTeams[2] ? { ...gTeams[2], group: g } : null
+      }).filter(Boolean).sort((a, b) => b.points - a.points || b.goal_difference - a.goal_difference)
+    : GROUPS.map(g => {
+        const predTable = getPredictedTable(g)
+        if (predTable.length < 3) return null
+        const t = predTable[2]
+        return { id: t.id, team_name: t.name, team_flag: t.flag, points: t.pts, goal_difference: t.gf - t.ga, group: g, _predicted: true }
+      }).filter(Boolean).sort((a, b) => b.points - a.points || b.goal_difference - a.goal_difference)
 
   // Pre-tournament — show predicted overview
   if (!showReal) {
+    // Build predicted 3rd place ranking — include any group with at least 1 prediction
+    const pred3rds = GROUPS.map(g => {
+      const t = getPredictedTable(g)
+      // Need at least 3 teams registered (even with 0 pts) and group has some predictions
+      const hasAnyPicks = t.some(team => team.played > 0)
+      if (!hasAnyPicks || t.length < 3) return null
+      return { ...t[2], group: g }
+    }).filter(Boolean).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga))
+
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <div className="card" style={{ background: 'var(--accent-blue-light)', border: '1px solid rgba(21,88,176,0.2)', padding: '14px 16px' }}>
-          <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent-blue)', marginBottom: '4px' }}>🌍 Your Predicted Groups</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Based on your picks so far. Real standings + accuracy tracking unlocks 11 Jun.</div>
+        <div className="card" style={{ background: 'var(--scottish-navy-light)', border: '1px solid rgba(0,48,135,0.15)', padding: '14px 16px' }}>
+          <div style={{ fontWeight: '800', fontSize: '14px', color: 'var(--scottish-navy)', marginBottom: '4px' }}>🔮 Your Predicted Standings</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            Based on your score picks · <strong style={{ color: 'var(--accent-green)' }}>Green = qualifies</strong> · Real standings + accuracy tracking unlocks 11 Jun
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
           {GROUPS.map(g => {
             const predTable = getPredictedTable(g)
+            const hasPicks = predTable.some(t => t.played > 0)
             return (
-              <div key={g} className="card" style={{ padding: '10px 12px' }}>
-                <div style={{ fontWeight: '800', fontSize: '12px', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ background: 'var(--scottish-navy)', color: 'white', width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '9px', fontWeight: '800' }}>{g}</span>
+              <div key={g} className="card" style={{ padding: '12px 14px' }}>
+                <div style={{ fontWeight: '800', fontSize: '13px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ background: 'var(--scottish-navy)', color: 'white', width: '20px', height: '20px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '800', flexShrink: 0 }}>{g}</span>
                   Group {g}
                 </div>
-                {predTable.length === 0 ? (
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No picks yet</div>
+                {!hasPicks ? (
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>No picks yet</div>
                 ) : predTable.map((team, i) => (
-                  <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '2px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
-                    <span style={{ fontSize: '10px', fontWeight: '700', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', width: '10px' }}>{i + 1}</span>
-                    <span style={{ fontSize: '12px' }}>{team.flag}</span>
-                    <span style={{ fontSize: '11px', flex: 1, color: i >= 2 ? 'var(--text-muted)' : 'var(--text-primary)', fontWeight: i < 2 ? '600' : '400' }}>{team.name}</span>
-                    <span style={{ fontSize: '10px', fontWeight: '700', fontFamily: 'var(--font-mono)', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{team.pts}</span>
+                  <div key={team.id} style={{
+                    display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 0',
+                    borderTop: i > 0 ? '1px solid var(--border-light)' : 'none',
+                    opacity: team.played === 0 ? 0.4 : 1,
+                  }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', width: '12px', flexShrink: 0 }}>{i + 1}</span>
+                    <span style={{ fontSize: '14px', lineHeight: 1, flexShrink: 0 }}>{team.flag}</span>
+                    <span style={{ fontSize: '12px', flex: 1, color: i < 2 ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: i < 2 ? '700' : '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{team.name}</span>
+                    <span style={{ fontSize: '11px', fontWeight: '800', fontFamily: 'var(--font-mono)', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', flexShrink: 0 }}>{team.played > 0 ? `${team.pts}pt` : '–'}</span>
                   </div>
                 ))}
               </div>
             )
           })}
         </div>
+        {/* Predicted best 3rd place */}
+        {pred3rds.length > 0 && (
+          <div className="card">
+            <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '4px' }}>🏅 Best 3rd Place (Predicted)</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>Top 8 of 12 advance to the Round of 32</div>
+            {pred3rds.map((team, i) => (
+              <div key={`${team.group}-${i}`} style={{
+                display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px',
+                borderRadius: 'var(--radius-sm)', marginBottom: '3px',
+                background: i < 8 ? 'var(--accent-green-light)' : 'var(--bg-secondary)',
+                border: i < 8 ? '1px solid rgba(0,122,51,0.15)' : '1px solid transparent',
+              }}>
+                <span style={{ fontWeight: '700', fontSize: '11px', width: '16px', color: 'var(--text-muted)', flexShrink: 0 }}>{i + 1}</span>
+                <span style={{ fontSize: '16px', lineHeight: 1 }}>{team.flag}</span>
+                <span style={{ fontSize: '12px', flex: 1, fontWeight: '600' }}>{team.name}</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700' }}>Grp {team.group}</span>
+                <span style={{ fontWeight: '800', fontFamily: 'var(--font-mono)', fontSize: '12px' }}>{team.pts}pt</span>
+                <span style={{ fontSize: '12px', fontWeight: '700', color: i < 8 ? 'var(--accent-green)' : 'var(--text-muted)', flexShrink: 0 }}>{i < 8 ? '✓' : '✗'}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     )
   }
@@ -1316,37 +1367,37 @@ export default function Predictions() {
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, boxShadow: 'var(--shadow-sm)' }}>
         <div className="container">
 
-          {/* Row 1: Title + controls */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h1 style={{ fontSize: '19px', fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>⚽ Predictions</h1>
-              <Link to="/how-to-play" style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', flexShrink: 0, textDecoration: 'none' }}>?</Link>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {/* Picks / Standings pill switcher */}
-              {appSettings?.show_group_tables === 'true' && (
-                <div className="pill-tabs" style={{ padding: '3px' }}>
-                  {[{ key: 'picks', label: '⚽ Picks' }, { key: 'standings', label: '📊 Tables' }].map(tab => (
-                    <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`} style={{ fontSize: '12px', padding: '6px 10px' }}>
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              {user && activeTab === 'picks' && (
-                <div className={`joker-counter ${jokersRemaining === 0 ? 'joker-counter-empty' : jokersRemaining <= 2 ? 'joker-counter-low' : 'joker-counter-active'}`}
-                  style={{ animation: jokersRemaining > 0 && showJokerReminder ? 'pulse 1.5s infinite' : 'none' }}>
-                  <span style={{ fontSize: '13px', lineHeight: 1 }}>🃏</span>
-                  <span style={{ fontSize: '13px', fontWeight: '800' }}>{jokersRemaining}</span>
-                </div>
-              )}
-              {user && activeTab === 'picks' && (
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontWeight: '600' }}>
-                  <span style={{ color: 'var(--accent-green)', fontWeight: '800' }}>{getPredictionCount()}</span>/{matches.length}
+          {/* Title row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 0 0' }}>
+            <div>
+              <h1 style={{ fontSize: '22px', fontWeight: '900', color: 'var(--text-primary)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>⚽ Predictions</h1>
+              {user && (
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ color: getPredictionCount() === matches.length ? 'var(--accent-green)' : 'var(--text-muted)', fontWeight: '700' }}>
+                    {getPredictionCount()}/{matches.length} picks
+                  </span>
+                  <span>·</span>
+                  <span style={{ color: jokersRemaining <= 2 ? 'var(--accent-red)' : 'var(--accent-gold)', fontWeight: '700' }}>
+                    🃏 {jokersRemaining} left
+                  </span>
                 </div>
               )}
             </div>
+            <Link to="/how-to-play" style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', flexShrink: 0, textDecoration: 'none' }}>?</Link>
           </div>
+
+          {/* Picks / Tables switcher — own row, left aligned */}
+          {appSettings?.show_group_tables === 'true' && (
+            <div style={{ marginTop: '10px' }}>
+              <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px' }}>
+                {[{ key: 'picks', label: '⚽ Picks' }, { key: 'standings', label: '📊 Tables' }].map(tab => (
+                  <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`} style={{ fontSize: '13px', padding: '7px 16px' }}>
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Row 2: Group / Date tabs */}
           <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>

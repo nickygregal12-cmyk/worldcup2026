@@ -685,17 +685,27 @@ export default function Leagues() {
 
                   {/* Invite code + actions */}
                   {!league.is_global && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-light)' }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '15px', letterSpacing: '0.12em', flex: 1 }}>{league.invite_code}</span>
-                      <button onClick={() => copyInviteCode(league.invite_code)} style={{ fontSize: '12px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)', background: 'var(--bg-card)', cursor: 'pointer' }}>📋</button>
-                      <button onClick={() => shareWhatsApp(league.name, league.invite_code)} style={{ fontSize: '12px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: 'none', background: '#25d366', color: 'white', cursor: 'pointer' }}>💬</button>
-                      {isCreator ? (
-                        <button onClick={() => setConfirmAction({ type: 'deleteLeague', leagueId: league.id, leagueName: league.name })}
-                          style={{ fontSize: '12px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid #e53935', color: '#e53935', background: 'none', cursor: 'pointer' }}>🗑️</button>
-                      ) : (
-                        <button onClick={() => setConfirmAction({ type: 'leave', leagueId: league.id, leagueName: league.name })}
-                          style={{ fontSize: '12px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-medium)', color: 'var(--text-muted)', background: 'none', cursor: 'pointer' }}>Leave</button>
-                      )}
+                    <div style={{ padding: '12px 16px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-light)' }}>
+                      {/* Code pill with copy inline */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', flex: 1, background: 'var(--bg-card)', border: '1.5px dashed var(--border-medium)', borderRadius: 'var(--radius-full)', padding: '8px 16px', gap: '10px' }}>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '900', fontSize: '18px', letterSpacing: '0.15em', color: 'var(--scottish-navy)', flex: 1, textAlign: 'center' }}>{league.invite_code}</span>
+                          <button onClick={() => copyInviteCode(league.invite_code)} style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '5px 12px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                            📋 Copy
+                          </button>
+                        </div>
+                      </div>
+                      {/* Action buttons */}
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button onClick={() => shareWhatsApp(league.name, league.invite_code)} style={{ flex: 1, fontSize: '13px', padding: '9px', borderRadius: 'var(--radius-md)', border: 'none', background: '#25d366', color: 'white', fontWeight: '700', cursor: 'pointer' }}>💬 Share on WhatsApp</button>
+                        {isCreator ? (
+                          <button onClick={() => setConfirmAction({ type: 'deleteLeague', leagueId: league.id, leagueName: league.name })}
+                            style={{ fontSize: '13px', padding: '9px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-red)', color: 'var(--accent-red)', background: 'none', cursor: 'pointer', fontWeight: '600' }}>🗑️</button>
+                        ) : (
+                          <button onClick={() => setConfirmAction({ type: 'leave', leagueId: league.id, leagueName: league.name })}
+                            style={{ fontSize: '13px', padding: '9px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-medium)', color: 'var(--text-muted)', background: 'none', cursor: 'pointer', fontWeight: '600' }}>Leave</button>
+                        )}
+                      </div>
                     </div>
                   )}
 
