@@ -1205,7 +1205,10 @@ export default function AdminPanel() {
         }
 
         if (homeScore !== null && awayScore !== null) {
-          predictions.push({ match_number: matchNum, home_score: homeScore, away_score: awayScore, is_joker: isJoker })
+          // Only add if not already found (deduplicate by match number)
+          if (!predictions.find(p => p.match_number === matchNum)) {
+            predictions.push({ match_number: matchNum, home_score: homeScore, away_score: awayScore, is_joker: isJoker })
+          }
         }
       }
 
