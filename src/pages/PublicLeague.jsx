@@ -168,6 +168,19 @@ export default function PublicLeague() {
       {/* Leaderboard */}
       <div className="container" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
+        {/* Offline players note */}
+        {allMembers.some(m => m.isOffline) && (
+          <div className="card" style={{ padding: '12px 16px', borderLeft: '3px solid var(--accent-blue)', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '18px', flexShrink: 0 }}>📧</span>
+            <div>
+              <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '2px' }}>Some players don't have an account yet</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Players marked "no account" have their picks entered by the league admin. Ask the admin for a personal invite link to get your own account — your predictions lock automatically at kickoff so no one can change them.
+              </div>
+            </div>
+          </div>
+        )}
+
         {allMembers.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
             <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏆</div>
@@ -194,13 +207,8 @@ export default function PublicLeague() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: '700', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {member.name}
-                    {member.isOffline && <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: '6px', fontWeight: '400' }}>paper entry</span>}
+                    {member.isOffline && <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: '6px', fontWeight: '400' }}>no account</span>}
                   </div>
-                  {member.isOffline && (
-                    <div style={{ fontSize: '11px', color: 'var(--accent-blue)', marginTop: '2px' }}>
-                      📧 Want your own account? Ask the league admin for an invite link
-                    </div>
-                  )}
                   {!member.isOffline && member.streak > 1 && (
                     <div style={{ fontSize: '11px', color: 'var(--accent-orange)', fontWeight: '600' }}>🔥 {member.streak} streak</div>
                   )}
@@ -218,7 +226,7 @@ export default function PublicLeague() {
           <div className="card" style={{ textAlign: 'center', padding: '20px', background: 'var(--scottish-navy)', color: 'white' }}>
             <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '6px' }}>Think you can beat them? 🏴󠁧󠁢󠁳󠁣󠁴󠁥󠁢</div>
             <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '14px' }}>
-              Predict all 104 World Cup matches and compete for glory.
+              Predict all 104 World Cup matches and compete for glory. Your picks lock automatically at kickoff — no one can change them.
             </div>
             <button onClick={joinLeague} disabled={joining} className="btn btn-primary" style={{ fontWeight: '800', width: '100%', padding: '12px' }}>
               {joining ? '⏳ Joining...' : user ? '🏆 Join this league' : '🏆 Sign up free & join'}
