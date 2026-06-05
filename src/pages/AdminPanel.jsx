@@ -1109,6 +1109,15 @@ export default function AdminPanel() {
       await logAudit('IMPORT_OFFLINE_PREDICTIONS', { player_id: targetPlayerId, count: toSave.length })
       setActionResult(`✅ Imported ${toSave.length} predictions successfully`)
       setOfflineImportPreview(null)
+      // Reload predictions into state so manual entry boxes show imported scores
+      const updates = {}
+      toSave.forEach(p => {
+        updates[`${p.offline_player_id}-${p.match_id}`] = {
+          home: p.home_score, away: p.away_score,
+          joker: p.is_confident, saved: true
+        }
+      })
+      setOfflineManualScores(prev => ({ ...prev, ...updates }))
     }
     setOfflineImporting(false)
   }
