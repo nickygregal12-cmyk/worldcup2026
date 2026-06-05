@@ -194,7 +194,7 @@ export default function Leagues() {
   const loadMyLeagues = async () => {
     const { data: memberships } = await supabase
       .from('league_members')
-      .select('league_id, league:league_id(id, name, invite_code, is_global, created_by)')
+      .select('league_id, league:league_id(id, name, invite_code, is_global, created_by, scoring_preset, custom_scoring)')
       .eq('user_id', user.id)
       .order('joined_at', { ascending: false })
 
@@ -288,7 +288,7 @@ export default function Leagues() {
     setLoadingMembers(prev => ({ ...prev, [leagueId]: true }))
     const { data } = await supabase
       .from('league_members')
-      .select('*, profile:user_id(id, username, total_points, display_name, streak_current, exact_scores)')
+      .select('*, league_points, profile:user_id(id, username, total_points, display_name, streak_current, exact_scores, avatar_emoji)')
       .eq('league_id', leagueId)
       .order('joined_at', { ascending: true })
 
@@ -495,8 +495,18 @@ export default function Leagues() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
-  const sortedMembers = (leagueId) =>
-    [...(leagueMembers[leagueId] || [])].sort((a, b) => (b.profile?.total_points || 0) - (a.profile?.total_points || 0))
+  const sortedMembers = (leagueId) => {
+    const league = myLeagues.find(m => m.league_id === leagueId)
+    const hasCustomScoring = league?.league?.scoring_preset && league.league.scoring_preset !== 'standard'
+    return [...(leagueMembers[leagueId] || [])].sort((a, b) => {
+      // Use league_points if any member has them, otherwise total_points
+      const aLeaguePts = a.league_points ?? 0
+      const bLeaguePts = b.league_points ?? 0
+      const hasLeaguePts = (leagueMembers[leagueId] || []).some(m => (m.league_points ?? 0) > 0)
+      if (hasLeaguePts || hasCustomScoring) return bLeaguePts - aLeaguePts
+      return (b.profile?.total_points || 0) - (a.profile?.total_points || 0)
+    })
+  }
 
   const getPredResult = (pred) => {
     const m = pred.match
@@ -743,11 +753,12 @@ export default function Leagues() {
                           </div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>{memberCount} {memberCount === 1 ? 'member' : 'members'}{!league.is_global && ` · ${isCreator ? 'Creator' : 'Member'}`}</span>
-                            {league.scoring_preset && league.scoring_preset !== 'standard' && (
-                              <span style={{ fontSize: '10px', fontWeight: '700', padding: '1px 5px', borderRadius: 'var(--radius-full)', background: 'var(--scottish-navy-light)', color: 'var(--scottish-navy)' }}>
+                            {league.custom_scoring && league.scoring_preset !== 'standard' && (
+                              <span style={{ fontSize: '10px', fontWeight: '700', padding: '1px 5px', borderRadius: 'var(--radius-full)', background: 'var(--scottish-navy-light)', color: 'var(--scottish-navy)', cursor: 'pointer' }}
+                                title={league.custom_scoring ? `Correct: ${league.custom_scoring.group_correct}pts | Exact: ${league.custom_scoring.group_exact}pts | Joker: ${league.custom_scoring.joker_multiplier}×` : ''}>
                                 {league.scoring_preset === 'high_stakes' ? '🔥 High Stakes' :
                                  league.scoring_preset === 'exact_only' ? '🎯 Exact Only' :
-                                 league.scoring_preset === 'excel' ? '📊 Excel Format' : ''}
+                                 league.scoring_preset === 'excel' ? '📊 Excel Format' : '⚙️ Custom'}
                               </span>
                             )}
                           </div>
@@ -779,7 +790,8 @@ export default function Leagues() {
                           const isMe = member.user_id === user.id
                           const isLeagueCreator = league.created_by === member.user_id
                           const canRemove = (isCreator || isAdmin) && !isMe && !isLeagueCreator && !league.is_global
-                          const pts = member.profile?.total_points || 0
+                          const hasLeaguePts = members.some(m => (m.league_points ?? 0) > 0)
+                          const pts = hasLeaguePts ? (member.league_points || 0) : (member.profile?.total_points || 0)
                           const leaderPts = members[0]?.profile?.total_points || 0
                           const gap = i > 0 && pts !== leaderPts ? leaderPts - pts : null
                           const rankColours = ['#f59e0b', '#9ca3af', '#cd7f32']

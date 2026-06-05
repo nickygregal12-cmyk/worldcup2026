@@ -186,6 +186,29 @@ export default function AdminPanel() {
   const [newLeagueCreatingFor, setNewLeagueCreatingFor] = useState('')
   const [newLeagueIsGlobal, setNewLeagueIsGlobal] = useState(false)
   const [newLeaguePreset, setNewLeaguePreset] = useState('standard')
+  const [newLeagueScoring, setNewLeagueScoring] = useState({
+    group_correct: 3, group_exact: 5, group_jokers: 8, joker_multiplier: 2,
+    ko_correct: 3, ko_exact: 5, ko_jokers: 5,
+    group_position: 2, perfect_group: 5,
+    golden_boot: 15, golden_glove: 10, pott: 10, goals_exact: 15,
+  })
+
+  const SCORING_PRESETS = {
+    standard:    { group_correct: 3, group_exact: 5, group_jokers: 8, joker_multiplier: 2, ko_correct: 3, ko_exact: 5, ko_jokers: 5, group_position: 2, perfect_group: 5, golden_boot: 15, golden_glove: 10, pott: 10, goals_exact: 15 },
+    high_stakes: { group_correct: 5, group_exact: 10, group_jokers: 8, joker_multiplier: 2, ko_correct: 5, ko_exact: 10, ko_jokers: 5, group_position: 4, perfect_group: 10, golden_boot: 25, golden_glove: 15, pott: 15, goals_exact: 20 },
+    exact_only:  { group_correct: 0, group_exact: 8, group_jokers: 5, joker_multiplier: 2, ko_correct: 0, ko_exact: 8, ko_jokers: 3, group_position: 2, perfect_group: 5, golden_boot: 15, golden_glove: 10, pott: 10, goals_exact: 15 },
+    excel:       { group_correct: 3, group_exact: 5, group_jokers: 8, joker_multiplier: 2, ko_correct: 3, ko_exact: 5, ko_jokers: 5, group_position: 2, perfect_group: 5, golden_boot: 25, golden_glove: 15, pott: 15, goals_exact: 15 },
+  }
+
+  const applyPreset = (preset) => {
+    setNewLeaguePreset(preset)
+    if (SCORING_PRESETS[preset]) setNewLeagueScoring({ ...SCORING_PRESETS[preset] })
+  }
+
+  const updateScoring = (key, val) => {
+    const num = Math.min(50, Math.max(0, parseInt(val) || 0))
+    setNewLeagueScoring(prev => ({ ...prev, [key]: num }))
+  }
 
   // Offline players state
   const [offlinePlayers, setOfflinePlayers] = useState([])
@@ -777,16 +800,18 @@ export default function AdminPanel() {
       created_by: creatorUser?.id || user.id,
       is_global: newLeagueIsGlobal || false,
       scoring_preset: newLeaguePreset || 'standard',
+      custom_scoring: newLeagueScoring,
     }).select().single()
     if (error) { setActionResult(`❌ Error creating league: ${error.message}`); return }
     await supabase.from('league_members').insert({ league_id: league.id, user_id: creatorUser?.id || user.id })
-    await logAudit('CREATE_LEAGUE', { league_id: league.id, name: newLeagueName, code, preset: newLeaguePreset })
+    await logAudit('CREATE_LEAGUE', { league_id: league.id, name: newLeagueName, code, preset: newLeaguePreset, scoring: newLeagueScoring })
     setActionResult(`✅ Created league "${newLeagueName}" with code ${code}`)
     setShowCreateLeague(false)
     setNewLeagueName('')
     setNewLeagueCreatingFor('')
     setNewLeagueIsGlobal(false)
     setNewLeaguePreset('standard')
+    setNewLeagueScoring(SCORING_PRESETS.standard)
     loadLeagues()
   }
 
@@ -1660,17 +1685,63 @@ export default function AdminPanel() {
                       onChange={e => setNewLeagueIsGlobal(e.target.checked)} />
                     🌍 Global league (visible to all users on Leagues page)
                   </label>
+                  {/* Quick preset buttons */}
                   <div>
-                    <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: 'var(--text-muted)' }}>Scoring Preset</div>
-                    <select className="input" value={newLeaguePreset || 'standard'} onChange={e => setNewLeaguePreset(e.target.value)}>
-                      <option value="standard">⚽ Standard (3pts correct / 5pts exact)</option>
-                      <option value="high_stakes">🔥 High Stakes (5pts correct / 10pts exact)</option>
-                      <option value="exact_only">🎯 Exact Only (0pts correct / 8pts exact)</option>
-                      <option value="excel">📊 Excel Import Format (matches external predictor)</option>
-                    </select>
+                    <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '6px', color: 'var(--text-muted)' }}>Quick Start Preset</div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {[['standard','⚽ Standard'],['high_stakes','🔥 High Stakes'],['exact_only','🎯 Exact Only'],['excel','📊 Excel']].map(([key, label]) => (
+                        <button key={key} onClick={() => applyPreset(key)} className="btn btn-sm"
+                          style={{ background: newLeaguePreset === key ? 'var(--scottish-navy)' : 'var(--bg-secondary)', color: newLeaguePreset === key ? 'white' : 'var(--text-primary)', border: '1px solid var(--border-light)' }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Custom scoring grid */}
+                  <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '10px', color: 'var(--scottish-navy)' }}>⚙️ Custom Scoring (0–50pts each)</div>
+                    {[
+                      { label: '⚽ Group Stage', fields: [
+                        { key: 'group_correct', label: 'Correct result' },
+                        { key: 'group_exact', label: 'Exact score' },
+                        { key: 'group_jokers', label: 'Jokers available' },
+                        { key: 'joker_multiplier', label: 'Joker multiplier ×' },
+                      ]},
+                      { label: '🏆 Knockout', fields: [
+                        { key: 'ko_correct', label: 'Correct result' },
+                        { key: 'ko_exact', label: 'Exact score' },
+                        { key: 'ko_jokers', label: 'Jokers available' },
+                      ]},
+                      { label: '📊 Group Positions', fields: [
+                        { key: 'group_position', label: 'Per correct position' },
+                        { key: 'perfect_group', label: 'Perfect group bonus' },
+                      ]},
+                      { label: '🥇 Awards', fields: [
+                        { key: 'golden_boot', label: 'Golden Boot' },
+                        { key: 'golden_glove', label: 'Golden Glove' },
+                        { key: 'pott', label: 'Player of Tournament' },
+                        { key: 'goals_exact', label: 'Goals total exact' },
+                      ]},
+                    ].map(section => (
+                      <div key={section.label} style={{ marginBottom: '10px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>{section.label}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                          {section.fields.map(f => (
+                            <div key={f.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', padding: '6px 8px' }}>
+                              <span style={{ fontSize: '11px', flex: 1, color: 'var(--text-muted)' }}>{f.label}</span>
+                              <input type="number" min="0" max="50" value={newLeagueScoring[f.key] ?? 0}
+                                onChange={e => updateScoring(f.key, e.target.value)}
+                                style={{ width: '44px', textAlign: 'center', padding: '3px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '13px', fontWeight: '700' }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={createLeague} disabled={!newLeagueName.trim()} className="btn btn-primary btn-sm">Create</button>
+                    <button onClick={createLeague} disabled={!newLeagueName.trim()} className="btn btn-primary btn-sm">Create League</button>
                     <button onClick={() => setShowCreateLeague(false)} className="btn btn-secondary btn-sm">Cancel</button>
                   </div>
                 </div>
@@ -1966,11 +2037,13 @@ export default function AdminPanel() {
                     const amount = parseInt(leagueAmendAmount)
                     if (isNaN(amount)) { setActionResult('❌ Invalid amount'); return }
                     setLeagueAmendSaving(true)
-                    const { data: members } = await supabase.from('league_members').select('user_id').eq('league_id', leagueAmendLeagueId)
+                    const { data: members } = await supabase.from('league_members').select('user_id, league_points').eq('league_id', leagueAmendLeagueId)
                     if (!members?.length) { setActionResult('❌ No members found'); setLeagueAmendSaving(false); return }
                     for (const m of members) {
-                      const { data: profile } = await supabase.from('profiles').select('total_points').eq('id', m.user_id).single()
-                      await supabase.from('profiles').update({ total_points: (profile?.total_points || 0) + amount }).eq('id', m.user_id)
+                      await supabase.from('league_members')
+                        .update({ league_points: (m.league_points || 0) + amount })
+                        .eq('league_id', leagueAmendLeagueId)
+                        .eq('user_id', m.user_id)
                       await logAudit('LEAGUE_POINTS_AMENDMENT', { league_id: leagueAmendLeagueId, user_id: m.user_id, amount, reason: leagueAmendReason })
                     }
                     setActionResult(`✅ Applied ${amount > 0 ? '+' : ''}${amount}pts to ${members.length} members · ${leagueAmendReason}`)
