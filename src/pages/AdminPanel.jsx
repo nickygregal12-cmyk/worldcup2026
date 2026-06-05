@@ -843,12 +843,26 @@ export default function AdminPanel() {
     const { data, error } = await supabase
       .from('offline_players')
       .select(`
-        id, display_name, league_id, created_at,
+        id, display_name, league_id, league_points, created_at,
         league:league_id(id, name)
       `)
       .order('created_at', { ascending: false })
     if (error) { console.error('loadOfflinePlayers error:', error); return }
     setOfflinePlayers(data || [])
+
+    // Load all existing offline predictions into state
+    const { data: preds } = await supabase
+      .from('offline_predictions')
+      .select('offline_player_id, match_id, home_score, away_score')
+    const scoresMap = {}
+    ;(preds || []).forEach(p => {
+      scoresMap[`${p.offline_player_id}-${p.match_id}`] = {
+        home: p.home_score ?? '',
+        away: p.away_score ?? '',
+        saved: true
+      }
+    })
+    setOfflineManualScores(scoresMap)
   }
 
   const createOfflinePlayer = async () => {
@@ -2001,33 +2015,42 @@ export default function AdminPanel() {
 
                 {/* Manual score entry */}
                 {offlineSelectedPlayer?.id === player.id && (
-                  <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>
-                      Enter scores manually — saves automatically
+                  <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '4px' }}>
+                      Enter scores — saves on blur (tap away after each entry)
                     </div>
                     {matches.filter(m => m.stage === 'group').map(match => {
                       const key = `${player.id}-${match.id}`
                       const val = offlineManualScores[key] || {}
+                      const hasPred = val.home !== '' && val.away !== '' && val.home !== undefined
                       return (
-                        <div key={match.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 8px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
-                          <span style={{ fontSize: '11px', flex: 1, color: 'var(--text-muted)' }}>
-                            {match.home_team?.short_code} vs {match.away_team?.short_code}
+                        <div key={match.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: hasPred ? 'rgba(0,122,51,0.05)' : 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: hasPred ? '1px solid rgba(0,122,51,0.15)' : '1px solid var(--border-light)' }}>
+                          <span style={{ fontSize: '11px', flex: 1, fontWeight: hasPred ? '600' : '400' }}>
+                            {match.home_team?.flag_emoji} {match.home_team?.short_code}
+                            <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>vs</span>
+                            {match.away_team?.short_code} {match.away_team?.flag_emoji}
                           </span>
-                          <input type="number" min="0" max="20" placeholder="H"
+                          <input type="number" min="0" max="20"
+                            placeholder="0"
                             value={val.home ?? ''}
-                            onChange={e => setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], home: e.target.value } }))}
+                            onChange={e => setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], home: e.target.value, saved: false } }))}
                             onBlur={() => saveManualScore(player.id, match.id, val.home, val.away)}
-                            style={{ width: '40px', textAlign: 'center', padding: '4px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '13px' }} />
-                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>–</span>
-                          <input type="number" min="0" max="20" placeholder="A"
+                            style={{ width: '36px', textAlign: 'center', padding: '3px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '13px', fontWeight: '700' }} />
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700' }}>–</span>
+                          <input type="number" min="0" max="20"
+                            placeholder="0"
                             value={val.away ?? ''}
-                            onChange={e => setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], away: e.target.value } }))}
+                            onChange={e => setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], away: e.target.value, saved: false } }))}
                             onBlur={() => saveManualScore(player.id, match.id, val.home, val.away)}
-                            style={{ width: '40px', textAlign: 'center', padding: '4px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '13px' }} />
-                          {val.saved && <span style={{ fontSize: '11px', color: 'var(--accent-green)' }}>✓</span>}
+                            style={{ width: '36px', textAlign: 'center', padding: '3px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '13px', fontWeight: '700' }} />
+                          {val.saved && <span style={{ fontSize: '11px', color: 'var(--accent-green)', minWidth: '12px' }}>✓</span>}
+                          {val.saved === false && <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '12px' }}>…</span>}
                         </div>
                       )
                     })}
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
+                      {Object.keys(offlineManualScores).filter(k => k.startsWith(player.id)).length} / {matches.filter(m => m.stage === 'group').length} predictions entered
+                    </div>
                   </div>
                 )}
                 </div>}
