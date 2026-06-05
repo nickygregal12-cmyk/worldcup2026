@@ -1196,11 +1196,14 @@ export default function AdminPanel() {
         // Look for two 1-2 digit numbers after position 3 (past match#, group, date, time)
         let homeScore = null, awayScore = null, isJoker = false
 
-        // Filter out time/date parts first
+        // Find scores — filter out times (contain :), dates (contain -), and group letters
+        // Also skip the first 2 items (match# and group letter)
         const scoreCandidates = []
-        for (let i = 3; i < parts.length; i++) {
+        for (let i = 2; i < parts.length; i++) {
           const p = parts[i]
+          // Skip times, dates, single letters (group names)
           if (p.includes(':') || p.includes('-') || p.includes('/')) continue
+          if (p.length === 1 && /[A-L]/.test(p)) continue // group letter
           const n = parseInt(p)
           if (!isNaN(n) && n >= 0 && n <= 20 && /^\d{1,2}$/.test(p)) {
             scoreCandidates.push({ val: n, idx: i })
@@ -1251,10 +1254,10 @@ export default function AdminPanel() {
         if (pred.is_joker) jokersFound++
       }
 
-      setOfflineImportPreview({ targetPlayerId, predictions: toSave, jokersFound, unmatched, source: 'pdf' })
       const foundNums = predictions.map(p => p.match_number)
       const missingNums = Array.from({length: 72}, (_, i) => i + 1).filter(n => !foundNums.includes(n))
-      if (missingNums.length) setActionResult(`⚠️ Found ${predictions.length}/72 predictions. Missing: M${missingNums.join(', M')}`)
+
+      setOfflineImportPreview({ targetPlayerId, predictions: toSave, jokersFound, unmatched, source: 'pdf', missingNums })
 
     } catch (e) {
       console.error('PDF parse error:', e)
@@ -2097,9 +2100,14 @@ export default function AdminPanel() {
               <div className="card" style={{ border: '2px solid var(--accent-green)' }}>
                 <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '10px' }}>📋 Import Preview</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
-                  <div style={{ fontSize: '14px' }}>✅ <strong>{offlineImportPreview.predictions.length}</strong> predictions found</div>
+                  <div style={{ fontSize: '14px' }}>✅ <strong>{offlineImportPreview.predictions.length}</strong> / 72 predictions found</div>
                   <div style={{ fontSize: '14px' }}>🃏 <strong>{offlineImportPreview.jokersFound}</strong> jokers applied</div>
-                  {offlineImportPreview.unmatched.length > 0 && (
+                  {offlineImportPreview.missingNums?.length > 0 && (
+                    <div style={{ padding: '8px', background: 'rgba(184,134,11,0.1)', borderRadius: 'var(--radius-md)', fontSize: '12px', color: 'var(--accent-gold)' }}>
+                      ⚠️ <strong>{offlineImportPreview.missingNums.length} missing:</strong> M{offlineImportPreview.missingNums.join(', M')} — enter these manually after importing
+                    </div>
+                  )}
+                  {offlineImportPreview.unmatched?.length > 0 && (
                     <div style={{ padding: '8px', background: 'var(--accent-red-light)', borderRadius: 'var(--radius-md)', fontSize: '12px' }}>
                       ⚠️ <strong>{offlineImportPreview.unmatched.length} unmatched teams:</strong> {offlineImportPreview.unmatched.join(', ')}
                     </div>
