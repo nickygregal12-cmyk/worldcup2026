@@ -166,6 +166,8 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
   const [committedPreds, setCommittedPreds] = useState({})
   const [awardPreds, setAwardPreds] = useState({})
   const [goalPreds, setGoalPreds] = useState({})
+  const [knockoutPreds, setKnockoutPreds] = useState([])
+  const [teamsById, setTeamsById] = useState({})
   const [selectedUserId, setSelectedUserId] = useState('')
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -176,7 +178,7 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
     const load = async () => {
       setLoaded(false)
 
-      const [matchRes, awardRes, goalRes] = await Promise.all([
+      const [matchRes, awardRes, goalRes, knockoutRes, teamRes] = await Promise.all([
         supabase.from('league_predictions')
           .select('user_id, match_id, home_score, away_score, is_confident')
           .eq('league_id', leagueId),
@@ -185,7 +187,13 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
           .eq('league_id', leagueId),
         supabase.from('league_tournament_predictions')
           .select('user_id, prediction_type, int_value, team_id')
+          .eq('league_id', leagueId),
+        supabase.from('league_knockout_picks')
+          .select('id, user_id, stage, team_id, is_joker, match_number, home_team_id, away_team_id, winner_team_id, result_type')
           .eq('league_id', leagueId)
+          .order('match_number', { ascending: true }),
+        supabase.from('teams')
+          .select('id, name, short_code, flag_emoji')
       ])
 
       if (cancelled) return
@@ -215,6 +223,11 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
         }
       })
       setGoalPreds(goalMap)
+
+      setKnockoutPreds(knockoutRes.data || [])
+      const teamMap = {}
+      ;(teamRes.data || []).forEach(t => { teamMap[t.id] = t })
+      setTeamsById(teamMap)
 
       setLoaded(true)
     }
@@ -279,6 +292,28 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
     setSaving(false)
   }
 
+  const saveKnockoutPick = async (pickId, winnerTeamId) => {
+    if (!pickId || !winnerTeamId) return
+    const current = knockoutPreds.find(p => p.id === pickId)
+    if (!current) return
+
+    setSaving(true)
+    const { error } = await supabase.from('league_knockout_picks')
+      .update({
+        winner_team_id: winnerTeamId,
+        team_id: winnerTeamId,
+        committed_at: new Date().toISOString(),
+      })
+      .eq('id', pickId)
+      .eq('league_id', leagueId)
+
+    if (!error) {
+      await logAudit('EDIT_COMMITTED_KNOCKOUT', { league_id: leagueId, user_id: current.user_id, pick_id: pickId, match_number: current.match_number, winner_team_id: winnerTeamId })
+      setKnockoutPreds(prev => prev.map(p => p.id === pickId ? { ...p, winner_team_id: winnerTeamId, team_id: winnerTeamId } : p))
+    }
+    setSaving(false)
+  }
+
   const groupMatches = matches.filter(m => m.stage === 'group')
   const selectedMember = members?.find(m => m.user_id === selectedUserId)
   const memberName = selectedMember?.profile?.display_name || selectedMember?.profile?.username || 'Selected member'
@@ -287,6 +322,7 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
     { key: 'matches', label: '⚽ Matches' },
     { key: 'goals', label: '🎯 Goals' },
     { key: 'awards', label: '🥇 Awards' },
+    { key: 'knockout', label: '🏆 Knockout' },
   ]
 
   const goalTypes = [
@@ -300,6 +336,21 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
     { key: 'golden_glove', label: 'Golden Glove' },
     { key: 'player_of_tournament', label: 'Player of the Tournament' },
   ]
+
+  const stageLabels = {
+    r32: 'Round of 32',
+    r16: 'Round of 16',
+    qf: 'Quarter-final',
+    sf: 'Semi-final',
+    '3rd': 'Third-place play-off',
+    final: 'Final',
+  }
+
+  const teamLabel = (teamId) => {
+    const team = teamsById[teamId]
+    if (!team) return teamId ? 'Unknown team' : 'TBC'
+    return `${team.flag_emoji || ''} ${team.short_code || team.name}`.trim()
+  }
 
   return (
     <div style={{ marginTop: '10px', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
@@ -398,6 +449,48 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
                   style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '12px' }} />
                 <button onClick={() => saveAward(selectedUserId, award.key, awardPreds[key]?.player)}
                   className="btn btn-primary btn-sm" style={{ fontSize: '11px' }}>Save</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {selectedUserId && loaded && activeEditorTab === 'knockout' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '360px', overflowY: 'auto' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '2px' }}>
+            {memberName}'s locked knockout winners. Only the winner can be changed; match path data stays frozen.
+          </div>
+          {knockoutPreds.filter(p => p.user_id === selectedUserId).length === 0 && (
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)' }}>
+              No locked knockout picks found for this member.
+            </div>
+          )}
+          {knockoutPreds.filter(p => p.user_id === selectedUserId).map(pick => {
+            const homeLabel = teamLabel(pick.home_team_id)
+            const awayLabel = teamLabel(pick.away_team_id)
+            const currentWinner = pick.winner_team_id || pick.team_id || ''
+            const options = [pick.home_team_id, pick.away_team_id].filter(Boolean)
+            return (
+              <div key={pick.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '12px', fontWeight: '800' }}>
+                    {stageLabels[pick.stage] || pick.stage || 'Knockout'} · Match {pick.match_number || '?'} {pick.is_joker ? '🃏' : ''}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {homeLabel} v {awayLabel}
+                  </div>
+                </div>
+                <select
+                  className="input"
+                  value={currentWinner}
+                  onChange={e => saveKnockoutPick(pick.id, e.target.value)}
+                  style={{ flex: '0 0 150px', minWidth: '150px', fontSize: '12px', padding: '6px 8px' }}
+                >
+                  <option value="">Select winner</option>
+                  {options.map(teamId => <option key={teamId} value={teamId}>{teamLabel(teamId)}</option>)}
+                  {currentWinner && !options.includes(currentWinner) && <option value={currentWinner}>{teamLabel(currentWinner)}</option>}
+                </select>
+                <span style={{ fontSize: '10px', color: 'var(--accent-green)', width: '12px' }}>{currentWinner ? '✓' : ''}</span>
               </div>
             )
           })}
