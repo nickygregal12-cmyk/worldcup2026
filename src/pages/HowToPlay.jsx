@@ -9,6 +9,7 @@ const SCORING = [
       { label: 'Correct result (win/draw/loss)', pts: '3pts' },
       { label: 'Exact score', pts: '5pts' },
       { label: 'Wrong or missed prediction', pts: '0pts' },
+      { label: 'Jokers available (doubles points if correct)', pts: '8 total' },
     ]
   },
   {
