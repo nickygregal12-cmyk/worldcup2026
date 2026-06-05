@@ -1117,63 +1117,114 @@ export default function AdminPanel() {
     setOfflineImporting(true)
     setActionResult('')
     try {
-      // Convert PDF to base64
+      // Load PDF.js from CDN
+      if (!window.pdfjsLib) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+          script.onload = resolve
+          script.onerror = reject
+          document.head.appendChild(script)
+        })
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+      }
+
+      // Load PDF
       const buffer = await file.arrayBuffer()
-      const bytes = new Uint8Array(buffer)
-      let binary = ''
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
-      const base64 = btoa(binary)
+      const pdf = await window.pdfjsLib.getDocument({ data: buffer }).promise
 
-      // Send to Netlify function for Claude Vision parsing
-      const res = await fetch('/.netlify/functions/parse-pdf-predictions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pdfBase64: base64, mediaType: 'application/pdf' })
-      })
+      // Extract all text from all pages
+      let fullText = ''
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i)
+        const content = await page.getTextContent()
+        // Get text items with their x positions for column detection
+        const items = content.items.map(item => ({
+          text: item.str.trim(),
+          x: Math.round(item.transform[4]),
+          y: Math.round(item.transform[5]),
+        })).filter(item => item.text.length > 0)
 
-      if (!res.ok) throw new Error(`Parse failed: ${res.statusText}`)
-      const parsed = await res.json()
+        // Group by y position (rows)
+        const rows = {}
+        items.forEach(item => {
+          const rowKey = Math.round(item.y / 3) * 3 // group within 3px
+          if (!rows[rowKey]) rows[rowKey] = []
+          rows[rowKey].push(item)
+        })
 
-      if (!parsed.predictions?.length) {
-        setActionResult('❌ No predictions found in PDF — check the file format')
+        // Sort rows top to bottom, items left to right
+        const sortedRows = Object.entries(rows)
+          .sort((a, b) => b[0] - a[0])
+          .map(([, items]) => items.sort((a, b) => a.x - b.x).map(i => i.text))
+
+        fullText += sortedRows.map(r => r.join('\t')).join('\n') + '\n'
+      }
+
+      // Parse predictions from extracted text
+      // Format: match# | group | date | time | home_team | home_score | away_score | away_team | joker? | venue
+      const predictions = []
+      const lines = fullText.split('\n')
+
+      for (const line of lines) {
+        const parts = line.split('\t').map(p => p.trim()).filter(p => p.length > 0)
+        if (parts.length < 6) continue
+
+        // First part should be a match number (1-72)
+        const matchNum = parseInt(parts[0])
+        if (isNaN(matchNum) || matchNum < 1 || matchNum > 72) continue
+
+        // Find two consecutive integers that look like scores (0-20)
+        let homeScore = null, awayScore = null, isJoker = false
+        let scoreIdx = -1
+
+        for (let i = 1; i < parts.length - 1; i++) {
+          const a = parseInt(parts[i])
+          const b = parseInt(parts[i + 1])
+          if (!isNaN(a) && !isNaN(b) && a >= 0 && a <= 20 && b >= 0 && b <= 20) {
+            // Make sure they're not years or match numbers
+            if (parts[i].length <= 2 && parts[i+1].length <= 2) {
+              homeScore = a
+              awayScore = b
+              scoreIdx = i
+              break
+            }
+          }
+        }
+
+        if (homeScore === null || awayScore === null) continue
+
+        // Check for joker marker (X, x, ✓, Y, yes) after the scores
+        for (let i = scoreIdx + 2; i < Math.min(parts.length, scoreIdx + 5); i++) {
+          if (['x', 'X', '✓', 'Y', 'yes', '1'].includes(parts[i])) {
+            isJoker = true
+            break
+          }
+        }
+
+        predictions.push({ match_number: matchNum, home_score: homeScore, away_score: awayScore, is_joker: isJoker })
+      }
+
+      if (!predictions.length) {
+        setActionResult('❌ No predictions found in PDF — make sure it uses the standard template format')
         setOfflineImporting(false)
         return
       }
 
-      // Match predictions to DB matches using match_number
+      // Match to DB matches
       const toSave = []
       const unmatched = []
       let jokersFound = 0
 
-      for (const pred of parsed.predictions) {
+      for (const pred of predictions) {
         const dbMatch = matches.find(m => m.match_number === pred.match_number)
-        if (!dbMatch) {
-          // Try matching by team names as fallback
-          const byTeam = matches.find(m =>
-            m.stage === 'group' &&
-            (m.home_team?.name?.toLowerCase().includes(pred.home_team?.toLowerCase()) ||
-             m.away_team?.name?.toLowerCase().includes(pred.away_team?.toLowerCase()))
-          )
-          if (byTeam) {
-            toSave.push({ match_id: byTeam.id, home_score: pred.home_score, away_score: pred.away_score, is_confident: pred.is_joker || false })
-            if (pred.is_joker) jokersFound++
-          } else {
-            unmatched.push(`M${pred.match_number} ${pred.home_team} vs ${pred.away_team}`)
-          }
-          continue
-        }
-        toSave.push({ match_id: dbMatch.id, home_score: pred.home_score, away_score: pred.away_score, is_confident: pred.is_joker || false })
+        if (!dbMatch) { unmatched.push(`M${pred.match_number}`); continue }
+        toSave.push({ match_id: dbMatch.id, home_score: pred.home_score, away_score: pred.away_score, is_confident: pred.is_joker })
         if (pred.is_joker) jokersFound++
       }
 
-      // Show preview before saving
-      setOfflineImportPreview({
-        targetPlayerId,
-        predictions: toSave,
-        jokersFound,
-        unmatched,
-        source: 'pdf',
-      })
+      setOfflineImportPreview({ targetPlayerId, predictions: toSave, jokersFound, unmatched, source: 'pdf' })
 
     } catch (e) {
       console.error('PDF parse error:', e)
