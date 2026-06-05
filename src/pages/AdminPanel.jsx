@@ -4,16 +4,16 @@ import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TABS = [
-  { key: 'health',   label: '🩺 Health' },
-  { key: 'matches',  label: '⚽ Matches' },
-  { key: 'awards',   label: '🥇 Awards' },
-  { key: 'ko',       label: '🔥 KO Predictor' },
-  { key: 'users',    label: '👥 Users' },
-  { key: 'leagues',  label: '🏆 Leagues' },
-  { key: 'offline',  label: '👤 Offline' },
-  { key: 'points',   label: '🎯 Points' },
-  { key: 'audit',    label: '📋 Audit Log' },
-  { key: 'settings', label: '⚙️ Settings' },
+  { key: 'health',   label: '🩺 Health',        superOnly: true },
+  { key: 'matches',  label: '⚽ Matches',        superOnly: true },
+  { key: 'awards',   label: '🥇 Awards',         superOnly: true },
+  { key: 'ko',       label: '🔥 KO Predictor',   superOnly: true },
+  { key: 'users',    label: '👥 Users',           superOnly: true },
+  { key: 'leagues',  label: '🏆 Leagues',         superOnly: false },
+  { key: 'offline',  label: '👤 Offline',         superOnly: false },
+  { key: 'points',   label: '🎯 Points',          superOnly: false },
+  { key: 'audit',    label: '📋 Audit Log',       superOnly: true },
+  { key: 'settings', label: '⚙️ Settings',        superOnly: true },
 ]
 
 const AWARD_DEFS = [
@@ -112,8 +112,19 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
 
 export default function AdminPanel() {
   const { user, isAdmin } = useAuthStore()
+  const [profile, setProfile] = useState(null)
+
+  // Load profile to check admin_level
+  useEffect(() => {
+    if (user) supabase.from('profiles').select('admin_level, is_admin').eq('id', user.id).single().then(({ data }) => setProfile(data))
+  }, [user])
+
+  const isSuperAdmin = isAdmin || profile?.is_admin
+  const isLeagueAdmin = profile?.admin_level === 'league_admin'
+  const hasAdminAccess = isSuperAdmin || isLeagueAdmin
+  const visibleTabs = TABS.filter(t => isSuperAdmin || !t.superOnly)
   const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState('health')
+  const [activeTab, setActiveTab] = useState(() => isSuperAdmin ? 'health' : 'leagues')
   const [loading, setLoading] = useState(true)
 
   // Data
@@ -194,9 +205,9 @@ export default function AdminPanel() {
   const [leagueAmendSaving, setLeagueAmendSaving] = useState(false)
 
   useEffect(() => {
-    if (!user || !isAdmin) { navigate('/'); return }
+    if (!user || !hasAdminAccess) { navigate('/'); return }
     loadAll()
-  }, [user, isAdmin])
+  }, [user, hasAdminAccess])
 
   useEffect(() => {
     if (activeTab === 'ko') loadKoData()
@@ -630,8 +641,23 @@ export default function AdminPanel() {
     loadUsers()
   }
 
+  const makeLeagueAdmin = async (userId, username) => {
+    const { error } = await supabase.from('profiles').update({ admin_level: 'league_admin' }).eq('id', userId)
+    if (error) { setActionResult(`❌ Error: ${error.message}`); return }
+    await logAudit('MAKE_LEAGUE_ADMIN', { user_id: userId, username })
+    setActionResult(`✅ ${username} is now a League Admin`)
+    loadUsers()
+  }
+
+  const removeLeagueAdmin = async (userId, username) => {
+    await supabase.from('profiles').update({ admin_level: null }).eq('id', userId)
+    await logAudit('REMOVE_LEAGUE_ADMIN', { user_id: userId, username })
+    setActionResult(`✅ ${username} League Admin access removed`)
+    loadUsers()
+  }
+
   const makeAdmin = async (userId, username) => {
-    const { error } = await supabase.from('profiles').update({ is_admin: true }).eq('id', userId)
+    const { error } = await supabase.from('profiles').update({ is_admin: true, admin_level: 'super_admin' }).eq('id', userId)
     if (error) { setActionResult(`Error: ${error.message}`); return }
     await logAudit('MAKE_ADMIN', { user_id: userId, username })
     setActionResult(`Made ${username} an admin`)
@@ -1026,6 +1052,9 @@ export default function AdminPanel() {
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '4px' }}>
             <h1 style={{ fontSize: '22px', fontWeight: '800' }}>⚙️ Admin Panel</h1>
+            <span style={{ background: isSuperAdmin ? 'var(--accent-orange)' : 'var(--scottish-navy)', color: 'white', fontSize: '11px', fontWeight: '700', padding: '2px 8px', borderRadius: '4px', marginLeft: '8px' }}>
+              {isSuperAdmin ? 'SUPER ADMIN' : 'LEAGUE ADMIN'}
+            </span>
             <span style={{ background: 'var(--accent-orange)', color: 'white', padding: '2px 10px', borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: '700' }}>ADMIN</span>
           </div>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px' }}>WC26 Predictor Management · {health.totalUsers} users</p>
@@ -1042,7 +1071,7 @@ export default function AdminPanel() {
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', overflowX: 'auto' }}>
         <div className="container">
           <div style={{ display: 'flex' }}>
-            {TABS.map(tab => (
+            {visibleTabs.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)} style={{
                 padding: '12px 16px', fontSize: '13px', whiteSpace: 'nowrap',
                 fontWeight: activeTab === tab.key ? '700' : '400',
@@ -1562,7 +1591,8 @@ export default function AdminPanel() {
                       <div>
                         <div style={{ fontWeight: '700', fontSize: '14px' }}>
                           {u.username}
-                          {u.is_admin && <span style={{ marginLeft: '6px', fontSize: '10px', background: 'var(--accent-orange)', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>ADMIN</span>}
+                          {u.is_admin && <span style={{ marginLeft: '6px', fontSize: '10px', background: 'var(--accent-orange)', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>SUPER ADMIN</span>}
+                          {!u.is_admin && u.admin_level === 'league_admin' && <span style={{ marginLeft: '6px', fontSize: '10px', background: 'var(--scottish-navy)', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>LEAGUE ADMIN</span>}
                           {u.is_banned && <span style={{ marginLeft: '6px', fontSize: '10px', background: '#e53935', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>BANNED</span>}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{u.email}</div>
@@ -1582,7 +1612,9 @@ export default function AdminPanel() {
                       <button onClick={() => sendBanWarning(u.id, u.username)} className="btn btn-sm" style={{ border: '1px solid #e53935', color: '#e53935', background: 'none' }}>⚠️ Warn</button>
                     )}
                     <button onClick={() => setConfirmAction({ type: 'reset', userId: u.id, username: u.username })} className="btn btn-secondary btn-sm">↺ Reset</button>
-                    {!u.is_admin && <button onClick={() => setConfirmAction({ type: 'makeAdmin', userId: u.id, username: u.username })} className="btn btn-sm" style={{ border: '1px solid var(--accent-orange)', color: 'var(--accent-orange)', background: 'none' }}>⭐ Admin</button>}
+                    {!u.is_admin && <button onClick={() => setConfirmAction({ type: 'makeAdmin', userId: u.id, username: u.username })} className="btn btn-sm" style={{ border: '1px solid var(--accent-orange)', color: 'var(--accent-orange)', background: 'none' }}>⭐ Super Admin</button>}
+                    {!u.is_admin && u.admin_level !== 'league_admin' && <button onClick={() => setConfirmAction({ type: 'makeLeagueAdmin', userId: u.id, username: u.username })} className="btn btn-sm" style={{ border: '1px solid var(--scottish-navy)', color: 'var(--scottish-navy)', background: 'none' }}>🏆 League Admin</button>}
+                    {!u.is_admin && u.admin_level === 'league_admin' && <button onClick={() => removeLeagueAdmin(u.id, u.username)} className="btn btn-sm" style={{ border: '1px solid var(--accent-red)', color: 'var(--accent-red)', background: 'none' }}>✕ Remove League Admin</button>}
                     <button onClick={() => setPointAdjUser(u.id)} className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none' }}>🎯 Points</button>
                     <button onClick={() => { setEditingUserPreds(u.id); loadUserPredictions(u.id) }} className="btn btn-sm" style={{ border: '1px solid var(--scottish-navy)', color: 'var(--scottish-navy)', background: 'none' }}>✏️ Predictions</button>
                   </div>
@@ -2310,7 +2342,8 @@ export default function AdminPanel() {
             <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>
               {confirmAction.type === 'ban' ? '🚫 Ban User' :
                confirmAction.type === 'reset' ? '↺ Reset Predictions' :
-               confirmAction.type === 'makeAdmin' ? '⭐ Make Admin' :
+               confirmAction.type === 'makeAdmin' ? '⭐ Make Super Admin' :
+               confirmAction.type === 'makeLeagueAdmin' ? '🏆 Make League Admin' :
                confirmAction.type === 'removeMember' ? '👤 Remove Member' :
                confirmAction.type === 'deleteOfflinePlayer' ? '🗑️ Delete Offline Player' :
                '🗑️ Delete League'}
@@ -2318,7 +2351,8 @@ export default function AdminPanel() {
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>
               {confirmAction.type === 'ban' ? `Ban ${confirmAction.username}? They won't be able to sign in.` :
                confirmAction.type === 'reset' ? `Delete all predictions for ${confirmAction.username}? This cannot be undone.` :
-               confirmAction.type === 'makeAdmin' ? `Give ${confirmAction.username} admin access?` :
+               confirmAction.type === 'makeAdmin' ? `Give ${confirmAction.username} full super admin access?` :
+               confirmAction.type === 'makeLeagueAdmin' ? `Give ${confirmAction.username} league admin access (leagues, offline players, points)?` :
                confirmAction.type === 'removeMember' ? `Remove ${confirmAction.username} from "${confirmAction.leagueName}"?` :
                confirmAction.type === 'deleteOfflinePlayer' ? `Delete offline player "${confirmAction.displayName}" and all their predictions? This cannot be undone.` :
                `Delete league "${confirmAction.leagueName}"? All members will be removed.`}
@@ -2328,6 +2362,7 @@ export default function AdminPanel() {
                 if (confirmAction.type === 'ban') banUser(confirmAction.userId, confirmAction.username)
                 else if (confirmAction.type === 'reset') resetUserPredictions(confirmAction.userId, confirmAction.username)
                 else if (confirmAction.type === 'makeAdmin') makeAdmin(confirmAction.userId, confirmAction.username)
+                else if (confirmAction.type === 'makeLeagueAdmin') makeLeagueAdmin(confirmAction.userId, confirmAction.username)
                 else if (confirmAction.type === 'removeMember') removeMemberFromLeague(confirmAction.leagueId, confirmAction.userId, confirmAction.username, confirmAction.leagueName)
                 else if (confirmAction.type === 'deleteLeague') deleteLeague(confirmAction.leagueId, confirmAction.leagueName)
                 else if (confirmAction.type === 'deleteKoLeague') deleteKoLeague(confirmAction.leagueId, confirmAction.leagueName)

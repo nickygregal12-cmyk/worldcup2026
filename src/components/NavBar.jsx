@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
 export default function NavBar() {
-  const { user, profile, isAdmin, logout } = useAuthStore()
+  const { user, profile, isAdmin, isLeagueAdmin, logout } = useAuthStore()
   const { darkMode, toggleDarkMode } = useAppStore()
   const location = useLocation()
 
@@ -51,7 +51,7 @@ export default function NavBar() {
               {label}
             </Link>
           ))}
-          {isAdmin && (
+          {(isAdmin || isLeagueAdmin) && (
             <Link to="/admin" style={{
               padding: '6px 14px', borderRadius: 'var(--radius-md)',
               fontSize: '14px', fontWeight: '400',

@@ -13,12 +13,14 @@ export const useAuthStore = create(
       profile: null,
       isLoading: true,
       isAdmin: false,
+      isLeagueAdmin: false,
       initialized: false,
 
       setUser: (user) => set({ user }),
       setProfile: (profile) => set({ 
         profile, 
-        isAdmin: profile?.is_admin || false 
+        isAdmin: profile?.is_admin || false,
+        isLeagueAdmin: profile?.admin_level === 'league_admin' || false
       }),
       setLoading: (isLoading) => set({ isLoading }),
 
@@ -33,7 +35,7 @@ export const useAuthStore = create(
           const playerAwards = awardPreds?.length || 0
           const goalsEntered = (goalPreds?.length || 0) > 0 ? 1 : 0
           const awards_done = playerAwards + goalsEntered
-          set({ profile: { ...data, awards_done }, isAdmin: data.is_admin || false })
+          set({ profile: { ...data, awards_done }, isAdmin: data.is_admin || false, isLeagueAdmin: data.admin_level === 'league_admin' || false })
         }
       },
 
@@ -48,7 +50,7 @@ export const useAuthStore = create(
               set({ user: session.user, initialized: true })
               get().loadProfile(session.user.id).catch(() => {})
             } else if (event === 'SIGNED_OUT') {
-              set({ user: null, profile: null, isAdmin: false, initialized: false })
+              set({ user: null, profile: null, isAdmin: false, isLeagueAdmin: false, initialized: false })
             } else if (event === 'TOKEN_REFRESHED' && session?.user) {
               set({ user: session.user })
             }
@@ -68,7 +70,7 @@ export const useAuthStore = create(
                   // Session genuinely gone
                   const currentState = get()
                   if (currentState.user) {
-                    set({ user: null, profile: null, isAdmin: false, initialized: false })
+                    set({ user: null, profile: null, isAdmin: false, isLeagueAdmin: false, initialized: false })
                   }
                 }
                 // If error (e.g. network offline), keep existing session
@@ -86,7 +88,7 @@ export const useAuthStore = create(
               set({ user: session.user })
               get().loadProfile(session.user.id).catch(() => {})
             } else if (!error) {
-              set({ user: null, profile: null, isAdmin: false, initialized: false })
+              set({ user: null, profile: null, isAdmin: false, isLeagueAdmin: false, initialized: false })
             }
             // If network error, silently keep existing session
           }).catch(() => {})
@@ -111,7 +113,7 @@ export const useAuthStore = create(
 
       logout: async () => {
         await supabase.auth.signOut()
-        set({ user: null, profile: null, isAdmin: false, initialized: false })
+        set({ user: null, profile: null, isAdmin: false, isLeagueAdmin: false, initialized: false })
       },
     }),
     {
