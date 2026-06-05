@@ -887,6 +887,29 @@ export default function AdminPanel() {
     loadLeagues()
   }
 
+
+  const updateLeagueLockType = async (league, lockType) => {
+    if (!league?.id || !['rolling', 'pre_tournament'].includes(lockType)) return
+    if ((league.lock_type || 'rolling') === lockType) return
+
+    const label = lockType === 'pre_tournament' ? 'Pre-tournament lock' : 'Match-by-match editing'
+    const message = lockType === 'pre_tournament'
+      ? `Switch "${league.name}" to pre-tournament lock? This does not delete predictions. If the league should be frozen now, use Snapshot now afterwards.`
+      : `Switch "${league.name}" to match-by-match editing? This does not delete predictions or existing committed snapshots.`
+
+    if (!confirm(message)) return
+
+    const { error } = await supabase
+      .from('leagues')
+      .update({ lock_type: lockType })
+      .eq('id', league.id)
+
+    if (error) { setActionResult(`❌ Error updating lock mode: ${error.message}`); return }
+    await logAudit('UPDATE_LEAGUE_LOCK_TYPE', { league_id: league.id, league: league.name, lock_type: lockType })
+    setActionResult(`✅ ${league.name} set to ${label}`)
+    loadLeagues()
+  }
+
   const addMemberToLeague = async (leagueId, leagueName, userId, username) => {
     // Check not already a member
     const { data: existing } = await supabase
@@ -2105,11 +2128,11 @@ export default function AdminPanel() {
                         <div style={{ fontWeight: '700', fontSize: '15px' }}>{league.name}</div>
                         <button onClick={() => { setEditingLeagueName(league.id); setEditingLeagueNameVal(league.name) }}
                           style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>✏️</button>
-                        {league.lock_type === 'pre_tournament' && (
-                          <span style={{ fontSize: '10px', fontWeight: '700', background: league.snapshot_taken_at ? 'var(--accent-green)' : 'var(--accent-gold)', color: 'white', padding: '2px 6px', borderRadius: 'var(--radius-full)' }}>
-                            {league.snapshot_taken_at ? '🔒 Locked' : '⏳ Pre-lock'}
-                          </span>
-                        )}
+                        <span style={{ fontSize: '10px', fontWeight: '700', background: league.lock_type === 'pre_tournament' ? (league.snapshot_taken_at ? 'var(--accent-green)' : 'var(--accent-gold)') : 'var(--accent-blue)', color: 'white', padding: '2px 6px', borderRadius: 'var(--radius-full)' }}>
+                          {league.lock_type === 'pre_tournament'
+                            ? (league.snapshot_taken_at ? '🔒 Locked' : '⏳ Pre-lock')
+                            : '⏱ Match lock'}
+                        </span>
                       </div>
                     )}
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -2140,6 +2163,28 @@ export default function AdminPanel() {
                     ))}
                   </div>
                 )}
+
+
+                {/* Lock mode admin override */}
+                <div style={{ marginBottom: '10px', padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '6px' }}>🔒 League lock mode</div>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <select
+                      className="input"
+                      value={league.lock_type || 'rolling'}
+                      onChange={e => updateLeagueLockType(league, e.target.value)}
+                      style={{ flex: '1 1 190px', minWidth: '190px', fontSize: '12px', padding: '7px 8px' }}
+                    >
+                      <option value="rolling">⏱ Match-by-match editing</option>
+                      <option value="pre_tournament">🔒 Pre-tournament lock</option>
+                    </select>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', flex: '2 1 220px' }}>
+                      {league.lock_type === 'pre_tournament'
+                        ? 'Uses committed league snapshots once taken.'
+                        : 'Members can edit future unlocked matches.'}
+                    </span>
+                  </div>
+                </div>
 
                 {/* Add member */}
                 {addingMemberTo === league.id ? (
@@ -2196,8 +2241,13 @@ export default function AdminPanel() {
                       {!league.snapshot_taken_at && (
                         <button onClick={async () => {
                           if (!confirm(`Take snapshot now for "${league.name}"? This locks all predictions immediately.`)) return
-                          const res = await fetch('/.netlify/functions/snapshot-league-predictions', { method: 'POST' })
+                          const res = await fetch('/.netlify/functions/snapshot-league-predictions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ league_id: league.id })
+                          })
                           const data = await res.json()
+                          if (!res.ok) { setActionResult(`❌ Snapshot failed: ${data.error || 'Unknown error'}`); return }
                           setActionResult(`✅ ${data.message} — ${data.predictions} predictions locked`)
                           loadLeagues()
                         }} className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', fontSize: '11px' }}>

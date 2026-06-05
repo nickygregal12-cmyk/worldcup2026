@@ -16,16 +16,37 @@ exports.handler = async (event) => {
   )
 
   try {
-    // Get all pre_tournament leagues that haven't been snapshotted yet
-    const { data: leagues, error: leagueError } = await supabase
+    let requestedLeagueId = null
+    if (event.httpMethod === 'POST' && event.body) {
+      try {
+        const body = JSON.parse(event.body)
+        requestedLeagueId = body.league_id || body.leagueId || null
+      } catch (_) {
+        requestedLeagueId = null
+      }
+    }
+
+    // Get pre_tournament leagues that haven't been snapshotted yet.
+    // Manual admin snapshots can target one league; scheduled runs still handle all pending leagues.
+    let leagueQuery = supabase
       .from('leagues')
       .select('id, name, lock_type, snapshot_taken_at')
       .eq('lock_type', 'pre_tournament')
       .is('snapshot_taken_at', null)
 
+    if (requestedLeagueId) leagueQuery = leagueQuery.eq('id', requestedLeagueId)
+
+    const { data: leagues, error: leagueError } = await leagueQuery
+
     if (leagueError) throw leagueError
     if (!leagues?.length) {
-      return { statusCode: 200, body: JSON.stringify({ message: 'No leagues to snapshot', count: 0 }) }
+      return {
+        statusCode: requestedLeagueId ? 404 : 200,
+        body: JSON.stringify({
+          message: requestedLeagueId ? 'League is not pending a pre-tournament snapshot' : 'No leagues to snapshot',
+          count: 0
+        })
+      }
     }
 
     let totalSnapshotted = 0
