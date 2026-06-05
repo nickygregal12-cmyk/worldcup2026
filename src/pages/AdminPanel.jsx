@@ -2078,7 +2078,7 @@ export default function AdminPanel() {
                       Pick which team advances — teams resolved from group predictions
                     </div>
                     {(() => {
-                      // Build predMap — use state if available, otherwise show what we have
+                      // Build predMap from group predictions
                       const predMap = {}
                       const groupMatches = matches.filter(m => m.stage === 'group')
                       groupMatches.forEach(m => {
@@ -2088,9 +2088,25 @@ export default function AdminPanel() {
                           predMap[m.id] = { home: parseInt(val.home), away: parseInt(val.away) }
                         }
                       })
-                      const predictionsLoaded = Object.keys(predMap).length > 0
                       const standings = calcPredictedStandings(groupMatches, predMap)
-                      const best3rd = getBest3rdTeams(standings)
+
+                      // Resolve a slot — handles both group slots (1A, 2B) and W slots (W73, W74)
+                      const resolveOfflineSlot = (slot) => {
+                        if (!slot) return null
+                        if (slot.startsWith('W')) {
+                          // Look up who the player picked to win that match
+                          const matchNum = parseInt(slot.replace('W', ''))
+                          const koMatch = matches.find(m => m.match_number === matchNum)
+                          if (!koMatch) return null
+                          const koKey = `${player.id}-${koMatch.id}`
+                          const koVal = offlineManualScores[koKey]
+                          if (!koVal?.picked_team_id) return null
+                          // Find the team object
+                          const allTeams = matches.flatMap(m => [m.home_team, m.away_team]).filter(Boolean)
+                          return allTeams.find(t => t?.id === koVal.picked_team_id) || null
+                        }
+                        return resolveSlot(slot, standings, groupMatches, predMap)
+                      }
 
                       return ALL_STAGES.map(stage => (
                         <div key={stage.key}>
@@ -2100,39 +2116,60 @@ export default function AdminPanel() {
                             if (!dbMatch) return null
                             const key = `${player.id}-${dbMatch.id}`
                             const val = offlineManualScores[key] || {}
-                            const homeTeam = resolveSlot(matchDef.home_slot, standings, groupMatches, predMap)
-                            const awayTeam = resolveSlot(matchDef.away_slot, standings, groupMatches, predMap)
+                            const homeTeam = resolveOfflineSlot(matchDef.home_slot)
+                            const awayTeam = resolveOfflineSlot(matchDef.away_slot)
                             const teams = [homeTeam, awayTeam].filter(Boolean)
+                            const pickedTeam = teams.find(t => t?.id === val.picked_team_id)
                             return (
                               <div key={matchDef.match_number} style={{ padding: '6px 8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: `1px solid ${val.picked_team_id ? 'var(--accent-green)' : 'var(--border-light)'}`, marginBottom: '3px' }}>
                                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>
                                   M{matchDef.match_number} · {matchDef.home_slot} vs {matchDef.away_slot}
+                                  {val.picked_team_id && <span style={{ color: 'var(--accent-green)', marginLeft: '6px' }}>✓ {pickedTeam?.name || 'Picked'}</span>}
                                 </div>
                                 {teams.length === 0 ? (
-                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>⚠️ Enter group predictions first to unlock</div>
+                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                    {matchDef.home_slot.startsWith('W') ? `Pick M${matchDef.home_slot.replace('W','')} winner first` : '⚠️ Enter group predictions first'}
+                                  </div>
                                 ) : (
                                   <div style={{ display: 'flex', gap: '6px' }}>
                                     {teams.map(team => (
                                       <button key={team.id}
                                         onClick={async () => {
-                                          setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], picked_team_id: team.id } }))
+                                          const newPickId = val.picked_team_id === team.id ? null : team.id
+                                          setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], picked_team_id: newPickId } }))
                                           await supabase.from('offline_predictions').upsert({
-                                            offline_player_id: player.id,
-                                            match_id: dbMatch.id,
-                                            picked_team_id: team.id,
+                                            offline_player_id: player.id, match_id: dbMatch.id, picked_team_id: newPickId,
                                           }, { onConflict: 'offline_player_id,match_id' })
                                         }}
                                         style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: `1.5px solid ${val.picked_team_id === team.id ? 'var(--accent-green)' : 'var(--border-light)'}`, background: val.picked_team_id === team.id ? 'var(--accent-green-light)' : 'var(--bg-secondary)', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
-                                        {team.flag_emoji} {team.short_code || team.name}
+                                        {team.flag_emoji} {team.short_code || team.name}{val.picked_team_id === team.id && ' ✓'}
                                       </button>
                                     ))}
-                                    {teams.length === 1 && (
-                                      <div style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1.5px dashed var(--border-medium)', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>
-                                        TBD
-                                      </div>
-                                    )}
+                                    {teams.length === 1 && <div style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1.5px dashed var(--border-medium)', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>TBD</div>}
                                   </div>
                                 )}
+                                {/* Override — pick any team if bracket prediction was wrong */}
+                                <details style={{ marginTop: '4px' }}>
+                                  <summary style={{ fontSize: '10px', color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>🔧 Override — pick any team</summary>
+                                  <select onChange={async e => {
+                                    if (!e.target.value) return
+                                    const newId = e.target.value
+                                    setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], picked_team_id: newId } }))
+                                    await supabase.from('offline_predictions').upsert({
+                                      offline_player_id: player.id, match_id: dbMatch.id, picked_team_id: newId,
+                                    }, { onConflict: 'offline_player_id,match_id' })
+                                  }} value={val.picked_team_id || ''}
+                                    style={{ width: '100%', marginTop: '4px', padding: '4px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '12px' }}>
+                                    <option value="">Select any team...</option>
+                                    {matches.reduce((acc, m) => {
+                                      if (m.home_team && !acc.find(t => t.id === m.home_team.id)) acc.push(m.home_team)
+                                      if (m.away_team && !acc.find(t => t.id === m.away_team.id)) acc.push(m.away_team)
+                                      return acc
+                                    }, []).sort((a,b) => a.name?.localeCompare(b.name)).map(t => (
+                                      <option key={t.id} value={t.id}>{t.flag_emoji} {t.name}</option>
+                                    ))}
+                                  </select>
+                                </details>
                               </div>
                             )
                           })}
