@@ -1167,10 +1167,10 @@ export default function AdminPanel() {
 
       if (!allItems.length) throw new Error('No text found in PDF — is it a scanned image?')
 
-      // Group items into rows by Y position (within 8px tolerance)
+      // Group items into rows by Y position (within 12px tolerance)
       const rowMap = {}
       allItems.forEach(item => {
-        const rowKey = `${item.page}_${Math.round(item.y / 8) * 8}`
+        const rowKey = `${item.page}_${Math.round(item.y / 12) * 12}`
         if (!rowMap[rowKey]) rowMap[rowKey] = []
         rowMap[rowKey].push(item)
       })
@@ -1183,45 +1183,55 @@ export default function AdminPanel() {
         })
         .map(row => row.sort((a, b) => a.x - b.x).map(i => i.text))
 
-      // Parse predictions — look for rows starting with match number 1-72
+      // Parse predictions using match number as spatial anchor
+      // For each match 1-72, find its Y position and look for scores nearby
       const predictions = []
-      for (const parts of rows) {
-        if (parts.length < 4) continue
 
-        // Match number must be first item
-        const matchNum = parseInt(parts[0])
-        if (isNaN(matchNum) || matchNum < 1 || matchNum > 72) continue
+      // Find all items that are standalone match numbers (1-72)
+      const matchAnchors = {}
+      allItems.forEach(item => {
+        const n = parseInt(item.text)
+        if (!isNaN(n) && n >= 1 && n <= 72 && /^\d{1,2}$/.test(item.text)) {
+          // Keep leftmost occurrence (real match# is on left, position numbers on right)
+          if (!matchAnchors[n] || item.x < matchAnchors[n].x) {
+            matchAnchors[n] = item
+          }
+        }
+      })
 
-        // Find scores — skip times (contain :) and dates (contain -)
-        // Look for two 1-2 digit numbers after position 3 (past match#, group, date, time)
-        let homeScore = null, awayScore = null, isJoker = false
+      for (let matchNum = 1; matchNum <= 72; matchNum++) {
+        const anchor = matchAnchors[matchNum]
+        if (!anchor) continue
 
-        // Find scores — filter out times (contain :), dates (contain -), and group letters
-        // Also skip the first 2 items (match# and group letter)
+        // Get all items within 15px vertically on same page, to the right of match number
+        const rowItems = allItems
+          .filter(item => item.page === anchor.page && Math.abs(item.y - anchor.y) <= 15 && item.x > anchor.x)
+          .sort((a, b) => a.x - b.x)
+          .map(i => i.text)
+
+        // Find score pair: two 1-2 digit numbers (0-20), skip times/dates/long strings
         const scoreCandidates = []
-        for (let i = 2; i < parts.length; i++) {
-          const p = parts[i]
-          // Skip times, dates, single letters (group names)
+        for (let i = 0; i < rowItems.length; i++) {
+          const p = rowItems[i]
           if (p.includes(':') || p.includes('-') || p.includes('/')) continue
-          if (p.length === 1 && /[A-L]/.test(p)) continue // group letter
+          if (p.length > 2) continue // skip long strings
+          if (/^[A-Za-z]/.test(p)) continue // skip words
           const n = parseInt(p)
-          if (!isNaN(n) && n >= 0 && n <= 20 && /^\d{1,2}$/.test(p)) {
+          if (!isNaN(n) && n >= 0 && n <= 20) {
             scoreCandidates.push({ val: n, idx: i })
           }
         }
 
-        // Find two consecutive candidates (within 4 positions of each other)
+        let homeScore = null, awayScore = null, isJoker = false
         for (let si = 0; si < scoreCandidates.length - 1; si++) {
           const curr = scoreCandidates[si]
           const next = scoreCandidates[si + 1]
           if (next.idx - curr.idx <= 4) {
             homeScore = curr.val
             awayScore = next.val
-            // Check for standalone X joker after scores
-            for (let j = next.idx + 1; j < parts.length; j++) {
-              if (parts[j] === 'X' || parts[j] === 'x' || parts[j] === '✓') {
-                isJoker = true
-                break
+            for (let j = next.idx + 1; j < rowItems.length; j++) {
+              if (rowItems[j] === 'X' || rowItems[j] === 'x' || rowItems[j] === '✓') {
+                isJoker = true; break
               }
             }
             break
@@ -1229,18 +1239,7 @@ export default function AdminPanel() {
         }
 
         if (homeScore !== null && awayScore !== null) {
-          // Debug log for problem matches
-          if ([5, 7, 23, 61].includes(matchNum)) {
-            console.log(`M${matchNum}: parts=${JSON.stringify(parts)}, scores=${homeScore}-${awayScore}, joker=${isJoker}`)
-          }
-          // Only add if not already found (deduplicate by match number)
-          if (!predictions.find(p => p.match_number === matchNum)) {
-            predictions.push({ match_number: matchNum, home_score: homeScore, away_score: awayScore, is_joker: isJoker })
-          }
-        } else {
-          if ([5, 7, 23, 61].includes(matchNum)) {
-            console.log(`M${matchNum}: NO SCORES FOUND — parts=${JSON.stringify(parts)}`)
-          }
+          predictions.push({ match_number: matchNum, home_score: homeScore, away_score: awayScore, is_joker: isJoker })
         }
       }
 
