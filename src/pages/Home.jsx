@@ -101,7 +101,7 @@ export default function Home() {
   useEffect(() => { loadData() }, [user])
 
   useEffect(() => {
-    if (nextMatch?.venue?.city && tournamentStarted) fetchWeather(nextMatch.venue.city)
+    if (nextMatch?.venue?.city) fetchWeather(nextMatch.venue.city)
   }, [nextMatch?.id])
 
   // Re-fetch when returning to tab so progress bars update immediately
@@ -147,6 +147,10 @@ export default function Home() {
 
     // Load user prediction count + leaderboard position
     if (user) {
+      // Refresh profile from DB to pick up knockout_picks_count etc
+      const { data: freshProfile } = await supabase
+        .from('profiles').select('*').eq('id', user.id).single()
+      if (freshProfile) useAuthStore.getState().setProfile(freshProfile)
       const { count } = await supabase.from('predictions')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
