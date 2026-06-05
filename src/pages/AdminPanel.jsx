@@ -844,6 +844,7 @@ export default function AdminPanel() {
         created_by: user.id,
       }).select().single()
       if (error) throw error
+
       await logAudit('CREATE_OFFLINE_PLAYER', { player_id: player.id, display_name: offlineDisplayName, league_id: offlineLeagueId })
       setActionResult(`✅ Offline player "${offlineDisplayName}" created`)
       setOfflineDisplayName('')
@@ -2089,10 +2090,21 @@ export default function AdminPanel() {
                   setPlayerAdjLeagueId(e.target.value)
                   setPlayerAdjUserId('')
                   if (e.target.value) {
-                    const { data } = await supabase.from('league_members')
+                    // Fetch real members
+                    const { data: realMembers } = await supabase.from('league_members')
                       .select('user_id, league_points, profile:user_id(id, username, display_name, is_offline)')
                       .eq('league_id', e.target.value)
-                    setPlayerAdjLeagueMembers(data || [])
+                    // Fetch offline players in this league
+                    const { data: offlineInLeague } = await supabase.from('offline_players')
+                      .select('id, display_name, league_points')
+                      .eq('league_id', e.target.value)
+                    // Merge — offline players as pseudo-members
+                    const offlineAsMembers = (offlineInLeague || []).map(op => ({
+                      user_id: op.id,
+                      league_points: op.league_points || 0,
+                      profile: { id: op.id, display_name: op.display_name, username: op.display_name, is_offline: true }
+                    }))
+                    setPlayerAdjLeagueMembers([...(realMembers || []), ...offlineAsMembers])
                   }
                 }}>
                   <option value="">Select league...</option>
@@ -2122,18 +2134,34 @@ export default function AdminPanel() {
                     if (isNaN(amount)) { setActionResult('❌ Invalid amount'); return }
                     setPlayerAdjSaving(true)
                     const member = playerAdjLeagueMembers.find(m => m.user_id === playerAdjUserId)
-                    await supabase.from('league_members')
-                      .update({ league_points: (member?.league_points || 0) + amount })
-                      .eq('league_id', playerAdjLeagueId).eq('user_id', playerAdjUserId)
+                    const isOffline = member?.profile?.is_offline
+                    if (isOffline) {
+                      // Update offline_players table
+                      await supabase.from('offline_players')
+                        .update({ league_points: (member?.league_points || 0) + amount })
+                        .eq('id', playerAdjUserId)
+                    } else {
+                      // Update league_members table
+                      await supabase.from('league_members')
+                        .update({ league_points: (member?.league_points || 0) + amount })
+                        .eq('league_id', playerAdjLeagueId).eq('user_id', playerAdjUserId)
+                    }
                     await logAudit('PLAYER_POINTS_ADJUSTMENT', { league_id: playerAdjLeagueId, user_id: playerAdjUserId, amount, reason: playerAdjReason })
                     setActionResult(`✅ ${amount > 0 ? '+' : ''}${amount}pts applied to ${member?.profile?.display_name || member?.profile?.username} · ${playerAdjReason}`)
                     setPlayerAdjAmount('')
                     setPlayerAdjReason('')
                     setPlayerAdjUserId('')
-                    const { data } = await supabase.from('league_members')
+                    // Refresh members list
+                    const { data: refreshed } = await supabase.from('league_members')
                       .select('user_id, league_points, profile:user_id(id, username, display_name, is_offline)')
                       .eq('league_id', playerAdjLeagueId)
-                    setPlayerAdjLeagueMembers(data || [])
+                    const { data: refreshedOffline } = await supabase.from('offline_players')
+                      .select('id, display_name, league_points').eq('league_id', playerAdjLeagueId)
+                    const offlineAsMembers = (refreshedOffline || []).map(op => ({
+                      user_id: op.id, league_points: op.league_points || 0,
+                      profile: { id: op.id, display_name: op.display_name, username: op.display_name, is_offline: true }
+                    }))
+                    setPlayerAdjLeagueMembers([...(refreshed || []), ...offlineAsMembers])
                     setPlayerAdjSaving(false)
                   }}>
                   {playerAdjSaving ? '⏳ Saving...' : 'Apply to player'}
