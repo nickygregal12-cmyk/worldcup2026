@@ -1117,102 +1117,105 @@ export default function AdminPanel() {
     setOfflineImporting(true)
     setActionResult('')
     try {
-      // Load PDF.js from CDN
+      // Load PDF.js from CDN if not already loaded
       if (!window.pdfjsLib) {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script')
           script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
-          script.onload = resolve
-          script.onerror = reject
+          script.onload = () => {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+              'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+            resolve()
+          }
+          script.onerror = () => reject(new Error('Failed to load PDF.js library'))
           document.head.appendChild(script)
         })
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
       }
 
-      // Load PDF
+      if (!window.pdfjsLib) throw new Error('PDF.js failed to initialise')
+
+      // Load PDF from file
       const buffer = await file.arrayBuffer()
-      const pdf = await window.pdfjsLib.getDocument({ data: buffer }).promise
+      const loadingTask = window.pdfjsLib.getDocument({ data: buffer })
+      const pdf = await loadingTask.promise
 
-      // Extract all text from all pages
-      let fullText = ''
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i)
+      // Extract all text from all pages with position data
+      const allItems = []
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum)
         const content = await page.getTextContent()
-        // Get text items with their x positions for column detection
-        const items = content.items.map(item => ({
-          text: item.str.trim(),
-          x: Math.round(item.transform[4]),
-          y: Math.round(item.transform[5]),
-        })).filter(item => item.text.length > 0)
-
-        // Group by y position (rows)
-        const rows = {}
-        items.forEach(item => {
-          const rowKey = Math.round(item.y / 3) * 3 // group within 3px
-          if (!rows[rowKey]) rows[rowKey] = []
-          rows[rowKey].push(item)
+        content.items.forEach(item => {
+          if (item.str?.trim()) {
+            allItems.push({
+              text: item.str.trim(),
+              x: Math.round(item.transform[4]),
+              y: Math.round(item.transform[5]),
+              page: pageNum,
+            })
+          }
         })
-
-        // Sort rows top to bottom, items left to right
-        const sortedRows = Object.entries(rows)
-          .sort((a, b) => b[0] - a[0])
-          .map(([, items]) => items.sort((a, b) => a.x - b.x).map(i => i.text))
-
-        fullText += sortedRows.map(r => r.join('\t')).join('\n') + '\n'
       }
 
-      // Parse predictions from extracted text
-      // Format: match# | group | date | time | home_team | home_score | away_score | away_team | joker? | venue
+      if (!allItems.length) throw new Error('No text found in PDF — is it a scanned image?')
+
+      // Group items into rows by Y position (within 6px tolerance)
+      const rowMap = {}
+      allItems.forEach(item => {
+        const rowKey = `${item.page}_${Math.round(item.y / 6) * 6}`
+        if (!rowMap[rowKey]) rowMap[rowKey] = []
+        rowMap[rowKey].push(item)
+      })
+
+      // Sort rows and within each row sort by X
+      const rows = Object.values(rowMap)
+        .sort((a, b) => {
+          if (a[0].page !== b[0].page) return a[0].page - b[0].page
+          return b[0].y - a[0].y // higher Y = higher on page
+        })
+        .map(row => row.sort((a, b) => a.x - b.x).map(i => i.text))
+
+      // Parse predictions — look for rows starting with match number 1-72
       const predictions = []
-      const lines = fullText.split('\n')
+      for (const parts of rows) {
+        if (parts.length < 4) continue
 
-      for (const line of lines) {
-        const parts = line.split('\t').map(p => p.trim()).filter(p => p.length > 0)
-        if (parts.length < 6) continue
-
-        // First part should be a match number (1-72)
+        // Match number must be first item
         const matchNum = parseInt(parts[0])
         if (isNaN(matchNum) || matchNum < 1 || matchNum > 72) continue
 
-        // Find two consecutive integers that look like scores (0-20)
+        // Find two consecutive score-like integers (0-20)
         let homeScore = null, awayScore = null, isJoker = false
-        let scoreIdx = -1
 
         for (let i = 1; i < parts.length - 1; i++) {
           const a = parseInt(parts[i])
           const b = parseInt(parts[i + 1])
-          if (!isNaN(a) && !isNaN(b) && a >= 0 && a <= 20 && b >= 0 && b <= 20) {
-            // Make sure they're not years or match numbers
-            if (parts[i].length <= 2 && parts[i+1].length <= 2) {
-              homeScore = a
-              awayScore = b
-              scoreIdx = i
-              break
+          if (!isNaN(a) && !isNaN(b) && a >= 0 && a <= 20 && b >= 0 && b <= 20
+              && parts[i].length <= 2 && parts[i + 1].length <= 2) {
+            homeScore = a
+            awayScore = b
+            // Check ALL remaining items in row for joker marker
+            for (let j = i + 2; j < parts.length; j++) {
+              if (['x', 'X', '✓', 'Y', 'yes', '✗', '×'].includes(parts[j])) {
+                isJoker = true
+                break
+              }
             }
-          }
-        }
-
-        if (homeScore === null || awayScore === null) continue
-
-        // Check for joker marker (X, x, ✓, Y, yes) after the scores
-        for (let i = scoreIdx + 2; i < Math.min(parts.length, scoreIdx + 5); i++) {
-          if (['x', 'X', '✓', 'Y', 'yes', '1'].includes(parts[i])) {
-            isJoker = true
             break
           }
         }
 
-        predictions.push({ match_number: matchNum, home_score: homeScore, away_score: awayScore, is_joker: isJoker })
+        if (homeScore !== null && awayScore !== null) {
+          predictions.push({ match_number: matchNum, home_score: homeScore, away_score: awayScore, is_joker: isJoker })
+        }
       }
 
       if (!predictions.length) {
-        setActionResult('❌ No predictions found in PDF — make sure it uses the standard template format')
+        setActionResult('❌ No predictions found — make sure scores are filled in and the PDF uses the standard template')
         setOfflineImporting(false)
         return
       }
 
-      // Match to DB matches
+      // Match to DB matches by match_number
       const toSave = []
       const unmatched = []
       let jokersFound = 0
@@ -1225,10 +1228,13 @@ export default function AdminPanel() {
       }
 
       setOfflineImportPreview({ targetPlayerId, predictions: toSave, jokersFound, unmatched, source: 'pdf' })
+      const foundNums = predictions.map(p => p.match_number)
+      const missingNums = Array.from({length: 72}, (_, i) => i + 1).filter(n => !foundNums.includes(n))
+      if (missingNums.length) setActionResult(`⚠️ Found ${predictions.length}/72 predictions. Missing: M${missingNums.join(', M')}`)
 
     } catch (e) {
       console.error('PDF parse error:', e)
-      setActionResult(`❌ Error parsing PDF: ${e.message}`)
+      setActionResult(`❌ Error parsing PDF: ${e.message || 'Unknown error — check browser console'}`)
     }
     setOfflineImporting(false)
   }
