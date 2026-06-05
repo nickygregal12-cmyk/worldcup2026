@@ -301,7 +301,24 @@ export default function AdminPanel() {
       .from('leagues')
       .select('*, creator:created_by(username), members:league_members(user_id, profile:user_id(username))')
       .order('created_at', { ascending: false })
-    setLeagues(data || [])
+    // Fetch offline players and merge into each league's members
+    const { data: offlinePlayers } = await supabase
+      .from('offline_players').select('id, display_name, league_id, league_points')
+    const offlineByLeague = {}
+    ;(offlinePlayers || []).forEach(op => {
+      if (!offlineByLeague[op.league_id]) offlineByLeague[op.league_id] = []
+      offlineByLeague[op.league_id].push({
+        user_id: op.id,
+        league_points: op.league_points || 0,
+        is_offline: true,
+        profile: { username: op.display_name + ' (offline)', display_name: op.display_name }
+      })
+    })
+    const merged = (data || []).map(league => ({
+      ...league,
+      members: [...(league.members || []), ...(offlineByLeague[league.id] || [])]
+    }))
+    setLeagues(merged)
   }
 
   const loadAudit = async () => {
