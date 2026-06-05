@@ -1204,10 +1204,11 @@ export default function AdminPanel() {
         if (!anchor) continue
 
         // Get all items within 15px vertically on same page, to the right of match number
-        const rowItems = allItems
+        const rowItemsFull = allItems
           .filter(item => item.page === anchor.page && Math.abs(item.y - anchor.y) <= 15 && item.x > anchor.x)
           .sort((a, b) => a.x - b.x)
-          .map(i => i.text)
+
+        const rowItems = rowItemsFull.map(i => i.text)
 
         // Find score pair: two 1-2 digit numbers (0-20), skip times/dates/long strings
         const scoreCandidates = []
@@ -1223,19 +1224,27 @@ export default function AdminPanel() {
         }
 
         let homeScore = null, awayScore = null, isJoker = false
+        let scoreEndX = null
         for (let si = 0; si < scoreCandidates.length - 1; si++) {
           const curr = scoreCandidates[si]
           const next = scoreCandidates[si + 1]
           if (next.idx - curr.idx <= 4) {
             homeScore = curr.val
             awayScore = next.val
-            for (let j = next.idx + 1; j < rowItems.length; j++) {
-              if (rowItems[j] === 'X' || rowItems[j] === 'x' || rowItems[j] === '✓') {
-                isJoker = true; break
-              }
-            }
+            scoreEndX = rowItemsFull[next.idx]?.x || 0
             break
           }
+        }
+
+        // Joker: look for standalone "X" that appears AFTER the scores but BEFORE venue name
+        // Venue names start well to the right — joker X should be within ~100px of scores
+        if (homeScore !== null && scoreEndX !== null) {
+          const jokerCandidates = rowItemsFull.filter(item =>
+            item.x > scoreEndX &&
+            item.x < scoreEndX + 120 && // within 120px after scores
+            (item.text === 'X' || item.text === 'x' || item.text === '✓')
+          )
+          isJoker = jokerCandidates.length > 0
         }
 
         if (homeScore !== null && awayScore !== null) {
