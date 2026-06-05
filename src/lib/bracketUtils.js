@@ -4,37 +4,37 @@
  * and builds the R32 bracket accordingly
  */
 
-// Official R32 bracket structure
+// Official R32 bracket structure — verified against FIFA/official sources
 // home/away are slot descriptors, not teams
 export const R32_MATCHES = [
-  { match_number: 73, home_slot: '2A', away_slot: '2B', venue: 'Los Angeles',   kickoff: '2026-06-28T19:00:00Z' },
-  { match_number: 74, home_slot: '1C', away_slot: '2F', venue: 'Houston',       kickoff: '2026-06-29T17:00:00Z' },
-  { match_number: 75, home_slot: '1E', away_slot: '3X', venue: 'Boston',        kickoff: '2026-06-29T20:30:00Z' },
-  { match_number: 76, home_slot: '1F', away_slot: '2C', venue: 'Monterrey',     kickoff: '2026-06-30T01:00:00Z' },
-  { match_number: 77, home_slot: '2E', away_slot: '2I', venue: 'Dallas',        kickoff: '2026-06-30T17:00:00Z' },
-  { match_number: 78, home_slot: '1I', away_slot: '3Y', venue: 'New York/NJ',   kickoff: '2026-06-30T21:00:00Z' },
-  { match_number: 79, home_slot: '1A', away_slot: '3Z', venue: 'Mexico City',   kickoff: '2026-07-01T01:00:00Z' },
-  { match_number: 80, home_slot: '1L', away_slot: '3W', venue: 'Atlanta',       kickoff: '2026-07-01T16:00:00Z' },
-  { match_number: 81, home_slot: '1G', away_slot: '3V', venue: 'Seattle',       kickoff: '2026-07-01T20:00:00Z' },
-  { match_number: 82, home_slot: '1D', away_slot: '3U', venue: 'San Francisco', kickoff: '2026-07-02T00:00:00Z' },
-  { match_number: 83, home_slot: '1H', away_slot: '2J', venue: 'Los Angeles',   kickoff: '2026-07-02T19:00:00Z' },
-  { match_number: 84, home_slot: '2K', away_slot: '2L', venue: 'Toronto',       kickoff: '2026-07-02T23:00:00Z' },
-  { match_number: 85, home_slot: '1B', away_slot: '3T', venue: 'Vancouver',     kickoff: '2026-07-03T03:00:00Z' },
-  { match_number: 86, home_slot: '2D', away_slot: '2G', venue: 'Dallas',        kickoff: '2026-07-03T18:00:00Z' },
-  { match_number: 87, home_slot: '1J', away_slot: '2H', venue: 'Miami',         kickoff: '2026-07-03T22:00:00Z' },
-  { match_number: 88, home_slot: '1K', away_slot: '3S', venue: 'Kansas City',   kickoff: '2026-07-04T01:30:00Z' },
+  { match_number: 73, home_slot: '2A',  away_slot: '2B',  venue: 'Los Angeles',   kickoff: '2026-06-28T19:00:00Z' },
+  { match_number: 74, home_slot: '1E',  away_slot: '3T',  venue: 'Boston',        kickoff: '2026-06-29T17:00:00Z' },
+  { match_number: 75, home_slot: '1F',  away_slot: '2C',  venue: 'Monterrey',     kickoff: '2026-06-29T20:30:00Z' },
+  { match_number: 76, home_slot: '1C',  away_slot: '2F',  venue: 'Houston',       kickoff: '2026-06-30T01:00:00Z' },
+  { match_number: 77, home_slot: '1I',  away_slot: '3X',  venue: 'New York/NJ',   kickoff: '2026-06-30T17:00:00Z' },
+  { match_number: 78, home_slot: '2E',  away_slot: '2I',  venue: 'Dallas',        kickoff: '2026-06-30T21:00:00Z' },
+  { match_number: 79, home_slot: '1A',  away_slot: '3Y',  venue: 'Mexico City',   kickoff: '2026-07-01T01:00:00Z' },
+  { match_number: 80, home_slot: '1L',  away_slot: '3Z',  venue: 'Atlanta',       kickoff: '2026-07-01T16:00:00Z' },
+  { match_number: 81, home_slot: '1D',  away_slot: '3W',  venue: 'San Francisco', kickoff: '2026-07-01T20:00:00Z' },
+  { match_number: 82, home_slot: '1G',  away_slot: '3V',  venue: 'Seattle',       kickoff: '2026-07-02T00:00:00Z' },
+  { match_number: 83, home_slot: '2K',  away_slot: '2L',  venue: 'Toronto',       kickoff: '2026-07-02T19:00:00Z' },
+  { match_number: 84, home_slot: '1H',  away_slot: '2J',  venue: 'Los Angeles',   kickoff: '2026-07-02T23:00:00Z' },
+  { match_number: 85, home_slot: '1B',  away_slot: '3U',  venue: 'Vancouver',     kickoff: '2026-07-03T03:00:00Z' },
+  { match_number: 86, home_slot: '2D',  away_slot: '2G',  venue: 'Dallas',        kickoff: '2026-07-03T18:00:00Z' },
+  { match_number: 87, home_slot: '1J',  away_slot: '2H',  venue: 'Miami',         kickoff: '2026-07-03T22:00:00Z' },
+  { match_number: 88, home_slot: '1K',  away_slot: '3S',  venue: 'Kansas City',   kickoff: '2026-07-04T01:30:00Z' },
 ]
 
-// R16 bracket — winners of R32 matches
+// R16 bracket — verified against official sources
 export const R16_MATCHES = [
-  { match_number: 89, home_slot: 'W73', away_slot: 'W74', venue: 'Houston',       kickoff: '2026-07-04T17:00:00Z' },
-  { match_number: 90, home_slot: 'W75', away_slot: 'W76', venue: 'Philadelphia',  kickoff: '2026-07-04T21:00:00Z' },
-  { match_number: 91, home_slot: 'W77', away_slot: 'W78', venue: 'New York/NJ',   kickoff: '2026-07-05T20:00:00Z' },
+  { match_number: 89, home_slot: 'W74', away_slot: 'W77', venue: 'Philadelphia',  kickoff: '2026-07-04T17:00:00Z' },
+  { match_number: 90, home_slot: 'W73', away_slot: 'W75', venue: 'Houston',       kickoff: '2026-07-04T21:00:00Z' },
+  { match_number: 91, home_slot: 'W76', away_slot: 'W78', venue: 'New York/NJ',   kickoff: '2026-07-05T20:00:00Z' },
   { match_number: 92, home_slot: 'W79', away_slot: 'W80', venue: 'Mexico City',   kickoff: '2026-07-06T00:00:00Z' },
-  { match_number: 93, home_slot: 'W81', away_slot: 'W82', venue: 'Dallas',        kickoff: '2026-07-06T19:00:00Z' },
-  { match_number: 94, home_slot: 'W83', away_slot: 'W84', venue: 'Seattle',       kickoff: '2026-07-07T00:00:00Z' },
-  { match_number: 95, home_slot: 'W85', away_slot: 'W86', venue: 'Atlanta',       kickoff: '2026-07-07T16:00:00Z' },
-  { match_number: 96, home_slot: 'W87', away_slot: 'W88', venue: 'Vancouver',     kickoff: '2026-07-07T20:00:00Z' },
+  { match_number: 93, home_slot: 'W83', away_slot: 'W84', venue: 'Dallas',        kickoff: '2026-07-06T19:00:00Z' },
+  { match_number: 94, home_slot: 'W81', away_slot: 'W82', venue: 'Seattle',       kickoff: '2026-07-07T00:00:00Z' },
+  { match_number: 95, home_slot: 'W86', away_slot: 'W88', venue: 'Atlanta',       kickoff: '2026-07-07T16:00:00Z' },
+  { match_number: 96, home_slot: 'W85', away_slot: 'W87', venue: 'Vancouver',     kickoff: '2026-07-07T20:00:00Z' },
 ]
 
 // QF bracket

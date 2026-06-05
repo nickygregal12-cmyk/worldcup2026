@@ -49,6 +49,29 @@ export default function Knockout() {
 
   useEffect(() => { loadData() }, [user])
 
+  // Recalculate affected matches when standings change
+  useEffect(() => {
+    if (!standings || Object.keys(standings).length === 0) return
+    if (Object.keys(knockoutPicks).length === 0) return
+    const newAffected = []
+    for (const [mn, pick] of Object.entries(knockoutPicks)) {
+      if (!pick?.winner_id) continue
+      const matchNum = parseInt(mn)
+      const matchDef = ALL_STAGES.flatMap(s => s.matches).find(m => m.match_number === matchNum)
+      if (!matchDef) continue
+      // Only check R32 matches (slots starting with 1/2/3 not W)
+      // R16+ are cascade dependent so don't flag them
+      const isR32 = !matchDef.home_slot.startsWith('W') && !matchDef.away_slot.startsWith('W')
+      if (!isR32) continue
+      const { home, away } = getMatchTeams(matchDef)
+      // Only flag if BOTH teams are resolved but neither matches the saved pick
+      if (home && away && home.id !== pick.winner_id && away.id !== pick.winner_id) {
+        newAffected.push(matchNum)
+      }
+    }
+    setAffectedMatches(newAffected)
+  }, [standings])
+
   const loadData = async () => {
     try {
       setLoading(true)
@@ -96,10 +119,19 @@ export default function Knockout() {
     const matchNum = parseInt(slot.replace('W', ''))
     const pick = knockoutPicks[matchNum]
     if (!pick?.winner_id) return null
+    // Use stored team object if available (instant propagation)
+    if (pick.winner_team) return pick.winner_team
+    // Search in group matches
     for (const m of groupMatches) {
       if (m.home_team?.id === pick.winner_id) return m.home_team
       if (m.away_team?.id === pick.winner_id) return m.away_team
     }
+    // Search in other pick's stored teams
+    for (const [, p] of Object.entries(knockoutPicks)) {
+      if (p?.home_team?.id === pick.winner_id) return p.home_team
+      if (p?.away_team?.id === pick.winner_id) return p.away_team
+    }
+    if (pick.winner_id) return { id: pick.winner_id, name: '?', flag_emoji: '🏳️', short_code: '???' }
     return null
   }, [knockoutPicks, groupMatches])
 
@@ -151,7 +183,8 @@ export default function Knockout() {
     }
 
     setAffectedMatches(prev => prev.filter(n => n !== mn))
-    const newPick = { winner_id: winnerId, home_id: home?.id, away_id: away?.id }
+    const winner = home?.id === winnerId ? home : away
+    const newPick = { winner_id: winnerId, home_id: home?.id, away_id: away?.id, winner_team: winner, home_team: home, away_team: away }
     setKnockoutPicks(prev => ({ ...prev, [mn]: newPick }))
     setSaving(prev => ({ ...prev, [mn]: true }))
 
@@ -425,7 +458,7 @@ export default function Knockout() {
           )}
 
           {/* Pre-tournament tip — only show if no picks made yet */}
-          {isPreTournament && Object.keys(knockoutPicks).length === 0 && (
+          {isPreTournament && totalPicks === 0 && (
             <div style={{ marginTop: '10px', background: 'rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', padding: '8px 14px', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
               💡 Predict all 3 games in a group to lock those teams into the bracket
             </div>
