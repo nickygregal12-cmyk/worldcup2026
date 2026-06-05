@@ -39,9 +39,9 @@ export const R16_MATCHES = [
 
 // QF bracket
 export const QF_MATCHES = [
-  { match_number: 97, home_slot: 'W89', away_slot: 'W90', venue: 'Boston',      kickoff: '2026-07-09T20:00:00Z' },
-  { match_number: 98, home_slot: 'W91', away_slot: 'W92', venue: 'Los Angeles', kickoff: '2026-07-10T19:00:00Z' },
-  { match_number: 99, home_slot: 'W93', away_slot: 'W94', venue: 'Miami',       kickoff: '2026-07-11T21:00:00Z' },
+  { match_number: 97,  home_slot: 'W89', away_slot: 'W90', venue: 'Boston',      kickoff: '2026-07-09T20:00:00Z' },
+  { match_number: 98,  home_slot: 'W93', away_slot: 'W94', venue: 'Los Angeles', kickoff: '2026-07-10T19:00:00Z' },
+  { match_number: 99,  home_slot: 'W91', away_slot: 'W92', venue: 'Miami',       kickoff: '2026-07-11T21:00:00Z' },
   { match_number: 100, home_slot: 'W95', away_slot: 'W96', venue: 'Kansas City', kickoff: '2026-07-12T01:00:00Z' },
 ]
 

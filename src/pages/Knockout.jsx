@@ -264,7 +264,8 @@ export default function Knockout() {
     const isAffected = affectedMatches.includes(mn)
     const locked = new Date() >= new Date(matchDef.kickoff)
     const canPick = !locked  // guests can pick locally too
-    const teamsKnown = !!(home && away)
+    const teamsKnown = !!(home || away) // show as soon as either team is known
+    const bothTeamsKnown = !!(home && away) // need both to enable picking
     const isPicked = !!pick?.winner_id
 
     const isFinalMatch = matchDef.match_number === 104
@@ -328,47 +329,65 @@ export default function Knockout() {
           {/* Teams or placeholder slots */}
           {teamsKnown ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-              {[home, away].map((team, idx) => {
-                if (!team) return null
-                const isPickedTeam = pick?.winner_id === team.id
+              {[
+                { team: home, slot: matchDef.home_slot },
+                { team: away, slot: matchDef.away_slot }
+              ].map(({ team, slot }, idx) => {
+                const isPickedTeam = pick?.winner_id === team?.id
                 const isFinal = matchDef.match_number === 104
+                const canPickThisTeam = canPick && bothTeamsKnown && !!team
                 return (
-                  <div key={team.id}>
-                    <button
-                      onClick={() => canPick && savePick(matchDef, team.id)}
-                      disabled={!canPick}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: '14px',
-                        padding: '14px 16px',
-                        borderRadius: 'var(--radius-md)',
-                        width: '100%', textAlign: 'left',
-                        transition: 'all 0.15s',
-                        border: isPickedTeam
-                          ? `2px solid ${isFinal ? 'var(--accent-gold)' : 'var(--accent-green)'}`
-                          : '1.5px solid var(--border-light)',
-                        background: isPickedTeam
-                          ? (isFinal ? 'var(--accent-gold-light)' : 'var(--accent-green-light)')
-                          : 'var(--bg-secondary)',
-                        cursor: canPick ? 'pointer' : 'default',
-                        boxShadow: isPickedTeam ? `0 0 0 3px ${isFinal ? 'rgba(184,134,11,0.12)' : 'rgba(0,122,51,0.1)'}` : 'none',
-                      }}>
-                      <span style={{ fontSize: '40px', lineHeight: 1, flexShrink: 0 }}>{team.flag_emoji}</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: '800', fontSize: '16px', letterSpacing: '-0.01em',
-                          color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : 'var(--accent-green)') : 'var(--text-primary)',
-                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {team.name}
+                  <div key={team?.id || slot}>
+                    {team ? (
+                      <button
+                        onClick={() => canPickThisTeam && savePick(matchDef, team.id)}
+                        disabled={!canPickThisTeam}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '14px',
+                          padding: '14px 16px',
+                          borderRadius: 'var(--radius-md)',
+                          width: '100%', textAlign: 'left',
+                          transition: 'all 0.15s',
+                          border: isPickedTeam
+                            ? `2px solid ${isFinal ? 'var(--accent-gold)' : 'var(--accent-green)'}`
+                            : '1.5px solid var(--border-light)',
+                          background: isPickedTeam
+                            ? (isFinal ? 'var(--accent-gold-light)' : 'var(--accent-green-light)')
+                            : 'var(--bg-secondary)',
+                          cursor: canPickThisTeam ? 'pointer' : 'default',
+                          boxShadow: isPickedTeam ? `0 0 0 3px ${isFinal ? 'rgba(184,134,11,0.12)' : 'rgba(0,122,51,0.1)'}` : 'none',
+                        }}>
+                        <span style={{ fontSize: '40px', lineHeight: 1, flexShrink: 0 }}>{team.flag_emoji}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: '800', fontSize: '16px', letterSpacing: '-0.01em',
+                            color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : 'var(--accent-green)') : 'var(--text-primary)',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {team.name}
+                          </div>
+                          <div style={{ fontSize: '11px', color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : 'var(--accent-green)') : 'var(--text-muted)', fontWeight: '600', marginTop: '2px', opacity: 0.8 }}>
+                            {team.short_code}
+                          </div>
                         </div>
-                        <div style={{ fontSize: '11px', color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : 'var(--accent-green)') : 'var(--text-muted)', fontWeight: '600', marginTop: '2px', opacity: 0.8 }}>
-                          {team.short_code}
+                        {isPickedTeam && (
+                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isFinal ? 'var(--accent-gold)' : 'var(--accent-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ color: 'white', fontSize: '14px', fontWeight: '900' }}>✓</span>
+                          </div>
+                        )}
+                      </button>
+                    ) : (
+                      // Placeholder for unknown team
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: '14px',
+                        padding: '14px 16px', borderRadius: 'var(--radius-md)',
+                        border: '1.5px dashed var(--border-medium)', background: 'var(--bg-secondary)',
+                      }}>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>🏳️</div>
+                        <div>
+                          <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>Waiting for group results</div>
                         </div>
                       </div>
-                      {isPickedTeam && (
-                        <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isFinal ? 'var(--accent-gold)' : 'var(--accent-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <span style={{ color: 'white', fontSize: '14px', fontWeight: '900' }}>✓</span>
-                        </div>
-                      )}
-                    </button>
+                    )}
                     {/* VS divider between the two teams */}
                     {idx === 0 && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '6px 0' }}>
