@@ -8,21 +8,20 @@ const SCORING = [
     rows: [
       { label: 'Correct result (win/draw/loss)', pts: '3pts' },
       { label: 'Exact score', pts: '5pts' },
-      { label: 'Joker on correct result', pts: '2x pts', highlight: true },
-      { label: 'Joker on exact score', pts: '2x pts', highlight: true },
-      { label: 'Wrong prediction', pts: '0pts' },
-      { label: 'Missed prediction', pts: '0pts' },
+      { label: 'Wrong or missed prediction', pts: '0pts' },
     ]
   },
   {
     section: '🏆 Knockout Picks',
-    desc: 'Pick which teams advance through each round. Picks lock when the round begins.',
+    desc: 'Pick which teams you think will advance through each round. Points are awarded for each team that actually makes it — regardless of which specific match they play.',
     rows: [
-      { label: 'Team reaches Round of 16', pts: '5pts' },
-      { label: 'Team reaches Quarter-Finals', pts: '10pts' },
-      { label: 'Team reaches Semi-Finals', pts: '15pts' },
-      { label: 'Team reaches Final', pts: '20pts' },
-      { label: 'Correct tournament winner', pts: '25pts' },
+      { label: 'Team you predicted to qualify reaches R32 · 32 teams = max 160pts', pts: '5pts' },
+      { label: 'Team you picked in R32 advances to R16 · 16 teams = max 128pts', pts: '8pts' },
+      { label: 'Team you picked in R16 advances to QF · 8 teams = max 96pts', pts: '12pts' },
+      { label: 'Team you picked in QF advances to SF · 4 teams = max 64pts', pts: '16pts' },
+      { label: 'Team you picked in SF reaches the Final · 2 teams = max 40pts', pts: '20pts' },
+      { label: 'Correct tournament winner bonus', pts: '+25pts', highlight: true },
+      { label: 'Max if all picks correct including winner', pts: '513pts' },
     ]
   },
   {
@@ -51,7 +50,8 @@ const SCORING = [
     desc: 'Use jokers on predictions you\'re most confident about to double your points.',
     rows: [
       { label: 'Group stage jokers available', pts: '8 total' },
-      { label: 'Joker doubles all points if correct', pts: '2× pts', highlight: true },
+      { label: 'Joker on correct result = 6pts (3pts × 2)', pts: '2× pts', highlight: true },
+      { label: 'Joker on exact score = 10pts (5pts × 2)', pts: '2× pts', highlight: true },
       { label: 'Joker on wrong prediction', pts: '0pts' },
     ]
   },
