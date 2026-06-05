@@ -111,6 +111,85 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
   )
 }
 
+function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, logAudit }) {
+  const [committedPreds, setCommittedPreds] = useState({})
+  const [selectedUserId, setSelectedUserId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    const load = async () => {
+      const { data } = await supabase.from('league_predictions')
+        .select('user_id, match_id, home_score, away_score, is_confident')
+        .eq('league_id', leagueId)
+      const map = {}
+      ;(data || []).forEach(p => {
+        map[`${p.user_id}-${p.match_id}`] = { home: p.home_score, away: p.away_score, joker: p.is_confident }
+      })
+      setCommittedPreds(map)
+      setLoaded(true)
+    }
+    load()
+  }, [leagueId])
+
+  const saveScore = async (userId, matchId, home, away, joker) => {
+    if (home === '' || away === '' || isNaN(parseInt(home)) || isNaN(parseInt(away))) return
+    setSaving(true)
+    await supabase.from('league_predictions').upsert({
+      league_id: leagueId, user_id: userId, match_id: matchId,
+      home_score: parseInt(home), away_score: parseInt(away), is_confident: joker || false,
+    }, { onConflict: 'league_id,user_id,match_id' })
+    await logAudit('EDIT_COMMITTED_SCORE', { league_id: leagueId, user_id: userId, match_id: matchId, home, away })
+    setCommittedPreds(prev => ({ ...prev, [`${userId}-${matchId}`]: { home, away, joker } }))
+    setSaving(false)
+  }
+
+  const groupMatches = matches.filter(m => m.stage === 'group')
+  const selectedMember = members?.find(m => m.user_id === selectedUserId)
+
+  return (
+    <div style={{ marginTop: '10px', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
+      <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '8px' }}>✏️ Edit committed scores</div>
+      <select className="input" value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} style={{ marginBottom: '8px' }}>
+        <option value="">Select member...</option>
+        {(members || []).map(m => (
+          <option key={m.user_id} value={m.user_id}>
+            {m.profile?.display_name || m.profile?.username || m.profile?.display_name || '?'}{m.is_offline ? ' (offline)' : ''}
+          </option>
+        ))}
+      </select>
+
+      {selectedUserId && loaded && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '300px', overflowY: 'auto' }}>
+          {groupMatches.map(match => {
+            const key = `${selectedUserId}-${match.id}`
+            const val = committedPreds[key] || {}
+            const hasPred = val.home !== undefined && val.home !== null
+            return (
+              <div key={match.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: hasPred ? 'rgba(0,122,51,0.05)' : 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: hasPred ? '1px solid rgba(0,122,51,0.2)' : '1px solid var(--border-light)' }}>
+                <span style={{ fontSize: '11px', flex: 1 }}>
+                  {match.home_team?.flag_emoji} {match.home_team?.short_code} vs {match.away_team?.short_code} {match.away_team?.flag_emoji}
+                </span>
+                <input type="number" min="0" max="20" placeholder="H" value={val.home ?? ''}
+                  onChange={e => setCommittedPreds(prev => ({ ...prev, [key]: { ...prev[key], home: e.target.value } }))}
+                  onBlur={() => saveScore(selectedUserId, match.id, val.home, val.away, val.joker)}
+                  style={{ width: '34px', textAlign: 'center', padding: '3px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '12px', fontWeight: '700' }} />
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>–</span>
+                <input type="number" min="0" max="20" placeholder="A" value={val.away ?? ''}
+                  onChange={e => setCommittedPreds(prev => ({ ...prev, [key]: { ...prev[key], away: e.target.value } }))}
+                  onBlur={() => saveScore(selectedUserId, match.id, val.home, val.away, val.joker)}
+                  style={{ width: '34px', textAlign: 'center', padding: '3px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '12px', fontWeight: '700' }} />
+                {hasPred && <span style={{ fontSize: '10px', color: 'var(--accent-green)' }}>✓</span>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+      <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ marginTop: '8px' }}>Close</button>
+    </div>
+  )
+}
+
 export default function AdminPanel() {
   const { user, isAdmin } = useAuthStore()
   const [profile, setProfile] = useState(null)
@@ -188,6 +267,8 @@ export default function AdminPanel() {
   const [newLeagueIsGlobal, setNewLeagueIsGlobal] = useState(false)
   const [newLeaguePreset, setNewLeaguePreset] = useState('standard')
   const [showCustomScoring, setShowCustomScoring] = useState(false)
+  const [newLockType, setNewLockType] = useState('rolling')
+  const [editingCommittedLeague, setEditingCommittedLeague] = useState(null)
   const [newLeagueScoring, setNewLeagueScoring] = useState({
     group_correct: 3, group_exact: 5, group_jokers: 8, joker_multiplier: 2,
     ko_correct: 3, ko_exact: 5, ko_jokers: 5,
@@ -309,7 +390,7 @@ export default function AdminPanel() {
   const loadLeagues = async () => {
     const { data } = await supabase
       .from('leagues')
-      .select('*, creator:created_by(username), members:league_members(user_id, profile:user_id(username))')
+      .select('*, creator:created_by(username), members:league_members(user_id, profile:user_id(username, display_name))')
       .order('created_at', { ascending: false })
     // Fetch offline players and merge into each league's members
     const { data: offlinePlayers } = await supabase
@@ -835,6 +916,7 @@ export default function AdminPanel() {
       is_global: newLeagueIsGlobal || false,
       scoring_preset: newLeaguePreset || 'standard',
       custom_scoring: newLeagueScoring,
+      lock_type: newLockType,
     }).select().single()
     if (error) { setActionResult(`❌ Error creating league: ${error.message}`); return }
     await supabase.from('league_members').insert({ league_id: league.id, user_id: creatorUser?.id || user.id })
@@ -846,6 +928,7 @@ export default function AdminPanel() {
     setNewLeagueIsGlobal(false)
     setNewLeaguePreset('standard')
     setNewLeagueScoring(SCORING_PRESETS.standard)
+    setNewLockType('rolling')
     loadLeagues()
   }
 
@@ -1907,6 +1990,29 @@ export default function AdminPanel() {
                       onChange={e => setNewLeagueIsGlobal(e.target.checked)} />
                     🌍 Global league (visible to all users on Leagues page)
                   </label>
+
+                  {/* Lock type */}
+                  <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '8px', color: 'var(--scottish-navy)' }}>🔒 Prediction Lock</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', padding: '8px', borderRadius: 'var(--radius-sm)', background: newLockType === 'rolling' ? 'var(--accent-blue-light)' : 'var(--bg-card)', border: `1.5px solid ${newLockType === 'rolling' ? 'var(--accent-blue)' : 'var(--border-light)'}` }}>
+                        <input type="radio" name="lockType" value="rolling" checked={newLockType === 'rolling'}
+                          onChange={() => setNewLockType('rolling')} style={{ marginTop: '2px' }} />
+                        <div>
+                          <div style={{ fontWeight: '700', fontSize: '13px' }}>🔓 Always editable</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>Predictions lock match by match at kickoff. Members can update future picks any time.</div>
+                        </div>
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', padding: '8px', borderRadius: 'var(--radius-sm)', background: newLockType === 'pre_tournament' ? 'var(--accent-blue-light)' : 'var(--bg-card)', border: `1.5px solid ${newLockType === 'pre_tournament' ? 'var(--accent-blue)' : 'var(--border-light)'}` }}>
+                        <input type="radio" name="lockType" value="pre_tournament" checked={newLockType === 'pre_tournament'}
+                          onChange={() => setNewLockType('pre_tournament')} style={{ marginTop: '2px' }} />
+                        <div>
+                          <div style={{ fontWeight: '700', fontSize: '13px' }}>🔒 Lock before tournament</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>All predictions snapshot at 11 Jun 13:00. Scores frozen for league scoring. Members can still update their overall predictions after kickoff.</div>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
                   {/* Quick preset buttons */}
                   <div>
                     <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '6px', color: 'var(--text-muted)' }}>Quick Start Preset</div>
@@ -1999,6 +2105,11 @@ export default function AdminPanel() {
                         <div style={{ fontWeight: '700', fontSize: '15px' }}>{league.name}</div>
                         <button onClick={() => { setEditingLeagueName(league.id); setEditingLeagueNameVal(league.name) }}
                           style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>✏️</button>
+                        {league.lock_type === 'pre_tournament' && (
+                          <span style={{ fontSize: '10px', fontWeight: '700', background: league.snapshot_taken_at ? 'var(--accent-green)' : 'var(--accent-gold)', color: 'white', padding: '2px 6px', borderRadius: 'var(--radius-full)' }}>
+                            {league.snapshot_taken_at ? '🔒 Locked' : '⏳ Pre-lock'}
+                          </span>
+                        )}
                       </div>
                     )}
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -2070,6 +2181,43 @@ export default function AdminPanel() {
                   className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
                   🗑️ Delete League
                 </button>
+
+                {/* Snapshot controls for pre_tournament leagues */}
+                {league.lock_type === 'pre_tournament' && (
+                  <div style={{ marginTop: '8px', padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700' }}>🔒 Pre-tournament lock</span>
+                      {league.snapshot_taken_at
+                        ? <span style={{ fontSize: '11px', color: 'var(--accent-green)' }}>✅ Snapshot taken {new Date(league.snapshot_taken_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        : <span style={{ fontSize: '11px', color: 'var(--accent-gold)' }}>⏳ Snapshot pending (11 Jun 13:00)</span>
+                      }
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      {!league.snapshot_taken_at && (
+                        <button onClick={async () => {
+                          if (!confirm(`Take snapshot now for "${league.name}"? This locks all predictions immediately.`)) return
+                          const res = await fetch('/.netlify/functions/snapshot-league-predictions', { method: 'POST' })
+                          const data = await res.json()
+                          setActionResult(`✅ ${data.message} — ${data.predictions} predictions locked`)
+                          loadLeagues()
+                        }} className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', fontSize: '11px' }}>
+                          📸 Snapshot now
+                        </button>
+                      )}
+                      {league.snapshot_taken_at && (
+                        <button onClick={() => setEditingCommittedLeague(editingCommittedLeague === league.id ? null : league.id)}
+                          className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none', fontSize: '11px' }}>
+                          ✏️ Edit committed scores
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Edit committed scores */}
+                    {editingCommittedLeague === league.id && (
+                      <CommittedScoreEditor leagueId={league.id} members={league.members} matches={matches} supabase={supabase} onClose={() => setEditingCommittedLeague(null)} logAudit={logAudit} />
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
