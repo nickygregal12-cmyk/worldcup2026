@@ -100,10 +100,6 @@ export default function Home() {
 
   useEffect(() => { loadData() }, [user])
 
-  useEffect(() => {
-    if (nextMatch?.venue?.city) fetchWeather(nextMatch.venue.city)
-  }, [nextMatch?.id])
-
   // Re-fetch when returning to tab so progress bars update immediately
   useEffect(() => {
     if (!user) return
