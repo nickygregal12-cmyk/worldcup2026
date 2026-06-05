@@ -35,13 +35,14 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <!-- Twemoji: renders flag emojis on Windows -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/twemoji.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/twemoji@14.0.2/dist/twemoji.min.js" crossorigin="anonymous"></script>
     <script>
       // Parse emojis after each React render
       const observer = new MutationObserver(() => {
+        if (typeof twemoji === 'undefined') return
         twemoji.parse(document.body, {
           folder: 'svg', ext: '.svg',
-          base: 'https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/',
+          base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
           callback: (icon, options) => {
             // Only replace flag emojis (regional indicator sequences)
             if (icon.length === 4 && icon.startsWith('1f1')) return `${options.base}${options.size}/${icon}${options.ext}`
