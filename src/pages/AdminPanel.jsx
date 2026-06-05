@@ -2099,6 +2099,9 @@ export default function AdminPanel() {
                     })()}
                   </div>
                 )}
+
+                {/* Group scores section */}
+                {offlineSelectedPlayer?.id === player.id && (
                   <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
                       <span>Enter scores — saves on blur</span>
@@ -2150,50 +2153,6 @@ export default function AdminPanel() {
                     })}
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
                       {Object.keys(offlineManualScores).filter(k => k.startsWith(player.id) && offlineManualScores[k]?.home !== '').length} / {matches.filter(m => m.stage === 'group').length} predictions entered
-                    </div>
-
-                    {/* Knockout picks section */}
-                    <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
-                      <button onClick={() => setCollapsedPlayers(prev => ({ ...prev, [`${player.id}-ko`]: !prev[`${player.id}-ko`] }))}
-                        style={{ background: 'none', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', width: '100%', textAlign: 'left' }}>
-                        {collapsedPlayers[`${player.id}-ko`] ? '▲ Hide knockout picks' : '▼ Enter knockout picks manually'}
-                      </button>
-
-                      {collapsedPlayers[`${player.id}-ko`] && (
-                        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                            Pick which team advances from each knockout match
-                          </div>
-                          {matches.filter(m => ['r32','r16','qf','sf','final'].includes(m.stage)).map(match => {
-                            const key = `${player.id}-${match.id}`
-                            const val = offlineManualScores[key] || {}
-                            const isPicked = val.picked_team_id
-                            return (
-                              <div key={match.id} style={{ padding: '6px 8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: `1px solid ${isPicked ? 'var(--accent-green)' : 'var(--border-light)'}` }}>
-                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>
-                                  M{match.match_number} · {match.stage?.toUpperCase()} · {match.home_team?.flag_emoji} {match.home_team?.short_code} vs {match.away_team?.short_code} {match.away_team?.flag_emoji}
-                                </div>
-                                <div style={{ display: 'flex', gap: '6px' }}>
-                                  {[match.home_team, match.away_team].filter(Boolean).map(team => (
-                                    <button key={team.id}
-                                      onClick={async () => {
-                                        setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], picked_team_id: team.id } }))
-                                        await supabase.from('offline_predictions').upsert({
-                                          offline_player_id: player.id,
-                                          match_id: match.id,
-                                          picked_team_id: team.id,
-                                        }, { onConflict: 'offline_player_id,match_id' })
-                                      }}
-                                      style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: `1.5px solid ${val.picked_team_id === team.id ? 'var(--accent-green)' : 'var(--border-light)'}`, background: val.picked_team_id === team.id ? 'var(--accent-green-light)' : 'var(--bg-secondary)', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
-                                      {team.flag_emoji} {team.short_code}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
