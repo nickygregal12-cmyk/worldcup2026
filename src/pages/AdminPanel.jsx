@@ -2225,6 +2225,7 @@ export default function AdminPanel() {
               { key: 'show_odds', label: 'Show Betting Odds', desc: 'Display odds on prediction cards', type: 'toggle' },
               { section: '🔧 Platform' },
               { key: 'maintenance_mode', label: 'Maintenance Mode', desc: 'Show maintenance message to all non-admin users', type: 'toggle' },
+              { key: 'points_maintenance', label: '🔧 Points Maintenance Mode', desc: 'Hide all points/scores from users — show "points being updated" message instead. Use when recalculating or fixing scores.', type: 'toggle' },
               { key: 'registration_open', label: 'Registration Open', desc: 'Allow new user registrations', type: 'toggle' },
               { section: '📊 Group Standings' },
               { key: 'show_group_tables', label: 'Show Group Tables', desc: 'Show real vs predicted standings tab on predictions page', type: 'toggle' },

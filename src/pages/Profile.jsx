@@ -8,7 +8,7 @@ const AVATARS = ['⚽','🏆','🥅','🧤','👟','🎯','🔥','⚡','🦁','�
 
 export default function Profile() {
   const { user, profile, loadProfile, setProfile, logout, isAdmin } = useAuthStore()
-  const { darkMode, toggleDarkMode } = useAppStore()
+  const { darkMode, toggleDarkMode, appSettings } = useAppStore()
   const navigate = useNavigate()
   const [badges, setBadges] = useState([])
   const [editing, setEditing] = useState(false)
@@ -306,6 +306,13 @@ export default function Profile() {
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+      {/* Points maintenance banner */}
+      {appSettings?.points_maintenance === 'true' && !isAdmin && (
+        <div style={{ background: '#b8860b', color: 'white', padding: '10px 16px', textAlign: 'center', fontSize: '13px', fontWeight: '600' }}>
+          🔧 Points are being updated — check back shortly!
+        </div>
+      )}
+
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat',
@@ -406,7 +413,7 @@ export default function Profile() {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
                 {[
-                  { label: 'Total Points', value: profile.total_points || 0, icon: '🏅' },
+                  { label: 'Total Points', value: appSettings?.points_maintenance === 'true' && !isAdmin ? '—' : (profile.total_points || 0), icon: '🏅' },
                   { label: 'Accuracy', value: `${accuracy}%`, icon: '🎯', desc: 'Correct results' },
                   { label: 'Current Streak', value: profile.streak_current || 0, icon: '🔥', desc: 'Correct in a row' },
                   { label: 'Best Streak', value: profile.streak_best || 0, icon: '⚡', desc: 'Personal best' },

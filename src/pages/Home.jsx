@@ -66,7 +66,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
 }
 
 export default function Home() {
-  const { user, profile } = useAuthStore()
+  const { user, profile, isAdmin } = useAuthStore()
   const [nextMatch, setNextMatch]         = useState(null)
   const [liveMatches, setLiveMatches]     = useState([])
   const [upcomingMatches, setUpcomingMatches] = useState([])
@@ -330,6 +330,19 @@ export default function Home() {
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+
+
+      {/* Points maintenance banner */}
+      {appSettings?.points_maintenance === 'true' && !isAdmin && (
+        <div style={{
+          background: '#b8860b', color: 'white',
+          padding: '10px 16px', textAlign: 'center',
+          fontSize: '13px', fontWeight: '600',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+        }}>
+          🔧 Points are being updated — scores will be back shortly!
+        </div>
+      )}
 
       {/* ── Hero ── */}
       <div style={{

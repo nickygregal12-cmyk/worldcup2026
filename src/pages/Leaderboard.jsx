@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { useAuthStore } from '../store/index.js'
+import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
@@ -83,6 +83,13 @@ export default function Leaderboard() {
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
+      {/* Points maintenance banner */}
+      {appSettings?.points_maintenance === 'true' && !isAdmin && (
+        <div style={{ background: '#b8860b', color: 'white', padding: '10px 16px', textAlign: 'center', fontSize: '13px', fontWeight: '600' }}>
+          🔧 Points are being updated — scores will be back shortly!
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/leaderboard-bg.jpg) center/cover no-repeat', padding: '28px 20px 20px', color: 'white', textAlign: 'center' }}>
         <div className="container">
@@ -162,7 +169,9 @@ export default function Leaderboard() {
                 const rank = currentPlayers.findIndex(p => p.id === player.id) + 1
                 const isCurrentUser = user?.id === player.id
                 const movement = getRankMovement(player.id, rank)
-                const pts = isTournament ? player.total_points : player.ko_points
+                const pts = appSettings?.points_maintenance === 'true' && !isAdmin 
+                  ? null 
+                  : isTournament ? player.total_points : player.ko_points
 
                 return (
                   <div key={player.id} className="leaderboard-row" style={{
@@ -217,7 +226,7 @@ export default function Leaderboard() {
                     {/* Points */}
                     <div style={{ fontWeight: '800', fontSize: '18px', fontFamily: 'var(--font-mono)',
                       color: pts > 0 ? accentColour : 'var(--text-muted)' }}>
-                      {pts || 0}
+                      {pts === null ? '—' : (pts || 0)}
                     </div>
                   </div>
                 )
@@ -235,7 +244,9 @@ export default function Leaderboard() {
             {user && userRank > 0 && !userVisible && !search && (
               <div className="card" style={{ padding: '12px 16px', marginBottom: '12px', border: `1px solid ${accentColour}`, background: accentLight, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: '13px', fontWeight: '700', color: accentColour }}>Your position: #{userRank}</div>
-                <div style={{ fontSize: '16px', fontWeight: '800', fontFamily: 'var(--font-mono)', color: accentColour }}>{userPoints} pts</div>
+                <div style={{ fontSize: '16px', fontWeight: '800', fontFamily: 'var(--font-mono)', color: accentColour }}>
+                  {appSettings?.points_maintenance === 'true' && !isAdmin ? '—' : `${userPoints} pts`}
+                </div>
               </div>
             )}
 
