@@ -424,8 +424,8 @@ export default function Knockout() {
             </div>
           )}
 
-          {/* Pre-tournament tip */}
-          {isPreTournament && (
+          {/* Pre-tournament tip — only show if no picks made yet */}
+          {isPreTournament && Object.keys(knockoutPicks).length === 0 && (
             <div style={{ marginTop: '10px', background: 'rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', padding: '8px 14px', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
               💡 Predict all 3 games in a group to lock those teams into the bracket
             </div>
