@@ -1242,9 +1242,8 @@ export default function AdminPanel() {
             item.x > scoreEndX &&
             (item.text === 'X' || item.text === 'x' || item.text === '✓')
           )
-          // Debug first few matches
-          if (matchNum <= 15) {
-            console.log(`M${matchNum}: scoreEndX=${scoreEndX}, Xs=${JSON.stringify(allXItems.map(i => ({text: i.text, x: i.x})))}`)
+          if ([10, 11, 12, 13, 14, 15].includes(matchNum)) {
+            console.log(`M${matchNum} joker=${allXItems.length > 0}: scoreEndX=${Math.round(scoreEndX)}, Xs at x=${allXItems.map(i => Math.round(i.x)).join(',')}`)
           }
           isJoker = allXItems.length > 0
         }
