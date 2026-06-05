@@ -2090,7 +2090,7 @@ export default function AdminPanel() {
                   setPlayerAdjUserId('')
                   if (e.target.value) {
                     const { data } = await supabase.from('league_members')
-                      .select('user_id, league_points, profile:user_id(username, display_name, is_offline)')
+                      .select('user_id, league_points, profile:user_id(id, username, display_name, is_offline)')
                       .eq('league_id', e.target.value)
                     setPlayerAdjLeagueMembers(data || [])
                   }
@@ -2131,7 +2131,7 @@ export default function AdminPanel() {
                     setPlayerAdjReason('')
                     setPlayerAdjUserId('')
                     const { data } = await supabase.from('league_members')
-                      .select('user_id, league_points, profile:user_id(username, display_name, is_offline)')
+                      .select('user_id, league_points, profile:user_id(id, username, display_name, is_offline)')
                       .eq('league_id', playerAdjLeagueId)
                     setPlayerAdjLeagueMembers(data || [])
                     setPlayerAdjSaving(false)
