@@ -5,7 +5,7 @@ import { useAuthStore, useAppStore } from '../store/index.js'
 import { toApiName, normalise } from '../lib/teamNames.js'
 import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
 import { StandingsRow, StandingsHeader, StandingsLegend } from '../components/GroupStandingsTable.jsx'
-import { calcPredictedStandings, getBest3rdTeams, groupFullyPredicted } from '../lib/bracketUtils.js'
+import { ALL_STAGES, calcPredictedStandings, getBest3rdTeams, groupFullyPredicted, resolveSlot } from '../lib/bracketUtils.js'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 const TOTAL_GROUP_MATCHES = 72 // 12 groups × 6 matches
@@ -521,6 +521,8 @@ export default function Predictions() {
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [scoreWarning, setScoreWarning] = useState(null) // Item 8: {matchId, side, value}
   const [jokerConfirm, setJokerConfirm] = useState(null) // { matchId, currentJoker }
+  const [knockoutPicks, setKnockoutPicks] = useState({})
+  const [knockoutImpactWarning, setKnockoutImpactWarning] = useState(null)
 
   useEffect(() => {
     loadMatches()
@@ -528,6 +530,7 @@ export default function Predictions() {
     loadStandings()
     if (user) {
       loadPredictions()
+      loadKnockoutPicks()
       loadFreshJokerCount()
       checkJokerReminder()
     }
@@ -651,46 +654,189 @@ export default function Predictions() {
     if (data) {
       const predMap = {}
       data.forEach(p => { predMap[p.match_id] = { home: p.home_score, away: p.away_score, joker: p.is_confident } })
+      savedPredictionsRef.current = predMap
       setPredictions(predMap)
     }
+  }
+
+  const loadKnockoutPicks = async () => {
+    const { data } = await supabase
+      .from('knockout_picks')
+      .select('match_number, winner_team_id, home_team_id, away_team_id')
+      .eq('user_id', user.id)
+    const pickMap = {}
+    data?.forEach(p => {
+      pickMap[p.match_number] = {
+        winner_id: p.winner_team_id,
+        home_id: p.home_team_id,
+        away_id: p.away_team_id,
+      }
+    })
+    setKnockoutPicks(pickMap)
   }
 
   const isLocked = (kickoffTime) => new Date() >= new Date(kickoffTime)
 
   const saveTimers = useRef({})
   const predictionsRef = useRef(predictions)
+  const savedPredictionsRef = useRef({})
   const matchesRef = useRef(matches)
+  const knockoutPicksRef = useRef(knockoutPicks)
   const userRef = useRef(user)
 
   useEffect(() => { predictionsRef.current = predictions }, [predictions])
   useEffect(() => { matchesRef.current = matches }, [matches])
+  useEffect(() => { knockoutPicksRef.current = knockoutPicks }, [knockoutPicks])
   useEffect(() => { userRef.current = user }, [user])
 
-  // Save all dirty predictions when navigating away
+  // Clear pending autosave timers when leaving the page.
+  // Do not silently save here: group score changes may need the knockout-impact warning first.
   useEffect(() => {
     return () => {
       Object.values(saveTimers.current).forEach(t => clearTimeout(t))
-      const currentUser = userRef.current
-      if (!currentUser) return
-      const dirtyPreds = Object.entries(predictionsRef.current)
-        .filter(([, pred]) => pred._dirty && pred.home !== '' && pred.home !== undefined && pred.away !== '' && pred.away !== undefined)
-      for (const [matchId, pred] of dirtyPreds) {
-        const match = matchesRef.current.find(m => m.id === matchId)
-        if (match && !isLocked(match.kickoff_time)) {
-          supabase.from('predictions').upsert({
-            user_id: currentUser.id,
-            match_id: matchId,
-            home_score: pred.home,
-            away_score: pred.away,
-            is_confident: pred.joker ?? false,
-            bracket_type: 'main',
-          }, { onConflict: 'user_id,match_id,bracket_type' })
-        }
-      }
     }
   }, [])
 
   const inputRefs = useRef({}) // store refs to all score inputs
+
+  const getR32Snapshot = useCallback((predMap) => {
+    const currentMatches = matchesRef.current
+    const snapshot = {}
+    const predictedStandings = calcPredictedStandings(currentMatches, predMap)
+    const r32 = ALL_STAGES.find(stage => stage.key === 'r32')
+
+    r32?.matches.forEach(matchDef => {
+      const home = resolveSlot(matchDef.home_slot, predictedStandings, currentMatches, predMap)
+      const away = resolveSlot(matchDef.away_slot, predictedStandings, currentMatches, predMap)
+      snapshot[matchDef.match_number] = {
+        home_id: home?.id || null,
+        away_id: away?.id || null,
+        teamIds: [home?.id, away?.id].filter(Boolean),
+      }
+    })
+
+    return snapshot
+  }, [])
+
+  const getKnockoutImpact = useCallback((matchId, nextPredictions) => {
+    const currentPicks = knockoutPicksRef.current
+    const pickedEntries = Object.entries(currentPicks).filter(([, pick]) => pick?.winner_id)
+    if (pickedEntries.length === 0) return null
+
+    const previousPredictions = savedPredictionsRef.current || {}
+    const previousSnapshot = getR32Snapshot(previousPredictions)
+    const nextSnapshot = getR32Snapshot(nextPredictions)
+
+    const changedR32Matches = []
+    const removedTeamIds = new Set()
+    const addedTeamIds = new Set()
+
+    for (const [matchNumber, before] of Object.entries(previousSnapshot)) {
+      const after = nextSnapshot[matchNumber] || { teamIds: [] }
+      const beforeIds = before.teamIds || []
+      const afterIds = after.teamIds || []
+      const beforeKey = [...beforeIds].sort().join('|')
+      const afterKey = [...afterIds].sort().join('|')
+      if (beforeKey === afterKey) continue
+
+      changedR32Matches.push(Number(matchNumber))
+      beforeIds.filter(id => !afterIds.includes(id)).forEach(id => removedTeamIds.add(id))
+      afterIds.filter(id => !beforeIds.includes(id)).forEach(id => addedTeamIds.add(id))
+    }
+
+    if (changedR32Matches.length === 0) return null
+
+    const affectedPickNumbers = new Set()
+    for (const [matchNumber, pick] of pickedEntries) {
+      const mn = Number(matchNumber)
+      if (changedR32Matches.includes(mn)) affectedPickNumbers.add(mn)
+      if (removedTeamIds.has(pick.winner_id) || removedTeamIds.has(pick.home_id) || removedTeamIds.has(pick.away_id)) {
+        affectedPickNumbers.add(mn)
+      }
+    }
+
+    if (affectedPickNumbers.size === 0) return null
+
+    const changedMatch = matchesRef.current.find(m => m.id === matchId)
+    return {
+      matchId,
+      group: changedMatch?.group?.name,
+      affectedCount: affectedPickNumbers.size,
+      changedR32Count: changedR32Matches.length,
+      removedCount: removedTeamIds.size,
+      addedCount: addedTeamIds.size,
+    }
+  }, [getR32Snapshot])
+
+  const persistPrediction = useCallback(async (match, homeScore, awayScore, jokerOverride) => {
+    if (!userRef.current) return { ok: false }
+    if (!match || isLocked(match.kickoff_time)) return { ok: false }
+
+    setSaving(prev => ({ ...prev, [match.id]: true }))
+    const { error } = await supabase.from('predictions').upsert({
+      user_id: userRef.current.id,
+      match_id: match.id,
+      home_score: homeScore,
+      away_score: awayScore,
+      is_confident: jokerOverride ?? predictionsRef.current[match.id]?.joker ?? false,
+      bracket_type: 'main',
+    }, { onConflict: 'user_id,match_id,bracket_type' })
+
+    setSaving(prev => ({ ...prev, [match.id]: false }))
+    if (error) {
+      console.error('Save error:', error)
+      return { ok: false, error }
+    }
+
+    savedPredictionsRef.current = {
+      ...savedPredictionsRef.current,
+      [match.id]: {
+        ...savedPredictionsRef.current[match.id],
+        home: homeScore,
+        away: awayScore,
+        joker: jokerOverride ?? predictionsRef.current[match.id]?.joker ?? false,
+      },
+    }
+    setSaved(prev => ({ ...prev, [match.id]: true }))
+    setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], home: homeScore, away: awayScore, _dirty: false } }))
+    setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
+    return { ok: true }
+  }, [])
+
+  const attemptSavePrediction = useCallback(async (match, homeScore, awayScore, options = {}) => {
+    if (!userRef.current) return
+    if (homeScore === '' || homeScore === undefined || awayScore === '' || awayScore === undefined) return
+    if (!options.skipImpactCheck) {
+      const nextPredictions = {
+        ...predictionsRef.current,
+        [match.id]: { ...predictionsRef.current[match.id], home: homeScore, away: awayScore },
+      }
+      const impact = getKnockoutImpact(match.id, nextPredictions)
+      if (impact) {
+        clearTimeout(saveTimers.current[match.id])
+        setKnockoutImpactWarning({
+          ...impact,
+          match,
+          homeScore,
+          awayScore,
+          jokerOverride: options.jokerOverride,
+        })
+        return
+      }
+    }
+    return persistPrediction(match, homeScore, awayScore, options.jokerOverride)
+  }, [getKnockoutImpact, persistPrediction])
+
+  const revertPredictionToLastSaved = useCallback((matchId) => {
+    clearTimeout(saveTimers.current[matchId])
+    const previous = savedPredictionsRef.current[matchId]
+    setPredictions(prev => {
+      const next = { ...prev }
+      if (previous) next[matchId] = { ...previous, _dirty: false }
+      else delete next[matchId]
+      return next
+    })
+  }, [])
 
   const handleScoreChange = (matchId, side, value) => {
     // Allow local state update for guests — just skip the DB save below
@@ -708,21 +854,7 @@ export default function Predictions() {
       if (isNaN(homeVal) || isNaN(awayVal)) return
       const match = matchesRef.current.find(m => m.id === matchId)
       if (!match || isLocked(match.kickoff_time)) return
-      supabase.from('predictions').upsert({
-        user_id: userRef.current.id,
-        match_id: matchId,
-        home_score: homeVal,
-        away_score: awayVal,
-        is_confident: predictionsRef.current[matchId]?.joker ?? false,
-        bracket_type: 'main',
-      }, { onConflict: 'user_id,match_id,bracket_type' }).then(({ error }) => {
-        if (error) console.error('Save error:', error)
-        else {
-          setSaved(prev => ({ ...prev, [matchId]: true }))
-          setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], _dirty: false } }))
-          setTimeout(() => setSaved(prev => ({ ...prev, [matchId]: false })), 2000)
-        }
-      })
+      attemptSavePrediction(match, homeVal, awayVal)
     }, 600)
   }
 
@@ -737,23 +869,13 @@ export default function Predictions() {
     if (homeVal !== '' && awayVal !== '') {
       const h = parseInt(homeVal)
       const a = parseInt(awayVal)
-      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], home: h, away: a } }))
+      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], home: h, away: a, _dirty: true } }))
+      clearTimeout(saveTimers.current[match.id])
 
       if (isHighScore(side === 'home' ? h : a)) {
-        setScoreWarning({ matchId: match.id, match, side, value: side === 'home' ? h : a })
+        setScoreWarning({ matchId: match.id, match, side, value: side === 'home' ? h : a, homeScore: h, awayScore: a })
       } else {
-        // Save directly from DOM values
-        supabase.from('predictions').upsert({
-          user_id: user.id, match_id: match.id,
-          home_score: h, away_score: a,
-          is_confident: predictions[match.id]?.joker ?? false,
-          bracket_type: 'main',
-        }, { onConflict: 'user_id,match_id,bracket_type' }).then(({ error }) => {
-          if (!error) {
-            setSaved(prev => ({ ...prev, [match.id]: true }))
-            setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
-          }
-        })
+        attemptSavePrediction(match, h, a)
       }
     }
   }
@@ -781,23 +903,9 @@ export default function Predictions() {
 
   const savePrediction = async (match, jokerOverride) => {
     if (!user) return
-    const pred = predictions[match.id]
+    const pred = predictionsRef.current[match.id]
     if (pred?.home === '' || pred?.home === undefined || pred?.away === '' || pred?.away === undefined) return
-    if (isLocked(match.kickoff_time)) return
-    setSaving(prev => ({ ...prev, [match.id]: true }))
-    const { error } = await supabase.from('predictions').upsert({
-      user_id: user.id, match_id: match.id,
-      home_score: pred.home, away_score: pred.away,
-      is_confident: jokerOverride ?? pred.joker ?? false,
-      bracket_type: 'main',
-    }, { onConflict: 'user_id,match_id,bracket_type' })
-    setSaving(prev => ({ ...prev, [match.id]: false }))
-    if (!error) {
-      setSaved(prev => ({ ...prev, [match.id]: true }))
-      // Clear dirty flag — prediction is now saved to DB
-      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _dirty: false } }))
-      setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
-    }
+    return attemptSavePrediction(match, pred.home, pred.away, { jokerOverride })
   }
 
   // Item 2: autofill for By Date view
@@ -845,6 +953,7 @@ export default function Predictions() {
     }
     setPredictions(newPreds)
     await Promise.all(updates)
+    savedPredictionsRef.current = newPreds
   }
 
   const formatDate = (time) => new Date(time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -855,6 +964,7 @@ export default function Predictions() {
     if (!user) return
     const hadJoker = predictions[matchId]?.joker === true
     setPredictions(prev => { const next = { ...prev }; delete next[matchId]; return next })
+    delete savedPredictionsRef.current[matchId]
     await supabase.from('predictions').delete().eq('match_id', matchId).eq('user_id', user.id)
     if (hadJoker) {
       const newRemaining = jokersRemaining + 1
@@ -871,6 +981,7 @@ export default function Predictions() {
     })
     const jokersToRefund = groupMatchIds.filter(id => predictions[id]?.joker === true).length
     setPredictions(prev => { const next = { ...prev }; groupMatchIds.forEach(id => delete next[id]); return next })
+    groupMatchIds.forEach(id => { delete savedPredictionsRef.current[id] })
     await supabase.from('predictions').delete().in('match_id', groupMatchIds).eq('user_id', user.id)
     if (jokersToRefund > 0) {
       const newRemaining = Math.min(8, jokersRemaining + jokersToRefund)
@@ -886,6 +997,7 @@ export default function Predictions() {
     const unlockedIds = matches.filter(m => !isLocked(m.kickoff_time)).map(m => m.id)
     const jokersToRefund = unlockedIds.filter(id => predictions[id]?.joker === true).length
     setPredictions(prev => { const next = { ...prev }; unlockedIds.forEach(id => delete next[id]); return next })
+    unlockedIds.forEach(id => { delete savedPredictionsRef.current[id] })
     await supabase.from('predictions').delete().in('match_id', unlockedIds).eq('user_id', user.id)
     if (jokersToRefund > 0) {
       const newRemaining = Math.min(8, jokersRemaining + jokersToRefund)
@@ -900,6 +1012,7 @@ export default function Predictions() {
     if (!user) return
     const ids = dateMatches.map(m => m.id).filter(id => !isLocked(matches.find(m => m.id === id)?.kickoff_time))
     setPredictions(prev => { const next = { ...prev }; ids.forEach(id => delete next[id]); return next })
+    ids.forEach(id => { delete savedPredictionsRef.current[id] })
     await supabase.from('predictions').delete().in('match_id', ids).eq('user_id', user.id)
     setShowClearConfirm(false)
   }
@@ -1397,6 +1510,40 @@ export default function Predictions() {
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
+      {/* Knockout impact warning modal */}
+      {knockoutImpactWarning && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 320, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div className="card" style={{ maxWidth: '360px', width: '100%' }}>
+            <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>⚠️ Knockout bracket will change</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: 1.5 }}>
+              Changing this score affects your knockout bracket{knockoutImpactWarning.group ? ` from Group ${knockoutImpactWarning.group}` : ''}.
+            </div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.5, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '10px 12px' }}>
+              This may remove teams from your knockout path and clear later picks that depended on them.
+              <br />
+              <strong>{knockoutImpactWarning.affectedCount}</strong> knockout pick{knockoutImpactWarning.affectedCount === 1 ? '' : 's'} may be affected.
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={() => {
+                  const warning = knockoutImpactWarning
+                  setKnockoutImpactWarning(null)
+                  persistPrediction(warning.match, warning.homeScore, warning.awayScore, warning.jokerOverride)
+                }}
+                className="btn btn-primary" style={{ flex: 1 }}
+              >Save & update bracket</button>
+              <button
+                onClick={() => {
+                  revertPredictionToLastSaved(knockoutImpactWarning.matchId)
+                  setKnockoutImpactWarning(null)
+                }}
+                className="btn btn-secondary" style={{ flex: 1 }}
+              >Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Item 8: Score warning modal */}
       {scoreWarning && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
@@ -1711,15 +1858,7 @@ export default function Predictions() {
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
                     <span>{date}</span>
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
-                    {/* Per-day actions */}
-                    {user && hasUnlocked && (
-                      <button onClick={() => autoFillDate(dayMatches)} disabled={!!autoFillingDate} style={{
-                        fontSize: '11px', padding: '3px 8px', borderRadius: 'var(--radius-full)',
-                        border: '1px solid var(--border-medium)', background: isFillingThis ? 'var(--border-light)' : 'var(--bg-card)',
-                        color: 'var(--text-muted)', cursor: autoFillingDate ? 'not-allowed' : 'pointer',
-                        opacity: autoFillingDate && !isFillingThis ? 0.5 : 1,
-                      }}>{isFillingThis ? '⏳ Filling...' : '✨ Autofill'}</button>
-                    )}
+                    {/* Item 3: clear per day */}
                     {user && hasPreds && hasUnlocked && (
                       <button onClick={() => setShowClearConfirm(dayMatches)} style={{
                         fontSize: '11px', padding: '3px 8px', borderRadius: 'var(--radius-full)',
