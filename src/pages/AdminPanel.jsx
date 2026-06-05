@@ -111,26 +111,117 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
   )
 }
 
+function SnapshotCounts({ leagueId, supabase }) {
+  const [counts, setCounts] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const countRows = async (table, extra = null) => {
+      let query = supabase
+        .from(table)
+        .select('id', { count: 'exact', head: true })
+        .eq('league_id', leagueId)
+
+      if (extra) query = extra(query)
+
+      const { count, error } = await query
+      if (error) return null
+      return count || 0
+    }
+
+    const load = async () => {
+      const [matches, knockout, awards, goals] = await Promise.all([
+        countRows('league_predictions'),
+        countRows('league_knockout_picks'),
+        countRows('league_award_predictions'),
+        countRows('league_tournament_predictions', q => q.in('prediction_type', ['group_goals', 'knockout_goals', 'total_goals'])),
+      ])
+
+      if (!cancelled) setCounts({ matches, knockout, awards, goals })
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [leagueId, supabase])
+
+  if (!counts) {
+    return <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>Loading locked prediction counts...</div>
+  }
+
+  const itemStyle = { padding: '5px 8px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: '700' }
+
+  return (
+    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+      <span style={itemStyle}>⚽ Matches: {counts.matches}</span>
+      <span style={itemStyle}>🏆 Knockout: {counts.knockout}</span>
+      <span style={itemStyle}>🥇 Awards: {counts.awards}</span>
+      <span style={itemStyle}>🎯 Goals: {counts.goals}</span>
+    </div>
+  )
+}
+
 function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, logAudit }) {
+  const [activeEditorTab, setActiveEditorTab] = useState('matches')
   const [committedPreds, setCommittedPreds] = useState({})
+  const [awardPreds, setAwardPreds] = useState({})
+  const [goalPreds, setGoalPreds] = useState({})
   const [selectedUserId, setSelectedUserId] = useState('')
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
+
     const load = async () => {
-      const { data } = await supabase.from('league_predictions')
-        .select('user_id, match_id, home_score, away_score, is_confident')
-        .eq('league_id', leagueId)
-      const map = {}
-      ;(data || []).forEach(p => {
-        map[`${p.user_id}-${p.match_id}`] = { home: p.home_score, away: p.away_score, joker: p.is_confident }
+      setLoaded(false)
+
+      const [matchRes, awardRes, goalRes] = await Promise.all([
+        supabase.from('league_predictions')
+          .select('user_id, match_id, home_score, away_score, is_confident')
+          .eq('league_id', leagueId),
+        supabase.from('league_award_predictions')
+          .select('user_id, award_type, bracket_type, predicted_player_name, predicted_team_id')
+          .eq('league_id', leagueId),
+        supabase.from('league_tournament_predictions')
+          .select('user_id, prediction_type, int_value, team_id')
+          .eq('league_id', leagueId)
+      ])
+
+      if (cancelled) return
+
+      const matchMap = {}
+      ;(matchRes.data || []).forEach(p => {
+        matchMap[`${p.user_id}-${p.match_id}`] = { home: p.home_score, away: p.away_score, joker: p.is_confident }
       })
-      setCommittedPreds(map)
+      setCommittedPreds(matchMap)
+
+      const awardMap = {}
+      ;(awardRes.data || []).forEach(p => {
+        const bracket = p.bracket_type || 'main'
+        awardMap[`${p.user_id}-${p.award_type}-${bracket}`] = {
+          player: p.predicted_player_name || '',
+          teamId: p.predicted_team_id || null,
+          bracket,
+        }
+      })
+      setAwardPreds(awardMap)
+
+      const goalMap = {}
+      ;(goalRes.data || []).forEach(p => {
+        goalMap[`${p.user_id}-${p.prediction_type}`] = {
+          value: p.int_value ?? '',
+          teamId: p.team_id || null,
+        }
+      })
+      setGoalPreds(goalMap)
+
       setLoaded(true)
     }
+
     load()
-  }, [leagueId])
+    return () => { cancelled = true }
+  }, [leagueId, supabase])
 
   const saveScore = async (userId, matchId, home, away, joker) => {
     if (home === '' || away === '' || isNaN(parseInt(home)) || isNaN(parseInt(away))) return
@@ -144,22 +235,109 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
     setSaving(false)
   }
 
+  const saveAward = async (userId, awardType, value) => {
+    const cleaned = (value || '').trim()
+    if (!cleaned) return
+
+    const key = `${userId}-${awardType}-main`
+    const current = awardPreds[key] || {}
+
+    setSaving(true)
+    await supabase.from('league_award_predictions').upsert({
+      league_id: leagueId,
+      user_id: userId,
+      award_type: awardType,
+      bracket_type: 'main',
+      predicted_player_name: cleaned,
+      predicted_team_id: current.teamId || null,
+      is_locked: true,
+      committed_at: new Date().toISOString(),
+    }, { onConflict: 'league_id,user_id,award_type,bracket_type' })
+    await logAudit('EDIT_COMMITTED_AWARD', { league_id: leagueId, user_id: userId, award_type: awardType, predicted_player_name: cleaned })
+    setAwardPreds(prev => ({ ...prev, [key]: { ...current, player: cleaned, bracket: 'main' } }))
+    setSaving(false)
+  }
+
+  const saveGoal = async (userId, predictionType, value) => {
+    if (value === '' || isNaN(parseInt(value))) return
+
+    const key = `${userId}-${predictionType}`
+    const current = goalPreds[key] || {}
+
+    setSaving(true)
+    await supabase.from('league_tournament_predictions').upsert({
+      league_id: leagueId,
+      user_id: userId,
+      prediction_type: predictionType,
+      int_value: parseInt(value),
+      team_id: current.teamId || null,
+      is_locked: true,
+      committed_at: new Date().toISOString(),
+    }, { onConflict: 'league_id,user_id,prediction_type,team_id' })
+    await logAudit('EDIT_COMMITTED_GOALS', { league_id: leagueId, user_id: userId, prediction_type: predictionType, int_value: parseInt(value) })
+    setGoalPreds(prev => ({ ...prev, [key]: { ...current, value: parseInt(value) } }))
+    setSaving(false)
+  }
+
   const groupMatches = matches.filter(m => m.stage === 'group')
   const selectedMember = members?.find(m => m.user_id === selectedUserId)
+  const memberName = selectedMember?.profile?.display_name || selectedMember?.profile?.username || 'Selected member'
+
+  const editorTabs = [
+    { key: 'matches', label: '⚽ Matches' },
+    { key: 'goals', label: '🎯 Goals' },
+    { key: 'awards', label: '🥇 Awards' },
+  ]
+
+  const goalTypes = [
+    { key: 'group_goals', label: 'Group goals' },
+    { key: 'knockout_goals', label: 'Knockout goals' },
+    { key: 'total_goals', label: 'Total goals' },
+  ]
+
+  const awardTypes = [
+    { key: 'golden_boot', label: 'Golden Boot' },
+    { key: 'golden_glove', label: 'Golden Glove' },
+    { key: 'player_of_tournament', label: 'Player of the Tournament' },
+  ]
 
   return (
     <div style={{ marginTop: '10px', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
-      <div style={{ fontWeight: '700', fontSize: '13px', marginBottom: '8px' }}>✏️ Edit committed scores</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+        <div>
+          <div style={{ fontWeight: '700', fontSize: '13px' }}>✏️ Edit committed snapshot</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Admin-only fixes for frozen pre-tournament league data.</div>
+        </div>
+        {saving && <span style={{ fontSize: '11px', color: 'var(--accent-blue)', fontWeight: '700' }}>Saving...</span>}
+      </div>
+
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+        {editorTabs.map(tab => (
+          <button key={tab.key} onClick={() => setActiveEditorTab(tab.key)}
+            className="btn btn-sm"
+            style={{
+              background: activeEditorTab === tab.key ? 'var(--scottish-navy)' : 'var(--bg-secondary)',
+              color: activeEditorTab === tab.key ? 'white' : 'var(--text-primary)',
+              border: '1px solid var(--border-light)',
+              fontSize: '11px'
+            }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       <select className="input" value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} style={{ marginBottom: '8px' }}>
         <option value="">Select member...</option>
         {(members || []).map(m => (
           <option key={m.user_id} value={m.user_id}>
-            {m.profile?.display_name || m.profile?.username || m.profile?.display_name || '?'}{m.is_offline ? ' (offline)' : ''}
+            {m.profile?.display_name || m.profile?.username || '?'}{m.is_offline ? ' (offline)' : ''}
           </option>
         ))}
       </select>
 
-      {selectedUserId && loaded && (
+      {!selectedUserId && <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '8px 0' }}>Choose a member to edit their locked snapshot.</div>}
+
+      {selectedUserId && loaded && activeEditorTab === 'matches' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '300px', overflowY: 'auto' }}>
           {groupMatches.map(match => {
             const key = `${selectedUserId}-${match.id}`
@@ -185,6 +363,47 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
           })}
         </div>
       )}
+
+      {selectedUserId && loaded && activeEditorTab === 'goals' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '2px' }}>{memberName}'s locked goals totals</div>
+          {goalTypes.map(goal => {
+            const key = `${selectedUserId}-${goal.key}`
+            const val = goalPreds[key] || {}
+            return (
+              <div key={goal.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                <span style={{ flex: 1, fontSize: '12px', fontWeight: '700' }}>{goal.label}</span>
+                <input type="number" min="0" placeholder="0" value={val.value ?? ''}
+                  onChange={e => setGoalPreds(prev => ({ ...prev, [key]: { ...prev[key], value: e.target.value } }))}
+                  style={{ width: '72px', textAlign: 'center', padding: '5px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '12px', fontWeight: '700' }} />
+                <button onClick={() => saveGoal(selectedUserId, goal.key, goalPreds[key]?.value)}
+                  className="btn btn-primary btn-sm" style={{ fontSize: '11px' }}>Save</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {selectedUserId && loaded && activeEditorTab === 'awards' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '2px' }}>{memberName}'s locked award picks</div>
+          {awardTypes.map(award => {
+            const key = `${selectedUserId}-${award.key}-main`
+            const val = awardPreds[key] || {}
+            return (
+              <div key={award.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                <span style={{ flex: '0 0 120px', fontSize: '12px', fontWeight: '700' }}>{award.label}</span>
+                <input type="text" placeholder="Player name" value={val.player ?? ''}
+                  onChange={e => setAwardPreds(prev => ({ ...prev, [key]: { ...prev[key], player: e.target.value } }))}
+                  style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '12px' }} />
+                <button onClick={() => saveAward(selectedUserId, award.key, awardPreds[key]?.player)}
+                  className="btn btn-primary btn-sm" style={{ fontSize: '11px' }}>Save</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ marginTop: '8px' }}>Close</button>
     </div>
   )
@@ -884,29 +1103,6 @@ export default function AdminPanel() {
     await logAudit('RENAME_LEAGUE', { league_id: leagueId, new_name: newName })
     setActionResult(`✅ League renamed to "${newName}"`)
     setEditingLeagueName(null)
-    loadLeagues()
-  }
-
-
-  const updateLeagueLockType = async (league, lockType) => {
-    if (!league?.id || !['rolling', 'pre_tournament'].includes(lockType)) return
-    if ((league.lock_type || 'rolling') === lockType) return
-
-    const label = lockType === 'pre_tournament' ? 'Pre-tournament lock' : 'Match-by-match editing'
-    const message = lockType === 'pre_tournament'
-      ? `Switch "${league.name}" to pre-tournament lock? This does not delete predictions. If the league should be frozen now, use Snapshot now afterwards.`
-      : `Switch "${league.name}" to match-by-match editing? This does not delete predictions or existing committed snapshots.`
-
-    if (!confirm(message)) return
-
-    const { error } = await supabase
-      .from('leagues')
-      .update({ lock_type: lockType })
-      .eq('id', league.id)
-
-    if (error) { setActionResult(`❌ Error updating lock mode: ${error.message}`); return }
-    await logAudit('UPDATE_LEAGUE_LOCK_TYPE', { league_id: league.id, league: league.name, lock_type: lockType })
-    setActionResult(`✅ ${league.name} set to ${label}`)
     loadLeagues()
   }
 
@@ -2128,11 +2324,11 @@ export default function AdminPanel() {
                         <div style={{ fontWeight: '700', fontSize: '15px' }}>{league.name}</div>
                         <button onClick={() => { setEditingLeagueName(league.id); setEditingLeagueNameVal(league.name) }}
                           style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>✏️</button>
-                        <span style={{ fontSize: '10px', fontWeight: '700', background: league.lock_type === 'pre_tournament' ? (league.snapshot_taken_at ? 'var(--accent-green)' : 'var(--accent-gold)') : 'var(--accent-blue)', color: 'white', padding: '2px 6px', borderRadius: 'var(--radius-full)' }}>
-                          {league.lock_type === 'pre_tournament'
-                            ? (league.snapshot_taken_at ? '🔒 Locked' : '⏳ Pre-lock')
-                            : '⏱ Match lock'}
-                        </span>
+                        {league.lock_type === 'pre_tournament' && (
+                          <span style={{ fontSize: '10px', fontWeight: '700', background: league.snapshot_taken_at ? 'var(--accent-green)' : 'var(--accent-gold)', color: 'white', padding: '2px 6px', borderRadius: 'var(--radius-full)' }}>
+                            {league.snapshot_taken_at ? '🔒 Locked' : '⏳ Pre-lock'}
+                          </span>
+                        )}
                       </div>
                     )}
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -2163,28 +2359,6 @@ export default function AdminPanel() {
                     ))}
                   </div>
                 )}
-
-
-                {/* Lock mode admin override */}
-                <div style={{ marginBottom: '10px', padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '6px' }}>🔒 League lock mode</div>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <select
-                      className="input"
-                      value={league.lock_type || 'rolling'}
-                      onChange={e => updateLeagueLockType(league, e.target.value)}
-                      style={{ flex: '1 1 190px', minWidth: '190px', fontSize: '12px', padding: '7px 8px' }}
-                    >
-                      <option value="rolling">⏱ Match-by-match editing</option>
-                      <option value="pre_tournament">🔒 Pre-tournament lock</option>
-                    </select>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', flex: '2 1 220px' }}>
-                      {league.lock_type === 'pre_tournament'
-                        ? 'Uses committed league snapshots once taken.'
-                        : 'Members can edit future unlocked matches.'}
-                    </span>
-                  </div>
-                </div>
 
                 {/* Add member */}
                 {addingMemberTo === league.id ? (
@@ -2237,7 +2411,11 @@ export default function AdminPanel() {
                         : <span style={{ fontSize: '11px', color: 'var(--accent-gold)' }}>⏳ Snapshot pending (11 Jun 13:00)</span>
                       }
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {league.snapshot_taken_at && (
+                      <SnapshotCounts leagueId={league.id} supabase={supabase} />
+                    )}
+
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
                       {!league.snapshot_taken_at && (
                         <button onClick={async () => {
                           if (!confirm(`Take snapshot now for "${league.name}"? This locks all predictions immediately.`)) return
@@ -2248,7 +2426,13 @@ export default function AdminPanel() {
                           })
                           const data = await res.json()
                           if (!res.ok) { setActionResult(`❌ Snapshot failed: ${data.error || 'Unknown error'}`); return }
-                          setActionResult(`✅ ${data.message} — ${data.predictions} predictions locked`)
+                          const detail = [
+                            `${data.matchPredictions ?? data.predictions ?? 0} matches`,
+                            `${data.knockoutPicks ?? 0} knockout`,
+                            `${data.awardPredictions ?? 0} awards`,
+                            `${data.tournamentPredictions ?? 0} goals`
+                          ].join(' · ')
+                          setActionResult(`✅ ${data.message} — ${detail}`)
                           loadLeagues()
                         }} className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', fontSize: '11px' }}>
                           📸 Snapshot now
@@ -2257,12 +2441,12 @@ export default function AdminPanel() {
                       {league.snapshot_taken_at && (
                         <button onClick={() => setEditingCommittedLeague(editingCommittedLeague === league.id ? null : league.id)}
                           className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none', fontSize: '11px' }}>
-                          ✏️ Edit committed scores
+                          ✏️ Edit committed snapshot
                         </button>
                       )}
                     </div>
 
-                    {/* Edit committed scores */}
+                    {/* Edit committed snapshot */}
                     {editingCommittedLeague === league.id && (
                       <CommittedScoreEditor leagueId={league.id} members={league.members} matches={matches} supabase={supabase} onClose={() => setEditingCommittedLeague(null)} logAudit={logAudit} />
                     )}
