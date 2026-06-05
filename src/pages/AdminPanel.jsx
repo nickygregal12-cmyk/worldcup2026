@@ -284,9 +284,17 @@ export default function AdminPanel() {
   const loadMatches = async () => {
     const { data } = await supabase
       .from('matches')
-      .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code)')
+      .select('*, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code), group:group_id(name)')
       .order('kickoff_time', { ascending: true })
-    setMatches(data || [])
+    // Attach group name from separate fetch since FK join may not be registered
+    const { data: groups } = await supabase.from('groups').select('id, name')
+    const groupMap = {}
+    groups?.forEach(g => { groupMap[g.id] = g.name })
+    const enriched = (data || []).map(m => ({
+      ...m,
+      group: { name: groupMap[m.group_id] || m.group?.name || null }
+    }))
+    setMatches(enriched)
   }
 
   const loadUsers = async () => {
