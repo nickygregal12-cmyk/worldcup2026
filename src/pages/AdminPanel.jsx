@@ -1194,8 +1194,10 @@ export default function AdminPanel() {
             homeScore = a
             awayScore = b
             // Check ALL remaining items in row for joker marker
+            // Must be a standalone single character, not part of a word
             for (let j = i + 2; j < parts.length; j++) {
-              if (['x', 'X', '✓', 'Y', 'yes', '✗', '×'].includes(parts[j])) {
+              const p = parts[j]
+              if (p === 'X' || p === 'x' || p === '✓') {
                 isJoker = true
                 break
               }
