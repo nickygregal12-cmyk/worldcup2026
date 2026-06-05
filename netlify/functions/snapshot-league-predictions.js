@@ -1,21 +1,36 @@
 // snapshot-league-predictions.js
-// Takes a snapshot of all member predictions for pre_tournament locked leagues
-// Called automatically at 11 Jun 13:00 UK time, or manually from Admin Panel
+// Takes a snapshot of all member predictions for pre_tournament locked leagues.
+// Called automatically by Supabase pg_cron, or manually from Admin Panel.
 
 const { createClient } = require('@supabase/supabase-js')
 
+const nowIso = () => new Date().toISOString()
+
+const json = (statusCode, body) => ({
+  statusCode,
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(body),
+})
+
+const requireEnv = () => {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl) throw new Error('Missing Supabase URL env var: set VITE_SUPABASE_URL or SUPABASE_URL in Netlify')
+  if (!serviceKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY env var in Netlify')
+
+  return { supabaseUrl, serviceKey }
+}
+
 exports.handler = async (event) => {
-  // Allow POST (manual trigger from admin) or scheduled
   if (event.httpMethod !== 'POST' && event.httpMethod !== 'GET') {
-    return { statusCode: 405, body: 'Method not allowed' }
+    return json(405, { error: 'Method not allowed' })
   }
 
-  const supabase = createClient(
-    process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  )
-
   try {
+    const { supabaseUrl, serviceKey } = requireEnv()
+    const supabase = createClient(supabaseUrl, serviceKey)
+
     let requestedLeagueId = null
     if (event.httpMethod === 'POST' && event.body) {
       try {
@@ -26,8 +41,6 @@ exports.handler = async (event) => {
       }
     }
 
-    // Get pre_tournament leagues that haven't been snapshotted yet.
-    // Manual admin snapshots can target one league; scheduled runs still handle all pending leagues.
     let leagueQuery = supabase
       .from('leagues')
       .select('id, name, lock_type, snapshot_taken_at')
@@ -37,108 +50,238 @@ exports.handler = async (event) => {
     if (requestedLeagueId) leagueQuery = leagueQuery.eq('id', requestedLeagueId)
 
     const { data: leagues, error: leagueError } = await leagueQuery
+    if (leagueError) throw new Error(`Failed to load leagues: ${leagueError.message}`)
 
-    if (leagueError) throw leagueError
     if (!leagues?.length) {
-      return {
-        statusCode: requestedLeagueId ? 404 : 200,
-        body: JSON.stringify({
-          message: requestedLeagueId ? 'League is not pending a pre-tournament snapshot' : 'No leagues to snapshot',
-          count: 0
-        })
-      }
+      return json(requestedLeagueId ? 404 : 200, {
+        message: requestedLeagueId ? 'League is not pending a pre-tournament snapshot' : 'No leagues to snapshot',
+        count: 0,
+      })
     }
 
-    let totalSnapshotted = 0
+    const totals = {
+      leagues: 0,
+      matchPredictions: 0,
+      knockoutPicks: 0,
+      awardPredictions: 0,
+      tournamentPredictions: 0,
+      offlinePredictions: 0,
+    }
+
+    const leagueResults = []
 
     for (const league of leagues) {
-      // Get all members of this league
-      const { data: members } = await supabase
+      const committedAt = nowIso()
+      const result = {
+        league_id: league.id,
+        league_name: league.name,
+        matchPredictions: 0,
+        offlinePredictions: 0,
+        knockoutPicks: 0,
+        awardPredictions: 0,
+        tournamentPredictions: 0,
+      }
+
+      const { data: members, error: membersError } = await supabase
         .from('league_members')
         .select('user_id')
         .eq('league_id', league.id)
 
-      if (!members?.length) continue
+      if (membersError) throw new Error(`Failed to load members for ${league.name}: ${membersError.message}`)
+      if (!members?.length) {
+        leagueResults.push({ ...result, skipped: 'No league members' })
+        continue
+      }
 
-      const memberIds = members.map(m => m.user_id)
+      const memberIds = members.map(m => m.user_id).filter(Boolean)
 
-      // Get all predictions for these members
-      const { data: predictions } = await supabase
+      // 1) Group/match score predictions
+      const { data: predictions, error: predictionsError } = await supabase
         .from('predictions')
         .select('user_id, match_id, home_score, away_score, is_confident')
         .in('user_id', memberIds)
 
-      if (!predictions?.length) continue
+      if (predictionsError) throw new Error(`Failed to load match predictions for ${league.name}: ${predictionsError.message}`)
 
-      // Also get offline player predictions for this league
-      const { data: offlinePlayers } = await supabase
+      const matchRows = (predictions || []).map(p => ({
+        league_id: league.id,
+        user_id: p.user_id,
+        match_id: p.match_id,
+        home_score: p.home_score,
+        away_score: p.away_score,
+        is_confident: p.is_confident || false,
+        committed_at: committedAt,
+      }))
+
+      // 2) Offline player match predictions
+      const { data: offlinePlayers, error: offlinePlayersError } = await supabase
         .from('offline_players')
         .select('id')
         .eq('league_id', league.id)
 
-      const offlineIds = offlinePlayers?.map(p => p.id) || []
+      if (offlinePlayersError) throw new Error(`Failed to load offline players for ${league.name}: ${offlinePlayersError.message}`)
 
-      let offlinePredictions = []
+      const offlineIds = offlinePlayers?.map(p => p.id).filter(Boolean) || []
+      let offlineRows = []
+
       if (offlineIds.length) {
-        const { data: offPreds } = await supabase
+        const { data: offPreds, error: offPredsError } = await supabase
           .from('offline_predictions')
           .select('offline_player_id, match_id, home_score, away_score, is_confident')
           .in('offline_player_id', offlineIds)
-        offlinePredictions = offPreds || []
-      }
 
-      // Build snapshot rows
-      const snapshotRows = [
-        ...predictions.map(p => ({
-          league_id: league.id,
-          user_id: p.user_id,
-          match_id: p.match_id,
-          home_score: p.home_score,
-          away_score: p.away_score,
-          is_confident: p.is_confident || false,
-          committed_at: new Date().toISOString(),
-        })),
-        ...offlinePredictions.map(p => ({
+        if (offPredsError) throw new Error(`Failed to load offline predictions for ${league.name}: ${offPredsError.message}`)
+
+        offlineRows = (offPreds || []).map(p => ({
           league_id: league.id,
           user_id: p.offline_player_id,
           match_id: p.match_id,
           home_score: p.home_score,
           away_score: p.away_score,
           is_confident: p.is_confident || false,
-          committed_at: new Date().toISOString(),
+          committed_at: committedAt,
         }))
-      ]
-
-      // Insert snapshot
-      const { error: insertError } = await supabase
-        .from('league_predictions')
-        .upsert(snapshotRows, { onConflict: 'league_id,user_id,match_id' })
-
-      if (insertError) {
-        console.error(`Error snapshotting league ${league.name}:`, insertError)
-        continue
       }
 
-      // Mark league as snapshotted
-      await supabase.from('leagues')
-        .update({ snapshot_taken_at: new Date().toISOString() })
+      const allMatchRows = [...matchRows, ...offlineRows]
+      if (allMatchRows.length) {
+        const { error: insertMatchError } = await supabase
+          .from('league_predictions')
+          .upsert(allMatchRows, { onConflict: 'league_id,user_id,match_id' })
+
+        if (insertMatchError) throw new Error(`Failed to snapshot match predictions for ${league.name}: ${insertMatchError.message}`)
+      }
+
+      result.matchPredictions = matchRows.length
+      result.offlinePredictions = offlineRows.length
+      totals.matchPredictions += matchRows.length
+      totals.offlinePredictions += offlineRows.length
+
+      // 3) Knockout picks
+      const { data: knockoutPicks, error: koError } = await supabase
+        .from('knockout_picks')
+        .select('id, user_id, stage, team_id, is_joker, match_number, home_team_id, away_team_id, winner_team_id, result_type')
+        .in('user_id', memberIds)
+
+      if (koError) throw new Error(`Failed to load knockout picks for ${league.name}: ${koError.message}`)
+
+      const koRows = (knockoutPicks || []).map(p => ({
+        league_id: league.id,
+        user_id: p.user_id,
+        source_pick_id: p.id,
+        stage: p.stage,
+        team_id: p.team_id,
+        is_joker: p.is_joker || false,
+        match_number: p.match_number,
+        home_team_id: p.home_team_id,
+        away_team_id: p.away_team_id,
+        winner_team_id: p.winner_team_id,
+        result_type: p.result_type,
+        committed_at: committedAt,
+      })).filter(p => p.match_number !== null && p.match_number !== undefined)
+
+      if (koRows.length) {
+        const { error: insertKoError } = await supabase
+          .from('league_knockout_picks')
+          .upsert(koRows, { onConflict: 'league_id,user_id,match_number' })
+
+        if (insertKoError) throw new Error(`Failed to snapshot knockout picks for ${league.name}: ${insertKoError.message}`)
+      }
+
+      result.knockoutPicks = koRows.length
+      totals.knockoutPicks += koRows.length
+
+      // 4) Award predictions
+      const { data: awardPredictions, error: awardError } = await supabase
+        .from('award_predictions')
+        .select('id, user_id, award_type, bracket_type, predicted_player_name, predicted_team_id, points_awarded, is_correct, is_locked, submitted_at')
+        .in('user_id', memberIds)
+
+      if (awardError) throw new Error(`Failed to load award predictions for ${league.name}: ${awardError.message}`)
+
+      const awardRows = (awardPredictions || []).map(p => ({
+        league_id: league.id,
+        user_id: p.user_id,
+        source_prediction_id: p.id,
+        award_type: p.award_type,
+        bracket_type: p.bracket_type || 'main',
+        predicted_player_name: p.predicted_player_name,
+        predicted_team_id: p.predicted_team_id,
+        points_awarded: p.points_awarded || 0,
+        is_correct: p.is_correct,
+        is_locked: true,
+        submitted_at: p.submitted_at,
+        committed_at: committedAt,
+      })).filter(p => p.award_type)
+
+      if (awardRows.length) {
+        const { error: insertAwardError } = await supabase
+          .from('league_award_predictions')
+          .upsert(awardRows, { onConflict: 'league_id,user_id,award_type,bracket_type' })
+
+        if (insertAwardError) throw new Error(`Failed to snapshot award predictions for ${league.name}: ${insertAwardError.message}`)
+      }
+
+      result.awardPredictions = awardRows.length
+      totals.awardPredictions += awardRows.length
+
+      // 5) Tournament/goal predictions
+      const { data: tournamentPredictions, error: tournamentError } = await supabase
+        .from('tournament_predictions')
+        .select('id, user_id, prediction_type, int_value, team_id, is_locked, created_at, updated_at')
+        .in('user_id', memberIds)
+
+      if (tournamentError) throw new Error(`Failed to load tournament predictions for ${league.name}: ${tournamentError.message}`)
+
+      const tournamentRows = (tournamentPredictions || []).map(p => ({
+        league_id: league.id,
+        user_id: p.user_id,
+        source_prediction_id: p.id,
+        prediction_type: p.prediction_type,
+        int_value: p.int_value,
+        team_id: p.team_id,
+        is_locked: true,
+        source_created_at: p.created_at,
+        source_updated_at: p.updated_at,
+        committed_at: committedAt,
+      })).filter(p => p.prediction_type)
+
+      if (tournamentRows.length) {
+        const { error: insertTournamentError } = await supabase
+          .from('league_tournament_predictions')
+          .upsert(tournamentRows, { onConflict: 'league_id,user_id,prediction_type,team_id' })
+
+        if (insertTournamentError) throw new Error(`Failed to snapshot tournament predictions for ${league.name}: ${insertTournamentError.message}`)
+      }
+
+      result.tournamentPredictions = tournamentRows.length
+      totals.tournamentPredictions += tournamentRows.length
+
+      const { error: updateLeagueError } = await supabase
+        .from('leagues')
+        .update({ snapshot_taken_at: committedAt })
         .eq('id', league.id)
 
-      totalSnapshotted += snapshotRows.length
-      console.log(`Snapshotted ${snapshotRows.length} predictions for league "${league.name}"`)
+      if (updateLeagueError) throw new Error(`Failed to mark ${league.name} as snapshotted: ${updateLeagueError.message}`)
+
+      totals.leagues += 1
+      leagueResults.push(result)
+      console.log(`Snapshot complete for ${league.name}:`, result)
     }
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        message: `Snapshot complete`,
-        leagues: leagues.length,
-        predictions: totalSnapshotted
-      })
-    }
-
+    return json(200, {
+      message: 'Snapshot complete',
+      leagues: totals.leagues,
+      predictions: totals.matchPredictions + totals.offlinePredictions,
+      matchPredictions: totals.matchPredictions,
+      offlinePredictions: totals.offlinePredictions,
+      knockoutPicks: totals.knockoutPicks,
+      awardPredictions: totals.awardPredictions,
+      tournamentPredictions: totals.tournamentPredictions,
+      results: leagueResults,
+    })
   } catch (e) {
     console.error('Snapshot error:', e)
-    return { statusCode: 500, body: JSON.stringify({ error: e.message }) }
+    return json(500, { error: e.message || 'Snapshot failed' })
   }
 }
