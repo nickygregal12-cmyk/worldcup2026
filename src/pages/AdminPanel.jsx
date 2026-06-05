@@ -1183,21 +1183,31 @@ export default function AdminPanel() {
         const matchNum = parseInt(parts[0])
         if (isNaN(matchNum) || matchNum < 1 || matchNum > 72) continue
 
-        // Find two consecutive score-like integers (0-20)
+        // Find scores — skip times (contain :) and dates (contain -)
+        // Look for two 1-2 digit numbers after position 3 (past match#, group, date, time)
         let homeScore = null, awayScore = null, isJoker = false
 
-        for (let i = 1; i < parts.length - 1; i++) {
-          const a = parseInt(parts[i])
-          const b = parseInt(parts[i + 1])
-          if (!isNaN(a) && !isNaN(b) && a >= 0 && a <= 20 && b >= 0 && b <= 20
-              && parts[i].length <= 2 && parts[i + 1].length <= 2) {
-            homeScore = a
-            awayScore = b
-            // Check ALL remaining items in row for joker marker
-            // Must be a standalone single character, not part of a word
-            for (let j = i + 2; j < parts.length; j++) {
-              const p = parts[j]
-              if (p === 'X' || p === 'x' || p === '✓') {
+        // Filter out time/date parts first
+        const scoreCandidates = []
+        for (let i = 3; i < parts.length; i++) {
+          const p = parts[i]
+          if (p.includes(':') || p.includes('-') || p.includes('/')) continue
+          const n = parseInt(p)
+          if (!isNaN(n) && n >= 0 && n <= 20 && /^\d{1,2}$/.test(p)) {
+            scoreCandidates.push({ val: n, idx: i })
+          }
+        }
+
+        // Find two consecutive candidates (within 2 positions of each other)
+        for (let si = 0; si < scoreCandidates.length - 1; si++) {
+          const curr = scoreCandidates[si]
+          const next = scoreCandidates[si + 1]
+          if (next.idx - curr.idx <= 2) {
+            homeScore = curr.val
+            awayScore = next.val
+            // Check for standalone X joker after scores
+            for (let j = next.idx + 1; j < parts.length; j++) {
+              if (parts[j] === 'X' || parts[j] === 'x' || parts[j] === '✓') {
                 isJoker = true
                 break
               }
