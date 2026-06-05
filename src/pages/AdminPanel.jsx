@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TABS = [
@@ -220,6 +221,7 @@ export default function AdminPanel() {
   const [offlineImportPreview, setOfflineImportPreview] = useState(null)
   const [offlineSelectedPlayer, setOfflineSelectedPlayer] = useState(null)
   const [offlineManualScores, setOfflineManualScores] = useState({})
+  const [offlineKoMode, setOfflineKoMode] = useState(null) // player id showing KO picks
   const [offlineSearch, setOfflineSearch] = useState('')
   const [offlineLeagueFilter, setOfflineLeagueFilter] = useState('')
   const [collapsedPlayers, setCollapsedPlayers] = useState({})
@@ -242,7 +244,7 @@ export default function AdminPanel() {
   useEffect(() => {
     if (activeTab === 'ko') loadKoData()
     if (activeTab === 'settings') { loadSettings(); if (matches.length === 0) loadMatches() }
-    if (activeTab === 'offline') { if (leagues.length === 0) loadLeagues(); loadOfflinePlayers() }
+    if (activeTab === 'offline') { if (leagues.length === 0) loadLeagues(); if (matches.length === 0) loadMatches(); loadOfflinePlayers() }
   }, [activeTab])
 
   const loadAll = async () => {
@@ -853,13 +855,14 @@ export default function AdminPanel() {
     // Load all existing offline predictions into state
     const { data: preds } = await supabase
       .from('offline_predictions')
-      .select('offline_player_id, match_id, home_score, away_score, is_confident')
+      .select('offline_player_id, match_id, home_score, away_score, is_confident, picked_team_id')
     const scoresMap = {}
     ;(preds || []).forEach(p => {
       scoresMap[`${p.offline_player_id}-${p.match_id}`] = {
         home: p.home_score ?? '',
         away: p.away_score ?? '',
         joker: p.is_confident || false,
+        picked_team_id: p.picked_team_id || null,
         saved: true
       }
     })
@@ -2009,14 +2012,93 @@ export default function AdminPanel() {
                   {offlineImporting && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>⏳ Parsing spreadsheet...</div>}
                 </div>
 
-                {/* Manual score entry toggle */}
-                <button onClick={() => setOfflineSelectedPlayer(offlineSelectedPlayer?.id === player.id ? null : player)}
-                  className="btn btn-sm" style={{ border: '1px solid var(--scottish-navy)', color: 'var(--scottish-navy)', background: 'none', width: '100%' }}>
-                  {offlineSelectedPlayer?.id === player.id ? '▲ Hide manual entry' : '⌨️ Enter scores manually'}
-                </button>
+                {/* Manual score entry toggle buttons */}
+                <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+                  <button onClick={() => {
+                    setOfflineSelectedPlayer(offlineSelectedPlayer?.id === player.id ? null : player)
+                    setOfflineKoMode(null)
+                  }}
+                    className="btn btn-sm" style={{ flex: 1, border: '1px solid var(--scottish-navy)', color: offlineSelectedPlayer?.id === player.id ? 'white' : 'var(--scottish-navy)', background: offlineSelectedPlayer?.id === player.id ? 'var(--scottish-navy)' : 'none' }}>
+                    ⚽ {offlineSelectedPlayer?.id === player.id ? '▲ Hide groups' : '⌨️ Group scores'}
+                  </button>
+                  <button onClick={() => {
+                    setOfflineKoMode(offlineKoMode === player.id ? null : player.id)
+                    setOfflineSelectedPlayer(null)
+                  }}
+                    className="btn btn-sm" style={{ flex: 1, border: '1px solid var(--scottish-navy)', color: offlineKoMode === player.id ? 'white' : 'var(--scottish-navy)', background: offlineKoMode === player.id ? 'var(--scottish-navy)' : 'none' }}>
+                    🏆 {offlineKoMode === player.id ? '▲ Hide knockouts' : 'Knockout picks'}
+                  </button>
+                </div>
 
-                {/* Manual score entry */}
-                {offlineSelectedPlayer?.id === player.id && (
+                {/* Knockout picks mode */}
+                {offlineKoMode === player.id && (
+                  <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '4px' }}>
+                      Pick which team advances — teams shown based on their group predictions
+                    </div>
+                    {(() => {
+                      // Build predMap from this player's offline predictions
+                      const predMap = {}
+                      const groupMatches = matches.filter(m => m.stage === 'group')
+                      groupMatches.forEach(m => {
+                        const key = `${player.id}-${m.id}`
+                        const val = offlineManualScores[key]
+                        if (val?.home !== '' && val?.away !== '' && val?.home !== undefined) {
+                          predMap[m.id] = { home: parseInt(val.home), away: parseInt(val.away) }
+                        }
+                      })
+                      const standings = calcPredictedStandings(groupMatches, predMap)
+                      const best3rd = getBest3rdTeams(standings)
+
+                      return ALL_STAGES.map(stage => (
+                        <div key={stage.key}>
+                          <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', padding: '6px 0 4px' }}>{stage.label} · {stage.points}pts</div>
+                          {stage.matches.map(matchDef => {
+                            const dbMatch = matches.find(m => m.match_number === matchDef.match_number)
+                            if (!dbMatch) return null
+                            const key = `${player.id}-${dbMatch.id}`
+                            const val = offlineManualScores[key] || {}
+                            const homeTeam = resolveSlot(matchDef.home_slot, standings, groupMatches, predMap)
+                            const awayTeam = resolveSlot(matchDef.away_slot, standings, groupMatches, predMap)
+                            const teams = [homeTeam, awayTeam].filter(Boolean)
+                            return (
+                              <div key={matchDef.match_number} style={{ padding: '6px 8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: `1px solid ${val.picked_team_id ? 'var(--accent-green)' : 'var(--border-light)'}`, marginBottom: '3px' }}>
+                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                                  M{matchDef.match_number} · {matchDef.home_slot} vs {matchDef.away_slot}
+                                </div>
+                                {teams.length === 0 ? (
+                                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>⚠️ Enter group predictions first to unlock</div>
+                                ) : (
+                                  <div style={{ display: 'flex', gap: '6px' }}>
+                                    {teams.map(team => (
+                                      <button key={team.id}
+                                        onClick={async () => {
+                                          setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], picked_team_id: team.id } }))
+                                          await supabase.from('offline_predictions').upsert({
+                                            offline_player_id: player.id,
+                                            match_id: dbMatch.id,
+                                            picked_team_id: team.id,
+                                          }, { onConflict: 'offline_player_id,match_id' })
+                                        }}
+                                        style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: `1.5px solid ${val.picked_team_id === team.id ? 'var(--accent-green)' : 'var(--border-light)'}`, background: val.picked_team_id === team.id ? 'var(--accent-green-light)' : 'var(--bg-secondary)', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
+                                        {team.flag_emoji} {team.short_code || team.name}
+                                      </button>
+                                    ))}
+                                    {teams.length === 1 && (
+                                      <div style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: '1.5px dashed var(--border-medium)', fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                                        TBD
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                )}
                   <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
                       <span>Enter scores — saves on blur</span>
