@@ -186,6 +186,7 @@ export default function AdminPanel() {
   const [newLeagueCreatingFor, setNewLeagueCreatingFor] = useState('')
   const [newLeagueIsGlobal, setNewLeagueIsGlobal] = useState(false)
   const [newLeaguePreset, setNewLeaguePreset] = useState('standard')
+  const [showCustomScoring, setShowCustomScoring] = useState(false)
   const [newLeagueScoring, setNewLeagueScoring] = useState({
     group_correct: 3, group_exact: 5, group_jokers: 8, joker_multiplier: 2,
     ko_correct: 3, ko_exact: 5, ko_jokers: 5,
@@ -223,6 +224,12 @@ export default function AdminPanel() {
   const [offlineLeagueFilter, setOfflineLeagueFilter] = useState('')
   const [collapsedPlayers, setCollapsedPlayers] = useState({})
   const [leagueAmendLeagueId, setLeagueAmendLeagueId] = useState('')
+  const [playerAdjLeagueId, setPlayerAdjLeagueId] = useState('')
+  const [playerAdjUserId, setPlayerAdjUserId] = useState('')
+  const [playerAdjAmount, setPlayerAdjAmount] = useState('')
+  const [playerAdjReason, setPlayerAdjReason] = useState('')
+  const [playerAdjSaving, setPlayerAdjSaving] = useState(false)
+  const [playerAdjLeagueMembers, setPlayerAdjLeagueMembers] = useState([])
   const [leagueAmendAmount, setLeagueAmendAmount] = useState('')
   const [leagueAmendReason, setLeagueAmendReason] = useState('')
   const [leagueAmendSaving, setLeagueAmendSaving] = useState(false)
@@ -1698,7 +1705,14 @@ export default function AdminPanel() {
                     </div>
                   </div>
 
-                  {/* Custom scoring grid */}
+                  {/* Custom scoring grid — collapsed by default */}
+                  <div>
+                    <button onClick={() => setShowCustomScoring(s => !s)}
+                      style={{ background: 'none', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', width: '100%', textAlign: 'left' }}>
+                      {showCustomScoring ? '▲ Hide custom scoring' : '⚙️ Customise scoring (optional) — Standard scoring pre-filled'}
+                    </button>
+                  </div>
+                  {showCustomScoring && (
                   <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '12px' }}>
                     <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '10px', color: 'var(--scottish-navy)' }}>⚙️ Custom Scoring (0–50pts each)</div>
                     {[
@@ -1739,6 +1753,7 @@ export default function AdminPanel() {
                       </div>
                     ))}
                   </div>
+                  )}
 
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button onClick={createLeague} disabled={!newLeagueName.trim()} className="btn btn-primary btn-sm">Create League</button>
@@ -1909,39 +1924,45 @@ export default function AdminPanel() {
               {offlinePlayers.length} offline player{offlinePlayers.length !== 1 ? 's' : ''}
             </div>
 
-            {offlinePlayers
-              .filter(p => {
-                const matchSearch = !offlineSearch || p.display_name?.toLowerCase().includes(offlineSearch.toLowerCase())
-                const matchLeague = !offlineLeagueFilter || p.league_id === offlineLeagueFilter
-                return matchSearch && matchLeague
-              })
-              .map(player => {
-              const isCollapsed = collapsedPlayers[player.id] !== false // default collapsed
-              return (
-              <div key={player.id} className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '800', fontSize: '15px' }}>👤 {player.display_name}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {player.league?.name || '—'}
+            {/* Compact table */}
+            <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+              {/* Header row */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px', gap: '8px', padding: '8px 12px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                <span>Player</span>
+                <span>League</span>
+                <span style={{ textAlign: 'right' }}>Actions</span>
+              </div>
+              {offlinePlayers
+                .filter(p => {
+                  const matchSearch = !offlineSearch || p.display_name?.toLowerCase().includes(offlineSearch.toLowerCase())
+                  const matchLeague = !offlineLeagueFilter || p.league_id === offlineLeagueFilter
+                  return matchSearch && matchLeague
+                })
+                .map((player, idx, arr) => {
+                const isCollapsed = collapsedPlayers[player.id] !== false
+                return (
+                <div key={player.id}>
+                  {/* Compact row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px', gap: '8px', padding: '10px 12px', borderBottom: idx < arr.length - 1 || !isCollapsed ? '1px solid var(--border-light)' : 'none', alignItems: 'center' }}>
+                    <div style={{ fontWeight: '700', fontSize: '13px' }}>👤 {player.display_name}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{player.league?.name || '—'}</div>
+                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                      <button onClick={() => generateInviteLink(player.id, player.display_name)}
+                        title="Generate & copy a unique signup link for this player. They click it, create an account, and their predictions are linked automatically. Valid for 7 days." className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', fontSize: '11px', padding: '3px 7px' }}>
+                        📧
+                      </button>
+                      <button onClick={() => setCollapsedPlayers(prev => ({ ...prev, [player.id]: !isCollapsed }))}
+                        className="btn btn-sm" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', fontSize: '11px', padding: '3px 7px' }}>
+                        {isCollapsed ? '▼' : '▲'}
+                      </button>
+                      <button onClick={() => setConfirmAction({ type: 'deleteOfflinePlayer', playerId: player.id, displayName: player.display_name })}
+                        className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none', padding: '3px 7px' }}>
+                        🗑️
+                      </button>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <button onClick={() => generateInviteLink(player.id, player.display_name)}
-                      className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', fontSize: '11px' }}>
-                      📧
-                    </button>
-                    <button onClick={() => setCollapsedPlayers(prev => ({ ...prev, [player.id]: isCollapsed ? false : true }))}
-                      className="btn btn-sm" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', fontSize: '11px' }}>
-                      {isCollapsed ? '▼ Expand' : '▲ Collapse'}
-                    </button>
-                    <button onClick={() => setConfirmAction({ type: 'deleteOfflinePlayer', playerId: player.id, displayName: player.display_name })}
-                      className="btn btn-sm" style={{ background: '#e53935', color: 'white', border: 'none' }}>
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-                {!isCollapsed && <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-light)', paddingTop: '12px' }}>
+                  {/* Expanded detail */}
+                  {!isCollapsed && <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)' }}>
 
                 {/* Excel upload */}
                 <div style={{ marginBottom: '10px' }}>
@@ -1991,9 +2012,10 @@ export default function AdminPanel() {
                     })}
                   </div>
                 )}
-              </div>}
-              </div>
-            )})}
+                </div>}
+                </div>
+              )})}
+            </div>
 
             {offlinePlayers.filter(p => {
               const matchSearch = !offlineSearch || p.display_name?.toLowerCase().includes(offlineSearch.toLowerCase())
@@ -2052,6 +2074,69 @@ export default function AdminPanel() {
                     setLeagueAmendSaving(false)
                   }}>
                   {leagueAmendSaving ? '⏳ Applying...' : 'Apply to all league members'}
+                </button>
+              </div>
+            </div>
+
+            {/* Individual player points adjustment */}
+            <div className="card" style={{ border: '1px solid var(--scottish-navy)' }}>
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '4px' }}>🎯 Individual Player Points</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                Add or deduct points for a specific player in a league with a reason (e.g. "Harry Kane goal bonus +5pts")
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <select className="input" value={playerAdjLeagueId} onChange={async e => {
+                  setPlayerAdjLeagueId(e.target.value)
+                  setPlayerAdjUserId('')
+                  if (e.target.value) {
+                    const { data } = await supabase.from('league_members')
+                      .select('user_id, league_points, profile:user_id(username, display_name, is_offline)')
+                      .eq('league_id', e.target.value)
+                    setPlayerAdjLeagueMembers(data || [])
+                  }
+                }}>
+                  <option value="">Select league...</option>
+                  {leagues.filter(l => !l.is_global).map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+                {playerAdjLeagueId && (
+                  <select className="input" value={playerAdjUserId} onChange={e => setPlayerAdjUserId(e.target.value)}>
+                    <option value="">Select player...</option>
+                    {playerAdjLeagueMembers.map(m => (
+                      <option key={m.user_id} value={m.user_id}>
+                        {m.profile?.display_name || m.profile?.username || '?'} {m.profile?.is_offline ? '(offline)' : ''} · {m.league_points || 0}pts
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input type="number" className="input" placeholder="±pts (e.g. +5 or -3)" style={{ flex: 1 }}
+                    value={playerAdjAmount} onChange={e => setPlayerAdjAmount(e.target.value)} />
+                  <input type="text" className="input" placeholder="Reason (e.g. Harry Kane goal bonus)" style={{ flex: 2 }}
+                    value={playerAdjReason} onChange={e => setPlayerAdjReason(e.target.value)} />
+                </div>
+                <button className="btn btn-primary" disabled={playerAdjSaving || !playerAdjLeagueId || !playerAdjUserId || !playerAdjAmount || !playerAdjReason}
+                  onClick={async () => {
+                    const amount = parseInt(playerAdjAmount)
+                    if (isNaN(amount)) { setActionResult('❌ Invalid amount'); return }
+                    setPlayerAdjSaving(true)
+                    const member = playerAdjLeagueMembers.find(m => m.user_id === playerAdjUserId)
+                    await supabase.from('league_members')
+                      .update({ league_points: (member?.league_points || 0) + amount })
+                      .eq('league_id', playerAdjLeagueId).eq('user_id', playerAdjUserId)
+                    await logAudit('PLAYER_POINTS_ADJUSTMENT', { league_id: playerAdjLeagueId, user_id: playerAdjUserId, amount, reason: playerAdjReason })
+                    setActionResult(`✅ ${amount > 0 ? '+' : ''}${amount}pts applied to ${member?.profile?.display_name || member?.profile?.username} · ${playerAdjReason}`)
+                    setPlayerAdjAmount('')
+                    setPlayerAdjReason('')
+                    setPlayerAdjUserId('')
+                    const { data } = await supabase.from('league_members')
+                      .select('user_id, league_points, profile:user_id(username, display_name, is_offline)')
+                      .eq('league_id', playerAdjLeagueId)
+                    setPlayerAdjLeagueMembers(data || [])
+                    setPlayerAdjSaving(false)
+                  }}>
+                  {playerAdjSaving ? '⏳ Saving...' : 'Apply to player'}
                 </button>
               </div>
             </div>
