@@ -1113,6 +1113,75 @@ export default function AdminPanel() {
     setOfflineImporting(false)
   }
 
+  const parsePdfFile = async (file, targetPlayerId) => {
+    setOfflineImporting(true)
+    setActionResult('')
+    try {
+      // Convert PDF to base64
+      const buffer = await file.arrayBuffer()
+      const bytes = new Uint8Array(buffer)
+      let binary = ''
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+      const base64 = btoa(binary)
+
+      // Send to Netlify function for Claude Vision parsing
+      const res = await fetch('/.netlify/functions/parse-pdf-predictions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pdfBase64: base64, mediaType: 'application/pdf' })
+      })
+
+      if (!res.ok) throw new Error(`Parse failed: ${res.statusText}`)
+      const parsed = await res.json()
+
+      if (!parsed.predictions?.length) {
+        setActionResult('❌ No predictions found in PDF — check the file format')
+        setOfflineImporting(false)
+        return
+      }
+
+      // Match predictions to DB matches using match_number
+      const toSave = []
+      const unmatched = []
+      let jokersFound = 0
+
+      for (const pred of parsed.predictions) {
+        const dbMatch = matches.find(m => m.match_number === pred.match_number)
+        if (!dbMatch) {
+          // Try matching by team names as fallback
+          const byTeam = matches.find(m =>
+            m.stage === 'group' &&
+            (m.home_team?.name?.toLowerCase().includes(pred.home_team?.toLowerCase()) ||
+             m.away_team?.name?.toLowerCase().includes(pred.away_team?.toLowerCase()))
+          )
+          if (byTeam) {
+            toSave.push({ match_id: byTeam.id, home_score: pred.home_score, away_score: pred.away_score, is_confident: pred.is_joker || false })
+            if (pred.is_joker) jokersFound++
+          } else {
+            unmatched.push(`M${pred.match_number} ${pred.home_team} vs ${pred.away_team}`)
+          }
+          continue
+        }
+        toSave.push({ match_id: dbMatch.id, home_score: pred.home_score, away_score: pred.away_score, is_confident: pred.is_joker || false })
+        if (pred.is_joker) jokersFound++
+      }
+
+      // Show preview before saving
+      setOfflineImportPreview({
+        targetPlayerId,
+        predictions: toSave,
+        jokersFound,
+        unmatched,
+        source: 'pdf',
+      })
+
+    } catch (e) {
+      console.error('PDF parse error:', e)
+      setActionResult(`❌ Error parsing PDF: ${e.message}`)
+    }
+    setOfflineImporting(false)
+  }
+
   const filteredUsers = users.filter(u =>
     !userSearch || u.username?.toLowerCase().includes(userSearch.toLowerCase()) || u.email?.toLowerCase().includes(userSearch.toLowerCase())
   )
@@ -2009,15 +2078,31 @@ export default function AdminPanel() {
                   {/* Expanded detail */}
                   {!isCollapsed && <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)' }}>
 
-                {/* Excel upload */}
-                <div style={{ marginBottom: '10px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                    📊 Import predictions from Excel
+                {/* Import section */}
+                <div style={{ marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)' }}>
+                    📥 Import predictions
                   </div>
-                  <input type="file" accept=".xlsx,.xls,.csv"
-                    onChange={e => { if (e.target.files[0]) parseExcelFile(e.target.files[0], player.id) }}
-                    style={{ fontSize: '12px', width: '100%' }} />
-                  {offlineImporting && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>⏳ Parsing spreadsheet...</div>}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>📊 Excel / CSV</div>
+                      <input type="file" accept=".xlsx,.xls,.csv"
+                        onChange={e => { if (e.target.files[0]) parseExcelFile(e.target.files[0], player.id) }}
+                        style={{ fontSize: '11px', width: '100%' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>📄 PDF predictor sheet</div>
+                      <input type="file" accept=".pdf"
+                        onChange={e => { if (e.target.files[0]) parsePdfFile(e.target.files[0], player.id) }}
+                        style={{ fontSize: '11px', width: '100%' }} />
+                    </div>
+                  </div>
+                  {offlineImporting && (
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div className="spinner" style={{ width: '12px', height: '12px' }} />
+                      Parsing file with AI — this may take 15-30 seconds...
+                    </div>
+                  )}
                 </div>
 
                 {/* Manual score entry toggle buttons */}
