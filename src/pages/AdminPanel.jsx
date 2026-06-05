@@ -1236,15 +1236,17 @@ export default function AdminPanel() {
           }
         }
 
-        // Joker: look for standalone "X" that appears AFTER the scores but BEFORE venue name
-        // Venue names start well to the right — joker X should be within ~100px of scores
+        // Joker: look for standalone "X" after the scores
         if (homeScore !== null && scoreEndX !== null) {
-          const jokerCandidates = rowItemsFull.filter(item =>
+          const allXItems = rowItemsFull.filter(item =>
             item.x > scoreEndX &&
-            item.x < scoreEndX + 120 && // within 120px after scores
             (item.text === 'X' || item.text === 'x' || item.text === '✓')
           )
-          isJoker = jokerCandidates.length > 0
+          // Debug first few matches
+          if (matchNum <= 15) {
+            console.log(`M${matchNum}: scoreEndX=${scoreEndX}, Xs=${JSON.stringify(allXItems.map(i => ({text: i.text, x: i.x})))}`)
+          }
+          isJoker = allXItems.length > 0
         }
 
         if (homeScore !== null && awayScore !== null) {
