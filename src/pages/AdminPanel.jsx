@@ -1236,16 +1236,16 @@ export default function AdminPanel() {
           }
         }
 
-        // Joker: look for standalone "X" after the scores
-        if (homeScore !== null && scoreEndX !== null) {
-          const allXItems = rowItemsFull.filter(item =>
-            item.x > scoreEndX &&
+        // Joker: look for standalone "X" at same Y as the match number (tight tolerance ±4px)
+        // The joker column is always at a fixed X position, use anchor.y for exact row matching
+        if (homeScore !== null) {
+          const jokerItems = allItems.filter(item =>
+            item.page === anchor.page &&
+            Math.abs(item.y - anchor.y) <= 4 && // tight Y — same row only
+            item.x > anchor.x &&
             (item.text === 'X' || item.text === 'x' || item.text === '✓')
           )
-          if ([10, 11, 12, 13, 14, 15].includes(matchNum)) {
-            console.log(`M${matchNum} joker=${allXItems.length > 0}: scoreEndX=${Math.round(scoreEndX)}, Xs at x=${allXItems.map(i => Math.round(i.x)).join(',')}`)
-          }
-          isJoker = allXItems.length > 0
+          isJoker = jokerItems.length > 0
         }
 
         if (homeScore !== null && awayScore !== null) {
