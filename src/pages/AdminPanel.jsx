@@ -1167,10 +1167,10 @@ export default function AdminPanel() {
 
       if (!allItems.length) throw new Error('No text found in PDF — is it a scanned image?')
 
-      // Group items into rows by Y position (within 6px tolerance)
+      // Group items into rows by Y position (within 8px tolerance)
       const rowMap = {}
       allItems.forEach(item => {
-        const rowKey = `${item.page}_${Math.round(item.y / 6) * 6}`
+        const rowKey = `${item.page}_${Math.round(item.y / 8) * 8}`
         if (!rowMap[rowKey]) rowMap[rowKey] = []
         rowMap[rowKey].push(item)
       })
@@ -1210,11 +1210,11 @@ export default function AdminPanel() {
           }
         }
 
-        // Find two consecutive candidates (within 2 positions of each other)
+        // Find two consecutive candidates (within 4 positions of each other)
         for (let si = 0; si < scoreCandidates.length - 1; si++) {
           const curr = scoreCandidates[si]
           const next = scoreCandidates[si + 1]
-          if (next.idx - curr.idx <= 2) {
+          if (next.idx - curr.idx <= 4) {
             homeScore = curr.val
             awayScore = next.val
             // Check for standalone X joker after scores
@@ -1229,9 +1229,17 @@ export default function AdminPanel() {
         }
 
         if (homeScore !== null && awayScore !== null) {
+          // Debug log for problem matches
+          if ([5, 7, 23, 61].includes(matchNum)) {
+            console.log(`M${matchNum}: parts=${JSON.stringify(parts)}, scores=${homeScore}-${awayScore}, joker=${isJoker}`)
+          }
           // Only add if not already found (deduplicate by match number)
           if (!predictions.find(p => p.match_number === matchNum)) {
             predictions.push({ match_number: matchNum, home_score: homeScore, away_score: awayScore, is_joker: isJoker })
+          }
+        } else {
+          if ([5, 7, 23, 61].includes(matchNum)) {
+            console.log(`M${matchNum}: NO SCORES FOUND — parts=${JSON.stringify(parts)}`)
           }
         }
       }
