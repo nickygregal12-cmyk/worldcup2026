@@ -196,7 +196,12 @@ export default function PublicLeague() {
                     {member.name}
                     {member.isOffline && <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: '6px', fontWeight: '400' }}>paper entry</span>}
                   </div>
-                  {member.streak > 1 && (
+                  {member.isOffline && (
+                    <div style={{ fontSize: '11px', color: 'var(--accent-blue)', marginTop: '2px' }}>
+                      📧 Want your own account? Ask the league admin for an invite link
+                    </div>
+                  )}
+                  {!member.isOffline && member.streak > 1 && (
                     <div style={{ fontSize: '11px', color: 'var(--accent-orange)', fontWeight: '600' }}>🔥 {member.streak} streak</div>
                   )}
                 </div>
