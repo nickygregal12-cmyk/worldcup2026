@@ -72,7 +72,7 @@ export const handler = async (event, context) => {
       // Try matching by external_match_id first (most reliable)
       let { data: ourMatch } = await supabase
         .from('matches')
-        .select('id, status, home_score, away_score, use_manual_override')
+        .select('id, status, home_score, away_score, use_manual_override, stage')
         .eq('external_match_id', match.id.toString())
         .maybeSingle()
 
@@ -84,7 +84,7 @@ export const handler = async (event, context) => {
 
         const { data: candidates } = await supabase
           .from('matches')
-          .select('id, status, home_score, away_score, use_manual_override, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
+          .select('id, status, home_score, away_score, use_manual_override, stage, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
           .gte('kickoff_time', `${matchDate}T00:00:00Z`)
           .lte('kickoff_time', `${matchDate}T23:59:59Z`)
 

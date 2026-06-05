@@ -7,7 +7,8 @@ const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 const PAGE_SIZE = 25
 
 export default function Leaderboard() {
-  const { user } = useAuthStore()
+  const { user, isAdmin } = useAuthStore()
+  const { appSettings, loadAppSettings } = useAppStore()
   const [activeGame, setActiveGame] = useState('tournament')
   const [players, setPlayers] = useState([])
   const [koPlayers, setKoPlayers] = useState([])
@@ -19,7 +20,10 @@ export default function Leaderboard() {
   const preTournament = new Date() < TOURNAMENT_START
   const koLive = new Date() >= KO_OPEN_DATE
 
-  useEffect(() => { loadAll() }, [])
+  useEffect(() => {
+    loadAll()
+    loadAppSettings()
+  }, [loadAppSettings])
 
   const loadAll = async () => {
     setLoading(true)

@@ -1711,7 +1711,15 @@ export default function Predictions() {
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
                     <span>{date}</span>
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
-                    {/* Item 3: clear per day */}
+                    {/* Per-day actions */}
+                    {user && hasUnlocked && (
+                      <button onClick={() => autoFillDate(dayMatches)} disabled={!!autoFillingDate} style={{
+                        fontSize: '11px', padding: '3px 8px', borderRadius: 'var(--radius-full)',
+                        border: '1px solid var(--border-medium)', background: isFillingThis ? 'var(--border-light)' : 'var(--bg-card)',
+                        color: 'var(--text-muted)', cursor: autoFillingDate ? 'not-allowed' : 'pointer',
+                        opacity: autoFillingDate && !isFillingThis ? 0.5 : 1,
+                      }}>{isFillingThis ? '⏳ Filling...' : '✨ Autofill'}</button>
+                    )}
                     {user && hasPreds && hasUnlocked && (
                       <button onClick={() => setShowClearConfirm(dayMatches)} style={{
                         fontSize: '11px', padding: '3px 8px', borderRadius: 'var(--radius-full)',

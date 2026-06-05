@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { signUpWithEmail, signInWithGoogle } from '../lib/supabase.js'
+import { supabase, signUpWithEmail, signInWithGoogle } from '../lib/supabase.js'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18">
@@ -46,7 +46,7 @@ export default function Register() {
       // Auto-join league if came from league invite link
       if (joinCode) {
         const { data: league } = await supabase.from('leagues').select('id').eq('invite_code', joinCode.toUpperCase()).single()
-        if (league) await supabase.from('league_members').insert({ league_id: league.id, user_id: data.user.id }).catch(() => {})
+        if (league && data?.user?.id) await supabase.from('league_members').insert({ league_id: league.id, user_id: data.user.id }).catch(() => {})
       }
       navigate(claimToken ? `/claim/${claimToken}` : joinCode ? `/league/${joinCode}` : '/predictions')
     }
