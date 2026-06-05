@@ -2014,16 +2014,49 @@ export default function AdminPanel() {
 
                 {/* Manual score entry toggle buttons */}
                 <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
-                  <button onClick={() => {
-                    setOfflineSelectedPlayer(offlineSelectedPlayer?.id === player.id ? null : player)
+                  <button onClick={async () => {
+                    const newPlayer = offlineSelectedPlayer?.id === player.id ? null : player
+                    setOfflineSelectedPlayer(newPlayer)
                     setOfflineKoMode(null)
+                    if (newPlayer) {
+                      const { data: preds } = await supabase.from('offline_predictions')
+                        .select('offline_player_id, match_id, home_score, away_score, is_confident, picked_team_id')
+                        .eq('offline_player_id', player.id)
+                      const updates = {}
+                      ;(preds || []).forEach(p => {
+                        updates[`${p.offline_player_id}-${p.match_id}`] = {
+                          home: p.home_score ?? '', away: p.away_score ?? '',
+                          joker: p.is_confident || false,
+                          picked_team_id: p.picked_team_id || null,
+                          saved: true
+                        }
+                      })
+                      setOfflineManualScores(prev => ({ ...prev, ...updates }))
+                    }
                   }}
                     className="btn btn-sm" style={{ flex: 1, border: '1px solid var(--scottish-navy)', color: offlineSelectedPlayer?.id === player.id ? 'white' : 'var(--scottish-navy)', background: offlineSelectedPlayer?.id === player.id ? 'var(--scottish-navy)' : 'none' }}>
                     ⚽ {offlineSelectedPlayer?.id === player.id ? '▲ Hide groups' : '⌨️ Group scores'}
                   </button>
-                  <button onClick={() => {
-                    setOfflineKoMode(offlineKoMode === player.id ? null : player.id)
+                  <button onClick={async () => {
+                    const newMode = offlineKoMode === player.id ? null : player.id
+                    setOfflineKoMode(newMode)
                     setOfflineSelectedPlayer(null)
+                    // Load this player's predictions into state if not already loaded
+                    if (newMode) {
+                      const { data: preds } = await supabase.from('offline_predictions')
+                        .select('offline_player_id, match_id, home_score, away_score, is_confident, picked_team_id')
+                        .eq('offline_player_id', player.id)
+                      const updates = {}
+                      ;(preds || []).forEach(p => {
+                        updates[`${p.offline_player_id}-${p.match_id}`] = {
+                          home: p.home_score ?? '', away: p.away_score ?? '',
+                          joker: p.is_confident || false,
+                          picked_team_id: p.picked_team_id || null,
+                          saved: true
+                        }
+                      })
+                      setOfflineManualScores(prev => ({ ...prev, ...updates }))
+                    }
                   }}
                     className="btn btn-sm" style={{ flex: 1, border: '1px solid var(--scottish-navy)', color: offlineKoMode === player.id ? 'white' : 'var(--scottish-navy)', background: offlineKoMode === player.id ? 'var(--scottish-navy)' : 'none' }}>
                     🏆 {offlineKoMode === player.id ? '▲ Hide knockouts' : 'Knockout picks'}
@@ -2034,19 +2067,20 @@ export default function AdminPanel() {
                 {offlineKoMode === player.id && (
                   <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '4px' }}>
-                      Pick which team advances — teams shown based on their group predictions
+                      Pick which team advances — teams resolved from group predictions
                     </div>
                     {(() => {
-                      // Build predMap from this player's offline predictions
+                      // Build predMap — use state if available, otherwise show what we have
                       const predMap = {}
                       const groupMatches = matches.filter(m => m.stage === 'group')
                       groupMatches.forEach(m => {
                         const key = `${player.id}-${m.id}`
                         const val = offlineManualScores[key]
-                        if (val?.home !== '' && val?.away !== '' && val?.home !== undefined) {
+                        if (val?.home !== undefined && val?.home !== '' && val?.away !== undefined && val?.away !== '') {
                           predMap[m.id] = { home: parseInt(val.home), away: parseInt(val.away) }
                         }
                       })
+                      const predictionsLoaded = Object.keys(predMap).length > 0
                       const standings = calcPredictedStandings(groupMatches, predMap)
                       const best3rd = getBest3rdTeams(standings)
 
