@@ -384,7 +384,9 @@ export default function Knockout() {
                         <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>🏳️</div>
                         <div>
                           <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>Waiting for group results</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>
+                            {slot.startsWith('W') ? `Waiting for M${slot.replace('W', '')} winner` : 'Waiting for group results'}
+                          </div>
                         </div>
                       </div>
                     )}
@@ -416,7 +418,9 @@ export default function Knockout() {
                   <div>
                     <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>
-                      {groupStageDone ? 'To be confirmed' : 'Predict all 3 group games to unlock'}
+                      {slot.startsWith('W') 
+                        ? (groupStageDone ? 'To be confirmed' : `Waiting for M${slot.replace('W', '')} winner`)
+                        : (groupStageDone ? 'To be confirmed' : 'Predict all 3 group games to unlock')}
                     </div>
                   </div>
                 </div>
