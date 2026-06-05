@@ -30,7 +30,7 @@ export const useAuthStore = create(
           const [{ data: awardPreds }, { data: goalPreds }] = await Promise.all([
             supabase.from('award_predictions').select('award_type').eq('user_id', userId),
             supabase.from('tournament_predictions').select('prediction_type').eq('user_id', userId)
-              .in('prediction_type', ['group_goals', 'knockout_goals', 'total_goals'])
+              .eq('prediction_type', 'total_goals')
           ])
           const playerAwards = awardPreds?.length || 0
           const goalsEntered = (goalPreds?.length || 0) > 0 ? 1 : 0

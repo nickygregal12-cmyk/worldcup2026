@@ -123,7 +123,7 @@ function AwardPredsView({ userId }) {
   React.useEffect(() => {
     Promise.all([
       supabase.from('award_predictions').select('award_type, predicted_player_name').eq('user_id', userId),
-      supabase.from('tournament_predictions').select('prediction_type, int_value').eq('user_id', userId).in('prediction_type', ['group_goals', 'knockout_goals', 'total_goals'])
+      supabase.from('tournament_predictions').select('prediction_type, int_value').eq('user_id', userId).eq('prediction_type', 'total_goals')
     ]).then(([{ data: awardData }, { data: goalData }]) => {
       setPreds(awardData || [])
       setGoals(goalData || [])
@@ -140,7 +140,7 @@ function AwardPredsView({ userId }) {
   )
 
   const labels = { golden_boot: '⚽ Golden Boot', golden_glove: '🧤 Golden Glove', player_of_tournament: '🌟 Player of the Tournament' }
-  const goalLabels = { group_goals: '⚽ Group Stage Goals', knockout_goals: '🏆 Knockout Goals', total_goals: '🌍 Tournament Total Goals' }
+  const goalLabels = { total_goals: '🌍 Tournament Total Goals' }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

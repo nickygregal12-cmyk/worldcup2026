@@ -135,7 +135,7 @@ function SnapshotCounts({ leagueId, supabase }) {
         countRows('league_predictions'),
         countRows('league_knockout_picks'),
         countRows('league_award_predictions'),
-        countRows('league_tournament_predictions', q => q.in('prediction_type', ['group_goals', 'knockout_goals', 'total_goals'])),
+        countRows('league_tournament_predictions', q => q.eq('prediction_type', 'total_goals')),
       ])
 
       if (!cancelled) setCounts({ matches, knockout, awards, goals })
@@ -326,9 +326,7 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
   ]
 
   const goalTypes = [
-    { key: 'group_goals', label: 'Group goals' },
-    { key: 'knockout_goals', label: 'Knockout goals' },
-    { key: 'total_goals', label: 'Total goals' },
+    { key: 'total_goals', label: 'Tournament total goals' },
   ]
 
   const awardTypes = [

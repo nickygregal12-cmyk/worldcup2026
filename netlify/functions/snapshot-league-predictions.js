@@ -230,6 +230,7 @@ exports.handler = async (event) => {
         .from('tournament_predictions')
         .select('id, user_id, prediction_type, int_value, team_id, is_locked, created_at, updated_at')
         .in('user_id', memberIds)
+        .eq('prediction_type', 'total_goals')
 
       if (tournamentError) throw new Error(`Failed to load tournament predictions for ${league.name}: ${tournamentError.message}`)
 

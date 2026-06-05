@@ -216,8 +216,6 @@ export default function Home() {
       // Only fill missing goal sections
       const goals = predictGoals()
       const goalUpserts = [
-        { prediction_type: 'group_goals', int_value: goals.groupGoals },
-        { prediction_type: 'knockout_goals', int_value: goals.knockoutGoals },
         { prediction_type: 'total_goals', int_value: goals.totalGoals },
       ].filter(g => !existingGoalTypes.has(g.prediction_type)).map(g => ({ user_id: user.id, ...g }))
       if (goalUpserts.length) {

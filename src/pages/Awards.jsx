@@ -54,14 +54,13 @@ export default function Awards() {
   const [saved, setSaved] = useState({})
 
   // Goals
-  const [groupGoals, setGroupGoals] = useState('')
-  const [knockoutGoals, setKnockoutGoals] = useState('')
   const [totalGoals, setTotalGoals] = useState('')
   const [goalsLocked, setGoalsLocked] = useState(false)
   const [goalsSaving, setGoalsSaving] = useState(false)
   const [goalsSaved, setGoalsSaved] = useState(false)
   const [predictedGroupGoals, setPredictedGroupGoals] = useState(null)
   const [allGroupPredicted, setAllGroupPredicted] = useState(false)
+  const ESTIMATED_KNOCKOUT_GOALS = 69
 
   const tournamentStarted = new Date() >= new Date('2026-06-11T19:00:00Z')
 
@@ -89,13 +88,9 @@ export default function Awards() {
       const { data: tourData } = await supabase
         .from('tournament_predictions').select('*').eq('user_id', user.id)
       if (tourData) {
-        const gg = tourData.find(p => p.prediction_type === 'group_goals')
-        const kg = tourData.find(p => p.prediction_type === 'knockout_goals')
         const tg = tourData.find(p => p.prediction_type === 'total_goals')
-        if (gg) setGroupGoals(gg.int_value?.toString() || '')
-        if (kg) setKnockoutGoals(kg.int_value?.toString() || '')
         if (tg) setTotalGoals(tg.int_value?.toString() || '')
-        if (gg?.is_locked) setGoalsLocked(true)
+        if (tg?.is_locked) setGoalsLocked(true)
       }
 
       await calcPredictedGoals()
@@ -117,8 +112,8 @@ export default function Awards() {
       const total = groupPreds.reduce((sum, p) => sum + (Number(p.home_score) || 0) + (Number(p.away_score) || 0), 0)
       setPredictedGroupGoals(total)
       setAllGroupPredicted(true)
-      // Only auto-fill if user hasn't already saved a value
-      setGroupGoals(prev => prev ? prev : total.toString())
+      // Use group-pick total as a helper. If no total is saved yet, suggest group goals + a conservative knockout estimate.
+      setTotalGoals(prev => prev ? prev : (total + ESTIMATED_KNOCKOUT_GOALS).toString())
     } else {
       setAllGroupPredicted(false)
       if (groupPreds.length > 0) {
@@ -133,22 +128,22 @@ export default function Awards() {
   const saveGoals = async () => {
     if (!user || tournamentStarted) return
     setGoalsSaving(true)
-    const upserts = [
-      { user_id: user.id, prediction_type: 'group_goals', int_value: parseInt(groupGoals) || null },
-      { user_id: user.id, prediction_type: 'knockout_goals', int_value: parseInt(knockoutGoals) || null },
-      { user_id: user.id, prediction_type: 'total_goals', int_value: parseInt(totalGoals) || null },
-    ].filter(u => u.int_value !== null)
-    for (const upsert of upserts) {
-      // Delete existing then insert to avoid conflict key issues with null team_id
-      await supabase.from('tournament_predictions')
-        .delete()
-        .eq('user_id', user.id)
-        .eq('prediction_type', upsert.prediction_type)
-      await supabase.from('tournament_predictions').insert(upsert)
+    // Group/knockout goal totals are now helper-only. Only tournament total is scored/saved.
+    await supabase.from('tournament_predictions')
+      .delete()
+      .eq('user_id', user.id)
+      .in('prediction_type', ['group_goals', 'knockout_goals', 'total_goals'])
+
+    if (totalGoals) {
+      await supabase.from('tournament_predictions').insert({
+        user_id: user.id,
+        prediction_type: 'total_goals',
+        int_value: parseInt(totalGoals) || null,
+      })
     }
 
-    // Update awards_done — count player awards + 1 if any goals entered
-    const goalsEntered = groupGoals || knockoutGoals || totalGoals ? 1 : 0
+    // Update awards_done — count player awards + 1 if total goals entered
+    const goalsEntered = totalGoals ? 1 : 0
     const { data: awardPreds } = await supabase.from('award_predictions').select('award_type').eq('user_id', user.id)
     const playerAwardsDone = awardPreds?.length || 0
     await supabase.from('profiles').update({ awards_done: playerAwardsDone + goalsEntered }).eq('id', user.id)
@@ -196,7 +191,7 @@ export default function Awards() {
     const playerCount = AWARDS.filter(a => newPreds[a.type]?.player_name).length
     const { data: goalData } = await supabase.from('tournament_predictions')
       .select('prediction_type').eq('user_id', user.id)
-      .in('prediction_type', ['group_goals', 'knockout_goals', 'total_goals'])
+      .eq('prediction_type', 'total_goals')
     const goalsEntered = goalData && goalData.length > 0 ? 1 : 0
     await supabase.from('profiles').update({ awards_done: playerCount + goalsEntered }).eq('id', user.id)
     setSaving(prev => ({ ...prev, [awardType]: false }))
@@ -208,7 +203,7 @@ export default function Awards() {
 
   // Progress summary
   const awardsDone = AWARDS.filter(a => predictions[a.type]?.player_name).length
-  const goalsDone = [groupGoals, knockoutGoals, totalGoals].filter(Boolean).length
+  const goalsDone = totalGoals ? 1 : 0
   const totalDone = awardsDone + (goalsDone > 0 ? 1 : 0)
   const totalPossible = AWARDS.length + 1 // 3 awards + goals section
 
@@ -238,7 +233,7 @@ export default function Awards() {
               {goalsDone > 0 ? '✓' : '🥅'}
             </div>
             <div style={{ height: '3px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${(goalsDone / 3) * 100}%`, background: '#4ade80', borderRadius: '2px', transition: 'width 0.4s' }} />
+              <div style={{ height: '100%', width: goalsDone ? '100%' : '0%', background: '#4ade80', borderRadius: '2px', transition: 'width 0.4s' }} />
             </div>
           </div>
         </div>
@@ -379,41 +374,31 @@ export default function Awards() {
             {predictedGroupGoals !== null && (
               <div style={{ marginBottom: '12px', padding: '10px 14px', background: allGroupPredicted ? 'var(--accent-green-light)' : 'var(--accent-blue-light)', borderRadius: 'var(--radius-md)', fontSize: '13px', color: allGroupPredicted ? 'var(--accent-green)' : 'var(--accent-blue)', fontWeight: '600' }}>
                 {allGroupPredicted
-                  ? <>✓ Your predictions total <strong>{predictedGroupGoals} group goals</strong> · update your saved value below if you want to change it</>
-                  : <>📊 Based on your picks so far · ~<strong>{predictedGroupGoals} group goals</strong> estimated · complete all 72 to auto-fill</>
+                  ? <>✓ Your group picks total <strong>{predictedGroupGoals} goals</strong>. Suggested tournament total: <strong>{predictedGroupGoals + ESTIMATED_KNOCKOUT_GOALS}</strong>. You can edit it below.</>
+                  : <>📊 Your group picks so far total <strong>{predictedGroupGoals} goals</strong>. Complete all 72 group matches for a better tournament-total guide.</>
                 }
               </div>
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {[
-                { key: 'group', label: '⚽ Group Stage Goals', value: groupGoals, setter: setGroupGoals, locked: tournamentStarted, hint: '72 matches · avg ~2.5/game' },
-                { key: 'knockout', label: '🏆 Knockout Goals', value: knockoutGoals, setter: setKnockoutGoals, locked: new Date() >= new Date('2026-06-28T20:00:00Z'), hint: '32 matches · avg ~2.2/game' },
-                { key: 'total', label: '🌍 Tournament Total', value: totalGoals, setter: setTotalGoals, locked: tournamentStarted, hint: '104 matches total' },
-              ].map(item => (
-                <div key={item.key}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{item.label}</label>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{item.hint}</span>
-                  </div>
-                  <input type="number" min="0" max="400" value={item.value}
-                    onChange={e => {
-                      item.setter(e.target.value)
-                      if (item.key === 'group' && knockoutGoals) setTotalGoals((parseInt(e.target.value || 0) + parseInt(knockoutGoals || 0)).toString())
-                      if (item.key === 'knockout' && groupGoals) setTotalGoals((parseInt(groupGoals || 0) + parseInt(e.target.value || 0)).toString())
-                    }}
-                    disabled={item.locked}
-                    placeholder="Enter number..."
-                    className="input"
-                    style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', fontSize: '16px', opacity: item.locked ? 0.6 : 1 }}
-                  />
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>🌍 Tournament Total Goals</label>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>104 matches total</span>
                 </div>
-              ))}
+                <input type="number" min="0" max="400" value={totalGoals}
+                  onChange={e => setTotalGoals(e.target.value)}
+                  disabled={tournamentStarted}
+                  placeholder="Enter tournament total..."
+                  className="input"
+                  style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', fontSize: '16px', opacity: tournamentStarted ? 0.6 : 1 }}
+                />
+              </div>
             </div>
 
             {!tournamentStarted && (
               <button onClick={user ? saveGoals : () => alert('Sign up free to save your predictions!')}
-                disabled={goalsSaving || (!groupGoals && !knockoutGoals && !totalGoals)}
+                disabled={goalsSaving || !totalGoals}
                 className="btn btn-primary btn-full" style={{ marginTop: '14px' }}>
                 {goalsSaving ? 'Saving...' : '💾 Save Goals Predictions'}
               </button>
