@@ -37,7 +37,7 @@ function useCountdown(targetDate) {
 
 // ── Smart CTA logic ──────────────────────────────────────────────────────────
 function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, koLive) {
-  if (!user) return { label: '🏆 Join Free — it\'s free!', to: '/register', secondary: { label: 'How does it work?', to: '/how-to-play' } }
+  if (!user) return { label: '🏆 Start predicting free', to: '/register', secondary: { label: 'How does it work?', to: '/how-to-play' } }
 
   const groupsDone    = predictionCount >= 72
   const knockoutsDone = (profile?.knockout_picks_count || 0) >= 32
@@ -45,12 +45,12 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
   const jokersLeft    = profile?.jokers_group_remaining ?? 8
 
   if (!tournamentStarted) {
-    if (predictionCount === 0)  return { label: '⚽ Start predicting', to: '/predictions', secondary: { label: 'How to play →', to: '/how-to-play' } }
-    if (!groupsDone)            return { label: '⚽ Continue group predictions', to: '/predictions', secondary: { label: 'How to play →', to: '/how-to-play' } }
+    if (predictionCount === 0)  return { label: '⚽ Start group predictions', to: '/predictions', secondary: { label: 'Step-by-step guide →', to: '/how-to-play' } }
+    if (!groupsDone)            return { label: '⚽ Continue group predictions', to: '/predictions', secondary: { label: 'Finish groups first →', to: '/how-to-play' } }
     if (!knockoutsDone)         return { label: '🏆 Pick your knockout teams', to: '/knockout', secondary: { label: 'How to play →', to: '/how-to-play' } }
     if (!awardsDone)            return { label: '🏅 Make your award predictions', to: '/awards', secondary: { label: 'How to play →', to: '/how-to-play' } }
     if (jokersLeft > 0)         return { label: '🃏 Use your jokers before kickoff!', to: '/predictions', secondary: { label: '👥 Invite a friend to compete →', to: '/leagues' } }
-    return { label: '✏️ Edit your predictions', to: '/predictions', secondary: { label: '👥 Invite a friend to compete →', to: '/leagues' } }
+    return { label: '✏️ Edit your predictions', to: '/predictions', secondary: { label: '👥 Create or join a league →', to: '/leagues' } }
   }
 
   if (koLive) {
@@ -76,6 +76,7 @@ export default function Home() {
   const [loading, setLoading]             = useState(true)
   const [luckyDipping, setLuckyDipping]   = useState(false)
   const [showShareCard, setShowShareCard] = useState(false)
+  const [shareCopied, setShareCopied]     = useState(false)
   const [luckyDone, setLuckyDone]         = useState(false)
   const countdown = useCountdown(nextMatch?.kickoff_time)
 
@@ -172,6 +173,27 @@ export default function Home() {
   }
 
   const cta = getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, knockoutLive)
+
+  const handleShareApp = async () => {
+    const url = window.location.origin
+    const shareData = {
+      title: 'WC26 Predictor',
+      text: 'Join my World Cup 2026 predictor — pick every match, build your knockout bracket and compete with friends.',
+      url,
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else {
+        await navigator.clipboard.writeText(url)
+        setShareCopied(true)
+        setTimeout(() => setShareCopied(false), 2200)
+      }
+    } catch (_) {
+      // Native share was cancelled
+    }
+  }
 
   // ── Lucky Dip — fill everything in one tap ───────────────────────────────
   const handleLuckyDip = async () => {
@@ -312,6 +334,9 @@ export default function Home() {
     { label: 'Awards', done: profile?.awards_done || 0, total: 4, to: '/awards' },
   ] : []
 
+  const firstGroupPickMade = user && predictionCount > 0
+  const showFirstTimeGuide = user && !tournamentStarted && !firstGroupPickMade
+
   // ── Hero subtitle ─────────────────────────────────────────────────────────
   const heroSubtitle = tournamentOver
     ? 'Thanks for playing — see you next time! 🏆'
@@ -319,7 +344,9 @@ export default function Home() {
     ? 'Group stage complete — knockout stage underway!'
     : tournamentStarted
     ? 'Group stage underway · Predictions lock at kickoff'
-    : 'Predict every match. Compete with friends. Glory awaits.'
+    : user
+    ? 'Predict every match. Compete with friends. Glory awaits.'
+    : 'Predict all 104 matches, build your knockout bracket, pick awards and compete with friends.'
 
   // ── Countdown target ──────────────────────────────────────────────────────
   // Pre-tournament: count down to tournament start, not just next match
@@ -497,19 +524,43 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Share predictions card ── */}
-          {user && predictionCount >= 72 && !tournamentStarted && (
+          {/* ── First-time guidance ── */}
+          {showFirstTimeGuide && (
+            <div className="card fade-in" style={{ border: '1px solid var(--accent-blue)', background: 'linear-gradient(180deg, var(--bg-card), var(--accent-blue-light))' }}>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Start here</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', marginBottom: '8px' }}>👋 Make your World Cup predictions</div>
+              <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '14px' }}>
+                First, predict the 72 group matches. After that, build your knockout bracket, pick the awards and join a league with friends.
+              </div>
+              <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
+                {[
+                  '1. Pick scores for every group match',
+                  '2. Your group tables create your knockout bracket',
+                  '3. Choose awards and total tournament goals',
+                  '4. Join or create a mini league',
+                ].map(step => (
+                  <div key={step} style={{ fontSize: '13px', fontWeight: '700', padding: '9px 10px', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                    {step}
+                  </div>
+                ))}
+              </div>
+              <Link to="/predictions" className="btn btn-primary btn-full">⚽ Start group predictions</Link>
+            </div>
+          )}
+
+          {/* ── Invite friends / app share card ── */}
+          {user && !tournamentStarted && (
             <div className="card fade-in" style={{ overflow: 'hidden' }}>
               <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div style={{ fontSize: '32px', flexShrink: 0 }}>📤</div>
+                <div style={{ fontSize: '32px', flexShrink: 0 }}>🚀</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '3px' }}>Share your predictions</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Show your mates who you think will win</div>
+                  <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '3px' }}>Invite friends to play</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Share WC26 Predictor — they can make their own picks and join a league later</div>
                 </div>
-                <button onClick={() => setShowShareCard(true)}
-                  style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', flexShrink: 0 }}>
-                  Share 🏆
+                <button onClick={handleShareApp}
+                  style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  {shareCopied ? 'Copied ✓' : 'Share'}
                 </button>
               </div>
             </div>
@@ -763,10 +814,10 @@ export default function Home() {
               <div className="section-title" style={{ marginBottom: '16px' }}>How it works</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {[
-                  { icon: '⚽', title: 'Predict every match', desc: 'Pick scores for all 72 group games' },
-                  { icon: '🏅', title: 'Earn points', desc: 'Correct result = 3pts. Exact score = 5pts. Jokers double your points.' },
-                  { icon: '👥', title: 'Compete in leagues', desc: 'Create or join private leagues. Beat your friends.' },
-                  { icon: '📊', title: 'Live tracking', desc: 'Scores update in real time as matches are played' },
+                  { icon: '⚽', title: 'Predict the full tournament', desc: 'Pick the 72 group games, then build your knockout bracket.' },
+                  { icon: '🏅', title: 'Pick awards and goals', desc: 'Choose Golden Boot, Golden Glove, Player of the Tournament and total goals.' },
+                  { icon: '👥', title: 'Compete in mini leagues', desc: 'Create or join private leagues with friends, family or work.' },
+                  { icon: '📊', title: 'Live scoring', desc: 'Leaderboards update as the World Cup is played.' },
                 ].map(({ icon, title, desc }) => (
                   <div key={title} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
                     <div style={{

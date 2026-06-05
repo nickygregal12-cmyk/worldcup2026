@@ -86,8 +86,20 @@ export default function Register() {
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>🏆</div>
           <h1 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.03em' }}>Join WC26 Predictor</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '6px', fontSize: '15px' }}>
-            Predict. Compete. Win bragging rights.
+            Predict all 104 matches, build your bracket and compete with friends.
           </p>
+          <div style={{ display: 'grid', gap: '6px', marginTop: '14px', textAlign: 'left' }}>
+            {[
+              '⚽ Predict group scores',
+              '🏆 Build your knockout bracket',
+              '🏅 Pick awards and total goals',
+              '👥 Join mini leagues with friends',
+            ].map(item => (
+              <div key={item} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.86)', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.14)', borderRadius: 'var(--radius-full)', padding: '7px 12px' }}>
+                {item}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Step indicator */}

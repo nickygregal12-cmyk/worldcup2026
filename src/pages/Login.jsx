@@ -125,7 +125,7 @@ export default function Login() {
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚽</div>
           <h1 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.03em' }}>Welcome back</h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '6px', fontSize: '15px' }}>Sign in to WC26 Predictor</p>
+          <p style={{ color: 'var(--text-muted)', marginTop: '6px', fontSize: '15px' }}>Sign in to edit your predictions, check leagues and follow your points.</p>
         </div>
 
         <div className="card" style={{ padding: '28px' }}>
