@@ -24,6 +24,7 @@ export default function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const claimToken = searchParams.get('claim')
+  const joinCode = searchParams.get('join')
   const { loadProfile } = useAuthStore()
 
   const handleLogin = async (e) => {
@@ -35,7 +36,11 @@ export default function Login() {
       setError(error.message)
     } else {
       await loadProfile(data.user.id)
-      navigate(claimToken ? `/claim/${claimToken}` : '/')
+      if (joinCode) {
+        const { data: league } = await supabase.from('leagues').select('id').eq('invite_code', joinCode.toUpperCase()).single()
+        if (league) await supabase.from('league_members').insert({ league_id: league.id, user_id: data.user.id }).catch(() => {})
+      }
+      navigate(claimToken ? `/claim/${claimToken}` : joinCode ? `/league/${joinCode}` : '/')
     }
     setLoading(false)
   }

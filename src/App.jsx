@@ -23,6 +23,7 @@ import AuthCallback from './pages/AuthCallback.jsx'
 import HowToPlay from './pages/HowToPlay.jsx'
 import KOPredictor from './pages/KOPredictor.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
+import PublicLeague from './pages/PublicLeague.jsx'
 
 function ProtectedRoute({ children }) {
   const { user, isLoading } = useAuthStore()
@@ -88,6 +89,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/claim/:token" element={<ClaimAccount />} />
+          <Route path="/league/:code" element={<PublicLeague />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/predictions" element={<Predictions />} />
           <Route path="/knockout" element={<Knockout />} />
