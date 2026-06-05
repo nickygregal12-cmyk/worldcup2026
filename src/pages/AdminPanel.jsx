@@ -853,12 +853,13 @@ export default function AdminPanel() {
     // Load all existing offline predictions into state
     const { data: preds } = await supabase
       .from('offline_predictions')
-      .select('offline_player_id, match_id, home_score, away_score')
+      .select('offline_player_id, match_id, home_score, away_score, is_confident')
     const scoresMap = {}
     ;(preds || []).forEach(p => {
       scoresMap[`${p.offline_player_id}-${p.match_id}`] = {
         home: p.home_score ?? '',
         away: p.away_score ?? '',
+        joker: p.is_confident || false,
         saved: true
       }
     })
@@ -908,16 +909,17 @@ export default function AdminPanel() {
     setActionResult(`✅ Invite link for "${displayName}" copied to clipboard! Valid for 7 days.`)
   }
 
-  const saveManualScore = async (playerId, matchId, home, away) => {
+  const saveManualScore = async (playerId, matchId, home, away, joker = false) => {
     if (home === '' || away === '' || isNaN(parseInt(home)) || isNaN(parseInt(away))) return
     await supabase.from('offline_predictions').upsert({
       offline_player_id: playerId,
       match_id: matchId,
       home_score: parseInt(home),
       away_score: parseInt(away),
+      is_confident: joker,
     }, { onConflict: 'offline_player_id,match_id' })
-    setOfflineManualScores(prev => ({ ...prev, [`${playerId}-${matchId}`]: { home, away, saved: true } }))
-    setTimeout(() => setOfflineManualScores(prev => ({ ...prev, [`${playerId}-${matchId}`]: { home, away, saved: false } })), 1500)
+    setOfflineManualScores(prev => ({ ...prev, [`${playerId}-${matchId}`]: { home, away, joker, saved: true } }))
+    setTimeout(() => setOfflineManualScores(prev => ({ ...prev, [`${playerId}-${matchId}`]: { home, away, joker, saved: true } })), 1500)
   }
 
   // Team name fuzzy matching for Excel import
@@ -2016,40 +2018,100 @@ export default function AdminPanel() {
                 {/* Manual score entry */}
                 {offlineSelectedPlayer?.id === player.id && (
                   <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '4px' }}>
-                      Enter scores — saves on blur (tap away after each entry)
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Enter scores — saves on blur</span>
+                      <span style={{ color: 'var(--accent-gold)' }}>
+                        🃏 {Object.keys(offlineManualScores).filter(k => k.startsWith(player.id) && offlineManualScores[k]?.joker).length} / {
+                          (() => { const league = leagues.find(l => l.id === player.league_id); return league?.custom_scoring?.group_jokers ?? 8 })()
+                        } jokers used
+                      </span>
                     </div>
                     {matches.filter(m => m.stage === 'group').map(match => {
                       const key = `${player.id}-${match.id}`
                       const val = offlineManualScores[key] || {}
                       const hasPred = val.home !== '' && val.away !== '' && val.home !== undefined
+                      const maxJokers = (() => { const league = leagues.find(l => l.id === player.league_id); return league?.custom_scoring?.group_jokers ?? 8 })()
+                      const jokersUsed = Object.keys(offlineManualScores).filter(k => k.startsWith(player.id) && offlineManualScores[k]?.joker).length
+                      const canAddJoker = !val.joker && jokersUsed >= maxJokers
                       return (
-                        <div key={match.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: hasPred ? 'rgba(0,122,51,0.05)' : 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: hasPred ? '1px solid rgba(0,122,51,0.15)' : '1px solid var(--border-light)' }}>
+                        <div key={match.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: hasPred ? 'rgba(0,122,51,0.05)' : 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: val.joker ? '1px solid var(--accent-gold)' : hasPred ? '1px solid rgba(0,122,51,0.15)' : '1px solid var(--border-light)' }}>
                           <span style={{ fontSize: '11px', flex: 1, fontWeight: hasPred ? '600' : '400' }}>
                             {match.home_team?.flag_emoji} {match.home_team?.short_code}
                             <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>vs</span>
                             {match.away_team?.short_code} {match.away_team?.flag_emoji}
                           </span>
-                          <input type="number" min="0" max="20"
-                            placeholder="0"
+                          <input type="number" min="0" max="20" placeholder="0"
                             value={val.home ?? ''}
                             onChange={e => setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], home: e.target.value, saved: false } }))}
-                            onBlur={() => saveManualScore(player.id, match.id, val.home, val.away)}
+                            onBlur={() => saveManualScore(player.id, match.id, val.home, val.away, val.joker || false)}
                             style={{ width: '36px', textAlign: 'center', padding: '3px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '13px', fontWeight: '700' }} />
                           <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700' }}>–</span>
-                          <input type="number" min="0" max="20"
-                            placeholder="0"
+                          <input type="number" min="0" max="20" placeholder="0"
                             value={val.away ?? ''}
                             onChange={e => setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], away: e.target.value, saved: false } }))}
-                            onBlur={() => saveManualScore(player.id, match.id, val.home, val.away)}
+                            onBlur={() => saveManualScore(player.id, match.id, val.home, val.away, val.joker || false)}
                             style={{ width: '36px', textAlign: 'center', padding: '3px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '13px', fontWeight: '700' }} />
+                          <button
+                            disabled={canAddJoker}
+                            title={canAddJoker ? 'Joker limit reached' : val.joker ? 'Remove joker' : 'Add joker'}
+                            onClick={() => {
+                              const newJoker = !val.joker
+                              setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], joker: newJoker } }))
+                              if (hasPred) saveManualScore(player.id, match.id, val.home, val.away, newJoker)
+                            }}
+                            style={{ fontSize: '14px', background: 'none', border: 'none', cursor: canAddJoker ? 'not-allowed' : 'pointer', opacity: canAddJoker ? 0.3 : 1, padding: '0 2px' }}>
+                            🃏
+                          </button>
                           {val.saved && <span style={{ fontSize: '11px', color: 'var(--accent-green)', minWidth: '12px' }}>✓</span>}
-                          {val.saved === false && <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '12px' }}>…</span>}
                         </div>
                       )
                     })}
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px', textAlign: 'right' }}>
-                      {Object.keys(offlineManualScores).filter(k => k.startsWith(player.id)).length} / {matches.filter(m => m.stage === 'group').length} predictions entered
+                      {Object.keys(offlineManualScores).filter(k => k.startsWith(player.id) && offlineManualScores[k]?.home !== '').length} / {matches.filter(m => m.stage === 'group').length} predictions entered
+                    </div>
+
+                    {/* Knockout picks section */}
+                    <div style={{ marginTop: '12px', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
+                      <button onClick={() => setCollapsedPlayers(prev => ({ ...prev, [`${player.id}-ko`]: !prev[`${player.id}-ko`] }))}
+                        style={{ background: 'none', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', width: '100%', textAlign: 'left' }}>
+                        {collapsedPlayers[`${player.id}-ko`] ? '▲ Hide knockout picks' : '▼ Enter knockout picks manually'}
+                      </button>
+
+                      {collapsedPlayers[`${player.id}-ko`] && (
+                        <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                            Pick which team advances from each knockout match
+                          </div>
+                          {matches.filter(m => ['r32','r16','qf','sf','final'].includes(m.stage)).map(match => {
+                            const key = `${player.id}-${match.id}`
+                            const val = offlineManualScores[key] || {}
+                            const isPicked = val.picked_team_id
+                            return (
+                              <div key={match.id} style={{ padding: '6px 8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: `1px solid ${isPicked ? 'var(--accent-green)' : 'var(--border-light)'}` }}>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px', fontWeight: '600' }}>
+                                  M{match.match_number} · {match.stage?.toUpperCase()} · {match.home_team?.flag_emoji} {match.home_team?.short_code} vs {match.away_team?.short_code} {match.away_team?.flag_emoji}
+                                </div>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  {[match.home_team, match.away_team].filter(Boolean).map(team => (
+                                    <button key={team.id}
+                                      onClick={async () => {
+                                        setOfflineManualScores(prev => ({ ...prev, [key]: { ...prev[key], picked_team_id: team.id } }))
+                                        await supabase.from('offline_predictions').upsert({
+                                          offline_player_id: player.id,
+                                          match_id: match.id,
+                                          picked_team_id: team.id,
+                                        }, { onConflict: 'offline_player_id,match_id' })
+                                      }}
+                                      style={{ flex: 1, padding: '4px 8px', borderRadius: 'var(--radius-sm)', border: `1.5px solid ${val.picked_team_id === team.id ? 'var(--accent-green)' : 'var(--border-light)'}`, background: val.picked_team_id === team.id ? 'var(--accent-green-light)' : 'var(--bg-secondary)', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}>
+                                      {team.flag_emoji} {team.short_code}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
