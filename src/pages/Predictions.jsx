@@ -1043,6 +1043,22 @@ export default function Predictions() {
     return acc
   }, {})
 
+  const showTeamSearch = activeTab === 'picks' && activeGroup !== 'FINAL'
+
+  const switchToDateView = () => {
+    setViewMode('date')
+    setActiveTab('picks')
+    setActiveGroup('FINAL')
+    setTeamSearch('')
+  }
+
+  const switchToGroupView = () => {
+    setViewMode('group')
+    setActiveTab('picks')
+    if (activeGroup === 'FINAL') setActiveGroup('A')
+    setTeamSearch('')
+  }
+
   if (loading) {
     return (
       <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh', padding: '16px' }}>
@@ -1648,7 +1664,7 @@ export default function Predictions() {
             {appSettings?.show_group_tables === 'true' && (
               <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
                 <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px' }}>
-                  {[{ key: 'picks', label: '⚽ Picks' }, { key: 'standings', label: '📊 Tables' }].map(tab => (
+                  {[{ key: 'picks', label: '🌍 Overview' }, { key: 'standings', label: '📊 Tables' }].map(tab => (
                     <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`} style={{ fontSize: '13px', padding: '7px 16px' }}>
                       {tab.label}
                     </button>
@@ -1660,8 +1676,8 @@ export default function Predictions() {
             <Link to="/how-to-play" style={{ position: 'absolute', right: 0, top: '14px', width: '26px', height: '26px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textDecoration: 'none' }}>?</Link>
           </div>
 
-          {/* Team search */}
-          <div style={{ padding: '6px 0' }}>
+          {/* Team search — only useful on fixture/prediction views */}
+          {showTeamSearch && <div style={{ padding: '6px 0' }}>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'var(--text-muted)' }}>🔍</span>
               <input
@@ -1684,22 +1700,22 @@ export default function Predictions() {
                 }}>✕</button>
               )}
             </div>
-          </div>
+          </div>}
 
           {/* Row 2: Group / Date tabs — hidden when searching */}
-          {!teamSearch && <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {(!showTeamSearch || !teamSearch) && <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
 
             {viewMode === 'group' ? (
               <>
                 {/* By Date switcher */}
-                <button onClick={() => setViewMode('date')} style={{
+                <button onClick={switchToDateView} style={{
                   padding: '10px 12px', fontSize: '12px', fontWeight: '600',
                   color: 'var(--text-muted)', borderBottom: '2px solid transparent',
                   background: 'none', border: 'none', borderBottom: '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                 }}>
-                  📅 By Date
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '500' }}>All groups</span>
+                  🌍 Overall
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '500' }}>By date</span>
                 </button>
                 <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 4px', flexShrink: 0 }} />
                 {GROUPS.map(g => {
@@ -1732,7 +1748,7 @@ export default function Predictions() {
                   </button>
                 )}
                 <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 4px', flexShrink: 0 }} />
-                <button onClick={() => setActiveGroup('FINAL')} style={{
+                <button onClick={() => { setActiveGroup('FINAL'); setActiveTab('picks'); setTeamSearch('') }} style={{
                   padding: '10px 12px', fontSize: '12px', fontWeight: activeGroup === 'FINAL' ? '800' : '500',
                   color: activeGroup === 'FINAL' ? 'var(--scottish-navy)' : 'var(--text-muted)',
                   borderBottom: activeGroup === 'FINAL' ? '2px solid var(--scottish-navy)' : '2px solid transparent',
@@ -1745,14 +1761,14 @@ export default function Predictions() {
               </>
             ) : (
               <>
-                <button onClick={() => setViewMode('group')} style={{
+                <button onClick={switchToGroupView} style={{
                   padding: '10px 14px', fontSize: '12px', fontWeight: '400',
                   color: 'var(--text-muted)', borderBottom: '2px solid transparent',
                   background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
                 }}>
-                  By Group
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>A – L</span>
+                  📂 By Group
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>A–L</span>
                 </button>
                 <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 2px', flexShrink: 0 }} />
                 {Object.entries(matchesByDate).map(([dateKey, dayMatches]) => {
@@ -1788,7 +1804,7 @@ export default function Predictions() {
       {/* Matches / Standings */}
       <div className="container" style={{ padding: '16px' }}>
         {activeTab === 'standings' ? (
-          activeGroup === 'FINAL' ? (
+          (viewMode === 'date' || activeGroup === 'FINAL') ? (
             <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
           ) : (
           <StandingsView
@@ -1801,7 +1817,7 @@ export default function Predictions() {
           )
         ) : activeGroup === 'FINAL' && !teamSearch ? (
           <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
-        ) : teamSearch ? (
+        ) : showTeamSearch && teamSearch ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)', paddingTop: '4px' }}>
               {groupMatches.length > 0
