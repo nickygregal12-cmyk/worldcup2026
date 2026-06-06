@@ -69,17 +69,21 @@ function MemberStandingsView({ predictions }) {
   )
 }
 
-function KnockoutPicksView({ userId }) {
+function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
   const [picks, setPicks] = React.useState([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
-    supabase.from('knockout_picks')
+    const table = lockedSnapshot ? 'league_knockout_picks' : 'knockout_picks'
+    let query = supabase.from(table)
       .select('match_number, stage, winner_team_id, is_joker, winner:winner_team_id(name, flag_emoji, short_code)')
       .eq('user_id', userId)
-      .order('match_number', { ascending: true })
+
+    if (lockedSnapshot && leagueId) query = query.eq('league_id', leagueId)
+
+    query.order('match_number', { ascending: true })
       .then(({ data }) => { setPicks(data || []); setLoading(false) })
-  }, [userId])
+  }, [userId, leagueId, lockedSnapshot])
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
   if (picks.length === 0) return (
@@ -115,21 +119,29 @@ function KnockoutPicksView({ userId }) {
   )
 }
 
-function AwardPredsView({ userId }) {
+function AwardPredsView({ userId, leagueId, lockedSnapshot = false }) {
   const [preds, setPreds] = React.useState([])
   const [goals, setGoals] = React.useState([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
-    Promise.all([
-      supabase.from('award_predictions').select('award_type, predicted_player_name').eq('user_id', userId),
-      supabase.from('tournament_predictions').select('prediction_type, int_value').eq('user_id', userId).eq('prediction_type', 'total_goals')
-    ]).then(([{ data: awardData }, { data: goalData }]) => {
+    const awardTable = lockedSnapshot ? 'league_award_predictions' : 'award_predictions'
+    const goalTable = lockedSnapshot ? 'league_tournament_predictions' : 'tournament_predictions'
+
+    let awardQuery = supabase.from(awardTable).select('award_type, predicted_player_name').eq('user_id', userId)
+    let goalQuery = supabase.from(goalTable).select('prediction_type, int_value').eq('user_id', userId).eq('prediction_type', 'total_goals')
+
+    if (lockedSnapshot && leagueId) {
+      awardQuery = awardQuery.eq('league_id', leagueId)
+      goalQuery = goalQuery.eq('league_id', leagueId)
+    }
+
+    Promise.all([awardQuery, goalQuery]).then(([{ data: awardData }, { data: goalData }]) => {
       setPreds(awardData || [])
       setGoals(goalData || [])
       setLoading(false)
     })
-  }, [userId])
+  }, [userId, leagueId, lockedSnapshot])
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
   if (preds.length === 0 && goals.length === 0) return (
@@ -169,6 +181,7 @@ export default function Leagues() {
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
   const [newLeagueName, setNewLeagueName] = useState('')
+  const [newLeagueLockType, setNewLeagueLockType] = useState('rolling')
   const [joinCode, setJoinCode] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -194,7 +207,7 @@ export default function Leagues() {
   const loadMyLeagues = async () => {
     const { data: memberships } = await supabase
       .from('league_members')
-      .select('league_id, league:league_id(id, name, invite_code, is_global, created_by, scoring_preset, custom_scoring)')
+      .select('league_id, league:league_id(id, name, invite_code, is_global, created_by, scoring_preset, custom_scoring, lock_type, snapshot_taken_at)')
       .eq('user_id', user.id)
       .order('joined_at', { ascending: false })
 
@@ -393,12 +406,36 @@ export default function Leagues() {
     setLoadingPreds(false)
   }
 
+  const loadLockedMemberPredictions = async (leagueId, userId) => {
+    setLoadingPreds(true)
+    const { data: preds } = await supabase
+      .from('league_predictions')
+      .select(`
+        home_score, away_score, is_confident,
+        match:match_id(id, match_number, kickoff_time, stage, status, home_score, away_score,
+          group:group_id(name),
+          home_team:home_team_id(name,flag_emoji,short_code),
+          away_team:away_team_id(name,flag_emoji,short_code))
+      `)
+      .eq('league_id', leagueId)
+      .eq('user_id', userId)
+
+    const sorted = (preds || []).sort((a, b) => new Date(a.match?.kickoff_time) - new Date(b.match?.kickoff_time))
+    setMemberPredictions(sorted)
+    setLoadingPreds(false)
+  }
+
   const openMemberModal = async (member, leagueId) => {
+    const leagueEntry = myLeagues.find(m => m.league_id === leagueId)
+    const league = leagueEntry?.league
+    const lockedSnapshot = league?.lock_type === 'pre_tournament' && !!league?.snapshot_taken_at
     const isOffline = member.profile?.is_offline || member.is_offline
     const displayName = member.profile?.display_name || member.profile?.username || 'Unknown'
-    setMemberModal({ userId: member.user_id, username: displayName, leagueId, isOffline })
+    setMemberModal({ userId: member.user_id, username: displayName, leagueId, isOffline, lockedSnapshot, leagueName: league?.name })
 
-    if (isOffline) {
+    if (lockedSnapshot) {
+      await loadLockedMemberPredictions(leagueId, member.user_id)
+    } else if (isOffline) {
       // Load from offline_predictions table
       const { data: preds } = await supabase
         .from('offline_predictions')
@@ -439,12 +476,12 @@ export default function Leagues() {
     const code = generateCode()
     const { data: league, error: err } = await supabase
       .from('leagues')
-      .insert({ name: newLeagueName.trim(), invite_code: code, created_by: user.id, is_global: false })
+      .insert({ name: newLeagueName.trim(), invite_code: code, created_by: user.id, is_global: false, lock_type: newLeagueLockType })
       .select().single()
     if (err) { setError(err.message); return }
     await supabase.from('league_members').insert({ league_id: league.id, user_id: user.id })
     setSuccess(`League created! Share this code: ${code}`)
-    setNewLeagueName(''); setShowCreate(false)
+    setNewLeagueName(''); setNewLeagueLockType('rolling'); setShowCreate(false)
     loadMyLeagues()
   }
 
@@ -621,13 +658,30 @@ export default function Leagues() {
                 {activeGame === 'ko' ? 'Separate from Tournament leagues — KO points only' : 'Group + knockout + awards predictions'}
               </div>
               <input className="input" placeholder="League name e.g. Office WC26" value={newLeagueName}
-                onChange={e => setNewLeagueName(e.target.value)} style={{ marginBottom: '12px' }} />
+                onChange={e => setNewLeagueName(e.target.value)} style={{ marginBottom: activeGame === 'ko' ? '12px' : '10px' }} />
+              {activeGame === 'tournament' && (
+                <div style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  {[
+                    { key: 'rolling', title: '🔄 Rolling', desc: 'Default · future unlocked picks can be edited' },
+                    { key: 'pre_tournament', title: '🔒 Locked', desc: 'League scoring uses picks frozen at tournament start' },
+                  ].map(option => (
+                    <button key={option.key} type="button" onClick={() => setNewLeagueLockType(option.key)} style={{
+                      textAlign: 'left', padding: '10px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                      border: newLeagueLockType === option.key ? '2px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                      background: newLeagueLockType === option.key ? 'rgba(0,48,135,0.06)' : 'var(--bg-card)',
+                    }}>
+                      <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '3px' }}>{option.title}</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.3 }}>{option.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
               {error && <div style={{ color: 'var(--accent-red)', fontSize: '13px', marginBottom: '8px' }}>{error}</div>}
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button onClick={activeGame === 'ko' ? createKoLeague : createLeague}
                   className="btn btn-primary btn-sm"
                   style={{ background: activeGame === 'ko' ? '#e65100' : 'var(--scottish-navy)' }}>Create</button>
-                <button onClick={() => setShowCreate(false)} className="btn btn-secondary btn-sm">Cancel</button>
+                <button onClick={() => { setShowCreate(false); setNewLeagueLockType('rolling') }} className="btn btn-secondary btn-sm">Cancel</button>
               </div>
             </div>
           )}
@@ -759,6 +813,15 @@ export default function Leagues() {
                           </div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>{memberCount} {memberCount === 1 ? 'member' : 'members'}{!league.is_global && ` · ${isCreator ? 'Creator' : 'Member'}`}</span>
+                            {!league.is_global && (
+                              <span title={league.lock_type === 'pre_tournament' ? 'League scoring uses predictions frozen before kickoff' : 'Future unlocked predictions can still be edited'} style={{
+                                fontSize: '10px', fontWeight: '800', padding: '1px 6px', borderRadius: 'var(--radius-full)',
+                                background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.14)' : 'rgba(21,88,176,0.10)',
+                                color: league.lock_type === 'pre_tournament' ? '#b45309' : 'var(--accent-blue)',
+                              }}>
+                                {league.lock_type === 'pre_tournament' ? '🔒 Locked' : '🔄 Rolling'}
+                              </span>
+                            )}
                             {league.custom_scoring && league.scoring_preset !== 'standard' && (
                               <span style={{ fontSize: '10px', fontWeight: '700', padding: '1px 5px', borderRadius: 'var(--radius-full)', background: 'var(--scottish-navy-light)', color: 'var(--scottish-navy)', cursor: 'pointer' }}
                                 title={league.custom_scoring ? `Correct: ${league.custom_scoring.group_correct}pts | Exact: ${league.custom_scoring.group_exact}pts | Joker: ${league.custom_scoring.joker_multiplier}×` : ''}>
@@ -786,6 +849,15 @@ export default function Leagues() {
                     </div>
                   )}
 
+                  {!league.is_global && (
+                    <div style={{ padding: '8px 16px', background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.08)' : 'rgba(21,88,176,0.05)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                      <strong>{league.lock_type === 'pre_tournament' ? '🔒 Pre-tournament lock:' : '🔄 Rolling league:'}</strong>{' '}
+                      {league.lock_type === 'pre_tournament'
+                        ? (league.snapshot_taken_at ? 'Frozen predictions are visible to league members and used for scoring.' : 'Predictions will be frozen at tournament start for league scoring.')
+                        : 'Future unlocked predictions can be edited; visibility follows each user’s privacy setting.'}
+                    </div>
+                  )}
+
                   {/* League table — always visible */}
                   <div>
                     {loadingMembers[league.id] ? (
@@ -803,12 +875,13 @@ export default function Leagues() {
                           const rankColours = ['#f59e0b', '#9ca3af', '#cd7f32']
 
                           return (
-                            <div key={member.user_id} style={{
+                            <div key={member.user_id} onClick={() => openMemberModal(member, league.id)} role="button" tabIndex={0} style={{
                               display: 'flex', alignItems: 'center', gap: '10px',
                               padding: '11px 16px',
                               borderBottom: '1px solid var(--border-light)',
                               background: isMe ? 'rgba(0,48,135,0.05)' : 'transparent',
                               borderLeft: isMe ? '3px solid var(--scottish-navy)' : '3px solid transparent',
+                              cursor: 'pointer',
                             }}>
                               {/* Rank */}
                               <span style={{ fontSize: '13px', fontWeight: '800', width: '20px', flexShrink: 0, color: i < 3 ? rankColours[i] : 'var(--text-muted)' }}>
@@ -844,11 +917,11 @@ export default function Leagues() {
 
                               {/* Actions */}
                               <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
-                                <button onClick={() => openMemberModal(member, league.id)}
+                                <button onClick={(e) => { e.stopPropagation(); openMemberModal(member, league.id) }}
                                   style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', cursor: 'pointer', fontSize: '14px', opacity: member.profile?.is_offline ? 1 : 0.7, padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}
                                   title={member.profile?.is_offline ? "View offline picks" : "View picks"}>👁</button>
                                 {canRemove && (
-                                  <button onClick={() => setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username })}
+                                  <button onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username }) }}
                                     style={{ background: '#ffebee', border: '1px solid #ffcdd2', cursor: 'pointer', fontSize: '14px', color: '#e53935', padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}>×</button>
                                 )}
                               </div>
@@ -918,11 +991,17 @@ export default function Leagues() {
                   {memberModal.isOffline ? '👤 ' : ''}{memberModal.username}'s Predictions
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  {memberModal.isOffline ? 'Offline player · imported predictions' : 'Past picks always visible · Future picks if they\'ve enabled sharing'}
+                  {memberModal.lockedSnapshot ? `Locked league snapshot${memberModal.leagueName ? ` · ${memberModal.leagueName}` : ''}` : memberModal.isOffline ? 'Offline player · imported predictions' : 'Past picks always visible · Future picks if they\'ve enabled sharing'}
                 </div>
               </div>
               <button onClick={() => setMemberModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
             </div>
+
+            {memberModal.lockedSnapshot && (
+              <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.10)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: '#92400e', fontWeight: '700' }}>
+                🔒 Showing frozen league predictions used for scoring. Profile privacy does not hide locked league picks.
+              </div>
+            )}
 
             {/* Tabs */}
             <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)' }}>
@@ -988,9 +1067,9 @@ export default function Leagues() {
                   </div>
                 )
               ) : memberModal.tab === 'knockout' ? (
-                <KnockoutPicksView userId={memberModal.userId} />
+                <KnockoutPicksView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
               ) : memberModal.tab === 'awards' ? (
-                <AwardPredsView userId={memberModal.userId} />
+                <AwardPredsView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
               ) : memberModal.tab === 'standings' ? (
                 <MemberStandingsView predictions={memberPredictions} />
               ) : null}
