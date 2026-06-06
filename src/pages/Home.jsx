@@ -13,6 +13,26 @@ const KNOCKOUT_BANNER    = new Date('2026-06-20T00:00:00Z') // banner appears
 const KNOCKOUT_LIVE      = new Date('2026-06-27T00:00:00Z') // predictor opens
 const TOURNAMENT_END     = new Date('2026-07-19T20:00:00Z') // final
 
+
+const VENUE_FLAGS = {
+  'Mexico City': '🇲🇽', 'Guadalajara': '🇲🇽', 'Monterrey': '🇲🇽',
+  'Toronto': '🇨🇦', 'Vancouver': '🇨🇦',
+  'New York': '🇺🇸', 'New Jersey': '🇺🇸', 'New York/NJ': '🇺🇸', 'Los Angeles': '🇺🇸',
+  'Dallas': '🇺🇸', 'Houston': '🇺🇸', 'San Francisco': '🇺🇸', 'Seattle': '🇺🇸',
+  'Boston': '🇺🇸', 'Miami': '🇺🇸', 'Atlanta': '🇺🇸', 'Philadelphia': '🇺🇸', 'Kansas City': '🇺🇸',
+}
+
+const getVenueFlag = (city = '') => VENUE_FLAGS[city] || '🏟️'
+
+const formatWeather = (weather) => {
+  if (!weather) return null
+  const temp = weather.temp_c ?? weather.temperature ?? weather.temp
+  const condition = weather.condition || weather.text || ''
+  const icon = weather.icon || weather.emoji || '🌤️'
+  if (temp === undefined || temp === null) return condition ? `${icon} ${condition}` : null
+  return `${icon} ${Math.round(Number(temp))}°C${condition ? ` · ${condition}` : ''}`
+}
+
 function useCountdown(targetDate) {
   const [timeLeft, setTimeLeft] = useState({})
   useEffect(() => {
@@ -78,6 +98,7 @@ export default function Home() {
   const [showShareCard, setShowShareCard] = useState(false)
   const [shareCopied, setShareCopied]     = useState(false)
   const [luckyDone, setLuckyDone]         = useState(false)
+  const [matchWeather, setMatchWeather]   = useState({})
   const countdown = useCountdown(nextMatch?.kickoff_time)
 
   const now               = new Date()
@@ -113,6 +134,32 @@ export default function Home() {
     const interval = setInterval(loadData, 60000)
     return () => clearInterval(interval)
   }, [user])
+
+  useEffect(() => {
+    const matchesToCheck = [nextMatch, ...liveMatches].filter(Boolean)
+    if (!matchesToCheck.length) return
+
+    matchesToCheck.forEach(match => {
+      if (!match?.id || !match?.venue?.city || matchWeather[match.id]) return
+      loadMatchWeather(match)
+    })
+  }, [nextMatch?.id, liveMatches.map(m => m.id).join('|')])
+
+  const loadMatchWeather = async (match) => {
+    try {
+      const params = new URLSearchParams({
+        city: match.venue.city,
+        kickoff: match.kickoff_time,
+      })
+      const res = await fetch(`/.netlify/functions/weather?${params.toString()}`)
+      if (!res.ok) return
+      const data = await res.json()
+      if (!data?.available) return
+      setMatchWeather(prev => ({ ...prev, [match.id]: data }))
+    } catch (e) {
+      // Weather is a nice-to-have; never block the home screen.
+    }
+  }
 
   const loadData = async () => {
     const nowIso = new Date().toISOString()
@@ -173,6 +220,18 @@ export default function Home() {
   }
 
   const cta = getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, knockoutLive)
+
+  const groupsComplete = predictionCount >= 72
+  const knockoutsComplete = (profile?.knockout_picks_count || 0) >= 32
+  const awardsComplete = (profile?.awards_done || 0) >= 4
+  const jokersUsed = (profile?.jokers_group_remaining ?? 8) <= 0
+  const readyChecklist = [
+    { label: 'Groups complete', done: groupsComplete },
+    { label: 'Knockouts complete', done: knockoutsComplete },
+    { label: 'Awards complete', done: awardsComplete },
+    { label: 'All jokers used', done: jokersUsed },
+  ]
+  const readyForKickoff = readyChecklist.every(item => item.done)
 
   const handleShareApp = async () => {
     const url = window.location.origin
@@ -507,48 +566,96 @@ export default function Home() {
       <div className="container" style={{ padding: '20px 16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
 
-          {/* ── Tournament countdown / next match — pre-tournament ── */}
+          {/* ── Tournament countdown / opening match — pre-tournament ── */}
           {!loading && !tournamentStarted && nextMatch && (
-            <div className="card fade-in" style={{ overflow: 'hidden', border: '1px solid rgba(0,48,135,0.16)' }}>
-              <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
-                <div>
-                  <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px' }}>Tournament starts in</div>
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    {[
-                      { label: 'Days', value: mainCountdown.days ?? 0 },
-                      { label: 'Hours', value: mainCountdown.hours ?? 0 },
-                      { label: 'Mins', value: mainCountdown.minutes ?? 0 },
-                    ].map(item => (
-                      <div key={item.label} style={{ minWidth: '58px', textAlign: 'center', padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-                        <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)' }}>{item.value}</div>
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</div>
-                      </div>
-                    ))}
-                  </div>
+            <div className="card fade-in" style={{ overflow: 'hidden', border: '1px solid rgba(0,48,135,0.16)', padding: '22px 18px' }}>
+              <div style={{ height: '5px', background: 'var(--scottish-navy)', marginBottom: '20px', borderRadius: 'var(--radius-full)' }} />
+
+              <div style={{ textAlign: 'center', marginBottom: '22px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '900', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '14px' }}>
+                  ⏱ World Cup kicks off in
                 </div>
-                <Link to="/predictions" style={{ fontSize: '12px', fontWeight: '800', color: 'var(--scottish-navy)', textDecoration: 'none', whiteSpace: 'nowrap', paddingTop: '2px' }}>
-                  Review picks →
-                </Link>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '8px' }}>
+                  {[
+                    { label: 'Days', value: mainCountdown.days ?? 0 },
+                    { label: 'Hours', value: mainCountdown.hours ?? 0 },
+                    { label: 'Mins', value: mainCountdown.minutes ?? 0 },
+                    { label: 'Secs', value: mainCountdown.seconds ?? 0 },
+                  ].map(item => (
+                    <div key={item.label} style={{ textAlign: 'center', padding: '12px 6px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', boxShadow: 'var(--shadow-sm)' }}>
+                      <div style={{ fontWeight: '900', fontSize: 'clamp(28px, 8vw, 42px)', lineHeight: 1, fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)', letterSpacing: '-0.04em' }}>
+                        {String(item.value).padStart(2, '0')}
+                      </div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '8px' }}>{item.label}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <div style={{ fontWeight: '800', fontSize: '14px' }}>⚽ Opening Match</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
+              <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '12px' }}>
+                  <div style={{ fontWeight: '900', fontSize: '16px' }}>⚽ Opening Match</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textAlign: 'right' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: '34px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
-                    <span style={{ fontWeight: '800', fontSize: '13px', textAlign: 'center' }}>{nextMatch.home_team?.name}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: '38px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
+                    <span style={{ fontWeight: '900', fontSize: '15px', textAlign: 'center', lineHeight: 1.15 }}>{nextMatch.home_team?.name}</span>
                   </div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '800' }}>vs</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: '34px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
-                    <span style={{ fontWeight: '800', fontSize: '13px', textAlign: 'center' }}>{nextMatch.away_team?.name}</span>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '900' }}>vs</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: '38px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
+                    <span style={{ fontWeight: '900', fontSize: '15px', textAlign: 'center', lineHeight: 1.15 }}>{nextMatch.away_team?.name}</span>
                   </div>
                 </div>
-                {nextMatch.venue?.city && <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>🏟️ {nextMatch.venue.city}</div>}
+                {nextMatch.venue?.city && (
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '12px', fontWeight: '700' }}>
+                    {getVenueFlag(nextMatch.venue.city)} {nextMatch.venue.city}
+                    {formatWeather(matchWeather[nextMatch.id]) && <span> · {formatWeather(matchWeather[nextMatch.id])}</span>}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Invite friends / app share card ── */}
+          {user && !tournamentStarted && (
+            <div className="card fade-in" style={{ overflow: 'hidden' }}>
+              <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ fontSize: '32px', flexShrink: 0 }}>🚀</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '3px' }}>Invite friends to play</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Share WC26 Predictor — they can make their own picks and join a league later</div>
+                </div>
+                <button onClick={handleShareApp}
+                  style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  {shareCopied ? 'Copied ✓' : 'Share'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── Ready for kickoff checklist ── */}
+          {!loading && user && !tournamentStarted && (
+            <div className="card fade-in" style={{ overflow: 'hidden' }}>
+              <div style={{ height: '4px', background: readyForKickoff ? 'var(--accent-green)' : 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <div style={{ fontWeight: '900', fontSize: '16px' }}>{readyForKickoff ? "🎉 You're ready for kickoff" : '✅ Ready for kickoff'}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Final checks before the opening match.</div>
+                </div>
+                <div style={{ fontSize: '12px', fontWeight: '800', color: readyForKickoff ? 'var(--accent-green)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                  {readyChecklist.filter(item => item.done).length}/{readyChecklist.length}
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                {readyChecklist.map(item => (
+                  <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 10px', borderRadius: 'var(--radius-md)', background: item.done ? 'var(--accent-green-light)' : 'var(--bg-secondary)', border: `1px solid ${item.done ? 'rgba(0,122,51,0.18)' : 'var(--border-light)'}` }}>
+                    <span style={{ fontSize: '13px', fontWeight: '900', color: item.done ? 'var(--accent-green)' : 'var(--text-muted)' }}>{item.done ? '✓' : '□'}</span>
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: item.done ? 'var(--text-primary)' : 'var(--text-muted)' }}>{item.label}</span>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -605,23 +712,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Invite friends / app share card ── */}
-          {user && !tournamentStarted && (
-            <div className="card fade-in" style={{ overflow: 'hidden' }}>
-              <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <div style={{ fontSize: '32px', flexShrink: 0 }}>🚀</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '3px' }}>Invite friends to play</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Share WC26 Predictor — they can make their own picks and join a league later</div>
-                </div>
-                <button onClick={handleShareApp}
-                  style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                  {shareCopied ? 'Copied ✓' : 'Share'}
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* ── "You're X pts behind 1st" nudge ── */}
           {tournamentStarted && user && profile && leaderPosition && leaderPosition > 1 && topPredictors.length > 0 && (
@@ -715,7 +805,7 @@ export default function Home() {
                   }}>
                     {match.venue?.city && (
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', textAlign: 'center', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        📍 {match.venue.city}
+                        {getVenueFlag(match.venue.city)} {match.venue.city}{formatWeather(matchWeather[match.id]) ? ` · ${formatWeather(matchWeather[match.id])}` : ''}
                       </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
@@ -759,7 +849,7 @@ export default function Home() {
                   <span style={{ fontWeight: '800', fontSize: '13px' }}>{nextMatch.away_team?.name}</span>
                 </div>
               </div>
-              {nextMatch.venue?.city && <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>📍 {nextMatch.venue.city}</div>}
+              {nextMatch.venue?.city && <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>{getVenueFlag(nextMatch.venue.city)} {nextMatch.venue.city}{formatWeather(matchWeather[nextMatch.id]) ? ` · ${formatWeather(matchWeather[nextMatch.id])}` : ''}</div>}
             </div>
           )}
 
@@ -896,10 +986,24 @@ export default function Home() {
             </div>
           )}
 
-          <div style={{ textAlign: 'center', paddingBottom: '24px' }}>
-            <Link to="/how-to-play" style={{ fontSize: '14px', color: 'var(--accent-blue)', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-              ❓ How does scoring work?
-            </Link>
+          <div className="card fade-in" style={{ overflow: 'hidden' }}>
+            <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+            <div className="section-header" style={{ marginBottom: '10px' }}>
+              <span className="section-title">🏅 How to score points</span>
+              <Link to="/how-to-play" className="section-link">Full rules →</Link>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              {[
+                { label: 'Correct result', value: '+10' },
+                { label: 'Exact score', value: '+30' },
+                { label: 'Goals bonus', value: '+20' },
+              ].map(item => (
+                <div key={item.label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', padding: '10px 8px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '900', color: 'var(--scottish-navy)', fontFamily: 'var(--font-mono)' }}>{item.value}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: '3px' }}>{item.label}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
         </div>
