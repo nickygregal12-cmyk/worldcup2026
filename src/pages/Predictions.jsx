@@ -1710,11 +1710,11 @@ export default function Predictions() {
                 </div>
               )
             })()}
-            {/* Row 1: Overall / By Group mode switcher */}
+            {/* Row 1: By Date / By Group mode switcher */}
             <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
               <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px', width: '100%', maxWidth: '420px' }}>
                 {[
-                  { key: 'date', label: '🌍 Overall' },
+                  { key: 'date', label: '📅 By Date' },
                   { key: 'group', label: '📂 By Group' },
                 ].map(mode => (
                   <button
@@ -1780,7 +1780,7 @@ export default function Predictions() {
             </div>
           </div>}
 
-          {/* Row 3: context selector — dates for Overall, groups for By Group */}
+          {/* Row 3: context selector — dates for By Date, groups for By Group */}
           {(!showTeamSearch || !teamSearch) && activeTab === 'overview' && <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {viewMode === 'group' ? (
               <>
@@ -1902,7 +1902,7 @@ export default function Predictions() {
             })()}
           </div>
         ) : (
-          // Overall view — grouped by date
+          // By Date view — grouped by date
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {Object.entries(matchesByDate).map(([date, dayMatches]) => {
               const hasUnlocked = dayMatches.some(m => !isLocked(m.kickoff_time))

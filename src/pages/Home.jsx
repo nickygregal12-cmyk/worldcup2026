@@ -335,7 +335,7 @@ export default function Home() {
   ] : []
 
   const firstGroupPickMade = user && predictionCount > 0
-  const showFirstTimeGuide = user && !tournamentStarted && !firstGroupPickMade
+  const showFirstTimeGuide = !loading && user && !tournamentStarted && !firstGroupPickMade
 
   // ── Hero subtitle ─────────────────────────────────────────────────────────
   const heroSubtitle = tournamentOver
@@ -392,7 +392,16 @@ export default function Home() {
 
           {/* Smart CTA */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-            {user ? (
+            {loading ? (
+              <div style={{
+                background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.82)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                padding: '13px 24px', borderRadius: 'var(--radius-lg)',
+                fontSize: '15px', fontWeight: '700',
+              }}>
+                Loading your tournament dashboard…
+              </div>
+            ) : user ? (
               <>
                 <Link to={cta.to} className="btn btn-green btn-lg">{cta.label}</Link>
                 {cta.secondary && (
@@ -416,7 +425,7 @@ export default function Home() {
           </div>
 
           {/* Lucky Dip — show pre-tournament only when predictions incomplete */}
-          {user && !tournamentStarted && predictionCount < 72 && (
+          {!loading && user && !tournamentStarted && predictionCount < 72 && (
             <div style={{ marginTop: '12px' }}>
               <button
                 onClick={handleLuckyDip}
@@ -450,7 +459,7 @@ export default function Home() {
           )}
 
           {/* Prediction progress bar — logged in only */}
-          {user && progressItems.length > 0 && (
+          {!loading && user && progressItems.length > 0 && (
             <div style={{ marginTop: '24px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
               {progressItems.map(({ label, done, total, to }) => {
                 const pct = Math.round((done / total) * 100)
@@ -472,29 +481,77 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ── Stats Bar ── */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '14px 16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', maxWidth: '500px', margin: '0 auto' }}>
-          {[
-            { label: 'Teams', value: '48' },
-            { label: 'Matches', value: '104' },
-            { label: 'Kick off', value: '11 Jun' },
-            { label: 'Final', value: '19 Jul' },
-          ].map(({ label, value }, i, arr) => (
-            <div key={label} style={{
-              textAlign: 'center', flex: 1,
-              borderRight: i < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
-              padding: '0 8px',
-            }}>
-              <div style={{ fontWeight: '800', fontSize: '15px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{value}</div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>{label}</div>
-            </div>
-          ))}
+      {/* ── Stats Bar — only useful once the tournament is live ── */}
+      {tournamentStarted && (
+        <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '14px 16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', maxWidth: '500px', margin: '0 auto' }}>
+            {[
+              { label: 'Teams', value: '48' },
+              { label: 'Matches', value: '104' },
+              { label: 'Kick off', value: '11 Jun' },
+              { label: 'Final', value: '19 Jul' },
+            ].map(({ label, value }, i, arr) => (
+              <div key={label} style={{
+                textAlign: 'center', flex: 1,
+                borderRight: i < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
+                padding: '0 8px',
+              }}>
+                <div style={{ fontWeight: '800', fontSize: '15px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{value}</div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>{label}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="container" style={{ padding: '20px 16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
+
+          {/* ── Tournament countdown / next match — pre-tournament ── */}
+          {!loading && !tournamentStarted && nextMatch && (
+            <div className="card fade-in" style={{ overflow: 'hidden', border: '1px solid rgba(0,48,135,0.16)' }}>
+              <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: '800', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '4px' }}>Tournament starts in</div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {[
+                      { label: 'Days', value: mainCountdown.days ?? 0 },
+                      { label: 'Hours', value: mainCountdown.hours ?? 0 },
+                      { label: 'Mins', value: mainCountdown.minutes ?? 0 },
+                    ].map(item => (
+                      <div key={item.label} style={{ minWidth: '58px', textAlign: 'center', padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                        <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)' }}>{item.value}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <Link to="/predictions" style={{ fontSize: '12px', fontWeight: '800', color: 'var(--scottish-navy)', textDecoration: 'none', whiteSpace: 'nowrap', paddingTop: '2px' }}>
+                  Review picks →
+                </Link>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <div style={{ fontWeight: '800', fontSize: '14px' }}>⚽ Opening Match</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: '34px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
+                    <span style={{ fontWeight: '800', fontSize: '13px', textAlign: 'center' }}>{nextMatch.home_team?.name}</span>
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '800' }}>vs</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1, minWidth: 0 }}>
+                    <span style={{ fontSize: '34px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
+                    <span style={{ fontWeight: '800', fontSize: '13px', textAlign: 'center' }}>{nextMatch.away_team?.name}</span>
+                  </div>
+                </div>
+                {nextMatch.venue?.city && <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>🏟️ {nextMatch.venue.city}</div>}
+              </div>
+            </div>
+          )}
 
           {/* ── Knockout Predictor Banner (20 Jun – 26 Jun teaser, 27 Jun+ live) ── */}
           {showKnockoutBanner && (
@@ -567,7 +624,7 @@ export default function Home() {
           )}
 
           {/* ── "You're X pts behind 1st" nudge ── */}
-          {user && profile && leaderPosition && leaderPosition > 1 && topPredictors.length > 0 && (
+          {tournamentStarted && user && profile && leaderPosition && leaderPosition > 1 && topPredictors.length > 0 && (
             <div style={{
               background: 'var(--accent-blue-light)', border: '1px solid rgba(21,88,176,0.2)',
               borderRadius: 'var(--radius-lg)', padding: '12px 16px',
@@ -583,7 +640,7 @@ export default function Home() {
           )}
 
           {/* ── User Stats ── */}
-          {user && profile && (
+          {user && profile && (tournamentStarted || knockoutLive || (profile.total_points || 0) > 0) && (
             <div className="card fade-in">
               <div className="section-header">
                 <span className="section-title">👋 Your Stats</span>
