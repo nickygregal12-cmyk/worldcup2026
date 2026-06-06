@@ -346,6 +346,15 @@ export default function Leagues() {
   const [memberPredictions, setMemberPredictions] = useState([])
   const [loadingPreds, setLoadingPreds] = useState(false)
   const [matchOdds, setMatchOdds] = useState({})
+  const [showWelcome, setShowWelcome] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.localStorage.getItem('wc26_seen_welcome') !== 'true'
+  })
+
+  const dismissWelcome = () => {
+    window.localStorage.setItem('wc26_seen_welcome', 'true')
+    setShowWelcome(false)
+  }
 
   const { appSettings } = useAppStore()
   const phaseOverride = appSettings?.game_phase_override || ''
@@ -799,18 +808,8 @@ export default function Leagues() {
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, rgba(0,30,80,0.88) 0%, rgba(0,94,184,0.82) 100%), url(/leagues-bg.jpg) center/cover no-repeat', padding: '20px' }}>
         <div className="container">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <div style={{ marginBottom: '12px' }}>
             <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'white' }}>👥 Leagues</h1>
-            {activeGame !== 'overall' && (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button onClick={() => { setShowJoin(!showJoin); setShowCreate(false); setError('') }} className="btn btn-secondary btn-sm">Join</button>
-                <button onClick={() => { setShowCreate(!showCreate); setShowJoin(false); setError('') }}
-                  className="btn btn-primary btn-sm"
-                  style={{ background: activeGame === 'ko' ? '#e65100' : 'var(--scottish-navy)' }}>
-                  + Create
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Page toggle */}
@@ -903,6 +902,39 @@ export default function Leagues() {
       </div>
 
       <div className="container" style={{ padding: '16px' }}>
+        {showWelcome && (
+          <div className="card" style={{ padding: '18px', marginBottom: '12px', border: '1px solid rgba(0,48,135,0.16)', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
+              <div style={{ fontSize: '30px', lineHeight: 1 }}>👋</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '18px', fontWeight: '900', marginBottom: '4px' }}>Welcome to World Cup 2026 Predictor</div>
+                <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.45 }}>Here’s where everything lives before kickoff.</div>
+              </div>
+              <button onClick={dismissWelcome} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer', lineHeight: 1 }}>×</button>
+            </div>
+
+            {[
+              { icon: '👥', title: 'Join or create a league', desc: 'Compete with friends and family.' },
+              { icon: '⚽', title: 'Make your predictions', desc: 'Predict scores, tournament outcomes and awards.' },
+              { icon: '👤', title: 'Check out your profile', desc: 'View your stats, predictions and league activity.' },
+              { icon: '🏆', title: 'Overall Rankings', desc: 'Unlock when the tournament begins.' },
+              { icon: '🎯', title: 'Earn More Points', desc: 'Learn how scoring, jokers and bonuses work.' },
+            ].map(item => (
+              <div key={item.title} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '8px 0', borderTop: '1px solid var(--border-light)' }}>
+                <div style={{ fontSize: '20px', width: '24px', textAlign: 'center', flexShrink: 0 }}>{item.icon}</div>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary)' }}>{item.title}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.35, marginTop: '2px' }}>{item.desc}</div>
+                </div>
+              </div>
+            ))}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '14px' }}>
+              <Link to="/how-to-play" onClick={dismissWelcome} className="btn btn-secondary">How To Play</Link>
+              <button onClick={dismissWelcome} className="btn btn-primary">Let’s Go</button>
+            </div>
+          </div>
+        )}
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><div className="spinner" /></div>
         ) : activeGame === 'overall' ? (
