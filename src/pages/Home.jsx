@@ -202,6 +202,7 @@ export default function Home() {
           jokerCountRes,
           knockoutCountRes,
           awardCountRes,
+          totalGoalsRes,
         ] = await Promise.all([
           supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
           supabase.from('predictions')
@@ -219,6 +220,11 @@ export default function Home() {
           supabase.from('award_predictions')
             .select('award_type', { count: 'exact', head: true })
             .eq('user_id', user.id),
+          supabase.from('tournament_predictions')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('prediction_type', 'total_goals')
+            .not('int_value', 'is', null),
         ])
 
         const freshProfile = freshProfileRes.data
@@ -227,7 +233,7 @@ export default function Home() {
         const groupCount = groupCountRes.count || 0
         const jokerCount = jokerCountRes.count || 0
         const koCount = knockoutCountRes.count || 0
-        const awardsCount = awardCountRes.count || 0
+        const awardsCount = (awardCountRes.count || 0) + (totalGoalsRes.count || 0)
 
         setPredictionCount(groupCount)
         setJokerAssignedCount(Math.min(8, jokerCount))

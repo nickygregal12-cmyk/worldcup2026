@@ -127,30 +127,43 @@ export default function Awards() {
 
   const saveGoals = async () => {
     if (!user || tournamentStarted) return
-    setGoalsSaving(true)
-    // Group/knockout goal totals are now helper-only. Only tournament total is scored/saved.
-    await supabase.from('tournament_predictions')
-      .delete()
-      .eq('user_id', user.id)
-      .in('prediction_type', ['group_goals', 'knockout_goals', 'total_goals'])
 
-    if (totalGoals) {
-      await supabase.from('tournament_predictions').insert({
+    const parsedGoals = parseInt(totalGoals, 10)
+    if (Number.isNaN(parsedGoals) || parsedGoals < 0) return
+
+    setGoalsSaving(true)
+    try {
+      // Group/knockout goal totals are now helper-only. Only tournament total is scored/saved.
+      const { error: deleteError } = await supabase.from('tournament_predictions')
+        .delete()
+        .eq('user_id', user.id)
+        .in('prediction_type', ['group_goals', 'knockout_goals', 'total_goals'])
+
+      if (deleteError) throw deleteError
+
+      const { error: insertError } = await supabase.from('tournament_predictions').insert({
         user_id: user.id,
         prediction_type: 'total_goals',
-        int_value: parseInt(totalGoals) || null,
+        int_value: parsedGoals,
       })
+
+      if (insertError) throw insertError
+
+      setTotalGoals(String(parsedGoals))
+
+      // Update awards_done — count player awards + 1 for total goals.
+      const { data: awardPreds } = await supabase.from('award_predictions').select('award_type').eq('user_id', user.id)
+      const playerAwardsDone = AWARDS.filter(a => (awardPreds || []).some(p => p.award_type === a.type)).length
+      await supabase.from('profiles').update({ awards_done: playerAwardsDone + 1 }).eq('id', user.id)
+
+      setGoalsSaved(true)
+      setTimeout(() => setGoalsSaved(false), 2000)
+    } catch (error) {
+      console.error('Failed to save total goals:', error)
+      alert('Could not save total goals. Please try again.')
+    } finally {
+      setGoalsSaving(false)
     }
-
-    // Update awards_done — count player awards + 1 if total goals entered
-    const goalsEntered = totalGoals ? 1 : 0
-    const { data: awardPreds } = await supabase.from('award_predictions').select('award_type').eq('user_id', user.id)
-    const playerAwardsDone = awardPreds?.length || 0
-    await supabase.from('profiles').update({ awards_done: playerAwardsDone + goalsEntered }).eq('id', user.id)
-
-    setGoalsSaving(false)
-    setGoalsSaved(true)
-    setTimeout(() => setGoalsSaved(false), 2000)
   }
 
   const getFilteredPlayers = (awardType) => {
@@ -400,7 +413,7 @@ export default function Awards() {
               <button onClick={user ? saveGoals : () => alert('Sign up free to save your predictions!')}
                 disabled={goalsSaving || !totalGoals}
                 className="btn btn-primary btn-full" style={{ marginTop: '14px' }}>
-                {goalsSaving ? 'Saving...' : '💾 Save Goals Predictions'}
+                {goalsSaving ? 'Saving...' : goalsSaved ? 'Saved!' : '💾 Save Total Goals'}
               </button>
             )}
           </div>
