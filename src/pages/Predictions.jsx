@@ -1227,7 +1227,7 @@ export default function Predictions() {
               </div>
               <div style={{ fontWeight: '900', fontSize: '24px', fontFamily: 'var(--font-mono)', lineHeight: 1,
                 color: resultColour === 'gold' ? 'var(--accent-gold)' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                {pred.points_awarded !== undefined ? `+${pred.points_awarded}` : resultColour === 'gold' ? '+10' : resultColour === 'green' ? '+5' : '+0'}
+                {pred.points_awarded !== undefined ? `+${pred.points_awarded}` : `+${(resultColour === 'gold' ? 10 : resultColour === 'green' ? 5 : 0) * (hasJoker && resultColour !== 'red' ? 2 : 1)}`}
                 <span style={{ fontSize: '11px', fontWeight: '600' }}>pts</span>
               </div>
             </div>
@@ -1850,7 +1850,7 @@ export default function Predictions() {
               <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px', width: '100%', maxWidth: '420px' }}>
                 {[
                   { key: 'picks', label: '⚽ Picks' },
-                  { key: 'overview', label: '🔮 Overview' },
+                  { key: 'overview', label: viewMode === 'group' ? '🔮 Predicted Table' : '🔮 Overview' },
                   { key: 'standings', label: '📊 Tables' },
                 ].map(tab => (
                   <button

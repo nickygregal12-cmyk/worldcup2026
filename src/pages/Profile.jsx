@@ -149,41 +149,124 @@ export default function Profile() {
   const handleExportPredictions = async () => {
     if (!user) return
     const XLSX = await import('xlsx')
-    const { data: matches } = await supabase
-      .from('matches')
-      .select('id, kickoff_time, home_team:home_team_id(name, short_code), away_team:away_team_id(name, short_code), group:group_id(name)')
-      .eq('stage', 'group').order('kickoff_time')
-    const { data: preds } = await supabase
-      .from('predictions').select('match_id, home_score, away_score, is_confident').eq('user_id', user.id)
-    const predMap = {}
-    preds?.forEach(p => { predMap[p.match_id] = p })
 
-    const rows = [['Match', 'Group', 'Date', 'Home Team', 'Away Team', 'Home Score', 'Away Score', 'Joker']]
-    matches?.forEach((m, i) => {
+    const [
+      matchesRes,
+      predsRes,
+      knockoutRes,
+      awardsRes,
+      tournamentRes,
+      teamsRes,
+    ] = await Promise.all([
+      supabase
+        .from('matches')
+        .select('id, match_number, stage, kickoff_time, home_team:home_team_id(name, short_code), away_team:away_team_id(name, short_code), group:group_id(name)')
+        .order('kickoff_time'),
+      supabase
+        .from('predictions')
+        .select('match_id, home_score, away_score, is_confident')
+        .eq('user_id', user.id),
+      supabase
+        .from('knockout_picks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('match_number', { ascending: true }),
+      supabase
+        .from('award_predictions')
+        .select('*')
+        .eq('user_id', user.id),
+      supabase
+        .from('tournament_predictions')
+        .select('*')
+        .eq('user_id', user.id),
+      supabase
+        .from('teams')
+        .select('id, name, short_code, flag_emoji'),
+    ])
+
+    const matches = matchesRes.data || []
+    const preds = predsRes.data || []
+    const knockoutPicks = knockoutRes.data || []
+    const awardPredictions = awardsRes.data || []
+    const tournamentPredictions = tournamentRes.data || []
+    const teams = teamsRes.data || []
+
+    const teamMap = {}
+    teams.forEach(t => { teamMap[t.id] = `${t.flag_emoji || ''} ${t.name || t.short_code || t.id}`.trim() })
+
+    const wb = XLSX.utils.book_new()
+
+    const predMap = {}
+    preds.forEach(p => { predMap[p.match_id] = p })
+
+    const groupRows = [['Match', 'Group', 'Date', 'Home Team', 'Away Team', 'Home Score', 'Away Score', 'Joker']]
+    matches.filter(m => m.stage === 'group').forEach((m, i) => {
       const pred = predMap[m.id]
       const date = new Date(m.kickoff_time).toLocaleDateString('en-GB')
-      rows.push([
-        `M${i + 1}`,
+      groupRows.push([
+        m.match_number ? `M${m.match_number}` : `M${i + 1}`,
         m.group?.name || '',
         date,
         m.home_team?.name || '',
         m.away_team?.name || '',
         pred?.home_score ?? '',
         pred?.away_score ?? '',
-        pred?.is_confident ? 'X' : '',
+        pred?.is_confident ? 'Yes' : '',
       ])
     })
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(groupRows), 'Group Predictions')
 
-    const ws = XLSX.utils.aoa_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Predictions')
+    const knockoutRows = [['Match', 'Stage', 'Winner', 'Home Team', 'Away Team']]
+    knockoutPicks.forEach(p => {
+      knockoutRows.push([
+        p.match_number ? `M${p.match_number}` : '',
+        p.stage || '',
+        teamMap[p.winner_team_id || p.team_id] || p.winner_team_id || p.team_id || '',
+        teamMap[p.home_team_id] || p.home_team_id || '',
+        teamMap[p.away_team_id] || p.away_team_id || '',
+      ])
+    })
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(knockoutRows), 'Knockout Picks')
+
+    const awardRows = [['Award', 'Player', 'Team']]
+    awardPredictions.forEach(p => {
+      awardRows.push([
+        p.award_type || '',
+        p.predicted_player_name || p.player_name || p.player_id || '',
+        teamMap[p.predicted_team_id || p.team_id] || p.predicted_team_id || p.team_id || '',
+      ])
+    })
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(awardRows), 'Awards')
+
+    const tournamentRows = [['Prediction Type', 'Value', 'Team', 'Player']]
+    tournamentPredictions.forEach(p => {
+      tournamentRows.push([
+        p.prediction_type || '',
+        p.int_value ?? p.text_value ?? p.value ?? '',
+        teamMap[p.team_id] || p.team_id || '',
+        p.player_id || p.predicted_player_name || '',
+      ])
+    })
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(tournamentRows), 'Tournament Picks')
+
+    const jokerCount = preds.filter(p => p.is_confident).length
+    const summaryRows = [
+      ['Section', 'Complete / Count'],
+      ['Group predictions', `${preds.filter(p => p.home_score !== null && p.home_score !== undefined && p.away_score !== null && p.away_score !== undefined).length}/72`],
+      ['Knockout picks', `${knockoutPicks.length}/32`],
+      ['Awards', `${awardPredictions.length}/4`],
+      ['Group jokers assigned', `${jokerCount}/8`],
+      ['Total points', profile?.total_points || 0],
+    ]
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), 'Summary')
+
     // Browser-safe download
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
     const blob = new Blob([wbout], { type: 'application/octet-stream' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `wc26-predictions-${profile?.display_name || 'export'}.xlsx`
+    a.download = `wc26-predictions-${profile?.display_name || profile?.username || 'export'}.xlsx`
     a.click()
     URL.revokeObjectURL(url)
   }

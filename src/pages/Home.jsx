@@ -92,6 +92,9 @@ export default function Home() {
   const [upcomingMatches, setUpcomingMatches] = useState([])
   const [topPredictors, setTopPredictors] = useState([])
   const [predictionCount, setPredictionCount] = useState(0)
+  const [knockoutPickCount, setKnockoutPickCount] = useState(0)
+  const [awardPickCount, setAwardPickCount] = useState(0)
+  const [jokerAssignedCount, setJokerAssignedCount] = useState(0)
   const [leaderPosition, setLeaderPosition]   = useState(null)
   const [loading, setLoading]             = useState(true)
   const [luckyDipping, setLuckyDipping]   = useState(false)
@@ -162,54 +165,104 @@ export default function Home() {
   }
 
   const loadData = async () => {
-    const nowIso = new Date().toISOString()
+    try {
+      const nowIso = new Date().toISOString()
 
-    const [liveRes, nextRes, upcomingRes, predictorRes] = await Promise.all([
-      supabase.from('matches')
-        .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
-        .eq('status', 'live').order('kickoff_time', { ascending: true }),
+      const [liveRes, nextRes, upcomingRes, predictorRes] = await Promise.all([
+        supabase.from('matches')
+          .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
+          .eq('status', 'live').order('kickoff_time', { ascending: true }),
 
-      supabase.from('matches')
-        .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
-        .eq('status', 'scheduled').gt('kickoff_time', nowIso)
-        .order('kickoff_time', { ascending: true }).limit(1).single(),
+        supabase.from('matches')
+          .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
+          .eq('status', 'scheduled').gt('kickoff_time', nowIso)
+          .order('kickoff_time', { ascending: true }).limit(1).maybeSingle(),
 
-      supabase.from('matches')
-        .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
-        .eq('status', 'scheduled').gt('kickoff_time', nowIso)
-        .order('kickoff_time', { ascending: true }).range(1, 5),
+        supabase.from('matches')
+          .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
+          .eq('status', 'scheduled').gt('kickoff_time', nowIso)
+          .order('kickoff_time', { ascending: true }).range(1, 5),
 
-      supabase.from('profiles')
-        .select('id, username, total_points, streak_current')
-        .order('total_points', { ascending: false }).limit(5),
-    ])
+        supabase.from('profiles')
+          .select('id, username, total_points, streak_current')
+          .order('total_points', { ascending: false }).limit(5),
+      ])
 
-    setLiveMatches(liveRes.data || [])
-    setNextMatch(nextRes.data || null)
-    setUpcomingMatches(upcomingRes.data || [])
-    setTopPredictors(predictorRes.data || [])
+      setLiveMatches(liveRes.data || [])
+      setNextMatch(nextRes.data || null)
+      setUpcomingMatches(upcomingRes.data || [])
+      setTopPredictors(predictorRes.data || [])
 
-    // Load user prediction count + leaderboard position
-    if (user) {
-      // Refresh profile from DB to pick up knockout_picks_count etc
-      const { data: freshProfile } = await supabase
-        .from('profiles').select('*').eq('id', user.id).single()
-      if (freshProfile) useAuthStore.getState().setProfile(freshProfile)
-      const { count } = await supabase.from('predictions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .not('home_score', 'is', null)
-      setPredictionCount(count || 0)
+      // Load user completion counts from source tables so Home doesn't rely on stale cached profile values.
+      if (user) {
+        const [
+          freshProfileRes,
+          groupCountRes,
+          jokerCountRes,
+          knockoutCountRes,
+          awardCountRes,
+        ] = await Promise.all([
+          supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+          supabase.from('predictions')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .not('home_score', 'is', null)
+            .not('away_score', 'is', null),
+          supabase.from('predictions')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('is_confident', true),
+          supabase.from('knockout_picks')
+            .select('match_number', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+          supabase.from('award_predictions')
+            .select('award_type', { count: 'exact', head: true })
+            .eq('user_id', user.id),
+        ])
 
-      if (profile?.total_points > 0) {
-        const { count: ahead } = await supabase.from('profiles')
-          .select('*', { count: 'exact', head: true })
-          .gt('total_points', profile.total_points || 0)
-        setLeaderPosition((ahead || 0) + 1)
+        const freshProfile = freshProfileRes.data
+        if (freshProfile) useAuthStore.getState().setProfile(freshProfile)
+
+        const groupCount = groupCountRes.count || 0
+        const jokerCount = jokerCountRes.count || 0
+        const koCount = knockoutCountRes.count || 0
+        const awardsCount = awardCountRes.count || 0
+
+        setPredictionCount(groupCount)
+        setJokerAssignedCount(Math.min(8, jokerCount))
+        setKnockoutPickCount(koCount)
+        setAwardPickCount(awardsCount)
+
+        // Repair cached profile counters used by other screens, but keep Home based on live counts above.
+        await supabase.from('profiles')
+          .update({
+            jokers_group_remaining: Math.max(0, 8 - jokerCount),
+            knockout_picks_count: koCount,
+            awards_done: awardsCount,
+          })
+          .eq('id', user.id)
+
+        const pointsForRank = freshProfile?.total_points ?? profile?.total_points ?? 0
+        if (pointsForRank > 0) {
+          const { count: ahead } = await supabase.from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gt('total_points', pointsForRank)
+          setLeaderPosition((ahead || 0) + 1)
+        } else {
+          setLeaderPosition(null)
+        }
+      } else {
+        setPredictionCount(0)
+        setJokerAssignedCount(0)
+        setKnockoutPickCount(0)
+        setAwardPickCount(0)
+        setLeaderPosition(null)
       }
+    } catch (error) {
+      console.error('Home dashboard failed to load:', error)
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const formatKickoff = (time) => {
@@ -222,15 +275,14 @@ export default function Home() {
   const cta = getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, knockoutLive)
 
   const groupsComplete = predictionCount >= 72
-  const knockoutsComplete = (profile?.knockout_picks_count || 0) >= 32
-  const awardsComplete = (profile?.awards_done || 0) >= 4
-  const jokersRemaining = profile?.jokers_group_remaining ?? 8
-  const jokersAssigned = Math.max(0, 8 - jokersRemaining)
+  const knockoutsComplete = knockoutPickCount >= 32
+  const awardsComplete = awardPickCount >= 4
+  const jokersAssigned = jokerAssignedCount
   const readyChecklist = [
     { label: 'Groups complete', done: groupsComplete },
     { label: 'Knockouts complete', done: knockoutsComplete },
     { label: 'Awards complete', done: awardsComplete },
-    { label: `${jokersAssigned}/8 jokers assigned`, done: jokersAssigned > 0 },
+    { label: `${jokersAssigned}/8 jokers assigned`, done: jokersAssigned >= 8 },
   ]
   const readyForKickoff = readyChecklist.every(item => item.done)
 
@@ -390,8 +442,8 @@ export default function Home() {
   // ── Progress bar data ────────────────────────────────────────────────────
   const progressItems = user ? [
     { label: 'Groups', done: Math.min(predictionCount, 72), total: 72, to: '/predictions' },
-    { label: 'Knockouts', done: profile?.knockout_picks_count || 0, total: 32, to: '/knockout' },
-    { label: 'Awards', done: profile?.awards_done || 0, total: 4, to: '/awards' },
+    { label: 'Knockouts', done: knockoutPickCount, total: 32, to: '/knockout' },
+    { label: 'Awards', done: awardPickCount, total: 4, to: '/awards' },
   ] : []
 
   const firstGroupPickMade = user && predictionCount > 0
