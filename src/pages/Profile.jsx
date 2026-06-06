@@ -465,7 +465,7 @@ export default function Profile() {
                 {[
                   { code: 'first_prediction', icon: '⚽', name: 'First Kick', desc: 'Make your first prediction', check: () => (profile?.total_predictions || 0) >= 1 },
                   { code: 'all_groups', icon: '📋', name: 'Full House', desc: 'Predict all 72 group matches', check: () => (profile?.total_predictions || 0) >= 72 },
-                  { code: 'knockout_done', icon: '🏆', name: 'Bracket Builder', desc: 'Complete your knockout picks', check: () => (profile?.knockout_picks_count || 0) >= 16 },
+                  { code: 'knockout_done', icon: '🏆', name: 'Bracket Builder', desc: 'Complete your knockout picks', check: () => (profile?.knockout_picks_count || 0) >= 32 },
                   { code: 'awards_done', icon: '🥇', name: 'Award Season', desc: 'Complete all award predictions', check: () => (profile?.awards_done || 0) >= 4 },
                   { code: 'exact_score', icon: '🎯', name: 'Sniper', desc: 'Get your first exact score', check: () => (profile?.exact_scores || 0) >= 1 },
                   { code: 'five_exact', icon: '💎', name: 'Diamond Eye', desc: 'Get 5 exact scores', check: () => (profile?.exact_scores || 0) >= 5 },

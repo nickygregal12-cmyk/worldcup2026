@@ -10,7 +10,7 @@ import ShareCard from '../components/ShareCard.jsx'
 const TOURNAMENT_START   = new Date('2026-06-11T19:00:00Z') // first kickoff
 const GROUP_STAGE_END    = new Date('2026-06-27T22:00:00Z') // last group game
 const KNOCKOUT_BANNER    = new Date('2026-06-20T00:00:00Z') // banner appears
-const KNOCKOUT_LIVE      = new Date('2026-06-27T00:00:00Z') // predictor opens
+const KNOCKOUT_LIVE      = new Date('2026-06-27T22:00:00Z') // predictor opens 27 Jun 23:00 BST
 const TOURNAMENT_END     = new Date('2026-07-19T20:00:00Z') // final
 
 
@@ -224,12 +224,13 @@ export default function Home() {
   const groupsComplete = predictionCount >= 72
   const knockoutsComplete = (profile?.knockout_picks_count || 0) >= 32
   const awardsComplete = (profile?.awards_done || 0) >= 4
-  const jokersUsed = (profile?.jokers_group_remaining ?? 8) <= 0
+  const jokersRemaining = profile?.jokers_group_remaining ?? 8
+  const jokersAssigned = Math.max(0, 8 - jokersRemaining)
   const readyChecklist = [
     { label: 'Groups complete', done: groupsComplete },
     { label: 'Knockouts complete', done: knockoutsComplete },
     { label: 'Awards complete', done: awardsComplete },
-    { label: 'All jokers used', done: jokersUsed },
+    { label: `${jokersAssigned}/8 jokers assigned`, done: jokersAssigned > 0 },
   ]
   const readyForKickoff = readyChecklist.every(item => item.done)
 
@@ -639,14 +640,10 @@ export default function Home() {
           {/* ── Ready for kickoff checklist ── */}
           {!loading && user && !tournamentStarted && (
             <div className="card fade-in" style={{ overflow: 'hidden' }}>
-              <div style={{ height: '4px', background: readyForKickoff ? 'var(--accent-green)' : 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '12px' }}>
-                <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ flex: 1 }}>
                   <div style={{ fontWeight: '900', fontSize: '16px' }}>{readyForKickoff ? "🎉 You're ready for kickoff" : '✅ Ready for kickoff'}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Final checks before the opening match.</div>
-                </div>
-                <div style={{ fontSize: '12px', fontWeight: '800', color: readyForKickoff ? 'var(--accent-green)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                  {readyChecklist.filter(item => item.done).length}/{readyChecklist.length}
                 </div>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>

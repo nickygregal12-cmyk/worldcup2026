@@ -1781,7 +1781,7 @@ export default function Predictions() {
           </div>}
 
           {/* Row 3: context selector — dates for By Date, groups for By Group */}
-          {(!showTeamSearch || !teamSearch) && activeTab === 'overview' && <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {(!showTeamSearch || !teamSearch) && (activeTab === 'overview' || viewMode === 'group') && <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {viewMode === 'group' ? (
               <>
                 {GROUPS.map(g => {
@@ -1790,7 +1790,7 @@ export default function Predictions() {
                   const gComplete = gDone === gMatches.length && gMatches.length > 0
                   const isActive = activeGroup === g
                   return (
-                    <button key={g} onClick={() => { setActiveGroup(g); scrollToMatch(getSmartMatch('group', g)) }} style={{
+                    <button key={g} onClick={() => { setActiveGroup(g); if (activeTab === 'overview') scrollToMatch(getSmartMatch('group', g)) }} style={{
                       padding: '10px 11px', fontSize: '12px', fontWeight: isActive ? '800' : '500',
                       color: isActive ? 'var(--scottish-navy)' : 'var(--text-muted)',
                       borderBottom: isActive ? '2px solid var(--scottish-navy)' : '2px solid transparent',

@@ -63,12 +63,19 @@ export default function NavBar() {
         {/* Right side */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* Dark mode toggle */}
-          <button onClick={toggleDarkMode} style={{
-            width: '34px', height: '34px', borderRadius: 'var(--radius-md)',
-            background: 'var(--bg-tertiary)', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px',
-          }}>
-            {darkMode ? '☀️' : '🌙'}
+          <button
+            onClick={toggleDarkMode}
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{
+              minWidth: '76px', height: '34px', borderRadius: 'var(--radius-md)',
+              background: 'var(--bg-tertiary)', border: '1px solid var(--border-light)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', padding: '0 10px',
+            }}
+          >
+            <span>{darkMode ? '☀️' : '🌙'}</span>
+            <span>{darkMode ? 'Light' : 'Dark'}</span>
           </button>
 
           {user ? (
@@ -120,11 +127,16 @@ export default function NavBar() {
 
         {/* Right: dark mode + profile */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button onClick={toggleDarkMode} style={{
-            width: '32px', height: '32px', borderRadius: 'var(--radius-full)',
-            background: 'var(--bg-tertiary)', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px',
-          }}>
+          <button
+            onClick={toggleDarkMode}
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            style={{
+              width: '36px', height: '32px', borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-tertiary)', border: '1px solid var(--border-light)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px',
+            }}
+          >
             {darkMode ? '☀️' : '🌙'}
           </button>
 
