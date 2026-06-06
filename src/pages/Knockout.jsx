@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
@@ -43,6 +43,7 @@ export default function Knockout() {
   const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState({})
   const [saved, setSaved] = useState({})
+  const smartStageAppliedRef = useRef(false)
 
   const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
   const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
@@ -235,6 +236,40 @@ export default function Knockout() {
       ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   }
 
+  const getSmartBracketMatch = (stageKey = null) => {
+    const now = new Date()
+    const stages = stageKey ? ALL_STAGES.filter(s => s.key === stageKey) : ALL_STAGES
+    const allMatches = stages.flatMap(s => s.matches.map(m => ({ ...m, stageKey: s.key })))
+    const ordered = [...allMatches].sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
+    return ordered.find(m => new Date() < new Date(m.kickoff) && !knockoutPicks[m.match_number]?.winner_id)
+      || ordered.find(m => !knockoutPicks[m.match_number]?.winner_id)
+      || ordered.find(m => new Date(m.kickoff) >= now)
+      || [...ordered].reverse().find(Boolean)
+      || null
+  }
+
+  const scrollToBracketMatch = (matchDef, delay = 180) => {
+    if (!matchDef) return
+    window.setTimeout(() => {
+      const el = document.getElementById(`bracket-match-${matchDef.match_number}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, delay)
+  }
+
+  const goToSmartBracketStage = (stageKey = null) => {
+    const matchDef = getSmartBracketMatch(stageKey)
+    if (!matchDef) return
+    setActiveStage(matchDef.stageKey || stageKey || activeStage)
+    scrollToBracketMatch(matchDef)
+  }
+
+  useEffect(() => {
+    if (loading || smartStageAppliedRef.current) return
+    if (!ALL_STAGES?.length) return
+    smartStageAppliedRef.current = true
+    goToSmartBracketStage()
+  }, [loading, knockoutPicks])
+
   if (loading) return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh', padding: '16px' }}>
       <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingTop: '16px' }}>
@@ -286,7 +321,7 @@ export default function Knockout() {
       : 'var(--bg-card)'
 
     return (
-      <div key={`${mn}-${isPicked ? pick?.winner_id : 'empty'}`} style={{
+      <div key={`${mn}-${isPicked ? pick?.winner_id : 'empty'}`} id={`bracket-match-${mn}`} style={{
         background: cardBg,
         border: cardBorder,
         borderRadius: 'var(--radius-lg)',
@@ -497,7 +532,7 @@ export default function Knockout() {
             const complete = picks === stage.matches.length
             const isActive = activeStage === stage.key
             return (
-              <button key={stage.key} onClick={() => setActiveStage(stage.key)} style={{
+              <button key={stage.key} onClick={() => { setActiveStage(stage.key); scrollToBracketMatch(getSmartBracketMatch(stage.key)) }} style={{
                 padding: '12px 14px', fontSize: '12px', whiteSpace: 'nowrap',
                 background: 'none', border: 'none',
                 fontWeight: isActive ? '800' : '500',

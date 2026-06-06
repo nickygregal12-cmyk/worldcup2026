@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
@@ -46,6 +46,7 @@ export default function KOPredictor() {
   const [jokersRemaining, setJokersRemaining] = useState(5)
   const [jokerConfirm, setJokerConfirm] = useState(null)
   const [scoreWarning, setScoreWarning] = useState(null)
+  const smartStageAppliedRef = useRef(false)
 
   const phaseOverride = appSettings?.game_phase_override || ''
   const isOpen = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
@@ -63,12 +64,17 @@ export default function KOPredictor() {
 
   const loadFreshJokerCount = async () => {
     if (!user) return
-    const { data } = await supabase
-      .from('profiles')
-      .select('ko_jokers_remaining')
-      .eq('id', user.id)
-      .single()
-    if (data) setJokersRemaining(data.ko_jokers_remaining ?? 5)
+    // Source of truth is the actual saved KO joker picks, not the cached profile counter.
+    const { count, error } = await supabase
+      .from('ko_predictions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_joker', true)
+
+    if (error) return
+    const remaining = Math.max(0, 5 - (count || 0))
+    setJokersRemaining(remaining)
+    await supabase.from('profiles').update({ ko_jokers_remaining: remaining }).eq('id', user.id)
   }
 
   const loadData = async () => {
@@ -99,6 +105,10 @@ export default function KOPredictor() {
         }
       })
       setPredictions(predMap)
+      const jokerCount = predData?.filter(p => p.is_joker === true).length || 0
+      const remaining = Math.max(0, 5 - jokerCount)
+      setJokersRemaining(remaining)
+      await supabase.from('profiles').update({ ko_jokers_remaining: remaining }).eq('id', user.id)
     }
     setLoading(false)
   }
@@ -202,6 +212,41 @@ export default function KOPredictor() {
   const formatTime = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   const formatDate = (t) => new Date(t).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
 
+  const hasPredictionForMatch = (match) => {
+    const pred = predictions[match.id]
+    return pred?.home !== undefined && pred?.home !== '' && pred?.away !== undefined && pred?.away !== ''
+  }
+
+  const getSmartKOMatch = (stageKey = null) => {
+    const now = new Date()
+    const scope = stageKey ? matches.filter(m => m.stage === stageKey) : matches
+    const ordered = [...scope].sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
+    return ordered.find(m => !isLocked(m.kickoff_time) && !hasPredictionForMatch(m))
+      || ordered.find(m => new Date(m.kickoff_time) >= now)
+      || [...ordered].reverse().find(Boolean)
+      || null
+  }
+
+  const scrollToKOMatch = (match, delay = 180) => {
+    if (!match) return
+    window.setTimeout(() => {
+      const el = document.getElementById(`ko-match-${match.id}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, delay)
+  }
+
+  const goToSmartKOStage = (stageKey = null) => {
+    const match = getSmartKOMatch(stageKey)
+    if (match?.stage) setActiveStage(match.stage)
+    scrollToKOMatch(match)
+  }
+
+  useEffect(() => {
+    if (loading || smartStageAppliedRef.current || matches.length === 0) return
+    smartStageAppliedRef.current = true
+    goToSmartKOStage()
+  }, [loading, matches.length, predictions])
+
   const stageMatches = matches.filter(m => m.stage === activeStage)
   const getPredCount = (stage) => {
     const sm = matches.filter(m => m.stage === stage)
@@ -258,7 +303,7 @@ export default function KOPredictor() {
     })()
 
     return (
-      <div key={match.id} className="card" style={{ border: cardBorder, background: cardBg, opacity: locked && !hasPrediction ? 0.6 : 1 }}>
+      <div key={match.id} id={`ko-match-${match.id}`} className="card" style={{ border: cardBorder, background: cardBg, opacity: locked && !hasPrediction ? 0.6 : 1 }}>
 
         {/* Result badge */}
         {resultColour && (
@@ -560,7 +605,7 @@ export default function KOPredictor() {
               const complete = done === total && total > 0
               const isActive = activeStage === stage.key
               return (
-                <button key={stage.key} onClick={() => setActiveStage(stage.key)} style={{
+                <button key={stage.key} onClick={() => { setActiveStage(stage.key); scrollToKOMatch(getSmartKOMatch(stage.key)) }} style={{
                   padding: '10px 14px', fontSize: '12px', fontWeight: isActive ? '700' : '500',
                   color: isActive ? 'white' : 'rgba(255,255,255,0.6)',
                   borderBottom: isActive ? '2px solid white' : '2px solid transparent',

@@ -159,7 +159,7 @@ function FinalStandingsView({ standings, matches, predictions, appSettings }) {
             Based on your score picks · <strong style={{ color: 'var(--accent-green)' }}>Green = qualifies top 2</strong> · <strong style={{ color: 'var(--accent-gold)' }}>Gold 🏅 = qualifying 3rd</strong>
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', padding: '6px 10px', background: 'rgba(0,48,135,0.06)', borderRadius: 'var(--radius-sm)' }}>
-            💡 View your full predicted standings in <strong>Overview</strong>.
+            💡 See your full predicted table for each group in <strong>Picks</strong>.
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
@@ -540,12 +540,23 @@ export default function Predictions() {
 
   // Always fetch joker count fresh from DB — never trust stale persisted profile
   const loadFreshJokerCount = async () => {
-    const { data } = await supabase
+    if (!user) return
+    // Source of truth is the actual saved joker picks, not the cached profile counter.
+    const { count, error } = await supabase
+      .from('predictions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_confident', true)
+
+    if (error) return
+    const remaining = Math.max(0, 8 - (count || 0))
+    setJokersRemaining(remaining)
+
+    // Keep the cached profile counter repaired for other screens that still read it.
+    await supabase
       .from('profiles')
-      .select('jokers_group_remaining')
+      .update({ jokers_group_remaining: remaining })
       .eq('id', user.id)
-      .single()
-    if (data) setJokersRemaining(data.jokers_group_remaining ?? 8)
   }
 
   const loadStandings = async () => {
@@ -656,6 +667,10 @@ export default function Predictions() {
       data.forEach(p => { predMap[p.match_id] = { home: p.home_score, away: p.away_score, joker: p.is_confident } })
       savedPredictionsRef.current = predMap
       setPredictions(predMap)
+      const jokerCount = data.filter(p => p.is_confident === true).length
+      const remaining = Math.max(0, 8 - jokerCount)
+      setJokersRemaining(remaining)
+      await supabase.from('profiles').update({ jokers_group_remaining: remaining }).eq('id', user.id)
     }
   }
 
@@ -1043,6 +1058,37 @@ export default function Predictions() {
     return acc
   }, {})
 
+  const getMatchHasPrediction = (match) => {
+    const pred = predictions[match.id]
+    return pred?.home !== undefined && pred?.home !== '' && pred?.away !== undefined && pred?.away !== ''
+  }
+
+  const getSmartMatch = (mode = viewMode, group = activeGroup) => {
+    const now = new Date()
+    const scope = mode === 'group'
+      ? matches.filter(m => m.group?.name === group)
+      : matches
+    const ordered = [...scope].sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
+    return ordered.find(m => !isLocked(m.kickoff_time) && !getMatchHasPrediction(m))
+      || ordered.find(m => new Date(m.kickoff_time) >= now)
+      || [...ordered].reverse().find(Boolean)
+      || null
+  }
+
+  const scrollToMatch = (match, delay = 160) => {
+    if (!match) return
+    window.setTimeout(() => {
+      const el = document.getElementById(`match-${match.id}`)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, delay)
+  }
+
+  const goToSmartGroup = (group = activeGroup) => {
+    const match = getSmartMatch('group', group)
+    if (match?.group?.name && match.group.name !== group) setActiveGroup(match.group.name)
+    scrollToMatch(match)
+  }
+
   const showTeamSearch = activeTab === 'overview'
 
   const switchToDateView = () => {
@@ -1050,13 +1096,17 @@ export default function Predictions() {
     setActiveTab('overview')
     setActiveGroup('FINAL')
     setTeamSearch('')
+    scrollToMatch(getSmartMatch('date', 'FINAL'))
   }
 
   const switchToGroupView = () => {
     setViewMode('group')
     setActiveTab('overview')
-    if (activeGroup === 'FINAL') setActiveGroup('A')
     setTeamSearch('')
+    const match = getSmartMatch('date', 'FINAL')
+    const targetGroup = match?.group?.name || (activeGroup === 'FINAL' ? 'A' : activeGroup)
+    setActiveGroup(targetGroup)
+    scrollToMatch(getSmartMatch('group', targetGroup))
   }
 
   if (loading) {
@@ -1686,12 +1736,12 @@ export default function Predictions() {
             <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
               <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px', width: '100%', maxWidth: '420px' }}>
                 {[
-                  { key: 'overview', label: '🌍 Overview' },
+                  { key: 'overview', label: '⚽ Picks' },
                   { key: 'standings', label: '📊 Tables' },
                 ].map(tab => (
                   <button
                     key={tab.key}
-                    onClick={() => { setActiveTab(tab.key); setTeamSearch('') }}
+                    onClick={() => { setActiveTab(tab.key); setTeamSearch(''); if (tab.key === 'overview') scrollToMatch(getSmartMatch(viewMode, activeGroup)) }}
                     className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`}
                     style={{ flex: 1, fontSize: '13px', padding: '7px 12px' }}
                   >
@@ -1740,7 +1790,7 @@ export default function Predictions() {
                   const gComplete = gDone === gMatches.length && gMatches.length > 0
                   const isActive = activeGroup === g
                   return (
-                    <button key={g} onClick={() => setActiveGroup(g)} style={{
+                    <button key={g} onClick={() => { setActiveGroup(g); scrollToMatch(getSmartMatch('group', g)) }} style={{
                       padding: '10px 11px', fontSize: '12px', fontWeight: isActive ? '800' : '500',
                       color: isActive ? 'var(--scottish-navy)' : 'var(--text-muted)',
                       borderBottom: isActive ? '2px solid var(--scottish-navy)' : '2px solid transparent',
@@ -1840,7 +1890,7 @@ export default function Predictions() {
               })
               if (!nextGroup) return null
               return (
-                <button onClick={() => setActiveGroup(nextGroup)} style={{
+                <button onClick={() => { setActiveGroup(nextGroup); scrollToMatch(getSmartMatch('group', nextGroup)) }} style={{
                   background: 'none', border: '1px dashed var(--border-medium)',
                   borderRadius: 'var(--radius-md)', padding: '12px',
                   cursor: 'pointer', color: 'var(--text-muted)', fontSize: '13px',
