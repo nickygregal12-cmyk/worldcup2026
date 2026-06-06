@@ -992,17 +992,18 @@ export default function Home() {
               <span className="section-title">🏅 How to score points</span>
               <Link to="/how-to-play" className="section-link">Full rules →</Link>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-              {[
-                { label: 'Correct result', value: '+10' },
-                { label: 'Exact score', value: '+30' },
-                { label: 'Goals bonus', value: '+20' },
-              ].map(item => (
-                <div key={item.label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', padding: '10px 8px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '18px', fontWeight: '900', color: 'var(--scottish-navy)', fontFamily: 'var(--font-mono)' }}>{item.value}</div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: '3px' }}>{item.label}</div>
-                </div>
-              ))}
+            <div style={{
+              background: 'var(--bg-secondary)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border-light)',
+              padding: '14px',
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '6px' }}>
+                Predict scores, use jokers and earn points throughout the tournament.
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                Exact scores score the most points. Jokers boost selected matches. Awards, knockout picks and tournament predictions all contribute to your final total.
+              </div>
             </div>
           </div>
 
