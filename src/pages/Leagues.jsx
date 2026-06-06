@@ -325,6 +325,9 @@ function CompareWithMeView({ myUserId, targetUserId, targetName, leagueId, locke
 export default function Leagues() {
   const { user, isAdmin } = useAuthStore()
   const [activeGame, setActiveGame] = useState('tournament')
+  const [overallRows, setOverallRows] = useState([])
+  const [loadingOverall, setLoadingOverall] = useState(false)
+  const [openLeagueMenu, setOpenLeagueMenu] = useState(null)
   const [myLeagues, setMyLeagues] = useState([])
   const [myKoLeagues, setMyKoLeagues] = useState([])
   const [loading, setLoading] = useState(true)
@@ -352,7 +355,36 @@ export default function Leagues() {
     : phaseOverride && phaseOverride !== 'ko_predictor' ? false
     : new Date() >= KO_OPEN_DATE
 
-  useEffect(() => { if (user) { loadMyLeagues(); loadMyKoLeagues() } }, [user])
+  useEffect(() => { if (user) { loadMyLeagues(); loadMyKoLeagues(); loadOverallRankings() } }, [user])
+
+  const loadOverallRankings = async () => {
+    setLoadingOverall(true)
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, total_points, streak_current, exact_scores, avatar_emoji, show_future_predictions')
+      .order('total_points', { ascending: false })
+      .order('exact_scores', { ascending: false })
+      .limit(100)
+    setOverallRows(data || [])
+    setLoadingOverall(false)
+  }
+
+  const openOverallProfile = async (profile) => {
+    const displayName = profile.display_name || profile.username || 'Unknown'
+    const showFuture = profile.show_future_predictions || profile.id === user.id
+    setMemberModal({
+      userId: profile.id,
+      username: displayName,
+      leagueId: null,
+      isOffline: false,
+      lockedSnapshot: false,
+      leagueName: 'Overall Rankings',
+      targetShowFuture: showFuture,
+      canRemoveMember: false,
+      memberName: displayName,
+    })
+    await loadMemberPredictions(profile.id, showFuture)
+  }
 
   const loadMyLeagues = async () => {
     const { data: memberships } = await supabase
@@ -746,7 +778,7 @@ export default function Leagues() {
             { icon: '🔒', title: 'Private & invite-only', desc: 'Only people with your code can join' },
             { icon: '📊', title: 'Your own leaderboard', desc: 'See exactly where you rank vs friends' },
             { icon: '💬', title: 'Share via WhatsApp', desc: 'One tap to invite your mates' },
-            { icon: '🌍', title: 'Global leaderboard too', desc: 'Compete with everyone on the overall table' },
+            { icon: '🏆', title: 'Overall rankings too', desc: 'Compete on the main rankings once points go live' },
           ].map(item => (
             <div key={item.title} className="card" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <div style={{ fontSize: '28px', flexShrink: 0 }}>{item.icon}</div>
@@ -769,17 +801,19 @@ export default function Leagues() {
         <div className="container">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
             <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'white' }}>👥 Leagues</h1>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => { setShowJoin(!showJoin); setShowCreate(false); setError('') }} className="btn btn-secondary btn-sm">Join</button>
-              <button onClick={() => { setShowCreate(!showCreate); setShowJoin(false); setError('') }}
-                className="btn btn-primary btn-sm"
-                style={{ background: activeGame === 'ko' ? '#e65100' : 'var(--scottish-navy)' }}>
-                + Create
-              </button>
-            </div>
+            {activeGame !== 'overall' && (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button onClick={() => { setShowJoin(!showJoin); setShowCreate(false); setError('') }} className="btn btn-secondary btn-sm">Join</button>
+                <button onClick={() => { setShowCreate(!showCreate); setShowJoin(false); setError('') }}
+                  className="btn btn-primary btn-sm"
+                  style={{ background: activeGame === 'ko' ? '#e65100' : 'var(--scottish-navy)' }}>
+                  + Create
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Game toggle */}
+          {/* Page toggle */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
             <button onClick={() => { setActiveGame('tournament'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
               flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
@@ -788,13 +822,22 @@ export default function Leagues() {
               border: activeGame === 'tournament' ? '1px solid var(--scottish-navy)' : '1px solid rgba(255,255,255,0.3)',
               cursor: 'pointer',
             }}>🌍 Tournament Leagues</button>
-            <button onClick={() => { if (koLive) { setActiveGame('ko'); setShowCreate(false); setShowJoin(false); setError('') } }} style={{
+            <button onClick={() => { setActiveGame('overall'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
               flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
-              background: activeGame === 'ko' ? '#e65100' : 'rgba(255,255,255,0.15)',
-              color: activeGame === 'ko' ? 'white' : 'rgba(255,255,255,0.8)',
-              border: activeGame === 'ko' ? '1px solid #e65100' : '1px solid rgba(255,255,255,0.3)',
+              background: activeGame === 'overall' ? 'var(--scottish-navy)' : 'rgba(255,255,255,0.15)',
+              color: activeGame === 'overall' ? 'white' : 'rgba(255,255,255,0.8)',
+              border: activeGame === 'overall' ? '1px solid var(--scottish-navy)' : '1px solid rgba(255,255,255,0.3)',
               cursor: 'pointer',
-            }}>🔥 KO Predictor {!koLive && <span style={{ fontSize: '10px', opacity: 0.7 }}>· 28 Jun</span>}</button>
+            }}>🏆 Overall Rankings</button>
+            {koLive && (
+              <button onClick={() => { setActiveGame('ko'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
+                flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
+                background: activeGame === 'ko' ? '#e65100' : 'rgba(255,255,255,0.15)',
+                color: activeGame === 'ko' ? 'white' : 'rgba(255,255,255,0.8)',
+                border: activeGame === 'ko' ? '1px solid #e65100' : '1px solid rgba(255,255,255,0.3)',
+                cursor: 'pointer',
+              }}>🔥 KO Predictor <span style={{ fontSize: '10px', opacity: 0.8 }}>NEW</span></button>
+            )}
           </div>
 
           {success && (
@@ -804,10 +847,10 @@ export default function Leagues() {
             </div>
           )}
 
-          {showCreate && (
+          {showCreate && activeGame !== 'overall' && (
             <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '12px', border: `1px solid ${activeGame === 'ko' ? '#e65100' : 'var(--scottish-navy)'}` }}>
               <div style={{ fontWeight: '700', marginBottom: '4px' }}>
-                {activeGame === 'ko' ? '🔥 Create a KO Predictor League' : '🌍 Create a Tournament League'}
+                {activeGame === 'ko' ? '🔥 Create a KO Predictor League' : '🌍 Create a League'}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
                 {activeGame === 'ko' ? 'Separate from Tournament leagues — KO points only' : 'Group + knockout + awards predictions'}
@@ -817,8 +860,8 @@ export default function Leagues() {
               {activeGame === 'tournament' && (
                 <div style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   {[
-                    { key: 'rolling', title: '🔄 Rolling', desc: 'Default · future unlocked picks can be edited' },
-                    { key: 'pre_tournament', title: '🔒 Locked', desc: 'League scoring uses picks frozen at tournament start' },
+                    { key: 'rolling', title: '🔄 Standard League', desc: 'Most leagues use this mode' },
+                    { key: 'pre_tournament', title: '🔒 One-Shot League', desc: 'Uses everyone’s tournament-start predictions' },
                   ].map(option => (
                     <button key={option.key} type="button" onClick={() => setNewLeagueLockType(option.key)} style={{
                       textAlign: 'left', padding: '10px', borderRadius: 'var(--radius-md)', cursor: 'pointer',
@@ -841,10 +884,10 @@ export default function Leagues() {
             </div>
           )}
 
-          {showJoin && (
+          {showJoin && activeGame !== 'overall' && (
             <div style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '16px', marginBottom: '12px' }}>
               <div style={{ fontWeight: '700', marginBottom: '4px' }}>
-                {activeGame === 'ko' ? '🔥 Join a KO Predictor League' : '🌍 Join a Tournament League'}
+                {activeGame === 'ko' ? '🔥 Join a KO Predictor League' : '🌍 Join a League'}
               </div>
               <input className="input" placeholder="Enter invite code e.g. AB1234" value={joinCode}
                 onChange={e => setJoinCode(e.target.value.toUpperCase())}
@@ -862,6 +905,76 @@ export default function Leagues() {
       <div className="container" style={{ padding: '16px' }}>
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}><div className="spinner" /></div>
+        ) : activeGame === 'overall' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {!tournamentLive ? (
+              <div className="card" style={{ textAlign: 'center', padding: '28px 20px' }}>
+                <div style={{ fontSize: '42px', marginBottom: '10px' }}>🏆</div>
+                <div style={{ fontSize: '20px', fontWeight: '900', marginBottom: '8px' }}>Overall Rankings</div>
+                <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '16px' }}>
+                  Rankings unlock when the tournament begins. Complete your predictions and join leagues before kickoff.
+                </div>
+                {myLeagues.filter(m => !m.league?.is_global).length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '10px' }}>
+                    <div style={{ padding: '12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)' }}>
+                      <div style={{ fontSize: '18px', fontWeight: '900' }}>{myLeagues.filter(m => !m.league?.is_global).length}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700' }}>Entered leagues</div>
+                    </div>
+                    <div style={{ padding: '12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)' }}>
+                      <div style={{ fontSize: '18px', fontWeight: '900' }}>{myLeagues.filter(m => !m.league?.is_global).reduce((sum, m) => sum + Math.max((m.memberCount || 1) - 1, 0), 0)}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700' }}>Opponents</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '12px' }}>
+                    <button onClick={() => { setActiveGame('tournament'); setShowCreate(true); setShowJoin(false) }} className="btn btn-primary btn-sm">Create League</button>
+                    <button onClick={() => { setActiveGame('tournament'); setShowJoin(true); setShowCreate(false) }} className="btn btn-secondary btn-sm">Join League</button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="card" style={{ padding: '18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                    <div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}>Your overall rank</div>
+                      <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--scottish-navy)' }}>
+                        #{Math.max((overallRows.findIndex(p => p.id === user.id) + 1), 1)}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}>Points</div>
+                      <div style={{ fontSize: '28px', fontWeight: '900' }}>{overallRows.find(p => p.id === user.id)?.total_points || 0}</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-light)', fontWeight: '900' }}>🏆 Overall Rankings</div>
+                  {loadingOverall ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
+                  ) : overallRows.length === 0 ? (
+                    <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>No rankings yet</div>
+                  ) : overallRows.map((profile, i) => {
+                    const isMe = profile.id === user.id
+                    return (
+                      <div key={profile.id} onClick={() => openOverallProfile(profile)} role="button" tabIndex={0} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', borderBottom: '1px solid var(--border-light)', background: isMe ? 'rgba(0,48,135,0.05)' : 'transparent', borderLeft: isMe ? '3px solid var(--scottish-navy)' : '3px solid transparent', cursor: 'pointer' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '900', width: '24px', color: i < 3 ? ['#f59e0b','#9ca3af','#cd7f32'][i] : 'var(--text-muted)' }}>{i + 1}</span>
+                        <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: isMe ? 'white' : 'var(--text-secondary)', flexShrink: 0 }}>
+                          {profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: isMe ? '800' : '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'} {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '1px 5px', borderRadius: '3px', fontWeight: '700' }}>YOU</span>}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>{profile.exact_scores > 0 ? `🎯 ${profile.exact_scores} exact` : 'Overall player'}</div>
+                        </div>
+                        <span style={{ fontWeight: '900', fontSize: '15px', fontFamily: 'var(--font-mono)' }}>{profile.total_points || 0}<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--text-muted)' }}>pts</span></span>
+                        <span style={{ fontSize: '18px', color: 'var(--text-muted)' }}>›</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
         ) : activeGame === 'ko' && !koLive ? (
           /* KO not live yet */
           <div className="card" style={{ textAlign: 'center', padding: '48px 24px' }}>
@@ -927,13 +1040,21 @@ export default function Leagues() {
             </div>
           )
         ) : myLeagues.length === 0 ? (
-          <div className="empty-state">
-            <div className="empty-state-icon">👥</div>
-            <div className="empty-state-title">No leagues yet</div>
-            <div className="empty-state-desc">Create a league or join one with an invite code</div>
+          <div className="card" style={{ textAlign: 'center', padding: '32px 22px' }}>
+            <div style={{ fontSize: '42px', marginBottom: '12px' }}>🏆</div>
+            <div style={{ fontSize: '20px', fontWeight: '900', marginBottom: '8px' }}>Play With Friends</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: '18px' }}>Create a league and challenge friends, or join an existing competition.</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <button onClick={() => { setShowCreate(true); setShowJoin(false); setError('') }} className="btn btn-primary">+ Create</button>
+              <button onClick={() => { setShowJoin(true); setShowCreate(false); setError('') }} className="btn btn-secondary">Join</button>
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="card" style={{ padding: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <button onClick={() => { setShowCreate(true); setShowJoin(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-primary btn-sm">+ Create League</button>
+              <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-secondary btn-sm">Join League</button>
+            </div>
             {[...myLeagues].sort((a, b) => {
               if (a.league?.is_global && !b.league?.is_global) return -1
               if (!a.league?.is_global && b.league?.is_global) return 1
@@ -964,7 +1085,7 @@ export default function Leagues() {
                         <span style={{ fontSize: '18px' }}>{league.is_global ? '🌍' : isCreator ? '👑' : '👥'}</span>
                         <div>
                           <div style={{ fontWeight: '800', fontSize: '15px', color: 'var(--text-primary)' }}>
-                            {league.is_global ? 'WC26 Overall' : league.name}
+                            {league.is_global ? 'Overall Rankings' : league.name}
                           </div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>{memberCount} {memberCount === 1 ? 'member' : 'members'}{!league.is_global && ` · ${isCreator ? 'Creator' : 'Member'}`}</span>
@@ -974,7 +1095,7 @@ export default function Leagues() {
                                 background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.14)' : 'rgba(21,88,176,0.10)',
                                 color: league.lock_type === 'pre_tournament' ? '#b45309' : 'var(--accent-blue)',
                               }}>
-                                {league.lock_type === 'pre_tournament' ? '🔒 Locked' : '🔄 Rolling'}
+                                {league.lock_type === 'pre_tournament' ? '🔒 One-Shot' : '🔄 Standard'}
                               </span>
                             )}
                             {league.custom_scoring && league.scoring_preset !== 'standard' && (
@@ -997,19 +1118,11 @@ export default function Leagues() {
                     </div>
                   </div>
 
-                  {/* Pre-tournament notice */}
-                  {!tournamentLive && (
-                    <div style={{ padding: '8px 16px', background: 'rgba(21,88,176,0.06)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '600' }}>
-                      🗓️ Points go live 11 Jun — make sure everyone joins before then!
-                    </div>
-                  )}
-
                   {!league.is_global && (
-                    <div style={{ padding: '8px 16px', background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.08)' : 'rgba(21,88,176,0.05)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                      <strong>{league.lock_type === 'pre_tournament' ? '🔒 Pre-tournament lock:' : '🔄 Rolling league:'}</strong>{' '}
+                    <div style={{ padding: '8px 16px', background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.08)' : 'rgba(21,88,176,0.05)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: league.lock_type === 'pre_tournament' ? '#92400e' : 'var(--accent-blue)', fontWeight: '800' }}>
                       {league.lock_type === 'pre_tournament'
-                        ? (league.snapshot_taken_at ? 'Frozen predictions are visible to league members and used for scoring.' : 'Predictions will be frozen at tournament start for league scoring.')
-                        : 'Future unlocked predictions can be edited; visibility follows each user’s privacy setting.'}
+                        ? `🔒 One-Shot League • ${league.snapshot_taken_at ? 'Snapshot taken' : 'Freezes at tournament start'}`
+                        : `🔄 Standard League${!tournamentLive ? ' • Points start 11 Jun' : ''}`}
                     </div>
                   )}
 
@@ -1090,32 +1203,30 @@ export default function Leagues() {
                     )}
                   </div>
 
-                  {/* Invite code + actions */}
+                  {/* Invite + actions */}
                   {!league.is_global && (
-                    <div style={{ padding: '12px 16px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-light)' }}>
-                      {/* Code pill with copy inline */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', flex: 1, background: 'var(--bg-card)', border: '1.5px dashed var(--border-medium)', borderRadius: 'var(--radius-full)', padding: '8px 16px', gap: '10px' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '900', fontSize: '18px', letterSpacing: '0.15em', color: 'var(--scottish-navy)', flex: 1, textAlign: 'center' }}>{league.invite_code}</span>
-                          <button onClick={() => copyInviteCode(league.invite_code)} style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '5px 12px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                            📋 Copy
-                          </button>
-                        </div>
-                        <button onClick={() => copyLeagueLink(league.name, league.invite_code)}
-                          style={{ background: 'var(--accent-green)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '10px 14px', fontSize: '13px', fontWeight: '700', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                          🔗 Share
+                    <div style={{ padding: '10px 16px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border-light)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <button onClick={() => copyInviteCode(league.invite_code)} style={{ flex: 1, fontSize: '13px', padding: '9px 10px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', background: 'var(--bg-card)', color: 'var(--scottish-navy)', fontWeight: '800', cursor: 'pointer' }}>
+                          📋 Copy Code
                         </button>
-                      </div>
-                      {/* Action buttons */}
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => shareWhatsApp(league.name, league.invite_code)} style={{ flex: 1, fontSize: '13px', padding: '9px', borderRadius: 'var(--radius-md)', border: 'none', background: '#25d366', color: 'white', fontWeight: '700', cursor: 'pointer' }}>💬 Share on WhatsApp</button>
-                        {isCreator ? (
-                          <button onClick={() => setConfirmAction({ type: 'deleteLeague', leagueId: league.id, leagueName: league.name })}
-                            style={{ fontSize: '13px', padding: '9px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--accent-red)', color: 'var(--accent-red)', background: 'none', cursor: 'pointer', fontWeight: '600' }}>🗑️</button>
-                        ) : (
-                          <button onClick={() => setConfirmAction({ type: 'leave', leagueId: league.id, leagueName: league.name })}
-                            style={{ fontSize: '13px', padding: '9px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-medium)', color: 'var(--text-muted)', background: 'none', cursor: 'pointer', fontWeight: '600' }}>Leave</button>
-                        )}
+                        <button onClick={() => shareWhatsApp(league.name, league.invite_code)} style={{ flex: 1, fontSize: '13px', padding: '9px 10px', borderRadius: 'var(--radius-md)', border: 'none', background: '#25d366', color: 'white', fontWeight: '800', cursor: 'pointer' }}>
+                          💬 Share
+                        </button>
+                        <div style={{ position: 'relative' }}>
+                          <button onClick={() => setOpenLeagueMenu(openLeagueMenu === league.id ? null : league.id)} style={{ width: '38px', height: '38px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', background: 'var(--bg-card)', fontSize: '18px', cursor: 'pointer', color: 'var(--text-muted)' }}>⋯</button>
+                          {openLeagueMenu === league.id && (
+                            <div style={{ position: 'absolute', right: 0, bottom: '44px', minWidth: '180px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)', zIndex: 20, overflow: 'hidden' }}>
+                              <button onClick={() => { copyLeagueLink(league.name, league.invite_code); setOpenLeagueMenu(null) }} style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }}>🔗 Copy invite link</button>
+                              <button onClick={() => { copyInviteCode(league.invite_code); setOpenLeagueMenu(null) }} style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '700' }}>🏷️ Code: {league.invite_code}</button>
+                              {isCreator ? (
+                                <button onClick={() => { setOpenLeagueMenu(null); setConfirmAction({ type: 'deleteLeague', leagueId: league.id, leagueName: league.name }) }} style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '800', color: 'var(--accent-red)' }}>🗑️ Delete league</button>
+                              ) : (
+                                <button onClick={() => { setOpenLeagueMenu(null); setConfirmAction({ type: 'leave', leagueId: league.id, leagueName: league.name }) }} style={{ width: '100%', textAlign: 'left', padding: '10px 12px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>Leave league</button>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -1241,18 +1352,6 @@ export default function Leagues() {
       )}
 
       {/* Confirm dialog */}
-      {/* Global leaderboard link */}
-      <div className="container" style={{ padding: '0 16px 16px' }}>
-        <Link to="/leaderboard" style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-          padding: '14px', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border-light)', textDecoration: 'none',
-          color: 'var(--scottish-navy)', fontWeight: '700', fontSize: '14px',
-          boxShadow: 'var(--shadow-sm)',
-        }}>
-          🌍 View global leaderboard →
-        </Link>
-      </div>
 
       {confirmAction && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
