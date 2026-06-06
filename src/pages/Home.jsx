@@ -12,6 +12,7 @@ const GROUP_STAGE_END    = new Date('2026-06-27T22:00:00Z') // last group game
 const KNOCKOUT_BANNER    = new Date('2026-06-20T00:00:00Z') // banner appears
 const KNOCKOUT_LIVE      = new Date('2026-06-27T22:00:00Z') // predictor opens 27 Jun 23:00 BST
 const TOURNAMENT_END     = new Date('2026-07-19T20:00:00Z') // final
+const REQUIRED_KNOCKOUT_PICKS = ALL_STAGES.reduce((total, stage) => total + (stage.matches?.length || 0), 0)
 
 
 const VENUE_FLAGS = {
@@ -60,7 +61,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
   if (!user) return { label: '🏆 Start predicting free', to: '/register', secondary: { label: 'How does it work?', to: '/how-to-play' } }
 
   const groupsDone    = predictionCount >= 72
-  const knockoutsDone = (profile?.knockout_picks_count || 0) >= 32
+  const knockoutsDone = (profile?.knockout_picks_count || 0) >= REQUIRED_KNOCKOUT_PICKS
   const awardsDone    = (profile?.awards_done || 0) >= 4
   const jokersLeft    = profile?.jokers_group_remaining ?? 8
 
@@ -275,7 +276,7 @@ export default function Home() {
   const cta = getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, knockoutLive)
 
   const groupsComplete = predictionCount >= 72
-  const knockoutsComplete = knockoutPickCount >= 32
+  const knockoutsComplete = knockoutPickCount >= REQUIRED_KNOCKOUT_PICKS
   const awardsComplete = awardPickCount >= 4
   const jokersAssigned = jokerAssignedCount
   const readyChecklist = [
@@ -376,7 +377,7 @@ export default function Home() {
         .from('knockout_picks').select('match_number').eq('user_id', user.id)
       const existingKoNums = new Set((existingKoPicks || []).map(p => p.match_number))
 
-      if (existingKoNums.size < 32) {
+      if (existingKoNums.size < REQUIRED_KNOCKOUT_PICKS) {
         // Build predicted standings from group predictions
         const allGroupMatches = matches
         const { data: allPreds } = await supabase
@@ -442,7 +443,7 @@ export default function Home() {
   // ── Progress bar data ────────────────────────────────────────────────────
   const progressItems = user ? [
     { label: 'Groups', done: Math.min(predictionCount, 72), total: 72, to: '/predictions' },
-    { label: 'Knockouts', done: knockoutPickCount, total: 32, to: '/knockout' },
+    { label: 'Knockouts', done: knockoutPickCount, total: REQUIRED_KNOCKOUT_PICKS, to: '/knockout' },
     { label: 'Awards', done: awardPickCount, total: 4, to: '/awards' },
   ] : []
 

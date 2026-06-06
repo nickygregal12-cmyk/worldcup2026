@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import ShareCard from '../components/ShareCard.jsx'
+import { ALL_STAGES } from '../lib/bracketUtils.js'
 
 const AVATARS = ['⚽','🏆','🥅','🧤','👟','🎯','🔥','⚡','🦁','🐯','🦅','🏴󠁧󠁢󠁳󠁣󠁴󠁿']
+const REQUIRED_KNOCKOUT_PICKS = ALL_STAGES.reduce((total, stage) => total + (stage.matches?.length || 0), 0)
 
 export default function Profile() {
   const { user, profile, loadProfile, setProfile, logout, isAdmin } = useAuthStore()
@@ -253,7 +255,7 @@ export default function Profile() {
     const summaryRows = [
       ['Section', 'Complete / Count'],
       ['Group predictions', `${preds.filter(p => p.home_score !== null && p.home_score !== undefined && p.away_score !== null && p.away_score !== undefined).length}/72`],
-      ['Knockout picks', `${knockoutPicks.length}/32`],
+      ['Knockout picks', `${knockoutPicks.length}/${REQUIRED_KNOCKOUT_PICKS}`],
       ['Awards', `${awardPredictions.length}/4`],
       ['Group jokers assigned', `${jokerCount}/8`],
       ['Total points', profile?.total_points || 0],
@@ -548,7 +550,7 @@ export default function Profile() {
                 {[
                   { code: 'first_prediction', icon: '⚽', name: 'First Kick', desc: 'Make your first prediction', check: () => (profile?.total_predictions || 0) >= 1 },
                   { code: 'all_groups', icon: '📋', name: 'Full House', desc: 'Predict all 72 group matches', check: () => (profile?.total_predictions || 0) >= 72 },
-                  { code: 'knockout_done', icon: '🏆', name: 'Bracket Builder', desc: 'Complete your knockout picks', check: () => (profile?.knockout_picks_count || 0) >= 32 },
+                  { code: 'knockout_done', icon: '🏆', name: 'Bracket Builder', desc: 'Complete your knockout picks', check: () => (profile?.knockout_picks_count || 0) >= REQUIRED_KNOCKOUT_PICKS },
                   { code: 'awards_done', icon: '🥇', name: 'Award Season', desc: 'Complete all award predictions', check: () => (profile?.awards_done || 0) >= 4 },
                   { code: 'exact_score', icon: '🎯', name: 'Sniper', desc: 'Get your first exact score', check: () => (profile?.exact_scores || 0) >= 1 },
                   { code: 'five_exact', icon: '💎', name: 'Diamond Eye', desc: 'Get 5 exact scores', check: () => (profile?.exact_scores || 0) >= 5 },
