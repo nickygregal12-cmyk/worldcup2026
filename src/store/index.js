@@ -6,6 +6,21 @@ import { supabase, getProfile } from '../lib/supabase'
 let authListenerSetUp = false
 let visibilityListenerSetUp = false
 
+const SESSION_ONLY_KEY = 'wc26-session-only'
+const SESSION_ACTIVE_KEY = 'wc26-session-active'
+
+const shouldClearSessionOnlyLogin = () => {
+  if (typeof window === 'undefined') return false
+  return window.localStorage.getItem(SESSION_ONLY_KEY) === 'true' &&
+    window.sessionStorage.getItem(SESSION_ACTIVE_KEY) !== 'true'
+}
+
+const clearSessionOnlyFlags = () => {
+  if (typeof window === 'undefined') return
+  window.localStorage.removeItem(SESSION_ONLY_KEY)
+  window.sessionStorage.removeItem(SESSION_ACTIVE_KEY)
+}
+
 export const useAuthStore = create(
   persist(
     (set, get) => ({
@@ -47,6 +62,12 @@ export const useAuthStore = create(
           authListenerSetUp = true
           supabase.auth.onAuthStateChange(async (event, session) => {
             if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+              if (event === 'INITIAL_SESSION' && shouldClearSessionOnlyLogin()) {
+                await supabase.auth.signOut()
+                clearSessionOnlyFlags()
+                set({ user: null, profile: null, isAdmin: false, isLeagueAdmin: false, initialized: true })
+                return
+              }
               set({ user: session.user, initialized: true })
               get().loadProfile(session.user.id).catch(() => {})
             } else if (event === 'SIGNED_OUT') {
@@ -81,6 +102,12 @@ export const useAuthStore = create(
 
         // ── Already initialized — force refresh then return ──────────────
         if (state.initialized) {
+          if (shouldClearSessionOnlyLogin()) {
+            await supabase.auth.signOut()
+            clearSessionOnlyFlags()
+            set({ user: null, profile: null, isAdmin: false, isLeagueAdmin: false, isLoading: false, initialized: true })
+            return
+          }
           set({ isLoading: false })
           // Force a real token refresh (not just cache read)
           supabase.auth.refreshSession().then(({ data: { session }, error }) => {
@@ -97,6 +124,12 @@ export const useAuthStore = create(
 
         // ── First init ───────────────────────────────────────────────────
         set({ isLoading: true })
+        if (shouldClearSessionOnlyLogin()) {
+          await supabase.auth.signOut()
+          clearSessionOnlyFlags()
+          set({ user: null, profile: null, isAdmin: false, isLeagueAdmin: false, isLoading: false, initialized: true })
+          return
+        }
         try {
           const { data: { session } } = await supabase.auth.getSession()
           if (session?.user) {
@@ -112,6 +145,7 @@ export const useAuthStore = create(
       },
 
       logout: async () => {
+        clearSessionOnlyFlags()
         await supabase.auth.signOut()
         set({ user: null, profile: null, isAdmin: false, isLeagueAdmin: false, initialized: false })
       },

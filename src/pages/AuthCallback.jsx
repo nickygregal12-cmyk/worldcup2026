@@ -7,6 +7,13 @@ export default function AuthCallback() {
   const navigate = useNavigate()
   const { loadProfile, setUser } = useAuthStore()
 
+  const markSessionOnlyActive = () => {
+    if (typeof window === 'undefined') return
+    if (window.localStorage.getItem('wc26-session-only') === 'true') {
+      window.sessionStorage.setItem('wc26-session-active', 'true')
+    }
+  }
+
   useEffect(() => {
     const handleCallback = async () => {
       try {
@@ -16,6 +23,7 @@ export default function AuthCallback() {
         )
 
         if (session?.user) {
+          markSessionOnlyActive()
           setUser(session.user)
           await loadProfile(session.user.id)
           navigate('/', { replace: true })
@@ -29,6 +37,7 @@ export default function AuthCallback() {
         // Fallback: check if session already exists (e.g. implicit flow)
         const { data: { session: existingSession } } = await supabase.auth.getSession()
         if (existingSession?.user) {
+          markSessionOnlyActive()
           setUser(existingSession.user)
           await loadProfile(existingSession.user.id)
           navigate('/', { replace: true })

@@ -15,6 +15,10 @@ const GoogleIcon = () => (
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [staySignedIn, setStaySignedIn] = useState(() => {
+    if (typeof window === 'undefined') return true
+    return window.localStorage.getItem('wc26-stay-signed-in') !== 'false'
+  })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showForgot, setShowForgot] = useState(false)
@@ -27,10 +31,23 @@ export default function Login() {
   const joinCode = searchParams.get('join')
   const { loadProfile } = useAuthStore()
 
+  const setSessionPreference = (shouldStaySignedIn) => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem('wc26-stay-signed-in', shouldStaySignedIn ? 'true' : 'false')
+    if (shouldStaySignedIn) {
+      window.localStorage.removeItem('wc26-session-only')
+      window.sessionStorage.removeItem('wc26-session-active')
+    } else {
+      window.localStorage.setItem('wc26-session-only', 'true')
+      window.sessionStorage.setItem('wc26-session-active', 'true')
+    }
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
+    setSessionPreference(staySignedIn)
     const { data, error } = await signInWithEmail(email, password)
     if (error) {
       setError(error.message)
@@ -47,6 +64,7 @@ export default function Login() {
 
   const handleGoogle = async () => {
     setError('')
+    setSessionPreference(staySignedIn)
     const { error } = await signInWithGoogle()
     if (error) setError(error.message)
   }
@@ -156,6 +174,29 @@ export default function Login() {
               <input className="input" type="password" placeholder="••••••••" value={password}
                 onChange={e => setPassword(e.target.value)} required />
             </div>
+
+            <label style={{
+              display: 'flex', alignItems: 'flex-start', gap: '10px',
+              padding: '10px 12px', marginBottom: '16px',
+              border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)',
+              background: 'var(--bg-secondary)', cursor: 'pointer', userSelect: 'none',
+            }}>
+              <input
+                type="checkbox"
+                checked={staySignedIn}
+                onChange={e => {
+                  setStaySignedIn(e.target.checked)
+                  if (typeof window !== 'undefined') {
+                    window.localStorage.setItem('wc26-stay-signed-in', e.target.checked ? 'true' : 'false')
+                  }
+                }}
+                style={{ marginTop: '2px', width: '16px', height: '16px', accentColor: 'var(--scottish-navy)', flexShrink: 0 }}
+              />
+              <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Stay signed in on this device</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.4 }}>Untick this on shared or public devices.</span>
+              </span>
+            </label>
 
             {error && (
               <div style={{ padding: '10px 14px', background: 'var(--accent-red-light)', color: 'var(--accent-red)', borderRadius: 'var(--radius-md)', fontSize: '13px', marginBottom: '16px' }}>
