@@ -159,7 +159,7 @@ function FinalStandingsView({ standings, matches, predictions, appSettings }) {
             Based on your score picks · <strong style={{ color: 'var(--accent-green)' }}>Green = qualifies top 2</strong> · <strong style={{ color: 'var(--accent-gold)' }}>Gold 🏅 = qualifying 3rd</strong>
           </div>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px', padding: '6px 10px', background: 'rgba(0,48,135,0.06)', borderRadius: 'var(--radius-sm)' }}>
-            💡 See your full predicted table for each group in the <strong>Picks tab</strong> — scroll to the bottom of any group's matches
+            💡 View your full predicted standings in <strong>Overview</strong>.
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
@@ -504,7 +504,7 @@ export default function Predictions() {
   const navigate = useNavigate()
   const [activeGroup, setActiveGroup] = useState('A')
   const [viewMode, setViewMode] = useState('group')
-  const [activeTab, setActiveTab] = useState('picks') // picks | standings
+  const [activeTab, setActiveTab] = useState('overview') // overview | standings
   const [teamSearch, setTeamSearch] = useState('')
   const [standings, setStandings] = useState([])
   const [matches, setMatches] = useState([])
@@ -1043,18 +1043,18 @@ export default function Predictions() {
     return acc
   }, {})
 
-  const showTeamSearch = activeTab === 'picks' && activeGroup !== 'FINAL'
+  const showTeamSearch = activeTab === 'overview'
 
   const switchToDateView = () => {
     setViewMode('date')
-    setActiveTab('picks')
+    setActiveTab('overview')
     setActiveGroup('FINAL')
     setTeamSearch('')
   }
 
   const switchToGroupView = () => {
     setViewMode('group')
-    setActiveTab('picks')
+    setActiveTab('overview')
     if (activeGroup === 'FINAL') setActiveGroup('A')
     setTeamSearch('')
   }
@@ -1586,7 +1586,7 @@ export default function Predictions() {
       )}
 
       {/* Joker reminder */}
-      {user && activeTab === 'picks' && (() => {
+      {user && activeTab === 'overview' && (() => {
         const msg = getJokerMessage()
         if (!msg) return null
         return (
@@ -1660,18 +1660,46 @@ export default function Predictions() {
                 </div>
               )
             })()}
-            {/* Picks / Tables switcher */}
-            {appSettings?.show_group_tables === 'true' && (
-              <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
-                <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px' }}>
-                  {[{ key: 'picks', label: '🌍 Overview' }, { key: 'standings', label: '📊 Tables' }].map(tab => (
-                    <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`} style={{ fontSize: '13px', padding: '7px 16px' }}>
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
+            {/* Row 1: Overall / By Group mode switcher */}
+            <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+              <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px', width: '100%', maxWidth: '420px' }}>
+                {[
+                  { key: 'date', label: '🌍 Overall' },
+                  { key: 'group', label: '📂 By Group' },
+                ].map(mode => (
+                  <button
+                    key={mode.key}
+                    onClick={() => {
+                      if (mode.key === 'date') switchToDateView()
+                      else switchToGroupView()
+                    }}
+                    className={`pill-tab ${viewMode === mode.key ? 'active' : ''}`}
+                    style={{ flex: 1, fontSize: '13px', padding: '7px 12px' }}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
+
+            {/* Row 2: Overview / Tables switcher — identical in both modes */}
+            <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
+              <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px', width: '100%', maxWidth: '420px' }}>
+                {[
+                  { key: 'overview', label: '🌍 Overview' },
+                  { key: 'standings', label: '📊 Tables' },
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => { setActiveTab(tab.key); setTeamSearch('') }}
+                    className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`}
+                    style={{ flex: 1, fontSize: '13px', padding: '7px 12px' }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             {/* ? help link */}
             <Link to="/how-to-play" style={{ position: 'absolute', right: 0, top: '14px', width: '26px', height: '26px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textDecoration: 'none' }}>?</Link>
           </div>
@@ -1702,22 +1730,10 @@ export default function Predictions() {
             </div>
           </div>}
 
-          {/* Row 2: Group / Date tabs — hidden when searching */}
-          {(!showTeamSearch || !teamSearch) && <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-
+          {/* Row 3: context selector — dates for Overall, groups for By Group */}
+          {(!showTeamSearch || !teamSearch) && activeTab === 'overview' && <div style={{ display: 'flex', overflowX: 'auto', marginTop: '6px', borderBottom: '1px solid var(--border-light)', scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             {viewMode === 'group' ? (
               <>
-                {/* By Date switcher */}
-                <button onClick={switchToDateView} style={{
-                  padding: '10px 12px', fontSize: '12px', fontWeight: '600',
-                  color: 'var(--text-muted)', borderBottom: '2px solid transparent',
-                  background: 'none', border: 'none', borderBottom: '2px solid transparent', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                }}>
-                  🌍 Overall
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '500' }}>By date</span>
-                </button>
-                <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 4px', flexShrink: 0 }} />
                 {GROUPS.map(g => {
                   const gMatches = matches.filter(m => m.group?.name === g)
                   const gDone = gMatches.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
@@ -1747,30 +1763,9 @@ export default function Predictions() {
                   }}>🗑️<span style={{ fontSize: '9px', fontWeight: '600' }}>Clear</span>
                   </button>
                 )}
-                <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 4px', flexShrink: 0 }} />
-                <button onClick={() => { setActiveGroup('FINAL'); setActiveTab('picks'); setTeamSearch('') }} style={{
-                  padding: '10px 12px', fontSize: '12px', fontWeight: activeGroup === 'FINAL' ? '800' : '500',
-                  color: activeGroup === 'FINAL' ? 'var(--scottish-navy)' : 'var(--text-muted)',
-                  borderBottom: activeGroup === 'FINAL' ? '2px solid var(--scottish-navy)' : '2px solid transparent',
-                  background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                }}>
-                  🌍
-                  <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: '700' }}>Overview</span>
-                </button>
               </>
             ) : (
               <>
-                <button onClick={switchToGroupView} style={{
-                  padding: '10px 14px', fontSize: '12px', fontWeight: '400',
-                  color: 'var(--text-muted)', borderBottom: '2px solid transparent',
-                  background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                }}>
-                  📂 By Group
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>A–L</span>
-                </button>
-                <div style={{ width: '1px', background: 'var(--border-light)', margin: '8px 2px', flexShrink: 0 }} />
                 {Object.entries(matchesByDate).map(([dateKey, dayMatches]) => {
                   const firstMatch = dayMatches[0]
                   const shortDate = new Date(firstMatch.kickoff_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -1804,7 +1799,7 @@ export default function Predictions() {
       {/* Matches / Standings */}
       <div className="container" style={{ padding: '16px' }}>
         {activeTab === 'standings' ? (
-          (viewMode === 'date' || activeGroup === 'FINAL') ? (
+          viewMode === 'date' ? (
             <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
           ) : (
           <StandingsView
@@ -1815,8 +1810,6 @@ export default function Predictions() {
             appSettings={appSettings}
           />
           )
-        ) : activeGroup === 'FINAL' && !teamSearch ? (
-          <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
         ) : showTeamSearch && teamSearch ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)', paddingTop: '4px' }}>
@@ -1859,10 +1852,7 @@ export default function Predictions() {
             })()}
           </div>
         ) : (
-          // By Date view — Overview tab check first
-          activeGroup === 'FINAL' ? (
-            <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={appSettings} />
-          ) : (
+          // Overall view — grouped by date
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {Object.entries(matchesByDate).map(([date, dayMatches]) => {
               const hasUnlocked = dayMatches.some(m => !isLocked(m.kickoff_time))
@@ -1891,7 +1881,6 @@ export default function Predictions() {
             })}
             {renderAllGroupsStandings()}
           </div>
-          )
         )}
       </div>
 
