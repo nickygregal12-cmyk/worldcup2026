@@ -172,6 +172,156 @@ function AwardPredsView({ userId, leagueId, lockedSnapshot = false }) {
   )
 }
 
+function CompareWithMeView({ myUserId, targetUserId, targetName, leagueId, lockedSnapshot = false, targetShowFuture = false }) {
+  const [loading, setLoading] = React.useState(true)
+  const [rows, setRows] = React.useState([])
+  const [awards, setAwards] = React.useState([])
+  const [totals, setTotals] = React.useState({ same: 0, different: 0 })
+
+  React.useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      setLoading(true)
+      const table = lockedSnapshot ? 'league_predictions' : 'predictions'
+      let query = supabase.from(table)
+        .select(`
+          user_id, match_id, home_score, away_score,
+          match:match_id(id, match_number, kickoff_time, stage, status,
+            home_team:home_team_id(name,flag_emoji,short_code),
+            away_team:away_team_id(name,flag_emoji,short_code))
+        `)
+        .in('user_id', [myUserId, targetUserId])
+
+      if (lockedSnapshot && leagueId) query = query.eq('league_id', leagueId)
+
+      const awardTable = lockedSnapshot ? 'league_award_predictions' : 'award_predictions'
+      const goalTable = lockedSnapshot ? 'league_tournament_predictions' : 'tournament_predictions'
+      let myAwardQuery = supabase.from(awardTable).select('award_type, predicted_player_name').eq('user_id', myUserId)
+      let targetAwardQuery = supabase.from(awardTable).select('award_type, predicted_player_name').eq('user_id', targetUserId)
+      let myGoalQuery = supabase.from(goalTable).select('prediction_type, int_value').eq('user_id', myUserId).eq('prediction_type', 'total_goals')
+      let targetGoalQuery = supabase.from(goalTable).select('prediction_type, int_value').eq('user_id', targetUserId).eq('prediction_type', 'total_goals')
+      if (lockedSnapshot && leagueId) {
+        myAwardQuery = myAwardQuery.eq('league_id', leagueId)
+        targetAwardQuery = targetAwardQuery.eq('league_id', leagueId)
+        myGoalQuery = myGoalQuery.eq('league_id', leagueId)
+        targetGoalQuery = targetGoalQuery.eq('league_id', leagueId)
+      }
+      const [{ data: matchData }, { data: myAwards }, { data: targetAwards }, { data: myGoals }, { data: targetGoals }] = await Promise.all([
+        query,
+        myAwardQuery,
+        targetAwardQuery,
+        myGoalQuery,
+        targetGoalQuery,
+      ])
+
+      if (cancelled) return
+
+      const visibleMatchData = (matchData || []).filter(p => {
+        if (lockedSnapshot) return true
+        if (p.user_id === myUserId) return true
+        const kicked = new Date(p.match?.kickoff_time) <= new Date()
+        return kicked || targetShowFuture
+      })
+
+      const mineByMatch = {}
+      const theirsByMatch = {}
+      visibleMatchData.forEach(p => {
+        if (p.user_id === myUserId) mineByMatch[p.match_id] = p
+        if (p.user_id === targetUserId) theirsByMatch[p.match_id] = p
+      })
+
+      const comparisonRows = Object.keys(theirsByMatch).map(matchId => {
+        const mine = mineByMatch[matchId]
+        const theirs = theirsByMatch[matchId]
+        const same = mine && theirs && mine.home_score === theirs.home_score && mine.away_score === theirs.away_score
+        const sameResult = mine && theirs && Math.sign(mine.home_score - mine.away_score) === Math.sign(theirs.home_score - theirs.away_score)
+        return { matchId, mine, theirs, same, sameResult, match: theirs.match }
+      }).sort((a, b) => (a.match?.match_number || 0) - (b.match?.match_number || 0))
+
+      const awardLabels = { golden_boot: 'Golden Boot', golden_glove: 'Golden Glove', player_of_tournament: 'Player of the Tournament' }
+      const myAwardMap = {}
+      const targetAwardMap = {}
+      ;(myAwards || []).forEach(a => { myAwardMap[a.award_type] = a.predicted_player_name })
+      ;(targetAwards || []).forEach(a => { targetAwardMap[a.award_type] = a.predicted_player_name })
+      const awardRows = Object.keys(awardLabels).filter(k => myAwardMap[k] || targetAwardMap[k]).map(k => ({
+        label: awardLabels[k],
+        mine: myAwardMap[k] || '—',
+        theirs: targetAwardMap[k] || '—',
+        same: myAwardMap[k] && targetAwardMap[k] && myAwardMap[k] === targetAwardMap[k]
+      }))
+      const myTotalGoals = (myGoals || [])[0]?.int_value
+      const targetTotalGoals = (targetGoals || [])[0]?.int_value
+      if (myTotalGoals || targetTotalGoals) awardRows.push({ label: 'Total Goals', mine: myTotalGoals ? `${myTotalGoals}` : '—', theirs: targetTotalGoals ? `${targetTotalGoals}` : '—', same: myTotalGoals && targetTotalGoals && myTotalGoals === targetTotalGoals })
+
+      setRows(comparisonRows)
+      setAwards(awardRows)
+      setTotals({ same: comparisonRows.filter(r => r.same).length, different: comparisonRows.filter(r => !r.same).length })
+      setLoading(false)
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [myUserId, targetUserId, targetName, leagueId, lockedSnapshot, targetShowFuture])
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
+
+  const hiddenMessage = !lockedSnapshot && !targetShowFuture
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div style={{ padding: '12px 14px', background: lockedSnapshot ? 'rgba(245,158,11,0.10)' : 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)' }}>
+        <div style={{ fontSize: '13px', fontWeight: '800', marginBottom: '4px' }}>You vs {targetName}</div>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          {lockedSnapshot ? 'Comparing frozen league predictions.' : hiddenMessage ? 'Only visible picks are compared. Future hidden picks stay private.' : 'Comparing visible live predictions.'}
+        </div>
+        <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+          <span style={{ fontSize: '11px', fontWeight: '800', padding: '4px 8px', borderRadius: 'var(--radius-full)', background: 'var(--accent-green-light)', color: 'var(--accent-green)' }}>Same scores: {totals.same}</span>
+          <span style={{ fontSize: '11px', fontWeight: '800', padding: '4px 8px', borderRadius: 'var(--radius-full)', background: 'var(--bg-card)', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>Different: {totals.different}</span>
+        </div>
+      </div>
+
+      {awards.length > 0 && (
+        <div>
+          <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>Awards & totals</div>
+          {awards.map(row => (
+            <div key={row.label} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', alignItems: 'center', padding: '8px 10px', background: row.same ? 'var(--accent-green-light)' : 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', marginBottom: '6px' }}>
+              <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)' }}>{row.label}</span>
+              <span style={{ fontSize: '12px', fontWeight: '800' }}>You: {row.mine}</span>
+              <span style={{ fontSize: '12px', fontWeight: '800' }}>{targetName}: {row.theirs}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div>
+        <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>Match predictions</div>
+        {rows.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+            <div style={{ fontSize: '28px', marginBottom: '6px' }}>🔒</div>
+            <div style={{ fontWeight: '700' }}>No comparable picks visible yet</div>
+            <div style={{ fontSize: '12px', marginTop: '4px' }}>Future rolling-league picks stay private unless sharing is enabled.</div>
+          </div>
+        ) : rows.map(row => (
+          <div key={row.matchId} style={{ padding: '10px 12px', background: row.same ? 'var(--accent-green-light)' : row.sameResult ? 'var(--accent-blue-light)' : 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', marginBottom: '7px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span style={{ fontSize: '18px' }}>{row.match?.home_team?.flag_emoji}</span>
+              <span style={{ flex: 1, fontSize: '12px', fontWeight: '800' }}>{row.match?.home_team?.short_code} vs {row.match?.away_team?.short_code}</span>
+              <span style={{ fontSize: '18px' }}>{row.match?.away_team?.flag_emoji}</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>#{row.match?.match_number}</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div style={{ fontSize: '12px', padding: '7px 9px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', border: '1px solid var(--border-light)' }}><strong>You:</strong> {row.mine ? `${row.mine.home_score}–${row.mine.away_score}` : '—'}</div>
+              <div style={{ fontSize: '12px', padding: '7px 9px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', border: '1px solid var(--border-light)' }}><strong>{targetName}:</strong> {row.theirs ? `${row.theirs.home_score}–${row.theirs.away_score}` : '—'}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+
 export default function Leagues() {
   const { user, isAdmin } = useAuthStore()
   const [activeGame, setActiveGame] = useState('tournament')
@@ -431,7 +581,10 @@ export default function Leagues() {
     const lockedSnapshot = league?.lock_type === 'pre_tournament' && !!league?.snapshot_taken_at
     const isOffline = member.profile?.is_offline || member.is_offline
     const displayName = member.profile?.display_name || member.profile?.username || 'Unknown'
-    setMemberModal({ userId: member.user_id, username: displayName, leagueId, isOffline, lockedSnapshot, leagueName: league?.name })
+    const isMe = member.user_id === user.id
+    const isLeagueCreator = league?.created_by === member.user_id
+    const canRemoveMember = (league?.created_by === user?.id || isAdmin) && !isMe && !isLeagueCreator && !league?.is_global
+    setMemberModal({ userId: member.user_id, username: displayName, leagueId, isOffline, lockedSnapshot, leagueName: league?.name, targetShowFuture: lockedSnapshot || false, canRemoveMember, memberName: displayName })
 
     if (lockedSnapshot) {
       await loadLockedMemberPredictions(leagueId, member.user_id)
@@ -452,7 +605,9 @@ export default function Leagues() {
     } else {
       const { data: profile } = await supabase
         .from('profiles').select('show_future_predictions').eq('id', member.user_id).single()
-      await loadMemberPredictions(member.user_id, profile?.show_future_predictions || false)
+      const showFuture = profile?.show_future_predictions || member.user_id === user.id
+      setMemberModal(prev => ({ ...prev, targetShowFuture: showFuture }))
+      await loadMemberPredictions(member.user_id, showFuture)
     }
   }
 
@@ -915,16 +1070,8 @@ export default function Leagues() {
                                 {pts}<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--text-muted)' }}>pts</span>
                               </span>
 
-                              {/* Actions */}
-                              <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
-                                <button onClick={(e) => { e.stopPropagation(); openMemberModal(member, league.id) }}
-                                  style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', cursor: 'pointer', fontSize: '14px', opacity: member.profile?.is_offline ? 1 : 0.7, padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}
-                                  title={member.profile?.is_offline ? "View offline picks" : "View picks"}>👁</button>
-                                {canRemove && (
-                                  <button onClick={(e) => { e.stopPropagation(); setConfirmAction({ type: 'removeMember', leagueId: league.id, memberId: member.user_id, memberName: member.profile?.username }) }}
-                                    style={{ background: '#ffebee', border: '1px solid #ffcdd2', cursor: 'pointer', fontSize: '14px', color: '#e53935', padding: '4px 8px', borderRadius: 'var(--radius-sm)' }}>×</button>
-                                )}
-                              </div>
+                              {/* Row chevron */}
+                              <span style={{ fontSize: '18px', color: 'var(--text-muted)', flexShrink: 0 }}>›</span>
                             </div>
                           )
                         })}
@@ -1005,14 +1152,14 @@ export default function Leagues() {
 
             {/* Tabs */}
             <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)' }}>
-              {(memberModal.isOffline ? ['group', 'standings'] : ['group', 'knockout', 'awards', 'standings']).map(tab => (
+              {(memberModal.isOffline ? ['group', 'standings'] : ['overview', 'group', 'knockout', 'awards', 'compare', 'standings']).map(tab => (
                 <button key={tab} onClick={() => setMemberModal(prev => ({ ...prev, tab }))} style={{
-                  flex: 1, padding: '10px', fontSize: '12px', fontWeight: memberModal.tab === tab || (!memberModal.tab && tab === 'group') ? '700' : '400',
-                  color: memberModal.tab === tab || (!memberModal.tab && tab === 'group') ? 'var(--text-primary)' : 'var(--text-muted)',
-                  borderBottom: memberModal.tab === tab || (!memberModal.tab && tab === 'group') ? '2px solid var(--scottish-navy)' : '2px solid transparent',
+                  flex: 1, padding: '10px', fontSize: '12px', fontWeight: memberModal.tab === tab || (!memberModal.tab && tab === 'overview') ? '700' : '400',
+                  color: memberModal.tab === tab || (!memberModal.tab && tab === 'overview') ? 'var(--text-primary)' : 'var(--text-muted)',
+                  borderBottom: memberModal.tab === tab || (!memberModal.tab && tab === 'overview') ? '2px solid var(--scottish-navy)' : '2px solid transparent',
                   background: 'none', border: 'none', cursor: 'pointer', textTransform: 'capitalize',
                 }}>
-                  {tab === 'group' ? '⚽ Groups' : tab === 'knockout' ? '🏆 Knockout' : tab === 'awards' ? '🥇 Awards' : '📊 Standings'}
+                  {tab === 'overview' ? '👤 Overview' : tab === 'group' ? '⚽ Groups' : tab === 'knockout' ? '🏆 Knockout' : tab === 'awards' ? '🥇 Awards' : tab === 'compare' ? '⚔️ Compare' : '📊 Standings'}
                 </button>
               ))}
             </div>
@@ -1020,7 +1167,20 @@ export default function Leagues() {
             <div style={{ overflowY: 'auto', padding: '16px', flex: 1 }}>
               {loadingPreds ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-              ) : (!memberModal.tab || memberModal.tab === 'group') ? (
+              ) : (!memberModal.tab || memberModal.tab === 'overview') ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ textAlign: 'center', padding: '16px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--scottish-navy)', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', fontWeight: '900', marginBottom: '8px' }}>{(memberModal.username || '?')[0].toUpperCase()}</div>
+                    <div style={{ fontSize: '18px', fontWeight: '900' }}>{memberModal.username}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{memberModal.lockedSnapshot ? 'Locked league profile' : 'League member profile'}</div>
+                  </div>
+                  <button onClick={() => setMemberModal(prev => ({ ...prev, tab: 'compare' }))} className="btn btn-primary btn-full">⚔️ Compare with me</button>
+                  <button onClick={() => setMemberModal(prev => ({ ...prev, tab: 'group' }))} className="btn btn-secondary btn-full">View predictions</button>
+                  {memberModal.canRemoveMember && (
+                    <button onClick={() => { setConfirmAction({ type: 'removeMember', leagueId: memberModal.leagueId, memberId: memberModal.userId, memberName: memberModal.memberName }); setMemberModal(null) }} className="btn btn-sm" style={{ background: 'none', border: '1px solid var(--accent-red)', color: 'var(--accent-red)' }}>Remove from league</button>
+                  )}
+                </div>
+              ) : memberModal.tab === 'group' ? (
                 memberPredictions.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
                     <div style={{ fontSize: '32px', marginBottom: '8px' }}>{memberModal.isOffline ? '👤' : '🔒'}</div>
@@ -1070,6 +1230,8 @@ export default function Leagues() {
                 <KnockoutPicksView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
               ) : memberModal.tab === 'awards' ? (
                 <AwardPredsView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
+              ) : memberModal.tab === 'compare' ? (
+                <CompareWithMeView myUserId={user.id} targetUserId={memberModal.userId} targetName={memberModal.username} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} targetShowFuture={memberModal.targetShowFuture} />
               ) : memberModal.tab === 'standings' ? (
                 <MemberStandingsView predictions={memberPredictions} />
               ) : null}
