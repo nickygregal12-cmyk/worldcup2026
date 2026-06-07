@@ -933,6 +933,9 @@ export default function Predictions() {
     if (!user) return
     const pred = predictions[matchId]
     if (!pred) return
+    // Don't allow joker changes after match has kicked off
+    const match = matchesRef.current.find(m => m.id === matchId)
+    if (!match || isLocked(match.kickoff_time)) return
     if (!currentJoker && jokersRemaining <= 0) return
     const newJoker = !currentJoker
     const newRemaining = newJoker ? jokersRemaining - 1 : jokersRemaining + 1
@@ -973,6 +976,8 @@ export default function Predictions() {
 
   const autoFillGroup = async () => {
     if (!user || autoFilling) return
+    // Disable autofill after standings lock — bulk fills could reorder group standings
+    if (new Date() >= getMD1LockTime(matches)) return
     setAutoFilling(true)
     const groupMatchesToFill = matches.filter(m => m.group?.name === activeGroup && !isLocked(m.kickoff_time))
     await runAutofill(groupMatchesToFill)
@@ -981,6 +986,7 @@ export default function Predictions() {
 
   const autoFillDate = async (dateMatches) => {
     if (!user) return
+    if (new Date() >= getMD1LockTime(matches)) return
     const key = dateMatches[0]?.kickoff_time
     setAutoFillingDate(key)
     const toFill = dateMatches.filter(m => !isLocked(m.kickoff_time))
@@ -1419,16 +1425,8 @@ export default function Predictions() {
                     const awayVal = awayInput ? parseInt(awayInput.value.replace(/[^0-9]/g, '')) : NaN
                     if (!isNaN(homeVal) && !isNaN(awayVal)) {
                       setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], home: homeVal, away: awayVal } }))
-                      supabase.from('predictions').upsert({
-                        user_id: user.id, match_id: match.id,
-                        home_score: homeVal, away_score: awayVal,
-                        is_confident: pred.joker ?? false, bracket_type: 'main',
-                      }, { onConflict: 'user_id,match_id,bracket_type' }).then(({ error }) => {
-                        if (!error) {
-                          setSaved(prev => ({ ...prev, [match.id]: true }))
-                          setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
-                        } else console.error('Save error:', error)
-                      })
+                      // Route through attemptSavePrediction so all lock checks apply
+                      attemptSavePrediction(match, homeVal, awayVal)
                     } else {
                       savePrediction(match)
                     }
