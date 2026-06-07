@@ -17,11 +17,11 @@ const SCORING = [
     section: '🏆 Knockout Bracket',
     desc: 'Pick which teams advance through each round before Matchday 1 ends. Points awarded for each team that actually makes it — regardless of which specific match they play.',
     rows: [
-      { label: 'Team reaches Round of 32 · max 160pts', pts: '5pts' },
-      { label: 'Team reaches Round of 16 · max 128pts', pts: '8pts' },
-      { label: 'Team reaches Quarter-finals · max 96pts', pts: '12pts' },
-      { label: 'Team reaches Semi-finals · max 64pts', pts: '16pts' },
-      { label: 'Team reaches the Final · max 40pts', pts: '20pts' },
+      { label: 'Team reaches Round of 32 (32 teams)', pts: '5pts' },
+      { label: 'Team reaches Round of 16 (16 teams)', pts: '8pts' },
+      { label: 'Team reaches Quarter-finals (8 teams)', pts: '12pts' },
+      { label: 'Team reaches Semi-finals (4 teams)', pts: '16pts' },
+      { label: 'Team reaches the Final (2 teams)', pts: '20pts' },
       { label: 'Correct tournament winner bonus', pts: '+25pts', highlight: true },
       { label: 'Maximum if all picks correct', pts: '513pts' },
     ]
@@ -51,12 +51,14 @@ const SCORING = [
   },
   {
     section: '🔥 KO Predictor — Your Second Chance',
-    desc: 'A fresh game starting 27 Jun. Predict scores for all 32 knockout matches. Separate leaderboard, fresh start — everyone begins at 0.',
+    desc: 'A fresh game starting 28 Jun. Predict scores for all 32 knockout matches including how they end. Separate leaderboard, fresh start — everyone begins at 0.',
     rows: [
-      { label: 'Correct result', pts: '5pts' },
-      { label: 'Exact score', pts: '10pts' },
-      { label: 'Correct after extra time', pts: '+3pts' },
-      { label: 'Correct penalty shootout winner', pts: '+5pts' },
+      { label: 'Correct winner only', pts: '5pts' },
+      { label: 'Correct winner + exact score', pts: '10pts' },
+      { label: 'Predicted ET correctly (match went to ET)', pts: '+3pts', highlight: true },
+      { label: 'Predicted Penalties correctly (match went to PENS)', pts: '+5pts', highlight: true },
+      { label: 'Got winner right but wrong on ET/PENS', pts: '3pts ⚠️' },
+      { label: 'First goal time band correct', pts: '+3pts' },
       { label: 'KO Predictor jokers available', pts: '5 total' },
     ]
   },
@@ -119,7 +121,7 @@ const FAQS = [
   },
   {
     q: 'What is the KO Predictor?',
-    a: 'The KO Predictor is a second game that launches on 28 Jun once all 32 knockout teams are confirmed. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance. It has its own separate leaderboard.',
+    a: 'The KO Predictor is a second game that launches on 28 Jun once all 32 knockout teams are confirmed. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance. It has its own separate leaderboard. For each match you also predict whether it ends in 90 minutes, extra time, or penalties — getting that right earns bonus points, but getting it wrong reduces your base points from 5 to 3 even if you picked the right winner.',
   },
   {
     q: 'How does the leaderboard work?',
