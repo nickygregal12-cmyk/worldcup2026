@@ -4,6 +4,48 @@
  * and builds the R32 bracket accordingly
  */
 
+/**
+ * Shared lock dates — single source of truth used by both Predictions and Knockout pages.
+ *
+ * MD1_STANDINGS_LOCK: After all MD1 matches complete (~Jun 17 last kickoff + 2hrs buffer).
+ *   After this point users cannot change group standings order.
+ *   They can still tweak scores as long as team positions don't change.
+ *
+ * KO_BRACKET_LOCK: Same date — knockout bracket also locks at end of MD1.
+ *   Previously was end-of-MD2 which allowed exploitation of real match results.
+ *
+ * Both locks are derived dynamically from fixture data (MD1 = matches at index 0,1 per group).
+ * These fallbacks are used only if fixture data is unavailable.
+ */
+export const MD1_STANDINGS_LOCK_FALLBACK = new Date('2026-06-18T06:00:00Z') // Wed 18 Jun 07:00 BST
+export const MD1_LOCK_BUFFER_MS = 2 * 60 * 60 * 1000 // 2hr buffer after last kickoff
+
+/**
+ * Derive the MD1 lock time from actual fixture data.
+ * MD1 = first 2 matches per group (indices 0, 1 when sorted by kickoff).
+ */
+export function getMD1LockTime(groupMatches) {
+  const md1Kickoffs = []
+  const byGroup = {}
+  groupMatches.forEach(match => {
+    const g = match.group?.name
+    if (!g || !match.kickoff_time) return
+    if (!byGroup[g]) byGroup[g] = []
+    byGroup[g].push(match)
+  })
+  Object.values(byGroup).forEach(matches => {
+    const ordered = [...matches].sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
+    // MD1 = first 2 matches per 4-team group
+    ordered.slice(0, 2).forEach(match => {
+      const kickoff = new Date(match.kickoff_time)
+      if (!Number.isNaN(kickoff.getTime())) md1Kickoffs.push(kickoff)
+    })
+  })
+  if (!md1Kickoffs.length) return MD1_STANDINGS_LOCK_FALLBACK
+  const lastMD1 = new Date(Math.max(...md1Kickoffs.map(d => d.getTime())))
+  return new Date(lastMD1.getTime() + MD1_LOCK_BUFFER_MS)
+}
+
 // Official R32 bracket structure — verified against FIFA/official sources
 // home/away are slot descriptors, not teams
 export const R32_MATCHES = [

@@ -5,7 +5,7 @@ import { useAuthStore, useAppStore } from '../store/index.js'
 import { toApiName, normalise } from '../lib/teamNames.js'
 import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
 import { StandingsRow, StandingsHeader, StandingsLegend } from '../components/GroupStandingsTable.jsx'
-import { ALL_STAGES, calcPredictedStandings, getBest3rdTeams, groupFullyPredicted, resolveSlot } from '../lib/bracketUtils.js'
+import { ALL_STAGES, calcPredictedStandings, getBest3rdTeams, groupFullyPredicted, resolveSlot, getMD1LockTime, MD1_STANDINGS_LOCK_FALLBACK } from '../lib/bracketUtils.js'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 const TOTAL_GROUP_MATCHES = 72 // 12 groups × 6 matches
@@ -520,6 +520,7 @@ export default function Predictions() {
   const [showJokerReminder, setShowJokerReminder] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [scoreWarning, setScoreWarning] = useState(null) // Item 8: {matchId, side, value}
+  const [standingsLockWarning, setStandingsLockWarning] = useState(null)
   const [jokerConfirm, setJokerConfirm] = useState(null) // { matchId, currentJoker }
   const [knockoutPicks, setKnockoutPicks] = useState({})
   const [knockoutImpactWarning, setKnockoutImpactWarning] = useState(null)
@@ -821,6 +822,39 @@ export default function Predictions() {
   const attemptSavePrediction = useCallback(async (match, homeScore, awayScore, options = {}) => {
     if (!userRef.current) return
     if (homeScore === '' || homeScore === undefined || awayScore === '' || awayScore === undefined) return
+
+    // ── Standings lock check (group matches only, after MD1 lock) ──────────────
+    if (!options.skipStandingsCheck && match.stage === 'group') {
+      const standingsLockTime = getMD1LockTime(matchesRef.current || [])
+      if (new Date() >= standingsLockTime) {
+        const groupName = match.group?.name
+        if (groupName) {
+          // Calculate standings before and after the proposed change
+          const currentPreds = predictionsRef.current
+          const proposedPreds = {
+            ...currentPreds,
+            [match.id]: { ...currentPreds[match.id], home: homeScore, away: awayScore },
+          }
+          const before = calcPredictedStandings(matchesRef.current, currentPreds)
+          const after  = calcPredictedStandings(matchesRef.current, proposedPreds)
+
+          const beforeOrder = (before[groupName] || []).map(t => t.id)
+          const afterOrder  = (after[groupName]  || []).map(t => t.id)
+          const standingsChanged = beforeOrder.some((id, i) => id !== afterOrder[i])
+
+          if (standingsChanged) {
+            setStandingsLockWarning({
+              match, homeScore, awayScore,
+              groupName,
+              lockTime: standingsLockTime,
+              jokerOverride: options.jokerOverride,
+            })
+            return
+          }
+        }
+      }
+    }
+
     if (!options.skipImpactCheck) {
       const nextPredictions = {
         ...predictionsRef.current,
@@ -1689,6 +1723,34 @@ export default function Predictions() {
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
+      {/* Standings lock warning modal */}
+      {standingsLockWarning && (() => {
+        const lockDate = standingsLockWarning.lockTime
+        const lockStr = lockDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
+          ' · ' + lockDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' BST'
+        return (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 325, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div className="card" style={{ maxWidth: '360px', width: '100%' }}>
+              <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>🔒 Group standings locked</div>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px', lineHeight: 1.5 }}>
+                This score change would alter the Group {standingsLockWarning.groupName} standings order.
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.5, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '10px 12px' }}>
+                Group standings locked on <strong>{lockStr}</strong> to keep the knockout bracket fair.
+                You can still adjust scores as long as the group order doesn't change.
+              </div>
+              <button
+                onClick={() => {
+                  revertPredictionToLastSaved(standingsLockWarning.match.id)
+                  setStandingsLockWarning(null)
+                }}
+                className="btn btn-primary" style={{ width: '100%' }}
+              >Got it — revert my change</button>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Knockout impact warning modal */}
       {knockoutImpactWarning && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 320, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
@@ -1767,6 +1829,39 @@ export default function Predictions() {
             </div>
           </div>
         )
+      })()}
+
+      {/* Standings lock info banner */}
+      {user && (() => {
+        const standingsLockTime = getMD1LockTime(matches)
+        const now = new Date()
+        const isLocked = now >= standingsLockTime
+        const lockStr = standingsLockTime.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
+          ' · ' + standingsLockTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' BST'
+        const daysUntil = Math.ceil((standingsLockTime - now) / (1000 * 60 * 60 * 24))
+        if (isLocked) {
+          return (
+            <div style={{ background: '#1a1a2e', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '14px' }}>🔒</span>
+              <div style={{ color: 'white', fontSize: '13px', lineHeight: 1.4 }}>
+                <span style={{ fontWeight: '700' }}>Group standings locked.</span>
+                <span style={{ color: 'rgba(255,255,255,0.65)', marginLeft: '6px' }}>You can still tweak scores — but not change the group order.</span>
+              </div>
+            </div>
+          )
+        }
+        if (daysUntil <= 7) {
+          return (
+            <div style={{ background: 'rgba(230,81,0,0.08)', borderBottom: '1px solid rgba(230,81,0,0.15)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '14px' }}>⏳</span>
+              <div style={{ fontSize: '13px', lineHeight: 1.4, color: 'var(--text-primary)' }}>
+                <span style={{ fontWeight: '700', color: '#e65100' }}>Standings lock in {daysUntil} day{daysUntil !== 1 ? 's' : ''}</span>
+                <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>Group order and knockout bracket freeze on {lockStr}</span>
+              </div>
+            </div>
+          )
+        }
+        return null
       })()}
 
       {/* Guest banner — friendly, not a wall */}

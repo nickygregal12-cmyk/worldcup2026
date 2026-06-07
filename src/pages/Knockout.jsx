@@ -5,7 +5,8 @@ import { useAuthStore } from '../store/index.js'
 import { SkeletonCard, ErrorState } from '../components/PageState.jsx'
 import {
   ALL_STAGES,
-  calcPredictedStandings, resolveSlot, getBest3rdTeams, findAffectedPicks, groupFullyPredicted
+  calcPredictedStandings, resolveSlot, getBest3rdTeams, findAffectedPicks, groupFullyPredicted,
+  getMD1LockTime, MD1_STANDINGS_LOCK_FALLBACK,
 } from '../lib/bracketUtils.js'
 
 const VENUE_FLAGS = {
@@ -17,36 +18,17 @@ const VENUE_FLAGS = {
   'Mexico City': '🇲🇽', 'Guadalajara': '🇲🇽', 'Monterrey': '🇲🇽',
 }
 
-
-
-const MATCHDAY_TWO_LOCK_FALLBACK = new Date('2026-06-23T22:00:00Z') // fallback only; real value is derived from fixtures
-const MATCHDAY_TWO_FULL_TIME_BUFFER_MS = 120 * 60 * 1000
+// Lock time is now end of MD1 (not MD2) — users cannot exploit real MD2 results
+// Derived dynamically from fixture data; fallback used if fixtures unavailable
+const MATCHDAY_TWO_LOCK_FALLBACK = MD1_STANDINGS_LOCK_FALLBACK
+const MATCHDAY_TWO_FULL_TIME_BUFFER_MS = 0 // buffer already baked into getMD1LockTime
 
 function getMatchdayTwoFullTime(groupMatches = []) {
+  return getMD1LockTime(groupMatches)
+}
   const matchdayTwoKickoffs = []
   const byGroup = {}
 
-  groupMatches.forEach(match => {
-    const groupName = match.group?.name
-    if (!groupName || !match.kickoff_time) return
-    if (!byGroup[groupName]) byGroup[groupName] = []
-    byGroup[groupName].push(match)
-  })
-
-  Object.values(byGroup).forEach(matches => {
-    const ordered = [...matches].sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
-    // Each 4-team group has 6 matches: first 2 = MD1, next 2 = MD2, final 2 = MD3.
-    ordered.slice(2, 4).forEach(match => {
-      const kickoff = new Date(match.kickoff_time)
-      if (!Number.isNaN(kickoff.getTime())) matchdayTwoKickoffs.push(kickoff)
-    })
-  })
-
-  if (!matchdayTwoKickoffs.length) return MATCHDAY_TWO_LOCK_FALLBACK
-
-  const lastKickoff = new Date(Math.max(...matchdayTwoKickoffs.map(d => d.getTime())))
-  return new Date(lastKickoff.getTime() + MATCHDAY_TWO_FULL_TIME_BUFFER_MS)
-}
 
 function formatLockDate(date) {
   return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
@@ -235,7 +217,7 @@ export default function Knockout() {
   }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, isMainBracketPickFrozen, getTeamById, mainBracketLockTime])
 
   const getBracketLockReason = useCallback((matchDef) => {
-    if (new Date() >= mainBracketLockTime) return 'Main bracket locked after Matchday 2. Saved teams and winners are frozen.'
+    if (new Date() >= mainBracketLockTime) return 'Main bracket locked after Matchday 1. Saved teams and winners are frozen.'
     if (new Date() >= new Date(matchDef.kickoff)) return 'This knockout match has locked.'
     const pick = knockoutPicks[matchDef.match_number]
     if (pick?.winner_id && [pick.home_id, pick.away_id, pick.winner_id].filter(Boolean).some(teamGroupCompleted)) {
@@ -526,7 +508,7 @@ export default function Knockout() {
                         <div>
                           <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>
-                            {mainBracketLocked ? 'Not saved before Matchday 2 lock' : slot.startsWith('W') ? `Waiting for M${slot.replace('W', '')} winner` : 'Waiting for group results'}
+                            {mainBracketLocked ? 'Not saved before Matchday 1 lock' : slot.startsWith('W') ? `Waiting for M${slot.replace('W', '')} winner` : 'Waiting for group results'}
                           </div>
                         </div>
                       </div>
@@ -560,7 +542,7 @@ export default function Knockout() {
                     <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>
                       {mainBracketLocked
-                        ? 'Not saved before Matchday 2 lock'
+                        ? 'Not saved before Matchday 1 lock'
                         : slot.startsWith('W')
                         ? (groupStageDone ? 'To be confirmed' : `Waiting for M${slot.replace('W', '')} winner`)
                         : (groupStageDone ? 'To be confirmed' : 'Predict all 3 group games to unlock')}
@@ -593,7 +575,7 @@ export default function Knockout() {
             🏆 Knockout Bracket
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '20px' }}>
-            {mainBracketLocked ? 'Locked after Matchday 2 from your saved bracket' : `Based on your predicted group results · locks ${formatLockDate(mainBracketLockTime)}`}
+            {mainBracketLocked ? 'Locked after Matchday 1 from your saved bracket' : `Based on your predicted group results · locks ${formatLockDate(mainBracketLockTime)}`}
           </p>
 
           {/* Overall progress bar */}
@@ -626,7 +608,7 @@ export default function Knockout() {
           {/* Pre-tournament tip — only show if no picks made yet */}
           {isPreTournament && totalPicks === 0 && (
             <div style={{ marginTop: '10px', background: 'rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', padding: '8px 14px', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
-              💡 Fill your bracket before Matchday 2 ends — saved teams and winners freeze at the lock deadline
+              💡 Fill your bracket before Matchday 1 ends — saved teams and winners freeze at the lock deadline
             </div>
           )}
         </div>
