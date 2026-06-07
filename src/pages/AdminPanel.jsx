@@ -1456,6 +1456,63 @@ export default function AdminPanel() {
     return trimmed
   }
 
+  const downloadOfflineTemplate = async () => {
+    const XLSX = await import('xlsx')
+
+    // Fetch all 72 group matches
+    const { data: matches } = await supabase
+      .from('matches')
+      .select('match_number, kickoff_time, home_team:home_team_id(name, short_code), away_team:away_team_id(name, short_code), group:group_id(name)')
+      .eq('stage', 'group')
+      .order('match_number', { ascending: true })
+
+    if (!matches?.length) {
+      alert('No matches found — make sure group matches are loaded in the DB.')
+      return
+    }
+
+    // Build rows matching WC26 template format the parser expects:
+    // Col 0: Match #, Col 1: Group, Col 2: Home Team, Col 3: Home Short, Col 4: Country(home)
+    // Col 5: blank, Col 6: Home Score, Col 7: Away Score, Col 8: blank
+    // Col 9: Country(away), Col 10: Joker (TRUE/FALSE)
+    const header = ['Match #', 'Group', 'Home Team', 'Home Short', 'Country', '', 'Home Score', 'Away Score', '', 'Country', 'Joker']
+
+    const rows = matches.map(m => [
+      m.match_number,
+      m.group?.name || '',
+      m.home_team?.name || '',
+      m.home_team?.short_code || '',
+      m.home_team?.short_code || '',
+      '',
+      '', // Home Score — to be filled in
+      '', // Away Score — to be filled in
+      '',
+      m.away_team?.short_code || '',
+      'FALSE', // Joker — TRUE or FALSE
+    ])
+
+    const wb = XLSX.utils.book_new()
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows])
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 8 },  // Match #
+      { wch: 7 },  // Group
+      { wch: 20 }, // Home Team
+      { wch: 10 }, // Home Short
+      { wch: 10 }, // Country
+      { wch: 4 },  // blank
+      { wch: 11 }, // Home Score
+      { wch: 11 }, // Away Score
+      { wch: 4 },  // blank
+      { wch: 10 }, // Country
+      { wch: 7 },  // Joker
+    ]
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Predictions')
+    XLSX.writeFile(wb, 'WC26_Predictions_Template.xlsx')
+  }
+
   const parseExcelFile = async (file, targetPlayerId) => {
     setOfflineImporting(true)
     try {
@@ -2764,8 +2821,15 @@ export default function AdminPanel() {
 
                 {/* Import section */}
                 <div style={{ marginBottom: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)' }}>
-                    📥 Import predictions
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)' }}>
+                      📥 Import predictions
+                    </div>
+                    <button onClick={downloadOfflineTemplate}
+                      className="btn btn-sm"
+                      style={{ fontSize: '11px', padding: '3px 10px', background: 'var(--accent-green)', color: 'white', border: 'none' }}>
+                      ⬇️ Download blank template
+                    </button>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <div>
