@@ -72,7 +72,7 @@ export const handler = async (event, context) => {
       // Try matching by external_match_id first (most reliable)
       let { data: ourMatch } = await supabase
         .from('matches')
-        .select('id, status, home_score, away_score, use_manual_override, stage')
+        .select('id, status, home_score, away_score, use_manual_override, stage, home_team_id, away_team_id')
         .eq('external_match_id', match.id.toString())
         .maybeSingle()
 
@@ -109,13 +109,46 @@ export const handler = async (event, context) => {
 
       const newStatus = match.status === 'FINISHED' ? 'completed' : 'live'
 
-      const { error } = await supabase.from('matches').update({
+      // Derive winner_team_id and outcome_type for knockout scoring
+      // football-data.org: score.winner = HOME_TEAM | AWAY_TEAM | DRAW
+      // score.duration = REGULAR | EXTRA_TIME | PENALTY_SHOOTOUT
+      let winnerTeamId = null
+      let outcomeType = '90mins'
+      const isKnockoutStage = ['r32','r16','qf','sf','3rd','final'].includes(ourMatch.stage)
+
+      if (match.status === 'FINISHED' && isKnockoutStage) {
+        const winner = match.score?.winner
+        const duration = match.score?.duration
+
+        // Map duration to our outcome_type
+        if (duration === 'EXTRA_TIME') outcomeType = 'et'
+        else if (duration === 'PENALTY_SHOOTOUT') outcomeType = 'penalties'
+        else outcomeType = '90mins'
+
+        // Resolve winner team ID
+        if (winner === 'HOME_TEAM') {
+          winnerTeamId = ourMatch.home_team_id
+        } else if (winner === 'AWAY_TEAM') {
+          winnerTeamId = ourMatch.away_team_id
+        }
+        // DRAW at 90mins shouldn't happen in knockout — winner will be set after ET/PENS
+      }
+
+      const updateFields = {
         home_score: homeScore,
         away_score: awayScore,
         status: newStatus,
         external_match_id: match.id.toString(),
         api_synced_at: new Date().toISOString(),
-      }).eq('id', ourMatch.id)
+      }
+
+      // Only write knockout-specific fields for knockout stages
+      if (isKnockoutStage && match.status === 'FINISHED') {
+        if (winnerTeamId) updateFields.winner_team_id = winnerTeamId
+        updateFields.outcome_type = outcomeType
+      }
+
+      const { error } = await supabase.from('matches').update(updateFields).eq('id', ourMatch.id)
 
       if (error) { errors.push(error.message); continue }
       updated++
@@ -124,7 +157,10 @@ export const handler = async (event, context) => {
         // Use appropriate scoring function based on stage
         const isKnockout = ['r32','r16','qf','sf','3rd','final'].includes(ourMatch.stage)
         if (isKnockout) {
+          // Score main knockout bracket picks (team advancement)
           await supabase.rpc('calculate_knockout_points', { p_match_id: ourMatch.id })
+          // Score KO Predictor picks (score/ET/PENS predictions) — separate game
+          await supabase.rpc('calculate_ko_prediction_points', { p_match_id: ourMatch.id }).catch(() => {})
         } else {
           await supabase.rpc('calculate_prediction_points', { p_match_id: ourMatch.id })
         }

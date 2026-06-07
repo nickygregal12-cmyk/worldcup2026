@@ -46,13 +46,14 @@ export default function KOPredictor() {
   const [jokersRemaining, setJokersRemaining] = useState(5)
   const [jokerConfirm, setJokerConfirm] = useState(null)
   const [scoreWarning, setScoreWarning] = useState(null)
+  const [m73Ready, setM73Ready] = useState(false)
   const smartStageAppliedRef = useRef(false)
 
   const phaseOverride = appSettings?.game_phase_override || ''
   const isOpen = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
     ? true
     : phaseOverride && phaseOverride !== 'ko_predictor' ? false
-    : new Date() >= KO_OPEN_DATE
+    : m73Ready || new Date() >= KO_OPEN_DATE
   const isLocked = (kickoffTime) => new Date() >= new Date(kickoffTime)
 
   useEffect(() => {
@@ -79,6 +80,15 @@ export default function KOPredictor() {
 
   const loadData = async () => {
     setLoading(true)
+
+    // Check if M73 (first R32 match) has both teams confirmed — opens KO Predictor early
+    const { data: m73 } = await supabase
+      .from('matches')
+      .select('home_team_id, away_team_id')
+      .eq('match_number', 73)
+      .maybeSingle()
+    if (m73?.home_team_id && m73?.away_team_id) setM73Ready(true)
+
     const { data: matchData } = await supabase
       .from('matches')
       .select('*, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
@@ -160,8 +170,12 @@ export default function KOPredictor() {
       setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: 'Knockout matches cannot end level — select ET or Penalties' } }))
       return
     }
+    if (outcomeType === 'et' && !isDraw) {
+      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: 'Extra time only happens after a draw — enter equal scores (e.g. 1-1)' } }))
+      return
+    }
     if (outcomeType === 'penalties' && !isDraw) {
-      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: 'Penalty shootouts only happen after a draw' } }))
+      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: 'Penalty shootouts only happen after a draw — enter equal scores (e.g. 1-1)' } }))
       return
     }
     if ((outcomeType === 'et' || outcomeType === 'penalties') && !pred.winner_team_id) {
@@ -545,13 +559,13 @@ export default function KOPredictor() {
             <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔥</div>
             <h1 style={{ fontSize: '26px', fontWeight: '900', marginBottom: '8px' }}>Knockout Predictor</h1>
             <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '15px', marginBottom: '4px' }}>Your Second Chance</p>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Opens 27 Jun 23:00 BST — all 32 teams confirmed</p>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Opens as soon as the Round of 32 teams are confirmed</p>
           </div>
         </div>
         <div className="container" style={{ padding: '24px 16px' }}>
           <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>
             <div style={{ fontSize: '40px', marginBottom: '12px' }}>⏳</div>
-            <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>Coming 27 June</div>
+            <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>🔥 KO Predictor</div>
             <div style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
               Once the group stage finishes, all 32 knockout teams will be confirmed and predictions open immediately. A completely fresh start — everyone begins at 0 points.
             </div>
