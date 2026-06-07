@@ -1183,6 +1183,8 @@ export default function Predictions() {
     const isGuest = !user
     const hasJoker = pred.joker === true
     const canUseJoker = !locked && user && hasPrediction && (jokersRemaining > 0 || hasJoker)
+    const standingsLockTime = getMD1LockTime(matches)
+    const standingsLocked = match.stage === 'group' && new Date() >= standingsLockTime
     const resultColour = getResultColour(match, pred)
 
     const getFavourite = () => {
@@ -1285,6 +1287,7 @@ export default function Predictions() {
             </div>
             <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
               {locked && <span className="badge badge-red">🔒 Locked</span>}
+              {!locked && standingsLocked && <span className="badge badge-gray">📊 Order locked</span>}
               {!locked && hasPrediction && !hasJoker && <span className="badge badge-green">✓ Saved</span>}
               {(match.home_score !== null && match.home_score !== undefined) && (
                 <span className="badge badge-gray">{match.home_score}–{match.away_score}</span>
@@ -1439,6 +1442,16 @@ export default function Predictions() {
                     : isSaved ? '✓ Saved' : 'Save'}
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Standings lock note — shown on unlocked group matches after MD1 lock */}
+          {!locked && !resultColour && standingsLocked && (
+            <div style={{ marginTop: '10px', padding: '7px 12px', background: 'rgba(0,48,135,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,48,135,0.1)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '12px' }}>📊</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                Group order locked — you can adjust scores but not change standings
+              </span>
             </div>
           )}
 
@@ -1850,18 +1863,15 @@ export default function Predictions() {
             </div>
           )
         }
-        if (daysUntil <= 7) {
-          return (
-            <div style={{ background: 'rgba(230,81,0,0.08)', borderBottom: '1px solid rgba(230,81,0,0.15)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '14px' }}>⏳</span>
-              <div style={{ fontSize: '13px', lineHeight: 1.4, color: 'var(--text-primary)' }}>
-                <span style={{ fontWeight: '700', color: '#e65100' }}>Standings lock in {daysUntil} day{daysUntil !== 1 ? 's' : ''}</span>
-                <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>Group order and knockout bracket freeze on {lockStr}</span>
-              </div>
+        return (
+          <div style={{ background: 'rgba(0,48,135,0.06)', borderBottom: '1px solid rgba(0,48,135,0.1)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '14px' }}>📊</span>
+            <div style={{ fontSize: '13px', lineHeight: 1.4, color: 'var(--text-primary)' }}>
+              <span style={{ fontWeight: '700' }}>Group order locks {lockStr}</span>
+              <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>After this, scores can be tweaked but standings order is frozen</span>
             </div>
-          )
-        }
-        return null
+          </div>
+        )
       })()}
 
       {/* Guest banner — friendly, not a wall */}
