@@ -244,6 +244,7 @@ export default function Home() {
         // Repair cached profile counters used by other screens, but keep Home based on live counts above.
         await supabase.from('profiles')
           .update({
+            total_predictions: groupCount,
             jokers_group_remaining: Math.max(0, 8 - jokerCount),
             knockout_picks_count: koCount,
             awards_done: awardsCount,
