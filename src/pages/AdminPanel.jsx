@@ -18,10 +18,10 @@ const TABS = [
 ]
 
 const AWARD_DEFS = [
-  { key: 'golden_boot', label: '👟 Golden Boot', desc: 'Top scorer of the tournament', pts: 15, placeholder: 'e.g. Kylian Mbappé' },
-  { key: 'golden_glove', label: '🧤 Golden Glove', desc: 'Best goalkeeper', pts: 10, placeholder: 'e.g. Yann Sommer' },
-  { key: 'player_of_tournament', label: '🏅 Player of the Tournament', desc: 'Best overall player', pts: 10, placeholder: 'e.g. Jude Bellingham' },
-  { key: 'total_goals', label: '⚽ Total Goals', desc: 'Total goals scored in tournament', pts: 15, placeholder: 'e.g. 142' },
+  { key: 'golden_boot', label: '👟 Golden Boot', desc: 'Top scorer of the tournament', pts: 15, positionFilter: ['FWD', 'MID'] },
+  { key: 'golden_glove', label: '🧤 Golden Glove', desc: 'Best goalkeeper', pts: 10, positionFilter: ['GK'] },
+  { key: 'player_of_tournament', label: '🏅 Player of the Tournament', desc: 'Best overall player', pts: 10, positionFilter: null },
+  { key: 'total_goals', label: '⚽ Total Goals', desc: 'Total goals scored in tournament', pts: 15, isGoals: true },
 ]
 
 function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
@@ -32,6 +32,13 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
   })
   const [topScorers, setTopScorers] = useState([])
   const [loadingScorers, setLoadingScorers] = useState(false)
+  const [players, setPlayers] = useState([])
+  const [search, setSearch] = useState({})
+  const [openKey, setOpenKey] = useState(null)
+
+  useEffect(() => {
+    supabase.from('players').select('id, name, position, team:team_id(name, flag_emoji)').order('name').then(({ data }) => setPlayers(data || []))
+  }, [])
 
   const loadTopScorers = async () => {
     setLoadingScorers(true)
@@ -40,19 +47,35 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
     setLoadingScorers(false)
   }
 
+  const getFilteredPlayers = (awardKey, positionFilter) => {
+    const q = (search[awardKey] || '').toLowerCase()
+    if (q.length < 2) return []
+    return players.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(q)
+      const matchesPos = !positionFilter || positionFilter.includes(p.position)
+      return matchesSearch && matchesPos
+    }).slice(0, 8)
+  }
+
+  const selectPlayer = (awardKey, playerName) => {
+    setInputs(prev => ({ ...prev, [awardKey]: playerName }))
+    setSearch(prev => ({ ...prev, [awardKey]: playerName }))
+    setOpenKey(null)
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div className="card" style={{ background: 'var(--accent-blue-light)', border: '1px solid var(--accent-blue)' }}>
         <div style={{ fontSize: '13px', color: 'var(--accent-blue)', fontWeight: '600' }}>
-          ℹ️ Enter the actual tournament award winners after they are announced. Points will be automatically awarded to users who picked correctly.
+          ℹ️ Search and select from the players table — this guarantees the name matches exactly what users picked. Points auto-award on save.
         </div>
       </div>
 
-      {/* Golden Boot helper — load from live scorers */}
+      {/* Golden Boot helper */}
       <div className="card" style={{ border: '1px solid var(--accent-gold)' }}>
         <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '8px' }}>🥇 Live Top Scorers</div>
         <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
-          Load current top scorers from the synced data to quickly set the Golden Boot winner.
+          Load current top scorers — click Search to pre-fill the Golden Boot search field.
         </div>
         <button onClick={loadTopScorers} disabled={loadingScorers} className="btn btn-sm" style={{ marginBottom: '10px', background: 'var(--accent-gold)', color: 'white', border: 'none' }}>
           {loadingScorers ? '⏳ Loading...' : '🔄 Load Top Scorers'}
@@ -65,52 +88,113 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
                 <span style={{ flex: 1, fontSize: '13px', fontWeight: '600' }}>{s.player_name}</span>
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.team_name}</span>
                 <span style={{ fontWeight: '800', fontSize: '13px', color: 'var(--accent-gold)' }}>{s.goals}⚽</span>
-                <button onClick={() => setInputs(prev => ({ ...prev, golden_boot: s.player_name }))}
-                  className="btn btn-sm" style={{ fontSize: '11px', padding: '3px 8px' }}>
-                  Use
+                <button onClick={() => {
+                  setSearch(prev => ({ ...prev, golden_boot: s.player_name }))
+                  setInputs(prev => ({ ...prev, golden_boot: '' }))
+                  setOpenKey('golden_boot')
+                }} className="btn btn-sm" style={{ fontSize: '11px', padding: '3px 8px' }}>
+                  Search
                 </button>
               </div>
             ))}
           </div>
         )}
         {topScorers.length === 0 && !loadingScorers && (
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No scorer data yet — data syncs once tournament starts.</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No scorer data yet — syncs once tournament starts.</div>
         )}
       </div>
 
       {AWARD_DEFS.map(award => {
         const existing = awardResults[award.key]
+
+        if (award.isGoals) {
+          return (
+            <div key={award.key} className="card">
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '4px' }}>{award.label}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>{award.desc} · {award.pts}pts for exact</div>
+              {existing && (
+                <div style={{ padding: '8px 12px', background: 'var(--accent-green-light)', borderRadius: 'var(--radius-sm)', marginBottom: '10px', fontSize: '13px', color: 'var(--accent-green)', fontWeight: '600' }}>
+                  ✓ Result recorded: {existing.winner_name}
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input className="input" style={{ flex: 1 }} type="number" min="0" max="300"
+                  placeholder="e.g. 142"
+                  value={inputs[award.key] || ''}
+                  onChange={e => setInputs(prev => ({ ...prev, [award.key]: e.target.value }))}
+                />
+                <button onClick={() => saveAwardResult(award.key, inputs[award.key], award.pts)}
+                  disabled={!inputs[award.key] || awardSaving[award.key]}
+                  className="btn btn-primary btn-sm">
+                  {awardSaving[award.key] ? '...' : existing ? 'Update' : 'Save'}
+                </button>
+              </div>
+            </div>
+          )
+        }
+
+        const filteredPlayers = getFilteredPlayers(award.key, award.positionFilter)
+        const isOpen = openKey === award.key && filteredPlayers.length > 0
+        const selectedName = inputs[award.key]
+
         return (
           <div key={award.key} className="card">
             <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '4px' }}>{award.label}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>{award.desc} · {award.pts}pts for correct pick</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+              {award.desc} · {award.pts}pts
+              {award.positionFilter && <span style={{ marginLeft: '6px', opacity: 0.7 }}>({award.positionFilter.join('/')} only)</span>}
+            </div>
             {existing && (
               <div style={{ padding: '8px 12px', background: 'var(--accent-green-light)', borderRadius: 'var(--radius-sm)', marginBottom: '10px', fontSize: '13px', color: 'var(--accent-green)', fontWeight: '600' }}>
                 ✓ Result recorded: {existing.winner_name}
               </div>
             )}
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <input
-                className="input" style={{ flex: 1 }}
-                placeholder={award.placeholder}
-                value={inputs[award.key] || ''}
-                onChange={e => setInputs(prev => ({ ...prev, [award.key]: e.target.value }))}
+            <div style={{ position: 'relative', marginBottom: '10px' }}>
+              <input className="input"
+                placeholder="Search player name..."
+                value={search[award.key] !== undefined ? search[award.key] : (selectedName || '')}
+                onChange={e => {
+                  setSearch(prev => ({ ...prev, [award.key]: e.target.value }))
+                  setInputs(prev => ({ ...prev, [award.key]: '' }))
+                  setOpenKey(award.key)
+                }}
+                onFocus={() => setOpenKey(award.key)}
+                onBlur={() => setTimeout(() => setOpenKey(null), 150)}
               />
-              <button
-                onClick={() => saveAwardResult(award.key, inputs[award.key], award.pts)}
-                disabled={!inputs[award.key] || awardSaving[award.key]}
-                className="btn btn-primary btn-sm"
-              >
-                {awardSaving[award.key] ? '...' : existing ? 'Update' : 'Save'}
-              </button>
+              {isOpen && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border-medium)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', zIndex: 200, maxHeight: '240px', overflowY: 'auto', marginTop: '4px' }}>
+                  {filteredPlayers.map(p => (
+                    <button key={p.id} onMouseDown={() => selectPlayer(award.key, p.name)}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid var(--border-light)' }}>
+                      <span style={{ fontSize: '16px' }}>{p.team?.flag_emoji}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: '700', fontSize: '13px' }}>{p.name}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{p.team?.name}</div>
+                      </div>
+                      <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 6px', borderRadius: 'var(--radius-full)', background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{p.position}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+            {selectedName && (
+              <div style={{ padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', marginBottom: '10px', fontSize: '13px', fontWeight: '600', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Selected: <strong>{selectedName}</strong></span>
+                <button onClick={() => { setInputs(prev => ({ ...prev, [award.key]: '' })); setSearch(prev => ({ ...prev, [award.key]: '' })) }}
+                  style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>✕ Clear</button>
+              </div>
+            )}
+            <button onClick={() => saveAwardResult(award.key, selectedName, award.pts)}
+              disabled={!selectedName || awardSaving[award.key]}
+              className="btn btn-primary btn-sm">
+              {awardSaving[award.key] ? '...' : existing ? 'Update winner' : 'Save winner'}
+            </button>
           </div>
         )
       })}
     </div>
   )
 }
-
 function SnapshotCounts({ leagueId, supabase }) {
   const [counts, setCounts] = useState(null)
 
