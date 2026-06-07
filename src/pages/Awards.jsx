@@ -64,6 +64,11 @@ export default function Awards() {
 
   const tournamentStarted = new Date() >= new Date('2026-06-11T19:00:00Z')
 
+  // Live tournament data (post-kickoff)
+  const [awardResults, setAwardResults] = useState({}) // actual winners set by admin
+  const [topScorers, setTopScorers] = useState([])     // live top scorers
+  const [liveGoals, setLiveGoals] = useState(null)     // actual goals scored so far
+
   useEffect(() => { loadData() }, [user])
 
   const loadData = async () => {
@@ -73,6 +78,22 @@ export default function Awards() {
     ])
     setPlayers(playersRes.data || [])
     setTeams(teamsRes.data || [])
+
+    // Always fetch award results and live scorers once tournament started
+    if (tournamentStarted) {
+      const [awardRes, scorersRes, goalsRes] = await Promise.all([
+        supabase.from('award_results').select('*'),
+        supabase.from('tournament_scorers').select('*').order('goals', { ascending: false }).limit(5),
+        supabase.from('matches').select('home_score, away_score').eq('status', 'completed'),
+      ])
+      const awardMap = {}
+      ;(awardRes.data || []).forEach(r => { awardMap[r.award_type] = r })
+      setAwardResults(awardMap)
+      setTopScorers(scorersRes.data || [])
+      const totalLiveGoals = (goalsRes.data || []).reduce((sum, m) =>
+        sum + (m.home_score || 0) + (m.away_score || 0), 0)
+      setLiveGoals(totalLiveGoals)
+    }
 
     if (user) {
       const { data: awardData } = await supabase
@@ -266,6 +287,73 @@ export default function Awards() {
       <div className="container" style={{ padding: '16px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
+          {/* ── LIVE GOAL COUNTER (post-kickoff, moved to top) ── */}
+          {tournamentStarted && (
+            <div className="card" style={{ overflow: 'hidden', background: 'var(--scottish-navy)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <div style={{ fontWeight: '800', fontSize: '15px', color: 'white' }}>🥅 Total Goals</div>
+                {goalsLocked && <span className="badge badge-red">🔒 Locked</span>}
+              </div>
+              <div style={{ display: 'flex', gap: '0', borderRadius: 'var(--radius-md)', overflow: 'hidden', marginBottom: '10px' }}>
+                {/* Live goals */}
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.12)', padding: '14px 16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '36px', fontWeight: '900', fontFamily: 'var(--font-mono)', color: 'white', lineHeight: 1 }}>
+                    {liveGoals ?? '—'}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginTop: '4px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Live goals</div>
+                </div>
+                <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)' }} />
+                {/* Your prediction */}
+                <div style={{ flex: 1, background: 'rgba(255,255,255,0.06)', padding: '14px 16px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '36px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1,
+                    color: liveGoals !== null && totalGoals ? (
+                      Math.abs(liveGoals - parseInt(totalGoals)) === 0 ? '#4ade80' :
+                      Math.abs(liveGoals - parseInt(totalGoals)) <= 5 ? '#fbbf24' : 'rgba(255,255,255,0.5)'
+                    ) : 'rgba(255,255,255,0.5)'
+                  }}>
+                    {totalGoals || '—'}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', marginTop: '4px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Your pick</div>
+                </div>
+              </div>
+              {/* Gap indicator */}
+              {liveGoals !== null && totalGoals && (() => {
+                const diff = parseInt(totalGoals) - liveGoals
+                const absDiff = Math.abs(diff)
+                const pts = absDiff === 0 ? 15 : absDiff <= 5 ? 5 : absDiff <= 10 ? 3 : 0
+                const colour = pts === 15 ? '#4ade80' : pts === 5 ? '#fbbf24' : pts === 3 ? '#fb923c' : 'rgba(255,255,255,0.4)'
+                const msg = absDiff === 0 ? '🎯 Exact! On track for 15pts'
+                  : absDiff <= 5 ? `${diff > 0 ? `${absDiff} above live` : `${absDiff} below live`} · on track for 5pts`
+                  : absDiff <= 10 ? `${absDiff} away · on track for 3pts`
+                  : `${absDiff} away · 0pts if final`
+                return (
+                  <div style={{ fontSize: '12px', fontWeight: '700', color: colour, textAlign: 'center', padding: '4px 0 2px' }}>
+                    {msg}
+                  </div>
+                )
+              })()}
+              {/* Top scorers mini list */}
+              {topScorers.length > 0 && (
+                <div style={{ marginTop: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
+                  <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🥇 Top Scorers</div>
+                  {topScorers.slice(0, 3).map((s, i) => {
+                    const isMyPick = predictions['golden_boot']?.player_name === s.player_name
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 0', borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: 'rgba(255,255,255,0.4)', width: '16px' }}>{i + 1}</span>
+                        <span style={{ flex: 1, fontSize: '12px', fontWeight: isMyPick ? '800' : '600', color: isMyPick ? '#fbbf24' : 'rgba(255,255,255,0.8)' }}>
+                          {s.player_name} {isMyPick && '⭐'}
+                        </span>
+                        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>{s.team_name}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '800', color: 'white' }}>{s.goals}⚽</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── AWARD PREDICTIONS (Golden Boot, Glove, POTT) ── */}
           {AWARDS.map(award => {
             const pred = predictions[award.type]
@@ -274,9 +362,14 @@ export default function Awards() {
             const filtered = getFilteredPlayers(award.type)
             const isOpen = showDropdown[award.type]
             const currentSearch = search[award.type] ?? pred?.player_name ?? ''
+            const actualResult = awardResults[award.type] // set by admin post-tournament
+            const correct = actualResult && pred?.player_name === actualResult.winner_name
+            const decided = !!actualResult
 
             return (
-              <div key={award.type} className="card">
+              <div key={award.type} className="card" style={{
+                border: decided ? (correct ? '2px solid var(--accent-green)' : '2px solid rgba(198,40,40,0.3)') : undefined
+              }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                   <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', background: 'var(--accent-gold-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
                     {award.icon}
@@ -302,8 +395,32 @@ export default function Awards() {
                   </div>
                 </div>
 
-                {/* Current pick */}
-                {pred?.player_name && (
+                {/* Actual winner — shown when admin has set result */}
+                {decided && (
+                  <div style={{
+                    padding: '10px 14px', borderRadius: 'var(--radius-md)', marginBottom: '12px',
+                    background: correct ? 'var(--accent-green-light)' : 'rgba(198,40,40,0.06)',
+                    border: `1px solid ${correct ? 'var(--accent-green)' : 'rgba(198,40,40,0.2)'}`,
+                    display: 'flex', alignItems: 'center', gap: '10px',
+                  }}>
+                    <span style={{ fontSize: '22px' }}>{correct ? '🎯' : '❌'}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '800', fontSize: '13px', color: correct ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+                        {correct ? 'Correct!' : 'Wrong'} — Winner: {actualResult.winner_name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        Your pick: {pred?.player_name || 'No pick made'}
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: correct ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                      {correct ? `+${award.points}` : '0'}
+                      <span style={{ fontSize: '11px', fontWeight: '600' }}>pts</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Current pick — shown pre-result */}
+                {!decided && pred?.player_name && (
                   <div style={{ background: 'var(--accent-green-light)', border: '1px solid var(--accent-green)', borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '20px' }}>{teams.find(t => t.id === pred.team_id)?.flag_emoji || '🏳️'}</span>
                     <div style={{ flex: 1 }}>
@@ -370,8 +487,8 @@ export default function Awards() {
             )
           })}
 
-          {/* ── TOTAL GOALS (moved to bottom) ── */}
-          <div className="card">
+          {/* ── TOTAL GOALS (shown at bottom pre-tournament, moves to top post-kickoff) ── */}
+          {!tournamentStarted && <div className="card">
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', background: 'var(--accent-green-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
                 🥅
@@ -416,7 +533,7 @@ export default function Awards() {
                 {goalsSaving ? 'Saving...' : goalsSaved ? 'Saved!' : '💾 Save Total Goals'}
               </button>
             )}
-          </div>
+          </div>}
 
         </div>
       </div>
