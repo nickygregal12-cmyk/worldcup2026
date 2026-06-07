@@ -47,6 +47,8 @@ export default function Knockout() {
 
   const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
   const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
+  const mainBracketLockTime = new Date('2026-06-27T22:00:00Z') // final group match kickoff
+  const mainBracketLocked = new Date() >= mainBracketLockTime
 
   useEffect(() => { loadData() }, [user])
 
@@ -136,16 +138,72 @@ export default function Knockout() {
     return null
   }, [knockoutPicks, groupMatches])
 
+  const getTeamById = useCallback((teamId) => {
+    if (!teamId) return null
+    for (const m of groupMatches) {
+      if (m.home_team?.id === teamId) return m.home_team
+      if (m.away_team?.id === teamId) return m.away_team
+    }
+    for (const [, pick] of Object.entries(knockoutPicks)) {
+      if (pick?.winner_team?.id === teamId) return pick.winner_team
+      if (pick?.home_team?.id === teamId) return pick.home_team
+      if (pick?.away_team?.id === teamId) return pick.away_team
+    }
+    return { id: teamId, name: '?', flag_emoji: '🏳️', short_code: '???' }
+  }, [groupMatches, knockoutPicks])
+
+  const teamGroupCompleted = useCallback((teamId) => {
+    if (!teamId) return false
+    const completed = groupMatches.filter(m =>
+      (m.home_team?.id === teamId || m.away_team?.id === teamId) && m.status === 'completed'
+    ).length
+    return completed >= 3
+  }, [groupMatches])
+
+  const isMainBracketPickFrozen = useCallback((matchDef) => {
+    if (!matchDef) return false
+    if (new Date() >= mainBracketLockTime) return true
+    if (new Date() >= new Date(matchDef.kickoff)) return true
+
+    const pick = knockoutPicks[matchDef.match_number]
+    if (!pick?.winner_id) return false
+
+    // Once a team in this saved predicted path has completed its real group games,
+    // do not allow users to swap away from that pick using real-life information.
+    return [pick.home_id, pick.away_id, pick.winner_id].filter(Boolean).some(teamGroupCompleted)
+  }, [knockoutPicks, groupMatches])
+
   const getMatchTeams = useCallback((matchDef) => {
+    const savedPick = knockoutPicks[matchDef.match_number]
+    const useSavedSnapshot = savedPick && isMainBracketPickFrozen(matchDef) && (savedPick.home_id || savedPick.away_id)
+
+    if (useSavedSnapshot) {
+      return {
+        home: savedPick.home_id ? getTeamById(savedPick.home_id) : null,
+        away: savedPick.away_id ? getTeamById(savedPick.away_id) : null,
+      }
+    }
+
     const resolve = (slot) => {
       if (slot.startsWith('W')) return resolveKnockoutWinner(slot)
       if (slot.startsWith('L')) return null
       return resolveTeam(slot)
     }
     return { home: resolve(matchDef.home_slot), away: resolve(matchDef.away_slot) }
-  }, [resolveTeam, resolveKnockoutWinner])
+  }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, isMainBracketPickFrozen, getTeamById])
+
+  const getBracketLockReason = useCallback((matchDef) => {
+    if (new Date() >= mainBracketLockTime) return 'Main bracket locked after the group stage deadline.'
+    if (new Date() >= new Date(matchDef.kickoff)) return 'This knockout match has locked.'
+    const pick = knockoutPicks[matchDef.match_number]
+    if (pick?.winner_id && [pick.home_id, pick.away_id, pick.winner_id].filter(Boolean).some(teamGroupCompleted)) {
+      return 'This pick is frozen because one of its teams has completed its real group games.'
+    }
+    return null
+  }, [knockoutPicks, teamGroupCompleted])
 
   const savePick = async (matchDef, winnerId) => {
+    if (isMainBracketPickFrozen(matchDef)) return
     // Guests: update local state only, no DB save
     if (!user) {
       const mn = matchDef.match_number
@@ -297,7 +355,8 @@ export default function Knockout() {
     const mn = matchDef.match_number
     const pick = knockoutPicks[mn]
     const isAffected = affectedMatches.includes(mn)
-    const locked = new Date() >= new Date(matchDef.kickoff)
+    const locked = isMainBracketPickFrozen(matchDef)
+    const lockedReason = getBracketLockReason(matchDef)
     const canPick = !locked  // guests can pick locally too
     const teamsKnown = !!(home || away) // show as soon as either team is known
     const bothTeamsKnown = !!(home && away) // need both to enable picking
@@ -341,9 +400,14 @@ export default function Knockout() {
             </div>
           )}
           {/* Affected warning */}
-          {isAffected && (
+          {isAffected && !locked && (
             <div style={{ marginBottom: '12px', padding: '8px 12px', background: 'rgba(184,134,11,0.15)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)', border: '1px solid rgba(184,134,11,0.25)' }}>
               ⚠️ Your earlier pick changed — please re-pick the winner for this match
+            </div>
+          )}
+          {locked && lockedReason && (
+            <div style={{ marginBottom: '12px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
+              🔒 {lockedReason}
             </div>
           )}
 
@@ -485,7 +549,7 @@ export default function Knockout() {
             🏆 Knockout Bracket
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '20px' }}>
-            {isPreTournament ? 'Based on your predicted group results' : groupStageDone ? 'Real teams confirmed' : 'Mix of real results and your predictions'}
+            {mainBracketLocked ? 'Locked from your predicted group results' : 'Based on your predicted group results'}
           </p>
 
           {/* Overall progress bar */}
@@ -518,7 +582,7 @@ export default function Knockout() {
           {/* Pre-tournament tip — only show if no picks made yet */}
           {isPreTournament && totalPicks === 0 && (
             <div style={{ marginTop: '10px', background: 'rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', padding: '8px 14px', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
-              💡 Predict all 3 games in a group to lock those teams into the bracket
+              💡 Fill your bracket before the group-stage deadline — saved picks freeze as real group outcomes become known
             </div>
           )}
         </div>
