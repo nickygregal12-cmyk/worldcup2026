@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
@@ -15,6 +15,42 @@ const VENUE_FLAGS = {
   'Philadelphia': '🇺🇸', 'Kansas City': '🇺🇸',
   'Toronto': '🇨🇦', 'Vancouver': '🇨🇦',
   'Mexico City': '🇲🇽', 'Guadalajara': '🇲🇽', 'Monterrey': '🇲🇽',
+}
+
+
+
+const MATCHDAY_TWO_LOCK_FALLBACK = new Date('2026-06-23T22:00:00Z') // fallback only; real value is derived from fixtures
+const MATCHDAY_TWO_FULL_TIME_BUFFER_MS = 120 * 60 * 1000
+
+function getMatchdayTwoFullTime(groupMatches = []) {
+  const matchdayTwoKickoffs = []
+  const byGroup = {}
+
+  groupMatches.forEach(match => {
+    const groupName = match.group?.name
+    if (!groupName || !match.kickoff_time) return
+    if (!byGroup[groupName]) byGroup[groupName] = []
+    byGroup[groupName].push(match)
+  })
+
+  Object.values(byGroup).forEach(matches => {
+    const ordered = [...matches].sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
+    // Each 4-team group has 6 matches: first 2 = MD1, next 2 = MD2, final 2 = MD3.
+    ordered.slice(2, 4).forEach(match => {
+      const kickoff = new Date(match.kickoff_time)
+      if (!Number.isNaN(kickoff.getTime())) matchdayTwoKickoffs.push(kickoff)
+    })
+  })
+
+  if (!matchdayTwoKickoffs.length) return MATCHDAY_TWO_LOCK_FALLBACK
+
+  const lastKickoff = new Date(Math.max(...matchdayTwoKickoffs.map(d => d.getTime())))
+  return new Date(lastKickoff.getTime() + MATCHDAY_TWO_FULL_TIME_BUFFER_MS)
+}
+
+function formatLockDate(date) {
+  return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
+    ' · ' + date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 
 function slotLabel(slot) {
@@ -47,7 +83,7 @@ export default function Knockout() {
 
   const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
   const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
-  const mainBracketLockTime = new Date('2026-06-27T22:00:00Z') // final group match kickoff
+  const mainBracketLockTime = useMemo(() => getMatchdayTwoFullTime(groupMatches), [groupMatches])
   const mainBracketLocked = new Date() >= mainBracketLockTime
 
   useEffect(() => { loadData() }, [user])
@@ -168,10 +204,10 @@ export default function Knockout() {
     const pick = knockoutPicks[matchDef.match_number]
     if (!pick?.winner_id) return false
 
-    // Once a team in this saved predicted path has completed its real group games,
-    // do not allow users to swap away from that pick using real-life information.
+    // Safety fallback: if a saved path already involves a team whose real group is complete,
+    // freeze that pick even if the global Matchday 2 lock date was misconfigured.
     return [pick.home_id, pick.away_id, pick.winner_id].filter(Boolean).some(teamGroupCompleted)
-  }, [knockoutPicks, groupMatches])
+  }, [knockoutPicks, mainBracketLockTime, teamGroupCompleted])
 
   const getMatchTeams = useCallback((matchDef) => {
     const savedPick = knockoutPicks[matchDef.match_number]
@@ -184,23 +220,29 @@ export default function Knockout() {
       }
     }
 
+    // After the Matchday 2 lock, do not keep resolving unsaved bracket paths from edited group predictions.
+    // Saved picks display their stored snapshot above; unsaved matches stay as placeholders.
+    if (new Date() >= mainBracketLockTime && !savedPick) {
+      return { home: null, away: null }
+    }
+
     const resolve = (slot) => {
       if (slot.startsWith('W')) return resolveKnockoutWinner(slot)
       if (slot.startsWith('L')) return null
       return resolveTeam(slot)
     }
     return { home: resolve(matchDef.home_slot), away: resolve(matchDef.away_slot) }
-  }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, isMainBracketPickFrozen, getTeamById])
+  }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, isMainBracketPickFrozen, getTeamById, mainBracketLockTime])
 
   const getBracketLockReason = useCallback((matchDef) => {
-    if (new Date() >= mainBracketLockTime) return 'Main bracket locked after the group stage deadline.'
+    if (new Date() >= mainBracketLockTime) return 'Main bracket locked after Matchday 2. Saved teams and winners are frozen.'
     if (new Date() >= new Date(matchDef.kickoff)) return 'This knockout match has locked.'
     const pick = knockoutPicks[matchDef.match_number]
     if (pick?.winner_id && [pick.home_id, pick.away_id, pick.winner_id].filter(Boolean).some(teamGroupCompleted)) {
       return 'This pick is frozen because one of its teams has completed its real group games.'
     }
     return null
-  }, [knockoutPicks, teamGroupCompleted])
+  }, [knockoutPicks, teamGroupCompleted, mainBracketLockTime])
 
   const savePick = async (matchDef, winnerId) => {
     if (isMainBracketPickFrozen(matchDef)) return
@@ -211,7 +253,7 @@ export default function Knockout() {
       if (existing?.winner_id === winnerId) {
         setKnockoutPicks(prev => { const n = { ...prev }; delete n[mn]; return n })
       } else {
-        setKnockoutPicks(prev => ({ ...prev, [mn]: { winner_id: winnerId } }))
+        setKnockoutPicks(prev => ({ ...prev, [mn]: { winner_id: winnerId, home_id: getMatchTeams(matchDef).home?.id, away_id: getMatchTeams(matchDef).away?.id } }))
       }
       return
     }
@@ -484,7 +526,7 @@ export default function Knockout() {
                         <div>
                           <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>
-                            {slot.startsWith('W') ? `Waiting for M${slot.replace('W', '')} winner` : 'Waiting for group results'}
+                            {mainBracketLocked ? 'Not saved before Matchday 2 lock' : slot.startsWith('W') ? `Waiting for M${slot.replace('W', '')} winner` : 'Waiting for group results'}
                           </div>
                         </div>
                       </div>
@@ -517,7 +559,9 @@ export default function Knockout() {
                   <div>
                     <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>
-                      {slot.startsWith('W') 
+                      {mainBracketLocked
+                        ? 'Not saved before Matchday 2 lock'
+                        : slot.startsWith('W')
                         ? (groupStageDone ? 'To be confirmed' : `Waiting for M${slot.replace('W', '')} winner`)
                         : (groupStageDone ? 'To be confirmed' : 'Predict all 3 group games to unlock')}
                     </div>
@@ -549,7 +593,7 @@ export default function Knockout() {
             🏆 Knockout Bracket
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '20px' }}>
-            {mainBracketLocked ? 'Locked from your predicted group results' : 'Based on your predicted group results'}
+            {mainBracketLocked ? 'Locked after Matchday 2 from your saved bracket' : `Based on your predicted group results · locks ${formatLockDate(mainBracketLockTime)}`}
           </p>
 
           {/* Overall progress bar */}
@@ -582,7 +626,7 @@ export default function Knockout() {
           {/* Pre-tournament tip — only show if no picks made yet */}
           {isPreTournament && totalPicks === 0 && (
             <div style={{ marginTop: '10px', background: 'rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', padding: '8px 14px', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
-              💡 Fill your bracket before the group-stage deadline — saved picks freeze as real group outcomes become known
+              💡 Fill your bracket before Matchday 2 ends — saved teams and winners freeze at the lock deadline
             </div>
           )}
         </div>
