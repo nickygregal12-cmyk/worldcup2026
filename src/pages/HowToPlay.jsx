@@ -4,33 +4,34 @@ import { Link } from 'react-router-dom'
 const SCORING = [
   {
     section: '⚽ Group Stage Predictions',
-    desc: 'Predict the exact score for all 72 group stage matches. Picks lock at kickoff.',
+    desc: 'Predict the exact score for all 72 group stage matches. Each match locks at its own kickoff time.',
     rows: [
       { label: 'Correct result (win/draw/loss)', pts: '3pts' },
       { label: 'Exact score', pts: '5pts' },
+      { label: 'Joker doubles points if correct', pts: '2×', highlight: true },
       { label: 'Wrong or missed prediction', pts: '0pts' },
-      { label: 'Jokers available (doubles points if correct)', pts: '8 total' },
+      { label: 'Group stage jokers available', pts: '8 total' },
     ]
   },
   {
-    section: '🏆 Knockout Picks',
-    desc: 'Pick which teams you think will advance through each round. Points are awarded for each team that actually makes it — regardless of which specific match they play.',
+    section: '🏆 Knockout Bracket',
+    desc: 'Pick which teams advance through each round before Matchday 1 ends. Points awarded for each team that actually makes it — regardless of which specific match they play.',
     rows: [
-      { label: 'Team you predicted to qualify reaches R32 · 32 teams = max 160pts', pts: '5pts' },
-      { label: 'Team you picked in R32 advances to R16 · 16 teams = max 128pts', pts: '8pts' },
-      { label: 'Team you picked in R16 advances to QF · 8 teams = max 96pts', pts: '12pts' },
-      { label: 'Team you picked in QF advances to SF · 4 teams = max 64pts', pts: '16pts' },
-      { label: 'Team you picked in SF reaches the Final · 2 teams = max 40pts', pts: '20pts' },
+      { label: 'Team reaches Round of 32 · max 160pts', pts: '5pts' },
+      { label: 'Team reaches Round of 16 · max 128pts', pts: '8pts' },
+      { label: 'Team reaches Quarter-finals · max 96pts', pts: '12pts' },
+      { label: 'Team reaches Semi-finals · max 64pts', pts: '16pts' },
+      { label: 'Team reaches the Final · max 40pts', pts: '20pts' },
       { label: 'Correct tournament winner bonus', pts: '+25pts', highlight: true },
-      { label: 'Max if all picks correct including winner', pts: '513pts' },
+      { label: 'Maximum if all picks correct', pts: '513pts' },
     ]
   },
   {
     section: '🥇 Award Predictions',
-    desc: 'Predict the individual award winners and tournament goal totals.',
+    desc: 'Predict the individual award winners and total goals scored in the tournament. These lock when the tournament begins (Thu 11 Jun, 19:00 BST).',
     rows: [
-      { label: 'Golden Boot (top scorer)', pts: '15pts' },
-      { label: 'Golden Glove (best goalkeeper)', pts: '10pts' },
+      { label: 'Golden Boot — top scorer', pts: '15pts' },
+      { label: 'Golden Glove — best goalkeeper', pts: '10pts' },
       { label: 'Player of the Tournament', pts: '10pts' },
       { label: 'Total goals — exact', pts: '15pts' },
       { label: 'Total goals — within 5', pts: '5pts' },
@@ -38,69 +39,107 @@ const SCORING = [
     ]
   },
   {
-    section: '📊 Group Position Points',
-    desc: 'Awarded automatically when all 6 matches in a group are complete.',
-    rows: [
-      { label: 'Correct team position (per position)', pts: '2pts' },
-      { label: 'All 4 positions correct (bonus)', pts: '+5pts', highlight: true },
-      { label: 'Perfect group max', pts: '13pts' },
-    ]
-  },
-  {
     section: '🃏 Joker Rules',
-    desc: 'Use jokers on predictions you\'re most confident about to double your points.',
+    desc: 'Use jokers on group stage predictions you\'re most confident about to double your points.',
     rows: [
-      { label: 'Group stage jokers available', pts: '8 total' },
-      { label: 'Joker on correct result = 6pts (3pts × 2)', pts: '2× pts', highlight: true },
-      { label: 'Joker on exact score = 10pts (5pts × 2)', pts: '2× pts', highlight: true },
+      { label: 'Jokers available for group stage', pts: '8 total' },
+      { label: 'Joker on correct result = 6pts', pts: '2× pts', highlight: true },
+      { label: 'Joker on exact score = 10pts', pts: '2× pts', highlight: true },
       { label: 'Joker on wrong prediction', pts: '0pts' },
+      { label: 'One joker max per match', pts: '—' },
     ]
   },
   {
     section: '🔥 KO Predictor — Your Second Chance',
-    desc: 'A fresh game starting 27 Jun. Predict scores for all 32 knockout matches. Separate leaderboard, fresh start — everyone is equal.',
+    desc: 'A fresh game starting 27 Jun. Predict scores for all 32 knockout matches. Separate leaderboard, fresh start — everyone begins at 0.',
     rows: [
       { label: 'Correct result', pts: '5pts' },
       { label: 'Exact score', pts: '10pts' },
-      { label: 'Correct after extra time (+3)', pts: '+3pts' },
-      { label: 'Correct penalty shootout winner (+5)', pts: '+5pts' },
+      { label: 'Correct after extra time', pts: '+3pts' },
+      { label: 'Correct penalty shootout winner', pts: '+5pts' },
       { label: 'KO Predictor jokers available', pts: '5 total' },
     ]
   },
 ]
 
+const LOCKS = [
+  {
+    icon: '⚽',
+    title: 'Group score predictions',
+    time: 'Each match locks at its own kickoff',
+    detail: 'You can update a 9pm prediction right up until 9pm, even if an earlier match in the same group has already started.',
+    color: 'var(--accent-green)',
+  },
+  {
+    icon: '📊',
+    title: 'Group standings order',
+    time: 'Wed 18 Jun · 07:00 BST',
+    detail: 'After Matchday 1 ends, the group standings order freezes. You can still adjust scores — but not in a way that changes which team finishes 1st, 2nd, 3rd or 4th.',
+    color: '#e65100',
+  },
+  {
+    icon: '🏆',
+    title: 'Knockout bracket',
+    time: 'Wed 18 Jun · 07:00 BST',
+    detail: 'Your knockout picks freeze at the same time as the standings. This is to prevent using real Matchday 2 results to make informed bracket picks.',
+    color: 'var(--scottish-navy)',
+  },
+  {
+    icon: '🥇',
+    title: 'Award predictions',
+    time: 'Thu 11 Jun · 19:00 BST',
+    detail: 'Golden Boot, Golden Glove, Player of the Tournament and total goals all lock when the tournament kicks off.',
+    color: '#b8860b',
+  },
+  {
+    icon: '🔥',
+    title: 'KO Predictor',
+    time: 'Each match locks at kickoff',
+    detail: 'The KO Predictor is a separate game starting 28 Jun. Each knockout match locks individually at its own kickoff.',
+    color: '#7c3aed',
+  },
+]
+
 const FAQS = [
   {
-    q: 'When do predictions lock?',
-    a: 'Group stage predictions lock at the kickoff time of each individual match. So you can update your prediction for a 9pm match right up until 9pm, even if earlier matches in that group have already started.',
+    q: 'When do group predictions lock?',
+    a: 'Each match locks individually at its own kickoff time. So you can update your prediction for a 9pm match right up until 9pm, even if earlier matches that day have already started. However, the group standings order and knockout bracket both freeze on Wed 18 Jun at 07:00 BST — after all Matchday 1 games are complete.',
+  },
+  {
+    q: 'What is the standings lock on 18 Jun?',
+    a: 'Once Matchday 1 is complete, the group standings order freezes. You can still go back and tweak scores (e.g. change a 2-0 to a 3-0) but only if it doesn\'t move any team up or down in the group table. This is to stop people using real Matchday 2 results to game their knockout bracket picks.',
+  },
+  {
+    q: 'How does the knockout bracket work?',
+    a: 'You pick which teams you think will advance through each round — Round of 32, Round of 16, Quarter-finals, Semi-finals, and the Final. Points are awarded for every team that actually reaches that round in real life, regardless of which match they play. The bracket is based on your predicted group standings and locks after Matchday 1 ends on 18 Jun.',
   },
   {
     q: 'How do jokers work?',
-    a: 'A joker doubles your points for that prediction if you get it right. You have 8 jokers for the group stage and 5 for the KO Predictor. Use them wisely — if your joker prediction is wrong, you score 0 (same as a normal wrong prediction).',
+    a: 'A joker doubles your points for that prediction if you get it right. You have 8 jokers for the group stage and 5 for the KO Predictor. Jokers must be applied before the match kicks off. If your joker prediction is wrong, you score 0 — same as a normal wrong prediction.',
   },
   {
     q: 'What is the KO Predictor?',
-    a: 'The KO Predictor is a second game that launches on 27 Jun once all group stage teams are confirmed. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance.',
+    a: 'The KO Predictor is a second game that launches on 28 Jun once all 32 knockout teams are confirmed. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance. It has its own separate leaderboard.',
   },
   {
     q: 'How does the leaderboard work?',
-    a: 'Ranked by total points. Ties are broken first by exact scores, then by correct results. The KO Predictor has its own separate leaderboard.',
-  },
-  {
-    q: 'Can I change my predictions?',
-    a: 'Yes — you can change any prediction right up until that match kicks off. Once the match starts, your prediction is locked.',
+    a: 'Ranked by total points across group predictions, knockout bracket, and awards. Ties are broken by exact scores first, then correct results. The KO Predictor has its own separate leaderboard.',
   },
   {
     q: 'What are leagues?',
-    a: 'Leagues let you compete against specific friends. Create a league, share your invite code, and see a private leaderboard just for your group. You can be in multiple leagues at once.',
+    a: 'Leagues let you compete against specific friends or colleagues. Create a league, share your invite code, and see a private leaderboard just for your group. You can be in multiple leagues at once. League admins can also add offline players (people without accounts) and enter their picks manually.',
   },
   {
     q: 'What happens if I miss a prediction?',
-    a: 'You score 0 points for that match. There\'s no penalty for missing predictions — you just miss out on the points.',
+    a: 'You score 0 points for that match. There\'s no penalty — you just miss out on the points. You can still make predictions for future matches at any time before they kick off.',
   },
   {
     q: 'How are award predictions scored?',
-    a: 'You pick the Golden Boot, Golden Glove, and Player of the Tournament winners before the tournament starts. You also predict total goals — scored based on how close you get.',
+    a: 'Golden Boot, Golden Glove, and Player of the Tournament are simple pick-the-winner predictions — awarded at the end of the tournament once FIFA confirms the winners. Total goals is scored based on how close your prediction is to the actual number of goals scored across all 104 matches.',
+  },
+  {
+    q: 'Can I join a league after the tournament starts?',
+    a: 'Yes — you can join leagues at any time. Your points from matches already played still count, so you\'ll slot into the leaderboard at whatever score you\'ve already accumulated.',
   },
 ]
 
@@ -152,6 +191,31 @@ export default function HowToPlay() {
           </div>
         ))}
 
+        {/* Lock dates */}
+        <div style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>🔒 Lock Dates</div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '-4px', marginBottom: '4px' }}>
+          Different parts of the game lock at different times — here's everything you need to know.
+        </div>
+
+        {LOCKS.map((lock, i) => (
+          <div key={i} className="card" style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+            <div style={{
+              width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
+              background: `${lock.color}18`, display: 'flex', alignItems: 'center',
+              justifyContent: 'center', fontSize: '20px', flexShrink: 0,
+            }}>
+              {lock.icon}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '2px' }}>{lock.title}</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: lock.color, marginBottom: '6px' }}>
+                🔒 {lock.time}
+              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5 }}>{lock.detail}</div>
+            </div>
+          </div>
+        ))}
+
         {/* FAQ */}
         <div style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>❓ FAQ</div>
 
@@ -173,7 +237,7 @@ export default function HowToPlay() {
         <div className="card" style={{ background: 'var(--scottish-navy)', color: 'white', textAlign: 'center', padding: '24px' }}>
           <div style={{ fontSize: '22px', marginBottom: '8px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</div>
           <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>Ready to predict?</div>
-          <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '16px' }}>Tournament kicks off 11 Jun · All picks lock at kickoff</div>
+          <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '16px' }}>Tournament kicks off Thu 11 Jun · 19:00 BST</div>
           <Link to="/predictions" style={{
             display: 'inline-block', background: 'white', color: 'var(--scottish-navy)',
             padding: '12px 28px', borderRadius: 'var(--radius-full)',
