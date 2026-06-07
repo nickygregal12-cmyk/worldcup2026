@@ -111,15 +111,36 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
           return (
             <div key={award.key} className="card">
               <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '4px' }}>{award.label}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>{award.desc} · {award.pts}pts for exact</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '4px' }}>{award.desc}</div>
+              <div style={{ fontSize: '12px', color: 'var(--accent-blue)', marginBottom: '12px', fontWeight: '600' }}>
+                Exact = 15pts · Within 5 = 5pts · Within 10 = 3pts — range scoring handled automatically by DB
+              </div>
               {existing && (
                 <div style={{ padding: '8px 12px', background: 'var(--accent-green-light)', borderRadius: 'var(--radius-sm)', marginBottom: '10px', fontSize: '13px', color: 'var(--accent-green)', fontWeight: '600' }}>
-                  ✓ Result recorded: {existing.winner_name}
+                  ✓ Result recorded: {existing.winner_name} goals — points already awarded
                 </div>
               )}
+              <div style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', marginBottom: '12px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                💡 Once all 104 matches are complete, click "Auto-calculate from results" to pull the real total directly from match data and award points automatically. Or enter manually if needed.
+              </div>
+              <button
+                onClick={async () => {
+                  const { data } = await supabase.from('matches').select('home_score, away_score').eq('status', 'completed')
+                  if (!data || data.length < 104) {
+                    alert(`Only ${data?.length || 0}/104 matches completed — wait until all matches are done.`)
+                    return
+                  }
+                  const total = data.reduce((sum, m) => sum + (m.home_score || 0) + (m.away_score || 0), 0)
+                  if (window.confirm(`Auto-calculated total: ${total} goals from ${data.length} completed matches. Save and award points?`)) {
+                    saveAwardResult(award.key, String(total), award.pts)
+                  }
+                }}
+                className="btn btn-sm" style={{ marginBottom: '10px', background: 'var(--accent-green)', color: 'white', border: 'none', width: '100%' }}>
+                🔢 Auto-calculate from results
+              </button>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input className="input" style={{ flex: 1 }} type="number" min="0" max="300"
-                  placeholder="e.g. 142"
+                <input className="input" style={{ flex: 1 }} type="number" min="0" max="400"
+                  placeholder="or enter manually e.g. 147"
                   value={inputs[award.key] || ''}
                   onChange={e => setInputs(prev => ({ ...prev, [award.key]: e.target.value }))}
                 />
