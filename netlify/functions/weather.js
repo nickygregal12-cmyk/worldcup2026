@@ -1,6 +1,11 @@
 export async function handler(event) {
   const apiKey = process.env.WEATHER_API_KEY || process.env.VITE_WEATHER_API_KEY
 
+  // DEBUG — remove after confirming key is correct
+  console.log('WEATHER_API_KEY prefix:', process.env.WEATHER_API_KEY?.slice(0, 6) || 'NOT SET')
+  console.log('VITE_WEATHER_API_KEY prefix:', process.env.VITE_WEATHER_API_KEY?.slice(0, 6) || 'NOT SET')
+  console.log('Using key prefix:', apiKey?.slice(0, 6) || 'NONE')
+
   if (!apiKey) {
     return json({ available: false, error: 'Missing WEATHER_API_KEY' }, 200)
   }
