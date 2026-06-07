@@ -13,19 +13,19 @@ export default function BottomNav() {
     : phaseOverride && phaseOverride !== 'ko_predictor' ? false
     : new Date() >= KO_OPEN_DATE
 
-  // Post 27 Jun: swap Knockout tab for KO Predictor
+  // Post group stage: swap Groups tab for KO Predictor, keep Knockout
   const navItems = koLive ? [
-    { to: '/',            icon: '🏠',  label: 'Home' },
-    { to: '/predictions', icon: '⚽',  label: 'Tournament' },
-    { to: '/ko-predictor',icon: '🔥',  label: 'KO Pred', highlight: true },
-    { to: '/awards',      icon: '🏅',  label: 'Awards' },
-    { to: '/leagues',     icon: '👥',  label: 'Leagues', protected: true },
+    { to: '/',             icon: '🏠', label: 'Home' },
+    { to: '/ko-predictor', icon: '🔥', label: 'KO Pred', highlight: true },
+    { to: '/knockout',     icon: '🏆', label: 'Knockout' },
+    { to: '/awards',       icon: '🏅', label: 'Awards' },
+    { to: '/leagues',      icon: '👥', label: 'Leagues', protected: true },
   ] : [
-    { to: '/',            icon: '🏠',  label: 'Home' },
-    { to: '/predictions', icon: '⚽',  label: 'Groups' },
-    { to: '/knockout',    icon: '🏆',  label: 'Knockout' },
-    { to: '/awards',      icon: '🏅',  label: 'Awards' },
-    { to: '/leagues',     icon: '👥',  label: 'Leagues', protected: true },
+    { to: '/',             icon: '🏠', label: 'Home' },
+    { to: '/predictions',  icon: '⚽', label: 'Groups' },
+    { to: '/knockout',     icon: '🏆', label: 'Knockout' },
+    { to: '/awards',       icon: '🏅', label: 'Awards' },
+    { to: '/leagues',      icon: '👥', label: 'Leagues', protected: true },
   ]
 
   return (

@@ -1,13 +1,15 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { useAuthStore } from '../store/index.js'
+import { useAuthStore, useAppStore } from '../store/index.js'
 import { SkeletonCard, ErrorState } from '../components/PageState.jsx'
 import {
   ALL_STAGES,
   calcPredictedStandings, resolveSlot, getBest3rdTeams, findAffectedPicks, groupFullyPredicted,
   getMD1LockTime, MD1_STANDINGS_LOCK_FALLBACK,
 } from '../lib/bracketUtils.js'
+
+const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
 const VENUE_FLAGS = {
   'New York': '🇺🇸', 'New Jersey': '🇺🇸', 'New York/NJ': '🇺🇸', 'Los Angeles': '🇺🇸',
@@ -51,6 +53,7 @@ function slotLabel(slot) {
 
 export default function Knockout() {
   const { user } = useAuthStore()
+  const { appSettings } = useAppStore()
   const [groupMatches, setGroupMatches] = useState([])
   const [groupPredictions, setGroupPredictions] = useState({})
   const [standings, setStandings] = useState({})
@@ -61,10 +64,15 @@ export default function Knockout() {
   const [loadError, setLoadError] = useState(false)
   const [saving, setSaving] = useState({})
   const [saved, setSaved] = useState({})
+  const [m73Ready, setM73Ready] = useState(false)
   const smartStageAppliedRef = useRef(false)
 
   const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
   const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
+  const phaseOverride = appSettings?.game_phase_override || ''
+  const koLive = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
+    ? true : phaseOverride && phaseOverride !== 'ko_predictor' ? false
+    : m73Ready || new Date() >= KO_OPEN_DATE
   const mainBracketLockTime = useMemo(() => getMatchdayTwoFullTime(groupMatches), [groupMatches])
   const mainBracketLocked = new Date() >= mainBracketLockTime
 
@@ -96,6 +104,15 @@ export default function Knockout() {
   const loadData = async () => {
     try {
       setLoading(true)
+
+      // Check if M73 has both teams — signals KO Predictor is open
+      const { data: m73 } = await supabase
+        .from('matches')
+        .select('home_team_id, away_team_id')
+        .eq('match_number', 73)
+        .maybeSingle()
+      if (m73?.home_team_id && m73?.away_team_id) setM73Ready(true)
+
       const { data: matchData, error } = await supabase
         .from('matches')
         .select(`*, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code), group:group_id(name)`)
@@ -561,6 +578,21 @@ export default function Knockout() {
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+
+      {/* ── KO Predictor overlap banner — shown when KO Pred open but groups still running ── */}
+      {koLive && !groupStageDone && (
+        <div style={{ background: 'linear-gradient(135deg, #e65100, #ff9800)', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <div>
+            <div style={{ fontWeight: '800', fontSize: '14px', color: 'white' }}>🔥 KO Predictor is now open!</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginTop: '2px' }}>Fresh start — predict all 32 knockout matches</div>
+          </div>
+          <Link to="/ko-predictor" style={{
+            background: 'white', color: '#e65100',
+            padding: '8px 16px', borderRadius: 'var(--radius-full)',
+            fontWeight: '800', fontSize: '13px', textDecoration: 'none', flexShrink: 0,
+          }}>Play →</Link>
+        </div>
+      )}
 
       {/* ── Hero ── */}
       <div style={{
