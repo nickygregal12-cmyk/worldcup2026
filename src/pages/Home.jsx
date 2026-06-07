@@ -34,6 +34,19 @@ const formatWeather = (weather) => {
   return `${icon} ${Math.round(Number(temp))}°C${condition ? ` · ${condition}` : ''}`
 }
 
+// Returns { label, style } for a coloured weather pill
+const getWeatherPillStyle = (weather) => {
+  if (!weather?.available) return null
+  const temp = weather.temp_c
+  const cond = (weather.condition || '').toLowerCase()
+  if (temp >= 33) return { bg: 'rgba(230,81,0,0.12)', color: '#e65100' }
+  if (temp >= 28) return { bg: 'rgba(245,124,0,0.12)', color: '#e65100' }
+  if (cond.includes('thunder')) return { bg: 'rgba(94,53,177,0.12)', color: '#5e35b1' }
+  if (cond.includes('rain') || cond.includes('drizzle')) return { bg: 'rgba(21,101,192,0.12)', color: '#1565c0' }
+  if (cond.includes('cloud') || cond.includes('overcast')) return { bg: 'rgba(96,125,139,0.1)', color: 'var(--text-muted)' }
+  return { bg: 'rgba(46,125,50,0.1)', color: '#2e7d32' }
+}
+
 function useCountdown(targetDate) {
   const [timeLeft, setTimeLeft] = useState({})
   useEffect(() => {
@@ -102,6 +115,7 @@ export default function Home() {
   const [showShareCard, setShowShareCard] = useState(false)
   const [shareCopied, setShareCopied]     = useState(false)
   const [luckyDone, setLuckyDone]         = useState(false)
+  const [todayMatches, setTodayMatches]   = useState([])
   const [matchWeather, setMatchWeather]   = useState({})
   const countdown = useCountdown(nextMatch?.kickoff_time)
 
@@ -140,14 +154,17 @@ export default function Home() {
   }, [user])
 
   useEffect(() => {
-    const matchesToCheck = [nextMatch, ...liveMatches].filter(Boolean)
+    const matchesToCheck = [nextMatch, ...liveMatches, ...todayMatches].filter(Boolean)
     if (!matchesToCheck.length) return
 
+    // Deduplicate by id
+    const seen = new Set()
     matchesToCheck.forEach(match => {
-      if (!match?.id || !match?.venue?.city || matchWeather[match.id]) return
+      if (!match?.id || !match?.venue?.city || matchWeather[match.id] || seen.has(match.id)) return
+      seen.add(match.id)
       loadMatchWeather(match)
     })
-  }, [nextMatch?.id, liveMatches.map(m => m.id).join('|')])
+  }, [nextMatch?.id, liveMatches.map(m => m.id).join('|'), todayMatches.map(m => m.id).join('|')])
 
   const loadMatchWeather = async (match) => {
     try {
@@ -169,7 +186,12 @@ export default function Home() {
     try {
       const nowIso = new Date().toISOString()
 
-      const [liveRes, nextRes, upcomingRes, predictorRes] = await Promise.all([
+      // Rolling 24-hour window from now — timezone-safe, always shows the right session
+      // e.g. at 15:00 BST: catches 16:00, 19:00, 22:00, and 01:00 next morning kickoffs
+      const windowStart = new Date() // now
+      const windowEnd   = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000)
+
+      const [liveRes, nextRes, upcomingRes, predictorRes, todayRes] = await Promise.all([
         supabase.from('matches')
           .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
           .eq('status', 'live').order('kickoff_time', { ascending: true }),
@@ -187,12 +209,19 @@ export default function Home() {
         supabase.from('profiles')
           .select('id, username, total_points, streak_current')
           .order('total_points', { ascending: false }).limit(5),
+
+        supabase.from('matches')
+          .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
+          .gte('kickoff_time', windowStart.toISOString())
+          .lte('kickoff_time', windowEnd.toISOString())
+          .order('kickoff_time', { ascending: true }),
       ])
 
       setLiveMatches(liveRes.data || [])
       setNextMatch(nextRes.data || null)
       setUpcomingMatches(upcomingRes.data || [])
       setTopPredictors(predictorRes.data || [])
+      setTodayMatches(todayRes.data || [])
 
       // Load user completion counts from source tables so Home doesn't rely on stale cached profile values.
       if (user) {
@@ -889,27 +918,89 @@ export default function Home() {
           )}
 
           {/* ── Next match card (tournament live only) ── */}
-          {!loading && tournamentStarted && !tournamentOver && nextMatch && liveMatches.length === 0 && (
-            <div className="card fade-in" style={{ overflow: 'hidden' }}>
-              <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                <div style={{ fontWeight: '800', fontSize: '14px' }}>⏱️ Next Match</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                  <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
-                  <span style={{ fontWeight: '800', fontSize: '13px' }}>{nextMatch.home_team?.name}</span>
+          {!loading && tournamentStarted && !tournamentOver && nextMatch && liveMatches.length === 0 && (() => {
+            const w = matchWeather[nextMatch.id]
+            const pillStyle = w?.available ? getWeatherPillStyle(w) : null
+            return (
+              <div className="card fade-in" style={{ overflow: 'hidden' }}>
+                <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', padding: '0 16px' }}>
+                  <div style={{ fontWeight: '800', fontSize: '14px' }}>⏱️ Next Match</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
                 </div>
-                <div style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: '300' }}>vs</div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                  <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
-                  <span style={{ fontWeight: '800', fontSize: '13px' }}>{nextMatch.away_team?.name}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center', padding: '0 16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                    <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
+                    <span style={{ fontWeight: '800', fontSize: '13px' }}>{nextMatch.home_team?.name}</span>
+                  </div>
+                  <div style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: '300' }}>vs</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                    <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
+                    <span style={{ fontWeight: '800', fontSize: '13px' }}>{nextMatch.away_team?.name}</span>
+                  </div>
                 </div>
+                {/* Venue + weather row */}
+                <div style={{ padding: '10px 16px 14px', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  {nextMatch.venue?.city && (
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                      {getVenueFlag(nextMatch.venue.city)} {nextMatch.venue.city}
+                    </span>
+                  )}
+                  {pillStyle && (
+                    <>
+                      <span style={{ color: 'var(--border-light)' }}>·</span>
+                      <span style={{
+                        fontSize: '12px', fontWeight: '700', padding: '3px 10px',
+                        borderRadius: 'var(--radius-full)',
+                        background: pillStyle.bg, color: pillStyle.color,
+                      }}>
+                        {w.icon} {Math.round(w.temp_c)}°C · {w.condition}
+                      </span>
+                    </>
+                  )}
+                </div>
+                {/* Expanded weather stats row for next match */}
+                {w?.available && (w.humidity != null || w.wind_kph != null) && (
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-around',
+                    padding: '10px 16px', margin: '0 16px 14px',
+                    background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-light)',
+                  }}>
+                    {w.humidity != null && (
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{w.humidity}%</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Humidity</div>
+                      </div>
+                    )}
+                    {w.wind_kph != null && (
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{Math.round(w.wind_kph)} km/h</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Wind</div>
+                      </div>
+                    )}
+                    {w.feelslike_c != null && (
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{Math.round(w.feelslike_c)}°C</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Feels like</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {w?.alert && (
+                  <div style={{
+                    margin: '0 16px 14px', padding: '7px 12px',
+                    background: w.alert.includes('heat') || w.alert.includes('hot') ? 'rgba(230,81,0,0.08)' : 'rgba(94,53,177,0.08)',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: '11px', fontWeight: '600',
+                    color: w.alert.includes('heat') || w.alert.includes('hot') ? '#e65100' : '#5e35b1',
+                  }}>
+                    {w.alert.includes('heat') || w.alert.includes('hot') ? '🌡️' : '⛈️'} {w.alert} at kickoff
+                  </div>
+                )}
               </div>
-              {nextMatch.venue?.city && <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>{getVenueFlag(nextMatch.venue.city)} {nextMatch.venue.city}{formatWeather(matchWeather[nextMatch.id]) ? ` · ${formatWeather(matchWeather[nextMatch.id])}` : ''}</div>}
-            </div>
-          )}
+            )
+          })()}
 
           {/* ── Next up compact (when live matches on) ── */}
           {!loading && tournamentStarted && liveMatches.length > 0 && nextMatch && (
@@ -937,8 +1028,118 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Upcoming matches list ── */}
-          {liveMatches.length === 0 && upcomingMatches.length > 0 && nextMatch && !countdown.started && tournamentStarted && (
+          {/* ── Upcoming matches in next 24hrs — weather-first card ── */}
+          {todayMatches.length > 0 && tournamentStarted && (() => {
+            const now2 = new Date()
+            const liveIds = new Set(liveMatches.map(m => m.id))
+            // Exclude currently-live matches (already shown in LIVE card above)
+            const nonLive = todayMatches.filter(m => !liveIds.has(m.id))
+            const upcoming = nonLive.filter(m => new Date(m.kickoff_time) > now2 && m.status !== 'completed')
+            const completed = nonLive.filter(m => m.status === 'completed')
+            // Show upcoming first, completed at the bottom; if all done show results
+            const displayMatches = [...upcoming, ...completed].slice(0, 6)
+            const overflow = [...upcoming, ...completed].length - 6
+            if (displayMatches.length === 0) return null
+            const allDone = upcoming.length === 0 && completed.length > 0
+            return (
+              <div className="card fade-in" style={{ overflow: 'hidden' }}>
+                <div style={{ height: '3px', background: 'var(--scottish-navy)', borderRadius: 'var(--radius-full)', marginBottom: '0' }} />
+                <div className="section-header" style={{ paddingTop: '14px' }}>
+                  <span className="section-title">
+                    {allDone ? '✅ Recent Results' : '📅 Upcoming'}
+                  </span>
+                  <Link to="/predictions" className="section-link">Predict →</Link>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+                  {displayMatches.map((match, idx) => {
+                    const w = matchWeather[match.id]
+                    const pillStyle = w?.available ? getWeatherPillStyle(w) : null
+                    const isCompleted = match.status === 'completed'
+                    return (
+                      <div key={match.id} style={{
+                        padding: '12px 16px',
+                        borderTop: '1px solid var(--border-light)',
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                      }}>
+                        {/* Teams */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                          <span style={{ fontSize: '20px' }}>{match.home_team?.flag_emoji}</span>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                            {match.home_team?.short_code}
+                          </span>
+                          {isCompleted ? (
+                            <span style={{ fontSize: '14px', fontWeight: '900', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', padding: '0 4px' }}>
+                              {match.home_score}–{match.away_score}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', padding: '0 2px' }}>vs</span>
+                          )}
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                            {match.away_team?.short_code}
+                          </span>
+                          <span style={{ fontSize: '20px' }}>{match.away_team?.flag_emoji}</span>
+                        </div>
+
+                        {/* Right side: weather pill + kickoff time */}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', flexShrink: 0 }}>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>
+                            {isCompleted ? 'FT' : new Date(match.kickoff_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' }) + ' BST'}
+                          </span>
+                          {pillStyle && (
+                            <span style={{
+                              fontSize: '11px', fontWeight: '600',
+                              padding: '2px 7px', borderRadius: 'var(--radius-full)',
+                              background: pillStyle.bg, color: pillStyle.color,
+                              whiteSpace: 'nowrap',
+                            }}>
+                              {w.icon} {Math.round(w.temp_c)}°C
+                              {w.alert ? ` · ${w.alert}` : ''}
+                            </span>
+                          )}
+                          {!pillStyle && match.venue?.city && (
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.6 }}>
+                              {getVenueFlag(match.venue.city)} {match.venue.city}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                {/* Overflow note */}
+                {overflow > 0 && (
+                  <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border-light)', fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center' }}>
+                    + {overflow} more match{overflow > 1 ? 'es' : ''} today
+                  </div>
+                )}
+                {/* Extreme heat / thunderstorm alert if any match has one */}
+                {(() => {
+                  const alerts = displayMatches
+                    .map(m => matchWeather[m.id]?.alert)
+                    .filter(Boolean)
+                  const worst = alerts.find(a => a === 'Extreme heat' || a === 'Thunderstorm') || alerts[0]
+                  if (!worst) return null
+                  const isHeat = worst.includes('heat') || worst.includes('hot')
+                  return (
+                    <div style={{
+                      margin: '0 16px 14px', padding: '8px 12px',
+                      background: isHeat ? 'rgba(230,81,0,0.08)' : 'rgba(94,53,177,0.08)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '11px', fontWeight: '600',
+                      color: isHeat ? '#e65100' : '#5e35b1',
+                      display: 'flex', alignItems: 'center', gap: '6px',
+                    }}>
+                      {isHeat ? '🌡️' : '⛈️'}
+                      <span>{worst} conditions for {alerts.filter(a => a === worst).length > 1 ? 'multiple matches' : 'one match'} today</span>
+                    </div>
+                  )
+                })()}
+              </div>
+            )
+          })()}
+
+          {/* ── Coming Up fallback — shown when nothing in next 24hrs ── */}
+          {liveMatches.length === 0 && todayMatches.length === 0 && upcomingMatches.length > 0 && nextMatch && !countdown.started && tournamentStarted && (
             <div className="card fade-in">
               <div className="section-header">
                 <span className="section-title">📅 Coming Up</span>
