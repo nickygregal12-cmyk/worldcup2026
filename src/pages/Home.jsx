@@ -216,7 +216,8 @@ export default function Home() {
             .eq('is_confident', true),
           supabase.from('knockout_picks')
             .select('match_number', { count: 'exact', head: true })
-            .eq('user_id', user.id),
+            .eq('user_id', user.id)
+            .not('winner_id', 'is', null),
           supabase.from('award_predictions')
             .select('award_type', { count: 'exact', head: true })
             .eq('user_id', user.id),
