@@ -27,7 +27,7 @@ export default function Register() {
   const handleStep1 = (e) => {
     e.preventDefault()
     setError('')
-    if (username.length < 3) { setError('Display name must be at least 3 characters'); return }
+    if (username.trim().length < 3) { setError('Display name must be at least 3 characters'); return }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return }
     setStep(2)
   }
@@ -129,11 +129,11 @@ export default function Register() {
               <form onSubmit={handleStep1}>
                 <div className="form-group">
                   <label className="label">Display name</label>
-                  <input className="input" type="text" placeholder="e.g. FootballFan2026"
-                    value={username} onChange={e => setUsername(e.target.value.replace(/\s/g, ''))}
-                    required autoFocus maxLength={20} />
+                  <input className="input" type="text" placeholder="e.g. Jimmy Anderson"
+                    value={username} onChange={e => setUsername(e.target.value)}
+                    required autoFocus maxLength={30} />
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                    This is how you'll appear on the leaderboard
+                    This is how you'll appear on the leaderboard — spaces and capitals allowed
                   </div>
                 </div>
                 <div className="form-group">

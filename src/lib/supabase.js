@@ -21,13 +21,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 })
 
 // Auth helpers
-export const signUpWithEmail = async (email, password, username) => {
-  // Sign up the user
+export const signUpWithEmail = async (email, password, displayName) => {
+  // Generate clean username from display name (lowercase, no spaces/special chars)
+  const cleanUsername = displayName.toLowerCase().replace(/[^a-z0-9_]/g, '')
+  // Sign up the user — pass both display name (as typed) and clean username
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { username, full_name: username },
+      data: {
+        username: cleanUsername || displayName.toLowerCase().replace(/\s/g, ''),
+        full_name: displayName.trim(), // preserved exactly as typed
+      },
       emailRedirectTo: window.location.origin,
     },
   })
