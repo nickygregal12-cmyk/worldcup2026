@@ -658,9 +658,11 @@ function DailyQuestionsTab() {
       status: 'scheduled',
     }
     if (editingQ) {
-      await supabase.from('daily_questions').update(payload).eq('id', editingQ.id)
+      const { error } = await supabase.from('daily_questions').update(payload).eq('id', editingQ.id)
+      if (error) { alert(`Save failed: ${error.message}`); setSaving(false); return }
     } else {
-      await supabase.from('daily_questions').insert(payload)
+      const { error } = await supabase.from('daily_questions').insert(payload)
+      if (error) { alert(`Save failed: ${error.message}`); setSaving(false); return }
     }
     setSaving(false)
     setShowForm(false)
