@@ -540,6 +540,14 @@ export default function Predictions() {
     }
   }, [user])
 
+  // Matches grouped by date — used for By Date view and IntersectionObserver
+  const matchesByDate = matches.reduce((acc, match) => {
+    const key = formatDateKey(match.kickoff_time)
+    if (!acc[key]) acc[key] = []
+    acc[key].push(match)
+    return acc
+  }, {})
+
   // Auto-scroll the date tab strip to keep active date visible
   useEffect(() => {
     if (!activeDateKey) return
@@ -1167,13 +1175,6 @@ export default function Predictions() {
 
   const getPredictionCount = () =>
     Object.values(predictions).filter(p => p.home !== undefined && p.home !== '' && p.away !== undefined && p.away !== '').length
-
-  const matchesByDate = matches.reduce((acc, match) => {
-    const key = formatDateKey(match.kickoff_time)
-    if (!acc[key]) acc[key] = []
-    acc[key].push(match)
-    return acc
-  }, {})
 
   const getMatchHasPrediction = (match) => {
     const pred = predictions[match.id]
