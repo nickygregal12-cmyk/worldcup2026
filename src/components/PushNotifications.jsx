@@ -86,6 +86,8 @@ export default function PushNotifications() {
   }
 
   // Don't show if unsupported, subscribed, denied, or dismissed
+  // DEBUG: log state
+  console.log('PushNotifications render:', { user: !!user, isLoading, status, dismissed })
   if (!user || isLoading || status === 'unsupported' || status === 'subscribed' || status === 'denied' || dismissed) return null
 
   return (
