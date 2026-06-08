@@ -508,6 +508,7 @@ export default function Predictions() {
   const [teamSearch, setTeamSearch] = useState('')
   const [standings, setStandings] = useState([])
   const [matches, setMatches] = useState([])
+  const [communityPicks, setCommunityPicks] = useState({}) // matchId -> {home, draw, away, total}
   const [predictions, setPredictions] = useState({})
   const [odds, setOdds] = useState({})
   const [loading, setLoading] = useState(true)
@@ -655,10 +656,32 @@ export default function Predictions() {
       if (error) throw error
       setMatches(data || [])
       setLoadError(false)
+      // Load community picks for locked matches
+      const lockedIds = (data || []).filter(m => new Date() >= new Date(m.kickoff_time)).map(m => m.id)
+      if (lockedIds.length > 0) loadCommunityPicks(lockedIds)
     } catch (e) {
       console.error('Failed to load matches:', e)
       setLoadError(true)
     } finally { setLoading(false) }
+  }
+
+  const loadCommunityPicks = async (matchIds) => {
+    if (!matchIds?.length) return
+    const { data } = await supabase
+      .from('predictions')
+      .select('match_id, home_score, away_score')
+      .in('match_id', matchIds)
+      .not('home_score', 'is', null)
+    if (!data) return
+    const agg = {}
+    data.forEach(p => {
+      if (!agg[p.match_id]) agg[p.match_id] = { home: 0, draw: 0, away: 0, total: 0 }
+      agg[p.match_id].total++
+      if (p.home_score > p.away_score) agg[p.match_id].home++
+      else if (p.home_score === p.away_score) agg[p.match_id].draw++
+      else agg[p.match_id].away++
+    })
+    setCommunityPicks(agg)
   }
 
   const loadPredictions = async () => {
@@ -762,11 +785,22 @@ export default function Predictions() {
 
     if (changedR32Matches.length === 0) return null
 
+    // Only warn if the user's actual picked winner team is affected
+    // Ignore cases where unresolved slots (null) change — those are false positives
+    // from best-3rd-place slots that depend on all 12 groups being predicted
     const affectedPickNumbers = new Set()
     for (const [matchNumber, pick] of pickedEntries) {
       const mn = Number(matchNumber)
-      if (changedR32Matches.includes(mn)) affectedPickNumbers.add(mn)
-      if (removedTeamIds.has(pick.winner_id) || removedTeamIds.has(pick.home_id) || removedTeamIds.has(pick.away_id)) {
+      // Only flag if a team the user actually picked as winner is now gone from that match
+      if (changedR32Matches.includes(mn) && pick.winner_id) {
+        const afterMatch = nextSnapshot[mn]
+        // The pick is affected only if the winner they chose is no longer in that R32 match
+        if (afterMatch && !afterMatch.teamIds.includes(pick.winner_id)) {
+          affectedPickNumbers.add(mn)
+        }
+      }
+      // Also flag if their winner was removed from R32 entirely (moved to different match or out)
+      if (removedTeamIds.has(pick.winner_id)) {
         affectedPickNumbers.add(mn)
       }
     }
@@ -822,6 +856,20 @@ export default function Predictions() {
   const attemptSavePrediction = useCallback(async (match, homeScore, awayScore, options = {}) => {
     if (!userRef.current) return
     if (homeScore === '' || homeScore === undefined || awayScore === '' || awayScore === undefined) return
+
+    // ── Group kickoff lock: block if any match in the same group has already kicked off ──
+    // Prevents using live match results to game later predictions in the same group
+    if (match.stage === 'group' && match.group?.name) {
+      const groupName = match.group.name
+      const now = new Date()
+      const groupMatchKickedOff = (matchesRef.current || []).some(m =>
+        m.stage === 'group' &&
+        m.group?.name === groupName &&
+        m.id !== match.id &&
+        new Date(m.kickoff_time) <= now
+      )
+      if (groupMatchKickedOff) return
+    }
 
     // ── Standings lock check (group matches only, after MD1 lock) ──────────────
     if (!options.skipStandingsCheck && match.stage === 'group') {
@@ -1182,13 +1230,23 @@ export default function Predictions() {
   const renderMatch = (match) => {
     const pred = predictions[match.id] || {}
     const locked = isLocked(match.kickoff_time)
+    // Also lock if any other match in the same group has already kicked off
+    const groupLocked = !locked && match.stage === 'group' && match.group?.name
+      ? matches.some(m =>
+          m.stage === 'group' &&
+          m.group?.name === match.group.name &&
+          m.id !== match.id &&
+          isLocked(m.kickoff_time)
+        )
+      : false
+    const effectiveLocked = locked || groupLocked
     const isSaving = saving[match.id]
     const isSaved = saved[match.id]
     const matchOdds = getMatchOdds(match)
     const hasPrediction = pred.home !== undefined && pred.home !== ''
     const isGuest = !user
     const hasJoker = pred.joker === true
-    const canUseJoker = !locked && user && hasPrediction && (jokersRemaining > 0 || hasJoker)
+    const canUseJoker = !effectiveLocked && user && hasPrediction && (jokersRemaining > 0 || hasJoker)
     const standingsLockTime = getMD1LockTime(matches)
     const standingsLocked = match.stage === 'group' && new Date() >= standingsLockTime
     const resultColour = getResultColour(match, pred)
@@ -1292,9 +1350,9 @@ export default function Predictions() {
               {match.venue?.city && <span> · {match.venue.city} {VENUE_FLAGS[match.venue.city] || ''}</span>}
             </div>
             <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-              {locked && <span className="badge badge-red">🔒 Locked</span>}
+              {effectiveLocked && <span className="badge badge-red">🔒 Locked</span>}
               {!locked && standingsLocked && <span className="badge badge-gray">📊 Order locked</span>}
-              {!locked && hasPrediction && !hasJoker && <span className="badge badge-green">✓ Saved</span>}
+              {!effectiveLocked && hasPrediction && !hasJoker && <span className="badge badge-green">✓ Saved</span>}
               {(match.home_score !== null && match.home_score !== undefined) && (
                 <span className="badge badge-gray">{match.home_score}–{match.away_score}</span>
               )}
@@ -1331,7 +1389,7 @@ export default function Predictions() {
                     onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
                     onInput={e => handleScoreChange(match.id, 'home', e.target.value)}
                     onBlur={() => handleScoreBlur(match, 'home')}
-                    disabled={locked} placeholder="?"
+                    disabled={effectiveLocked} placeholder="?"
                   />
                   <span style={{ fontSize: '20px', color: 'var(--text-muted)', fontWeight: '300', fontFamily: 'var(--font-mono)' }}>–</span>
                   <input type="text" inputMode="numeric" pattern="[0-9]*" className="score-input"
@@ -1340,7 +1398,7 @@ export default function Predictions() {
                     onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
                     onInput={e => handleScoreChange(match.id, 'away', e.target.value)}
                     onBlur={() => handleScoreBlur(match, 'away')}
-                    disabled={locked} placeholder="?"
+                    disabled={effectiveLocked} placeholder="?"
                   />
                 </>
               )}
@@ -1356,7 +1414,7 @@ export default function Predictions() {
           </div>
 
           {/* Odds */}
-          {matchOdds && !locked && !resultColour && (
+          {matchOdds && !effectiveLocked && !resultColour && (
             <div className="odds-row">
               <div className={`odds-item ${favourite === 'home' ? 'odds-favourite' : ''}`}>
                 <span className="odds-label">{match.home_team?.short_code}</span>
@@ -1372,6 +1430,41 @@ export default function Predictions() {
               </div>
             </div>
           )}
+
+          {/* Community picks — shown after match locks */}
+          {effectiveLocked && (() => {
+            const cp = communityPicks[match.id]
+            if (!cp || cp.total < 3) return null
+            const homePct = Math.round((cp.home / cp.total) * 100)
+            const drawPct = Math.round((cp.draw / cp.total) * 100)
+            const awayPct = 100 - homePct - drawPct
+            const userResult = pred?.home !== undefined
+              ? pred.home > pred.away ? 'home' : pred.home === pred.away ? 'draw' : 'away'
+              : null
+            return (
+              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
+                <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '7px' }}>
+                  👥 {cp.total} predictions
+                </div>
+                <div style={{ display: 'flex', gap: '3px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: '6px', marginBottom: '7px' }}>
+                  <div style={{ width: `${homePct}%`, background: 'var(--scottish-navy)', transition: 'width 0.5s' }} />
+                  <div style={{ width: `${drawPct}%`, background: 'var(--text-muted)', opacity: 0.4, transition: 'width 0.5s' }} />
+                  <div style={{ width: `${awayPct}%`, background: '#c62828', transition: 'width 0.5s' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: '700' }}>
+                  <span style={{ color: userResult === 'home' ? 'var(--scottish-navy)' : 'var(--text-muted)' }}>
+                    {match.home_team?.short_code} {homePct}%{userResult === 'home' ? ' ✓' : ''}
+                  </span>
+                  <span style={{ color: userResult === 'draw' ? 'var(--text-primary)' : 'var(--text-muted)' }}>
+                    Draw {drawPct}%{userResult === 'draw' ? ' ✓' : ''}
+                  </span>
+                  <span style={{ color: userResult === 'away' ? '#c62828' : 'var(--text-muted)' }}>
+                    {match.away_team?.short_code} {awayPct}%{userResult === 'away' ? ' ✓' : ''}
+                  </span>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* Guest — no per-card CTA, handled by sticky banner */}
 
@@ -1444,7 +1537,7 @@ export default function Predictions() {
           )}
 
           {/* Standings lock note — shown on unlocked group matches after MD1 lock */}
-          {!locked && !resultColour && standingsLocked && (
+          {!effectiveLocked && !resultColour && standingsLocked && (
             <div style={{ marginTop: '10px', padding: '7px 12px', background: 'rgba(0,48,135,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,48,135,0.1)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '12px' }}>📊</span>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>
@@ -1532,7 +1625,11 @@ export default function Predictions() {
               {this3rd.team?.flag_emoji} {this3rd.team?.short_code} · {this3rdRank > 0 ? `${this3rdRank}${['st','nd','rd'][this3rdRank-1]||'th'} best 3rd` : 'unranked'} of {groupsWithPreds} groups
             </span>
             <span style={{ fontWeight: '800' }}>
-              {this3rdQualifies ? '🏅 On track' : 'Needs improvement'}
+              {(() => {
+                const groupDone = standings.every(t => t.played === 3)
+                if (groupDone) return this3rdQualifies ? '✅ Qualified' : '❌ Eliminated'
+                return this3rdQualifies ? '🏅 On track' : 'Needs improvement'
+              })()}
             </span>
           </div>
         )}
