@@ -15,6 +15,7 @@ const TABS = [
   { key: 'points',   label: '🎯 Points',          superOnly: false },
   { key: 'audit',    label: '📋 Audit Log',       superOnly: true },
   { key: 'settings', label: '⚙️ Settings',        superOnly: true },
+  { key: 'questions', label: '❓ Daily Questions',  superOnly: true },
 ]
 
 const AWARD_DEFS = [
@@ -601,6 +602,208 @@ function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, l
       )}
 
       <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ marginTop: '8px' }}>Close</button>
+    </div>
+  )
+}
+
+function DailyQuestionsTab() {
+  const [questions, setQuestions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editingQ, setEditingQ] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    question: '',
+    type: 'yes_no',
+    options: ['', '', '', ''],
+    scheduled_date: '',
+  })
+
+  useEffect(() => { loadQuestions() }, [])
+
+  const loadQuestions = async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('daily_questions')
+      .select('*, answers:daily_answers(count)')
+      .order('scheduled_date', { ascending: false })
+    setQuestions(data || [])
+    setLoading(false)
+  }
+
+  const openForm = (q = null) => {
+    if (q) {
+      setForm({
+        question: q.question,
+        type: q.type,
+        options: q.options ? [...q.options, '', '', '', ''].slice(0, 4) : ['', '', '', ''],
+        scheduled_date: q.scheduled_date,
+      })
+      setEditingQ(q)
+    } else {
+      setForm({ question: '', type: 'yes_no', options: ['', '', '', ''], scheduled_date: '' })
+      setEditingQ(null)
+    }
+    setShowForm(true)
+  }
+
+  const saveQuestion = async () => {
+    if (!form.question.trim() || !form.scheduled_date) return
+    setSaving(true)
+    const payload = {
+      question: form.question.trim(),
+      type: form.type,
+      options: form.type === 'multiple_choice' ? form.options.filter(o => o.trim()) : null,
+      scheduled_date: form.scheduled_date,
+      status: 'scheduled',
+    }
+    if (editingQ) {
+      await supabase.from('daily_questions').update(payload).eq('id', editingQ.id)
+    } else {
+      await supabase.from('daily_questions').insert(payload)
+    }
+    setSaving(false)
+    setShowForm(false)
+    loadQuestions()
+  }
+
+  const deleteQuestion = async (id) => {
+    if (!confirm('Delete this question?')) return
+    await supabase.from('daily_questions').delete().eq('id', id)
+    loadQuestions()
+  }
+
+  const statusColour = { live: 'var(--accent-green)', scheduled: 'var(--scottish-navy)', expired: 'var(--text-muted)' }
+  const today = new Date().toISOString().split('T')[0]
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+          <div style={{ fontWeight: '800', fontSize: '16px' }}>❓ Daily Questions</div>
+          <button onClick={() => openForm()} className="btn btn-primary btn-sm">+ New Question</button>
+        </div>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          One question per day — goes live at midnight UTC. Schedule ahead to keep the bank full.
+        </div>
+      </div>
+
+      {/* Question form */}
+      {showForm && (
+        <div className="card" style={{ border: '2px solid var(--scottish-navy)' }}>
+          <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '14px' }}>
+            {editingQ ? '✏️ Edit Question' : '➕ New Question'}
+          </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label className="label">Question</label>
+            <input className="input" value={form.question}
+              onChange={e => setForm(f => ({ ...f, question: e.target.value }))}
+              placeholder="e.g. Will there be a VAR controversy today?" />
+          </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label className="label">Scheduled Date</label>
+            <input className="input" type="date" value={form.scheduled_date} min={today}
+              onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} />
+          </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label className="label">Type</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {[
+                { key: 'yes_no', label: '👍 Yes / No' },
+                { key: 'multiple_choice', label: '📋 Multiple Choice' },
+                { key: 'number', label: '🔢 Number' },
+              ].map(t => (
+                <button key={t.key} onClick={() => setForm(f => ({ ...f, type: t.key }))}
+                  className="btn btn-sm"
+                  style={{ background: form.type === t.key ? 'var(--scottish-navy)' : 'var(--bg-tertiary)', color: form.type === t.key ? 'white' : 'var(--text-secondary)', border: '1px solid var(--border-light)' }}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {form.type === 'multiple_choice' && (
+            <div style={{ marginBottom: '12px' }}>
+              <label className="label">Options (2–4)</label>
+              {form.options.map((opt, i) => (
+                <input key={i} className="input" value={opt}
+                  onChange={e => setForm(f => {
+                    const opts = [...f.options]
+                    opts[i] = e.target.value
+                    return { ...f, options: opts }
+                  })}
+                  placeholder={`Option ${i + 1}${i < 2 ? ' (required)' : ' (optional)'}`}
+                  style={{ marginBottom: '6px' }} />
+              ))}
+            </div>
+          )}
+
+          {form.type === 'number' && (
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              💡 Users will enter any number as their answer. Community average will be shown after answering.
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={saveQuestion} disabled={saving || !form.question.trim() || !form.scheduled_date}
+              className="btn btn-primary">{saving ? 'Saving...' : editingQ ? 'Save Changes' : 'Schedule Question'}</button>
+            <button onClick={() => setShowForm(false)} className="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Questions list */}
+      {loading ? (
+        <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+      ) : questions.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          No questions yet — create your first one above.
+        </div>
+      ) : questions.map(q => (
+        <div key={q.id} className="card" style={{ borderLeft: `3px solid ${statusColour[q.status]}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase',
+                  color: statusColour[q.status], letterSpacing: '0.05em' }}>
+                  {q.status === 'live' ? '🟢 Live' : q.status === 'scheduled' ? '🕐 Scheduled' : '✓ Expired'}
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{q.scheduled_date}</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>·</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {q.type === 'yes_no' ? '👍 Yes/No' : q.type === 'multiple_choice' ? '📋 Multiple choice' : '🔢 Number'}
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>·</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {q.answers?.[0]?.count || 0} answers
+                </span>
+              </div>
+              <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: q.options ? '6px' : 0 }}>{q.question}</div>
+              {q.options && (
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                  {q.options.map((opt, i) => (
+                    <span key={i} style={{ fontSize: '11px', padding: '2px 8px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', color: 'var(--text-secondary)' }}>
+                      {opt}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              {q.status !== 'expired' && (
+                <button onClick={() => openForm(q)} className="btn btn-secondary btn-sm">Edit</button>
+              )}
+              <button onClick={() => deleteQuestion(q.id)} className="btn btn-sm"
+                style={{ background: 'rgba(229,57,53,0.1)', color: '#e53935', border: '1px solid rgba(229,57,53,0.2)' }}>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -2775,8 +2978,15 @@ export default function AdminPanel() {
             )}
 
             {/* Existing offline players */}
-            <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>
-              {offlinePlayers.length} offline player{offlinePlayers.length !== 1 ? 's' : ''}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)' }}>
+                {offlinePlayers.length} offline player{offlinePlayers.length !== 1 ? 's' : ''}
+              </div>
+              <button onClick={downloadOfflineTemplate}
+                className="btn btn-sm"
+                style={{ fontSize: '12px', background: 'var(--accent-green)', color: 'white', border: 'none' }}>
+                ⬇️ Download blank Excel template
+              </button>
             </div>
 
             {/* Compact table */}
@@ -3447,6 +3657,11 @@ export default function AdminPanel() {
               </div>
             ))}
           </div>
+        )}
+
+        {/* ── DAILY QUESTIONS TAB ── */}
+        {activeTab === 'questions' && (
+          <DailyQuestionsTab />
         )}
       </div>
 

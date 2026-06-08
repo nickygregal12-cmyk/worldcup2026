@@ -117,6 +117,11 @@ export default function Home() {
   const [luckyDone, setLuckyDone]         = useState(false)
   const [todayMatches, setTodayMatches]   = useState([])
   const [matchWeather, setMatchWeather]   = useState({})
+  const [dailyQuestion, setDailyQuestion] = useState(null)
+  const [myAnswer, setMyAnswer]           = useState(null)
+  const [answerCounts, setAnswerCounts]   = useState({})
+  const [answerSaving, setAnswerSaving]   = useState(false)
+  const [numberInput, setNumberInput]     = useState('')
   const countdown = useCountdown(nextMatch?.kickoff_time)
 
   const now               = new Date()
@@ -138,7 +143,7 @@ export default function Home() {
     : now >= KNOCKOUT_LIVE
   const tournamentOver = phaseOverride === 'post_tournament' ? true : now >= TOURNAMENT_END
 
-  useEffect(() => { loadData() }, [user])
+  useEffect(() => { loadData(); loadDailyQuestion() }, [user])
 
   // Re-fetch when returning to tab so progress bars update immediately
   useEffect(() => {
@@ -179,6 +184,40 @@ export default function Home() {
       setMatchWeather(prev => ({ ...prev, [match.id]: data }))
     } catch (e) {
       // Weather is a nice-to-have; never block the home screen.
+    }
+  }
+
+  const loadDailyQuestion = async () => {
+    const today = new Date().toISOString().split('T')[0]
+    const { data: q } = await supabase
+      .from('daily_questions')
+      .select('*')
+      .eq('status', 'live')
+      .eq('scheduled_date', today)
+      .single()
+
+    if (!q) return
+    setDailyQuestion(q)
+
+    // Get answer counts
+    const { data: answers } = await supabase
+      .from('daily_answers')
+      .select('answer')
+      .eq('question_id', q.id)
+
+    const counts = {}
+    answers?.forEach(a => { counts[a.answer] = (counts[a.answer] || 0) + 1 })
+    setAnswerCounts(counts)
+
+    // Get user's own answer
+    if (user) {
+      const { data: mine } = await supabase
+        .from('daily_answers')
+        .select('answer')
+        .eq('question_id', q.id)
+        .eq('user_id', user.id)
+        .single()
+      if (mine) setMyAnswer(mine.answer)
     }
   }
 
@@ -346,6 +385,28 @@ export default function Home() {
   }
 
   // ── Lucky Dip — fill everything in one tap ───────────────────────────────
+  const submitAnswer = async (answer) => {
+    if (!user || !dailyQuestion || myAnswer || answerSaving) return
+    setAnswerSaving(true)
+    setMyAnswer(answer)
+    setAnswerCounts(prev => ({ ...prev, [answer]: (prev[answer] || 0) + 1 }))
+
+    await supabase.from('daily_answers').upsert({
+      question_id: dailyQuestion.id,
+      user_id: user.id,
+      answer,
+    }, { onConflict: 'question_id,user_id' })
+
+    // Update streak
+    const today = new Date().toISOString().split('T')[0]
+    const { data: prof } = await supabase.from('profiles').select('question_last_answered, question_streak').eq('id', user.id).single()
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+    const newStreak = prof?.question_last_answered === yesterday ? (prof.question_streak || 0) + 1 : 1
+    await supabase.from('profiles').update({ question_streak: newStreak, question_last_answered: today }).eq('id', user.id)
+
+    setAnswerSaving(false)
+  }
+
   const handleLuckyDip = async () => {
     if (!user || luckyDipping || tournamentStarted) return
     setLuckyDipping(true)
@@ -493,7 +554,7 @@ export default function Home() {
     : groupStageDone
     ? 'Group stage complete — knockout stage underway!'
     : tournamentStarted
-    ? 'Group stage underway · Predictions lock at kickoff'
+    ? 'Group stage underway · Groups lock when first match kicks off'
     : user
     ? 'Predict every match. Compete with friends. Glory awaits.'
     : 'Predict all 104 matches, build your knockout bracket, pick awards and compete with friends.'
@@ -709,6 +770,104 @@ export default function Home() {
             </div>
           )}
 
+          {/* ── Daily Question ── */}
+          {dailyQuestion && user && (() => {
+            const total = Object.values(answerCounts).reduce((a, b) => a + b, 0)
+            const options = dailyQuestion.type === 'yes_no'
+              ? ['Yes', 'No']
+              : dailyQuestion.type === 'multiple_choice'
+              ? (dailyQuestion.options || [])
+              : null
+
+            return (
+              <div className="card fade-in" style={{ overflow: 'hidden', marginBottom: '4px' }}>
+                <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '18px' }}>❓</span>
+                  <span style={{ fontWeight: '800', fontSize: '15px' }}>Today's Question</span>
+                  {myAnswer && <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-green)', marginLeft: 'auto' }}>✓ Answered</span>}
+                </div>
+                <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: '14px', lineHeight: 1.4 }}>
+                  {dailyQuestion.question}
+                </div>
+
+                {/* Yes/No or Multiple Choice */}
+                {options && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {options.map(opt => {
+                      const count = answerCounts[opt] || 0
+                      const pct = total > 0 ? Math.round((count / total) * 100) : 0
+                      const isMyAnswer = myAnswer === opt
+                      return (
+                        <button key={opt}
+                          onClick={() => !myAnswer && submitAnswer(opt)}
+                          disabled={!!myAnswer}
+                          style={{
+                            position: 'relative', overflow: 'hidden',
+                            padding: '10px 14px', borderRadius: 'var(--radius-md)',
+                            border: isMyAnswer ? '2px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                            background: myAnswer ? 'var(--bg-secondary)' : 'var(--bg-secondary)',
+                            cursor: myAnswer ? 'default' : 'pointer',
+                            textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          }}>
+                          {/* Progress bar behind */}
+                          {myAnswer && (
+                            <div style={{
+                              position: 'absolute', left: 0, top: 0, bottom: 0,
+                              width: `${pct}%`,
+                              background: isMyAnswer ? 'rgba(0,56,168,0.12)' : 'rgba(0,0,0,0.04)',
+                              transition: 'width 0.6s ease',
+                            }} />
+                          )}
+                          <span style={{ fontWeight: isMyAnswer ? '700' : '500', fontSize: '14px', position: 'relative' }}>
+                            {isMyAnswer && '✓ '}{opt}
+                          </span>
+                          {myAnswer && (
+                            <span style={{ fontWeight: '700', fontSize: '13px', color: isMyAnswer ? 'var(--scottish-navy)' : 'var(--text-muted)', position: 'relative' }}>
+                              {pct}%
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Number input */}
+                {dailyQuestion.type === 'number' && !myAnswer && (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input className="input" type="number" min="0" value={numberInput}
+                      onChange={e => setNumberInput(e.target.value)}
+                      placeholder="Enter your number"
+                      style={{ flex: 1 }} />
+                    <button onClick={() => numberInput !== '' && submitAnswer(numberInput)}
+                      disabled={numberInput === '' || answerSaving}
+                      className="btn btn-primary">Submit</button>
+                  </div>
+                )}
+
+                {/* Number result */}
+                {dailyQuestion.type === 'number' && myAnswer && (
+                  <div style={{ padding: '10px 14px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '14px' }}>
+                    <span style={{ fontWeight: '700' }}>Your answer: {myAnswer}</span>
+                    {total > 1 && (
+                      <span style={{ color: 'var(--text-muted)', marginLeft: '8px' }}>
+                        · Community average: {(Object.entries(answerCounts).reduce((sum, [k, v]) => sum + parseFloat(k) * v, 0) / total).toFixed(1)}
+                        &nbsp;({total} answers)
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {myAnswer && total > 0 && dailyQuestion.type !== 'number' && (
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'right' }}>
+                    {total} answer{total !== 1 ? 's' : ''} so far
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
           {/* ── Invite friends / app share card ── */}
           {user && !tournamentStarted && (
             <div className="card fade-in" style={{ overflow: 'hidden' }}>
@@ -759,10 +918,10 @@ export default function Home() {
             }}>
               <div>
                 <div style={{ fontSize: '13px', fontWeight: '800', color: knockoutLive ? 'white' : '#ff9800', marginBottom: '2px' }}>
-                  🔥 {knockoutLive ? 'KO Predictor is LIVE!' : `KO Predictor launches in ${Math.ceil((KNOCKOUT_LIVE - now) / (1000 * 60 * 60 * 24))} days`}
+                  🔥 {knockoutLive ? 'KO Predictor is LIVE!' : 'KO Predictor — coming soon'}
                 </div>
                 <div style={{ fontSize: '12px', color: knockoutLive ? 'rgba(255,255,255,0.8)' : 'rgba(255,152,0,0.6)' }}>
-                  {knockoutLive ? 'Your Second Chance — predict all 32 knockout matches' : 'Fresh start, separate leaderboard · Coming 27 Jun 23:00 BST'}
+                  {knockoutLive ? 'Your Second Chance — predict all 32 knockout matches' : 'Opens when the first Round of 32 teams are confirmed — fresh start, separate leaderboard'}
                 </div>
               </div>
               {knockoutLive && (
@@ -1249,7 +1408,10 @@ export default function Home() {
             <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
             <div className="section-header" style={{ marginBottom: '10px' }}>
               <span className="section-title">🏅 How to score points</span>
-              <Link to="/how-to-play" className="section-link">Full rules →</Link>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                {tournamentStarted && <Link to="/stats" className="section-link">🌍 Community stats →</Link>}
+                <Link to="/how-to-play" className="section-link">Full rules →</Link>
+              </div>
             </div>
             <div style={{
               background: 'var(--bg-secondary)',
