@@ -11,8 +11,5 @@
 [functions]
   node_bundler = "esbuild"
 
-[functions."send-push"]
-  external_node_modules = ["web-push"]
-
 # Push notifications triggered via Supabase pg_cron instead of Netlify scheduler
 # (Netlify scheduled functions require Pro tier)
