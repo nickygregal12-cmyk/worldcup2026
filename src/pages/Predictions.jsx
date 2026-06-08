@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
@@ -528,6 +528,14 @@ export default function Predictions() {
   const [knockoutPicks, setKnockoutPicks] = useState({})
   const [knockoutImpactWarning, setKnockoutImpactWarning] = useState(null)
 
+  // Memoised date grouping — safe to use in useEffect dependency arrays
+  const matchesByDate = useMemo(() => matches.reduce((acc, match) => {
+    const key = formatDateKey(match.kickoff_time)
+    if (!acc[key]) acc[key] = []
+    acc[key].push(match)
+    return acc
+  }, {}), [matches])
+
   useEffect(() => {
     loadMatches()
     loadOdds()
@@ -539,14 +547,6 @@ export default function Predictions() {
       checkJokerReminder()
     }
   }, [user])
-
-  // Matches grouped by date — used for By Date view and IntersectionObserver
-  const matchesByDate = matches.reduce((acc, match) => {
-    const key = formatDateKey(match.kickoff_time)
-    if (!acc[key]) acc[key] = []
-    acc[key].push(match)
-    return acc
-  }, {})
 
   // Auto-scroll the date tab strip to keep active date visible
   useEffect(() => {
