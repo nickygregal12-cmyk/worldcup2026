@@ -656,7 +656,7 @@ export default function Profile() {
                 <div>
                   <div style={{ fontWeight: '600', fontSize: '14px' }}>🔮 Show Future Predictions</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {profile.show_future_predictions ? 'Others can see your upcoming picks' : 'Future picks are private'}
+                    {profile.show_future_predictions ? 'Others can see your upcoming picks' : 'Upcoming picks are private — locked picks always visible'}
                   </div>
                 </div>
                 <button onClick={toggleFuturePredictions} style={{ width: '48px', height: '28px', borderRadius: 'var(--radius-full)', background: profile.show_future_predictions ? 'var(--accent-green)' : 'var(--border-medium)', position: 'relative', border: 'none', cursor: 'pointer' }}>

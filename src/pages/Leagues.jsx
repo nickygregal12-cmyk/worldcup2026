@@ -590,7 +590,9 @@ export default function Leagues() {
     const filtered = (preds || [])
       .filter(p => {
         const kicked = new Date(p.match?.kickoff_time) <= new Date()
-        return kicked || showFuture
+        // Also show if match status is completed or live (locked regardless of toggle)
+        const isLocked = p.match?.status === 'completed' || p.match?.status === 'live'
+        return kicked || isLocked || showFuture
       })
       .sort((a, b) => new Date(a.match?.kickoff_time) - new Date(b.match?.kickoff_time))
     setMemberPredictions(filtered)
