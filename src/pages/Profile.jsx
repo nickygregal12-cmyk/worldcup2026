@@ -520,6 +520,30 @@ export default function Profile() {
                 ))}
               </div>
 
+              {/* Daily Question stat */}
+              {(profile.question_total > 0 || profile.question_streak > 0) && (
+                <>
+                  <div style={{ height: '1px', background: 'var(--border-light)', margin: '14px 0 12px' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'rgba(0,56,168,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,56,168,0.12)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '20px' }}>❓</span>
+                      <div>
+                        <div style={{ fontWeight: '700', fontSize: '13px' }}>Daily Questions</div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                          {profile.question_correct || 0}/{profile.question_total || 0} correct
+                        </div>
+                      </div>
+                    </div>
+                    {profile.question_streak > 0 && (
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: '800', fontSize: '18px', color: 'var(--scottish-navy)' }}>🔥 {profile.question_streak}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>DAY STREAK</div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
               {/* KO Predictor section */}
               <div style={{ height: '1px', background: 'var(--border-light)', margin: '14px 0 12px' }} />
               {profile.ko_points > 0 ? (

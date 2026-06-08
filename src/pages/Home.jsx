@@ -122,6 +122,7 @@ export default function Home() {
   const [answerCounts, setAnswerCounts]   = useState({})
   const [answerSaving, setAnswerSaving]   = useState(false)
   const [numberInput, setNumberInput]     = useState('')
+  const [myAnswerCorrect, setMyAnswerCorrect] = useState(null)
   const countdown = useCountdown(nextMatch?.kickoff_time)
 
   const now               = new Date()
@@ -189,14 +190,21 @@ export default function Home() {
 
   const loadDailyQuestion = async () => {
     const today = new Date().toISOString().split('T')[0]
-    const { data: q } = await supabase
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+
+    // Load today's live question OR yesterday's expired question (to show result)
+    const { data: questions } = await supabase
       .from('daily_questions')
       .select('*')
-      .eq('status', 'live')
-      .eq('scheduled_date', today)
-      .single()
+      .in('scheduled_date', [today, yesterday])
+      .in('status', ['live', 'expired'])
+      .order('scheduled_date', { ascending: false })
+      .limit(2)
 
-    if (!q) return
+    if (!questions?.length) return
+
+    // Prefer today's live question; fall back to yesterday's expired one
+    const q = questions.find(q => q.status === 'live') || questions[0]
     setDailyQuestion(q)
 
     // Get answer counts
@@ -213,11 +221,14 @@ export default function Home() {
     if (user) {
       const { data: mine } = await supabase
         .from('daily_answers')
-        .select('answer')
+        .select('answer, is_correct')
         .eq('question_id', q.id)
         .eq('user_id', user.id)
         .single()
-      if (mine) setMyAnswer(mine.answer)
+      if (mine) {
+        setMyAnswer(mine.answer)
+        setMyAnswerCorrect(mine.is_correct)
+      }
     }
   }
 
@@ -784,8 +795,17 @@ export default function Home() {
                 <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                   <span style={{ fontSize: '18px' }}>❓</span>
-                  <span style={{ fontWeight: '800', fontSize: '15px' }}>Today's Question</span>
-                  {myAnswer && <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-green)', marginLeft: 'auto' }}>✓ Answered</span>}
+                  <span style={{ fontWeight: '800', fontSize: '15px' }}>
+                    {dailyQuestion.status === 'expired' ? "Yesterday's Question" : "Today's Question"}
+                  </span>
+                  {myAnswer && myAnswerCorrect === null && <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-green)', marginLeft: 'auto' }}>✓ Answered</span>}
+                  {myAnswer && myAnswerCorrect === true && <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-green)', marginLeft: 'auto' }}>✅ Correct!</span>}
+                  {myAnswer && myAnswerCorrect === false && <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-red)', marginLeft: 'auto' }}>❌ Wrong</span>}
+                  {dailyQuestion.status === 'expired' && dailyQuestion.correct_answer && (
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)', marginLeft: myAnswer ? '4px' : 'auto' }}>
+                      Answer: {dailyQuestion.correct_answer}
+                    </span>
+                  )}
                 </div>
                 <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: '14px', lineHeight: 1.4 }}>
                   {dailyQuestion.question}
@@ -820,7 +840,9 @@ export default function Home() {
                             }} />
                           )}
                           <span style={{ fontWeight: isMyAnswer ? '700' : '500', fontSize: '14px', position: 'relative' }}>
-                            {isMyAnswer && '✓ '}{opt}
+                            {isMyAnswer && '✓ '}
+                            {dailyQuestion.status === 'expired' && dailyQuestion.correct_answer === opt && '✅ '}
+                            {opt}
                           </span>
                           {myAnswer && (
                             <span style={{ fontWeight: '700', fontSize: '13px', color: isMyAnswer ? 'var(--scottish-navy)' : 'var(--text-muted)', position: 'relative' }}>

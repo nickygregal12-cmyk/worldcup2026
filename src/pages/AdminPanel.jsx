@@ -673,6 +673,19 @@ function DailyQuestionsTab() {
     loadQuestions()
   }
 
+  const [settingResult, setSettingResult] = useState(null) // question id being set
+
+  const setQuestionResult = async (q, answer) => {
+    setSaving(true)
+    // Save correct answer
+    await supabase.from('daily_questions').update({ correct_answer: answer }).eq('id', q.id)
+    // Mark answers correct/incorrect and update profile totals
+    await supabase.rpc('mark_correct_answers', { p_question_id: q.id, p_correct_answer: answer })
+    setSettingResult(null)
+    setSaving(false)
+    loadQuestions()
+  }
+
   const statusColour = { live: 'var(--accent-green)', scheduled: 'var(--scottish-navy)', expired: 'var(--text-muted)' }
   const today = new Date().toISOString().split('T')[0]
 
@@ -793,6 +806,17 @@ function DailyQuestionsTab() {
               )}
             </div>
             <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              {q.status === 'expired' && !q.correct_answer && (
+                <button onClick={() => setSettingResult(q.id)} className="btn btn-sm"
+                  style={{ background: 'rgba(0,122,51,0.1)', color: 'var(--accent-green)', border: '1px solid rgba(0,122,51,0.2)', fontWeight: '700' }}>
+                  ✓ Set Result
+                </button>
+              )}
+              {q.correct_answer && (
+                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-green)', padding: '4px 8px', background: 'rgba(0,122,51,0.1)', borderRadius: 'var(--radius-full)' }}>
+                  ✓ {q.correct_answer}
+                </span>
+              )}
               {q.status !== 'expired' && (
                 <button onClick={() => openForm(q)} className="btn btn-secondary btn-sm">Edit</button>
               )}
@@ -802,6 +826,36 @@ function DailyQuestionsTab() {
               </button>
             </div>
           </div>
+        {/* Result picker for this question */}
+        {settingResult === q.id && (
+          <div style={{ marginTop: '10px', padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Select correct answer
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {(q.type === 'yes_no' ? ['Yes', 'No'] : q.type === 'multiple_choice' ? q.options : null)?.map(opt => (
+                <button key={opt} onClick={() => setQuestionResult(q, opt)} disabled={saving}
+                  className="btn btn-sm"
+                  style={{ background: 'var(--scottish-navy)', color: 'white', fontWeight: '600' }}>
+                  {saving ? '...' : opt}
+                </button>
+              ))}
+              {q.type === 'number' && (
+                <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
+                  <input className="input" type="number" placeholder="Correct number"
+                    id={`result-${q.id}`} style={{ flex: 1 }} />
+                  <button onClick={() => {
+                    const val = document.getElementById(`result-${q.id}`).value
+                    if (val) setQuestionResult(q, val)
+                  }} disabled={saving} className="btn btn-primary btn-sm">
+                    {saving ? '...' : 'Confirm'}
+                  </button>
+                </div>
+              )}
+              <button onClick={() => setSettingResult(null)} className="btn btn-secondary btn-sm">Cancel</button>
+            </div>
+          </div>
+        )}
         </div>
       ))}
     </div>
