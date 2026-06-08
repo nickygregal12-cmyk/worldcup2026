@@ -1329,6 +1329,28 @@ export default function AdminPanel() {
     loadUserPredictions(userId)
   }
 
+  const [editingUsername, setEditingUsername] = useState(null) // { userId, current }
+  const [newUsername, setNewUsername] = useState('')
+  const [usernameSaving, setUsernameSaving] = useState(false)
+
+  const saveUsername = async () => {
+    if (!newUsername.trim() || !editingUsername) return
+    setUsernameSaving(true)
+    const clean = newUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
+    if (!clean) { setUsernameSaving(false); return }
+    // Check uniqueness
+    const { data: existing } = await supabase.from('profiles').select('id').eq('username', clean).neq('id', editingUsername.userId).maybeSingle()
+    if (existing) { alert('Username already taken'); setUsernameSaving(false); return }
+    const { error } = await supabase.from('profiles').update({ username: clean, display_name: clean }).eq('id', editingUsername.userId)
+    if (error) { alert(error.message); setUsernameSaving(false); return }
+    await logAudit('EDIT_USERNAME', { user_id: editingUsername.userId, old_username: editingUsername.current, new_username: clean })
+    setActionResult(`✅ Username changed from ${editingUsername.current} to ${clean}`)
+    setEditingUsername(null)
+    setNewUsername('')
+    setUsernameSaving(false)
+    loadUsers()
+  }
+
   const sendBanWarning = async (userId, username) => {
     // Store a notification in profiles for the user to see on next login
     await supabase.from('profiles').update({
@@ -2664,6 +2686,22 @@ export default function AdminPanel() {
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Joined {fmt(u.created_at)}</div>
                     </div>
                   </div>
+                  {/* Edit username inline form */}
+                  {editingUsername?.userId === u.id && (
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px', padding: '10px 12px', background: 'rgba(124,58,237,0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(124,58,237,0.2)' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '700', color: '#7c3aed', flexShrink: 0 }}>✏️ Edit name</div>
+                      <input className="input" value={newUsername}
+                        onChange={e => setNewUsername(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && saveUsername()}
+                        placeholder="new username"
+                        style={{ flex: 1, fontSize: '13px', padding: '6px 10px' }} />
+                      <button onClick={saveUsername} disabled={usernameSaving} className="btn btn-primary btn-sm">
+                        {usernameSaving ? '...' : 'Save'}
+                      </button>
+                      <button onClick={() => { setEditingUsername(null); setNewUsername('') }} className="btn btn-secondary btn-sm">Cancel</button>
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     {u.is_banned
                       ? <button onClick={() => unbanUser(u.id, u.username)} className="btn btn-sm" style={{ background: 'var(--accent-green)', color: 'white', border: 'none' }}>✓ Unban</button>
@@ -2678,6 +2716,7 @@ export default function AdminPanel() {
                     {!u.is_admin && u.admin_level === 'league_admin' && <button onClick={() => removeLeagueAdmin(u.id, u.username)} className="btn btn-sm" style={{ border: '1px solid var(--accent-red)', color: 'var(--accent-red)', background: 'none' }}>✕ Remove League Admin</button>}
                     <button onClick={() => setPointAdjUser(u.id)} className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none' }}>🎯 Points</button>
                     <button onClick={() => { setEditingUserPreds(u.id); loadUserPredictions(u.id) }} className="btn btn-sm" style={{ border: '1px solid var(--scottish-navy)', color: 'var(--scottish-navy)', background: 'none' }}>✏️ Predictions</button>
+                    <button onClick={() => { setEditingUsername({ userId: u.id, current: u.username }); setNewUsername(u.display_name || u.username) }} className="btn btn-sm" style={{ border: '1px solid #7c3aed', color: '#7c3aed', background: 'none' }}>✏️ Name</button>
                   </div>
                   {pointAdjUser === u.id && (
                     <div style={{ marginTop: '10px', padding: '12px', background: 'var(--accent-blue-light)', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
