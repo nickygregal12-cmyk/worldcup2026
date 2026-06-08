@@ -1336,12 +1336,14 @@ export default function AdminPanel() {
   const saveUsername = async () => {
     if (!newUsername.trim() || !editingUsername) return
     setUsernameSaving(true)
-    const clean = newUsername.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
+    const displayVal = newUsername.trim()
+    const clean = displayVal.toLowerCase().replace(/[^a-z0-9_]/g, '')
     if (!clean) { setUsernameSaving(false); return }
     // Check uniqueness
     const { data: existing } = await supabase.from('profiles').select('id').eq('username', clean).neq('id', editingUsername.userId).maybeSingle()
     if (existing) { alert('Username already taken'); setUsernameSaving(false); return }
-    const { error } = await supabase.from('profiles').update({ username: clean, display_name: clean }).eq('id', editingUsername.userId)
+    // display_name keeps capitalisation/spaces as typed, username is the clean version
+    const { error } = await supabase.from('profiles').update({ username: clean, display_name: displayVal }).eq('id', editingUsername.userId)
     if (error) { alert(error.message); setUsernameSaving(false); return }
     await logAudit('EDIT_USERNAME', { user_id: editingUsername.userId, old_username: editingUsername.current, new_username: clean })
     setActionResult(`✅ Username changed from ${editingUsername.current} to ${clean}`)
