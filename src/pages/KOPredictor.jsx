@@ -325,15 +325,29 @@ export default function KOPredictor() {
             background: resultColour === 'gold' ? 'rgba(255,215,0,0.2)' : resultColour === 'green' ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.1)',
             color: resultColour === 'gold' ? '#b8860b' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
             {resultColour === 'gold' ? '🎯 Exact score!' : resultColour === 'green' ? '✅ Correct result' : '❌ Wrong result'}
-            {hasJoker && ' · 🃏 Joker'}
-            {pred.points_awarded > 0 && <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)' }}>+{pred.points_awarded}pts</span>}
+            {hasJoker && resultColour !== 'red' && <span style={{ marginLeft: '4px', color: 'var(--accent-gold)' }}>🃏 ×2</span>}
+            {hasJoker && resultColour === 'red' && <span style={{ marginLeft: '4px' }}>🃏 wasted</span>}
+            <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)' }}>
+              {pred.points_awarded !== undefined ? (pred.points_awarded === 0 ? '0' : `+${pred.points_awarded}`) : ''}pts
+            </span>
           </div>
         )}
 
-        {/* Joker indicator */}
+        {/* Joker indicator — pre-result */}
         {hasJoker && !resultColour && (
           <div style={{ marginBottom: '10px', padding: '6px 10px', background: 'rgba(255,152,0,0.15)', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '700', color: '#e65100' }}>
-            🃏 Joker applied — 2x points if correct!
+            🃏 Joker applied — 2× points if correct!
+          </div>
+        )}
+        {/* Joker result banners */}
+        {hasJoker && resultColour && resultColour !== 'red' && (
+          <div style={{ marginBottom: '10px', padding: '6px 10px', background: 'rgba(184,134,11,0.12)', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)', border: '1px solid rgba(184,134,11,0.3)' }}>
+            🃏 Joker paid off! Points doubled ×2
+          </div>
+        )}
+        {hasJoker && resultColour === 'red' && (
+          <div style={{ marginBottom: '10px', padding: '6px 10px', background: 'rgba(198,40,40,0.06)', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-red)', border: '1px solid rgba(198,40,40,0.2)' }}>
+            🃏 Joker wasted — wrong result, 0pts
           </div>
         )}
 
