@@ -1956,9 +1956,7 @@ export default function Predictions() {
         const standingsLockTime = getMD1LockTime(matches)
         const now = new Date()
         const isLocked = now >= standingsLockTime
-        const lockStr = standingsLockTime.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
-          ' · ' + standingsLockTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) + ' BST'
-        const daysUntil = Math.ceil((standingsLockTime - now) / (1000 * 60 * 60 * 24))
+
         if (isLocked) {
           return (
             <div style={{ background: '#1a1a2e', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1970,6 +1968,45 @@ export default function Predictions() {
             </div>
           )
         }
+
+        // Find groups kicking off within 24 hours
+        const in24hrs = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+        const firstByGroup = {}
+        matches.filter(m => m.stage === 'group').forEach(m => {
+          const g = m.group?.name
+          if (!g) return
+          const t = new Date(m.kickoff_time)
+          if (!firstByGroup[g] || t < firstByGroup[g].time) {
+            firstByGroup[g] = { time: t, match: m }
+          }
+        })
+        const imminent = Object.entries(firstByGroup)
+          .filter(([, { time }]) => time > now && time <= in24hrs)
+          .sort((a, b) => a[1].time - b[1].time)
+
+        if (imminent.length > 0) {
+          const next = imminent[0]
+          const hoursLeft = Math.floor((next[1].time - now) / (1000 * 60 * 60))
+          const minsLeft = Math.floor((next[1].time - now) / (1000 * 60)) % 60
+          const timeStr = next[1].time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' })
+          const urgent = hoursLeft < 2
+          const m = next[1].match
+          return (
+            <div style={{ background: urgent ? 'rgba(198,40,40,0.12)' : 'rgba(184,134,11,0.1)', borderBottom: `1px solid ${urgent ? 'rgba(198,40,40,0.3)' : 'rgba(184,134,11,0.25)'}`, padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '16px' }}>{urgent ? '🚨' : '⏰'}</span>
+              <div style={{ fontSize: '13px', lineHeight: 1.4, flex: 1 }}>
+                <span style={{ fontWeight: '800', color: urgent ? '#e53935' : '#b8860b' }}>
+                  Group {next[0]} locks in {hoursLeft > 0 ? `${hoursLeft}h ${minsLeft}m` : `${minsLeft} mins`}
+                </span>
+                <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>
+                  {m.home_team?.flag_emoji}{m.home_team?.short_code} vs {m.away_team?.short_code}{m.away_team?.flag_emoji} · {timeStr} BST
+                  {imminent.length > 1 ? ` · +${imminent.length - 1} more group${imminent.length > 2 ? 's' : ''}` : ''}
+                </span>
+              </div>
+            </div>
+          )
+        }
+
         return (
           <div style={{ background: 'rgba(0,48,135,0.06)', borderBottom: '1px solid rgba(0,48,135,0.1)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '14px' }}>📊</span>
