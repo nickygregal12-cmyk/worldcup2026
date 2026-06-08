@@ -234,7 +234,7 @@ export default function Knockout() {
   }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, isMainBracketPickFrozen, getTeamById, mainBracketLockTime])
 
   const getBracketLockReason = useCallback((matchDef) => {
-    if (new Date() >= mainBracketLockTime) return 'Main bracket locked after Matchday 1. Saved teams and winners are frozen.'
+    if (new Date() >= mainBracketLockTime) return 'Bracket fully locked. Saved teams and winners are frozen.'
     if (new Date() >= new Date(matchDef.kickoff)) return 'This knockout match has locked.'
     const pick = knockoutPicks[matchDef.match_number]
     if (pick?.winner_id && [pick.home_id, pick.away_id, pick.winner_id].filter(Boolean).some(teamGroupCompleted)) {
@@ -607,7 +607,7 @@ export default function Knockout() {
             🏆 Knockout Bracket
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '20px' }}>
-            {mainBracketLocked ? 'Locked after Matchday 1 from your saved bracket' : `Based on your predicted group results · locks ${formatLockDate(mainBracketLockTime)}`}
+            {mainBracketLocked ? 'Locked — frozen from your saved bracket' : `Based on your predicted group results · locks progressively as groups kick off`}
           </p>
 
           {/* Overall progress bar */}
@@ -640,7 +640,7 @@ export default function Knockout() {
           {/* Pre-tournament tip — only show if no picks made yet */}
           {isPreTournament && totalPicks === 0 && (
             <div style={{ marginTop: '10px', background: 'rgba(255,255,255,0.08)', borderRadius: 'var(--radius-md)', padding: '8px 14px', fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
-              💡 Fill your bracket before Matchday 1 ends — saved teams and winners freeze at the lock deadline
+              💡 Fill your bracket now — it locks progressively as each group kicks off
             </div>
           )}
         </div>

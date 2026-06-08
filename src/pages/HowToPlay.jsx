@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 const SCORING = [
   {
     section: '⚽ Group Stage Predictions',
-    desc: 'Predict the exact score for all 72 group stage matches. Each match locks at its own kickoff time.',
+    desc: 'Predict the exact score for all 72 group stage matches. Once the first match in a group kicks off, all remaining matches in that group lock too.',
     rows: [
       { label: 'Correct result (win/draw/loss)', pts: '3pts' },
       { label: 'Exact score', pts: '5pts' },
@@ -67,23 +67,16 @@ const SCORING = [
 const LOCKS = [
   {
     icon: '⚽',
-    title: 'Group score predictions',
-    time: 'Each match locks at its own kickoff',
-    detail: 'You can update a 9pm prediction right up until 9pm, even if an earlier match in the same group has already started.',
+    title: 'Group predictions',
+    time: 'When the first match in each group kicks off',
+    detail: 'Once any match in a group starts, all picks in that group lock — including matches scheduled for later dates. This stops anyone using live results to adjust their remaining picks in the same group.',
     color: 'var(--accent-green)',
-  },
-  {
-    icon: '📊',
-    title: 'Group standings order',
-    time: 'Wed 18 Jun · 07:00 BST',
-    detail: 'After Matchday 1 ends, the group standings order freezes. You can still adjust scores — but not in a way that changes which team finishes 1st, 2nd, 3rd or 4th.',
-    color: '#e65100',
   },
   {
     icon: '🏆',
     title: 'Knockout bracket',
-    time: 'Wed 18 Jun · 07:00 BST',
-    detail: 'Your knockout picks freeze at the same time as the standings. This is to prevent using real Matchday 2 results to make informed bracket picks.',
+    time: 'Locks progressively as groups kick off',
+    detail: 'Your bracket is based on your group predictions — so as each group locks at first kickoff, those bracket slots lock too. The whole bracket is fully frozen by Wed 18 Jun before Matchday 2 starts.',
     color: 'var(--scottish-navy)',
   },
   {
@@ -105,15 +98,12 @@ const LOCKS = [
 const FAQS = [
   {
     q: 'When do group predictions lock?',
-    a: 'Each match locks individually at its own kickoff time. So you can update your prediction for a 9pm match right up until 9pm, even if earlier matches that day have already started. However, the group standings order and knockout bracket both freeze on Wed 18 Jun at 07:00 BST — after all Matchday 1 games are complete.',
+    a: 'Once the first match in a group kicks off, all remaining matches in that group lock immediately — even ones scheduled days later. This stops anyone using live results (like watching Mexico lose 2-0 then adjusting their other Group A picks). Your knockout bracket also locks separately on Wed 18 Jun before Matchday 2 starts.',
   },
-  {
-    q: 'What is the standings lock on 18 Jun?',
-    a: 'Once Matchday 1 is complete, the group standings order freezes. You can still go back and tweak scores (e.g. change a 2-0 to a 3-0) but only if it doesn\'t move any team up or down in the group table. This is to stop people using real Matchday 2 results to game their knockout bracket picks.',
-  },
+
   {
     q: 'How does the knockout bracket work?',
-    a: 'You pick which teams you think will advance through each round — Round of 32, Round of 16, Quarter-finals, Semi-finals, and the Final. Points are awarded for every team that actually reaches that round in real life, regardless of which match they play. The bracket is based on your predicted group standings and locks after Matchday 1 ends on 18 Jun.',
+    a: 'You pick which teams you think will advance through each round — Round of 32, Round of 16, Quarter-finals, Semi-finals, and the Final. Points are awarded for every team that actually reaches that round in real life, regardless of which match they play. The bracket is based on your predicted group standings and locks progressively as each group kicks off — fully frozen by Wed 18 Jun before Matchday 2 starts.',
   },
   {
     q: 'How do jokers work?',
