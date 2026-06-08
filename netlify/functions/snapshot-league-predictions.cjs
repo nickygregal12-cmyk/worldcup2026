@@ -14,10 +14,10 @@ const json = (statusCode, body) => ({
 
 const requireEnv = () => {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
 
   if (!supabaseUrl) throw new Error('Missing Supabase URL env var: set VITE_SUPABASE_URL or SUPABASE_URL in Netlify')
-  if (!serviceKey) throw new Error('Missing SUPABASE_SERVICE_ROLE_KEY env var in Netlify')
+  if (!serviceKey) throw new Error('Missing SUPABASE_SERVICE_KEY env var in Netlify')
 
   return { supabaseUrl, serviceKey }
 }
