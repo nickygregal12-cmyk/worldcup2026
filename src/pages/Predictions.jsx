@@ -1246,7 +1246,7 @@ export default function Predictions() {
     const hasPrediction = pred.home !== undefined && pred.home !== ''
     const isGuest = !user
     const hasJoker = pred.joker === true
-    const canUseJoker = !effectiveLocked && user && hasPrediction && (jokersRemaining > 0 || hasJoker)
+    const canUseJoker = !locked && user && hasPrediction && (jokersRemaining > 0 || hasJoker) // jokers only lock at own kickoff, not group lock
     const standingsLockTime = getMD1LockTime(matches)
     const standingsLocked = match.stage === 'group' && new Date() >= standingsLockTime
     const resultColour = getResultColour(match, pred)
@@ -1318,7 +1318,8 @@ export default function Predictions() {
                   <div style={{ fontWeight: '800', fontSize: '14px',
                     color: resultColour === 'gold' ? 'var(--accent-gold)' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
                     {resultColour === 'gold' ? 'Exact score!' : resultColour === 'green' ? 'Correct result' : 'Wrong result'}
-                    {hasJoker && <span style={{ marginLeft: '6px', fontSize: '12px' }}>🃏</span>}
+                    {hasJoker && resultColour && resultColour !== 'red' && <span style={{ marginLeft: '6px', fontSize: '12px', color: 'var(--accent-gold)' }}>🃏 ×2</span>}
+                    {hasJoker && resultColour === 'red' && <span style={{ marginLeft: '6px', fontSize: '12px', color: 'var(--accent-red)' }}>🃏 wasted</span>}
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
                     Result: <strong style={{ fontFamily: 'var(--font-mono)' }}>{match.home_team?.short_code} {match.home_score}–{match.away_score} {match.away_team?.short_code}</strong>
@@ -1327,16 +1328,32 @@ export default function Predictions() {
               </div>
               <div style={{ fontWeight: '900', fontSize: '24px', fontFamily: 'var(--font-mono)', lineHeight: 1,
                 color: resultColour === 'gold' ? 'var(--accent-gold)' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                {pred.points_awarded !== undefined ? `+${pred.points_awarded}` : `+${(resultColour === 'gold' ? 10 : resultColour === 'green' ? 5 : 0) * (hasJoker && resultColour !== 'red' ? 2 : 1)}`}
+                {(() => {
+                  const pts = pred.points_awarded !== undefined
+                    ? pred.points_awarded
+                    : (resultColour === 'gold' ? 10 : resultColour === 'green' ? 5 : 0) * (hasJoker && resultColour !== 'red' ? 2 : 1)
+                  return pts === 0 ? '0' : `+${pts}`
+                })()}
                 <span style={{ fontSize: '11px', fontWeight: '600' }}>pts</span>
               </div>
             </div>
           )}
 
-          {/* Joker indicator (non-completed) */}
+          {/* Joker indicator */}
           {hasJoker && !resultColour && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', padding: '7px 12px', background: 'rgba(184,134,11,0.1)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)', border: '1px solid rgba(184,134,11,0.2)' }}>
               🃏 Joker applied — 2× points if correct!
+            </div>
+          )}
+          {/* Joker result indicator — after match played */}
+          {hasJoker && resultColour && resultColour !== 'red' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', padding: '7px 12px', background: 'rgba(184,134,11,0.12)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)', border: '1px solid rgba(184,134,11,0.3)' }}>
+              🃏 Joker paid off! Points doubled ×2
+            </div>
+          )}
+          {hasJoker && resultColour === 'red' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', padding: '7px 12px', background: 'rgba(198,40,40,0.06)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-red)', border: '1px solid rgba(198,40,40,0.2)' }}>
+              🃏 Joker wasted — wrong result, 0pts
             </div>
           )}
 
@@ -1490,7 +1507,7 @@ export default function Predictions() {
                   border: hasJoker ? '1px solid var(--accent-gold)' : '1px solid var(--border-light)',
                   transition: 'all 0.15s',
                   cursor: hasPrediction && (canUseJoker || hasJoker) ? 'pointer' : 'not-allowed',
-                  opacity: !hasPrediction ? 0.45 : 1,
+                  opacity: !hasPrediction ? 0.45 : effectiveLocked && !locked ? 0.7 : 1,
                 }}
               >
                 🃏 {hasJoker ? 'Joker ON' : 'Joker'}
