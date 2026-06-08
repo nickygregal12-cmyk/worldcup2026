@@ -148,22 +148,24 @@ export default function Home() {
   useEffect(() => { loadData(); loadDailyQuestion() }, [user])
 
   // Check for imminent bracket locks (within 3 hours)
+  // Uses allMatchesRef populated during loadData
   useEffect(() => {
-    if (!matches?.length) return
+    const allMatches = [...(liveMatches || []), ...(todayMatches || []), nextMatch].filter(Boolean)
+    if (!allMatches.length) return
     const now = new Date()
     const in3hrs = new Date(now.getTime() + 3 * 60 * 60 * 1000)
     const firstByGroup = {}
-    matches.filter(m => m.stage === 'group').forEach(m => {
+    allMatches.filter(m => m.stage === 'group').forEach(m => {
       const g = m.group?.name
       if (!g) return
       const t = new Date(m.kickoff_time)
-      if (!firstByGroup[g] || t < firstByGroup[g]) firstByGroup[g] = { time: t, match: m }
+      if (!firstByGroup[g] || t < firstByGroup[g].time) firstByGroup[g] = { time: t, match: m }
     })
     const next = Object.entries(firstByGroup)
       .filter(([, { time }]) => time > now && time <= in3hrs)
       .sort((a, b) => a[1].time - b[1].time)[0]
     setImminentBracketLock(next ? { group: next[0], ...next[1] } : null)
-  }, [matches])
+  }, [liveMatches, todayMatches, nextMatch])
 
   // Re-fetch when returning to tab so progress bars update immediately
   useEffect(() => {
