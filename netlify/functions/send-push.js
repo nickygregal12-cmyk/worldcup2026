@@ -58,14 +58,18 @@ export const handler = async (event) => {
 
     const userIds = [...new Set(subscriptions.map(s => s.user_id))]
 
-    // Get profiles (last_seen_at)
+    // Get profiles (last_seen_at + push_enabled)
     const { data: profiles } = await supabase
       .from('profiles')
-      .select('id, last_seen_at')
+      .select('id, last_seen_at, push_enabled')
       .in('id', userIds)
 
     const lastSeenMap = {}
-    profiles?.forEach(p => { lastSeenMap[p.id] = p.last_seen_at ? new Date(p.last_seen_at) : null })
+    const pushEnabledMap = {}
+    profiles?.forEach(p => {
+      lastSeenMap[p.id] = p.last_seen_at ? new Date(p.last_seen_at) : null
+      pushEnabledMap[p.id] = p.push_enabled !== false // default true
+    })
 
     // Get yesterday's predictions with points for these users
     const yesterdayMatchIds = yesterdayMatches.map(m => m.id)
@@ -122,6 +126,9 @@ export const handler = async (event) => {
 
       const hasYesterdayResults = (userYesterdayStats[uid]?.count || 0) > 0
       const hasMissingPicks = missingToday.length > 0
+
+      // Skip if user has disabled notifications
+      if (!pushEnabledMap[uid]) { skipped++; continue }
 
       // Skip if nothing to say
       if (!hasYesterdayResults && !hasMissingPicks) { skipped++; continue }

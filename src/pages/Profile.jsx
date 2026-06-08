@@ -91,6 +91,12 @@ export default function Profile() {
     await supabase.from('profiles').update({ show_future_predictions: newVal }).eq('id', user.id)
   }
 
+  const togglePushEnabled = async () => {
+    const newVal = !(profile.push_enabled !== false) // default true
+    setProfile({ ...profile, push_enabled: newVal })
+    await supabase.from('profiles').update({ push_enabled: newVal }).eq('id', user.id)
+  }
+
   const handleLogout = async () => {
     await logout()
     navigate('/')
@@ -614,6 +620,18 @@ export default function Profile() {
                 </div>
                 <button onClick={toggleFuturePredictions} style={{ width: '48px', height: '28px', borderRadius: 'var(--radius-full)', background: profile.show_future_predictions ? 'var(--accent-green)' : 'var(--border-medium)', position: 'relative', border: 'none', cursor: 'pointer' }}>
                   <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '4px', left: profile.show_future_predictions ? '24px' : '4px', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid var(--border-light)' }}>
+                <div>
+                  <div style={{ fontWeight: '600', fontSize: '14px' }}>🔔 Push Notifications</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    {profile.push_enabled !== false ? 'Daily results & pick reminders at 7pm' : 'Notifications off'}
+                  </div>
+                </div>
+                <button onClick={togglePushEnabled} style={{ width: '48px', height: '28px', borderRadius: 'var(--radius-full)', background: profile.push_enabled !== false ? 'var(--accent-green)' : 'var(--border-medium)', position: 'relative', border: 'none', cursor: 'pointer' }}>
+                  <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '4px', left: profile.push_enabled !== false ? '24px' : '4px', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                 </button>
               </div>
             </div>
