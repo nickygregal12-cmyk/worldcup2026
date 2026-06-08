@@ -141,10 +141,27 @@ export default function KOPredictor() {
 
   const handleScoreChange = (matchId, side, value) => {
     if (value.length > 2) return
-    setPredictions(prev => ({
-      ...prev,
-      [matchId]: { ...(prev[matchId] || {}), [side]: value === '' ? '' : parseInt(value) }
-    }))
+    setPredictions(prev => {
+      const current = prev[matchId] || {}
+      const updated = { ...current, [side]: value === '' ? '' : parseInt(value) }
+      // Work out if score is a draw after this change
+      const home = parseInt(side === 'home' ? value : current.home)
+      const away = parseInt(side === 'away' ? value : current.away)
+      const isNowDraw = !isNaN(home) && !isNaN(away) && home === away
+      const wasNonDraw = !isNaN(home) && !isNaN(away) && home !== away
+      // If score becomes a non-draw, force 90mins and clear winner
+      if (wasNonDraw) {
+        updated.outcome_type = '90mins'
+        updated.winner_team_id = null
+      }
+      // If score becomes a draw and outcome is 90mins, clear it so user must pick ET/Pens
+      if (isNowDraw && (updated.outcome_type === '90mins' || !updated.outcome_type)) {
+        updated.outcome_type = null // null = unselected, must pick
+        updated.winner_team_id = null
+      }
+      updated._error = null
+      return { ...prev, [matchId]: updated }
+    })
   }
 
   const handleScoreBlur = (match, side) => {
@@ -162,12 +179,16 @@ export default function KOPredictor() {
 
     const homeScore = parseInt(pred.home)
     const awayScore = parseInt(pred.away ?? 0)
-    const outcomeType = pred.outcome_type || '90mins'
+    const outcomeType = pred.outcome_type // null means unselected on a draw
     const isDraw = homeScore === awayScore
 
     // Validation
+    if (isDraw && !outcomeType) {
+      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: 'Select how it ends — Extra Time or Penalties' } }))
+      return
+    }
     if (isDraw && outcomeType === '90mins') {
-      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: 'Knockout matches cannot end level — select ET or Penalties' } }))
+      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: 'A draw must go to Extra Time or Penalties — select one' } }))
       return
     }
     if (outcomeType === 'et' && !isDraw) {
@@ -191,7 +212,7 @@ export default function KOPredictor() {
       match_id: match.id,
       home_score: homeScore,
       away_score: awayScore,
-      outcome_type: outcomeType,
+      outcome_type: outcomeType || '90mins',
       winner_team_id: pred.winner_team_id || null,
       first_goal_band: pred.first_goal_band || null,
       is_joker: pred.is_joker || false,
@@ -277,11 +298,12 @@ export default function KOPredictor() {
     const isGuest = !user
     const hasJoker = pred.is_joker === true
     const canUseJoker = !locked && user && hasPrediction && (jokersRemaining > 0 || hasJoker)
-    const outcomeType = pred.outcome_type || '90mins'
+    const outcomeType = pred.outcome_type // null = draw entered but ET/Pens not yet selected
     const homeScore = parseInt(pred.home)
     const awayScore = parseInt(pred.away ?? 0)
     const isDraw = hasPrediction && homeScore === awayScore
     const needsWinner = outcomeType === 'et' || outcomeType === 'penalties'
+    const outcomeUnselected = isDraw && !outcomeType
     const teamsKnown = match.home_team?.name && !match.home_team.name.includes('Winner') && !match.home_team.name.includes('Runner')
 
     // Result colouring for completed
@@ -413,40 +435,64 @@ export default function KOPredictor() {
           </div>
         )}
 
-        {/* Outcome picker — only show when scores entered */}
-        {hasPrediction && !locked && !isGuest && (
-          <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              How does it end?
-            </div>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              {[
-                { key: '90mins', label: '90 mins' },
-                { key: 'et',     label: '⏱ Extra Time +3pts' },
-                { key: 'penalties', label: '🎯 Penalties +5pts' },
-              ].map(opt => (
-                <button key={opt.key}
-                  onClick={() => setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], outcome_type: opt.key, winner_team_id: null, _error: null } }))}
-                  style={{
-                    padding: '5px 10px', fontSize: '11px', fontWeight: '600',
-                    borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                    background: outcomeType === opt.key ? '#e65100' : 'var(--bg-tertiary)',
-                    color: outcomeType === opt.key ? 'white' : 'var(--text-muted)',
-                    border: outcomeType === opt.key ? '1px solid #e65100' : '1px solid var(--border-light)',
-                    flex: 1,
-                  }}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+        {/* Score label — clarify what the score means when ET/Pens selected */}
+        {hasPrediction && !locked && !isGuest && isDraw && (outcomeType === 'et' || outcomeType === 'penalties') && (
+          <div style={{ textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '8px', marginTop: '-6px' }}>
+            ↑ Score after 90 mins
           </div>
         )}
 
-        {/* Winner picker for ET/Pens */}
-        {hasPrediction && needsWinner && !locked && !isGuest && (
+        {/* Outcome picker */}
+        {hasPrediction && !locked && !isGuest && (
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '11px', fontWeight: '700', color: outcomeUnselected ? 'var(--accent-red)' : 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {outcomeUnselected ? '⚠️ How does it end? (required)' : 'How does it end?'}
+            </div>
+            {!isDraw ? (
+              // Score is a win — 90 mins only
+              <div style={{ padding: '7px 12px', background: 'var(--scottish-navy)', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: '700', color: 'white', textAlign: 'center' }}>
+                ✓ 90 mins — winner decided by score
+              </div>
+            ) : (
+              // Draw — must pick ET or Penalties
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {[
+                  { key: 'et',        label: '⏱ Extra Time', sub: '+3pts bonus' },
+                  { key: 'penalties', label: '🎯 Penalties', sub: '+5pts bonus' },
+                ].map(opt => (
+                  <button key={opt.key}
+                    onClick={() => setPredictions(prev => ({
+                      ...prev,
+                      [match.id]: {
+                        ...prev[match.id],
+                        outcome_type: opt.key,
+                        // Clear winner if switching between ET and Pens
+                        winner_team_id: prev[match.id]?.outcome_type === opt.key ? prev[match.id].winner_team_id : null,
+                        _error: null,
+                      }
+                    }))}
+                    style={{
+                      padding: '7px 10px', fontSize: '12px', fontWeight: '700',
+                      borderRadius: 'var(--radius-sm)', cursor: 'pointer', flex: 1,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                      background: outcomeType === opt.key ? '#e65100' : outcomeUnselected ? 'rgba(198,40,40,0.06)' : 'var(--bg-tertiary)',
+                      color: outcomeType === opt.key ? 'white' : outcomeUnselected ? 'var(--accent-red)' : 'var(--text-secondary)',
+                      border: outcomeType === opt.key ? '1px solid #e65100' : outcomeUnselected ? '1px solid rgba(198,40,40,0.3)' : '1px solid var(--border-light)',
+                    }}>
+                    <span>{opt.label}</span>
+                    <span style={{ fontSize: '10px', opacity: 0.8, fontWeight: '600' }}>{opt.sub}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Winner picker — only for ET/Pens with draw score */}
+        {hasPrediction && isDraw && needsWinner && !locked && !isGuest && (
           <div style={{ marginBottom: '12px' }}>
             <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Who wins?
+              {outcomeType === 'penalties' ? '🎯 Who wins on penalties?' : '⏱ Who wins in extra time?'}
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               {[
@@ -456,8 +502,9 @@ export default function KOPredictor() {
                 <button key={team.id}
                   onClick={() => setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], winner_team_id: team.id, _error: null } }))}
                   style={{
-                    flex: 1, padding: '8px', fontSize: '13px', fontWeight: '700',
-                    borderRadius: 'var(--radius-md)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+                    flex: 1, padding: '10px 8px', fontSize: '13px', fontWeight: '700',
+                    borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
                     background: pred.winner_team_id === team.id ? '#e65100' : 'var(--bg-tertiary)',
                     color: pred.winner_team_id === team.id ? 'white' : 'var(--text-secondary)',
                     border: pred.winner_team_id === team.id ? '1px solid #e65100' : '1px solid var(--border-light)',
