@@ -514,10 +514,10 @@ export default function Profile() {
                 ))}
               </div>
 
-              {/* KO stats */}
-              {(profile.ko_points > 0 || profile.ko_jokers_remaining !== undefined) && (
+              {/* KO Predictor section */}
+              <div style={{ height: '1px', background: 'var(--border-light)', margin: '14px 0 12px' }} />
+              {profile.ko_points > 0 ? (
                 <>
-                  <div style={{ height: '1px', background: 'var(--border-light)', margin: '14px 0 12px' }} />
                   <div style={{ fontSize: '11px', fontWeight: '700', color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
                     🔥 KO Predictor
                   </div>
@@ -537,6 +537,15 @@ export default function Profile() {
                     ))}
                   </div>
                 </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: 'rgba(230,81,0,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(230,81,0,0.15)' }}>
+                  <span style={{ fontSize: '24px' }}>🔥</span>
+                  <div>
+                    <div style={{ fontWeight: '700', fontSize: '13px', color: '#e65100' }}>KO Predictor — coming 28 Jun</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Fresh start — predict all 32 knockout matches with a separate leaderboard</div>
+                  </div>
+                  <Link to="/ko-predictor" style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '700', color: '#e65100', textDecoration: 'none', whiteSpace: 'nowrap' }}>Learn more →</Link>
+                </div>
               )}
             </div>
 
@@ -586,25 +595,7 @@ export default function Profile() {
             <div className="card" style={{ marginBottom: '16px' }}>
               <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '14px' }}>⚙️ Settings</div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label className="label">Display Name</label>
-                {editing ? (
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input className="input" value={displayName} onChange={e => setDisplayName(e.target.value)} />
-                    <button onClick={saveProfile} disabled={saving} className="btn btn-primary btn-sm">
-                      {saving ? '...' : 'Save'}
-                    </button>
-                    <button onClick={() => setEditing(false)} className="btn btn-secondary btn-sm">Cancel</button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '14px' }}>{profile.display_name || profile.username}</span>
-                    <button onClick={() => setEditing(true)} className="btn btn-secondary btn-sm">Edit</button>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid var(--border-light)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '14px', borderBottom: '1px solid var(--border-light)' }}>
                 <div>
                   <div style={{ fontWeight: '600', fontSize: '14px' }}>Dark Mode</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{darkMode ? 'On' : 'Off'}</div>
@@ -638,6 +629,30 @@ export default function Profile() {
               </Link>
             )}
 
+            {/* Share & export */}
+            <div className="card" style={{ marginBottom: '12px' }}>
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '12px' }}>📤 Your Predictions</div>
+              <button onClick={() => setShowShareCard(true)}
+                className="btn btn-full" style={{ marginBottom: '8px', background: 'var(--scottish-navy)', color: 'white', fontWeight: '700' }}>
+                📤 Share my predictions
+              </button>
+              <button onClick={handleExportPredictions}
+                className="btn btn-full" style={{ marginBottom: '8px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontWeight: '700', border: '1px solid var(--border-medium)' }}>
+                📥 Export to Excel
+              </button>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  📊 Import from Excel
+                </label>
+                <input type="file" accept=".xlsx,.xls,.csv"
+                  onChange={e => { if (e.target.files[0]) handleImportPredictions(e.target.files[0]) }}
+                  style={{ fontSize: '12px', width: '100%', marginBottom: '4px' }} />
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  Your existing predictions will be overwritten.
+                </div>
+              </div>
+            </div>
+
             {/* Danger zone */}
             <div className="card" style={{ marginBottom: '12px', border: '1px solid rgba(229,57,53,0.2)' }}>
               <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -658,25 +673,6 @@ export default function Profile() {
               </div>
             </div>
 
-            <button onClick={() => setShowShareCard(true)}
-              className="btn btn-full" style={{ marginBottom: '12px', background: 'var(--scottish-navy)', color: 'white', fontWeight: '700' }}>
-              📤 Share my predictions
-            </button>
-            <button onClick={handleExportPredictions}
-              className="btn btn-full" style={{ marginBottom: '8px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontWeight: '700', border: '1px solid var(--border-medium)' }}>
-              📥 Export my predictions (Excel)
-            </button>
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                📊 Import predictions from Excel
-              </label>
-              <input type="file" accept=".xlsx,.xls,.csv"
-                onChange={e => { if (e.target.files[0]) handleImportPredictions(e.target.files[0]) }}
-                style={{ fontSize: '12px', width: '100%', marginBottom: '4px' }} />
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                💡 Fill in the template from another predictor and import here. Your existing predictions will be overwritten.
-              </div>
-            </div>
             <button onClick={handleLogout} className="btn btn-secondary btn-full" style={{ marginBottom: '24px' }}>
               Sign out
             </button>
