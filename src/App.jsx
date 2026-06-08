@@ -5,6 +5,7 @@ import { supabase } from './lib/supabase.js'
 
 import NavBar from './components/NavBar.jsx'
 import BottomNav from './components/BottomNav.jsx'
+import PushNotifications from './components/PushNotifications.jsx'
 import PWAInstall from './components/PWAInstall.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 
@@ -24,6 +25,7 @@ import HowToPlay from './pages/HowToPlay.jsx'
 import KOPredictor from './pages/KOPredictor.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 import PublicLeague from './pages/PublicLeague.jsx'
+import GlobalStats from './pages/GlobalStats.jsx'
 
 function ProtectedRoute({ children }) {
   const { user, isLoading } = useAuthStore()
@@ -40,7 +42,7 @@ function AdminRoute({ children }) {
 }
 
 export default function App() {
-  const { initialize, isLoading, profile } = useAuthStore()
+  const { initialize, isLoading, profile, user } = useAuthStore()
   const { darkMode, loadAppSettings } = useAppStore()
   const [showAdminMsg, setShowAdminMsg] = useState(true)
 
@@ -51,6 +53,16 @@ export default function App() {
     const interval = setInterval(() => loadAppSettings(), 30000)
     return () => clearInterval(interval)
   }, [])
+
+  // Update last_seen_at and refresh session on every app open
+  useEffect(() => {
+    if (!user) return
+    supabase.auth.refreshSession()
+    supabase.from('profiles')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', user.id)
+      .then(() => {})
+  }, [user?.id])
 
   useEffect(() => {
     if (darkMode) {
@@ -99,12 +111,14 @@ export default function App() {
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
           <Route path="/how-to-play" element={<HowToPlay />} />
+          <Route path="/stats" element={<GlobalStats />} />
           <Route path="/ko-predictor" element={<KOPredictor />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <BottomNav />
+      <PushNotifications />
       <PWAInstall />
     </div>
     </ErrorBoundary>

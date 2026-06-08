@@ -669,6 +669,8 @@ export default function Leagues() {
   const createLeague = async () => {
     if (!newLeagueName.trim()) { setError('Please enter a league name'); return }
     setError('')
+    // Refresh session first to prevent stale token RLS errors
+    await supabase.auth.refreshSession()
     const code = generateCode()
     const { data: league, error: err } = await supabase
       .from('leagues')
@@ -684,6 +686,8 @@ export default function Leagues() {
   const joinLeague = async () => {
     if (!joinCode.trim()) { setError('Enter an invite code'); return }
     setError('')
+    // Refresh session first to prevent stale token RLS errors
+    await supabase.auth.refreshSession()
     const { data: league } = await supabase.from('leagues').select('*').eq('invite_code', joinCode.toUpperCase().trim()).single()
     if (!league) { setError('League not found — check the code'); return }
     const { error: err } = await supabase.from('league_members').insert({ league_id: league.id, user_id: user.id })
