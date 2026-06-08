@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import { subscribeToPush, unsubscribeFromPush } from '../components/PushNotifications.jsx'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import ShareCard from '../components/ShareCard.jsx'
 import { ALL_STAGES } from '../lib/bracketUtils.js'
@@ -91,10 +92,26 @@ export default function Profile() {
     await supabase.from('profiles').update({ show_future_predictions: newVal }).eq('id', user.id)
   }
 
+  const [pushStatus, setPushStatus] = useState('idle') // idle | subscribing | subscribed | denied | unsupported
+
   const togglePushEnabled = async () => {
-    const newVal = !(profile.push_enabled !== false) // default true
-    setProfile({ ...profile, push_enabled: newVal })
-    await supabase.from('profiles').update({ push_enabled: newVal }).eq('id', user.id)
+    const currentlyEnabled = profile.push_enabled !== false
+    if (currentlyEnabled) {
+      // Turn off — unsubscribe
+      await unsubscribeFromPush(user.id)
+      setProfile({ ...profile, push_enabled: false })
+      await supabase.from('profiles').update({ push_enabled: false }).eq('id', user.id)
+      setPushStatus('idle')
+    } else {
+      // Turn on — request permission and subscribe
+      setPushStatus('subscribing')
+      const result = await subscribeToPush(user.id)
+      if (result.error === 'unsupported') { setPushStatus('unsupported'); return }
+      if (result.error === 'denied') { setPushStatus('denied'); return }
+      setProfile({ ...profile, push_enabled: true })
+      await supabase.from('profiles').update({ push_enabled: true }).eq('id', user.id)
+      setPushStatus('subscribed')
+    }
   }
 
   const handleLogout = async () => {
@@ -650,11 +667,15 @@ export default function Profile() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '14px', borderTop: '1px solid var(--border-light)' }}>
                 <div>
                   <div style={{ fontWeight: '600', fontSize: '14px' }}>🔔 Push Notifications</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    {profile.push_enabled !== false ? 'Daily results & pick reminders at 7pm' : 'Notifications off'}
+                  <div style={{ fontSize: '12px', color: pushStatus === 'denied' ? 'var(--accent-red)' : pushStatus === 'unsupported' ? 'var(--accent-red)' : 'var(--text-muted)' }}>
+                    {pushStatus === 'denied' ? 'Permission denied — enable in browser settings' :
+                     pushStatus === 'unsupported' ? 'Not supported on this browser' :
+                     pushStatus === 'subscribing' ? 'Requesting permission...' :
+                     profile.push_enabled !== false ? 'Daily results & pick reminders at 7pm BST' : 'Tap to enable notifications'}
                   </div>
                 </div>
-                <button onClick={togglePushEnabled} style={{ width: '48px', height: '28px', borderRadius: 'var(--radius-full)', background: profile.push_enabled !== false ? 'var(--accent-green)' : 'var(--border-medium)', position: 'relative', border: 'none', cursor: 'pointer' }}>
+                <button onClick={togglePushEnabled} disabled={pushStatus === 'subscribing' || pushStatus === 'unsupported' || pushStatus === 'denied'}
+                  style={{ width: '48px', height: '28px', borderRadius: 'var(--radius-full)', background: profile.push_enabled !== false ? 'var(--accent-green)' : 'var(--border-medium)', position: 'relative', border: 'none', cursor: pushStatus === 'subscribing' ? 'wait' : 'pointer', opacity: pushStatus === 'unsupported' || pushStatus === 'denied' ? 0.5 : 1 }}>
                   <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'white', position: 'absolute', top: '4px', left: profile.push_enabled !== false ? '24px' : '4px', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                 </button>
               </div>
