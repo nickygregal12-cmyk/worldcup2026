@@ -1961,8 +1961,8 @@ export default function Predictions() {
           <div style={{ background: 'rgba(0,48,135,0.06)', borderBottom: '1px solid rgba(0,48,135,0.1)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '14px' }}>📊</span>
             <div style={{ fontSize: '13px', lineHeight: 1.4, color: 'var(--text-primary)' }}>
-              <span style={{ fontWeight: '700' }}>Groups lock at first kickoff · knockout bracket locks {lockStr}</span>
-              <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>Once a group's first match starts, all picks in that group lock immediately</span>
+              <span style={{ fontWeight: '700' }}>⚠️ Groups lock when first match kicks off</span>
+              <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>Once a group starts, all picks in that group lock — including later matches. Your knockout bracket locks at the same time.</span>
             </div>
           </div>
         )
