@@ -37,7 +37,8 @@ export default function Leaderboard() {
         .select('id, username, avatar_emoji, ko_points, ko_streak_current, ko_exact_scores')
         .order('ko_points', { ascending: false })
         .order('username', { ascending: true })
-        .limit(200),
+        .limit(200)
+        .select('id, username, display_name, avatar_emoji, total_points, streak_current, exact_scores, ko_points, ko_streak_current, ko_exact_scores, rank_at_kickoff, is_banned'),
       supabase.from('leaderboard_snapshots')
         .select('user_id, rank')
         .eq('snapshot_type', 'previous'),
@@ -56,6 +57,15 @@ export default function Leaderboard() {
   }
 
   const getRankMovement = (playerId, currentRank) => {
+    // During live matches, use rank_at_kickoff for real-time movement
+    const player = players.find(p => p.id === playerId)
+    if (player?.rank_at_kickoff) {
+      const diff = player.rank_at_kickoff - currentRank
+      if (diff > 0) return { dir: 'up', n: diff }
+      if (diff < 0) return { dir: 'down', n: Math.abs(diff) }
+      return { dir: 'same', n: 0 }
+    }
+    // Fallback to daily snapshot
     const prev = prevRanks.find(p => p.user_id === playerId)
     if (!prev) return null
     const diff = prev.rank - currentRank

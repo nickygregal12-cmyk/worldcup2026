@@ -109,6 +109,12 @@ export const handler = async (event, context) => {
 
       const newStatus = match.status === 'FINISHED' ? 'completed' : 'live'
 
+      // Snapshot ranks when a match first goes live
+      // This gives us a baseline to show rank movement during the match
+      if (newStatus === 'live' && ourMatch.status === 'scheduled') {
+        await supabase.rpc('snapshot_user_ranks').catch(() => {})
+      }
+
       // Derive winner_team_id and outcome_type for knockout scoring
       // football-data.org: score.winner = HOME_TEAM | AWAY_TEAM | DRAW
       // score.duration = REGULAR | EXTRA_TIME | PENALTY_SHOOTOUT

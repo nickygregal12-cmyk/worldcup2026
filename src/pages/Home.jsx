@@ -304,7 +304,7 @@ export default function Home() {
           awardCountRes,
           totalGoalsRes,
         ] = await Promise.all([
-          supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+          supabase.from('profiles').select('*, rank_at_kickoff, rank_snapshot_taken_at').eq('id', user.id).maybeSingle(),
           supabase.from('predictions')
             .select('id', { count: 'exact', head: true })
             .eq('user_id', user.id)
@@ -1092,6 +1092,34 @@ export default function Home() {
               <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
                 🌍 Tournament Predictor
               </div>
+              {/* Live rank movement card — shows during live matches */}
+              {liveMatches.length > 0 && leaderPosition && profile.rank_at_kickoff && (() => {
+                const movement = profile.rank_at_kickoff - leaderPosition // positive = moved up
+                const moved = movement !== 0
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: moved ? (movement > 0 ? 'rgba(0,122,51,0.08)' : 'rgba(198,40,40,0.06)') : 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', marginBottom: '10px', border: `1px solid ${moved ? (movement > 0 ? 'rgba(0,122,51,0.2)' : 'rgba(198,40,40,0.15)') : 'var(--border-light)'}` }}>
+                    <div style={{ fontWeight: '900', fontSize: '28px', fontFamily: 'var(--font-mono)', color: moved ? (movement > 0 ? 'var(--accent-green)' : 'var(--accent-red)') : 'var(--text-primary)' }}>
+                      #{leaderPosition}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '700', fontSize: '13px' }}>
+                        {moved
+                          ? movement > 0
+                            ? `▲ Up ${movement} place${movement > 1 ? 's' : ''} since kickoff`
+                            : `▼ Down ${Math.abs(movement)} place${Math.abs(movement) > 1 ? 's' : ''} since kickoff`
+                          : 'Holding position since kickoff'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Was #{profile.rank_at_kickoff} · {profile.total_points || 0}pts
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '20px' }}>
+                      {moved ? (movement > 0 ? '📈' : '📉') : '➡️'}
+                    </div>
+                  </div>
+                )
+              })()}
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: knockoutLive ? '14px' : '0' }}>
                 {[
                   { label: 'Points', value: profile.total_points || 0, icon: '🏅' },
