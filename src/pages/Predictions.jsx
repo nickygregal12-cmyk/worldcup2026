@@ -548,33 +548,6 @@ export default function Predictions() {
     }
   }, [user])
 
-  // Auto-scroll the date tab strip to keep active date visible
-  useEffect(() => {
-    if (!activeDateKey) return
-    const btn = document.getElementById(`datetab-${activeDateKey.replace(/[^a-z0-9]/gi, '-')}`)
-    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
-  }, [activeDateKey])
-
-  // Track which date section is in view — highlights the active date tab
-  useEffect(() => {
-    if (viewMode !== 'date') return
-    const observers = []
-    // Small delay to let DOM render
-    const timer = setTimeout(() => {
-      Object.keys(matchesByDate || {}).forEach(dateKey => {
-        const el = document.getElementById(`date-${dateKey.replace(/[^a-z0-9]/gi, '-')}`)
-        if (!el) return
-        const obs = new IntersectionObserver(
-          ([entry]) => { if (entry.isIntersecting) setActiveDateKey(dateKey) },
-          { rootMargin: '-80px 0px -55% 0px', threshold: 0 }
-        )
-        obs.observe(el)
-        observers.push(obs)
-      })
-    }, 300)
-    return () => { clearTimeout(timer); observers.forEach(o => o.disconnect()) }
-  }, [viewMode, matchesByDate])
-
   const location = useLocation()
 
   // Always fetch joker count fresh from DB — never trust stale persisted profile
@@ -764,6 +737,32 @@ export default function Predictions() {
   useEffect(() => { matchesRef.current = matches }, [matches])
   useEffect(() => { knockoutPicksRef.current = knockoutPicks }, [knockoutPicks])
   useEffect(() => { userRef.current = user }, [user])
+
+  // Auto-scroll the date tab strip to keep active date visible
+  useEffect(() => {
+    if (!activeDateKey) return
+    const btn = document.getElementById(`datetab-${activeDateKey.replace(/[^a-z0-9]/gi, '-')}`)
+    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [activeDateKey])
+
+  // Track which date section is in view — highlights the active date tab
+  useEffect(() => {
+    if (viewMode !== 'date') return
+    const observers = []
+    const timer = setTimeout(() => {
+      Object.keys(matchesByDate || {}).forEach(dateKey => {
+        const el = document.getElementById(`date-${dateKey.replace(/[^a-z0-9]/gi, '-')}`)
+        if (!el) return
+        const obs = new IntersectionObserver(
+          ([entry]) => { if (entry.isIntersecting) setActiveDateKey(dateKey) },
+          { rootMargin: '-80px 0px -55% 0px', threshold: 0 }
+        )
+        obs.observe(el)
+        observers.push(obs)
+      })
+    }, 300)
+    return () => { clearTimeout(timer); observers.forEach(o => o.disconnect()) }
+  }, [viewMode, matchesByDate])
 
   // Clear pending autosave timers when leaving the page.
   // Do not silently save here: group score changes may need the knockout-impact warning first.
