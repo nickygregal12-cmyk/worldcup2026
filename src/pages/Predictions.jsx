@@ -503,7 +503,9 @@ export default function Predictions() {
   const { appSettings } = useAppStore()
   const navigate = useNavigate()
   const [activeGroup, setActiveGroup] = useState('A')
-  const [viewMode, setViewMode] = useState('group')
+  const tournamentKickoff = new Date('2026-06-11T19:00:00Z')
+  const [viewMode, setViewMode] = useState(() => new Date() >= new Date('2026-06-11T19:00:00Z') ? 'date' : 'group')
+  const [activeDateKey, setActiveDateKey] = useState(null)
   const [activeTab, setActiveTab] = useState('picks') // picks | overview | standings
   const [teamSearch, setTeamSearch] = useState('')
   const [standings, setStandings] = useState([])
@@ -537,6 +539,33 @@ export default function Predictions() {
       checkJokerReminder()
     }
   }, [user])
+
+  // Auto-scroll the date tab strip to keep active date visible
+  useEffect(() => {
+    if (!activeDateKey) return
+    const btn = document.getElementById(`datetab-${activeDateKey.replace(/[^a-z0-9]/gi, '-')}`)
+    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [activeDateKey])
+
+  // Track which date section is in view — highlights the active date tab
+  useEffect(() => {
+    if (viewMode !== 'date') return
+    const observers = []
+    // Small delay to let DOM render
+    const timer = setTimeout(() => {
+      Object.keys(matchesByDate || {}).forEach(dateKey => {
+        const el = document.getElementById(`date-${dateKey.replace(/[^a-z0-9]/gi, '-')}`)
+        if (!el) return
+        const obs = new IntersectionObserver(
+          ([entry]) => { if (entry.isIntersecting) setActiveDateKey(dateKey) },
+          { rootMargin: '-80px 0px -55% 0px', threshold: 0 }
+        )
+        obs.observe(el)
+        observers.push(obs)
+      })
+    }, 300)
+    return () => { clearTimeout(timer); observers.forEach(o => o.disconnect()) }
+  }, [viewMode, matchesByDate])
 
   const location = useLocation()
 
@@ -2151,15 +2180,20 @@ export default function Predictions() {
                   const shortDate = new Date(firstMatch.kickoff_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
                   const donePreds = dayMatches.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
                   const complete = donePreds === dayMatches.length
+                  const isActive = activeDateKey === dateKey
                   return (
-                    <button key={dateKey} onClick={() => {
+                    <button key={dateKey} id={`datetab-${dateKey.replace(/[^a-z0-9]/gi, '-')}`} onClick={() => {
+                      setActiveDateKey(dateKey)
                       const el = document.getElementById(`date-${dateKey.replace(/[^a-z0-9]/gi, '-')}`)
                       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                     }} style={{
-                      padding: '10px 12px', fontSize: '11px', fontWeight: '500',
-                      color: 'var(--text-muted)', borderBottom: '2px solid transparent',
+                      padding: '10px 12px', fontSize: '11px',
+                      fontWeight: isActive ? '800' : '500',
+                      color: isActive ? 'var(--scottish-navy)' : 'var(--text-muted)',
+                      borderBottom: isActive ? '2px solid var(--scottish-navy)' : '2px solid transparent',
                       background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                      transition: 'color 0.15s, border-color 0.15s',
                     }}>
                       {shortDate}
                       <span style={{ fontSize: '10px', color: complete ? 'var(--accent-green)' : 'var(--text-muted)', fontWeight: '600' }}>
