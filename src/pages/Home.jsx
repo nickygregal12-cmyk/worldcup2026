@@ -890,6 +890,40 @@ export default function Home() {
             )
           })()}
 
+          {/* ── Late joiner banner ── */}
+          {user && profile && tournamentStarted && predictionCount < 10 && (
+            <div className="card fade-in" style={{ overflow: 'hidden', border: '2px solid #e65100' }}>
+              <div style={{ height: '4px', background: '#e65100', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: '28px', flexShrink: 0 }}>🔥</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '4px' }}>
+                    Joined late? KO Predictor is your fresh start
+                  </div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '12px' }}>
+                    The KO Predictor opens once the Round of 32 teams are confirmed — everyone starts at 0pts regardless of the group stage. You'll be on equal footing with everyone.
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', padding: '4px 10px', background: 'rgba(230,81,0,0.1)', borderRadius: 'var(--radius-full)', color: '#e65100' }}>
+                      🏆 Separate leaderboard
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: '700', padding: '4px 10px', background: 'rgba(230,81,0,0.1)', borderRadius: 'var(--radius-full)', color: '#e65100' }}>
+                      ⚡ Fresh start for all
+                    </div>
+                    <div style={{ fontSize: '12px', fontWeight: '700', padding: '4px 10px', background: 'rgba(230,81,0,0.1)', borderRadius: 'var(--radius-full)', color: '#e65100' }}>
+                      📅 Opens ~28 Jun
+                    </div>
+                  </div>
+                  {predictionCount === 0 && (
+                    <div style={{ marginTop: '12px', padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                      💡 Some group matches may still be open — check the Groups tab to predict what you can. Every point counts!
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── Invite friends / app share card ── */}
           {user && !tournamentStarted && (
             <div className="card fade-in" style={{ overflow: 'hidden' }}>

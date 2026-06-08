@@ -139,7 +139,7 @@ export default function Leaderboard() {
               color: !isTournament ? '#e65100' : 'rgba(255,255,255,0.7)',
               border: 'none', cursor: 'pointer', opacity: !koLive && isTournament ? 0.6 : 1,
             }}>
-              🔥 KO Predictor {!koLive && <span style={{ fontSize: '10px' }}>· 27 Jun</span>}
+              🔥 KO Predictor {!koLive && <span style={{ fontSize: '10px' }}>· soon</span>}
             </button>
           </div>
 
@@ -169,9 +169,20 @@ export default function Leaderboard() {
         ) : !koLive && !isTournament ? (
           <div className="card" style={{ textAlign: 'center', padding: '48px 24px' }}>
             <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔥</div>
-            <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>KO Predictor launches 27 Jun</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6' }}>
-              A completely fresh start — everyone begins at 0 points when predictions open.
+            <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>KO Predictor — coming soon</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6', marginBottom: '16px' }}>
+              Opens when the Round of 32 teams are confirmed — a completely fresh start, everyone begins at 0 points regardless of the group stage.
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', padding: '6px 12px', background: 'rgba(230,81,0,0.1)', borderRadius: 'var(--radius-full)', color: '#e65100' }}>
+                🏆 Separate leaderboard
+              </div>
+              <div style={{ fontSize: '12px', fontWeight: '700', padding: '6px 12px', background: 'rgba(230,81,0,0.1)', borderRadius: 'var(--radius-full)', color: '#e65100' }}>
+                ⚡ Everyone starts at 0pts
+              </div>
+              <div style={{ fontSize: '12px', fontWeight: '700', padding: '6px 12px', background: 'rgba(230,81,0,0.1)', borderRadius: 'var(--radius-full)', color: '#e65100' }}>
+                🎯 32 knockout matches
+              </div>
             </div>
           </div>
         ) : (
