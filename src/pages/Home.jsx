@@ -118,6 +118,7 @@ export default function Home() {
   const [todayMatches, setTodayMatches]   = useState([])
   const [matchWeather, setMatchWeather]   = useState({})
   const [dailyQuestion, setDailyQuestion] = useState(null)
+  const [imminentBracketLock, setImminentBracketLock] = useState(null)
   const [myAnswer, setMyAnswer]           = useState(null)
   const [answerCounts, setAnswerCounts]   = useState({})
   const [answerSaving, setAnswerSaving]   = useState(false)
@@ -145,6 +146,24 @@ export default function Home() {
   const tournamentOver = phaseOverride === 'post_tournament' ? true : now >= TOURNAMENT_END
 
   useEffect(() => { loadData(); loadDailyQuestion() }, [user])
+
+  // Check for imminent bracket locks (within 3 hours)
+  useEffect(() => {
+    if (!matches?.length) return
+    const now = new Date()
+    const in3hrs = new Date(now.getTime() + 3 * 60 * 60 * 1000)
+    const firstByGroup = {}
+    matches.filter(m => m.stage === 'group').forEach(m => {
+      const g = m.group?.name
+      if (!g) return
+      const t = new Date(m.kickoff_time)
+      if (!firstByGroup[g] || t < firstByGroup[g]) firstByGroup[g] = { time: t, match: m }
+    })
+    const next = Object.entries(firstByGroup)
+      .filter(([, { time }]) => time > now && time <= in3hrs)
+      .sort((a, b) => a[1].time - b[1].time)[0]
+    setImminentBracketLock(next ? { group: next[0], ...next[1] } : null)
+  }, [matches])
 
   // Re-fetch when returning to tab so progress bars update immediately
   useEffect(() => {
@@ -780,6 +799,34 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {/* ── Imminent bracket lock warning ── */}
+          {user && imminentBracketLock && (() => {
+            const { group, time, match } = imminentBracketLock
+            const hoursLeft = Math.floor((time - new Date()) / (1000 * 60 * 60))
+            const minsLeft = Math.floor((time - new Date()) / (1000 * 60)) % 60
+            const timeStr = time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' })
+            const urgent = hoursLeft < 1
+            return (
+              <div className="card fade-in" style={{ overflow: 'hidden', border: `2px solid ${urgent ? '#e53935' : 'var(--accent-gold)'}` }}>
+                <div style={{ height: '4px', background: urgent ? '#e53935' : 'var(--accent-gold)', marginBottom: '12px', borderRadius: 'var(--radius-full)' }} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                  <span style={{ fontSize: '24px', flexShrink: 0 }}>{urgent ? '🚨' : '⏰'}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '3px', color: urgent ? '#e53935' : 'var(--text-primary)' }}>
+                      Group {group} bracket locks in {hoursLeft > 0 ? `${hoursLeft}h ${minsLeft}m` : `${minsLeft} mins`}
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.4 }}>
+                      {match.home_team?.flag_emoji}{match.home_team?.short_code} vs {match.away_team?.short_code}{match.away_team?.flag_emoji} kicks off {timeStr} BST — your Round of 32 picks from Group {group} lock then.
+                    </div>
+                    <Link to="/knockout" style={{ display: 'inline-block', background: urgent ? '#e53935' : 'var(--scottish-navy)', color: 'white', borderRadius: 'var(--radius-full)', padding: '7px 16px', fontSize: '12px', fontWeight: '700', textDecoration: 'none' }}>
+                      Check bracket →
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* ── Daily Question ── */}
           {dailyQuestion && user && (() => {

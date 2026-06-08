@@ -8,6 +8,7 @@ import {
   calcPredictedStandings, resolveSlot, getBest3rdTeams, findAffectedPicks, groupFullyPredicted,
   getMD1LockTime, MD1_STANDINGS_LOCK_FALLBACK,
 } from '../lib/bracketUtils.js'
+import { predictKnockoutMatch } from '../lib/luckyDip.js'
 
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
@@ -75,6 +76,28 @@ export default function Knockout() {
     : m73Ready || new Date() >= KO_OPEN_DATE
   const mainBracketLockTime = useMemo(() => getMatchdayTwoFullTime(groupMatches), [groupMatches])
   const mainBracketLocked = new Date() >= mainBracketLockTime
+
+  // Find groups whose first match kicks off within the next 24 hours
+  // Used to show bracket lock warning banners
+  const imminentGroupLocks = useMemo(() => {
+    const now = new Date()
+    const in24hrs = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    // Get first kickoff per group
+    const firstByGroup = {}
+    groupMatches.forEach(m => {
+      const g = m.group?.name
+      if (!g) return
+      const t = new Date(m.kickoff_time)
+      if (!firstByGroup[g] || t < firstByGroup[g].time) {
+        firstByGroup[g] = { time: t, match: m }
+      }
+    })
+    // Return groups that kick off within 24hrs and haven't kicked off yet
+    return Object.entries(firstByGroup)
+      .filter(([, { time }]) => time > now && time <= in24hrs)
+      .map(([group, { time, match }]) => ({ group, time, match }))
+      .sort((a, b) => a.time - b.time)
+  }, [groupMatches])
 
   useEffect(() => { loadData() }, [user])
 
@@ -197,16 +220,37 @@ export default function Knockout() {
 
   const isMainBracketPickFrozen = useCallback((matchDef) => {
     if (!matchDef) return false
-    if (new Date() >= mainBracketLockTime) return true
+
+    // Always lock if the match itself has kicked off
     if (new Date() >= new Date(matchDef.kickoff)) return true
 
     const pick = knockoutPicks[matchDef.match_number]
+
+    // Lock if any team feeding into this match is from a group that has already kicked off
+    // This prevents using real results to fill in empty bracket slots
+    // Applies whether or not a pick exists
+    const slots = [matchDef.home_slot, matchDef.away_slot].filter(Boolean)
+    const feedingGroupsKickedOff = slots.some(slot => {
+      // Direct group slots: '1A', '2B', '1L' etc — extract the group letter A-L
+      const groupMatch = slot.match(/^[123]([A-L])$/)
+      if (!groupMatch) return false // WM73 winner slots, 3S-3Z best-third slots — skip
+      const groupName = groupMatch[1]
+      return groupMatches.some(m =>
+        m.group?.name === groupName &&
+        new Date(m.kickoff_time) <= new Date()
+      )
+    })
+    if (feedingGroupsKickedOff) return true
+
+    // If no pick exists and feeding groups haven't kicked off — allow pick
     if (!pick?.winner_id) return false
 
-    // Safety fallback: if a saved path already involves a team whose real group is complete,
-    // freeze that pick even if the global Matchday 2 lock date was misconfigured.
+    // Pick exists — freeze it if the bracket lock has passed
+    if (new Date() >= mainBracketLockTime) return true
+
+    // Safety fallback: freeze if a saved path involves a team whose real group is complete
     return [pick.home_id, pick.away_id, pick.winner_id].filter(Boolean).some(teamGroupCompleted)
-  }, [knockoutPicks, mainBracketLockTime, teamGroupCompleted])
+  }, [knockoutPicks, mainBracketLockTime, teamGroupCompleted, groupMatches])
 
   const getMatchTeams = useCallback((matchDef) => {
     const savedPick = knockoutPicks[matchDef.match_number]
@@ -242,6 +286,40 @@ export default function Knockout() {
     }
     return null
   }, [knockoutPicks, teamGroupCompleted, mainBracketLockTime])
+
+  const [luckyDipping, setLuckyDipping] = useState(false)
+
+  // Count empty locked R32 slots so we can show the banner
+  const emptyLockedSlots = useMemo(() => {
+    if (!mainBracketLocked) return 0
+    return ALL_STAGES[0]?.matches?.filter(matchDef => {
+      const pick = knockoutPicks[matchDef.match_number]
+      if (pick?.winner_id) return false // already picked
+      // Check if feeding groups have kicked off
+      const slots = [matchDef.home_slot, matchDef.away_slot].filter(Boolean)
+      return slots.some(slot => {
+        const gm = slot.match(/^[123]([A-L])$/)
+        if (!gm) return false
+        return groupMatches.some(m => m.group?.name === gm[1] && new Date(m.kickoff_time) <= new Date())
+      })
+    }).length || 0
+  }, [mainBracketLocked, knockoutPicks, groupMatches])
+
+  const luckyDipBracket = async () => {
+    if (!user || luckyDipping) return
+    setLuckyDipping(true)
+    // Fill only empty R32 slots where teams are resolved
+    const allMatches = ALL_STAGES.flatMap(s => s.matches || [])
+    for (const matchDef of allMatches) {
+      const pick = knockoutPicks[matchDef.match_number]
+      if (pick?.winner_id) continue // already picked
+      const { home, away } = getMatchTeams(matchDef)
+      if (!home?.id || !away?.id) continue // teams not resolved yet
+      const winnerId = predictKnockoutMatch(home, away)
+      if (winnerId) await savePick(matchDef, winnerId)
+    }
+    setLuckyDipping(false)
+  }
 
   const savePick = async (matchDef, winnerId) => {
     if (isMainBracketPickFrozen(matchDef)) return
@@ -525,7 +603,7 @@ export default function Knockout() {
                         <div>
                           <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>
-                            {mainBracketLocked ? 'Not saved before Matchday 1 lock' : slot.startsWith('W') ? `Waiting for M${slot.replace('W', '')} winner` : 'Waiting for group results'}
+                            {slot.startsWith('W') ? `Waiting for M${slot.replace('W', '')} winner` : 'Waiting for group results'}
                           </div>
                         </div>
                       </div>
@@ -630,10 +708,66 @@ export default function Knockout() {
             </div>
           )}
 
+          {/* Imminent group lock warnings */}
+          {imminentGroupLocks.map(({ group, time, match }) => {
+            const now = new Date()
+            const hoursLeft = Math.floor((time - now) / (1000 * 60 * 60))
+            const minsLeft = Math.floor((time - now) / (1000 * 60)) % 60
+            const timeStr = time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' })
+            const urgent = hoursLeft < 2
+            // Check if user has any empty slots from this group
+            const emptyFromGroup = (ALL_STAGES[0]?.matches || []).filter(matchDef => {
+              const pick = knockoutPicks[matchDef.match_number]
+              if (pick?.winner_id) return false
+              return [matchDef.home_slot, matchDef.away_slot].some(slot => {
+                const gm = slot?.match(/^[123]([A-L])$/)
+                return gm && gm[1] === group
+              })
+            }).length
+            return (
+              <div key={group} style={{
+                marginTop: '12px', borderRadius: 'var(--radius-md)', padding: '12px 14px',
+                background: urgent ? 'rgba(198,40,40,0.2)' : 'rgba(184,134,11,0.15)',
+                border: `1px solid ${urgent ? 'rgba(198,40,40,0.4)' : 'rgba(184,134,11,0.3)'}`,
+              }}>
+                <div style={{ fontSize: '13px', fontWeight: '800', color: urgent ? '#ef5350' : '#b8860b', marginBottom: '4px' }}>
+                  {urgent ? '🚨' : '⏰'} Group {group} bracket slots lock in {hoursLeft > 0 ? `${hoursLeft}h ${minsLeft}m` : `${minsLeft} mins`}
+                </div>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', marginBottom: emptyFromGroup > 0 ? '10px' : 0, lineHeight: 1.4 }}>
+                  {match.home_team?.flag_emoji}{match.home_team?.short_code} vs {match.away_team?.short_code}{match.away_team?.flag_emoji} kicks off at {timeStr} BST
+                  {emptyFromGroup > 0
+                    ? ` — you have ${emptyFromGroup} unpicked slot${emptyFromGroup > 1 ? 's' : ''} from this group!`
+                    : ' — your Group ' + group + ' picks are saved ✓'}
+                </div>
+                {emptyFromGroup > 0 && (
+                  <Link to="/knockout" style={{ display: 'inline-block', background: urgent ? '#ef5350' : 'var(--accent-gold)', color: 'white', borderRadius: 'var(--radius-full)', padding: '6px 14px', fontSize: '12px', fontWeight: '700', textDecoration: 'none' }}>
+                    Complete bracket →
+                  </Link>
+                )}
+              </div>
+            )
+          })}
+
           {/* Affected warning */}
           {affectedMatches.length > 0 && (
             <div style={{ marginTop: '12px', background: 'rgba(184,134,11,0.3)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: '12px', color: '#ffd700', fontWeight: '700' }}>
               ⚠️ {affectedMatches.length} knockout pick{affectedMatches.length > 1 ? 's' : ''} need updating after group changes
+            </div>
+          )}
+
+          {/* Empty locked slots banner */}
+          {user && emptyLockedSlots > 0 && (
+            <div style={{ marginTop: '12px', background: 'rgba(184,134,11,0.15)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid rgba(184,134,11,0.3)' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: '#b8860b', marginBottom: '4px' }}>
+                🔒 {emptyLockedSlots} bracket slot{emptyLockedSlots > 1 ? 's' : ''} left empty before lock
+              </div>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)', marginBottom: '10px', lineHeight: 1.4 }}>
+                These locked when their group kicked off. Use Lucky Dip to fill them automatically — no points for these slots but at least your bracket is complete.
+              </div>
+              <button onClick={luckyDipBracket} disabled={luckyDipping}
+                style={{ background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: luckyDipping ? 'wait' : 'pointer', opacity: luckyDipping ? 0.7 : 1 }}>
+                {luckyDipping ? '🎲 Filling...' : '🎲 Fill with Lucky Dip'}
+              </button>
             </div>
           )}
 
