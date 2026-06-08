@@ -111,7 +111,7 @@ const FAQS = [
   },
   {
     q: 'What is the KO Predictor?',
-    a: 'The KO Predictor is a second game that launches on 28 Jun once all 32 knockout teams are confirmed. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance. It has its own separate leaderboard. For each match you also predict whether it ends in 90 minutes, extra time, or penalties — getting that right earns bonus points, but getting it wrong reduces your base points from 5 to 3 even if you picked the right winner.',
+    a: 'The KO Predictor is a second game that opens once all 32 knockout teams are confirmed. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance. It has its own separate leaderboard. For each match you also predict whether it ends in 90 minutes, extra time, or penalties — getting the right winner earns 5pts, with a bonus if you also called ET or pens correctly. If you picked the right winner but wrong outcome (e.g. said 90 mins but it went to ET) you get 3pts instead.',
   },
   {
     q: 'How does the leaderboard work?',

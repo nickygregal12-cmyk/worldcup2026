@@ -571,7 +571,7 @@ export default function Profile() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: 'rgba(230,81,0,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(230,81,0,0.15)' }}>
                   <span style={{ fontSize: '24px' }}>🔥</span>
                   <div>
-                    <div style={{ fontWeight: '700', fontSize: '13px', color: '#e65100' }}>KO Predictor — coming 28 Jun</div>
+                    <div style={{ fontWeight: '700', fontSize: '13px', color: '#e65100' }}>KO Predictor — opens when R32 teams confirmed</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Fresh start — predict all 32 knockout matches with a separate leaderboard</div>
                   </div>
                   <Link to="/ko-predictor" style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '700', color: '#e65100', textDecoration: 'none', whiteSpace: 'nowrap' }}>Learn more →</Link>
