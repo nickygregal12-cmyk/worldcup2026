@@ -1541,7 +1541,7 @@ export default function Predictions() {
             <div style={{ marginTop: '10px', padding: '7px 12px', background: 'rgba(0,48,135,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,48,135,0.1)', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '12px' }}>📊</span>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>
-                Group order locked — you can adjust scores but not change standings
+                Group locked — picks frozen once the first match in this group kicked off
               </span>
             </div>
           )}
@@ -1844,8 +1844,7 @@ export default function Predictions() {
                 This score change would alter the Group {standingsLockWarning.groupName} standings order.
               </div>
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '18px', lineHeight: 1.5, background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '10px 12px' }}>
-                Group standings locked on <strong>{lockStr}</strong> to keep the knockout bracket fair.
-                You can still adjust scores as long as the group order doesn't change.
+                Groups lock the moment their first match kicks off. The standings order was also frozen on <strong>{lockStr}</strong>.
               </div>
               <button
                 onClick={() => {
@@ -1952,8 +1951,8 @@ export default function Predictions() {
             <div style={{ background: '#1a1a2e', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '14px' }}>🔒</span>
               <div style={{ color: 'white', fontSize: '13px', lineHeight: 1.4 }}>
-                <span style={{ fontWeight: '700' }}>Group standings locked.</span>
-                <span style={{ color: 'rgba(255,255,255,0.65)', marginLeft: '6px' }}>You can still tweak scores — but not change the group order.</span>
+                <span style={{ fontWeight: '700' }}>Groups locked.</span>
+                <span style={{ color: 'rgba(255,255,255,0.65)', marginLeft: '6px' }}>Each group locked when its first match kicked off.</span>
               </div>
             </div>
           )
@@ -1962,8 +1961,8 @@ export default function Predictions() {
           <div style={{ background: 'rgba(0,48,135,0.06)', borderBottom: '1px solid rgba(0,48,135,0.1)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '14px' }}>📊</span>
             <div style={{ fontSize: '13px', lineHeight: 1.4, color: 'var(--text-primary)' }}>
-              <span style={{ fontWeight: '700' }}>Group order locks {lockStr}</span>
-              <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>After this, scores can be tweaked but standings order is frozen</span>
+              <span style={{ fontWeight: '700' }}>Groups lock at first kickoff · knockout bracket locks {lockStr}</span>
+              <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>Once a group's first match starts, all picks in that group lock immediately</span>
             </div>
           </div>
         )
@@ -2270,7 +2269,7 @@ export default function Predictions() {
               This doubles your points for this match if you get the result right.
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              You have <strong>{jokersRemaining}</strong> joker{jokersRemaining !== 1 ? 's' : ''} remaining. You can remove it before kickoff, but not after.
+              You have <strong>{jokersRemaining}</strong> joker{jokersRemaining !== 1 ? 's' : ''} remaining. You can remove it before the group kicks off, but not after.
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button
