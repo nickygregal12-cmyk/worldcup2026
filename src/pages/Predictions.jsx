@@ -758,7 +758,11 @@ export default function Predictions() {
     setKnockoutPicks(pickMap)
   }
 
-  const isLocked = (kickoffTime) => new Date() >= new Date(kickoffTime)
+  // Admin can grant lock_bypass to specific users — they can predict past kickoff
+  const isLocked = (kickoffTime) => {
+    if (profile?.lock_bypass) return false // bypass active for this user
+    return new Date() >= new Date(kickoffTime)
+  }
 
   const saveTimers = useRef({})
   const predictionsRef = useRef(predictions)

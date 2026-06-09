@@ -2718,6 +2718,15 @@ export default function AdminPanel() {
                     {!u.is_banned && (
                       <button onClick={() => sendBanWarning(u.id, u.username)} className="btn btn-sm" style={{ border: '1px solid #e53935', color: '#e53935', background: 'none' }}>⚠️ Warn</button>
                     )}
+                    <button onClick={async () => {
+                      const newVal = !u.lock_bypass
+                      await supabase.from('profiles').update({ lock_bypass: newVal }).eq('id', u.id)
+                      await logAudit('TOGGLE_LOCK_BYPASS', { user_id: u.id, username: u.username, bypass: newVal })
+                      setActionResult(`${newVal ? '🔓 Lock bypass enabled' : '🔒 Lock bypass disabled'} for ${u.username}`)
+                      loadUsers()
+                    }} className="btn btn-sm" style={{ border: `1px solid ${u.lock_bypass ? '#e65100' : 'var(--border-light)'}`, color: u.lock_bypass ? '#e65100' : 'var(--text-muted)', background: u.lock_bypass ? 'rgba(230,81,0,0.08)' : 'none' }}>
+                      {u.lock_bypass ? '🔓 Bypass ON' : '🔒 Bypass'}
+                    </button>
                     <button onClick={() => setConfirmAction({ type: 'reset', userId: u.id, username: u.username })} className="btn btn-secondary btn-sm">↺ Reset</button>
                     {!u.is_admin && <button onClick={() => setConfirmAction({ type: 'makeAdmin', userId: u.id, username: u.username })} className="btn btn-sm" style={{ border: '1px solid var(--accent-orange)', color: 'var(--accent-orange)', background: 'none' }}>⭐ Super Admin</button>}
                     {!u.is_admin && u.admin_level !== 'league_admin' && <button onClick={() => setConfirmAction({ type: 'makeLeagueAdmin', userId: u.id, username: u.username })} className="btn btn-sm" style={{ border: '1px solid var(--scottish-navy)', color: 'var(--scottish-navy)', background: 'none' }}>🏆 League Admin</button>}
