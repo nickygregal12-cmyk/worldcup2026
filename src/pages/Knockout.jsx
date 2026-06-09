@@ -863,6 +863,25 @@ export default function Knockout() {
         const champion = getTeamById(finalPick.winner_id)
         if (!champion) return null
 
+        // Find champion's group matches
+        const champGroupMatches = groupMatches.filter(m =>
+          m.home_team_id === champion.id || m.away_team_id === champion.id
+        ).sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
+
+        const groupResults = champGroupMatches.map(m => {
+          const pred = groupPredictions[m.id]
+          const isHome = m.home_team_id === champion.id
+          const opponent = isHome ? m.away_team : m.home_team
+          const predScore = pred ? (isHome ? `${pred.home}–${pred.away}` : `${pred.away}–${pred.home}`) : '?–?'
+          const actualScore = m.home_score != null ? (isHome ? `${m.home_score}–${m.away_score}` : `${m.away_score}–${m.home_score}`) : null
+          const correct = actualScore && pred ? (
+            isHome
+              ? (pred.home === m.home_score && pred.away === m.away_score)
+              : (pred.away === m.home_score && pred.home === m.away_score)
+          ) : null
+          return { opponent, predScore, actualScore, correct, stage: 'Group Stage' }
+        })
+
         // Build the champion's route through all knockout rounds
         const route = ALL_STAGES.map(stage => {
           const matchInStage = stage.matches.find(m => {
@@ -899,6 +918,30 @@ export default function Knockout() {
                   🏆 Predicted route to glory
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+
+                  {/* Group stage games */}
+                  {groupResults.map(({ opponent, predScore, correct }, i) => (
+                    <div key={`group-${i}`} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: 'var(--radius-md)' }}>
+                      <span style={{ fontSize: '14px', width: '22px', flexShrink: 0 }}>
+                        {correct === true ? '✅' : correct === false ? '❌' : '⚽'}
+                      </span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Group Stage</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                          {champion.flag_emoji} {champion.short_code} vs {opponent?.flag_emoji} {opponent?.short_code || '?'}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)', flexShrink: 0 }}>
+                        {predScore}
+                      </div>
+                    </div>
+                  ))}
+
+                  {groupResults.length > 0 && route.length > 0 && (
+                    <div style={{ height: '1px', background: 'var(--border-light)', margin: '2px 0' }} />
+                  )}
+
+                  {/* Knockout rounds */}
                   {route.map(({ stage, opponent, won }) => (
                     <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: 'var(--radius-md)' }}>
                       <span style={{ fontSize: '14px', width: '22px', flexShrink: 0 }}>{won ? '✅' : '❌'}</span>
@@ -918,9 +961,11 @@ export default function Knockout() {
                 <button
                   onClick={async () => {
                     const nl = String.fromCharCode(10)
-                    const text = '\u{1F3C6} My World Cup 2026 prediction: ' + champion.flag_emoji + ' ' + champion.name + ' to win it all!' + nl + nl +
-                      route.map(r => (r.won ? '\u2705' : '\u274C') + ' ' + r.stage + ': vs ' + (r.opponent?.name || '?')).join(nl) +
-                      nl + nl + 'Make your predictions at wc26predictor1.netlify.app'
+                    const groupLines = groupResults.map(r => '\u26BD Group: vs ' + (r.opponent?.name || '?') + ' ' + r.predScore)
+                    const knockoutLines = route.map(r => (r.won ? '\u2705' : '\u274C') + ' ' + r.stage + ': vs ' + (r.opponent?.name || '?'))
+                    const text = '\u{1F3C6} My WC26 predicted champion: ' + champion.flag_emoji + ' ' + champion.name + nl + nl +
+                      [...groupLines, '', ...knockoutLines].join(nl) +
+                      nl + nl + 'wc26predictor1.netlify.app'
                     if (navigator.share) {
                       await navigator.share({ title: 'My WC26 Prediction', text })
                     } else {
