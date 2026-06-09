@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
@@ -120,6 +120,8 @@ export default function Home() {
   const [dailyQuestion, setDailyQuestion] = useState(null)
   const [imminentBracketLock, setImminentBracketLock] = useState(null)
   const [roundUpData, setRoundUpData] = useState(null) // post-match round-up
+  const roundUpCardRef = useRef(null)
+  const [sharingRoundUp, setSharingRoundUp] = useState(false)
   const [myAnswer, setMyAnswer]           = useState(null)
   const [answerCounts, setAnswerCounts]   = useState({})
   const [answerSaving, setAnswerSaving]   = useState(false)
@@ -870,7 +872,7 @@ export default function Home() {
             }
 
             return (
-              <div className="card fade-in" style={{ overflow: 'hidden', background: 'var(--scottish-navy)', color: 'white' }}>
+              <div ref={roundUpCardRef} className="card fade-in" style={{ overflow: 'hidden', background: 'var(--scottish-navy)', color: 'white' }}>
                 <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
                   <span style={{ fontSize: '28px', flexShrink: 0 }}>⚽</span>
@@ -898,16 +900,29 @@ export default function Home() {
                 </div>
                 <button
                   onClick={async () => {
-                    const text = shareText()
-                    if (navigator.share) {
-                      await navigator.share({ title: 'My WC26 Score', text })
-                    } else {
-                      await navigator.clipboard.writeText(text)
-                      alert('Copied to clipboard!')
-                    }
+                    setSharingRoundUp(true)
+                    try {
+                      const html2canvas = (await import('html2canvas')).default
+                      const canvas = await html2canvas(roundUpCardRef.current, {
+                        scale: 2, backgroundColor: '#003087', useCORS: true, logging: false,
+                      })
+                      canvas.toBlob(async (blob) => {
+                        const file = new File([blob], 'wc26-score.png', { type: 'image/png' })
+                        if (navigator.share && navigator.canShare({ files: [file] })) {
+                          await navigator.share({ title: 'My WC26 Score', files: [file] })
+                        } else {
+                          const url = URL.createObjectURL(blob)
+                          const a = document.createElement('a')
+                          a.href = url; a.download = 'wc26-score.png'; a.click()
+                          URL.revokeObjectURL(url)
+                        }
+                        setSharingRoundUp(false)
+                      }, 'image/png')
+                    } catch (e) { setSharingRoundUp(false) }
                   }}
-                  style={{ width: '100%', padding: '11px', background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}>
-                  📤 Share my score
+                  disabled={sharingRoundUp}
+                  style={{ width: '100%', padding: '11px', background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontWeight: '800', fontSize: '14px', cursor: sharingRoundUp ? 'wait' : 'pointer', opacity: sharingRoundUp ? 0.7 : 1 }}>
+                  {sharingRoundUp ? '⏳ Generating...' : '📤 Share my score'}
                 </button>
               </div>
             )

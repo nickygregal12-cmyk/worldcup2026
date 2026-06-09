@@ -288,6 +288,8 @@ export default function Knockout() {
   }, [knockoutPicks, teamGroupCompleted, mainBracketLockTime])
 
   const [luckyDipping, setLuckyDipping] = useState(false)
+  const championCardRef = useRef(null)
+  const [sharingChampion, setSharingChampion] = useState(false)
 
   // Count empty locked R32 slots so we can show the banner
   const emptyLockedSlots = useMemo(() => {
@@ -900,15 +902,15 @@ export default function Knockout() {
 
         return (
           <div className="container" style={{ padding: '0 16px 16px' }}>
-            <div style={{ background: 'linear-gradient(135deg, rgba(184,134,11,0.08), rgba(184,134,11,0.04))', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(184,134,11,0.25)', overflow: 'hidden' }}>
+            <div ref={championCardRef} style={{ background: 'linear-gradient(135deg, #001830, #002a5c)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(184,134,11,0.4)', overflow: 'hidden' }}>
               {/* Header */}
               <div style={{ padding: '16px 16px 12px', textAlign: 'center', borderBottom: '1px solid rgba(184,134,11,0.15)' }}>
                 <div style={{ fontSize: '32px', marginBottom: '4px' }}>{champion.flag_emoji}</div>
-                <div style={{ fontWeight: '900', fontSize: '18px', color: 'var(--accent-gold)' }}>
+                <div style={{ fontWeight: '900', fontSize: '18px', color: '#FFD700' }}>
                   {champion.name}
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  Your predicted World Cup winners
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>
+                  Your predicted World Cup winner
                 </div>
               </div>
 
@@ -926,8 +928,8 @@ export default function Knockout() {
                         {correct === true ? '✅' : correct === false ? '❌' : '⚽'}
                       </span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Group Stage</div>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Group Stage</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>
                           {champion.flag_emoji} {champion.short_code} vs {opponent?.flag_emoji} {opponent?.short_code || '?'}
                         </div>
                       </div>
@@ -946,8 +948,8 @@ export default function Knockout() {
                     <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: 'var(--radius-md)' }}>
                       <span style={{ fontSize: '14px', width: '22px', flexShrink: 0 }}>{won ? '✅' : '❌'}</span>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{stage}</div>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                        <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{stage}</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>
                           {champion.flag_emoji} {champion.short_code} vs {opponent?.flag_emoji} {opponent?.short_code || '?'}
                         </div>
                       </div>
@@ -960,21 +962,29 @@ export default function Knockout() {
               <div style={{ padding: '0 16px 16px' }}>
                 <button
                   onClick={async () => {
-                    const nl = String.fromCharCode(10)
-                    const groupLines = groupResults.map(r => '\u26BD Group: vs ' + (r.opponent?.name || '?') + ' ' + r.predScore)
-                    const knockoutLines = route.map(r => (r.won ? '\u2705' : '\u274C') + ' ' + r.stage + ': vs ' + (r.opponent?.name || '?'))
-                    const text = '\u{1F3C6} My WC26 predicted champion: ' + champion.flag_emoji + ' ' + champion.name + nl + nl +
-                      [...groupLines, '', ...knockoutLines].join(nl) +
-                      nl + nl + 'wc26predictor1.netlify.app'
-                    if (navigator.share) {
-                      await navigator.share({ title: 'My WC26 Prediction', text })
-                    } else {
-                      await navigator.clipboard.writeText(text)
-                      alert('Copied to clipboard!')
-                    }
+                    setSharingChampion(true)
+                    try {
+                      const html2canvas = (await import('html2canvas')).default
+                      const canvas = await html2canvas(championCardRef.current, {
+                        scale: 2, backgroundColor: '#001830', useCORS: true, logging: false,
+                      })
+                      canvas.toBlob(async (blob) => {
+                        const file = new File([blob], 'wc26-champion.png', { type: 'image/png' })
+                        if (navigator.share && navigator.canShare({ files: [file] })) {
+                          await navigator.share({ title: 'My WC26 Predicted Champion', files: [file] })
+                        } else {
+                          const url = URL.createObjectURL(blob)
+                          const a = document.createElement('a')
+                          a.href = url; a.download = 'wc26-champion.png'; a.click()
+                          URL.revokeObjectURL(url)
+                        }
+                        setSharingChampion(false)
+                      }, 'image/png')
+                    } catch (e) { setSharingChampion(false) }
                   }}
-                  style={{ width: '100%', padding: '12px', background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}>
-                  🏆 Share my predicted champion
+                  disabled={sharingChampion}
+                  style={{ width: '100%', padding: '12px', background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontWeight: '800', fontSize: '14px', cursor: sharingChampion ? 'wait' : 'pointer', opacity: sharingChampion ? 0.7 : 1 }}>
+                  {sharingChampion ? '⏳ Generating...' : '🏆 Share my predicted champion'}
                 </button>
               </div>
             </div>
