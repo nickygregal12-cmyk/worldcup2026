@@ -3912,6 +3912,10 @@ export default function AdminPanel() {
                                   .eq('user_id', editingUserPreds)
                                   .eq('match_number', pick.match_number)
                                 await logAudit('ADMIN_EDIT_KO_PICK', { user_id: editingUserPreds, match_number: pick.match_number, team_id: team.id })
+                                await supabase.from('profiles').update({
+                                  admin_message: `An admin updated your knockout pick for M#${pick.match_number} to ${team.flag_emoji} ${team.name}`,
+                                  admin_message_read: false,
+                                }).eq('id', editingUserPreds)
                                 setEditingAwardPred(null)
                                 loadUserPredictions(editingUserPreds)
                               }} className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', fontWeight: '700' }}>
@@ -3963,6 +3967,10 @@ export default function AdminPanel() {
                                 await supabase.from('award_predictions').insert({ user_id: editingUserPreds, award_type: key, predicted_player_name: editingAwardValue })
                               }
                               await logAudit('ADMIN_EDIT_AWARD', { user_id: editingUserPreds, award_type: key, value: editingAwardValue })
+                              await supabase.from('profiles').update({
+                                admin_message: `An admin updated your ${label} prediction to ${editingAwardValue}`,
+                                admin_message_read: false,
+                              }).eq('id', editingUserPreds)
                               setEditingAwardPred(null)
                               loadUserPredictions(editingUserPreds)
                             }} className="btn btn-primary btn-sm">Save</button>
@@ -4000,6 +4008,10 @@ export default function AdminPanel() {
                                 await supabase.from('tournament_predictions').insert({ user_id: editingUserPreds, prediction_type: 'total_goals', int_value: val })
                               }
                               await logAudit('ADMIN_EDIT_TOTAL_GOALS', { user_id: editingUserPreds, value: val })
+                              await supabase.from('profiles').update({
+                                admin_message: `An admin updated your total goals prediction to ${val}`,
+                                admin_message_read: false,
+                              }).eq('id', editingUserPreds)
                               setEditingAwardPred(null)
                               loadUserPredictions(editingUserPreds)
                             }} className="btn btn-primary btn-sm">Save</button>
