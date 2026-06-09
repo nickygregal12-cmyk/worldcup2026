@@ -458,6 +458,35 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
             </table>
           </div>
         )}
+        {/* Group position bonus summary — shown when group is complete and real standings exist */}
+        {showReal && groupStandings.length > 0 && hasPredictions && (() => {
+          // Count correct positions
+          let correct = 0
+          predTable.forEach((team, i) => {
+            const realEntry = groupStandings.find(s => s.team_id === team.id)
+            if (realEntry && realEntry.position === i + 1) correct++
+          })
+          const isPerfect = correct === 4
+          const bonusPts = (correct * 2) + (isPerfect ? 5 : 0)
+          return (
+            <div style={{ marginTop: '10px', padding: '10px 12px', background: bonusPts > 0 ? 'rgba(0,122,51,0.06)' : 'rgba(0,0,0,0.03)', borderRadius: 'var(--radius-md)', border: `1px solid ${bonusPts > 0 ? 'rgba(0,122,51,0.15)' : 'var(--border-light)'}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '13px', color: bonusPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                    {isPerfect ? '🎯 Perfect group!' : correct > 0 ? `✓ ${correct}/4 positions correct` : '✗ No positions correct'}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>
+                    {isPerfect ? '+8pts positions + 5pts perfect bonus' : `+${correct * 2}pts from standings`}
+                  </div>
+                </div>
+                <div style={{ fontWeight: '900', fontSize: '20px', color: bonusPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  +{bonusPts}pts
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
         <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>Based on your predicted scores for this group</div>
       </div>
 
