@@ -3832,6 +3832,46 @@ export default function AdminPanel() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '65vh', overflowY: 'auto' }}>
 
                 {/* GROUP PREDICTIONS */}
+                {editModalTab === 'group' && (() => {
+                  // Group matches by group name using match data
+                  const byGroup = {}
+                  allMatches.forEach(match => {
+                    // Group from match_number: matches 1-6 = A, 7-12 = B etc (6 matches per group)
+                    const groupIdx = Math.ceil(match.match_number / 6)
+                    const key = String.fromCharCode(64 + groupIdx) // A, B, C...
+                    if (!byGroup[key]) byGroup[key] = []
+                    byGroup[key].push(match)
+                  })
+
+                  return (
+                    <>
+                      {/* Quick summary by group */}
+                      <div style={{ marginBottom: '12px', padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '12px', color: 'var(--text-muted)' }}>
+                        <div style={{ fontWeight: '700', marginBottom: '6px', color: 'var(--text-primary)' }}>📊 Group Summary</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {Object.entries(byGroup).sort().map(([group, matches]) => {
+                            const preds = matches.filter(m => {
+                              const p = userPredictions.find(up => up.match_id === m.id)
+                              return p?.home_score !== null && p?.home_score !== undefined
+                            })
+                            const complete = preds.length === matches.length
+                            return (
+                              <span key={group} style={{
+                                padding: '3px 8px', borderRadius: 'var(--radius-full)',
+                                background: complete ? 'rgba(0,122,51,0.1)' : preds.length > 0 ? 'rgba(184,134,11,0.1)' : 'rgba(0,0,0,0.05)',
+                                color: complete ? 'var(--accent-green)' : preds.length > 0 ? '#b8860b' : 'var(--text-muted)',
+                                fontWeight: '600', fontSize: '11px', border: `1px solid ${complete ? 'rgba(0,122,51,0.2)' : 'transparent'}`,
+                              }}>
+                                {group}: {preds.length}/{matches.length}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )
+                })()}
+
                 {editModalTab === 'group' && allMatches.map(match => {
                   const existing = userPredictions.find(p => p.match_id === match.id)
                   const edited = editedPreds[match.id]
