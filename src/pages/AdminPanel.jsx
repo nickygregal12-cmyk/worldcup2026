@@ -1277,14 +1277,27 @@ export default function AdminPanel() {
       .order('match(match_number)', { ascending: true })
     setUserPredictions(predData || [])
 
-    // Load knockout picks with team names
+    // Load knockout picks with team names + match details for opponent
     const { data: koData, error: koErr } = await supabase
       .from('knockout_picks')
       .select('*, team:team_id(id, name, flag_emoji, short_code)')
       .eq('user_id', userId)
       .order('match_number', { ascending: true })
     if (koErr) console.error('KO picks error:', koErr)
-    setUserKoPicks(koData || [])
+
+    // Load knockout matches to resolve home/away teams
+    const { data: koMatches } = await supabase
+      .from('matches')
+      .select('match_number, home_team:home_team_id(id, name, flag_emoji, short_code), away_team:away_team_id(id, name, flag_emoji, short_code)')
+      .in('stage', ['r32', 'r16', 'qf', 'sf', 'final'])
+    const koMatchMap = {}
+    koMatches?.forEach(m => { koMatchMap[m.match_number] = m })
+
+    const picksWithMatches = (koData || []).map(p => ({
+      ...p,
+      matchInfo: koMatchMap[p.match_number] || null,
+    }))
+    setUserKoPicks(picksWithMatches)
 
     // Load award predictions
     const { data: awardData } = await supabase
@@ -3878,17 +3891,50 @@ export default function AdminPanel() {
                     <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '13px' }}>
                       No knockout picks made yet
                     </div>
-                  ) : userKoPicks.map(pick => (
-                    <div key={pick.id} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-                      <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                        Match #{pick.match_number} · {pick.stage?.toUpperCase()}
+                  ) : userKoPicks.map(pick => {
+                    const m = pick.matchInfo
+                    const home = m?.home_team
+                    const away = m?.away_team
+                    const isEditing = editingAwardPred === `ko-${pick.match_number}`
+                    return (
+                      <div key={pick.id} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: `1px solid ${isEditing ? 'var(--scottish-navy)' : 'var(--border-light)'}` }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '6px' }}>
+                          M#{pick.match_number} · {pick.stage?.toUpperCase()}
+                          {home && away && <span> · {home.flag_emoji}{home.short_code} vs {away.short_code}{away.flag_emoji}</span>}
+                        </div>
+                        {isEditing ? (
+                          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                            <div style={{ fontSize: '12px', fontWeight: '600', width: '100%', marginBottom: '4px' }}>Pick winner:</div>
+                            {[home, away].filter(Boolean).map(team => (
+                              <button key={team.id} onClick={async () => {
+                                await supabase.from('knockout_picks')
+                                  .update({ team_id: team.id })
+                                  .eq('user_id', editingUserPreds)
+                                  .eq('match_number', pick.match_number)
+                                await logAudit('ADMIN_EDIT_KO_PICK', { user_id: editingUserPreds, match_number: pick.match_number, team_id: team.id })
+                                setEditingAwardPred(null)
+                                loadUserPredictions(editingUserPreds)
+                              }} className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', fontWeight: '700' }}>
+                                {team.flag_emoji} {team.name}
+                              </button>
+                            ))}
+                            <button onClick={() => setEditingAwardPred(null)} className="btn btn-secondary btn-sm">Cancel</button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              {pick.team?.flag_emoji} {pick.team?.name || '—'}
+                              {pick.is_joker && <span style={{ color: '#ff9800', fontSize: '12px' }}>🃏</span>}
+                            </div>
+                            {home && away && (
+                              <button onClick={() => setEditingAwardPred(`ko-${pick.match_number}`)}
+                                className="btn btn-secondary btn-sm">Edit</button>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div style={{ fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {pick.team?.flag_emoji} {pick.team?.name || pick.team?.short_code || '—'}
-                        {pick.is_joker && <span style={{ color: '#ff9800', fontSize: '12px' }}>🃏 Joker</span>}
-                      </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
 
                 {/* AWARD PREDICTIONS */}
