@@ -3844,15 +3844,16 @@ export default function AdminPanel() {
                     }
                   })
 
-                  // Calculate predicted standings for all groups
-                  const standings = calcPredictedStandings(allMatches, predMap)
+                  // Calculate predicted standings — returns { 'A': [...], 'B': [...] }
+                  const standingsMap = calcPredictedStandings(allMatches, predMap)
 
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       {groupLetters.map(letter => {
                         const groupMatches = allMatches.filter((_, i) => String.fromCharCode(65 + Math.floor(i / 6)) === letter)
-                        const groupStandings = standings.filter(s => s.group === letter)
-                          .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
+                        // Find the matching group key (could be 'A', 'B' etc or full name)
+                        const groupKey = Object.keys(standingsMap).find(k => k === letter || k === `Group ${letter}`)
+                        const groupStandings = groupKey ? (standingsMap[groupKey] || []) : []
 
                         return (
                           <div key={letter}>
@@ -3881,14 +3882,14 @@ export default function AdminPanel() {
                                       <tr key={team.id} style={{ borderTop: '1px solid var(--border-light)', background: idx < 2 ? 'rgba(0,122,51,0.04)' : 'transparent' }}>
                                         <td style={{ padding: '5px 8px', fontWeight: '700', color: idx < 2 ? 'var(--accent-green)' : 'var(--text-muted)', fontSize: '11px' }}>{idx + 1}</td>
                                         <td style={{ padding: '5px 8px', fontWeight: '600' }}>
-                                          {team.flag_emoji} {team.short_code || team.name}
+                                          {team.team?.flag_emoji} {team.team?.short_code || team.team?.name}
                                           {idx < 2 && <span style={{ marginLeft: '4px', fontSize: '10px', color: 'var(--accent-green)' }}>✓</span>}
                                         </td>
                                         <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.played || 0}</td>
                                         <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.w || 0}</td>
                                         <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.d || 0}</td>
                                         <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.l || 0}</td>
-                                        <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.gd >= 0 ? '+' : ''}{team.gd || 0}</td>
+                                        <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{(team.gd || 0) >= 0 ? '+' : ''}{team.gd || 0}</td>
                                         <td style={{ padding: '5px 8px', textAlign: 'center', fontWeight: '800', color: 'var(--scottish-navy)' }}>{team.pts || 0}</td>
                                       </tr>
                                     ))}
