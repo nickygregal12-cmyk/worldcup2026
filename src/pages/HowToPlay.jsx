@@ -49,19 +49,6 @@ const SCORING = [
       { label: 'One joker max per match', pts: '—' },
     ]
   },
-  {
-    section: '🔥 KO Predictor — A Completely Separate Game',
-    desc: 'A fresh game starting 28 Jun. Predict scores for all 32 knockout matches including how they end. Separate leaderboard, fresh start — everyone begins at 0.',
-    rows: [
-      { label: 'Correct winner only', pts: '5pts' },
-      { label: 'Correct winner + exact score', pts: '10pts' },
-      { label: 'Predicted ET correctly (match went to ET)', pts: '+3pts', highlight: true },
-      { label: 'Predicted Penalties correctly (match went to PENS)', pts: '+5pts', highlight: true },
-      { label: 'Got winner right but wrong on ET/PENS', pts: '3pts ⚠️' },
-      { label: 'First goal time band correct', pts: '+3pts' },
-      { label: 'KO Predictor jokers available', pts: '5 total' },
-    ]
-  },
 ]
 
 const LOCKS = [
@@ -207,6 +194,32 @@ export default function HowToPlay() {
             </div>
           </div>
         ))}
+
+        {/* KO Predictor — after locks since it's a future game */}
+        <div style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>🔥 KO Predictor — Opens ~28 Jun</div>
+        <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', marginTop: '4px', padding: '10px 14px', background: 'rgba(230,81,0,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(230,81,0,0.15)' }}>
+          A completely separate game from the Knockout Bracket. Opens once all 32 teams are confirmed from real results. Everyone starts at 0pts — even if your group stage didn't go well.
+        </div>
+        <div className="card" style={{ marginBottom: '8px' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+            <tbody>
+              {[
+                { label: 'Correct winner only', pts: '5pts' },
+                { label: 'Correct winner + exact score', pts: '10pts' },
+                { label: 'Predicted ET correctly', pts: '+3pts bonus', highlight: true },
+                { label: 'Predicted Penalties correctly', pts: '+5pts bonus', highlight: true },
+                { label: 'Got winner right but wrong on ET/Pens', pts: '3pts ⚠️' },
+                { label: 'First goal time band correct', pts: '+3pts' },
+                { label: 'KO Predictor jokers available', pts: '5 total' },
+              ].map(({ label, pts, highlight }) => (
+                <tr key={label} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                  <td style={{ padding: '8px 4px', color: highlight ? '#e65100' : 'var(--text-primary)', fontWeight: highlight ? '600' : '400' }}>{label}</td>
+                  <td style={{ padding: '8px 4px', textAlign: 'right', fontWeight: '700', color: '#e65100', whiteSpace: 'nowrap' }}>{pts}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* FAQ */}
         <div style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>❓ FAQ</div>
