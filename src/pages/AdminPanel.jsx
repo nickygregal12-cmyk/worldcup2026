@@ -1277,27 +1277,18 @@ export default function AdminPanel() {
       .order('match(match_number)', { ascending: true })
     setUserPredictions(predData || [])
 
-    // Load knockout picks with team names + match details for opponent
+    // Load knockout picks — home_team_id and away_team_id are on the row directly
     const { data: koData, error: koErr } = await supabase
       .from('knockout_picks')
-      .select('*, team:team_id(id, name, flag_emoji, short_code)')
+      .select(`*,
+        team:team_id(id, name, flag_emoji, short_code),
+        home_team:home_team_id(id, name, flag_emoji, short_code),
+        away_team:away_team_id(id, name, flag_emoji, short_code)
+      `)
       .eq('user_id', userId)
       .order('match_number', { ascending: true })
     if (koErr) console.error('KO picks error:', koErr)
-
-    // Load knockout matches to resolve home/away teams
-    const { data: koMatches } = await supabase
-      .from('matches')
-      .select('match_number, home_team:home_team_id(id, name, flag_emoji, short_code), away_team:away_team_id(id, name, flag_emoji, short_code)')
-      .in('stage', ['r32', 'r16', 'qf', 'sf', 'final'])
-    const koMatchMap = {}
-    koMatches?.forEach(m => { koMatchMap[m.match_number] = m })
-
-    const picksWithMatches = (koData || []).map(p => ({
-      ...p,
-      matchInfo: koMatchMap[p.match_number] || null,
-    }))
-    setUserKoPicks(picksWithMatches)
+    setUserKoPicks(koData || [])
 
     // Load award predictions
     const { data: awardData } = await supabase
@@ -3892,9 +3883,8 @@ export default function AdminPanel() {
                       No knockout picks made yet
                     </div>
                   ) : userKoPicks.map(pick => {
-                    const m = pick.matchInfo
-                    const home = m?.home_team
-                    const away = m?.away_team
+                    const home = pick.home_team
+                    const away = pick.away_team
                     const isEditing = editingAwardPred === `ko-${pick.match_number}`
                     return (
                       <div key={pick.id} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: `1px solid ${isEditing ? 'var(--scottish-navy)' : 'var(--border-light)'}` }}>
