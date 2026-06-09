@@ -44,6 +44,10 @@ export const handler = async (event, context) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
   }
 
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
+  }
+
   try {
     // Fetch ALL matches from football-data.org regardless of status
     const response = await fetch(

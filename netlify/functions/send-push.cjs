@@ -48,6 +48,10 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
   }
 
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
+  }
+
   try {
     const now = new Date()
     const { yesterdayMatches, todayMatches, todayStart } = await getRecentlyCompletedWindow()

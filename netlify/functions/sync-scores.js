@@ -45,6 +45,10 @@ export const handler = async (event, context) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
   }
 
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
+  }
+
   const { data: settings } = await supabase
     .from('app_settings')
     .select('value')

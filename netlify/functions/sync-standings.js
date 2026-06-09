@@ -27,6 +27,10 @@ export const handler = async (event, context) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
   }
 
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
+  }
+
   try {
     const response = await fetch(
       'https://api.football-data.org/v4/competitions/WC/standings?season=2026',
