@@ -933,6 +933,9 @@ export default function AdminPanel() {
   const [userPredictions, setUserPredictions] = useState([])
   const [userKoPicks, setUserKoPicks] = useState([])
   const [userAwardPreds, setUserAwardPreds] = useState([])
+  const [userTournamentPreds, setUserTournamentPreds] = useState([])
+  const [editingAwardPred, setEditingAwardPred] = useState(null)
+  const [editingAwardValue, setEditingAwardValue] = useState('')
   const [allMatches, setAllMatches] = useState([])
   const [loadingUserPreds, setLoadingUserPreds] = useState(false)
   const [editedPreds, setEditedPreds] = useState({})
@@ -1274,10 +1277,10 @@ export default function AdminPanel() {
       .order('match(match_number)', { ascending: true })
     setUserPredictions(predData || [])
 
-    // Load knockout picks
+    // Load knockout picks with team names
     const { data: koData, error: koErr } = await supabase
       .from('knockout_picks')
-      .select('*')
+      .select('*, team:team_id(id, name, flag_emoji, short_code)')
       .eq('user_id', userId)
       .order('match_number', { ascending: true })
     if (koErr) console.error('KO picks error:', koErr)
@@ -1289,6 +1292,13 @@ export default function AdminPanel() {
       .select('*')
       .eq('user_id', userId)
     setUserAwardPreds(awardData || [])
+
+    // Load tournament predictions (total goals etc)
+    const { data: tournData } = await supabase
+      .from('tournament_predictions')
+      .select('*')
+      .eq('user_id', userId)
+    setUserTournamentPreds(tournData || [])
 
     setLoadingUserPreds(false)
   }
@@ -3870,34 +3880,96 @@ export default function AdminPanel() {
                     </div>
                   ) : userKoPicks.map(pick => (
                     <div key={pick.id} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-                      <div style={{ fontSize: '12px', fontWeight: '600', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '4px' }}>
                         Match #{pick.match_number} · {pick.stage?.toUpperCase()}
                       </div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                        Winner ID: <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px' }}>{pick.winner_team_id?.slice(-8)}</span>
-                        {pick.is_joker && <span style={{ marginLeft: '6px', color: '#ff9800' }}>🃏 Joker</span>}
+                      <div style={{ fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {pick.team?.flag_emoji} {pick.team?.name || pick.team?.short_code || '—'}
+                        {pick.is_joker && <span style={{ color: '#ff9800', fontSize: '12px' }}>🃏 Joker</span>}
                       </div>
                     </div>
                   ))
                 )}
 
                 {/* AWARD PREDICTIONS */}
-                {editModalTab === 'awards' && (
-                  userAwardPreds.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)', fontSize: '13px' }}>
-                      No award predictions made yet
-                    </div>
-                  ) : userAwardPreds.map(award => (
-                    <div key={award.id} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '4px' }}>
-                        {award.award_type?.replace(/_/g, ' ')}
+                {editModalTab === 'awards' && (<>
+                  {/* Player awards */}
+                  {[
+                    { key: 'golden_boot', label: '⚽ Golden Boot' },
+                    { key: 'golden_glove', label: '🧤 Golden Glove' },
+                    { key: 'best_young_player', label: '🌟 Best Young Player' },
+                    { key: 'player_of_tournament', label: '🏆 Player of Tournament' },
+                  ].map(({ key, label }) => {
+                    const award = userAwardPreds.find(a => a.award_type === key)
+                    const isEditing = editingAwardPred === key
+                    return (
+                      <div key={key} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: `1px solid ${isEditing ? 'var(--scottish-navy)' : 'var(--border-light)'}` }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '6px' }}>{label}</div>
+                        {isEditing ? (
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <input className="input" value={editingAwardValue}
+                              onChange={e => setEditingAwardValue(e.target.value)}
+                              placeholder="Player name" style={{ flex: 1, fontSize: '13px' }} />
+                            <button onClick={async () => {
+                              if (award) {
+                                await supabase.from('award_predictions').update({ predicted_player_name: editingAwardValue }).eq('id', award.id)
+                              } else {
+                                await supabase.from('award_predictions').insert({ user_id: editingUserPreds, award_type: key, predicted_player_name: editingAwardValue })
+                              }
+                              await logAudit('ADMIN_EDIT_AWARD', { user_id: editingUserPreds, award_type: key, value: editingAwardValue })
+                              setEditingAwardPred(null)
+                              loadUserPredictions(editingUserPreds)
+                            }} className="btn btn-primary btn-sm">Save</button>
+                            <button onClick={() => setEditingAwardPred(null)} className="btn btn-secondary btn-sm">✕</button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ fontSize: '14px', fontWeight: '700' }}>{award?.predicted_player_name || <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>Not set</span>}</div>
+                            <button onClick={() => { setEditingAwardPred(key); setEditingAwardValue(award?.predicted_player_name || '') }}
+                              className="btn btn-secondary btn-sm">Edit</button>
+                          </div>
+                        )}
                       </div>
-                      <div style={{ fontSize: '14px', fontWeight: '700' }}>
-                        {award.predicted_player_name || '—'}
+                    )
+                  })}
+
+                  {/* Total goals */}
+                  {(() => {
+                    const tg = userTournamentPreds.find(p => p.prediction_type === 'total_goals')
+                    const isEditing = editingAwardPred === 'total_goals'
+                    return (
+                      <div style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: `1px solid ${isEditing ? 'var(--scottish-navy)' : 'var(--border-light)'}` }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '6px' }}>⚽ Total Goals in Tournament</div>
+                        {isEditing ? (
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <input type="number" className="input" value={editingAwardValue}
+                              onChange={e => setEditingAwardValue(e.target.value)}
+                              placeholder="e.g. 156" style={{ flex: 1, fontSize: '13px' }} />
+                            <button onClick={async () => {
+                              const val = parseInt(editingAwardValue)
+                              if (isNaN(val)) return
+                              if (tg) {
+                                await supabase.from('tournament_predictions').update({ int_value: val }).eq('id', tg.id)
+                              } else {
+                                await supabase.from('tournament_predictions').insert({ user_id: editingUserPreds, prediction_type: 'total_goals', int_value: val })
+                              }
+                              await logAudit('ADMIN_EDIT_TOTAL_GOALS', { user_id: editingUserPreds, value: val })
+                              setEditingAwardPred(null)
+                              loadUserPredictions(editingUserPreds)
+                            }} className="btn btn-primary btn-sm">Save</button>
+                            <button onClick={() => setEditingAwardPred(null)} className="btn btn-secondary btn-sm">✕</button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ fontSize: '14px', fontWeight: '700' }}>{tg?.int_value ?? <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>Not set</span>}</div>
+                            <button onClick={() => { setEditingAwardPred('total_goals'); setEditingAwardValue(tg?.int_value?.toString() || '') }}
+                              className="btn btn-secondary btn-sm">Edit</button>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))
-                )}
+                    )
+                  })()}
+                </>)}
 
               </div>
             )}
