@@ -37,6 +37,13 @@ const stripAccents = (str) => str
   .trim()
 
 export const handler = async (event, context) => {
+  // Auth check — reject requests without valid admin secret
+  // pg_cron calls pass this header; direct calls from AdminPanel pass it too
+  const secret = (event.headers || {})['x-admin-secret']
+  if (!process.env.ADMIN_FUNCTION_SECRET || secret !== process.env.ADMIN_FUNCTION_SECRET) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
+  }
+
   try {
     // Fetch ALL matches from football-data.org regardless of status
     const response = await fetch(

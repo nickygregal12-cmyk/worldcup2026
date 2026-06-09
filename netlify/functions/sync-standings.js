@@ -20,6 +20,13 @@ const API_TO_DB = {
 const normalise = (name) => API_TO_DB[name] || name
 
 export const handler = async (event, context) => {
+  // Auth check — reject requests without valid admin secret
+  // pg_cron calls pass this header; direct calls from AdminPanel pass it too
+  const secret = (event.headers || {})['x-admin-secret']
+  if (!process.env.ADMIN_FUNCTION_SECRET || secret !== process.env.ADMIN_FUNCTION_SECRET) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
+  }
+
   try {
     const response = await fetch(
       'https://api.football-data.org/v4/competitions/WC/standings?season=2026',

@@ -864,6 +864,12 @@ function DailyQuestionsTab() {
   )
 }
 
+const ADMIN_SECRET = import.meta.env.VITE_ADMIN_FUNCTION_SECRET || ''
+const adminHeaders = {
+  'Content-Type': 'application/json',
+  'x-admin-secret': ADMIN_SECRET,
+}
+
 export default function AdminPanel() {
   const { user, isAdmin } = useAuthStore()
   const [profile, setProfile] = useState(null)
@@ -1112,7 +1118,7 @@ export default function AdminPanel() {
   const syncScoresNow = async () => {
     setSaving(prev => ({ ...prev, sync: true }))
     try {
-      const res = await fetch('/.netlify/functions/sync-scores', { method: 'POST' })
+      const res = await fetch('/.netlify/functions/sync-scores', { method: 'POST', headers: adminHeaders })
       const data = await res.json()
       setActionResult(`Sync complete — ${data.updated || 0} matches updated, ${data.pointsCalculated || 0} points calculated`)
       await logAudit('MANUAL_SYNC', { updated: data.updated, pointsCalculated: data.pointsCalculated })
@@ -1126,7 +1132,7 @@ export default function AdminPanel() {
   const prepopulateMatchIds = async () => {
     setSaving(prev => ({ ...prev, prepopulate: true }))
     try {
-      const res = await fetch('/.netlify/functions/prepopulate-matches', { method: 'GET' })
+      const res = await fetch('/.netlify/functions/prepopulate-matches', { method: 'GET', headers: adminHeaders })
       const data = await res.json()
       if (data.error) {
         setActionResult(`Pre-populate error: ${data.error}`)
@@ -2222,7 +2228,7 @@ export default function AdminPanel() {
                 <button onClick={async () => {
                   setSaving(prev => ({ ...prev, standings: true }))
                   try {
-                    const res = await fetch('/.netlify/functions/sync-standings')
+                    const res = await fetch('/.netlify/functions/sync-standings', { headers: adminHeaders })
                     const data = await res.json()
                     setActionResult(`✅ Standings synced: ${data.updated} rows updated`)
                   } catch (e) {

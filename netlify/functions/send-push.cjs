@@ -41,8 +41,10 @@ const getRecentlyCompletedWindow = async () => {
 }
 
 exports.handler = async (event) => {
-  const secret = event.headers?.['x-push-secret'] || event.headers?.['X-Push-Secret']
-  if (process.env.PUSH_SECRET && secret && secret !== process.env.PUSH_SECRET) {
+  // Unified secret check using ADMIN_FUNCTION_SECRET
+  const secret = (event.headers || {})['x-admin-secret'] ||
+                 event.headers?.['x-push-secret']
+  if (!process.env.ADMIN_FUNCTION_SECRET || secret !== process.env.ADMIN_FUNCTION_SECRET) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
   }
 
