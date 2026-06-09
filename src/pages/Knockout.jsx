@@ -958,8 +958,17 @@ export default function Knockout() {
                 </div>
               </div>
 
-              {/* Share button */}
-              <div style={{ padding: '0 16px 16px' }}>
+              {/* Branding footer — always visible in image */}
+              <div style={{ padding: '10px 16px 12px', borderTop: '1px solid rgba(255,215,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '16px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>
+                  <span style={{ fontWeight: '800', fontSize: '13px', color: '#FFD700' }}>WC26 Predictor</span>
+                </div>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)' }}>wc26predictor1.netlify.app</span>
+              </div>
+
+              {/* Share button — hidden during capture */}
+              <div style={{ padding: '0 16px 16px', display: sharingChampion ? 'none' : 'block' }}>
                 <button
                   onClick={async () => {
                     setSharingChampion(true)
@@ -971,7 +980,11 @@ export default function Knockout() {
                       canvas.toBlob(async (blob) => {
                         const file = new File([blob], 'wc26-champion.png', { type: 'image/png' })
                         if (navigator.share && navigator.canShare({ files: [file] })) {
-                          await navigator.share({ title: 'My WC26 Predicted Champion', files: [file] })
+                          await navigator.share({
+                            title: 'My WC26 Predicted Champion',
+                            text: 'Make your own predictions at wc26predictor1.netlify.app',
+                            files: [file],
+                          })
                         } else {
                           const url = URL.createObjectURL(blob)
                           const a = document.createElement('a')

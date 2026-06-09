@@ -898,6 +898,17 @@ export default function Home() {
                     </div>
                   )}
                 </div>
+                {/* Branding footer */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '14px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>
+                    <span style={{ fontWeight: '800', fontSize: '12px', color: 'var(--accent-gold)' }}>WC26 Predictor</span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)' }}>wc26predictor1.netlify.app</span>
+                </div>
+
+                {/* Share button — hidden during capture */}
+                <div style={{ display: sharingRoundUp ? 'none' : 'block' }}>
                 <button
                   onClick={async () => {
                     setSharingRoundUp(true)
@@ -909,7 +920,11 @@ export default function Home() {
                       canvas.toBlob(async (blob) => {
                         const file = new File([blob], 'wc26-score.png', { type: 'image/png' })
                         if (navigator.share && navigator.canShare({ files: [file] })) {
-                          await navigator.share({ title: 'My WC26 Score', files: [file] })
+                          await navigator.share({
+                            title: 'My WC26 Score',
+                            text: 'Make your own predictions at wc26predictor1.netlify.app',
+                            files: [file],
+                          })
                         } else {
                           const url = URL.createObjectURL(blob)
                           const a = document.createElement('a')
@@ -924,6 +939,7 @@ export default function Home() {
                   style={{ width: '100%', padding: '11px', background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontWeight: '800', fontSize: '14px', cursor: sharingRoundUp ? 'wait' : 'pointer', opacity: sharingRoundUp ? 0.7 : 1 }}>
                   {sharingRoundUp ? '⏳ Generating...' : '📤 Share my score'}
                 </button>
+                </div>
               </div>
             )
           })()}
