@@ -1189,6 +1189,13 @@ export default function Predictions() {
   const getPredictionCount = () =>
     Object.values(predictions).filter(p => p.home !== undefined && p.home !== '' && p.away !== undefined && p.away !== '').length
 
+  const matchesByDate = matches.reduce((acc, match) => {
+    const key = formatDateKey(match.kickoff_time)
+    if (!acc[key]) acc[key] = []
+    acc[key].push(match)
+    return acc
+  }, {})
+
   const getMatchHasPrediction = (match) => {
     const pred = predictions[match.id]
     return pred?.home !== undefined && pred?.home !== '' && pred?.away !== undefined && pred?.away !== ''
