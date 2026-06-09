@@ -1522,6 +1522,33 @@ export default function Predictions() {
             )
           })()}
 
+          {/* Upset alert — shown when actual result was predicted by <20% */}
+          {resultColour && (() => {
+            const cp = communityPicks[match.id]
+            if (!cp || cp.total < 5) return null // need enough predictions to be meaningful
+
+            const actualHome = match.home_score
+            const actualAway = match.away_score
+            if (actualHome == null) return null
+
+            // What % predicted the actual result?
+            const actualResult = actualHome > actualAway ? 'home' : actualHome === actualAway ? 'draw' : 'away'
+            const predictedPct = Math.round((cp[actualResult] / cp.total) * 100)
+
+            if (predictedPct > 20) return null // not an upset
+
+            const upsetMsg = predictedPct <= 5
+              ? `🚨 Massive upset! Only ${predictedPct}% predicted this`
+              : `😲 Upset! Only ${predictedPct}% predicted this`
+
+            return (
+              <div style={{ margin: '10px 0 0', padding: '8px 12px', background: 'rgba(230,81,0,0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(230,81,0,0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '16px' }}>😲</span>
+                <span style={{ fontSize: '12px', fontWeight: '700', color: '#e65100' }}>{upsetMsg}</span>
+              </div>
+            )
+          })()}
+
           {/* Reactions — shown after match completes */}
           {resultColour && user && (() => {
             const r = reactions[match.id] || { fire: 0, laugh: 0, skull: 0, mine: null }
