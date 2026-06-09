@@ -504,7 +504,7 @@ export default function Predictions() {
   const navigate = useNavigate()
   const [activeGroup, setActiveGroup] = useState('A')
   const tournamentKickoff = new Date('2026-06-11T19:00:00Z')
-  const [viewMode, setViewMode] = useState('group')
+  const [viewMode, setViewMode] = useState(() => new Date() >= new Date('2026-06-11T19:00:00Z') ? 'date' : 'group')
   const [activeTab, setActiveTab] = useState('picks') // picks | overview | standings
   const [teamSearch, setTeamSearch] = useState('')
   const [standings, setStandings] = useState([])
@@ -658,6 +658,25 @@ export default function Predictions() {
       if (error) throw error
       setMatches(data || [])
       setLoadError(false)
+
+      // Auto-scroll to most relevant date when in date view post-kickoff
+      if (new Date() >= new Date('2026-06-11T19:00:00Z')) {
+        setTimeout(() => {
+          const now = new Date()
+          const allMatches = data || []
+          // Find the next unplayed match, or most recently completed
+          const nextMatch = allMatches.find(m => new Date(m.kickoff_time) > now)
+          const lastPlayed = [...allMatches].reverse().find(m => new Date(m.kickoff_time) <= now)
+          const target = nextMatch || lastPlayed
+          if (target) {
+            const formatDateKey = (time) => new Date(time).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+            const dateKey = formatDateKey(target.kickoff_time)
+            const el = document.getElementById('date-' + dateKey.replace(/[^a-z0-9]/gi, '-'))
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }
+        }, 500)
+      }
+
       // Load community picks for locked matches
       const lockedIds = (data || []).filter(m => new Date() >= new Date(m.kickoff_time)).map(m => m.id)
       if (lockedIds.length > 0) {
