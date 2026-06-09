@@ -643,7 +643,7 @@ export default function Home() {
   ] : []
 
   const firstGroupPickMade = user && predictionCount > 0
-  const showFirstTimeGuide = !loading && user && !tournamentStarted && !firstGroupPickMade
+  const showFirstTimeGuide = !loading && user && !firstGroupPickMade
 
   // ── Hero subtitle ─────────────────────────────────────────────────────────
   const heroSubtitle = tournamentOver
@@ -1222,23 +1222,35 @@ export default function Home() {
           {showFirstTimeGuide && (
             <div className="card fade-in" style={{ border: '1px solid var(--accent-blue)', background: 'linear-gradient(180deg, var(--bg-card), var(--accent-blue-light))' }}>
               <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--accent-blue)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Start here</div>
-              <div style={{ fontSize: '20px', fontWeight: '900', marginBottom: '8px' }}>👋 Make your World Cup predictions</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', marginBottom: '8px' }}>
+                {tournamentStarted ? "👋 Welcome — here's what you can do" : "👋 Make your World Cup predictions"}
+              </div>
               <div style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '14px' }}>
-                First, predict the 72 group matches. After that, build your knockout bracket, pick the awards and join a league with friends.
+                {tournamentStarted
+                  ? 'The tournament has started but you can still predict remaining matches, build your bracket and join a league!'
+                  : 'First, predict the 72 group matches. After that, build your knockout bracket, pick the awards and join a league with friends.'}
               </div>
               <div style={{ display: 'grid', gap: '8px', marginBottom: '16px' }}>
-                {[
+                {(tournamentStarted ? [
+                  '1. Predict upcoming group matches',
+                  '2. Build your knockout bracket',
+                  '3. KO Predictor opens ~28 Jun — fresh start for all',
+                  '4. Join or create a mini league',
+                ] : [
                   '1. Pick scores for every group match',
                   '2. Your group tables create your knockout bracket',
                   '3. Choose awards and total tournament goals',
                   '4. Join or create a mini league',
-                ].map(step => (
+                ]).map(step => (
                   <div key={step} style={{ fontSize: '13px', fontWeight: '700', padding: '9px 10px', background: 'var(--bg-card)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
                     {step}
                   </div>
                 ))}
               </div>
-              <Link to="/predictions" className="btn btn-primary btn-full">⚽ Start group predictions</Link>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <Link to="/predictions" className="btn btn-primary btn-full">⚽ {tournamentStarted ? 'Predict upcoming matches' : 'Start group predictions'}</Link>
+                <Link to="/how-to-play" style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600', textDecoration: 'none' }}>📖 How to play & scoring guide →</Link>
+              </div>
             </div>
           )}
 

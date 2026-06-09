@@ -736,6 +736,10 @@ export default function Profile() {
               </div>
             </div>
 
+            <Link to="/how-to-play" style={{ display: 'block', textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', fontWeight: '600', textDecoration: 'none', marginBottom: '12px' }}>
+              📖 How to play & scoring guide
+            </Link>
+
             <button onClick={handleLogout} className="btn btn-secondary btn-full" style={{ marginBottom: '24px' }}>
               Sign out
             </button>
