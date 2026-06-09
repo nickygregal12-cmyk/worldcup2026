@@ -619,7 +619,7 @@ export default function KOPredictor() {
           <div className="container">
             <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔥</div>
             <h1 style={{ fontSize: '26px', fontWeight: '900', marginBottom: '8px' }}>Knockout Predictor</h1>
-            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '15px', marginBottom: '4px' }}>Your Second Chance</p>
+            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '15px', marginBottom: '4px' }}>Separate game · fresh start · everyone on 0pts</p>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Opens as soon as the Round of 32 teams are confirmed</p>
           </div>
         </div>
@@ -628,7 +628,7 @@ export default function KOPredictor() {
             <div style={{ fontSize: '40px', marginBottom: '12px' }}>⏳</div>
             <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>🔥 KO Predictor</div>
             <div style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
-              Once the group stage finishes, all 32 knockout teams will be confirmed and predictions open immediately. A completely fresh start — everyone begins at 0 points.
+              Not the same as the Knockout Bracket — this is a completely separate game. Predict actual scores for all 32 knockout matches. Opens once R32 teams are confirmed from real results. Everyone starts at 0pts — even if your group stage didn't go well.
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', marginBottom: '20px' }}>
               {[

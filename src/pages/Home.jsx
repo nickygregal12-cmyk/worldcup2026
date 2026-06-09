@@ -389,7 +389,7 @@ export default function Home() {
   const jokersAssigned = jokerAssignedCount
   const readyChecklist = [
     { label: 'Groups complete', done: groupsComplete },
-    { label: 'Knockouts complete', done: knockoutsComplete },
+    { label: 'Knockout Bracket complete', done: knockoutsComplete },
     { label: 'Awards complete', done: awardsComplete },
     { label: `${jokersAssigned}/8 jokers assigned`, done: jokersAssigned >= 8 },
   ]
@@ -573,7 +573,7 @@ export default function Home() {
   // ── Progress bar data ────────────────────────────────────────────────────
   const progressItems = user ? [
     { label: 'Groups', done: Math.min(predictionCount, 72), total: 72, to: '/predictions' },
-    { label: 'Knockouts', done: knockoutPickCount, total: REQUIRED_KNOCKOUT_PICKS, to: '/knockout' },
+    { label: 'Knockout Bracket', done: knockoutPickCount, total: REQUIRED_KNOCKOUT_PICKS, to: '/knockout' },
     { label: 'Awards', done: awardPickCount, total: 4, to: '/awards' },
   ] : []
 
@@ -940,6 +940,25 @@ export default function Home() {
           })()}
 
           {/* ── Late joiner banner ── */}
+          {/* ── Incomplete bracket warning ── */}
+          {user && profile && !tournamentStarted && predictionCount >= 10 && !knockoutsComplete && (
+            <div className="card fade-in" style={{ overflow: 'hidden', border: '2px solid var(--accent-gold)' }}>
+              <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '12px', borderRadius: 'var(--radius-full)' }} />
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                <span style={{ fontSize: '24px', flexShrink: 0 }}>⚠️</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '3px' }}>Knockout Bracket incomplete</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.4 }}>
+                    You've done your group predictions but haven't finished your knockout bracket. It locks when groups kick off — complete it before Thursday!
+                  </div>
+                  <Link to="/knockout" style={{ display: 'inline-block', background: 'var(--scottish-navy)', color: 'white', borderRadius: 'var(--radius-full)', padding: '7px 16px', fontSize: '12px', fontWeight: '700', textDecoration: 'none' }}>
+                    Complete bracket →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          )}
+
           {user && profile && tournamentStarted && predictionCount < 10 && (
             <div className="card fade-in" style={{ overflow: 'hidden', border: '2px solid #e65100' }}>
               <div style={{ height: '4px', background: '#e65100', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />

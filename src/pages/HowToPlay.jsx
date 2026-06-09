@@ -50,7 +50,7 @@ const SCORING = [
     ]
   },
   {
-    section: '🔥 KO Predictor — Your Second Chance',
+    section: '🔥 KO Predictor — A Completely Separate Game',
     desc: 'A fresh game starting 28 Jun. Predict scores for all 32 knockout matches including how they end. Separate leaderboard, fresh start — everyone begins at 0.',
     rows: [
       { label: 'Correct winner only', pts: '5pts' },
@@ -111,7 +111,7 @@ const FAQS = [
   },
   {
     q: 'What is the KO Predictor?',
-    a: 'The KO Predictor is a second game that opens once all 32 knockout teams are confirmed. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance. It has its own separate leaderboard. For each match you also predict whether it ends in 90 minutes, extra time, or penalties — getting the right winner earns 5pts, with a bonus if you also called ET or pens correctly. If you picked the right winner but wrong outcome (e.g. said 90 mins but it went to ET) you get 3pts instead.',
+    a: 'The KO Predictor is completely separate from the Knockout Bracket — do not confuse the two! The Knockout Bracket is where you predict which teams advance each round (based on your group predictions). The KO Predictor opens once all 32 knockout teams are confirmed from real results. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance. It has its own separate leaderboard. For each match you also predict whether it ends in 90 minutes, extra time, or penalties — getting the right winner earns 5pts, with a bonus if you also called ET or pens correctly. If you picked the right winner but wrong outcome (e.g. said 90 mins but it went to ET) you get 3pts instead.',
   },
   {
     q: 'How does the leaderboard work?',

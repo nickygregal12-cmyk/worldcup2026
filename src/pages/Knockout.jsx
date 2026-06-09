@@ -780,6 +780,32 @@ export default function Knockout() {
         </div>
       </div>
 
+      {/* ── Two games explainer ── */}
+      {user && !mainBracketLocked && (
+        <div style={{ margin: '12px 16px', padding: '12px 14px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            Two separate knockout games
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <span style={{ fontSize: '16px', flexShrink: 0 }}>🏆</span>
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Knockout Bracket — this page</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4 }}>Pick which teams advance each round based on your group predictions. Must complete before groups kick off.</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+              <span style={{ fontSize: '16px', flexShrink: 0 }}>🔥</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>KO Predictor — opens ~28 Jun</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4 }}>Predict actual scores for all 32 knockout matches. Fresh start — even if your teams go out early, everyone begins at 0pts.</div>
+              </div>
+              <Link to="/ko-predictor" style={{ fontSize: '12px', fontWeight: '700', color: '#e65100', textDecoration: 'none', flexShrink: 0, marginTop: '2px' }}>Info →</Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Sticky stage tabs ── */}
       <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, boxShadow: 'var(--shadow-sm)' }}>
         <div style={{ display: 'flex', overflowX: 'auto', scrollbarWidth: 'none' }}>
