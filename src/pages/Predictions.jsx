@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import { haptic } from '../lib/haptics.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import { toApiName, normalise } from '../lib/teamNames.js'
 import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
@@ -755,6 +756,7 @@ export default function Predictions() {
 
   const toggleReaction = async (matchId, reaction) => {
     if (!user) return
+    haptic.tap()
     const current = reactions[matchId]?.mine
     // Optimistic update
     setReactions(prev => {
@@ -945,6 +947,7 @@ export default function Predictions() {
         joker: jokerOverride ?? predictionsRef.current[match.id]?.joker ?? false,
       },
     }
+    haptic.tap()
     setSaved(prev => ({ ...prev, [match.id]: true }))
     setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], home: homeScore, away: awayScore, _dirty: false } }))
     setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
@@ -1085,6 +1088,7 @@ export default function Predictions() {
     if (!currentJoker && jokersRemaining <= 0) return
     const newJoker = !currentJoker
     const newRemaining = newJoker ? jokersRemaining - 1 : jokersRemaining + 1
+    haptic.medium()
     // Optimistic update
     setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], joker: newJoker } }))
     setJokersRemaining(newRemaining)
@@ -1498,7 +1502,7 @@ export default function Predictions() {
                 </div>
               ) : (
                 <>
-                  <input type="text" inputMode="numeric" pattern="[0-9]*" className="score-input"
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" className={`score-input ${saved[match.id] ? 'just-saved' : ''}`}
                     ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
                     value={pred.home ?? ''}
                     onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
@@ -1507,7 +1511,7 @@ export default function Predictions() {
                     disabled={effectiveLocked} placeholder="?"
                   />
                   <span style={{ fontSize: '20px', color: 'var(--text-muted)', fontWeight: '300', fontFamily: 'var(--font-mono)' }}>–</span>
-                  <input type="text" inputMode="numeric" pattern="[0-9]*" className="score-input"
+                  <input type="text" inputMode="numeric" pattern="[0-9]*" className={`score-input ${saved[match.id] ? 'just-saved' : ''}`}
                     ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
                     value={pred.away ?? ''}
                     onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
@@ -1621,7 +1625,7 @@ export default function Predictions() {
               <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                 {EMOJIS.map(({ key, emoji, label }) => (
                   <button key={key} onClick={() => toggleReaction(match.id, key)}
-                    title={label}
+                    title={label} aria-label={`${label} reaction${r.mine === key ? ' (selected)' : ''}`} aria-pressed={r.mine === key}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '4px',
                       padding: '5px 10px', borderRadius: 'var(--radius-full)',

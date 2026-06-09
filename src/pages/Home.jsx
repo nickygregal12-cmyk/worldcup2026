@@ -1387,7 +1387,7 @@ export default function Home() {
                         <div style={{ fontSize: '32px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1, letterSpacing: '-0.02em' }}>
                           {match.home_score ?? 0} – {match.away_score ?? 0}
                         </div>
-                        <div style={{ marginTop: '6px', fontSize: '10px', fontWeight: '800', color: '#e53935', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Live</div>
+                        <div style={{ marginTop: '6px', fontSize: '10px', fontWeight: '800', color: '#e53935', textTransform: 'uppercase', letterSpacing: '0.1em' }}><span className="live-dot" />Live</div>
                         {(() => {
                           const pred = userPredictions?.[match.id]
                           if (!pred || pred.home === undefined) return (

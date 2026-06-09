@@ -849,3 +849,82 @@ img {
   color: rgba(255,255,255,0.65);
   font-weight: 500;
 }
+
+
+/* ── Touch feel: press feedback on all interactive elements ── */
+.btn:active,
+button:active {
+  transform: scale(0.97);
+}
+.btn, button {
+  transition: transform 0.1s ease, background-color 0.15s, box-shadow 0.15s, border-color 0.15s, opacity 0.15s;
+}
+/* Don't shrink disabled buttons */
+.btn:disabled:active,
+button:disabled:active {
+  transform: none;
+}
+
+/* ── Score input: saved pulse animation ── */
+@keyframes savedPulse {
+  0%   { border-color: var(--accent-green); box-shadow: 0 0 0 0 rgba(0,122,51,0.35); }
+  70%  { border-color: var(--accent-green); box-shadow: 0 0 0 8px rgba(0,122,51,0); }
+  100% { border-color: var(--border-medium); box-shadow: 0 0 0 0 rgba(0,122,51,0); }
+}
+.score-input.just-saved {
+  animation: savedPulse 0.7s ease-out;
+}
+
+/* ── Score input: larger comfortable tap target on small screens ── */
+@media (max-width: 380px) {
+  .score-input { width: 52px; height: 52px; font-size: 22px; }
+}
+
+/* ── Staggered list entrance for match cards ── */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.card-in { animation: cardIn 0.25s ease-out backwards; }
+.card-in:nth-child(1) { animation-delay: 0ms; }
+.card-in:nth-child(2) { animation-delay: 30ms; }
+.card-in:nth-child(3) { animation-delay: 60ms; }
+.card-in:nth-child(4) { animation-delay: 90ms; }
+.card-in:nth-child(5) { animation-delay: 120ms; }
+.card-in:nth-child(6) { animation-delay: 150ms; }
+
+
+/* ── Tabular numbers everywhere stats appear — stops layout jitter as scores update ── */
+.font-mono, [style*="font-mono"], table td, table th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Live indicator: breathing red dot ── */
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.85); }
+}
+.live-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #e53935;
+  animation: livePulse 1.6s ease-in-out infinite;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+/* ── Reduce motion respect ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Smoother focus rings for keyboard users ── */
+.btn:focus-visible, button:focus-visible, a:focus-visible, .score-input:focus-visible {
+  outline: 2px solid var(--scottish-navy);
+  outline-offset: 2px;
+}
