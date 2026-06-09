@@ -120,6 +120,7 @@ export default function Home() {
   const [dailyQuestion, setDailyQuestion] = useState(null)
   const [imminentBracketLock, setImminentBracketLock] = useState(null)
   const [roundUpData, setRoundUpData] = useState(null) // post-match round-up
+  const [userPredictions, setUserPredictions] = useState({}) // matchId -> {home, away}
   const roundUpCardRef = useRef(null)
   const [sharingRoundUp, setSharingRoundUp] = useState(false)
   const [myAnswer, setMyAnswer]           = useState(null)
@@ -149,6 +150,20 @@ export default function Home() {
   const tournamentOver = phaseOverride === 'post_tournament' ? true : now >= TOURNAMENT_END
 
   useEffect(() => { loadData(); loadDailyQuestion(); loadRoundUp() }, [user])
+
+  // Load user predictions for live matches so we can show pick vs score
+  useEffect(() => {
+    if (!user || !liveMatches.length) return
+    supabase.from('predictions')
+      .select('match_id, home_score, away_score')
+      .eq('user_id', user.id)
+      .in('match_id', liveMatches.map(m => m.id))
+      .then(({ data }) => {
+        const map = {}
+        data?.forEach(p => { map[p.match_id] = { home: p.home_score, away: p.away_score } })
+        setUserPredictions(map)
+      })
+  }, [liveMatches.map(m => m.id).join(',')])
 
   // Check for imminent bracket locks (within 3 hours)
   // Uses allMatchesRef populated during loadData
@@ -1361,6 +1376,30 @@ export default function Home() {
                           {match.home_score ?? 0} – {match.away_score ?? 0}
                         </div>
                         <div style={{ marginTop: '6px', fontSize: '10px', fontWeight: '800', color: '#e53935', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Live</div>
+                        {(() => {
+                          const pred = userPredictions?.[match.id]
+                          if (!pred || pred.home === undefined) return (
+                            <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>No prediction</div>
+                          )
+                          const liveHome = match.home_score ?? 0
+                          const liveAway = match.away_score ?? 0
+                          const predHome = pred.home
+                          const predAway = pred.away
+                          const onTrack = (liveHome > liveAway && predHome > predAway) ||
+                                         (liveHome === liveAway && predHome === predAway) ||
+                                         (liveHome < liveAway && predHome < predAway)
+                          return (
+                            <div style={{ marginTop: '8px', padding: '4px 8px', background: onTrack ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.08)', borderRadius: 'var(--radius-sm)', border: `1px solid ${onTrack ? 'rgba(0,122,51,0.2)' : 'rgba(198,40,40,0.15)'}` }}>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '1px' }}>Your pick</div>
+                              <div style={{ fontSize: '14px', fontWeight: '800', fontFamily: 'var(--font-mono)', color: onTrack ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+                                {predHome} – {predAway}
+                              </div>
+                              <div style={{ fontSize: '10px', fontWeight: '700', color: onTrack ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+                                {onTrack ? '✓ On track' : '✗ Off track'}
+                              </div>
+                            </div>
+                          )
+                        })()}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
                         <span style={{ fontSize: '32px' }}>{match.away_team?.flag_emoji}</span>
