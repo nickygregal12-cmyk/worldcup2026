@@ -509,7 +509,8 @@ export default function Predictions() {
   const [teamSearch, setTeamSearch] = useState('')
   const [standings, setStandings] = useState([])
   const [matches, setMatches] = useState([])
-  const [communityPicks, setCommunityPicks] = useState({}) // matchId -> {home, draw, away, total}
+  const [communityPicks, setCommunityPicks] = useState({})
+  const [reactions, setReactions] = useState({}) // { matchId: { fire: N, laugh: N, skull: N, mine: 'fire'|null } } // matchId -> {home, draw, away, total}
   const [predictions, setPredictions] = useState({})
   const [odds, setOdds] = useState({})
   const [loading, setLoading] = useState(true)
@@ -659,7 +660,10 @@ export default function Predictions() {
       setLoadError(false)
       // Load community picks for locked matches
       const lockedIds = (data || []).filter(m => new Date() >= new Date(m.kickoff_time)).map(m => m.id)
-      if (lockedIds.length > 0) loadCommunityPicks(lockedIds)
+      if (lockedIds.length > 0) {
+        loadCommunityPicks(lockedIds)
+        loadReactions(lockedIds)
+      }
     } catch (e) {
       console.error('Failed to load matches:', e)
       setLoadError(true)
@@ -683,6 +687,45 @@ export default function Predictions() {
       else agg[p.match_id].away++
     })
     setCommunityPicks(agg)
+  }
+
+  const loadReactions = async (matchIds) => {
+    if (!matchIds?.length) return
+    const { data } = await supabase
+      .from('match_reactions')
+      .select('match_id, reaction, user_id')
+      .in('match_id', matchIds)
+    if (!data) return
+    const agg = {}
+    data.forEach(r => {
+      if (!agg[r.match_id]) agg[r.match_id] = { fire: 0, laugh: 0, skull: 0, mine: null }
+      agg[r.match_id][r.reaction]++
+      if (user && r.user_id === user.id) agg[r.match_id].mine = r.reaction
+    })
+    setReactions(agg)
+  }
+
+  const toggleReaction = async (matchId, reaction) => {
+    if (!user) return
+    const current = reactions[matchId]?.mine
+    // Optimistic update
+    setReactions(prev => {
+      const r = { ...(prev[matchId] || { fire: 0, laugh: 0, skull: 0, mine: null }) }
+      if (current) r[current] = Math.max(0, r[current] - 1) // remove old
+      if (current !== reaction) { r[reaction]++; r.mine = reaction } // add new
+      else r.mine = null // toggle off
+      return { ...prev, [matchId]: r }
+    })
+    if (current === reaction) {
+      // Remove reaction
+      await supabase.from('match_reactions').delete()
+        .eq('user_id', user.id).eq('match_id', matchId)
+    } else {
+      // Upsert reaction
+      await supabase.from('match_reactions').upsert({
+        user_id: user.id, match_id: matchId, reaction,
+      }, { onConflict: 'user_id,match_id' })
+    }
   }
 
   const loadPredictions = async () => {
@@ -1475,6 +1518,42 @@ export default function Predictions() {
                     {match.away_team?.short_code} {awayPct}%{userResult === 'away' ? ' ✓' : ''}
                   </span>
                 </div>
+              </div>
+            )
+          })()}
+
+          {/* Reactions — shown after match completes */}
+          {resultColour && user && (() => {
+            const r = reactions[match.id] || { fire: 0, laugh: 0, skull: 0, mine: null }
+            const EMOJIS = [
+              { key: 'fire',  emoji: '🔥', label: 'Called it!' },
+              { key: 'laugh', emoji: '😂', label: 'Disaster' },
+              { key: 'skull', emoji: '💀', label: 'Joker ruined' },
+            ]
+            const total = r.fire + r.laugh + r.skull
+            return (
+              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {EMOJIS.map(({ key, emoji, label }) => (
+                  <button key={key} onClick={() => toggleReaction(match.id, key)}
+                    title={label}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '4px',
+                      padding: '5px 10px', borderRadius: 'var(--radius-full)',
+                      border: r.mine === key ? '1.5px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                      background: r.mine === key ? 'rgba(0,48,135,0.08)' : 'var(--bg-secondary)',
+                      cursor: 'pointer', fontSize: '14px', fontWeight: '700',
+                      color: 'var(--text-secondary)',
+                      transition: 'all 0.15s',
+                    }}>
+                    <span>{emoji}</span>
+                    {r[key] > 0 && <span style={{ fontSize: '12px', color: r.mine === key ? 'var(--scottish-navy)' : 'var(--text-muted)' }}>{r[key]}</span>}
+                  </button>
+                ))}
+                {total > 0 && (
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                    {total} reaction{total !== 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
             )
           })()}
