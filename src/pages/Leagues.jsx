@@ -344,6 +344,7 @@ export default function Leagues() {
   const [confirmAction, setConfirmAction] = useState(null)
   const [memberModal, setMemberModal] = useState(null)
   const [memberPredictions, setMemberPredictions] = useState([])
+  const [memberReactions, setMemberReactions] = useState({}) // matchId -> reaction emoji
   const [loadingPreds, setLoadingPreds] = useState(false)
   const [matchOdds, setMatchOdds] = useState({})
   const [showWelcome, setShowWelcome] = useState(() => {
@@ -596,6 +597,26 @@ export default function Leagues() {
       })
       .sort((a, b) => new Date(a.match?.kickoff_time) - new Date(b.match?.kickoff_time))
     setMemberPredictions(filtered)
+
+    // Load this member's reactions for completed matches
+    const completedMatchIds = filtered
+      .filter(p => p.match?.status === 'completed')
+      .map(p => p.match_id || p.match?.id)
+      .filter(Boolean)
+
+    if (completedMatchIds.length > 0) {
+      const { data: reactionData } = await supabase
+        .from('match_reactions')
+        .select('match_id, reaction')
+        .eq('user_id', userId)
+        .in('match_id', completedMatchIds)
+      const reactionMap = {}
+      reactionData?.forEach(r => { reactionMap[r.match_id] = r.reaction })
+      setMemberReactions(reactionMap)
+    } else {
+      setMemberReactions({})
+    }
+
     setLoadingPreds(false)
   }
 
@@ -1370,6 +1391,12 @@ export default function Leagues() {
                             </div>
                           )}
                           {!kicked && <span style={{ fontSize: '10px', color: 'var(--accent-blue)', fontWeight: '700' }}>🔮</span>}
+                          {match?.status === 'completed' && memberReactions[pred.match_id || match?.id] && (
+                            <span style={{ fontSize: '16px' }}>
+                              {memberReactions[pred.match_id || match?.id] === 'fire' ? '🔥' :
+                               memberReactions[pred.match_id || match?.id] === 'laugh' ? '😂' : '💀'}
+                            </span>
+                          )}
                         </div>
                       )
                     })}
