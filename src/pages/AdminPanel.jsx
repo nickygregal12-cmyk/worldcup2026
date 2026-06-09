@@ -1264,7 +1264,7 @@ export default function AdminPanel() {
     // Load all group matches
     const { data: allMatchData } = await supabase
       .from('matches')
-      .select('id, match_number, kickoff_time, status, home_score, away_score, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code)')
+      .select('id, match_number, kickoff_time, status, home_score, away_score, home_team_id, away_team_id, stage, group:group_id(name), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
       .eq('stage', 'group')
       .order('match_number', { ascending: true })
     setAllMatches(allMatchData || [])
@@ -3834,7 +3834,8 @@ export default function AdminPanel() {
 
                 {/* VIEW TAB — read-only summary of all group predictions */}
                 {editModalTab === 'view' && (() => {
-                  const groupLetters = [...new Set(allMatches.map((m, i) => String.fromCharCode(65 + Math.floor(i / 6))))]
+                  // Use actual group names from match data
+                  const groupLetters = [...new Set(allMatches.map(m => m.group?.name).filter(Boolean))].sort()
 
                   // Build prediction map for calcPredictedStandings
                   const predMap = {}
@@ -3850,10 +3851,9 @@ export default function AdminPanel() {
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       {groupLetters.map(letter => {
-                        const groupMatches = allMatches.filter((_, i) => String.fromCharCode(65 + Math.floor(i / 6)) === letter)
+                        const groupMatches = allMatches.filter(m => m.group?.name === letter)
                         // Find the matching group key (could be 'A', 'B' etc or full name)
-                        const groupKey = Object.keys(standingsMap).find(k => k === letter || k === `Group ${letter}`)
-                        const groupStandings = groupKey ? (standingsMap[groupKey] || []) : []
+                        const groupStandings = standingsMap[letter] || []
 
                         return (
                           <div key={letter}>
@@ -3951,9 +3951,8 @@ export default function AdminPanel() {
                   // Group matches by group name using match data
                   const byGroup = {}
                   allMatches.forEach(match => {
-                    // Group from match_number: matches 1-6 = A, 7-12 = B etc (6 matches per group)
-                    const groupIdx = Math.ceil(match.match_number / 6)
-                    const key = String.fromCharCode(64 + groupIdx) // A, B, C...
+                    const key = match.group?.name
+                    if (!key) return
                     if (!byGroup[key]) byGroup[key] = []
                     byGroup[key].push(match)
                   })
