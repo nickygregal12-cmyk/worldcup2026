@@ -854,6 +854,89 @@ export default function Knockout() {
         </div>
       </div>
 
+      {/* ── Champion Route Card (Final tab only) ── */}
+      {activeStage === 'final' && user && (() => {
+        // Find the predicted champion (winner of Final M104)
+        const finalPick = knockoutPicks[104]
+        if (!finalPick?.winner_id) return null
+
+        const champion = getTeamById(finalPick.winner_id)
+        if (!champion) return null
+
+        // Build the champion's route through all knockout rounds
+        const route = ALL_STAGES.map(stage => {
+          const matchInStage = stage.matches.find(m => {
+            const pick = knockoutPicks[m.match_number]
+            return pick?.winner_id === champion.id ||
+                   pick?.home_id === champion.id ||
+                   pick?.away_id === champion.id
+          })
+          if (!matchInStage) return null
+          const pick = knockoutPicks[matchInStage.match_number]
+          const { home, away } = getMatchTeams(matchInStage)
+          const opponent = home?.id === champion.id ? away : home
+          const won = pick?.winner_id === champion.id
+          return { stage: stage.label, opponent, won, matchDef: matchInStage }
+        }).filter(Boolean)
+
+        return (
+          <div className="container" style={{ padding: '0 16px 16px' }}>
+            <div style={{ background: 'linear-gradient(135deg, rgba(184,134,11,0.08), rgba(184,134,11,0.04))', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(184,134,11,0.25)', overflow: 'hidden' }}>
+              {/* Header */}
+              <div style={{ padding: '16px 16px 12px', textAlign: 'center', borderBottom: '1px solid rgba(184,134,11,0.15)' }}>
+                <div style={{ fontSize: '32px', marginBottom: '4px' }}>{champion.flag_emoji}</div>
+                <div style={{ fontWeight: '900', fontSize: '18px', color: 'var(--accent-gold)' }}>
+                  {champion.name}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                  Your predicted World Cup winners
+                </div>
+              </div>
+
+              {/* Route */}
+              <div style={{ padding: '12px 16px' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+                  🏆 Predicted route to glory
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {route.map(({ stage, opponent, won }) => (
+                    <div key={stage} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', background: 'rgba(255,255,255,0.04)', borderRadius: 'var(--radius-md)' }}>
+                      <span style={{ fontSize: '14px', width: '22px', flexShrink: 0 }}>{won ? '✅' : '❌'}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{stage}</div>
+                        <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>
+                          {champion.flag_emoji} {champion.short_code} vs {opponent?.flag_emoji} {opponent?.short_code || '?'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Share button */}
+              <div style={{ padding: '0 16px 16px' }}>
+                <button
+                  onClick={async () => {
+                    const nl = String.fromCharCode(10)
+                    const text = '\u{1F3C6} My World Cup 2026 prediction: ' + champion.flag_emoji + ' ' + champion.name + ' to win it all!' + nl + nl +
+                      route.map(r => (r.won ? '\u2705' : '\u274C') + ' ' + r.stage + ': vs ' + (r.opponent?.name || '?')).join(nl) +
+                      nl + nl + 'Make your predictions at wc26predictor1.netlify.app'
+                    if (navigator.share) {
+                      await navigator.share({ title: 'My WC26 Prediction', text })
+                    } else {
+                      await navigator.clipboard.writeText(text)
+                      alert('Copied to clipboard!')
+                    }
+                  }}
+                  style={{ width: '100%', padding: '12px', background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}>
+                  🏆 Share my predicted champion
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* ── Sticky guest save banner ── */}
       {!user && (
         <div style={{

@@ -119,6 +119,7 @@ export default function Home() {
   const [matchWeather, setMatchWeather]   = useState({})
   const [dailyQuestion, setDailyQuestion] = useState(null)
   const [imminentBracketLock, setImminentBracketLock] = useState(null)
+  const [roundUpData, setRoundUpData] = useState(null) // post-match round-up
   const [myAnswer, setMyAnswer]           = useState(null)
   const [answerCounts, setAnswerCounts]   = useState({})
   const [answerSaving, setAnswerSaving]   = useState(false)
@@ -145,7 +146,7 @@ export default function Home() {
     : now >= KNOCKOUT_LIVE
   const tournamentOver = phaseOverride === 'post_tournament' ? true : now >= TOURNAMENT_END
 
-  useEffect(() => { loadData(); loadDailyQuestion() }, [user])
+  useEffect(() => { loadData(); loadDailyQuestion(); loadRoundUp() }, [user])
 
   // Check for imminent bracket locks (within 3 hours)
   // Uses allMatchesRef populated during loadData
@@ -207,6 +208,53 @@ export default function Home() {
     } catch (e) {
       // Weather is a nice-to-have; never block the home screen.
     }
+  }
+
+  const loadRoundUp = async () => {
+    if (!user) return
+    const now = new Date()
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+
+    // Get completed matches from last 24hrs
+    const { data: recentMatches } = await supabase
+      .from('matches')
+      .select('id, match_number, kickoff_time, home_score, away_score, stage, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code)')
+      .eq('status', 'completed')
+      .gte('kickoff_time', yesterday.toISOString())
+      .lte('kickoff_time', now.toISOString())
+      .order('kickoff_time', { ascending: false })
+
+    if (!recentMatches?.length) return
+
+    // Get user's predictions for these matches
+    const { data: preds } = await supabase
+      .from('predictions')
+      .select('match_id, home_score, away_score, points_awarded, is_confident')
+      .eq('user_id', user.id)
+      .in('match_id', recentMatches.map(m => m.id))
+      .not('home_score', 'is', null)
+
+    if (!preds?.length) return
+
+    const totalPts = preds.reduce((sum, p) => sum + (p.points_awarded || 0), 0)
+    const correct = preds.filter(p => (p.points_awarded || 0) > 0).length
+    const exact = preds.filter(p => {
+      const match = recentMatches.find(m => m.id === p.match_id)
+      return match && p.home_score === match.home_score && p.away_score === match.away_score
+    })
+    const jokerPaid = preds.filter(p => p.is_confident && (p.points_awarded || 0) > 0)
+    const bestPred = exact[0] ? recentMatches.find(m => m.id === exact[0].match_id) : null
+
+    setRoundUpData({
+      matches: recentMatches,
+      preds,
+      totalPts,
+      correct,
+      exact: exact.length,
+      jokerPaid: jokerPaid.length,
+      bestMatch: bestPred,
+      bestPred: exact[0],
+    })
   }
 
   const loadDailyQuestion = async () => {
@@ -801,6 +849,69 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {/* ── Matchday round-up share card ── */}
+          {roundUpData && user && tournamentStarted && (() => {
+            const { totalPts, correct, exact, jokerPaid, bestMatch, matches, preds } = roundUpData
+            const shareText = () => {
+              const lines = [
+                `⚽ WC26 Predictor — Matchday Round-Up`,
+                ``,
+                `${profile?.display_name || profile?.username}`,
+                `+${totalPts}pts · ${correct}/${preds.length} correct${exact > 0 ? ` · ${exact} exact 🎯` : ''}`,
+                jokerPaid > 0 ? `🃏 Joker paid off!` : '',
+                bestMatch ? `⭐ Best pick: ${bestMatch.home_team?.flag_emoji}${bestMatch.home_team?.short_code} ${bestMatch.home_score}–${bestMatch.away_score} ${bestMatch.away_team?.short_code}${bestMatch.away_team?.flag_emoji}` : '',
+                ``,
+                `Current rank: #${leaderPosition || '?'}`,
+                ``,
+                `wc26predictor1.netlify.app`,
+              ].filter(Boolean).join(String.fromCharCode(10))
+              return lines
+            }
+
+            return (
+              <div className="card fade-in" style={{ overflow: 'hidden', background: 'var(--scottish-navy)', color: 'white' }}>
+                <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
+                  <span style={{ fontSize: '28px', flexShrink: 0 }}>⚽</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '900', fontSize: '16px', marginBottom: '2px' }}>
+                      +{totalPts}pts this round
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
+                      {correct}/{preds.length} correct
+                      {exact > 0 ? ` · ${exact} exact score${exact > 1 ? 's' : ''} 🎯` : ''}
+                      {jokerPaid > 0 ? ` · 🃏 joker paid off!` : ''}
+                    </div>
+                    {bestMatch && (
+                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>
+                        ⭐ {bestMatch.home_team?.flag_emoji}{bestMatch.home_team?.short_code} {bestMatch.home_score}–{bestMatch.away_score} {bestMatch.away_team?.short_code}{bestMatch.away_team?.flag_emoji}
+                      </div>
+                    )}
+                  </div>
+                  {leaderPosition && (
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontWeight: '900', fontSize: '22px', color: 'var(--accent-gold)' }}>#{leaderPosition}</div>
+                      <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rank</div>
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={async () => {
+                    const text = shareText()
+                    if (navigator.share) {
+                      await navigator.share({ title: 'My WC26 Score', text })
+                    } else {
+                      await navigator.clipboard.writeText(text)
+                      alert('Copied to clipboard!')
+                    }
+                  }}
+                  style={{ width: '100%', padding: '11px', background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontWeight: '800', fontSize: '14px', cursor: 'pointer' }}>
+                  📤 Share my score
+                </button>
+              </div>
+            )
+          })()}
 
           {/* ── Imminent bracket lock warning ── */}
           {user && imminentBracketLock && (() => {
