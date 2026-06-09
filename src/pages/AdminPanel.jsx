@@ -939,7 +939,7 @@ export default function AdminPanel() {
   const [allMatches, setAllMatches] = useState([])
   const [loadingUserPreds, setLoadingUserPreds] = useState(false)
   const [editedPreds, setEditedPreds] = useState({})
-  const [editModalTab, setEditModalTab] = useState('group') // group | knockout | awards
+  const [editModalTab, setEditModalTab] = useState('view') // view | group | knockout | awards
   const [editingLeagueName, setEditingLeagueName] = useState(null) // leagueId
   const [editingLeagueNameVal, setEditingLeagueNameVal] = useState('')
   const [addingMemberTo, setAddingMemberTo] = useState(null) // leagueId
@@ -3807,7 +3807,8 @@ export default function AdminPanel() {
             {/* Tabs */}
             <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', marginBottom: '14px' }}>
               {[
-                { key: 'group', label: '⚽ Group (72)' },
+                { key: 'view', label: '👁 View' },
+                { key: 'group', label: '✏️ Group (72)' },
                 { key: 'knockout', label: '🏆 Knockout' },
                 { key: 'awards', label: '🥇 Awards' },
               ].map(tab => (
@@ -3830,6 +3831,65 @@ export default function AdminPanel() {
               <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '65vh', overflowY: 'auto' }}>
+
+                {/* VIEW TAB — read-only summary of all group predictions */}
+                {editModalTab === 'view' && (() => {
+                  const groupLetters = [...new Set(allMatches.map((m, i) => String.fromCharCode(65 + Math.floor(i / 6))))]
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {groupLetters.map(letter => {
+                        const groupMatches = allMatches.filter((_, i) => String.fromCharCode(65 + Math.floor(i / 6)) === letter)
+                        return (
+                          <div key={letter}>
+                            <div style={{ fontWeight: '800', fontSize: '13px', color: 'var(--scottish-navy)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                              Group {letter}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              {groupMatches.map(match => {
+                                const pred = userPredictions.find(p => p.match_id === match.id)
+                                const hasPred = pred?.home_score !== null && pred?.home_score !== undefined
+                                const isCorrect = match.status === 'completed' && hasPred && (
+                                  (pred.home_score > pred.away_score && match.home_score > match.away_score) ||
+                                  (pred.home_score === pred.away_score && match.home_score === match.away_score) ||
+                                  (pred.home_score < pred.away_score && match.home_score < match.away_score)
+                                )
+                                const isExact = match.status === 'completed' && hasPred &&
+                                  pred.home_score === match.home_score && pred.away_score === match.away_score
+                                return (
+                                  <div key={match.id} style={{
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    padding: '6px 10px', borderRadius: 'var(--radius-md)',
+                                    background: isExact ? 'rgba(184,134,11,0.08)' : isCorrect ? 'rgba(0,122,51,0.06)' : 'var(--bg-secondary)',
+                                    border: `1px solid ${isExact ? 'rgba(184,134,11,0.2)' : isCorrect ? 'rgba(0,122,51,0.15)' : 'var(--border-light)'}`,
+                                  }}>
+                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', width: '28px', flexShrink: 0 }}>M{match.match_number}</span>
+                                    <span style={{ fontSize: '12px', flex: 1 }}>
+                                      {match.home_team?.flag_emoji}{match.home_team?.short_code} vs {match.away_team?.short_code}{match.away_team?.flag_emoji}
+                                    </span>
+                                    {hasPred ? (
+                                      <span style={{ fontWeight: '800', fontSize: '14px', fontFamily: 'var(--font-mono)', color: isExact ? '#b8860b' : isCorrect ? 'var(--accent-green)' : 'var(--text-primary)' }}>
+                                        {pred.home_score}–{pred.away_score}
+                                      </span>
+                                    ) : (
+                                      <span style={{ fontSize: '11px', color: 'var(--accent-red)', fontWeight: '600' }}>—</span>
+                                    )}
+                                    {pred?.is_confident && <span style={{ fontSize: '12px' }}>🃏</span>}
+                                    {isExact && <span style={{ fontSize: '11px' }}>🎯</span>}
+                                    {match.status === 'completed' && hasPred && (
+                                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '36px', textAlign: 'right' }}>
+                                        {pred.points_awarded > 0 ? `+${pred.points_awarded}` : '0'}
+                                      </span>
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )
+                })()}
 
                 {/* GROUP PREDICTIONS */}
                 {editModalTab === 'group' && (() => {
