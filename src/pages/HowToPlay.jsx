@@ -11,6 +11,8 @@ const SCORING = [
       { label: 'Joker doubles points if correct', pts: '2×', highlight: true },
       { label: 'Wrong or missed prediction', pts: '0pts' },
       { label: 'Group stage jokers available', pts: '8 total' },
+      { label: 'Correct group finishing position (per team)', pts: '+2pts', highlight: true },
+      { label: 'Perfect group — all 4 positions correct', pts: '+5pts bonus', highlight: true },
     ]
   },
   {
@@ -95,6 +97,10 @@ const FAQS = [
   {
     q: 'How do jokers work?',
     a: 'A joker doubles your points for that prediction if you get it right. You have 8 jokers for the group stage and 5 for the KO Predictor. Jokers must be applied before the match kicks off. If your joker prediction is wrong, you score 0 — same as a normal wrong prediction.',
+  },
+  {
+    q: 'Do I get bonus points for predicting group standings?',
+    a: 'Yes — once all matches in a group are completed, you earn +2pts for every team you correctly predicted to finish in that position (1st, 2nd, 3rd or 4th). If you get all 4 positions right in a group you also get a +5pt perfect group bonus. Maximum 13pts per group, 156pts across all 12 groups.',
   },
   {
     q: 'What is the daily question?',
