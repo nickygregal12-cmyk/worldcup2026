@@ -3835,15 +3835,69 @@ export default function AdminPanel() {
                 {/* VIEW TAB — read-only summary of all group predictions */}
                 {editModalTab === 'view' && (() => {
                   const groupLetters = [...new Set(allMatches.map((m, i) => String.fromCharCode(65 + Math.floor(i / 6))))]
+
+                  // Build prediction map for calcPredictedStandings
+                  const predMap = {}
+                  userPredictions.forEach(p => {
+                    if (p.home_score !== null && p.home_score !== undefined) {
+                      predMap[p.match_id] = { home: p.home_score, away: p.away_score }
+                    }
+                  })
+
+                  // Calculate predicted standings for all groups
+                  const standings = calcPredictedStandings(allMatches, predMap)
+
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                       {groupLetters.map(letter => {
                         const groupMatches = allMatches.filter((_, i) => String.fromCharCode(65 + Math.floor(i / 6)) === letter)
+                        const groupStandings = standings.filter(s => s.group === letter)
+                          .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
+
                         return (
                           <div key={letter}>
                             <div style={{ fontWeight: '800', fontSize: '13px', color: 'var(--scottish-navy)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                               Group {letter}
                             </div>
+
+                            {/* Predicted standings table */}
+                            {groupStandings.length > 0 && (
+                              <div style={{ marginBottom: '8px', background: 'rgba(0,48,135,0.04)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0,48,135,0.1)', overflow: 'hidden' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                                  <thead>
+                                    <tr style={{ background: 'rgba(0,48,135,0.08)' }}>
+                                      <th style={{ padding: '5px 8px', textAlign: 'left', fontWeight: '700', color: 'var(--text-muted)', width: '20px' }}>#</th>
+                                      <th style={{ padding: '5px 8px', textAlign: 'left', fontWeight: '700', color: 'var(--text-muted)' }}>Team</th>
+                                      <th style={{ padding: '5px 4px', textAlign: 'center', fontWeight: '700', color: 'var(--text-muted)', width: '24px' }}>P</th>
+                                      <th style={{ padding: '5px 4px', textAlign: 'center', fontWeight: '700', color: 'var(--text-muted)', width: '24px' }}>W</th>
+                                      <th style={{ padding: '5px 4px', textAlign: 'center', fontWeight: '700', color: 'var(--text-muted)', width: '24px' }}>D</th>
+                                      <th style={{ padding: '5px 4px', textAlign: 'center', fontWeight: '700', color: 'var(--text-muted)', width: '24px' }}>L</th>
+                                      <th style={{ padding: '5px 4px', textAlign: 'center', fontWeight: '700', color: 'var(--text-muted)', width: '28px' }}>GD</th>
+                                      <th style={{ padding: '5px 8px', textAlign: 'center', fontWeight: '700', color: 'var(--scottish-navy)', width: '24px' }}>Pts</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {groupStandings.map((team, idx) => (
+                                      <tr key={team.id} style={{ borderTop: '1px solid var(--border-light)', background: idx < 2 ? 'rgba(0,122,51,0.04)' : 'transparent' }}>
+                                        <td style={{ padding: '5px 8px', fontWeight: '700', color: idx < 2 ? 'var(--accent-green)' : 'var(--text-muted)', fontSize: '11px' }}>{idx + 1}</td>
+                                        <td style={{ padding: '5px 8px', fontWeight: '600' }}>
+                                          {team.flag_emoji} {team.short_code || team.name}
+                                          {idx < 2 && <span style={{ marginLeft: '4px', fontSize: '10px', color: 'var(--accent-green)' }}>✓</span>}
+                                        </td>
+                                        <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.played || 0}</td>
+                                        <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.w || 0}</td>
+                                        <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.d || 0}</td>
+                                        <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.l || 0}</td>
+                                        <td style={{ padding: '5px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.gd >= 0 ? '+' : ''}{team.gd || 0}</td>
+                                        <td style={{ padding: '5px 8px', textAlign: 'center', fontWeight: '800', color: 'var(--scottish-navy)' }}>{team.pts || 0}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+
+                            {/* Match scores */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                               {groupMatches.map(match => {
                                 const pred = userPredictions.find(p => p.match_id === match.id)
