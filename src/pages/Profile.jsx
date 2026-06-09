@@ -545,7 +545,7 @@ export default function Profile() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span style={{ fontSize: '20px' }}>❓</span>
                       <div>
-                        <div style={{ fontWeight: '700', fontSize: '13px' }}>Daily Questions</div>
+                        <div style={{ fontWeight: '700', fontSize: '13px' }}>Daily Questions <span style={{ fontWeight: '400', fontSize: '11px', color: 'var(--text-muted)' }}>(no points)</span></div>
                         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                           {profile.question_correct || 0}/{profile.question_total || 0} correct
                         </div>

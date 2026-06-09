@@ -844,10 +844,13 @@ export default function Home() {
                 <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                   <span style={{ fontSize: '18px' }}>❓</span>
-                  <span style={{ fontWeight: '800', fontSize: '15px' }}>
-                    {dailyQuestion.status === 'expired' ? "Yesterday's Question" : "Today's Question"}
-                  </span>
-                  {myAnswer && myAnswerCorrect === null && <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-green)', marginLeft: 'auto' }}>✓ Answered</span>}
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontWeight: '800', fontSize: '15px' }}>
+                      {dailyQuestion.status === 'expired' ? "Yesterday's Question" : "Today's Question"}
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px', fontWeight: '500' }}>No leaderboard points · just for fun</span>
+                  </div>
+                  {myAnswer && myAnswerCorrect === null && <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-green)' }}>✓ Answered</span>}
                   {myAnswer && myAnswerCorrect === true && <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-green)', marginLeft: 'auto' }}>✅ Correct!</span>}
                   {myAnswer && myAnswerCorrect === false && <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-red)', marginLeft: 'auto' }}>❌ Wrong</span>}
                   {dailyQuestion.status === 'expired' && dailyQuestion.correct_answer && (

@@ -97,6 +97,10 @@ const FAQS = [
     a: 'A joker doubles your points for that prediction if you get it right. You have 8 jokers for the group stage and 5 for the KO Predictor. Jokers must be applied before the match kicks off. If your joker prediction is wrong, you score 0 — same as a normal wrong prediction.',
   },
   {
+    q: 'What is the daily question?',
+    a: 'Each day at 1pm BST a fun question appears on the Home page — things like "Will there be a red card today?" or "Will Scotland beat Haiti?". Tap to answer before the match. After answering you see how the community voted. Daily questions are just for fun — they do not affect your leaderboard score. You do build a personal answer streak and correct/wrong tally on your profile, but these are separate from the main game.',
+  },
+  {
     q: 'What is the KO Predictor?',
     a: 'The KO Predictor is completely separate from the Knockout Bracket — do not confuse the two! The Knockout Bracket is where you predict which teams advance each round (based on your group predictions). The KO Predictor opens once all 32 knockout teams are confirmed from real results. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance. It has its own separate leaderboard. For each match you also predict whether it ends in 90 minutes, extra time, or penalties — getting the right winner earns 5pts, with a bonus if you also called ET or pens correctly. If you picked the right winner but wrong outcome (e.g. said 90 mins but it went to ET) you get 3pts instead.',
   },
