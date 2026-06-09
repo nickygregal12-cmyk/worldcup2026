@@ -28,7 +28,7 @@ const SCORING = [
   },
   {
     section: '🥇 Award Predictions',
-    desc: 'Predict the individual award winners and total goals scored in the tournament. These lock when the tournament begins (Thu 11 Jun, 19:00 BST).',
+    desc: 'Predict the individual award winners and total goals scored in the tournament. These lock when the tournament begins (Thu 11 Jun, 20:00 BST).',
     rows: [
       { label: 'Golden Boot — top scorer', pts: '15pts' },
       { label: 'Golden Glove — best goalkeeper', pts: '10pts' },
@@ -82,7 +82,7 @@ const LOCKS = [
   {
     icon: '🥇',
     title: 'Award predictions',
-    time: 'Thu 11 Jun · 19:00 BST',
+    time: 'Thu 11 Jun · 20:00 BST',
     detail: 'Golden Boot, Golden Glove, Player of the Tournament and total goals all lock when the tournament kicks off.',
     color: '#b8860b',
   },
@@ -229,7 +229,7 @@ export default function HowToPlay() {
         <div className="card" style={{ background: 'var(--scottish-navy)', color: 'white', textAlign: 'center', padding: '24px' }}>
           <div style={{ fontSize: '22px', marginBottom: '8px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</div>
           <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>Ready to predict?</div>
-          <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '16px' }}>Tournament kicks off Thu 11 Jun · 19:00 BST</div>
+          <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '16px' }}>Tournament kicks off Thu 11 Jun · 20:00 BST</div>
           <Link to="/predictions" style={{
             display: 'inline-block', background: 'white', color: 'var(--scottish-navy)',
             padding: '12px 28px', borderRadius: 'var(--radius-full)',
