@@ -80,14 +80,19 @@ export default function BracketHealth() {
     const info = {}
     ALL_STAGES.forEach(stage => {
       (stage.matches || []).forEach(def => {
-        const feeding = [...slotGroups(def.home_slot), ...slotGroups(def.away_slot)]
+        const homeGroups = slotGroups(def.home_slot)
+        const awayGroups = slotGroups(def.away_slot)
+        const feeding = [...homeGroups, ...awayGroups]
         let freezeAt
         if (feeding.length) {
-          // R32-style: freezes at the FIRST kickoff among feeding groups
+          // A direct-group slot freezes when ITS OWN group kicks off.
+          // The match becomes unpickable as soon as the EARLIER of its two
+          // slots freezes (you can no longer set a winner once one side locks).
           const times = feeding.map(g => groupFirstKickoff[g]).filter(Boolean)
           freezeAt = times.length ? new Date(Math.min(...times.map(d => d.getTime()))) : md1Lock
         } else {
-          // W-slot match: effectively freezes at the MD1 full lock
+          // W-slot match (R16+): no feeding group. In the live app these only
+          // freeze at the full MD1 bracket lock (or their own kickoff).
           freezeAt = md1Lock
         }
         const ownKick = new Date(def.kickoff)
@@ -95,6 +100,7 @@ export default function BracketHealth() {
         info[def.match_number] = {
           match_number: def.match_number,
           stage: stage.key,
+          feeding,
           frozen: now >= freezeAt,
           freezeAt,
         }
@@ -152,6 +158,20 @@ export default function BracketHealth() {
     const byStage = {}
     defs.forEach(d => { byStage[d.stage] = (byStage[d.stage] || 0) + 1 })
     return ALL_STAGES.map(s => s.key).filter(k => byStage[k]).map(k => `${STAGE_SHORT[k]} ×${byStage[k]}`).join(' · ')
+  }
+
+  // Bucket fillable defs by their actual freeze time, so the panel shows the
+  // real staggered deadlines (Group A slots tonight, B tomorrow, W-slots at
+  // the full lock) instead of collapsing everything onto the earliest date.
+  const freezeBuckets = (defs) => {
+    const buckets = {}
+    defs.forEach(d => {
+      const t = d.freezeAt.getTime()
+      if (!buckets[t]) buckets[t] = { time: t, count: 0, matches: [] }
+      buckets[t].count++
+      buckets[t].matches.push(d.match_number)
+    })
+    return Object.values(buckets).sort((a, b) => a.time - b.time)
   }
 
   return (
@@ -227,9 +247,13 @@ export default function BracketHealth() {
                             {r.fillable.length > 0 && (
                               <div>
                                 <strong style={{ color: 'var(--accent-orange)' }}>Still fillable:</strong> {summariseMissing(r.fillable)}
-                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                                  Next freeze: {fmtFreeze(new Date(Math.min(...r.fillable.map(d => d.freezeAt.getTime()))))}
-                                  {' — '}matches {r.fillable.slice(0, 12).map(d => `#${d.match_number}`).join(', ')}{r.fillable.length > 12 ? '…' : ''}
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                  {freezeBuckets(r.fillable).map(b => (
+                                    <div key={b.time}>
+                                      🔓 {b.count} lock{b.count > 1 ? '' : 's'} {fmtFreeze(new Date(b.time))}
+                                      {' — '}{b.matches.slice(0, 10).map(n => `#${n}`).join(', ')}{b.matches.length > 10 ? '…' : ''}
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             )}
