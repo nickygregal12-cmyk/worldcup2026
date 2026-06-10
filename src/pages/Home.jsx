@@ -636,6 +636,9 @@ export default function Home() {
   }
 
   // ── Progress bar data ────────────────────────────────────────────────────
+  // Bracket "done" uses the live count from knockout_picks. Note: the Knockout
+  // page itself does full matchup-validity checking and will flag/reprompt any
+  // stale picks there — Home links straight to it.
   const progressItems = user ? [
     { label: 'Groups', done: Math.min(predictionCount, 72), total: 72, to: '/predictions' },
     { label: 'Bracket', done: knockoutPickCount, total: REQUIRED_KNOCKOUT_PICKS, to: '/knockout' },

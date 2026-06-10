@@ -467,7 +467,26 @@ export default function Knockout() {
   const currentStage = ALL_STAGES.find(s => s.key === activeStage)
   const stageMatches = currentStage?.matches || []
   const stagePicks = stageMatches.filter(m => knockoutPicks[m.match_number]?.winner_id).length
-  const totalPicks = ALL_STAGES.reduce((acc, s) => acc + s.matches.filter(m => knockoutPicks[m.match_number]?.winner_id).length, 0)
+  // A pick counts toward completion only if its stored winner is still one of
+  // the two teams the bracket CURRENTLY resolves for that match. This catches
+  // picks that went stale after a group-prediction change or a bracket-structure
+  // correction — the row exists but no longer reflects a valid matchup.
+  const isPickValid = useCallback((matchDef) => {
+    const pick = knockoutPicks[matchDef.match_number]
+    if (!pick?.winner_id) return false
+    const { home, away } = getMatchTeams(matchDef)
+    // If neither team has resolved yet (earlier rounds incomplete), we can't
+    // judge validity — treat as not-yet-complete so the user is prompted.
+    if (!home && !away) return false
+    return pick.winner_id === home?.id || pick.winner_id === away?.id
+  }, [knockoutPicks, getMatchTeams])
+
+  const validPicks = ALL_STAGES.reduce((acc, s) => acc + s.matches.filter(m => isPickValid(m)).length, 0)
+  const stalePicks = ALL_STAGES.reduce((acc, s) => acc + s.matches.filter(m => {
+    const p = knockoutPicks[m.match_number]
+    return p?.winner_id && !isPickValid(m)
+  }).length, 0)
+  const totalPicks = validPicks
   const totalMatches = ALL_STAGES.reduce((acc, s) => acc + s.matches.length, 0)
   const pct = Math.round((totalPicks / totalMatches) * 100)
 
@@ -479,9 +498,15 @@ export default function Knockout() {
     let fillable = 0, lost = 0, firstStage = null
     ALL_STAGES.forEach(stage => {
       (stage.matches || []).forEach(def => {
-        if (knockoutPicks[def.match_number]?.winner_id) return
-        if (isMainBracketPickFrozen(def)) lost++
-        else { fillable++; if (!firstStage) firstStage = stage.key }
+        // A valid pick is done; a missing OR stale pick needs attention.
+        if (isPickValid(def)) return
+        if (isMainBracketPickFrozen(def)) {
+          // Frozen with no valid pick — only count as "lost" if genuinely empty;
+          // a stale pick on a frozen slot can't be changed anyway.
+          if (!knockoutPicks[def.match_number]?.winner_id) lost++
+        } else {
+          fillable++; if (!firstStage) firstStage = stage.key
+        }
       })
     })
     return { fillable, lost, firstStage }
@@ -498,21 +523,23 @@ export default function Knockout() {
     const teamsKnown = !!(home || away) // show as soon as either team is known
     const bothTeamsKnown = !!(home && away) // need both to enable picking
     const isPicked = !!pick?.winner_id
+    // Stale: a pick exists but its winner is no longer in the resolved matchup
+    const isStale = isPicked && (home || away) && pick.winner_id !== home?.id && pick.winner_id !== away?.id
 
     const isFinalMatch = matchDef.match_number === 104
 
-    const accentColor = isAffected ? 'var(--accent-gold)'
+    const accentColor = (isAffected || isStale) ? 'var(--accent-gold)'
       : isFinalMatch ? 'var(--accent-gold)'
       : isPicked ? 'var(--accent-green)'
       : 'transparent'
 
-    const cardBorder = isAffected ? '2px solid var(--accent-gold)'
+    const cardBorder = (isAffected || isStale) ? '2px solid var(--accent-gold)'
       : isFinalMatch && isPicked ? '2px solid var(--accent-gold)'
       : isFinalMatch ? '1.5px solid rgba(184,134,11,0.4)'
       : isPicked ? '1.5px solid var(--accent-green)'
       : '1.5px solid var(--border-light)'
 
-    const cardBg = isAffected ? 'var(--accent-gold-light)'
+    const cardBg = (isAffected || isStale) ? 'var(--accent-gold-light)'
       : isFinalMatch ? 'var(--accent-gold-light)'
       : 'var(--bg-card)'
 
@@ -536,10 +563,15 @@ export default function Knockout() {
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Pick your World Cup winner · Worth <strong style={{ color: 'var(--accent-gold)' }}>20 pts</strong></div>
             </div>
           )}
-          {/* Affected warning */}
-          {isAffected && !locked && (
+          {/* Affected / stale warning */}
+          {(isAffected || isStale) && !locked && (
             <div style={{ marginBottom: '12px', padding: '8px 12px', background: 'rgba(184,134,11,0.15)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)', border: '1px solid rgba(184,134,11,0.25)' }}>
-              ⚠️ Your earlier pick changed — please re-pick the winner for this match
+              ⚠️ The teams in this match changed — please re-pick the winner
+            </div>
+          )}
+          {isStale && locked && (
+            <div style={{ marginBottom: '12px', padding: '8px 12px', background: 'rgba(184,134,11,0.1)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', border: '1px solid rgba(184,134,11,0.2)' }}>
+              ⚠️ Your saved winner is no longer in this matchup, but it's locked and can't be changed
             </div>
           )}
           {locked && lockedReason && (
@@ -556,7 +588,8 @@ export default function Knockout() {
             </div>
             <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
               {locked && <span className="badge badge-red">🔒 Locked</span>}
-              {isPicked && !isAffected && <span className="badge badge-green">✓ Picked</span>}
+              {isPicked && !isAffected && !isStale && <span className="badge badge-green">✓ Picked</span>}
+              {isStale && !locked && <span className="badge" style={{ background: 'var(--accent-gold)', color: 'white' }}>⚠️ Re-pick</span>}
               {saved[mn] && <span className="badge badge-green">Saved!</span>}
               {saving[mn] && <div className="spinner" style={{ width: '14px', height: '14px' }} />}
             </div>
