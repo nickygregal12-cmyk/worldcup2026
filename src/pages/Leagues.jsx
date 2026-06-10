@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
 import { supabase } from '../lib/supabase.js'
 import { avatarColor } from '../lib/avatarColor.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
@@ -71,77 +72,130 @@ function MemberStandingsView({ predictions }) {
 }
 
 function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
-  const [picks, setPicks] = React.useState([])
+  const [picks, setPicks] = React.useState({})       // match_number -> {winner_id, is_joker}
+  const [groupPreds, setGroupPreds] = React.useState({}) // match_id -> {home, away}
+  const [matches, setMatches] = React.useState([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
-    const table = lockedSnapshot ? 'league_knockout_picks' : 'knockout_picks'
-    let query = supabase.from(table)
-      .select('match_number, stage, winner_team_id, home_team_id, away_team_id, is_joker, winner:winner_team_id(name, flag_emoji, short_code), home:home_team_id(name, flag_emoji, short_code), away:away_team_id(name, flag_emoji, short_code)')
-      .eq('user_id', userId)
+    let cancelled = false
+    const load = async () => {
+      setLoading(true)
+      const koTable = lockedSnapshot ? 'league_knockout_picks' : 'knockout_picks'
+      let koQuery = supabase.from(koTable)
+        .select('match_number, stage, winner_team_id, is_joker')
+        .eq('user_id', userId)
+      if (lockedSnapshot && leagueId) koQuery = koQuery.eq('league_id', leagueId)
 
-    if (lockedSnapshot && leagueId) query = query.eq('league_id', leagueId)
+      // Group predictions: locked leagues snapshot to league_predictions, else live predictions
+      const predTable = lockedSnapshot ? 'league_predictions' : 'predictions'
+      let predQuery = supabase.from(predTable)
+        .select('match_id, home_score, away_score')
+        .eq('user_id', userId)
+      if (lockedSnapshot && leagueId) predQuery = predQuery.eq('league_id', leagueId)
 
-    query.order('match_number', { ascending: true })
-      .then(({ data }) => { setPicks(data || []); setLoading(false) })
+      const [koRes, predRes, matchRes] = await Promise.all([
+        koQuery.order('match_number', { ascending: true }),
+        predQuery,
+        supabase.from('matches')
+          .select('id, match_number, stage, home_team_id, away_team_id, group:group_id(name), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)'),
+      ])
+      if (cancelled) return
+
+      const km = {}
+      ;(koRes.data || []).forEach(p => { km[p.match_number] = { winner_id: p.winner_team_id, is_joker: p.is_joker, stage: p.stage } })
+      const pm = {}
+      ;(predRes.data || []).forEach(p => {
+        if (p.home_score !== null && p.away_score !== null) pm[p.match_id] = { home: p.home_score, away: p.away_score }
+      })
+      setPicks(km)
+      setGroupPreds(pm)
+      setMatches(matchRes.data || [])
+      setLoading(false)
+    }
+    load()
+    return () => { cancelled = true }
   }, [userId, leagueId, lockedSnapshot])
 
+  const groupMatches = React.useMemo(() => matches.filter(m => m.stage === 'group'), [matches])
+  const standings = React.useMemo(() => calcPredictedStandings(groupMatches, groupPreds), [groupMatches, groupPreds])
+  const teamsById = React.useMemo(() => {
+    const map = {}
+    matches.forEach(m => { if (m.home_team) map[m.home_team.id] = m.home_team; if (m.away_team) map[m.away_team.id] = m.away_team })
+    return map
+  }, [matches])
+
+  // Resolve a slot live, same chain the bracket uses: group slots from this
+  // member's standings, W-slots from the winner THEY picked in the prior round.
+  const resolveTeam = (slot) => {
+    if (!slot) return null
+    if (slot.startsWith('W')) {
+      const mn = parseInt(slot.replace('W', ''))
+      const wid = picks[mn]?.winner_id
+      return wid ? (teamsById[wid] || null) : null
+    }
+    if (slot.startsWith('L')) return null
+    return resolveSlot(slot, standings, groupMatches, groupPreds)
+  }
+
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-  if (picks.length === 0) return (
+  if (Object.keys(picks).length === 0) return (
     <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
       <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏆</div>
       <div style={{ fontWeight: '700' }}>No knockout picks yet</div>
     </div>
   )
 
-  const stages = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-Finals', sf: 'Semi-Finals', final: 'Final' }
-  const grouped = picks.reduce((acc, p) => { const s = p.stage || 'r32'; if (!acc[s]) acc[s] = []; acc[s].push(p); return acc }, {})
+  const teamStyle = (won) => ({ fontSize: '13px', fontWeight: won ? '800' : '500', color: won ? 'var(--text-primary)' : 'var(--text-muted)' })
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      {Object.entries(grouped).map(([stage, stagePicks]) => (
-        <div key={stage}>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-            {stages[stage] || stage}
+      {ALL_STAGES.map(stage => {
+        const stageMatches = stage.matches.filter(md => picks[md.match_number]?.winner_id)
+        if (stageMatches.length === 0) return null
+        return (
+          <div key={stage.key}>
+            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+              {stage.label}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              {stageMatches.map(md => {
+                const pick = picks[md.match_number]
+                const home = resolveTeam(md.home_slot)
+                const away = resolveTeam(md.away_slot)
+                const winner = teamsById[pick.winner_id]
+                const isHomeWinner = home && home.id === pick.winner_id
+                const isAwayWinner = away && away.id === pick.winner_id
+                return (
+                  <div key={md.match_number} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '24px' }}>#{md.match_number}</span>
+                    {home && away ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                        <span style={{ fontSize: '16px', opacity: isHomeWinner ? 1 : 0.5 }}>{home.flag_emoji}</span>
+                        <span style={teamStyle(isHomeWinner)}>{home.short_code || home.name}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>v</span>
+                        <span style={{ fontSize: '16px', opacity: isAwayWinner ? 1 : 0.5 }}>{away.flag_emoji}</span>
+                        <span style={teamStyle(isAwayWinner)}>{away.short_code || away.name}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', marginLeft: '6px', whiteSpace: 'nowrap' }}>
+                          → {winner?.short_code || winner?.name || '?'}
+                        </span>
+                      </div>
+                    ) : (
+                      // Matchup can't be resolved (incomplete group preds) — show winner only
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>winner</span>
+                        <span style={{ fontSize: '18px' }}>{winner?.flag_emoji}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700' }}>{winner?.name || '?'}</span>
+                      </div>
+                    )}
+                    {pick.is_joker && <span style={{ marginLeft: 'auto', fontSize: '12px' }}>🃏</span>}
+                  </div>
+                )
+              })}
+            </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {stagePicks.map(pick => {
-              // Show the full tie when both sides are known, with the winner highlighted.
-              // Falls back to winner-only for older picks that never stored home/away.
-              const hasMatchup = pick.home && pick.away
-              const isHomeWinner = pick.winner_team_id && pick.home_team_id === pick.winner_team_id
-              const isAwayWinner = pick.winner_team_id && pick.away_team_id === pick.winner_team_id
-              const teamStyle = (won) => ({
-                fontSize: '13px', fontWeight: won ? '800' : '500',
-                color: won ? 'var(--text-primary)' : 'var(--text-muted)',
-              })
-              return (
-                <div key={pick.match_number} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '24px' }}>#{pick.match_number}</span>
-                  {hasMatchup ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
-                      <span style={{ fontSize: '16px', opacity: isHomeWinner ? 1 : 0.55 }}>{pick.home.flag_emoji}</span>
-                      <span style={teamStyle(isHomeWinner)}>{pick.home.short_code || pick.home.name}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>v</span>
-                      <span style={{ fontSize: '16px', opacity: isAwayWinner ? 1 : 0.55 }}>{pick.away.flag_emoji}</span>
-                      <span style={teamStyle(isAwayWinner)}>{pick.away.short_code || pick.away.name}</span>
-                      <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', marginLeft: '6px', whiteSpace: 'nowrap' }}>
-                        → {pick.winner?.short_code || pick.winner?.name || '?'}
-                      </span>
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                      <span style={{ fontSize: '18px' }}>{pick.winner?.flag_emoji}</span>
-                      <span style={{ fontSize: '13px', fontWeight: '700' }}>{pick.winner?.name || '?'}</span>
-                    </div>
-                  )}
-                  {pick.is_joker && <span style={{ marginLeft: 'auto', fontSize: '12px' }}>🃏</span>}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
