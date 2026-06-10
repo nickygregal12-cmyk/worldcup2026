@@ -535,6 +535,7 @@ export default function Predictions() {
   const [activeGroup, setActiveGroup] = useState('A')
   const tournamentKickoff = new Date('2026-06-11T19:00:00Z')
   const [viewMode, setViewMode] = useState(() => new Date() >= new Date('2026-06-11T19:00:00Z') ? 'date' : 'group')
+  const [activeDateId, setActiveDateId] = useState(null)
   const [activeTab, setActiveTab] = useState('picks') // picks | overview | standings
   const [teamSearch, setTeamSearch] = useState('')
   const [standings, setStandings] = useState([])
@@ -701,8 +702,15 @@ export default function Predictions() {
           if (target) {
             const formatDateKey = (time) => new Date(time).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
             const dateKey = formatDateKey(target.kickoff_time)
-            const el = document.getElementById('date-' + dateKey.replace(/[^a-z0-9]/gi, '-'))
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            const id = 'date-' + dateKey.replace(/[^a-z0-9]/gi, '-')
+            const el = document.getElementById(id)
+            if (el) {
+              const sticky = document.querySelector('[data-sticky-tabs]')
+              const occlusion = sticky ? sticky.getBoundingClientRect().bottom : 120
+              const y = el.getBoundingClientRect().top + window.scrollY - occlusion - 8
+              window.scrollTo({ top: y, behavior: 'smooth' })
+              setActiveDateId(id)
+            }
           }
         }, 500)
       }
@@ -809,6 +817,43 @@ export default function Predictions() {
   }
 
   // Admin can grant lock_bypass to specific users — they can predict past kickoff
+  // Scroll-spy: highlight the date tab for the section currently in view.
+  // Deliberately DOM-only (queries elements by id) — references NO component
+  // variables, so it cannot hit the init-order crash the old version had.
+  useEffect(() => {
+    let last = null
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        ticking = false
+        const sticky = document.querySelector('[data-sticky-tabs]')
+        const occlusion = sticky ? sticky.getBoundingClientRect().bottom : 120
+        const sections = document.querySelectorAll('[id^="date-"]')
+        let current = null
+        sections.forEach(sec => {
+          if (sec.getBoundingClientRect().top <= occlusion + 24) current = sec.id
+        })
+        if (current && current !== last) {
+          last = current
+          setActiveDateId(current)
+          // Keep the active tab visible in the horizontal strip
+          const tab = document.getElementById('tab-' + current)
+          if (tab) tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+        }
+      })
+    }
+    // Capture-mode on document catches scrolls from window OR any inner
+    // scrolling container (mobile layouts often scroll a div, not window)
+    document.addEventListener('scroll', onScroll, { passive: true, capture: true })
+    const t = setTimeout(onScroll, 400) // initial highlight after first paint
+    return () => {
+      document.removeEventListener('scroll', onScroll, { capture: true })
+      clearTimeout(t)
+    }
+  }, [loading, viewMode])
+
   const isLocked = (kickoffTime) => {
     if (profile?.lock_bypass) return false // bypass active for this user
     return new Date() >= new Date(kickoffTime)
@@ -2202,7 +2247,7 @@ export default function Predictions() {
       )}
 
       {/* Sticky header */}
-      <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, boxShadow: 'var(--shadow-sm)' }}>
+      <div data-sticky-tabs="1" style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50, boxShadow: 'var(--shadow-sm)' }}>
         <div className="container">
 
           {/* Title row — centred */}
@@ -2354,15 +2399,27 @@ export default function Predictions() {
                   const donePreds = dayMatches.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
                   const complete = donePreds === dayMatches.length
                   return (
-                    <button key={dateKey} onClick={() => {
-                      const el = document.getElementById(`date-${dateKey.replace(/[^a-z0-9]/gi, '-')}`)
-                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                    }} style={{
-                      padding: '10px 12px', fontSize: '11px', fontWeight: '500',
-                      color: 'var(--text-muted)', borderBottom: '2px solid transparent',
-                      background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                    }}>
+                    <button key={dateKey} id={`tab-date-${dateKey.replace(/[^a-z0-9]/gi, '-')}`} onClick={() => {
+                      const id = `date-${dateKey.replace(/[^a-z0-9]/gi, '-')}`
+                      const el = document.getElementById(id)
+                      if (el) {
+                        // Scroll so the section lands exactly below the sticky header
+                        const sticky = document.querySelector('[data-sticky-tabs]')
+                        const occlusion = sticky ? sticky.getBoundingClientRect().bottom : 120
+                        const y = el.getBoundingClientRect().top + window.scrollY - occlusion - 8
+                        window.scrollTo({ top: y, behavior: 'smooth' })
+                        setActiveDateId(id)
+                      }
+                    }} style={(() => {
+                      const isActiveDate = activeDateId === `date-${dateKey.replace(/[^a-z0-9]/gi, '-')}`
+                      return {
+                        padding: '10px 12px', fontSize: '11px', fontWeight: isActiveDate ? '800' : '500',
+                        color: isActiveDate ? 'var(--scottish-navy)' : 'var(--text-muted)',
+                        borderBottom: isActiveDate ? '2px solid var(--scottish-navy)' : '2px solid transparent',
+                        background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                      }
+                    })()}>
                       {shortDate}
                       <span style={{ fontSize: '10px', color: complete ? 'var(--accent-green)' : 'var(--text-muted)', fontWeight: '600' }}>
                         {complete ? '✓' : `${donePreds}/${dayMatches.length}`}
