@@ -29,9 +29,6 @@ const MATCHDAY_TWO_FULL_TIME_BUFFER_MS = 0 // buffer already baked into getMD1Lo
 function getMatchdayTwoFullTime(groupMatches = []) {
   return getMD1LockTime(groupMatches)
 }
-  const matchdayTwoKickoffs = []
-  const byGroup = {}
-
 
 function formatLockDate(date) {
   return date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) +
@@ -44,10 +41,9 @@ function slotLabel(slot) {
     const pos = posMatch[1] === '1' ? 'Winner' : 'Runner-up'
     return `${pos} — Group ${posMatch[2]}`
   }
-  const thirdMatch = slot.match(/^3([S-Z])$/)
-  if (thirdMatch) {
-    const rank = thirdMatch[1].charCodeAt(0) - 'S'.charCodeAt(0) + 1
-    return `Best 3rd Place #${rank}`
+  const bestThirdMatch = slot.match(/^BT3_([A-L]+)$/)
+  if (bestThirdMatch) {
+    return `Best 3rd place — Group ${bestThirdMatch[1].split('').join('/')}`
   }
   return slot
 }
@@ -232,13 +228,14 @@ export default function Knockout() {
     const slots = [matchDef.home_slot, matchDef.away_slot].filter(Boolean)
     const feedingGroupsKickedOff = slots.some(slot => {
       // Direct group slots: '1A', '2B', '1L' etc — extract the group letter A-L
-      const groupMatch = slot.match(/^[123]([A-L])$/)
-      if (!groupMatch) return false // WM73 winner slots, 3S-3Z best-third slots — skip
-      const groupName = groupMatch[1]
-      return groupMatches.some(m =>
+      const directGroupMatch = slot.match(/^[123]([A-L])$/)
+      const bestThirdMatch = slot.match(/^BT3_([A-L]+)$/)
+      const groups = directGroupMatch ? [directGroupMatch[1]] : bestThirdMatch ? bestThirdMatch[1].split('') : []
+      if (!groups.length) return false
+      return groups.some(groupName => groupMatches.some(m =>
         m.group?.name === groupName &&
         new Date(m.kickoff_time) <= new Date()
-      )
+      ))
     })
     if (feedingGroupsKickedOff) return true
 
@@ -300,9 +297,11 @@ export default function Knockout() {
       // Check if feeding groups have kicked off
       const slots = [matchDef.home_slot, matchDef.away_slot].filter(Boolean)
       return slots.some(slot => {
-        const gm = slot.match(/^[123]([A-L])$/)
-        if (!gm) return false
-        return groupMatches.some(m => m.group?.name === gm[1] && new Date(m.kickoff_time) <= new Date())
+        const directGroupMatch = slot.match(/^[123]([A-L])$/)
+        const bestThirdMatch = slot.match(/^BT3_([A-L]+)$/)
+        const groups = directGroupMatch ? [directGroupMatch[1]] : bestThirdMatch ? bestThirdMatch[1].split('') : []
+        if (!groups.length) return false
+        return groups.some(groupName => groupMatches.some(m => m.group?.name === groupName && new Date(m.kickoff_time) <= new Date()))
       })
     }).length || 0
   }, [mainBracketLocked, knockoutPicks, groupMatches])
@@ -379,7 +378,7 @@ export default function Knockout() {
     if (existingDb) {
       const { error } = await supabase
         .from('knockout_picks')
-        .update({ winner_team_id: winnerId, team_id: winnerId, home_team_id: home?.id, away_team_id: away?.id })
+        .update({ winner_team_id: winnerId, team_id: winnerId, home_team_id: home?.id, away_team_id: away?.id, bracket_version: 'fifa_v2' })
         .eq('user_id', user.id)
         .eq('match_number', mn)
       upsertErr = error
@@ -391,6 +390,7 @@ export default function Knockout() {
           stage: matchDef.stage || activeStage || 'r32',
           team_id: winnerId, winner_team_id: winnerId,
           home_team_id: home?.id, away_team_id: away?.id,
+          bracket_version: 'fifa_v2',
         })
       upsertErr = error
     }

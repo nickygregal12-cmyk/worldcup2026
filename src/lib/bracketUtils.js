@@ -49,22 +49,22 @@ export function getMD1LockTime(groupMatches) {
 // Official R32 bracket structure — verified against FIFA/official sources
 // home/away are slot descriptors, not teams
 export const R32_MATCHES = [
-  { match_number: 73, home_slot: '2A',  away_slot: '2B',  venue: 'Los Angeles',   kickoff: '2026-06-28T19:00:00Z' },
-  { match_number: 74, home_slot: '1E',  away_slot: '3T',  venue: 'Boston',        kickoff: '2026-06-29T17:00:00Z' },
-  { match_number: 75, home_slot: '1F',  away_slot: '2C',  venue: 'Monterrey',     kickoff: '2026-06-29T20:30:00Z' },
-  { match_number: 76, home_slot: '1C',  away_slot: '2F',  venue: 'Houston',       kickoff: '2026-06-30T01:00:00Z' },
-  { match_number: 77, home_slot: '1I',  away_slot: '3X',  venue: 'New York/NJ',   kickoff: '2026-06-30T17:00:00Z' },
-  { match_number: 78, home_slot: '2E',  away_slot: '2I',  venue: 'Dallas',        kickoff: '2026-06-30T21:00:00Z' },
-  { match_number: 79, home_slot: '1A',  away_slot: '3Y',  venue: 'Mexico City',   kickoff: '2026-07-01T01:00:00Z' },
-  { match_number: 80, home_slot: '1L',  away_slot: '3Z',  venue: 'Atlanta',       kickoff: '2026-07-01T16:00:00Z' },
-  { match_number: 81, home_slot: '1D',  away_slot: '3W',  venue: 'San Francisco', kickoff: '2026-07-01T20:00:00Z' },
-  { match_number: 82, home_slot: '1G',  away_slot: '3V',  venue: 'Seattle',       kickoff: '2026-07-02T00:00:00Z' },
-  { match_number: 83, home_slot: '2K',  away_slot: '2L',  venue: 'Toronto',       kickoff: '2026-07-02T19:00:00Z' },
-  { match_number: 84, home_slot: '1H',  away_slot: '2J',  venue: 'Los Angeles',   kickoff: '2026-07-02T23:00:00Z' },
-  { match_number: 85, home_slot: '1B',  away_slot: '3U',  venue: 'Vancouver',     kickoff: '2026-07-03T03:00:00Z' },
-  { match_number: 86, home_slot: '2D',  away_slot: '2G',  venue: 'Dallas',        kickoff: '2026-07-03T18:00:00Z' },
-  { match_number: 87, home_slot: '1J',  away_slot: '2H',  venue: 'Miami',         kickoff: '2026-07-03T22:00:00Z' },
-  { match_number: 88, home_slot: '1K',  away_slot: '3S',  venue: 'Kansas City',   kickoff: '2026-07-04T01:30:00Z' },
+  { match_number: 73, home_slot: '2A',  away_slot: '2B',        venue: 'Los Angeles',   kickoff: '2026-06-28T19:00:00Z' },
+  { match_number: 74, home_slot: '1E',  away_slot: 'BT3_ABCDF', venue: 'Boston',        kickoff: '2026-06-29T17:00:00Z' },
+  { match_number: 75, home_slot: '1F',  away_slot: '2C',        venue: 'Monterrey',     kickoff: '2026-06-29T20:30:00Z' },
+  { match_number: 76, home_slot: '1C',  away_slot: '2F',        venue: 'Houston',       kickoff: '2026-06-30T01:00:00Z' },
+  { match_number: 77, home_slot: '1I',  away_slot: 'BT3_CDFGH', venue: 'New York/NJ',   kickoff: '2026-06-30T17:00:00Z' },
+  { match_number: 78, home_slot: '2E',  away_slot: '2I',        venue: 'Dallas',        kickoff: '2026-06-30T21:00:00Z' },
+  { match_number: 79, home_slot: '1A',  away_slot: 'BT3_CEFHI', venue: 'Mexico City',   kickoff: '2026-07-01T01:00:00Z' },
+  { match_number: 80, home_slot: '1L',  away_slot: 'BT3_EHIJK', venue: 'Atlanta',       kickoff: '2026-07-01T16:00:00Z' },
+  { match_number: 81, home_slot: '1D',  away_slot: 'BT3_BEFIJ', venue: 'San Francisco', kickoff: '2026-07-01T20:00:00Z' },
+  { match_number: 82, home_slot: '1G',  away_slot: 'BT3_AEHIJ', venue: 'Seattle',       kickoff: '2026-07-02T00:00:00Z' },
+  { match_number: 83, home_slot: '2K',  away_slot: '2L',        venue: 'Toronto',       kickoff: '2026-07-02T19:00:00Z' },
+  { match_number: 84, home_slot: '1H',  away_slot: '2J',        venue: 'Los Angeles',   kickoff: '2026-07-02T23:00:00Z' },
+  { match_number: 85, home_slot: '1B',  away_slot: 'BT3_EFGIJ', venue: 'Vancouver',     kickoff: '2026-07-03T03:00:00Z' },
+  { match_number: 86, home_slot: '1J',  away_slot: '2H',        venue: 'Dallas',        kickoff: '2026-07-03T18:00:00Z' },
+  { match_number: 87, home_slot: '1K',  away_slot: 'BT3_DEIJL', venue: 'Miami',         kickoff: '2026-07-03T22:00:00Z' },
+  { match_number: 88, home_slot: '2D',  away_slot: '2G',        venue: 'Kansas City',   kickoff: '2026-07-04T01:30:00Z' },
 ]
 
 // R16 bracket — verified against official sources
@@ -216,7 +216,7 @@ export function getBest3rdTeams(standings) {
  * Resolve a slot descriptor to a team object from standings
  * Only returns a team if the group has actual predictions/results
  * e.g. '1A' = winner of group A, '2B' = runner-up of group B
- * '3S'-'3Z' = best 3rd place teams (ranked 1st-8th)
+ * 'BT3_XXXXX' = FIFA Annex C best-third slot. The suffix lists the possible source groups.
  */
 export function resolveSlot(slot, standings, matches = [], predictions = {}) {
   if (!slot) return null
@@ -232,17 +232,22 @@ export function resolveSlot(slot, standings, matches = [], predictions = {}) {
     return entry?.team || null
   }
   
-  // 3rd place slots: '3S' = best 3rd, '3T' = 2nd best 3rd, etc
-  const thirdMatch = slot.match(/^3([S-Z])$/)
-  if (thirdMatch) {
-    const rank = thirdMatch[1].charCodeAt(0) - 'S'.charCodeAt(0)
+  // FIFA best-third slots. These are not ranked #1-#8. FIFA allocates them using
+  // Annexe C after the eight qualifying third-placed groups are known. Until the real
+  // allocation is saved to the matches table, we only auto-resolve a slot when exactly
+  // one qualifying third-placed group fits that slot's eligible group list. This avoids
+  // showing a wrong team in the predictor.
+  const bestThirdMatch = slot.match(/^BT3_([A-L]+)$/)
+  if (bestThirdMatch) {
+    const eligibleGroups = bestThirdMatch[1].split('')
     const best3rd = getBest3rdTeams(standings)
-    // Only show if we have enough groups with predictions
     const groupsWithPreds = Object.keys(standings).filter(g => groupFullyPredicted(g, matches, predictions))
-    if (groupsWithPreds.length < 4) return null // need at least 4 groups predicted to rank 3rds meaningfully
-    return best3rd[rank]?.team || null
+    if (groupsWithPreds.length < 4) return null
+
+    const matchingThirds = best3rd.filter(t => eligibleGroups.includes(t.group))
+    return matchingThirds.length === 1 ? matchingThirds[0].team : null
   }
-  
+
   return null
 }
 
