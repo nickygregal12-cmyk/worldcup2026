@@ -929,3 +929,25 @@ button:disabled:active {
   outline: 2px solid var(--scottish-navy);
   outline-offset: 2px;
 }
+
+
+/* ── Dark mode compatibility for hardcoded inline colours ──
+   Inline styles beat stylesheet rules, so these use !important.
+   Only targets patterns that are definitely wrong in dark mode:
+   solid/near-opaque white backgrounds. Translucent white overlays
+   (rgba(255,255,255,0.0x-0.3)) on hero sections are intentional
+   and left untouched. */
+.dark [style*="background: white"],
+.dark [style*="background: #fff"],
+.dark [style*="background: rgb(255, 255, 255)"] {
+  background: var(--bg-card) !important;
+}
+.dark [style*="background: rgba(255, 255, 255, 0.9"],
+.dark [style*="background: rgba(255, 255, 255, 0.95"] {
+  background: rgba(22, 29, 39, 0.95) !important;
+}
+/* Solid black text hardcoded on light cards */
+.dark [style*="color: #000"],
+.dark [style*="color: black"] {
+  color: var(--text-primary) !important;
+}
