@@ -62,15 +62,15 @@ export const R32_MATCHES = [
   { match_number: 83, home_slot: '2K',  away_slot: '2L',        venue: 'Toronto',       kickoff: '2026-07-02T19:00:00Z' },
   { match_number: 84, home_slot: '1H',  away_slot: '2J',        venue: 'Los Angeles',   kickoff: '2026-07-02T23:00:00Z' },
   { match_number: 85, home_slot: '1B',  away_slot: 'BT3_EFGIJ', venue: 'Vancouver',     kickoff: '2026-07-03T03:00:00Z' },
-  { match_number: 86, home_slot: '1J',  away_slot: '2H',        venue: 'Dallas',        kickoff: '2026-07-03T18:00:00Z' },
-  { match_number: 87, home_slot: '1K',  away_slot: 'BT3_DEIJL', venue: 'Miami',         kickoff: '2026-07-03T22:00:00Z' },
-  { match_number: 88, home_slot: '2D',  away_slot: '2G',        venue: 'Kansas City',   kickoff: '2026-07-04T01:30:00Z' },
+  { match_number: 86, home_slot: '1J',  away_slot: '2H',        venue: 'Miami',         kickoff: '2026-07-03T22:00:00Z' },
+  { match_number: 87, home_slot: '1K',  away_slot: 'BT3_DEIJL', venue: 'Kansas City',   kickoff: '2026-07-04T01:30:00Z' },
+  { match_number: 88, home_slot: '2D',  away_slot: '2G',        venue: 'Dallas',        kickoff: '2026-07-03T18:00:00Z' },
 ]
 
 // R16 bracket — verified against official sources
 export const R16_MATCHES = [
-  { match_number: 89, home_slot: 'W74', away_slot: 'W77', venue: 'Philadelphia',  kickoff: '2026-07-04T17:00:00Z' },
-  { match_number: 90, home_slot: 'W73', away_slot: 'W75', venue: 'Houston',       kickoff: '2026-07-04T21:00:00Z' },
+  { match_number: 89, home_slot: 'W74', away_slot: 'W77', venue: 'Philadelphia',  kickoff: '2026-07-04T21:00:00Z' },
+  { match_number: 90, home_slot: 'W73', away_slot: 'W75', venue: 'Houston',       kickoff: '2026-07-04T17:00:00Z' },
   { match_number: 91, home_slot: 'W76', away_slot: 'W78', venue: 'New York/NJ',   kickoff: '2026-07-05T20:00:00Z' },
   { match_number: 92, home_slot: 'W79', away_slot: 'W80', venue: 'Mexico City',   kickoff: '2026-07-06T00:00:00Z' },
   { match_number: 93, home_slot: 'W83', away_slot: 'W84', venue: 'Dallas',        kickoff: '2026-07-06T19:00:00Z' },
@@ -213,6 +213,49 @@ export function getBest3rdTeams(standings) {
 }
 
 /**
+ * FIFA-legal allocation of the 8 qualifying third-place groups to the 8
+ * best-third R32 slots. Deterministic backtracking: most-constrained slot
+ * first, candidate groups alphabetical. Guarantees every third lands only
+ * in a slot whose eligible-group list (FIFA's official constraints) allows
+ * it, with a complete assignment whenever one exists.
+ * Note: FIFA's published Annex C table makes specific tie-break choices
+ * among legal assignments; this solver picks one legal assignment
+ * deterministically. The REAL bracket is ingested from the API once FIFA
+ * announces it, so actual results always follow FIFA exactly.
+ * @param qualifiedGroups e.g. ['A','B','C','D','E','F','I','J']
+ * @returns { 'BT3_ABCDF': 'A', ... } or null if infeasible/invalid
+ */
+export function allocateThirdPlaces(qualifiedGroups) {
+  if (!qualifiedGroups || qualifiedGroups.length !== 8) return null
+  const slotKeys = R32_MATCHES
+    .map(m => m.away_slot)
+    .filter(s => /^BT3_[A-L]+$/.test(s))
+  const slots = slotKeys.map(key => ({
+    key,
+    eligible: key.slice(4).split('').filter(g => qualifiedGroups.includes(g)).sort(),
+  }))
+  // Most-constrained first keeps the search tiny and the result deterministic
+  const order = [...slots].sort((a, b) =>
+    a.eligible.length - b.eligible.length || a.key.localeCompare(b.key))
+  const used = new Set()
+  const assign = {}
+  const backtrack = (i) => {
+    if (i === order.length) return true
+    const slot = order[i]
+    for (const g of slot.eligible) {
+      if (used.has(g)) continue
+      used.add(g)
+      assign[slot.key] = g
+      if (backtrack(i + 1)) return true
+      used.delete(g)
+      delete assign[slot.key]
+    }
+    return false
+  }
+  return backtrack(0) ? assign : null
+}
+
+/**
  * Resolve a slot descriptor to a team object from standings
  * Only returns a team if the group has actual predictions/results
  * e.g. '1A' = winner of group A, '2B' = runner-up of group B
@@ -244,6 +287,18 @@ export function resolveSlot(slot, standings, matches = [], predictions = {}) {
     const groupsWithPreds = Object.keys(standings).filter(g => groupFullyPredicted(g, matches, predictions))
     if (groupsWithPreds.length < 4) return null
 
+    // All 12 groups predicted -> the 8 qualifying thirds are known, so run
+    // the full FIFA-legal allocation and return this slot's assigned third.
+    if (groupsWithPreds.length === 12 && best3rd.length === 8) {
+      const allocation = allocateThirdPlaces(best3rd.map(t => t.group))
+      if (allocation && allocation[slot]) {
+        const assigned = best3rd.find(t => t.group === allocation[slot])
+        return assigned?.team || null
+      }
+    }
+
+    // Partial predictions: only resolve when exactly one qualifying third
+    // fits this slot's eligible groups (never place a team illegally)
     const matchingThirds = best3rd.filter(t => eligibleGroups.includes(t.group))
     return matchingThirds.length === 1 ? matchingThirds[0].team : null
   }
