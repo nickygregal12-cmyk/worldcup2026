@@ -391,7 +391,7 @@ export default function KOPredictor() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '36px' }}>{match.home_team?.flag_emoji || '🏳️'}</span>
             <span style={{ fontWeight: '700', fontSize: '13px', textAlign: 'center' }}>{match.home_team?.name || '?'}</span>
-            {favourite === 'home' && matchOdds && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
+            {favourite === 'home' && matchOdds && !locked && !resultColour && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input type="number" className="score-input" min="0" max="99"
@@ -413,7 +413,7 @@ export default function KOPredictor() {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '36px' }}>{match.away_team?.flag_emoji || '🏳️'}</span>
             <span style={{ fontWeight: '700', fontSize: '13px', textAlign: 'center' }}>{match.away_team?.name || '?'}</span>
-            {favourite === 'away' && matchOdds && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
+            {favourite === 'away' && matchOdds && !locked && !resultColour && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
           </div>
         </div>
 
