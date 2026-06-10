@@ -563,8 +563,8 @@ export default function Knockout() {
                         onClick={() => canPickThisTeam && savePick(matchDef, team.id)}
                         disabled={!canPickThisTeam}
                         style={{
-                          display: 'flex', alignItems: 'center', gap: '14px',
-                          padding: '14px 16px',
+                          display: 'flex', alignItems: 'center', gap: '12px',
+                          padding: '10px 14px',
                           borderRadius: 'var(--radius-md)',
                           width: '100%', textAlign: 'left',
                           transition: 'all 0.15s',
@@ -577,9 +577,9 @@ export default function Knockout() {
                           cursor: canPickThisTeam ? 'pointer' : 'default',
                           boxShadow: isPickedTeam ? `0 0 0 3px ${isFinal ? 'rgba(184,134,11,0.12)' : 'rgba(0,122,51,0.1)'}` : 'none',
                         }}>
-                        <span style={{ fontSize: '40px', lineHeight: 1, flexShrink: 0 }}>{team.flag_emoji}</span>
+                        <span style={{ fontSize: '30px', lineHeight: 1, flexShrink: 0 }}>{team.flag_emoji}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontWeight: '800', fontSize: '16px', letterSpacing: '-0.01em',
+                          <div style={{ fontWeight: '800', fontSize: '15px', letterSpacing: '-0.01em',
                             color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : 'var(--accent-green)') : 'var(--text-primary)',
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {team.name}
@@ -589,7 +589,7 @@ export default function Knockout() {
                           </div>
                         </div>
                         {isPickedTeam && (
-                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: isFinal ? 'var(--accent-gold)' : 'var(--accent-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: isFinal ? 'var(--accent-gold)' : 'var(--accent-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                             <span style={{ color: 'white', fontSize: '14px', fontWeight: '900' }}>✓</span>
                           </div>
                         )}
@@ -597,11 +597,11 @@ export default function Knockout() {
                     ) : (
                       // Placeholder for unknown team
                       <div style={{
-                        display: 'flex', alignItems: 'center', gap: '14px',
-                        padding: '14px 16px', borderRadius: 'var(--radius-md)',
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        padding: '10px 14px', borderRadius: 'var(--radius-md)',
                         border: '1.5px dashed var(--border-medium)', background: 'var(--bg-secondary)',
                       }}>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>🏳️</div>
+                        <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>🏳️</div>
                         <div>
                           <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>
@@ -612,7 +612,7 @@ export default function Knockout() {
                     )}
                     {/* VS divider between the two teams */}
                     {idx === 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '6px 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '4px 0' }}>
                         <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
                         <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', letterSpacing: '0.08em', padding: '2px 8px', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-full)', background: 'var(--bg-secondary)' }}>VS</span>
                         <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
@@ -626,13 +626,13 @@ export default function Knockout() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {[matchDef.home_slot, matchDef.away_slot].map(slot => (
                 <div key={slot} style={{
-                  display: 'flex', alignItems: 'center', gap: '14px',
-                  padding: '14px 16px',
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '10px 14px',
                   borderRadius: 'var(--radius-md)',
                   border: '1.5px dashed var(--border-medium)',
                   background: 'var(--bg-secondary)',
                 }}>
-                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>
                     🏳️
                   </div>
                   <div>

@@ -638,7 +638,7 @@ export default function Home() {
   // ── Progress bar data ────────────────────────────────────────────────────
   const progressItems = user ? [
     { label: 'Groups', done: Math.min(predictionCount, 72), total: 72, to: '/predictions' },
-    { label: 'Knockout Bracket', done: knockoutPickCount, total: REQUIRED_KNOCKOUT_PICKS, to: '/knockout' },
+    { label: 'Bracket', done: knockoutPickCount, total: REQUIRED_KNOCKOUT_PICKS, to: '/knockout' },
     { label: 'Awards', done: awardPickCount, total: 4, to: '/awards' },
   ] : []
 

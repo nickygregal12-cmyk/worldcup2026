@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import { avatarColor } from '../lib/avatarColor.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
@@ -1017,15 +1018,15 @@ export default function Leagues() {
                     const isMe = profile.id === user.id
                     return (
                       <div key={profile.id} onClick={() => openOverallProfile(profile)} role="button" tabIndex={0} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', borderBottom: '1px solid var(--border-light)', background: isMe ? 'rgba(0,48,135,0.05)' : 'transparent', borderLeft: isMe ? '3px solid var(--scottish-navy)' : '3px solid transparent', cursor: 'pointer' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '900', width: '24px', color: i < 3 ? ['#f59e0b','#9ca3af','#cd7f32'][i] : 'var(--text-muted)' }}>{i + 1}</span>
-                        <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: isMe ? 'white' : 'var(--text-secondary)', flexShrink: 0 }}>
+                        <span style={{ fontSize: '13px', fontWeight: '900', width: '24px', color: i < 3 ? ['#d4a017','#64748b','#b06a2c'][i] : 'var(--text-muted)' }}>{i + 1}</span>
+                        <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : avatarColor(profile.display_name || profile.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: isMe ? 'white' : avatarColor(profile.display_name || profile.username).fg, flexShrink: 0 }}>
                           {profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '13px', fontWeight: isMe ? '800' : '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'} {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '1px 5px', borderRadius: '3px', fontWeight: '700' }}>YOU</span>}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>{profile.exact_scores > 0 ? `🎯 ${profile.exact_scores} exact` : 'Overall player'}</div>
                         </div>
-                        <span style={{ fontWeight: '900', fontSize: '15px', fontFamily: 'var(--font-mono)' }}>{profile.total_points || 0}<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--text-muted)' }}>pts</span></span>
+                        <span style={{ fontWeight: '900', fontSize: '15px', fontVariantNumeric: 'tabular-nums' }}>{profile.total_points || 0}<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--text-muted)' }}>pts</span></span>
                         <span style={{ fontSize: '18px', color: 'var(--text-muted)' }}>›</span>
                       </div>
                     )
@@ -1171,7 +1172,7 @@ export default function Leagues() {
                       {myRank > 0 && (
                         <div style={{ textAlign: 'right' }}>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Your rank</div>
-                          <div style={{ fontSize: '18px', fontWeight: '900', color: myRank <= 3 ? ['#f59e0b','#9ca3af','#cd7f32'][myRank-1] : 'var(--scottish-navy)' }}>#{myRank}</div>
+                          <div style={{ fontSize: '18px', fontWeight: '900', color: myRank <= 3 ? ['#d4a017','#64748b','#b06a2c'][myRank-1] : 'var(--scottish-navy)' }}>#{myRank}</div>
                         </div>
                       )}
                     </div>
@@ -1216,7 +1217,7 @@ export default function Leagues() {
                               </span>
 
                               {/* Avatar */}
-                              <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: isMe ? 'white' : 'var(--text-secondary)', flexShrink: 0 }}>
+                              <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : avatarColor(member.profile?.display_name || member.profile?.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: isMe ? 'white' : avatarColor(member.profile?.display_name || member.profile?.username).fg, flexShrink: 0 }}>
                                 {(member.profile?.display_name || member.profile?.username || '?')[0].toUpperCase()}
                               </div>
 
@@ -1238,7 +1239,7 @@ export default function Leagues() {
                               </div>
 
                               {/* Points */}
-                              <span style={{ fontWeight: '800', fontSize: '15px', fontFamily: 'var(--font-mono)', color: pts > 0 ? 'var(--text-primary)' : 'var(--text-muted)', flexShrink: 0 }}>
+                              <span style={{ fontWeight: '800', fontSize: '15px', fontVariantNumeric: 'tabular-nums', color: pts > 0 ? 'var(--text-primary)' : 'var(--text-muted)', flexShrink: 0 }}>
                                 {pts}<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--text-muted)' }}>pts</span>
                               </span>
 

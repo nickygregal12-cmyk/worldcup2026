@@ -562,9 +562,10 @@ img {
   text-align: center;
 }
 
-.rank-1 { color: var(--accent-gold); }
-.rank-2 { color: #9e9e9e; }
-.rank-3 { color: #cd7f32; }
+.rank-1 { color: #d4a017; font-size: 1.1em; }
+.rank-2 { color: #64748b; font-size: 1.05em; }
+.rank-3 { color: #b06a2c; font-size: 1.05em; }
+.rank-1::after { content: ''; }
 
 /* ---- Responsive Utilities ---- */
 .hide-mobile  { display: none; }

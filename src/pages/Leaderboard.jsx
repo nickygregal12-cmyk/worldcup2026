@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
+import { avatarColor } from '../lib/avatarColor.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
@@ -227,10 +228,10 @@ export default function Leaderboard() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
                       <div style={{
                         width: '36px', height: '36px', borderRadius: '50%',
-                        background: isCurrentUser ? accentColour : 'var(--bg-tertiary)',
+                        background: isCurrentUser ? accentColour : avatarColor(player.display_name || player.username).bg,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: player.avatar_emoji ? '18px' : '15px', fontWeight: '700',
-                        color: isCurrentUser ? 'white' : 'var(--text-primary)', flexShrink: 0,
+                        color: isCurrentUser ? 'white' : avatarColor(player.display_name || player.username).fg, flexShrink: 0,
                       }}>
                         {player.avatar_emoji || player.username?.[0]?.toUpperCase()}
                       </div>
