@@ -471,6 +471,22 @@ export default function Knockout() {
   const totalMatches = ALL_STAGES.reduce((acc, s) => acc + s.matches.length, 0)
   const pct = Math.round((totalPicks / totalMatches) * 100)
 
+  // Pre-full-lock gap analysis: empty picks split into still-fillable vs
+  // already frozen empty (their feeding group kicked off). Drives the
+  // "sort your bracket" warning banner.
+  const preLockGaps = (() => {
+    if (mainBracketLocked) return { fillable: 0, lost: 0, firstStage: null }
+    let fillable = 0, lost = 0, firstStage = null
+    ALL_STAGES.forEach(stage => {
+      (stage.matches || []).forEach(def => {
+        if (knockoutPicks[def.match_number]?.winner_id) return
+        if (isMainBracketPickFrozen(def)) lost++
+        else { fillable++; if (!firstStage) firstStage = stage.key }
+      })
+    })
+    return { fillable, lost, firstStage }
+  })()
+
   const renderMatch = (matchDef) => {
     const { home, away } = getMatchTeams(matchDef)
     const mn = matchDef.match_number
@@ -754,6 +770,31 @@ export default function Knockout() {
           {affectedMatches.length > 0 && (
             <div style={{ marginTop: '12px', background: 'rgba(184,134,11,0.3)', borderRadius: 'var(--radius-md)', padding: '10px 14px', fontSize: '12px', color: '#ffd700', fontWeight: '700' }}>
               ⚠️ {affectedMatches.length} knockout pick{affectedMatches.length > 1 ? 's' : ''} need updating after group changes
+            </div>
+          )}
+
+          {/* Pre-lock gap warning — bracket incomplete, slots still fillable */}
+          {user && !mainBracketLocked && preLockGaps.fillable > 0 && !(isPreTournament && totalPicks === 0) && (
+            <div style={{ marginTop: '12px', background: 'rgba(230,81,0,0.18)', borderRadius: 'var(--radius-md)', padding: '12px 14px', border: '1px solid rgba(255,152,0,0.5)' }}>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: '#ffb74d', marginBottom: '4px' }}>
+                ⚠️ {preLockGaps.fillable} bracket pick{preLockGaps.fillable > 1 ? 's' : ''} missing
+              </div>
+              <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.75)', marginBottom: '10px', lineHeight: 1.4 }}>
+                Empty slots lock for good as each group's games kick off — fill them while you still can.
+                {preLockGaps.lost > 0 && ` (${preLockGaps.lost} slot${preLockGaps.lost > 1 ? 's have' : ' has'} already locked empty.)`}
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {preLockGaps.firstStage && preLockGaps.firstStage !== activeStage && (
+                  <button onClick={() => setActiveStage(preLockGaps.firstStage)}
+                    style={{ background: 'var(--accent-orange)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: 'pointer' }}>
+                    ➡️ Go to first gap
+                  </button>
+                )}
+                <button onClick={luckyDipBracket} disabled={luckyDipping}
+                  style={{ background: 'rgba(255,255,255,0.12)', color: 'white', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-full)', padding: '8px 16px', fontSize: '13px', fontWeight: '700', cursor: luckyDipping ? 'wait' : 'pointer', opacity: luckyDipping ? 0.7 : 1 }}>
+                  {luckyDipping ? '🎲 Filling...' : '🎲 Lucky Dip the rest'}
+                </button>
+              </div>
             </div>
           )}
 

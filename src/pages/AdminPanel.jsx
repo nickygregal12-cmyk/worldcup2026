@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
+import BracketHealth from '../components/BracketHealth.jsx'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TABS = [
@@ -2683,6 +2684,7 @@ export default function AdminPanel() {
         {/* ── USERS ── */}
         {activeTab === 'users' && (
           <div>
+            <BracketHealth />
             <input className="input" placeholder="Search by username or email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} style={{ marginBottom: '16px' }} />
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>{filteredUsers.length} users</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
