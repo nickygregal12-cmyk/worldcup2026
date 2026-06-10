@@ -102,7 +102,7 @@ export default function ShareCard({ onClose }) {
       const html2canvas = (await import('html2canvas')).default
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
-        backgroundColor: '#003087',
+        backgroundColor: null, // transparent — keeps the gold frame's rounded corners clean
         useCORS: true,
         logging: false,
       })
@@ -139,28 +139,50 @@ export default function ShareCard({ onClose }) {
       zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '20px', flexDirection: 'column', gap: '16px',
     }}>
-      {/* The card to be captured */}
+      {/* The card to be captured — gold foil frame wraps the navy card */}
       <div ref={cardRef} style={{
         width: '320px',
-        background: 'linear-gradient(160deg, #001f5b 0%, #003087 50%, #001540 100%)',
+        borderRadius: '18px',
+        padding: '2px',
+        background: 'linear-gradient(140deg, #d4af37 0%, #f5e7a3 25%, #b8860b 50%, #f5e7a3 75%, #d4af37 100%)',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
+      }}>
+      <div style={{
+        background: 'linear-gradient(160deg, #001f5b 0%, #003087 55%, #001540 100%)',
         borderRadius: '16px',
         padding: '20px',
         color: 'white',
         fontFamily: 'system-ui, -apple-system, sans-serif',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
+        {/* Static diagonal sheen (html2canvas-safe — no animation) */}
+        <div style={{
+          position: 'absolute', top: '-50%', left: '-20%', width: '60%', height: '200%',
+          background: 'linear-gradient(75deg, transparent 0%, rgba(255,255,255,0.06) 45%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0.06) 55%, transparent 100%)',
+          transform: 'rotate(8deg)', pointerEvents: 'none',
+        }} />
+
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
           <div>
-            <div style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '2px' }}>
+            <div style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', marginBottom: '2px' }}>
               FIFA World Cup 2026
             </div>
-            <div style={{ fontSize: '18px', fontWeight: '900', letterSpacing: '-0.02em' }}>
-              🏴󠁧󠁢󠁳󠁣󠁴󠁿 My Predictions
+            <div style={{ fontSize: '19px', fontWeight: '900', letterSpacing: '-0.02em' }}>
+              My Predictions
+            </div>
+            <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.6)', marginTop: '2px' }}>
+              🏴󠁧󠁢󠁳󠁣󠁴󠁿 {displayName}
             </div>
           </div>
-          <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.5)' }}>
-            {displayName}
-          </div>
+          <div style={{
+            width: '40px', height: '40px', borderRadius: '50%',
+            background: 'radial-gradient(circle at 35% 30%, #f5e7a3, #b8860b)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.5)',
+            flexShrink: 0,
+          }}>🏆</div>
         </div>
 
         {loading ? (
@@ -179,18 +201,18 @@ export default function ShareCard({ onClose }) {
                     <div key={g} style={{
                       background: 'rgba(255,255,255,0.08)',
                       borderRadius: '8px',
-                      padding: '6px 4px',
+                      padding: '7px 4px',
                       textAlign: 'center',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255,255,255,0.12)',
                     }}>
-                      <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', fontWeight: '700', marginBottom: '3px' }}>GRP {g}</div>
+                      <div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.45)', fontWeight: '700', marginBottom: '3px' }}>{g}</div>
                       {winner ? (
                         <>
-                          <div style={{ fontSize: '20px', lineHeight: 1, marginBottom: '2px' }}>{winner.team?.flag_emoji}</div>
+                          <div style={{ fontSize: '24px', lineHeight: 1, marginBottom: '2px' }}>{winner.team?.flag_emoji}</div>
                           <div style={{ fontSize: '9px', fontWeight: '700', color: 'rgba(255,255,255,0.9)', lineHeight: 1.2 }}>{(winner.team?.short_code || winner.team?.name || '').substring(0, 6)}</div>
                         </>
                       ) : (
-                        <div style={{ fontSize: '16px', opacity: 0.3 }}>🏳️</div>
+                        <div style={{ fontSize: '18px', opacity: 0.3 }}>🏳️</div>
                       )}
                     </div>
                   )
@@ -200,19 +222,19 @@ export default function ShareCard({ onClose }) {
 
             {/* Tournament winner */}
             <div style={{
-              background: 'linear-gradient(135deg, rgba(184,134,11,0.3), rgba(255,215,0,0.15))',
-              border: '1px solid rgba(255,215,0,0.3)',
-              borderRadius: '10px',
-              padding: '10px 14px',
+              background: 'linear-gradient(135deg, rgba(212,175,55,0.35), rgba(255,215,0,0.12))',
+              border: '1px solid rgba(255,215,0,0.45)',
+              borderRadius: '12px',
+              padding: '12px 14px',
               marginBottom: '10px',
-              display: 'flex', alignItems: 'center', gap: '10px',
+              display: 'flex', alignItems: 'center', gap: '12px',
             }}>
-              <span style={{ fontSize: '24px' }}>🏆</span>
+              <span style={{ fontSize: '28px' }}>🏆</span>
               <div>
-                <div style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,215,0,0.7)', marginBottom: '2px' }}>
+                <div style={{ fontSize: '9px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'rgba(255,215,0,0.75)', marginBottom: '2px' }}>
                   My World Cup Winner
                 </div>
-                <div style={{ fontSize: '15px', fontWeight: '900' }}>
+                <div style={{ fontSize: '17px', fontWeight: '900' }}>
                   {tournamentWinner
                     ? `${tournamentWinner.flag_emoji} ${tournamentWinner.name}`
                     : <span style={{ opacity: 0.4 }}>Not picked yet</span>}
@@ -238,13 +260,14 @@ export default function ShareCard({ onClose }) {
             )}
 
             {/* Footer */}
-            <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', textAlign: 'center' }}>
-              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>
-                wc26predictor1.netlify.app
+            <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '10px', textAlign: 'center' }}>
+              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', fontWeight: '600', letterSpacing: '0.04em' }}>
+                ⚽ wc26predictor1.netlify.app
               </div>
             </div>
           </>
         )}
+      </div>
       </div>
 
       {/* Action buttons */}

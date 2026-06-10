@@ -2,10 +2,17 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { avatarColor } from '../lib/avatarColor.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
+import { useCountUp } from '../hooks/useCountUp.js'
 
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 const PAGE_SIZE = 25
+
+// Animated count-up for points values
+function AnimatedPoints({ value }) {
+  const display = useCountUp(value)
+  return <>{display}</>
+}
 
 export default function Leaderboard() {
   const { user, isAdmin } = useAuthStore()
@@ -130,7 +137,7 @@ export default function Leaderboard() {
               padding: '6px 14px', marginBottom: '16px', fontSize: '13px', fontWeight: '700', color: 'white',
               border: '1px solid rgba(255,255,255,0.25)',
             }}>
-              You are #{userRank} · {userPoints} pts
+              You are #{userRank} · <AnimatedPoints value={userPoints} /> pts
             </div>
           )}
 
@@ -260,7 +267,7 @@ export default function Leaderboard() {
                     {/* Points */}
                     <div style={{ fontWeight: '800', fontSize: '18px', fontFamily: 'var(--font-mono)',
                       color: pts > 0 ? accentColour : 'var(--text-muted)' }}>
-                      {pts === null ? '—' : (pts || 0)}
+                      {pts === null ? '—' : <AnimatedPoints value={pts || 0} />}
                     </div>
                   </div>
                 )
@@ -270,6 +277,8 @@ export default function Leaderboard() {
                 <div className="empty-state">
                   <div className="empty-state-icon">🔍</div>
                   <div className="empty-state-title">No players found</div>
+                  <div className="empty-state-desc">No one matches "{search}" — check the spelling or try a shorter name.</div>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setSearch('')}>Clear search</button>
                 </div>
               )}
             </div>

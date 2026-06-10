@@ -1101,6 +1101,17 @@ export default function Predictions() {
     }, 600)
   }
 
+  // Score stepper (+/− buttons) — routes through handleScoreChange so
+  // autosave, validation and locking behave identically to typing
+  const bumpScore = (match, side, delta) => {
+    if (isLocked(match.kickoff_time)) return
+    const cur = predictions[match.id]?.[side]
+    const curN = (cur === '' || cur === undefined || cur === null) ? null : Number(cur)
+    // First tap on an empty box starts at 0 (for + and −)
+    const next = curN === null ? 0 : Math.max(0, Math.min(99, curN + delta))
+    handleScoreChange(match.id, side, String(next))
+  }
+
   const handleScoreBlur = (match, side) => {
     // Read from DOM ref for iOS reliability
     const homeInput = inputRefs.current[`${match.id}-home`]
@@ -1547,23 +1558,39 @@ export default function Predictions() {
                 </div>
               ) : (
                 <>
-                  <input type="text" inputMode="numeric" pattern="[0-9]*" className={`score-input ${saved[match.id] ? 'just-saved' : ''}`}
-                    ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
-                    value={pred.home ?? ''}
-                    onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
-                    onInput={e => handleScoreChange(match.id, 'home', e.target.value)}
-                    onBlur={() => handleScoreBlur(match, 'home')}
-                    disabled={effectiveLocked} placeholder="?"
-                  />
+                  <div className="score-pair">
+                    {!effectiveLocked && (
+                      <div className="stepper-col">
+                        <button type="button" className="stepper-btn" aria-label={`Increase ${match.home_team?.name} score`} onClick={() => bumpScore(match, 'home', 1)}>+</button>
+                        <button type="button" className="stepper-btn" aria-label={`Decrease ${match.home_team?.name} score`} onClick={() => bumpScore(match, 'home', -1)}>−</button>
+                      </div>
+                    )}
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" className={`score-input ${saved[match.id] ? 'just-saved' : ''}`}
+                      ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
+                      value={pred.home ?? ''}
+                      onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
+                      onInput={e => handleScoreChange(match.id, 'home', e.target.value)}
+                      onBlur={() => handleScoreBlur(match, 'home')}
+                      disabled={effectiveLocked} placeholder="?"
+                    />
+                  </div>
                   <span style={{ fontSize: '20px', color: 'var(--text-muted)', fontWeight: '300', fontFamily: 'var(--font-mono)' }}>–</span>
-                  <input type="text" inputMode="numeric" pattern="[0-9]*" className={`score-input ${saved[match.id] ? 'just-saved' : ''}`}
-                    ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
-                    value={pred.away ?? ''}
-                    onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
-                    onInput={e => handleScoreChange(match.id, 'away', e.target.value)}
-                    onBlur={() => handleScoreBlur(match, 'away')}
-                    disabled={effectiveLocked} placeholder="?"
-                  />
+                  <div className="score-pair">
+                    <input type="text" inputMode="numeric" pattern="[0-9]*" className={`score-input ${saved[match.id] ? 'just-saved' : ''}`}
+                      ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
+                      value={pred.away ?? ''}
+                      onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
+                      onInput={e => handleScoreChange(match.id, 'away', e.target.value)}
+                      onBlur={() => handleScoreBlur(match, 'away')}
+                      disabled={effectiveLocked} placeholder="?"
+                    />
+                    {!effectiveLocked && (
+                      <div className="stepper-col">
+                        <button type="button" className="stepper-btn" aria-label={`Increase ${match.away_team?.name} score`} onClick={() => bumpScore(match, 'away', 1)}>+</button>
+                        <button type="button" className="stepper-btn" aria-label={`Decrease ${match.away_team?.name} score`} onClick={() => bumpScore(match, 'away', -1)}>−</button>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
