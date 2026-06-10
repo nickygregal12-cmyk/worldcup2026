@@ -471,7 +471,7 @@ export default function Knockout() {
   // the two teams the bracket CURRENTLY resolves for that match. This catches
   // picks that went stale after a group-prediction change or a bracket-structure
   // correction — the row exists but no longer reflects a valid matchup.
-  const isPickValid = useCallback((matchDef) => {
+  const isPickValid = (matchDef) => {
     const pick = knockoutPicks[matchDef.match_number]
     if (!pick?.winner_id) return false
     const { home, away } = getMatchTeams(matchDef)
@@ -479,7 +479,7 @@ export default function Knockout() {
     // judge validity — treat as not-yet-complete so the user is prompted.
     if (!home && !away) return false
     return pick.winner_id === home?.id || pick.winner_id === away?.id
-  }, [knockoutPicks, getMatchTeams])
+  }
 
   const validPicks = ALL_STAGES.reduce((acc, s) => acc + s.matches.filter(m => isPickValid(m)).length, 0)
   const stalePicks = ALL_STAGES.reduce((acc, s) => acc + s.matches.filter(m => {
