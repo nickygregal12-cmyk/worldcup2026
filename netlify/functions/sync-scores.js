@@ -71,7 +71,57 @@ export const handler = async (event, context) => {
     const matches = data.matches || []
     let updated = 0
     let pointsCalculated = 0
+    let fixturesPopulated = 0
     const errors = []
+
+    // ── PASS 1: Auto-populate knockout fixtures from FIFA's real bracket ──
+    // Once groups complete, FIFA applies its Annex C allocation and the API
+    // publishes the real R32 (then R16/QF/SF/F) fixtures with actual teams.
+    // We match API fixtures to our rows by stage + exact kickoff time (every
+    // knockout match has a unique kickoff) and write the team ids in.
+    // This removes any need for manual fixture entry or our own Annex C table.
+    const API_STAGE_TO_OURS = {
+      'LAST_32': 'r32', 'ROUND_OF_32': 'r32', 'PLAYOFF_ROUND': 'r32',
+      'LAST_16': 'r16', 'ROUND_OF_16': 'r16',
+      'QUARTER_FINALS': 'qf', 'SEMI_FINALS': 'sf',
+      'THIRD_PLACE': '3rd', 'FINAL': 'final',
+    }
+    const koApiFixtures = matches.filter(m =>
+      API_STAGE_TO_OURS[m.stage] && m.homeTeam?.name && m.awayTeam?.name
+    )
+    if (koApiFixtures.length > 0) {
+      // Load knockout rows missing teams + the teams lookup, once
+      const { data: koRows } = await supabase
+        .from('matches')
+        .select('id, match_number, stage, kickoff_time, home_team_id, away_team_id')
+        .in('stage', ['r32', 'r16', 'qf', 'sf', '3rd', 'final'])
+      const { data: allTeams } = await supabase.from('teams').select('id, name')
+      const teamByName = {}
+      for (const t of allTeams || []) teamByName[stripAccents(normalise(t.name))] = t.id
+
+      for (const apiFx of koApiFixtures) {
+        const ourStage = API_STAGE_TO_OURS[apiFx.stage]
+        const ourRow = (koRows || []).find(r =>
+          r.stage === ourStage &&
+          new Date(r.kickoff_time).getTime() === new Date(apiFx.utcDate).getTime()
+        )
+        if (!ourRow) continue
+        if (ourRow.home_team_id && ourRow.away_team_id) continue // already set
+
+        const homeId = teamByName[stripAccents(normalise(apiFx.homeTeam.name))]
+        const awayId = teamByName[stripAccents(normalise(apiFx.awayTeam.name))]
+        if (!homeId || !awayId) {
+          errors.push(`KO fixture M${ourRow.match_number}: unknown team ${apiFx.homeTeam.name} / ${apiFx.awayTeam.name}`)
+          continue
+        }
+        const { error: fxErr } = await supabase.from('matches').update({
+          home_team_id: ourRow.home_team_id || homeId,
+          away_team_id: ourRow.away_team_id || awayId,
+          external_match_id: apiFx.id.toString(),
+        }).eq('id', ourRow.id)
+        if (!fxErr) fixturesPopulated++
+      }
+    }
 
     for (const match of matches) {
       if (!['FINISHED', 'IN_PLAY', 'PAUSED'].includes(match.status)) continue
@@ -232,7 +282,7 @@ export const handler = async (event, context) => {
     await supabase.from('app_settings')
       .upsert({ key: 'last_sync_at', value: new Date().toISOString() }, { onConflict: 'key' })
 
-    return { statusCode: 200, body: JSON.stringify({ message: 'Sync complete', updated, pointsCalculated, errors }) }
+    return { statusCode: 200, body: JSON.stringify({ message: 'Sync complete', updated, pointsCalculated, fixturesPopulated, errors }) }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
   }
