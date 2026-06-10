@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
 import BracketHealth from '../components/BracketHealth.jsx'
+import AdminUserBracketEditor from '../components/AdminUserBracketEditor.jsx'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TABS = [
@@ -931,6 +932,7 @@ export default function AdminPanel() {
 
   // Edit user predictions state
   const [editingUserPreds, setEditingUserPreds] = useState(null)
+  const [editingUserBracket, setEditingUserBracket] = useState(null)
   const [userPredictions, setUserPredictions] = useState([])
   const [userKoPicks, setUserKoPicks] = useState([])
   const [userAwardPreds, setUserAwardPreds] = useState([])
@@ -2749,6 +2751,7 @@ export default function AdminPanel() {
                     {!u.is_admin && u.admin_level === 'league_admin' && <button onClick={() => removeLeagueAdmin(u.id, u.username)} className="btn btn-sm" style={{ border: '1px solid var(--accent-red)', color: 'var(--accent-red)', background: 'none' }}>✕ Remove League Admin</button>}
                     <button onClick={() => setPointAdjUser(u.id)} className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none' }}>🎯 Points</button>
                     <button onClick={() => { setEditingUserPreds(u.id); loadUserPredictions(u.id) }} className="btn btn-sm" style={{ border: '1px solid var(--scottish-navy)', color: 'var(--scottish-navy)', background: 'none' }}>✏️ Predictions</button>
+                    <button onClick={() => setEditingUserBracket(editingUserBracket === u.id ? null : u.id)} className="btn btn-sm" style={{ border: '1px solid #e65100', color: '#e65100', background: editingUserBracket === u.id ? 'rgba(230,81,0,0.08)' : 'none' }}>🏆 Bracket</button>
                     <button onClick={() => { setEditingUsername({ userId: u.id, current: u.username }); setNewUsername(u.display_name || u.username) }} className="btn btn-sm" style={{ border: '1px solid #7c3aed', color: '#7c3aed', background: 'none' }}>✏️ Name</button>
                   </div>
                   {pointAdjUser === u.id && (
@@ -2765,6 +2768,15 @@ export default function AdminPanel() {
                         <button onClick={() => setPointAdjUser(null)} className="btn btn-secondary btn-sm">Cancel</button>
                       </div>
                     </div>
+                  )}
+                  {editingUserBracket === u.id && (
+                    <AdminUserBracketEditor
+                      userId={u.id}
+                      username={u.display_name || u.username}
+                      matches={matches}
+                      onClose={() => setEditingUserBracket(null)}
+                      logAudit={logAudit}
+                    />
                   )}
                 </div>
               ))}
