@@ -50,7 +50,7 @@ export default function BottomNav() {
         const href = prot && !user ? '/login' : to
 
         return (
-          <Link key={to} to={href} style={{
+          <Link key={to} to={href} aria-label={label} aria-current={isActive ? 'page' : undefined} style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
