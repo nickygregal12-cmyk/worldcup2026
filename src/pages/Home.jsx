@@ -1104,8 +1104,10 @@ export default function Home() {
                bracket before the FIFA structure fix won't see the incomplete
                warning, so prompt them to review M86-88 + third-place matchups.
                Shows pre-lock only; picks are editable until groups kick off. ── */}
-          {user && profile && !tournamentStarted && knockoutsComplete && (
-            <div className="card fade-in" style={{ overflow: 'hidden', border: '2px solid var(--accent-blue)' }}>
+          {user && profile && !tournamentStarted && knockoutsComplete && localStorage.getItem('bracketReviewDismissed') !== '1' && (
+            <div className="card fade-in" style={{ overflow: 'hidden', border: '2px solid var(--accent-blue)', position: 'relative' }}>
+              <button onClick={(e) => { localStorage.setItem('bracketReviewDismissed', '1'); e.currentTarget.closest('.card').style.display = 'none' }}
+                aria-label="Dismiss" style={{ position: 'absolute', top: '8px', right: '10px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: 'var(--text-muted)' }}>✕</button>
               <div style={{ height: '4px', background: 'var(--accent-blue)', marginBottom: '12px', borderRadius: 'var(--radius-full)' }} />
               <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                 <span style={{ fontSize: '24px', flexShrink: 0 }}>🔁</span>
@@ -1114,7 +1116,7 @@ export default function Home() {
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.4 }}>
                     Your picks are all saved, but matchups for a few Round of 32 games (incl. M86–M88) changed to match FIFA's real bracket. Worth a quick review before it locks at kickoff.
                   </div>
-                  <Link to="/knockout" className="btn btn-sm" style={{ background: 'var(--accent-blue)', color: 'white', fontWeight: '700' }}>Review bracket →</Link>
+                  <Link to="/knockout" onClick={() => localStorage.setItem('bracketReviewDismissed', '1')} className="btn btn-sm" style={{ background: 'var(--accent-blue)', color: 'white', fontWeight: '700' }}>Review bracket →</Link>
                 </div>
               </div>
             </div>
