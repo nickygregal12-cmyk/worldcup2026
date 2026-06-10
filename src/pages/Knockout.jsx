@@ -250,19 +250,17 @@ export default function Knockout() {
   }, [knockoutPicks, mainBracketLockTime, teamGroupCompleted, groupMatches])
 
   const getMatchTeams = useCallback((matchDef) => {
+    // Always resolve matchups LIVE from group predictions — never from stored
+    // opponent IDs. The stored home_id/away_id were a pick-time snapshot that
+    // could go stale when a group prediction (or the bracket structure) changed.
+    // Because group predictions themselves lock at MD1, live resolution is
+    // already stable after the lock — no snapshot needed, and never stale.
     const savedPick = knockoutPicks[matchDef.match_number]
-    const useSavedSnapshot = savedPick && isMainBracketPickFrozen(matchDef) && (savedPick.home_id || savedPick.away_id)
 
-    if (useSavedSnapshot) {
-      return {
-        home: savedPick.home_id ? getTeamById(savedPick.home_id) : null,
-        away: savedPick.away_id ? getTeamById(savedPick.away_id) : null,
-      }
-    }
-
-    // After the Matchday 2 lock, do not keep resolving unsaved bracket paths from edited group predictions.
-    // Saved picks display their stored snapshot above; unsaved matches stay as placeholders.
-    if (new Date() >= mainBracketLockTime && !savedPick) {
+    // After the full bracket lock, don't resolve UNSAVED paths from edited
+    // group predictions (they stay as placeholders). Saved picks still resolve
+    // live — which, with predictions frozen, is deterministic.
+    if (new Date() >= mainBracketLockTime && !savedPick?.winner_id) {
       return { home: null, away: null }
     }
 
@@ -272,7 +270,7 @@ export default function Knockout() {
       return resolveTeam(slot)
     }
     return { home: resolve(matchDef.home_slot), away: resolve(matchDef.away_slot) }
-  }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, isMainBracketPickFrozen, getTeamById, mainBracketLockTime])
+  }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, mainBracketLockTime])
 
   const getBracketLockReason = useCallback((matchDef) => {
     if (new Date() >= mainBracketLockTime) return 'Bracket fully locked. Saved teams and winners are frozen.'
@@ -471,7 +469,7 @@ export default function Knockout() {
   // the two teams the bracket CURRENTLY resolves for that match. This catches
   // picks that went stale after a group-prediction change or a bracket-structure
   // correction — the row exists but no longer reflects a valid matchup.
-  const isPickValid = (matchDef) => {
+  const isPickValid = useCallback((matchDef) => {
     const pick = knockoutPicks[matchDef.match_number]
     if (!pick?.winner_id) return false
     const { home, away } = getMatchTeams(matchDef)
@@ -479,7 +477,7 @@ export default function Knockout() {
     // judge validity — treat as not-yet-complete so the user is prompted.
     if (!home && !away) return false
     return pick.winner_id === home?.id || pick.winner_id === away?.id
-  }
+  }, [knockoutPicks, getMatchTeams])
 
   const validPicks = ALL_STAGES.reduce((acc, s) => acc + s.matches.filter(m => isPickValid(m)).length, 0)
   const stalePicks = ALL_STAGES.reduce((acc, s) => acc + s.matches.filter(m => {
@@ -962,9 +960,13 @@ export default function Knockout() {
         const route = ALL_STAGES.map(stage => {
           const matchInStage = stage.matches.find(m => {
             const pick = knockoutPicks[m.match_number]
-            return pick?.winner_id === champion.id ||
-                   pick?.home_id === champion.id ||
-                   pick?.away_id === champion.id
+            if (!pick?.winner_id) return false
+            // Resolve live so we find the match by its CURRENT teams, not a
+            // possibly-stale stored snapshot.
+            const { home, away } = getMatchTeams(m)
+            return pick.winner_id === champion.id ||
+                   home?.id === champion.id ||
+                   away?.id === champion.id
           })
           if (!matchInStage) return null
           const pick = knockoutPicks[matchInStage.match_number]
