@@ -403,6 +403,72 @@ function CompareWithMeView({ myUserId, targetUserId, targetName, leagueId, locke
 }
 
 
+// Warns the logged-in user at the top of their leagues if their OWN
+// predictions (groups / knockout bracket / awards) aren't finished — leagues
+// are a common place people check, so we nudge here too.
+function MyPredictionsProgress({ userId }) {
+  const [state, setState] = React.useState(null)
+
+  React.useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    const load = async () => {
+      const [groupRes, koRes, awardRes, goalRes] = await Promise.all([
+        supabase.from('predictions').select('id', { count: 'exact', head: true })
+          .eq('user_id', userId).not('home_score', 'is', null).not('away_score', 'is', null),
+        supabase.from('knockout_picks').select('match_number', { count: 'exact', head: true })
+          .eq('user_id', userId).not('winner_team_id', 'is', null),
+        supabase.from('award_predictions').select('award_type', { count: 'exact', head: true })
+          .eq('user_id', userId),
+        supabase.from('tournament_predictions').select('id', { count: 'exact', head: true })
+          .eq('user_id', userId).eq('prediction_type', 'total_goals').not('int_value', 'is', null),
+      ])
+      if (cancelled) return
+      setState({
+        groups: groupRes.count || 0,
+        knockout: koRes.count || 0,
+        awards: (awardRes.count || 0) + (goalRes.count || 0),
+      })
+    }
+    load()
+    return () => { cancelled = true }
+  }, [userId])
+
+  if (!state) return null
+
+  const items = [
+    { label: 'Group predictions', done: state.groups, total: 72, to: '/predictions' },
+    { label: 'Knockout bracket', done: state.knockout, total: 31, to: '/knockout' },
+    { label: 'Award picks', done: state.awards, total: 4, to: '/awards' },
+  ]
+  const unfinished = items.filter(i => i.done < i.total)
+  if (unfinished.length === 0) return null
+
+  return (
+    <div style={{ background: 'rgba(230,81,0,0.1)', border: '1px solid rgba(255,152,0,0.5)', borderRadius: 'var(--radius-md)', padding: '12px 14px', marginBottom: '12px' }}>
+      <div style={{ fontSize: '13px', fontWeight: '800', color: '#e65100', marginBottom: '8px' }}>
+        ⚠️ Your predictions aren't finished
+      </div>
+      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '10px', lineHeight: 1.4 }}>
+        Finish these so you score full points in every league you're in:
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {unfinished.map(i => (
+          <Link key={i.label} to={i.to} style={{ textDecoration: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+              <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)' }}>{i.label}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: '700', color: '#e65100' }}>{i.done}/{i.total}</span>
+                <span style={{ fontSize: '12px', color: 'var(--scottish-navy)', fontWeight: '700' }}>Finish →</span>
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function Leagues() {
   const { user, isAdmin } = useAuthStore()
   const [activeGame, setActiveGame] = useState('tournament')
@@ -1191,6 +1257,7 @@ export default function Leagues() {
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <MyPredictionsProgress userId={user?.id} />
             <div className="card" style={{ padding: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <button onClick={() => { setShowCreate(true); setShowJoin(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-primary btn-sm">+ Create League</button>
               <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-secondary btn-sm">Join League</button>
