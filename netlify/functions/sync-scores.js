@@ -183,13 +183,20 @@ export const handler = async (event, context) => {
         }
         pointsCalculated++
 
-        const { data: preds } = await supabase
-          .from('predictions')
-          .select('user_id')
-          .eq('match_id', ourMatch.id)
-
-        for (const pred of preds || []) {
-          await supabase.rpc('recalculate_user_total_points', { p_user_id: pred.user_id })
+        // Batch recalc server-side: one RPC recalculates every affected user
+        // (predictions AND knockout_picks users — fixes leaderboard not
+        // updating after knockout matches)
+        const { data: recalcCount, error: recalcErr } = await supabase
+          .rpc('recalculate_match_user_points', { p_match_id: ourMatch.id })
+        if (recalcErr) {
+          // Fallback to old per-user loop if the function is missing
+          const { data: preds } = await supabase
+            .from('predictions')
+            .select('user_id')
+            .eq('match_id', ourMatch.id)
+          for (const pred of preds || []) {
+            await supabase.rpc('recalculate_user_total_points', { p_user_id: pred.user_id })
+          }
         }
       }
     }

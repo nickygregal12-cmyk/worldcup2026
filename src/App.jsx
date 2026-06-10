@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore, useAppStore } from './store/index.js'
 import { supabase } from './lib/supabase.js'
@@ -19,7 +19,7 @@ import Awards from './pages/Awards.jsx'
 import Leagues from './pages/Leagues.jsx'
 import Leaderboard from './pages/Leaderboard.jsx'
 import Profile from './pages/Profile.jsx'
-import AdminPanel from './pages/AdminPanel.jsx'
+const AdminPanel = lazy(() => import('./pages/AdminPanel.jsx'))
 import AuthCallback from './pages/AuthCallback.jsx'
 import HowToPlay from './pages/HowToPlay.jsx'
 import KOPredictor from './pages/KOPredictor.jsx'
@@ -109,7 +109,7 @@ export default function App() {
           <Route path="/leagues" element={<ProtectedRoute><Leagues /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/admin" element={<AdminRoute><AdminPanel /></AdminRoute>} />
+          <Route path="/admin" element={<AdminRoute><Suspense fallback={<div className="loading-screen"><div className="spinner" /></div>}><AdminPanel /></Suspense></AdminRoute>} />
           <Route path="/how-to-play" element={<HowToPlay />} />
           <Route path="/stats" element={<GlobalStats />} />
           <Route path="/ko-predictor" element={<KOPredictor />} />
