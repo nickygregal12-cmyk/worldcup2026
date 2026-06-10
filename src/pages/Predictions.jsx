@@ -1109,6 +1109,7 @@ export default function Predictions() {
     const curN = (cur === '' || cur === undefined || cur === null) ? null : Number(cur)
     // First tap on an empty box starts at 0 (for + and −)
     const next = curN === null ? 0 : Math.max(0, Math.min(99, curN + delta))
+    haptic.tap()
     handleScoreChange(match.id, side, String(next))
   }
 
