@@ -951,3 +951,39 @@ button:disabled:active {
 .dark [style*="color: black"] {
   color: var(--text-primary) !important;
 }
+
+
+/* ── Professional polish batch ── */
+/* Page fade-slide on route change (uses existing fade-in on page roots) */
+.fade-in { animation: fadeIn 0.25s ease-out; }
+
+/* Cards lift subtly on hover (desktop) */
+@media (hover: hover) {
+  .card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+}
+
+/* Skeleton shimmer instead of static grey */
+@keyframes shimmer { 0% { background-position: -400px 0 } 100% { background-position: 400px 0 } }
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-hover) 37%, var(--bg-tertiary) 63%);
+  background-size: 400px 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+
+/* Frosted header */
+.navbar, [data-navbar] {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Slim, theme-aware scrollbars */
+* { scrollbar-width: thin; scrollbar-color: var(--border-medium) transparent; }
+*::-webkit-scrollbar { width: 6px; height: 6px; }
+*::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* Inputs focus with a soft ring, not just border */
+.input:focus, .score-input:focus {
+  box-shadow: 0 0 0 3px rgba(0, 48, 135, 0.12);
+}
