@@ -54,7 +54,7 @@ export default function AdminUserBracketEditor({ userId, username, matches, onCl
       })
       const km = {}
       ;(koRes.data || []).forEach(p => {
-        km[p.match_number] = { winner_id: p.winner_team_id, home_id: p.home_team_id, away_id: p.away_team_id }
+        km[p.match_number] = { winner_id: p.winner_team_id }
       })
       setGroupPreds(pm)
       setPicks(km)

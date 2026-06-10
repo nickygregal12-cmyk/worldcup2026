@@ -4058,7 +4058,7 @@ export default function AdminPanel() {
                       <div key={pick.id} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: `1px solid ${isEditing ? 'var(--scottish-navy)' : 'var(--border-light)'}` }}>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '6px' }}>
                           M#{pick.match_number} · {pick.stage?.toUpperCase()}
-                          {home && away && <span> · {home.flag_emoji}{home.short_code} vs {away.short_code}{away.flag_emoji}</span>}
+                          {home && away && <span style={{ opacity: 0.7 }}> · {home.flag_emoji}{home.short_code} vs {away.short_code}{away.flag_emoji} <span style={{ fontStyle: 'italic' }}>(stored)</span></span>}
                         </div>
                         {isEditing ? (
                           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>

@@ -241,14 +241,12 @@ export default function Profile() {
     })
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(groupRows), 'Group Predictions')
 
-    const knockoutRows = [['Match', 'Stage', 'Winner', 'Home Team', 'Away Team']]
+    const knockoutRows = [['Match', 'Stage', 'Winner Picked']]
     knockoutPicks.forEach(p => {
       knockoutRows.push([
         p.match_number ? `M${p.match_number}` : '',
         p.stage || '',
         teamMap[p.winner_team_id || p.team_id] || p.winner_team_id || p.team_id || '',
-        teamMap[p.home_team_id] || p.home_team_id || '',
-        teamMap[p.away_team_id] || p.away_team_id || '',
       ])
     })
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(knockoutRows), 'Knockout Picks')
