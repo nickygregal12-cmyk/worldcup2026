@@ -286,6 +286,17 @@ export default function Knockout() {
   const championCardRef = useRef(null)
   const [sharingChampion, setSharingChampion] = useState(false)
 
+  // A pick counts toward completion only if its stored winner is still one of
+  // the two teams the bracket CURRENTLY resolves for that match. Catches picks
+  // that went stale after a group-prediction change or bracket-structure fix.
+  const isPickValid = useCallback((matchDef) => {
+    const pick = knockoutPicks[matchDef.match_number]
+    if (!pick?.winner_id) return false
+    const { home, away } = getMatchTeams(matchDef)
+    if (!home && !away) return false
+    return pick.winner_id === home?.id || pick.winner_id === away?.id
+  }, [knockoutPicks, getMatchTeams])
+
   // Count empty locked R32 slots so we can show the banner
   const emptyLockedSlots = useMemo(() => {
     if (!mainBracketLocked) return 0
@@ -469,16 +480,6 @@ export default function Knockout() {
   // the two teams the bracket CURRENTLY resolves for that match. This catches
   // picks that went stale after a group-prediction change or a bracket-structure
   // correction — the row exists but no longer reflects a valid matchup.
-  const isPickValid = useCallback((matchDef) => {
-    const pick = knockoutPicks[matchDef.match_number]
-    if (!pick?.winner_id) return false
-    const { home, away } = getMatchTeams(matchDef)
-    // If neither team has resolved yet (earlier rounds incomplete), we can't
-    // judge validity — treat as not-yet-complete so the user is prompted.
-    if (!home && !away) return false
-    return pick.winner_id === home?.id || pick.winner_id === away?.id
-  }, [knockoutPicks, getMatchTeams])
-
   const validPicks = ALL_STAGES.reduce((acc, s) => acc + s.matches.filter(m => isPickValid(m)).length, 0)
   const stalePicks = ALL_STAGES.reduce((acc, s) => acc + s.matches.filter(m => {
     const p = knockoutPicks[m.match_number]
