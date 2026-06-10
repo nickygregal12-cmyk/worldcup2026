@@ -245,8 +245,10 @@ export default function Knockout() {
     // Pick exists — freeze it if the bracket lock has passed
     if (new Date() >= mainBracketLockTime) return true
 
-    // Safety fallback: freeze if a saved path involves a team whose real group is complete
-    return [pick.home_id, pick.away_id, pick.winner_id].filter(Boolean).some(teamGroupCompleted)
+    // If the picked winner's real group has completed, freeze the pick
+    // (the slot-based check above covers feeding groups; this catches the winner
+    // specifically — e.g. you picked a team whose group is now done)
+    return teamGroupCompleted(pick.winner_id)
   }, [knockoutPicks, mainBracketLockTime, teamGroupCompleted, groupMatches])
 
   const getMatchTeams = useCallback((matchDef) => {
