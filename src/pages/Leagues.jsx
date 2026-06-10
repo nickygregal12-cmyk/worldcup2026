@@ -77,7 +77,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
   React.useEffect(() => {
     const table = lockedSnapshot ? 'league_knockout_picks' : 'knockout_picks'
     let query = supabase.from(table)
-      .select('match_number, stage, winner_team_id, is_joker, winner:winner_team_id(name, flag_emoji, short_code)')
+      .select('match_number, stage, winner_team_id, home_team_id, away_team_id, is_joker, winner:winner_team_id(name, flag_emoji, short_code), home:home_team_id(name, flag_emoji, short_code), away:away_team_id(name, flag_emoji, short_code)')
       .eq('user_id', userId)
 
     if (lockedSnapshot && leagueId) query = query.eq('league_id', leagueId)
@@ -105,14 +105,40 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
             {stages[stage] || stage}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {stagePicks.map(pick => (
-              <div key={pick.match_number} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '24px' }}>#{pick.match_number}</span>
-                <span style={{ fontSize: '18px' }}>{pick.winner?.flag_emoji}</span>
-                <span style={{ fontSize: '13px', fontWeight: '700' }}>{pick.winner?.name || '?'}</span>
-                {pick.is_joker && <span style={{ marginLeft: 'auto', fontSize: '12px' }}>🃏</span>}
-              </div>
-            ))}
+            {stagePicks.map(pick => {
+              // Show the full tie when both sides are known, with the winner highlighted.
+              // Falls back to winner-only for older picks that never stored home/away.
+              const hasMatchup = pick.home && pick.away
+              const isHomeWinner = pick.winner_team_id && pick.home_team_id === pick.winner_team_id
+              const isAwayWinner = pick.winner_team_id && pick.away_team_id === pick.winner_team_id
+              const teamStyle = (won) => ({
+                fontSize: '13px', fontWeight: won ? '800' : '500',
+                color: won ? 'var(--text-primary)' : 'var(--text-muted)',
+              })
+              return (
+                <div key={pick.match_number} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '24px' }}>#{pick.match_number}</span>
+                  {hasMatchup ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                      <span style={{ fontSize: '16px', opacity: isHomeWinner ? 1 : 0.55 }}>{pick.home.flag_emoji}</span>
+                      <span style={teamStyle(isHomeWinner)}>{pick.home.short_code || pick.home.name}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>v</span>
+                      <span style={{ fontSize: '16px', opacity: isAwayWinner ? 1 : 0.55 }}>{pick.away.flag_emoji}</span>
+                      <span style={teamStyle(isAwayWinner)}>{pick.away.short_code || pick.away.name}</span>
+                      <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', marginLeft: '6px', whiteSpace: 'nowrap' }}>
+                        → {pick.winner?.short_code || pick.winner?.name || '?'}
+                      </span>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                      <span style={{ fontSize: '18px' }}>{pick.winner?.flag_emoji}</span>
+                      <span style={{ fontSize: '13px', fontWeight: '700' }}>{pick.winner?.name || '?'}</span>
+                    </div>
+                  )}
+                  {pick.is_joker && <span style={{ marginLeft: 'auto', fontSize: '12px' }}>🃏</span>}
+                </div>
+              )
+            })}
           </div>
         </div>
       ))}
