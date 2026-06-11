@@ -1525,7 +1525,7 @@ export default function Leagues() {
                           border: `1px solid ${result === 'exact' ? 'rgba(0,122,51,0.2)' : result === 'correct' ? 'rgba(21,88,176,0.2)' : result === 'wrong' ? 'rgba(198,40,40,0.2)' : 'var(--border-light)'}`,
                         }}>
                           <span style={{ fontSize: '18px' }}>{match?.home_team?.flag_emoji}</span>
-                          <span style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>{match?.home_team?.short_code} vs {match?.away_team?.short_code}</span>
+                          <span style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>{match?.home_team?.short_code} vs {match?.away_team?.short_code} {pred.is_confident ? '🃏' : ''}</span>
                           <span style={{ fontSize: '18px' }}>{match?.away_team?.flag_emoji}</span>
                           <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '14px', minWidth: '48px', textAlign: 'center' }}>
                             {pred.home_score} – {pred.away_score}
