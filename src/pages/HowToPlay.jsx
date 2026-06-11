@@ -252,7 +252,11 @@ export default function HowToPlay() {
         <div className="card" style={{ background: 'var(--scottish-navy)', color: 'white', textAlign: 'center', padding: '24px' }}>
           <div style={{ fontSize: '22px', marginBottom: '8px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</div>
           <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>Ready to predict?</div>
-          <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '16px' }}>Tournament kicks off Thu 11 Jun · 20:00 BST</div>
+          <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '16px' }}>
+            {new Date() >= new Date('2026-06-11T19:00:00Z')
+              ? 'Tournament is underway — predict upcoming matches!'
+              : 'Tournament kicks off Thu 11 Jun · 20:00 BST'}
+          </div>
           <Link to="/predictions" style={{
             display: 'inline-block', background: 'white', color: 'var(--scottish-navy)',
             padding: '12px 28px', borderRadius: 'var(--radius-full)',
