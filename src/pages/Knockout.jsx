@@ -237,7 +237,11 @@ export default function Knockout() {
         new Date(m.kickoff_time) <= new Date()
       ))
     })
-    if (feedingGroupsKickedOff) return true
+    if (feedingGroupsKickedOff && pick?.winner_id) return true
+    // Empty slot with feeding group kicked off: still fillable until the full
+    // MD1 bracket lock (18 Jun). Users get extra time to fill gaps they missed —
+    // this is safe because they haven't seen who actually qualifies yet, and the
+    // DB hard-locks all writes at 18 Jun regardless.
 
     // If no pick exists and feeding groups haven't kicked off — allow pick
     if (!pick?.winner_id) return false
