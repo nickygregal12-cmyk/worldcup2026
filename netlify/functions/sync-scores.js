@@ -278,9 +278,10 @@ export const handler = async (event, context) => {
       }
     } catch(e) { errors.push(`Scorers sync failed: ${e.message}`) }
 
-    // Update last sync time
+    // Update last sync time — use UPDATE not upsert to avoid INSERT policy issues
     await supabase.from('app_settings')
-      .upsert({ key: 'last_sync_at', value: new Date().toISOString() }, { onConflict: 'key' })
+      .update({ value: new Date().toISOString() })
+      .eq('key', 'last_sync_at')
 
     return { statusCode: 200, body: JSON.stringify({ message: 'Sync complete', updated, pointsCalculated, fixturesPopulated, errors }) }
   } catch (error) {
