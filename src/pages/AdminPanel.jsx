@@ -1443,9 +1443,38 @@ export default function AdminPanel() {
 
     if (error) { setActionResult(`Error saving score: ${error.message}`); setSaving(prev => ({ ...prev, [match.id]: false })); return }
 
+    // Score real users
     const { error: rpcErr } = await supabase.rpc('calculate_prediction_points', { p_match_id: match.id })
+
+    // Score offline players — read their predictions for this match and
+    // apply the same 3/5/2× formula, writing back to offline_players.league_points
+    const { data: offlinePreds } = await supabase
+      .from('offline_predictions')
+      .select('offline_player_id, home_score, away_score, is_confident')
+      .eq('match_id', match.id)
+
+    if (offlinePreds?.length) {
+      const actH = homeScore, actA = awayScore
+      const actResult = actH > actA ? 'H' : actH < actA ? 'A' : 'D'
+      for (const op of offlinePreds) {
+        if (op.home_score === null || op.away_score === null) continue
+        const predH = op.home_score, predA = op.away_score
+        const predResult = predH > predA ? 'H' : predH < predA ? 'A' : 'D'
+        if (predResult !== actResult) continue
+        const exact = predH === actH && predA === actA
+        let pts = exact ? 5 : 3
+        if (op.is_confident) pts *= 2
+        // Add to existing league_points
+        const { data: player } = await supabase
+          .from('offline_players').select('league_points').eq('id', op.offline_player_id).single()
+        await supabase.from('offline_players')
+          .update({ league_points: (player?.league_points || 0) + pts })
+          .eq('id', op.offline_player_id)
+      }
+    }
+
     if (rpcErr) setActionResult(`Score saved but points calc failed: ${rpcErr.message}`)
-    else setActionResult(`Score saved — points calculated for match #${match.match_number}`)
+    else setActionResult(`✅ Score saved — points calculated for all players`)
 
     await logAudit('SCORE_OVERRIDE', { match_id: match.id, match_number: match.match_number, home: homeScore, away: awayScore })
     setEditingMatch(null)
