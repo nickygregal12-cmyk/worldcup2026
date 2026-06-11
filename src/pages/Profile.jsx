@@ -481,6 +481,11 @@ export default function Profile() {
               </div>
             )}
           </div>
+        ) : profile.display_name_locked ? (
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '8px', padding: '4px 10px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)', cursor: 'not-allowed', opacity: 0.8 }}>
+            <span style={{ fontWeight: '800', fontSize: '22px' }}>{profile.display_name || profile.username}</span>
+            <span style={{ fontSize: '12px', opacity: 0.6 }}>🔒</span>
+          </div>
         ) : (
           <div onClick={() => setEditing(true)} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '8px', padding: '4px 10px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.1)' }}>
             <span style={{ fontWeight: '800', fontSize: '22px' }}>{profile.display_name || profile.username}</span>

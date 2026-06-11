@@ -2794,6 +2794,13 @@ export default function AdminPanel() {
                     {!u.is_admin && u.admin_level === 'league_admin' && <button onClick={() => removeLeagueAdmin(u.id, u.username)} className="btn btn-sm" style={{ border: '1px solid var(--accent-red)', color: 'var(--accent-red)', background: 'none' }}>✕ Remove League Admin</button>}
                     <button onClick={() => setPointAdjUser(u.id)} className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none' }}>🎯 Points</button>
                     <button onClick={() => { setEditingUserPreds(u.id); loadUserPredictions(u.id) }} className="btn btn-sm" style={{ border: '1px solid var(--scottish-navy)', color: 'var(--scottish-navy)', background: 'none' }}>✏️ Predictions</button>
+                    <button onClick={async () => {
+                      const newVal = !u.display_name_locked
+                      await supabase.from('profiles').update({ display_name_locked: newVal }).eq('id', u.id)
+                      loadUsers()
+                    }} className="btn btn-sm" style={{ border: `1px solid ${u.display_name_locked ? '#e53935' : 'var(--border-light)'}`, color: u.display_name_locked ? '#e53935' : 'var(--text-muted)', background: u.display_name_locked ? 'rgba(229,57,53,0.08)' : 'none' }}>
+                      {u.display_name_locked ? '🔒 Name Locked' : '🔓 Lock Name'}
+                    </button>
                     <button onClick={() => setEditingUserBracket(editingUserBracket === u.id ? null : u.id)} className="btn btn-sm" style={{ border: '1px solid #e65100', color: '#e65100', background: editingUserBracket === u.id ? 'rgba(230,81,0,0.08)' : 'none' }}>🏆 Bracket</button>
                     <button onClick={() => { setEditingUsername({ userId: u.id, current: u.username }); setNewUsername(u.display_name || u.username) }} className="btn btn-sm" style={{ border: '1px solid #7c3aed', color: '#7c3aed', background: 'none' }}>✏️ Name</button>
                   </div>
