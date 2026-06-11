@@ -1068,7 +1068,7 @@ export default function AdminPanel() {
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .order('total_points', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(100)
     setUsers(data || [])
   }
@@ -2736,6 +2736,11 @@ export default function AdminPanel() {
                           {u.is_banned && <span style={{ marginLeft: '6px', fontSize: '10px', background: '#e53935', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>BANNED</span>}
                         </div>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{u.email}</div>
+                        {u.created_at && (
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', opacity: 0.7 }}>
+                            Joined {new Date(u.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
