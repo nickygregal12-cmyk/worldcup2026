@@ -67,7 +67,7 @@ export default function Register() {
           <div style={{ fontSize: '64px', marginBottom: '16px' }}>🎉</div>
           <h2 style={{ fontSize: '24px', fontWeight: '800', marginBottom: '8px' }}>You're in!</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginBottom: '28px' }}>
-            Welcome to WC26 Predictor, <strong>{username}</strong>! The tournament starts 11 Jun — get your predictions in!
+            Welcome to WC26 Predictor, <strong>{username}</strong>! {new Date() < new Date('2026-06-11T19:00:00Z') ? 'The tournament starts 11 Jun — get your predictions in!' : 'The tournament is underway — get your predictions in!'}
           </p>
 
           <button onClick={() => navigate('/predictions')} className="btn btn-primary btn-full btn-lg">

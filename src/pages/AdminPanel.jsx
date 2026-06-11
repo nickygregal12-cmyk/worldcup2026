@@ -1575,6 +1575,31 @@ export default function AdminPanel() {
     setActionResult(`✅ Setting saved: ${key} = ${value}`)
   }
 
+  const snapshotKickoffRanks = async () => {
+    setSaving(prev => ({ ...prev, snapshot: true }))
+    // Rank all active players by total_points and write rank_at_kickoff.
+    // Run this ONCE just before the first match kicks off — it's the baseline
+    // for rank movement arrows throughout the tournament.
+    const { data: ranked, error } = await supabase
+      .from('profiles')
+      .select('id, total_points')
+      .eq('is_banned', false)
+      .order('total_points', { ascending: false })
+    if (error) { setActionResult(`❌ Snapshot failed: ${error.message}`); setSaving(prev => ({ ...prev, snapshot: false })); return }
+    // Batch update: assign rank position to each user
+    let failed = 0
+    for (let i = 0; i < (ranked || []).length; i++) {
+      const { error: upErr } = await supabase
+        .from('profiles')
+        .update({ rank_at_kickoff: i + 1, rank_snapshot_taken_at: new Date().toISOString() })
+        .eq('id', ranked[i].id)
+      if (upErr) failed++
+    }
+    await logAudit('SNAPSHOT_KICKOFF_RANKS', { player_count: ranked?.length, failed })
+    setSaving(prev => ({ ...prev, snapshot: false }))
+    setActionResult(`✅ Kickoff ranks snapshotted for ${ranked?.length} players${failed > 0 ? ` (${failed} failed)` : ''} — rank movement now active`)
+  }
+
   const recalcAllPoints = async () => {
     setSaving(prev => ({ ...prev, recalc: true }))
     const { data: userList, error } = await supabase.from('profiles').select('id')
@@ -3611,6 +3636,15 @@ export default function AdminPanel() {
                   </div>
                 ))}
               </div>
+            </div>
+            <div className="card" style={{ border: '2px solid var(--accent-gold)', marginBottom: '8px' }}>
+              <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '4px' }}>📸 Kickoff Rank Snapshot</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.5 }}>
+                Run this <strong>once, just before 20:00 tonight</strong>. Saves everyone's current rank as their baseline — powers the rank movement arrows (↑↓) on the leaderboard and home page throughout the tournament. Can only meaningfully be done once.
+              </div>
+              <button onClick={snapshotKickoffRanks} disabled={saving.snapshot} className="btn btn-primary" style={{ background: 'var(--accent-gold)', color: 'white', border: 'none' }}>
+                {saving.snapshot ? '⏳ Snapshotting...' : '📸 Snapshot Kickoff Ranks Now'}
+              </button>
             </div>
             <button onClick={recalcAllPoints} disabled={saving.recalc} className="btn btn-primary">
               {saving.recalc ? '⏳ Recalculating...' : '🔄 Recalculate All Points'}
