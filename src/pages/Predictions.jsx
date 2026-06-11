@@ -1496,10 +1496,14 @@ export default function Predictions() {
               <div style={{ fontWeight: '900', fontSize: '24px', fontFamily: 'var(--font-mono)', lineHeight: 1,
                 color: resultColour === 'gold' ? 'var(--accent-gold)' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
                 {(() => {
-                  const pts = pred.points_awarded !== undefined
+                  // Use DB points_awarded if set and > 0, otherwise calculate client-side
+                  // Base: exact=5pts, correct=3pts, then ×2 for joker
+                  const base = resultColour === 'gold' ? 5 : resultColour === 'green' ? 3 : 0
+                  const multiplier = hasJoker && resultColour !== 'red' ? 2 : 1
+                  const pts = (pred.points_awarded !== undefined && pred.points_awarded !== null && pred.points_awarded !== 0)
                     ? pred.points_awarded
-                    : (resultColour === 'gold' ? 10 : resultColour === 'green' ? 5 : 0) * (hasJoker && resultColour !== 'red' ? 2 : 1)
-                  return pts === 0 ? '0' : `+${pts}`
+                    : base * multiplier
+                  return pts === 0 && resultColour !== 'red' ? `+${base * multiplier}` : pts === 0 ? '0' : `+${pts}`
                 })()}
                 <span style={{ fontSize: '11px', fontWeight: '600' }}>pts</span>
               </div>
@@ -1812,13 +1816,20 @@ export default function Predictions() {
           )}
 
           {/* Points summary after result */}
-          {(match.home_score !== null && match.home_score !== undefined) && hasPrediction && (
+          {match.status === 'completed' && hasPrediction && (
             <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
               <span style={{ color: 'var(--text-muted)' }}>
                 Your pick: <strong style={{ fontFamily: 'var(--font-mono)' }}>{pred.home}–{pred.away}</strong>
                 {hasJoker && <span style={{ marginLeft: '6px', color: 'var(--accent-gold)' }}>🃏</span>}
               </span>
-              <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>+{predictions[match.id]?.points_total || 0} pts</span>
+              {(() => {
+                const base = resultColour === 'gold' ? 5 : resultColour === 'green' ? 3 : 0
+                const mult = hasJoker && resultColour !== 'red' ? 2 : 1
+                const pts = (pred.points_awarded !== undefined && pred.points_awarded !== null && pred.points_awarded !== 0)
+                  ? pred.points_awarded
+                  : base * mult
+                return <span style={{ fontWeight: '700', color: pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{pts} pts</span>
+              })()}
             </div>
           )}
 
