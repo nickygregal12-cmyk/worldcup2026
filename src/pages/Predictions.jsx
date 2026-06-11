@@ -854,8 +854,14 @@ export default function Predictions() {
     }
   }, [loading, viewMode])
 
-  const isLocked = (kickoffTime) => {
-    if (profile?.lock_bypass) return false // bypass active for this user
+  const isLocked = (kickoffTime, matchId) => {
+    // lock_bypass lets an admin-flagged user fill in MISSING predictions after
+    // kickoff, but NOT change an existing one (would allow cheating with results).
+    if (profile?.lock_bypass) {
+      const hasPrediction = matchId && predictions[matchId]?.home !== undefined && predictions[matchId]?.home !== ''
+      if (!hasPrediction) return false // empty — allow filling in
+      // Already has a prediction — enforce the normal lock
+    }
     return new Date() >= new Date(kickoffTime)
   }
 
@@ -1388,14 +1394,14 @@ export default function Predictions() {
 
   const renderMatch = (match) => {
     const pred = predictions[match.id] || {}
-    const locked = isLocked(match.kickoff_time)
+    const locked = isLocked(match.kickoff_time, match.id)
     // Also lock if any other match in the same group has already kicked off
     const groupLocked = !locked && match.stage === 'group' && match.group?.name
       ? matches.some(m =>
           m.stage === 'group' &&
           m.group?.name === match.group.name &&
           m.id !== match.id &&
-          isLocked(m.kickoff_time)
+          isLocked(m.kickoff_time, m.id)
         )
       : false
     const effectiveLocked = locked || groupLocked
