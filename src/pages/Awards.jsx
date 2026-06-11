@@ -363,8 +363,8 @@ export default function Awards() {
             const isOpen = showDropdown[award.type]
             const currentSearch = search[award.type] ?? pred?.player_name ?? ''
             const actualResult = awardResults[award.type] // set by admin post-tournament
-            const correct = actualResult && pred?.player_name === actualResult.winner_name
-            const decided = !!actualResult
+            const correct = actualResult?.winner_name && pred?.player_name === actualResult.winner_name
+            const decided = !!(actualResult?.winner_name) // only true when admin has actually set a winner
 
             return (
               <div key={award.type} className="card" style={{
