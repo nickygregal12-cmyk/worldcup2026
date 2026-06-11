@@ -1583,7 +1583,9 @@ export default function Home() {
                   <span className="section-title">
                     {allDone ? '✅ Recent Results' : '📅 Upcoming'}
                   </span>
-                  <Link to="/predictions" className="section-link">Predict →</Link>
+                  <Link to="/predictions" className="section-link">
+                    {allDone ? 'View →' : groupsComplete ? 'View →' : 'Predict →'}
+                  </Link>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
                   {displayMatches.map((match, idx) => {
@@ -1678,7 +1680,9 @@ export default function Home() {
             <div className="card fade-in">
               <div className="section-header">
                 <span className="section-title">📅 Coming Up</span>
-                <Link to="/predictions" className="section-link">Predict →</Link>
+                <Link to="/predictions" className="section-link">
+                  {groupsComplete ? 'View →' : 'Predict →'}
+                </Link>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {upcomingMatches.slice(0, 4).map(match => (
