@@ -24,7 +24,7 @@ const SCORING = [
       { label: 'Team reaches Quarter-finals (8 teams)', pts: '12pts' },
       { label: 'Team reaches Semi-finals (4 teams)', pts: '16pts' },
       { label: 'Team reaches the Final (2 teams)', pts: '20pts' },
-      { label: 'Correct tournament winner bonus', pts: '+25pts', highlight: true },
+      { label: 'Pick the World Cup Winner correctly', pts: '25pts', highlight: true },
       { label: 'Maximum if all picks correct', pts: '513pts' },
     ]
   },

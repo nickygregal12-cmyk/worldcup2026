@@ -916,7 +916,7 @@ export default function Knockout() {
             🏅 {activeStage === 'r32'
               ? `${currentStage?.points}pts for each team you predicted to qualify that reaches this round`
               : `${currentStage?.points}pts for each team you picked to advance that makes it to this round`}
-            {activeStage === 'final' && <span style={{ color: 'var(--accent-gold)' }}> + 25pts winner bonus</span>}
+            {activeStage === 'final' && <span style={{ color: 'var(--accent-gold)' }}> + 25pts for World Cup Winner</span>}
           </span>
           <span style={{ fontSize: '12px', fontWeight: '700', color: stagePicks === stageMatches.length ? 'var(--accent-green)' : 'var(--text-muted)' }}>
             {stagePicks === stageMatches.length ? '✓ Stage complete' : `${stagePicks}/${stageMatches.length} picked`}
