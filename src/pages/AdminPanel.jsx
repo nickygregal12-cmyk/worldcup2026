@@ -2144,9 +2144,13 @@ export default function AdminPanel() {
     setOfflineImporting(false)
   }
 
-  const filteredUsers = users.filter(u =>
-    !userSearch || u.username?.toLowerCase().includes(userSearch.toLowerCase()) || u.email?.toLowerCase().includes(userSearch.toLowerCase())
-  )
+  const filteredUsers = users.filter(u => {
+    if (!userSearch) return true
+    const q = userSearch.toLowerCase()
+    return u.username?.toLowerCase().includes(q) ||
+           u.display_name?.toLowerCase().includes(q) ||
+           u.email?.toLowerCase().includes(q)
+  })
   const filteredMatches = matches.filter(m => m.stage === stageFilter)
 
   const fmt = (t) => t ? new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'
@@ -2687,7 +2691,7 @@ export default function AdminPanel() {
         {activeTab === 'users' && (
           <div>
             <BracketHealth />
-            <input className="input" placeholder="Search by username or email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} style={{ marginBottom: '16px' }} />
+            <input className="input" placeholder="Search by display name, username or email..." value={userSearch} onChange={e => setUserSearch(e.target.value)} style={{ marginBottom: '16px' }} />
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px' }}>{filteredUsers.length} users</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {filteredUsers.map(u => (
@@ -2699,7 +2703,9 @@ export default function AdminPanel() {
                       </div>
                       <div>
                         <div style={{ fontWeight: '700', fontSize: '14px' }}>
-                          {u.username}
+                          {u.display_name && u.display_name !== u.username
+                            ? <>{u.display_name} <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500' }}>(@{u.username})</span></>
+                            : u.username}
                           {u.is_admin && <span style={{ marginLeft: '6px', fontSize: '10px', background: 'var(--accent-orange)', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>SUPER ADMIN</span>}
                           {!u.is_admin && u.admin_level === 'league_admin' && <span style={{ marginLeft: '6px', fontSize: '10px', background: 'var(--scottish-navy)', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>LEAGUE ADMIN</span>}
                           {u.is_banned && <span style={{ marginLeft: '6px', fontSize: '10px', background: '#e53935', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>BANNED</span>}
@@ -2712,19 +2718,26 @@ export default function AdminPanel() {
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Joined {fmt(u.created_at)}</div>
                     </div>
                   </div>
-                  {/* Edit username inline form */}
+                  {/* Edit display name / username inline form */}
                   {editingUsername?.userId === u.id && (
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px', padding: '10px 12px', background: 'rgba(124,58,237,0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(124,58,237,0.2)' }}>
-                      <div style={{ fontSize: '12px', fontWeight: '700', color: '#7c3aed', flexShrink: 0 }}>✏️ Edit name</div>
-                      <input className="input" value={newUsername}
-                        onChange={e => setNewUsername(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && saveUsername()}
-                        placeholder="new username"
-                        style={{ flex: 1, fontSize: '13px', padding: '6px 10px' }} />
-                      <button onClick={saveUsername} disabled={usernameSaving} className="btn btn-primary btn-sm">
-                        {usernameSaving ? '...' : 'Save'}
-                      </button>
-                      <button onClick={() => { setEditingUsername(null); setNewUsername('') }} className="btn btn-secondary btn-sm">Cancel</button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px', padding: '10px 12px', background: 'rgba(124,58,237,0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(124,58,237,0.2)' }}>
+                      <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: '700' }}>
+                        ✏️ Edit display name — shown in leagues &amp; leaderboard
+                        <span style={{ color: 'var(--text-muted)', fontWeight: '500', marginLeft: '6px' }}>
+                          (username @{editingUsername.current} stays as login identifier)
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <input className="input" value={newUsername}
+                          onChange={e => setNewUsername(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && saveUsername()}
+                          placeholder="New display name"
+                          style={{ flex: 1, fontSize: '13px', padding: '6px 10px' }} />
+                        <button onClick={saveUsername} disabled={usernameSaving} className="btn btn-primary btn-sm">
+                          {usernameSaving ? '...' : 'Save'}
+                        </button>
+                        <button onClick={() => { setEditingUsername(null); setNewUsername('') }} className="btn btn-secondary btn-sm">Cancel</button>
+                      </div>
                     </div>
                   )}
 
