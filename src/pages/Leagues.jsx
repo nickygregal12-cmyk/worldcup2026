@@ -528,7 +528,7 @@ export default function Leagues() {
 
   const openOverallProfile = async (profile) => {
     const displayName = profile.display_name || profile.username || 'Unknown'
-    const showFuture = profile.show_future_predictions || profile.id === user.id
+    const showFuture = profile.show_future_predictions !== false || profile.id === user.id
     setMemberModal({
       userId: profile.id,
       username: displayName,
@@ -816,7 +816,7 @@ export default function Leagues() {
     } else {
       const { data: profile } = await supabase
         .from('profiles').select('show_future_predictions').eq('id', member.user_id).single()
-      const showFuture = profile?.show_future_predictions || member.user_id === user.id
+      const showFuture = profile?.show_future_predictions !== false || member.user_id === user.id
       setMemberModal(prev => ({ ...prev, targetShowFuture: showFuture }))
       await loadMemberPredictions(member.user_id, showFuture)
     }
