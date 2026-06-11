@@ -156,12 +156,12 @@ export default function Home() {
   useEffect(() => {
     if (!user || !liveMatches.length) return
     supabase.from('predictions')
-      .select('match_id, home_score, away_score')
+      .select('match_id, home_score, away_score, is_confident')
       .eq('user_id', user.id)
       .in('match_id', liveMatches.map(m => m.id))
       .then(({ data }) => {
         const map = {}
-        data?.forEach(p => { map[p.match_id] = { home: p.home_score, away: p.away_score } })
+        data?.forEach(p => { map[p.match_id] = { home: p.home_score, away: p.away_score, joker: p.is_confident } })
         setUserPredictions(map)
       })
   }, [liveMatches.map(m => m.id).join(',')])
@@ -1430,12 +1430,12 @@ export default function Home() {
                                          (liveHome < liveAway && predHome < predAway)
                           return (
                             <div style={{ marginTop: '8px', padding: '4px 8px', background: onTrack ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.08)', borderRadius: 'var(--radius-sm)', border: `1px solid ${onTrack ? 'rgba(0,122,51,0.2)' : 'rgba(198,40,40,0.15)'}` }}>
-                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '1px' }}>Your pick</div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '1px' }}>Your pick {pred.joker ? '🃏' : ''}</div>
                               <div style={{ fontSize: '14px', fontWeight: '800', fontFamily: 'var(--font-mono)', color: onTrack ? 'var(--accent-green)' : 'var(--accent-red)' }}>
                                 {predHome} – {predAway}
                               </div>
                               <div style={{ fontSize: '10px', fontWeight: '700', color: onTrack ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                {onTrack ? '✓ On track' : '✗ Off track'}
+                                {onTrack ? '✓ On track' : '✗ Off track'}{pred.joker ? ' · 2× pts' : ''}
                               </div>
                             </div>
                           )
