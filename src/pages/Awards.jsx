@@ -419,13 +419,13 @@ export default function Awards() {
                   </div>
                 )}
 
-                {/* Current pick — shown pre-result */}
+                {/* Current pick — shown pre-result in neutral style (not green — that's for confirmed correct only) */}
                 {!decided && pred?.player_name && (
-                  <div style={{ background: 'var(--accent-green-light)', border: '1px solid var(--accent-green)', borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: 'var(--scottish-navy-light)', border: '1px solid var(--border-medium)', borderRadius: 'var(--radius-md)', padding: '10px 14px', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '20px' }}>{teams.find(t => t.id === pred.team_id)?.flag_emoji || '🏳️'}</span>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--accent-green)' }}>✓ {pred.player_name}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{teams.find(t => t.id === pred.team_id)?.name}</div>
+                      <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)' }}>🎯 {pred.player_name}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{teams.find(t => t.id === pred.team_id)?.name} · Your pick</div>
                     </div>
                     {isSaved && <span style={{ color: 'var(--accent-green)', fontSize: '12px', fontWeight: '700' }}>Saved!</span>}
                     {isSaving && <div className="spinner" style={{ width: '16px', height: '16px' }} />}
