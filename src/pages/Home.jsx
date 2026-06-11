@@ -93,6 +93,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
 
   if (!groupStageDone) {
     if (predictionCount === 0)  return { label: '⚽ Predict today\'s matches', to: '/predictions' }
+    if (predictionCount >= 72)  return { label: '👥 View your leagues', to: '/leagues', secondary: { label: '📊 Leaderboard →', to: '/leaderboard' } }
     return { label: '⚽ Continue predicting', to: '/predictions' }
   }
 
@@ -799,7 +800,9 @@ export default function Home() {
             {[
               { label: 'Teams', value: '48' },
               { label: 'Matches', value: '104' },
-              { label: 'Kick off', value: '11 Jun' },
+              tournamentStarted
+                ? { label: "Today's", value: `${todayMatches.length || 0} games` }
+                : { label: 'Kick off', value: '11 Jun' },
               { label: 'Final', value: '19 Jul' },
             ].map(({ label, value }, i, arr) => (
               <div key={label} style={{
