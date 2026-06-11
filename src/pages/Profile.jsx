@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { subscribeToPush, unsubscribeFromPush } from '../components/PushNotifications.jsx'
 import { useAuthStore, useAppStore } from '../store/index.js'
+import { validateDisplayName } from '../lib/validateDisplayName.js'
 import ShareCard from '../components/ShareCard.jsx'
 import { ALL_STAGES } from '../lib/bracketUtils.js'
 
@@ -17,6 +18,7 @@ export default function Profile() {
   const [editing, setEditing] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [nameError, setNameError] = useState('')
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [clearing, setClearing] = useState(false)
   const [clearDone, setClearDone] = useState(false)
@@ -69,6 +71,9 @@ export default function Profile() {
   }
 
   const saveProfile = async () => {
+    setNameError('')
+    const check = validateDisplayName(displayName)
+    if (!check.ok) { setNameError(check.reason); return }
     setSaving(true)
     await supabase
       .from('profiles')
@@ -451,23 +456,30 @@ export default function Profile() {
         </div>
 
         {editing ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-            <input
-              className="input"
-              value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveProfile(); if (e.key === 'Escape') setEditing(false) }}
-              autoFocus
-              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.4)', color: 'white', textAlign: 'center', fontWeight: '800', fontSize: '18px', maxWidth: '200px' }}
-            />
-            <button onClick={saveProfile} disabled={saving}
-              style={{ background: 'var(--accent-green)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '6px 12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-              {saving ? '...' : '✓'}
-            </button>
-            <button onClick={() => setEditing(false)}
-              style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '6px 12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-              ✕
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginTop: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input
+                className="input"
+                value={displayName}
+                onChange={e => { setDisplayName(e.target.value); setNameError('') }}
+                onKeyDown={e => { if (e.key === 'Enter') saveProfile(); if (e.key === 'Escape') setEditing(false) }}
+                autoFocus
+                style={{ background: 'rgba(255,255,255,0.15)', border: `1px solid ${nameError ? '#ef5350' : 'rgba(255,255,255,0.4)'}`, color: 'white', textAlign: 'center', fontWeight: '800', fontSize: '18px', maxWidth: '200px' }}
+              />
+              <button onClick={saveProfile} disabled={saving}
+                style={{ background: 'var(--accent-green)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '6px 12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                {saving ? '...' : '✓'}
+              </button>
+              <button onClick={() => { setEditing(false); setNameError('') }}
+                style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', padding: '6px 12px', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                ✕
+              </button>
+            </div>
+            {nameError && (
+              <div style={{ fontSize: '12px', color: '#ef5350', fontWeight: '600', background: 'rgba(239,83,80,0.12)', borderRadius: 'var(--radius-sm)', padding: '4px 10px' }}>
+                {nameError}
+              </div>
+            )}
           </div>
         ) : (
           <div onClick={() => setEditing(true)} style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', marginTop: '8px', padding: '4px 10px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.1)' }}>

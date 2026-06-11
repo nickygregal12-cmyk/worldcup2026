@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, signUpWithEmail, signInWithGoogle } from '../lib/supabase.js'
+import { validateDisplayName } from '../lib/validateDisplayName.js'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18">
@@ -28,6 +29,8 @@ export default function Register() {
     e.preventDefault()
     setError('')
     if (username.trim().length < 3) { setError('Display name must be at least 3 characters'); return }
+    const check = validateDisplayName(username)
+    if (!check.ok) { setError(check.reason); return }
     if (password.length < 6) { setError('Password must be at least 6 characters'); return }
     setStep(2)
   }
