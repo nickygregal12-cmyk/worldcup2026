@@ -1381,7 +1381,9 @@ export default function Predictions() {
   }
 
   // Item 7: colour coding for completed match result vs prediction
+  // Only fires on completed matches — not live (score may still change)
   const getResultColour = (match, pred) => {
+    if (match.status !== 'completed') return null
     if ((!match.home_score && match.home_score !== 0) || pred?.home === undefined) return null
     const predHome = Number(pred.home), predAway = Number(pred.away)
     const actHome = match.home_score, actAway = match.away_score
@@ -1536,7 +1538,9 @@ export default function Predictions() {
               {!locked && standingsLocked && <span className="badge badge-gray">📊 Order locked</span>}
               {!effectiveLocked && hasPrediction && !hasJoker && <span className="badge badge-green">✓ Saved</span>}
               {(match.home_score !== null && match.home_score !== undefined) && (
-                <span className="badge badge-gray">{match.home_score}–{match.away_score}</span>
+                <span className={`badge ${match.status === 'live' ? 'badge-red' : 'badge-gray'}`}>
+                  {match.status === 'live' ? '🔴 ' : ''}{match.home_score}–{match.away_score}
+                </span>
               )}
             </div>
           </div>
