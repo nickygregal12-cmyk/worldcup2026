@@ -1559,7 +1559,7 @@ export default function Predictions() {
             {/* Home team */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '42px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</span>
-              <span style={{ fontWeight: '800', fontSize: '13px', textAlign: 'center', letterSpacing: '-0.01em', maxWidth: '80px', wordBreak: 'break-word', lineHeight: 1.2 }}>{match.home_team?.name}</span>
+              <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', letterSpacing: '-0.01em', maxWidth: '85px', wordBreak: 'break-word', lineHeight: 1.2 }}>{match.home_team?.name}</span>
               {match.home_team?.fifa_ranking && <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>#{match.home_team.fifa_ranking}</span>}
               {favourite === 'home' && matchOdds && !effectiveLocked && !resultColour && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700', letterSpacing: '0.02em' }}>⭐ FAV</span>}
             </div>
@@ -1580,10 +1580,7 @@ export default function Predictions() {
                 <>
                   <div className="score-pair">
                     {!effectiveLocked && (
-                      <div className="stepper-col">
-                        <button type="button" className="stepper-btn" aria-label={`Increase ${match.home_team?.name} score`} onClick={() => bumpScore(match, 'home', 1)}>+</button>
-                        <button type="button" className="stepper-btn" aria-label={`Decrease ${match.home_team?.name} score`} onClick={() => bumpScore(match, 'home', -1)}>−</button>
-                      </div>
+                      <button type="button" className="stepper-btn" onClick={() => bumpScore(match, 'home', 1)}>+</button>
                     )}
                     <input type="text" inputMode="numeric" pattern="[0-9]*" className={`score-input ${saved[match.id] ? 'just-saved' : ''}`}
                       ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
@@ -1593,9 +1590,15 @@ export default function Predictions() {
                       onBlur={() => handleScoreBlur(match, 'home')}
                       disabled={effectiveLocked} placeholder="?"
                     />
+                    {!effectiveLocked && (
+                      <button type="button" className="stepper-btn" onClick={() => bumpScore(match, 'home', -1)}>−</button>
+                    )}
                   </div>
                   <span style={{ fontSize: '20px', color: 'var(--text-muted)', fontWeight: '300', fontFamily: 'var(--font-mono)' }}>–</span>
                   <div className="score-pair">
+                    {!effectiveLocked && (
+                      <button type="button" className="stepper-btn" onClick={() => bumpScore(match, 'away', 1)}>+</button>
+                    )}
                     <input type="text" inputMode="numeric" pattern="[0-9]*" className={`score-input ${saved[match.id] ? 'just-saved' : ''}`}
                       ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
                       value={pred.away ?? ''}
@@ -1605,10 +1608,7 @@ export default function Predictions() {
                       disabled={effectiveLocked} placeholder="?"
                     />
                     {!effectiveLocked && (
-                      <div className="stepper-col">
-                        <button type="button" className="stepper-btn" aria-label={`Increase ${match.away_team?.name} score`} onClick={() => bumpScore(match, 'away', 1)}>+</button>
-                        <button type="button" className="stepper-btn" aria-label={`Decrease ${match.away_team?.name} score`} onClick={() => bumpScore(match, 'away', -1)}>−</button>
-                      </div>
+                      <button type="button" className="stepper-btn" onClick={() => bumpScore(match, 'away', -1)}>−</button>
                     )}
                   </div>
                 </>
@@ -1618,7 +1618,7 @@ export default function Predictions() {
             {/* Away team */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
               <span style={{ fontSize: '42px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</span>
-              <span style={{ fontWeight: '800', fontSize: '13px', textAlign: 'center', letterSpacing: '-0.01em', maxWidth: '80px', wordBreak: 'break-word', lineHeight: 1.2 }}>{match.away_team?.name}</span>
+              <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', letterSpacing: '-0.01em', maxWidth: '85px', wordBreak: 'break-word', lineHeight: 1.2 }}>{match.away_team?.name}</span>
               {match.away_team?.fifa_ranking && <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>#{match.away_team.fifa_ranking}</span>}
               {favourite === 'away' && matchOdds && !effectiveLocked && !resultColour && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700', letterSpacing: '0.02em' }}>⭐ FAV</span>}
             </div>

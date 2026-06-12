@@ -348,9 +348,14 @@ img {
 }
 
 /* ---- Score steppers (+/−) ---- */
-.score-pair { display: flex; align-items: center; gap: 4px; }
+.score-pair {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
 
-.stepper-col { display: flex; flex-direction: column; gap: 4px; }
+.stepper-col { display: none; } /* legacy — no longer used */
 
 .stepper-btn {
   width: 30px;
