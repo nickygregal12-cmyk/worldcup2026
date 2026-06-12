@@ -42,6 +42,19 @@ export const handler = async (event, context) => {
     const data = await response.json()
     const standings = data.standings || []
 
+    // Debug: return raw structure if empty so we can see what the API actually sends
+    if (!standings.length) {
+      return { statusCode: 200, body: JSON.stringify({
+        message: 'Standings synced',
+        updated: 0,
+        debug: {
+          topLevelKeys: Object.keys(data),
+          standingsLength: standings.length,
+          rawSample: JSON.stringify(data).substring(0, 500)
+        }
+      })}
+    }
+
     // Get all teams from DB for ID lookup
     const { data: teams } = await supabase.from('teams').select('id, name')
     const teamMap = {}
