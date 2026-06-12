@@ -336,6 +336,16 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
     b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf
   )
 
+  // Find best 4 third-place teams across all groups for qualification indicator
+  const allThirds = standings
+    .filter(s => s.position === 3)
+    .sort((a, b) =>
+      b.points - a.points ||
+      b.goal_difference - a.goal_difference ||
+      b.goals_for - a.goals_for
+    )
+  const best4ThirdIds = new Set(allThirds.slice(0, 4).map(s => s.team_id))
+
   const hasPredictions = predTable.some(t => t.played > 0)
 
   return (
@@ -346,7 +356,7 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
         <div className="card">
           <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>📊 Live Standings — Group {activeGroup}</span>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500' }}>🟢 Top 2 qualify</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500' }}>🟢 Top 2 · 🟡 Best 3rd qualify</span>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
@@ -365,12 +375,13 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
               <tbody>
                 {groupStandings.map((team) => {
                   const qualifies = team.position <= 2
+                  const qualifies3rd = team.position === 3 && best4ThirdIds.has(team.team_id)
                   return (
                     <tr key={team.id} style={{
                       borderTop: '1px solid var(--border-light)',
-                      background: qualifies ? 'rgba(0,122,51,0.05)' : 'transparent',
+                      background: qualifies ? 'rgba(0,122,51,0.05)' : qualifies3rd ? 'rgba(245,158,11,0.08)' : 'transparent',
                     }}>
-                      <td style={{ padding: '8px 6px', fontWeight: '700', color: qualifies ? 'var(--accent-green)' : 'var(--text-muted)' }}>{team.position}</td>
+                      <td style={{ padding: '8px 6px', fontWeight: '700', color: qualifies ? 'var(--accent-green)' : qualifies3rd ? 'var(--accent-gold)' : 'var(--text-muted)' }}>{team.position}</td>
                       <td style={{ padding: '8px 6px', fontWeight: '600' }}>
                         {team.team?.flag_emoji} {team.team?.name || '?'}
                       </td>

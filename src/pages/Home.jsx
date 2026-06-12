@@ -878,7 +878,7 @@ export default function Home() {
             const { totalPts, correct, exact, jokerPaid, bestMatch, matches, preds } = roundUpData
             const shareText = () => {
               const lines = [
-                `⚽ WC26 Predictor — Matchday Round-Up`,
+                `⚽ WC26 Predictor — Last 24hrs Round-Up`,
                 ``,
                 `${profile?.display_name || profile?.username}`,
                 `+${totalPts}pts · ${correct}/${preds.length} correct${exact > 0 ? ` · ${exact} exact 🎯` : ''}`,
@@ -899,7 +899,7 @@ export default function Home() {
                   <span style={{ fontSize: '28px', flexShrink: 0 }}>⚽</span>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '900', fontSize: '16px', marginBottom: '2px' }}>
-                      +{totalPts}pts this round
+                      +{totalPts}pts in the last 24hrs
                     </div>
                     <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
                       {correct}/{preds.length} correct
