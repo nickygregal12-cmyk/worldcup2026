@@ -4252,18 +4252,21 @@ export default function AdminPanel() {
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '6px' }}>⚽ Total Goals in Tournament</div>
                       {isEditing ? (
                           <div style={{ display: 'flex', gap: '6px' }}>
-                            <input type="number" className="input" value={editingAwardValue}
-                              onChange={e => setEditingAwardValue(e.target.value)}
-                              placeholder="e.g. 156" min="0" max="400" style={{ flex: 1, fontSize: '13px' }}
-                              onKeyDown={e => e.key === 'Enter' && setEditingAwardPred(null)} />
+                            <input type="text" inputMode="numeric" pattern="[0-9]*" className="input" value={editingAwardValue}
+                              onChange={e => { if (/^\d*$/.test(e.target.value)) setEditingAwardValue(e.target.value) }}
+                              placeholder="e.g. 156" style={{ flex: 1, fontSize: '13px' }} />
                             <button onClick={async () => {
                               const val = parseInt(editingAwardValue)
                               if (isNaN(val) || val < 0) return
+                              let saveError = null
                               if (tg) {
-                                await supabase.from('tournament_predictions').update({ int_value: val }).eq('id', tg.id)
+                                const { error } = await supabase.from('tournament_predictions').update({ int_value: val }).eq('id', tg.id)
+                                saveError = error
                               } else {
-                                await supabase.from('tournament_predictions').insert({ user_id: editingUserPreds, prediction_type: 'total_goals', int_value: val })
+                                const { error } = await supabase.from('tournament_predictions').insert({ user_id: editingUserPreds, prediction_type: 'total_goals', int_value: val })
+                                saveError = error
                               }
+                              if (saveError) { setActionResult(`❌ Goals save error: ${saveError.message}`); return }
                               await logAudit('ADMIN_EDIT_TOTAL_GOALS', { user_id: editingUserPreds, value: val })
                               await supabase.from('profiles').update({
                                 admin_message: `An admin updated your total goals prediction to ${val}`,

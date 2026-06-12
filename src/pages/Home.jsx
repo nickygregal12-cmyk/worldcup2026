@@ -859,8 +859,8 @@ export default function Home() {
                             <span style={{ fontSize: '32px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</span>
                             <span style={{ fontWeight: '800', fontSize: '13px', textAlign: 'center' }}>{match.home_team?.short_code}</span>
                           </div>
-                          <div style={{ textAlign: 'center', flex: 1 }}>
-                            <div style={{ fontSize: '30px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+                          <div style={{ textAlign: 'center', minWidth: '80px' }}>
+                            <div style={{ fontSize: '30px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1, whiteSpace: 'nowrap' }}>
                               {match.home_score ?? 0} – {match.away_score ?? 0}
                             </div>
                             <div style={{ fontSize: '10px', color: '#e53935', fontWeight: '700', marginTop: '4px' }}>● LIVE</div>
