@@ -896,6 +896,7 @@ export default function AdminPanel() {
   const [auditLog, setAuditLog] = useState([])
   const [settings, setSettings] = useState({})
   const [health, setHealth] = useState({})
+  const [allPlayers, setAllPlayers] = useState([])
 
   // UI state
   const [stageFilter, setStageFilter] = useState('group')
@@ -1016,6 +1017,7 @@ export default function AdminPanel() {
 
   const loadAll = async () => {
     setLoading(true)
+    supabase.from('players').select('id, name, position, team:team_id(name, flag_emoji)').order('name').then(({ data }) => setAllPlayers(data || []))
     await Promise.all([loadHealth(), loadMatches(), loadUsers(), loadLeagues(), loadAudit(), loadSettings(), loadAwardResults()])
     setLoading(false)
   }
@@ -4225,7 +4227,7 @@ export default function AdminPanel() {
                               <button onClick={() => setEditingAwardPred(null)} className="btn btn-secondary btn-sm">✕</button>
                             </div>
                             <datalist id={`players-${key}`}>
-                              {players.filter(p => !editingAwardValue || p.name.toLowerCase().includes(editingAwardValue.toLowerCase())).slice(0, 20).map(p => (
+                              {allPlayers.filter(p => !editingAwardValue || p.name.toLowerCase().includes(editingAwardValue.toLowerCase())).slice(0, 20).map(p => (
                                 <option key={p.id} value={p.name}>{p.name} ({p.team?.name})</option>
                               ))}
                             </datalist>
@@ -4275,7 +4277,7 @@ export default function AdminPanel() {
                         ) : (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <div style={{ fontSize: '14px', fontWeight: '700' }}>{tg?.int_value ?? <span style={{ color: 'var(--text-muted)', fontWeight: '400' }}>Not set</span>}</div>
-                            <button onClick={() => { setEditingAwardPred('total_goals'); setEditingAwardValue(tg?.int_value?.toString() || '') }}
+                            <button onClick={() => { setEditingAwardPred('total_goals'); setEditingAwardValue(tg?.int_value != null ? String(tg.int_value) : '') }}
                               className="btn btn-secondary btn-sm">Edit</button>
                           </div>
                         )}
