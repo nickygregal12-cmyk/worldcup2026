@@ -739,9 +739,15 @@ export default function Leagues() {
     const filtered = (preds || [])
       .filter(p => {
         const kicked = new Date(p.match?.kickoff_time) <= new Date()
-        // Also show if match status is completed or live (locked regardless of toggle)
         const isLocked = p.match?.status === 'completed' || p.match?.status === 'live'
-        return kicked || isLocked || showFuture
+        // Also show if match is group-locked (any sibling in same group has kicked off)
+        const groupName = p.match?.group?.name
+        const groupLocked = groupName && (preds || []).some(other =>
+          other.match?.group?.name === groupName &&
+          other.match?.id !== p.match?.id &&
+          new Date(other.match?.kickoff_time) <= new Date()
+        )
+        return kicked || isLocked || groupLocked || showFuture
       })
       .sort((a, b) => new Date(a.match?.kickoff_time) - new Date(b.match?.kickoff_time))
     setMemberPredictions(filtered)
@@ -801,11 +807,10 @@ export default function Leagues() {
     if (lockedSnapshot) {
       await loadLockedMemberPredictions(leagueId, member.user_id)
     } else if (isOffline) {
-      // Load from offline_predictions table
       const { data: preds } = await supabase
         .from('offline_predictions')
         .select(`
-          home_score, away_score, is_confident,
+          id, home_score, away_score, is_confident,
           match:match_id(id, kickoff_time, home_score, away_score, status,
             home_team:home_team_id(name, flag_emoji, short_code),
             away_team:away_team_id(name, flag_emoji, short_code),
@@ -813,7 +818,34 @@ export default function Leagues() {
         `)
         .eq('offline_player_id', member.user_id)
         .order('match_id')
-      setMemberPredictions(preds || [])
+
+      // Calculate points client-side (no points_awarded column on offline_predictions)
+      const withPoints = (preds || []).map(p => {
+        const m = p.match
+        if (!m || m.status !== 'completed' || m.home_score == null) return { ...p, points_awarded: null }
+        const predH = p.home_score, predA = p.away_score
+        const actH = m.home_score, actA = m.away_score
+        const predR = predH > predA ? 'H' : predH < predA ? 'A' : 'D'
+        const actR = actH > actA ? 'H' : actH < actA ? 'A' : 'D'
+        if (predR !== actR) return { ...p, points_awarded: 0 }
+        const base = predH === actH && predA === actA ? 5 : 3
+        return { ...p, points_awarded: p.is_confident ? base * 2 : base }
+      })
+
+      // Apply same group-lock visibility filter as online players
+      const filtered = withPoints.filter(p => {
+        const kicked = new Date(p.match?.kickoff_time) <= new Date()
+        const isCompleted = p.match?.status === 'completed' || p.match?.status === 'live'
+        const groupName = p.match?.group?.name
+        const groupLocked = groupName && withPoints.some(other =>
+          other.match?.group?.name === groupName &&
+          other.match?.id !== p.match?.id &&
+          new Date(other.match?.kickoff_time) <= new Date()
+        )
+        return kicked || isCompleted || groupLocked
+      }).sort((a, b) => new Date(a.match?.kickoff_time) - new Date(b.match?.kickoff_time))
+
+      setMemberPredictions(filtered)
     } else {
       const { data: profile } = await supabase
         .from('profiles').select('show_future_predictions').eq('id', member.user_id).single()
