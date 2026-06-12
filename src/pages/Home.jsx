@@ -801,7 +801,7 @@ export default function Home() {
               { label: 'Teams', value: '48' },
               { label: 'Matches', value: '104' },
               tournamentStarted
-                ? { label: "Today's", value: `${todayMatches.length || 0} games` }
+                ? { label: 'Today', value: `${todayMatches.length || 0} games` }
                 : { label: 'Kick off', value: '11 Jun' },
               { label: 'Final', value: '19 Jul' },
             ].map(({ label, value }, i, arr) => (

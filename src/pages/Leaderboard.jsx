@@ -207,7 +207,7 @@ export default function Leaderboard() {
           <>
             <div className="card" style={{ padding: '8px', marginBottom: '12px' }}>
               {paginated.map(player => {
-                const rank = currentPlayers.findIndex(p => p.id === player.id) + 1
+                const rank = currentPlayers.filter(other => (other.total_points || 0) > (player.total_points || 0)).length + 1
                 const isCurrentUser = user?.id === player.id
                 const movement = getRankMovement(player.id, rank)
                 const pts = appSettings?.points_maintenance === 'true' && !isAdmin 
