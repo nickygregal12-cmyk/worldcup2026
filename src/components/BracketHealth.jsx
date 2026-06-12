@@ -120,6 +120,11 @@ export default function BracketHealth() {
 
     const rows = profiles.map(u => {
       const missing = allDefs.filter(d => !pickSet.has(`${u.id}:${d.match_number}`))
+      // DEBUG: log first incomplete user's picks
+      if (missing.length > 0 && missing.length < 31) {
+        const userPicks = picks.filter(p => p.user_id === u.id).map(p => p.match_number)
+        console.log(`[BracketHealth] ${u.username} has ${userPicks.length} picks: [${userPicks.join(',')}] missing: [${missing.map(d => d.match_number).join(',')}]`)
+      }
       const fillable = missing.filter(d => !d.frozen)
       const lost = missing.filter(d => d.frozen)
       return { ...u, missing, fillable, lost, total: TOTAL_PICKS - missing.length }
