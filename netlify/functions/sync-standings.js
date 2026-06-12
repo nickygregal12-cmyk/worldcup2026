@@ -68,6 +68,7 @@ export const handler = async (event, context) => {
     let skipped = 0
     let firstSkipped = null
 
+    const rows = []
     for (const entry of totalStanding.table || []) {
       const teamName = normalise(entry.team?.name || '')
       const teamId = teamMap[teamName.toLowerCase()] || null
@@ -80,27 +81,22 @@ export const handler = async (event, context) => {
         if (!firstSkipped) firstSkipped = `teamId="${teamId}" (${teamName}) not in groupTeams`
         skipped++; continue
       }
-
-      const { error } = await supabase.from('group_standings').upsert({
-        group_id: groupId,
-        team_id: teamId,
+      rows.push({
+        group_id: groupId, team_id: teamId,
         position: entry.position,
-        played: entry.playedGames ?? 0,
-        won: entry.won ?? 0,
-        drawn: entry.draw ?? 0,
-        lost: entry.lost ?? 0,
-        goals_for: entry.goalsFor ?? 0,
-        goals_against: entry.goalsAgainst ?? 0,
-        goal_difference: entry.goalDifference ?? 0,
-        points: entry.points ?? 0,
+        played: entry.playedGames ?? 0, won: entry.won ?? 0,
+        drawn: entry.draw ?? 0, lost: entry.lost ?? 0,
+        goals_for: entry.goalsFor ?? 0, goals_against: entry.goalsAgainst ?? 0,
+        goal_difference: entry.goalDifference ?? 0, points: entry.points ?? 0,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'group_id,team_id' })
+      })
+    }
 
-      if (!error) updated++
-      else {
-        if (!firstSkipped) firstSkipped = `upsert error: ${error.message} (${teamName})`
-        skipped++
-      }
+    if (rows.length > 0) {
+      const { error } = await supabase.from('group_standings')
+        .upsert(rows, { onConflict: 'group_id,team_id' })
+      if (!error) updated = rows.length
+      else firstSkipped = `batch upsert error: ${error.message}`
     }
 
     await supabase.from('app_settings')
