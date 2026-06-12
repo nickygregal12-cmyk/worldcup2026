@@ -58,7 +58,7 @@ export default function Profile() {
           away_team:away_team_id(name, flag_emoji, short_code))
       `)
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .order('submitted_at', { ascending: false })
       .limit(100)
     setHistory((data || []).filter(p => p.match?.status === 'completed')
       .sort((a, b) => new Date(b.match?.kickoff_time) - new Date(a.match?.kickoff_time)))
