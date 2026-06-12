@@ -7,7 +7,7 @@ const supabase = createClient(
 
 const API_TO_DB = {
   'Czech Republic': 'Czechia',
-  'Turkey': 'Türkiye',
+  'Turkey': 'Turkiye',
   'USA': 'United States',
   'United States of America': 'United States',
   "Côte d'Ivoire": 'Ivory Coast',
@@ -15,7 +15,8 @@ const API_TO_DB = {
   'Republic of Korea': 'South Korea',
   'Congo DR': 'DR Congo',
   'Cape Verde Islands': 'Cape Verde',
-  // Bosnia-Herzegovina matches DB name already — no mapping needed
+  'Curaçao': 'Curacao',
+  'Bosnia-Herzegovina': 'Bosnia-Herzegovina',
 }
 
 const normalise = (name) => API_TO_DB[name] || name
@@ -65,11 +66,15 @@ export const handler = async (event, context) => {
 
     let updated = 0
     let skipped = 0
+    let firstSkipped = null
 
     for (const entry of totalStanding.table || []) {
       const teamName = normalise(entry.team?.name || '')
       const teamId = teamMap[teamName.toLowerCase()] || null
-      if (!teamId) { skipped++; continue }
+      if (!teamId) {
+        if (skipped === 0) firstSkipped = teamName
+        skipped++; continue
+      }
 
       const groupId = teamGroupMap[teamId] || null
       if (!groupId) { skipped++; continue }
@@ -121,7 +126,7 @@ export const handler = async (event, context) => {
       }
     }
 
-    return { statusCode: 200, body: JSON.stringify({ message: 'Standings synced', updated, skipped, v: 5 }) }
+    return { statusCode: 200, body: JSON.stringify({ message: 'Standings synced', updated, skipped, firstSkipped, v: 5 }) }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
   }
