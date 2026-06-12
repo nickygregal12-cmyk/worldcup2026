@@ -611,6 +611,15 @@ export default function Profile() {
               )}
             </div>
 
+            {/* Compact scoring reference */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', marginBottom: '16px' }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                <span style={{ fontWeight: '700', color: 'var(--text-primary)', marginRight: '6px' }}>🏅 Scoring</span>
+                Correct result <strong>3pts</strong> · Exact score <strong>5pts</strong> · Joker <strong>2×</strong> · Group pos <strong>+2pts</strong> · KO picks <strong>5–20pts</strong>
+              </div>
+              <Link to="/how-to-play" style={{ fontSize: '12px', fontWeight: '700', color: 'var(--scottish-navy)', textDecoration: 'none', whiteSpace: 'nowrap', marginLeft: '12px', flexShrink: 0 }}>Full rules →</Link>
+            </div>
+
             {/* Badges */}
             <div className="card" style={{ marginBottom: '16px' }}>
               <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '4px' }}>🏆 Badges</div>

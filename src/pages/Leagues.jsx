@@ -1366,6 +1366,14 @@ export default function Leagues() {
                     </div>
                   )}
 
+                  {/* Compact scoring reference */}
+                  <div style={{ padding: '6px 16px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-secondary)' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Correct <strong>3pts</strong> · Exact <strong>5pts</strong> · Joker <strong>2×</strong> · KO picks <strong>5–20pts</strong>
+                    </span>
+                    <Link to="/how-to-play" style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textDecoration: 'none', flexShrink: 0, marginLeft: '8px' }}>Rules →</Link>
+                  </div>
+
                   {/* League table — always visible */}
                   <div>
                     {loadingMembers[league.id] ? (

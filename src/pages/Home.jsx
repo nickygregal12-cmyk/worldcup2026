@@ -1722,30 +1722,6 @@ export default function Home() {
             </div>
           )}
 
-          <div className="card fade-in" style={{ overflow: 'hidden' }}>
-            <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
-            <div className="section-header" style={{ marginBottom: '10px' }}>
-              <span className="section-title">🏅 How to score points</span>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                {tournamentStarted && <Link to="/stats" className="section-link">🌍 Community stats →</Link>}
-                <Link to="/how-to-play" className="section-link">Full rules →</Link>
-              </div>
-            </div>
-            <div style={{
-              background: 'var(--bg-secondary)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border-light)',
-              padding: '14px',
-            }}>
-              <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '6px' }}>
-                Predict scores, use jokers and earn points throughout the tournament.
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                Exact scores score the most points. Jokers boost selected matches. Awards, knockout picks and tournament predictions all contribute to your final total.
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
       {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
