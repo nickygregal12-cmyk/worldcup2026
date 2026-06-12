@@ -72,12 +72,14 @@ export const handler = async (event, context) => {
       const teamName = normalise(entry.team?.name || '')
       const teamId = teamMap[teamName.toLowerCase()] || null
       if (!teamId) {
-        if (skipped === 0) firstSkipped = teamName
+        if (!firstSkipped) firstSkipped = `name="${teamName}" not in teamMap`
         skipped++; continue
       }
-
       const groupId = teamGroupMap[teamId] || null
-      if (!groupId) { skipped++; continue }
+      if (!groupId) {
+        if (!firstSkipped) firstSkipped = `teamId="${teamId}" (${teamName}) not in groupTeams`
+        skipped++; continue
+      }
 
       const { error } = await supabase.from('group_standings').upsert({
         group_id: groupId,
