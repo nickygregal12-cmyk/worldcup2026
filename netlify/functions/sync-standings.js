@@ -97,7 +97,10 @@ export const handler = async (event, context) => {
       }, { onConflict: 'group_id,team_id' })
 
       if (!error) updated++
-      else skipped++
+      else {
+        if (!firstSkipped) firstSkipped = `upsert error: ${error.message} (${teamName})`
+        skipped++
+      }
     }
 
     await supabase.from('app_settings')
