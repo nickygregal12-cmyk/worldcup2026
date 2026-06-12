@@ -2305,7 +2305,7 @@ export default function AdminPanel() {
                   try {
                     const res = await fetch('/.netlify/functions/sync-standings', { method: 'POST', headers: adminHeaders })
                     const data = await res.json()
-                    setActionResult(`✅ Standings synced: ${data.updated || 0} rows updated, ${data.skipped || 0} skipped${data.note ? ` | ${data.note}` : ''}${data.v ? ` [v${data.v}]` : ''}`)
+                    setActionResult(`✅ Standings synced: ${data.updated || 0} rows updated, ${data.skipped || 0} skipped${data.firstSkipped ? ` (first skip: "${data.firstSkipped}")` : ''}${data.note ? ` | ${data.note}` : ''}${data.v ? ` [v${data.v}]` : ''}`)
                   } catch (e) {
                     setActionResult(`❌ Standings sync failed: ${e.message}`)
                   }
@@ -4202,11 +4202,13 @@ export default function AdminPanel() {
                       <div key={key} style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: `1px solid ${isEditing ? 'var(--scottish-navy)' : 'var(--border-light)'}` }}>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '6px' }}>{label}</div>
                         {isEditing ? (
-                          <div style={{ display: 'flex', gap: '6px' }}>
-                            <input className="input" value={editingAwardValue}
-                              onChange={e => setEditingAwardValue(e.target.value)}
-                              placeholder="Player name" style={{ flex: 1, fontSize: '13px' }} />
-                            <button onClick={async () => {
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <input className="input" value={editingAwardValue}
+                                onChange={e => setEditingAwardValue(e.target.value)}
+                                list={`players-${key}`}
+                                placeholder="Type player name..." style={{ flex: 1, fontSize: '13px' }} />
+                              <button onClick={async () => {
                               if (award) {
                                 await supabase.from('award_predictions').update({ predicted_player_name: editingAwardValue }).eq('id', award.id)
                               } else {
@@ -4220,7 +4222,13 @@ export default function AdminPanel() {
                               setEditingAwardPred(null)
                               loadUserPredictions(editingUserPreds)
                             }} className="btn btn-primary btn-sm">Save</button>
-                            <button onClick={() => setEditingAwardPred(null)} className="btn btn-secondary btn-sm">✕</button>
+                              <button onClick={() => setEditingAwardPred(null)} className="btn btn-secondary btn-sm">✕</button>
+                            </div>
+                            <datalist id={`players-${key}`}>
+                              {players.filter(p => !editingAwardValue || p.name.toLowerCase().includes(editingAwardValue.toLowerCase())).slice(0, 20).map(p => (
+                                <option key={p.id} value={p.name}>{p.name} ({p.team?.name})</option>
+                              ))}
+                            </datalist>
                           </div>
                         ) : (
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -4240,14 +4248,15 @@ export default function AdminPanel() {
                     return (
                       <div style={{ padding: '10px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: `1px solid ${isEditing ? 'var(--scottish-navy)' : 'var(--border-light)'}` }}>
                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', marginBottom: '6px' }}>⚽ Total Goals in Tournament</div>
-                        {isEditing ? (
+                      {isEditing ? (
                           <div style={{ display: 'flex', gap: '6px' }}>
                             <input type="number" className="input" value={editingAwardValue}
                               onChange={e => setEditingAwardValue(e.target.value)}
-                              placeholder="e.g. 156" style={{ flex: 1, fontSize: '13px' }} />
+                              placeholder="e.g. 156" min="0" max="400" style={{ flex: 1, fontSize: '13px' }}
+                              onKeyDown={e => e.key === 'Enter' && setEditingAwardPred(null)} />
                             <button onClick={async () => {
                               const val = parseInt(editingAwardValue)
-                              if (isNaN(val)) return
+                              if (isNaN(val) || val < 0) return
                               if (tg) {
                                 await supabase.from('tournament_predictions').update({ int_value: val }).eq('id', tg.id)
                               } else {
