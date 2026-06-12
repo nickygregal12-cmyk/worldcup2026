@@ -93,6 +93,30 @@ export const handler = async (event, context) => {
       .update({ value: new Date().toISOString() })
       .eq('key', 'standings_last_sync')
 
+    // Recalculate position within each group (API gives 1-48 overall position)
+    const { data: allRows } = await supabase
+      .from('group_standings')
+      .select('id, group_id, points, goal_difference, goals_for')
+
+    const byGroup = {}
+    allRows?.forEach(r => {
+      if (!byGroup[r.group_id]) byGroup[r.group_id] = []
+      byGroup[r.group_id].push(r)
+    })
+
+    for (const [groupId, rows] of Object.entries(byGroup)) {
+      rows.sort((a, b) =>
+        b.points - a.points ||
+        b.goal_difference - a.goal_difference ||
+        b.goals_for - a.goals_for
+      )
+      for (let i = 0; i < rows.length; i++) {
+        await supabase.from('group_standings')
+          .update({ position: i + 1 })
+          .eq('id', rows[i].id)
+      }
+    }
+
     return { statusCode: 200, body: JSON.stringify({ message: 'Standings synced', updated, skipped }) }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
