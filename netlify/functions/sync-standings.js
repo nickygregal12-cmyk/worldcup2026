@@ -13,11 +13,9 @@ const API_TO_DB = {
   "Côte d'Ivoire": 'Ivory Coast',
   'Korea Republic': 'South Korea',
   'Republic of Korea': 'South Korea',
-  'DR Congo': 'DR Congo',
   'Congo DR': 'DR Congo',
   'Cape Verde Islands': 'Cape Verde',
-  'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
-  'Curaçao': 'Curaçao',
+  // Bosnia-Herzegovina matches DB name already — no mapping needed
 }
 
 const normalise = (name) => API_TO_DB[name] || name
@@ -120,7 +118,7 @@ export const handler = async (event, context) => {
       }
     }
 
-    return { statusCode: 200, body: JSON.stringify({ message: 'Standings synced', updated, skipped }) }
+    return { statusCode: 200, body: JSON.stringify({ message: 'Standings synced', updated, skipped, v: 5 }) }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
   }
