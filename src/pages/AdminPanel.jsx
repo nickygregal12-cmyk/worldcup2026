@@ -2303,7 +2303,7 @@ export default function AdminPanel() {
                 <button onClick={async () => {
                   setSaving(prev => ({ ...prev, standings: true }))
                   try {
-                    const res = await fetch('/.netlify/functions/sync-standings', { headers: adminHeaders })
+                    const res = await fetch('/.netlify/functions/sync-standings', { method: 'POST', headers: adminHeaders })
                     const data = await res.json()
                     setActionResult(`✅ Standings synced: ${data.updated || 0} rows updated, ${data.skipped || 0} skipped${data.note ? ` | ${data.note}` : ''}${data.v ? ` [v${data.v}]` : ''}`)
                   } catch (e) {
