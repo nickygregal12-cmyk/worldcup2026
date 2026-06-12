@@ -44,7 +44,7 @@ export default function BracketHealth() {
   const load = async () => {
     setLoading(true)
     const [pickRes, profRes, matchRes, groupRes] = await Promise.all([
-      supabase.from('knockout_picks').select('user_id, match_number'),
+      supabase.from('knockout_picks').select('user_id, match_number, winner_team_id'),
       supabase.from('profiles').select('id, username, is_banned'),
       supabase.from('matches').select('kickoff_time, group_id, stage').eq('stage', 'group'),
       supabase.from('groups').select('id, name'),
@@ -113,7 +113,10 @@ export default function BracketHealth() {
   const analysis = useMemo(() => {
     const allDefs = Object.values(slotInfo)
     if (!allDefs.length || !profiles.length) return null
-    const pickSet = new Set(picks.map(p => `${p.user_id}:${p.match_number}`))
+    // Count a pick as present if any row exists for user+match_number with a winner_team_id
+    const pickSet = new Set(picks
+      .filter(p => p.winner_team_id) // must have a winner picked
+      .map(p => `${p.user_id}:${p.match_number}`))
 
     const rows = profiles.map(u => {
       const missing = allDefs.filter(d => !pickSet.has(`${u.id}:${d.match_number}`))

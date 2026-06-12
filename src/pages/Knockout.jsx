@@ -298,8 +298,10 @@ export default function Knockout() {
   const isPickValid = useCallback((matchDef) => {
     const pick = knockoutPicks[matchDef.match_number]
     if (!pick?.winner_id) return false
+    // Pick exists — consider it valid for display purposes even if team
+    // doesn't currently resolve from group predictions (stale but counted)
     const { home, away } = getMatchTeams(matchDef)
-    if (!home && !away) return false
+    if (!home && !away) return true // can't resolve opponents, assume valid
     return pick.winner_id === home?.id || pick.winner_id === away?.id
   }, [knockoutPicks, getMatchTeams])
 
