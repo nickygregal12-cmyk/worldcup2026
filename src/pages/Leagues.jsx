@@ -647,7 +647,7 @@ export default function Leagues() {
     // Also fetch offline players for this league
     const { data: offlinePlayers, error: offlineError } = await supabase
       .from('offline_players')
-      .select('id, display_name, league_id')
+      .select('id, display_name, league_id, league_points')
       .eq('league_id', leagueId)
 
     if (offlineError) console.error('Offline players error:', offlineError)
@@ -657,11 +657,12 @@ export default function Leagues() {
       user_id: p.id,
       league_id: leagueId,
       is_offline: true,
+      league_points: p.league_points || 0,
       profile: {
         id: p.id,
         display_name: p.display_name,
         username: p.display_name,
-        total_points: 0,
+        total_points: p.league_points || 0,
         is_offline: true,
       }
     }))
