@@ -46,12 +46,13 @@ export const handler = async (event, context) => {
 
     const data = await response.json()
     const allStandings = data.standings || []
-
-    // WC standings returns one flat table of all 48 teams (not per-group)
-    // with type=TOTAL, type=HOME, type=AWAY — use TOTAL only
     const totalStanding = allStandings.find(s => s.type === 'TOTAL')
+
     if (!totalStanding) {
-      return { statusCode: 200, body: JSON.stringify({ message: 'Standings synced', updated: 0, note: 'No TOTAL standing found' }) }
+      return { statusCode: 200, body: JSON.stringify({
+        message: 'Standings synced', updated: 0, v: 5,
+        note: `No TOTAL standing. Keys: ${Object.keys(data).join(',')}, standings count: ${allStandings.length}`
+      }) }
     }
 
     // Get teams and their group assignments from DB
@@ -67,6 +68,11 @@ export const handler = async (event, context) => {
     let updated = 0
     let skipped = 0
     let firstSkipped = null
+
+    const tableLength = totalStanding.table?.length || 0
+    if (tableLength === 0) {
+      return { statusCode: 200, body: JSON.stringify({ message: 'Standings synced', updated: 0, note: `TOTAL standing found but table empty`, v: 5 }) }
+    }
 
     const rows = []
     for (const entry of totalStanding.table || []) {
