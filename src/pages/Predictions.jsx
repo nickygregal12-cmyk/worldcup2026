@@ -597,9 +597,12 @@ export default function Predictions() {
   const loadStandings = async () => {
     const { data, error } = await supabase
       .from('group_standings')
-      .select('*')
-      .order('group_name')
-    if (!error) setStandings(data || [])
+      .select('*, group:group_id(id, name), team:team_id(id, name, flag_emoji, short_code)')
+      .order('position')
+    if (!error) {
+      // Add group_name field so existing filter logic works unchanged
+      setStandings((data || []).map(s => ({ ...s, group_name: s.group?.name || '' })))
+    }
   }
 
   // Auto-scroll to first unpredicted match — runs once when matches first load

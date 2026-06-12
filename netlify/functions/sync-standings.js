@@ -47,19 +47,28 @@ export const handler = async (event, context) => {
     const teamMap = {}
     teams?.forEach(t => { teamMap[t.name.toLowerCase()] = t.id })
 
+    // Get all groups from DB for ID lookup
+    const { data: groups } = await supabase.from('groups').select('id, name')
+    const groupMap = {}
+    groups?.forEach(g => { groupMap[g.name.toLowerCase()] = g.id })
+
     let updated = 0
 
     for (const group of standings) {
       if (group.type !== 'TOTAL') continue
-      const groupName = group.stage || group.group || 'Unknown'
+      const rawGroupName = group.stage || group.group || 'Unknown'
+      // API returns e.g. "GROUP_A" — normalise to "A"
+      const groupLetter = rawGroupName.replace('GROUP_', '').replace('Group ', '').trim()
+      const groupId = groupMap[`group ${groupLetter}`.toLowerCase()] || groupMap[groupLetter.toLowerCase()] || null
 
       for (const entry of group.table) {
         const teamName = normalise(entry.team?.name || '')
         const teamId = teamMap[teamName.toLowerCase()] || null
 
+        if (!groupId || !teamId) continue
+
         await supabase.from('group_standings').upsert({
-          group_name: groupName,
-          team_name: teamName,
+          group_id: groupId,
           team_id: teamId,
           position: entry.position,
           played: entry.playedGames,
@@ -71,7 +80,7 @@ export const handler = async (event, context) => {
           goal_difference: entry.goalDifference,
           points: entry.points,
           updated_at: new Date().toISOString(),
-        }, { onConflict: 'group_name,team_name' })
+        }, { onConflict: 'group_id,team_id' })
 
         updated++
       }
