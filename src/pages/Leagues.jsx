@@ -1350,6 +1350,12 @@ export default function Leagues() {
                           const gap = i > 0 && pts !== leaderPts ? leaderPts - pts : null
                           const rankColours = ['#f59e0b', '#9ca3af', '#cd7f32']
 
+                          // Dense ranking: count how many members have strictly more points
+                          const rank = visibleMembers.filter((m, j) => {
+                            const mPts = hasLeaguePts ? (m.league_points || 0) : (m.profile?.total_points || 0)
+                            return mPts > pts
+                          }).length + 1
+
                           return (
                             <div key={member.user_id} onClick={() => openMemberModal(member, league.id)} role="button" tabIndex={0} style={{
                               display: 'flex', alignItems: 'center', gap: '10px',
@@ -1360,8 +1366,8 @@ export default function Leagues() {
                               cursor: 'pointer',
                             }}>
                               {/* Rank */}
-                              <span style={{ fontSize: '13px', fontWeight: '800', width: '20px', flexShrink: 0, color: i < 3 ? rankColours[i] : 'var(--text-muted)' }}>
-                                {i + 1}
+                              <span style={{ fontSize: '13px', fontWeight: '800', width: '20px', flexShrink: 0, color: rank <= 3 ? rankColours[rank - 1] : 'var(--text-muted)' }}>
+                                {rank}
                               </span>
 
                               {/* Avatar */}
