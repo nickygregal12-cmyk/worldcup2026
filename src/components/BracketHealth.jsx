@@ -43,15 +43,31 @@ export default function BracketHealth() {
 
   const load = async () => {
     setLoading(true)
-    const [pickRes, profRes, matchRes, groupRes] = await Promise.all([
-      supabase.from('knockout_picks').select('user_id, match_number').limit(5000),
+
+    // Paginate knockout_picks — Supabase server max is 1000 rows per request
+    const allPicks = []
+    let from = 0
+    const batch = 1000
+    while (true) {
+      const { data, error } = await supabase
+        .from('knockout_picks')
+        .select('user_id, match_number')
+        .not('match_number', 'is', null)
+        .range(from, from + batch - 1)
+      if (error || !data?.length) break
+      allPicks.push(...data)
+      if (data.length < batch) break
+      from += batch
+    }
+
+    const [profRes, matchRes, groupRes] = await Promise.all([
       supabase.from('profiles').select('id, username, is_banned'),
       supabase.from('matches').select('kickoff_time, group_id, stage').eq('stage', 'group'),
       supabase.from('groups').select('id, name'),
     ])
     const groupMap = {}
     ;(groupRes.data || []).forEach(g => { groupMap[g.id] = g.name })
-    setPicks(pickRes.data || [])
+    setPicks(allPicks)
     setProfiles((profRes.data || []).filter(p => !p.is_banned))
     setGroupMatches((matchRes.data || []).map(m => ({
       kickoff_time: m.kickoff_time,
@@ -120,11 +136,6 @@ export default function BracketHealth() {
 
     const rows = profiles.map(u => {
       const missing = allDefs.filter(d => !pickSet.has(`${u.id}:${d.match_number}`))
-      // DEBUG: log first incomplete user's picks
-      if (missing.length > 0 && missing.length < 31) {
-        const userPicks = picks.filter(p => p.user_id === u.id).map(p => p.match_number)
-        console.log(`[BracketHealth] ${u.username} has ${userPicks.length} picks: [${userPicks.join(',')}] missing: [${missing.map(d => d.match_number).join(',')}]`)
-      }
       const fillable = missing.filter(d => !d.frozen)
       const lost = missing.filter(d => d.frozen)
       return { ...u, missing, fillable, lost, total: TOTAL_PICKS - missing.length }
