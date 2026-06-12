@@ -40,67 +40,77 @@ export const handler = async (event, context) => {
     if (!response.ok) throw new Error(`API error: ${response.status}`)
 
     const data = await response.json()
-    const standings = data.standings || []
 
-    // TEMP DEBUG: always return to see full API structure
-    return { statusCode: 200, body: JSON.stringify({
-      message: 'Standings synced', updated: 0,
-      debug: {
-        topLevelKeys: Object.keys(data),
-        standingsLength: standings.length,
-        firstStanding: standings[0] ? { type: standings[0].type, stage: standings[0].stage, group: standings[0].group, tableLength: standings[0].table?.length, firstTeam: standings[0].table?.[0]?.team?.name } : null,
-        rawStart: JSON.stringify(data).substring(0, 400)
-      }
-    })}
+    // The WC standings endpoint returns groups in data.standings[]
+    // For tournaments each entry has type="TOTAL" and group="GROUP_A" etc.
+    // Some tiers return it differently — handle all cases.
+    const allStandings = data.standings || []
 
-    // Get all teams from DB for ID lookup
+    // Get all teams and groups from DB
     const { data: teams } = await supabase.from('teams').select('id, name')
     const teamMap = {}
     teams?.forEach(t => { teamMap[t.name.toLowerCase()] = t.id })
 
-    // Get all groups from DB for ID lookup
     const { data: groups } = await supabase.from('groups').select('id, name')
     const groupMap = {}
     groups?.forEach(g => { groupMap[g.name.toLowerCase()] = g.id })
 
     let updated = 0
+    let skipped = 0
 
-    for (const group of standings) {
-      if (group.type !== 'TOTAL') continue
-      const rawGroupName = group.stage || group.group || 'Unknown'
-      // API returns e.g. "GROUP_A" — normalise to "A"
-      const groupLetter = rawGroupName.replace('GROUP_', '').replace('Group ', '').trim()
-      const groupId = groupMap[`group ${groupLetter}`.toLowerCase()] || groupMap[groupLetter.toLowerCase()] || null
+    for (const standing of allStandings) {
+      // Accept any type (TOTAL, HOME, AWAY) but prefer TOTAL
+      // For WC, group field is like "GROUP_A" or just "A"
+      const rawGroup = standing.group || standing.stage || ''
+      const groupLetter = rawGroup
+        .replace(/^GROUP_/i, '')
+        .replace(/^Group\s+/i, '')
+        .trim()
 
-      for (const entry of group.table) {
+      // Look up group ID — try "a", "group a", etc.
+      const groupId = groupMap[groupLetter.toLowerCase()] ||
+                      groupMap[`group ${groupLetter}`.toLowerCase()] ||
+                      null
+
+      if (!groupId) { skipped++; continue }
+
+      const table = standing.table || []
+      for (const entry of table) {
         const teamName = normalise(entry.team?.name || '')
         const teamId = teamMap[teamName.toLowerCase()] || null
 
-        if (!groupId || !teamId) continue
+        if (!teamId) { skipped++; continue }
 
-        await supabase.from('group_standings').upsert({
+        const { error } = await supabase.from('group_standings').upsert({
           group_id: groupId,
           team_id: teamId,
           position: entry.position,
-          played: entry.playedGames,
-          won: entry.won,
-          drawn: entry.draw,
-          lost: entry.lost,
-          goals_for: entry.goalsFor,
-          goals_against: entry.goalsAgainst,
-          goal_difference: entry.goalDifference,
-          points: entry.points,
+          played: entry.playedGames ?? 0,
+          won: entry.won ?? 0,
+          drawn: entry.draw ?? 0,
+          lost: entry.lost ?? 0,
+          goals_for: entry.goalsFor ?? 0,
+          goals_against: entry.goalsAgainst ?? 0,
+          goal_difference: entry.goalDifference ?? 0,
+          points: entry.points ?? 0,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'group_id,team_id' })
 
-        updated++
+        if (!error) updated++
+        else skipped++
       }
     }
 
     await supabase.from('app_settings')
-      .upsert({ key: 'standings_last_sync', value: new Date().toISOString() }, { onConflict: 'key' })
+      .update({ value: new Date().toISOString() })
+      .eq('key', 'standings_last_sync')
 
-    return { statusCode: 200, body: JSON.stringify({ message: 'Standings synced', updated }) }
+    return { statusCode: 200, body: JSON.stringify({
+      message: 'Standings synced',
+      updated,
+      skipped,
+      standingsGroups: allStandings.length,
+    }) }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
   }

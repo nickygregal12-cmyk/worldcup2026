@@ -2305,7 +2305,7 @@ export default function AdminPanel() {
                   try {
                     const res = await fetch('/.netlify/functions/sync-standings', { headers: adminHeaders })
                     const data = await res.json()
-                    setActionResult(`✅ Standings synced: ${data.updated || 0} rows updated${data.debug ? ` DEBUG: ${JSON.stringify(data.debug)}` : ''}`)
+                    setActionResult(`✅ Standings synced: ${data.updated || 0} rows updated, ${data.skipped || 0} skipped, ${data.standingsGroups || 0} groups from API`)
                   } catch (e) {
                     setActionResult(`❌ Standings sync failed: ${e.message}`)
                   }
