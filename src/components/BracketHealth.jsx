@@ -44,7 +44,7 @@ export default function BracketHealth() {
   const load = async () => {
     setLoading(true)
     const [pickRes, profRes, matchRes, groupRes] = await Promise.all([
-      supabase.from('knockout_picks').select('user_id, match_number'),
+      supabase.from('knockout_picks').select('user_id, match_number').limit(5000),
       supabase.from('profiles').select('id, username, is_banned'),
       supabase.from('matches').select('kickoff_time, group_id, stage').eq('stage', 'group'),
       supabase.from('groups').select('id, name'),
