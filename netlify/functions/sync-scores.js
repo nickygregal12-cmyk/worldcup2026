@@ -126,8 +126,16 @@ export const handler = async (event, context) => {
     for (const match of matches) {
       if (!['FINISHED', 'IN_PLAY', 'PAUSED'].includes(match.status)) continue
 
-      const homeScore = match.score?.fullTime?.home ?? match.score?.halfTime?.home
-      const awayScore = match.score?.fullTime?.away ?? match.score?.halfTime?.away
+      // For live matches, football-data.org puts the running score in score.fullTime
+      // (updated in real time on paid tiers). Fall back to halfTime, then currentScore.
+      const homeScore = match.score?.fullTime?.home
+        ?? match.score?.halfTime?.home
+        ?? match.score?.currentScore?.home
+        ?? (match.status !== 'FINISHED' ? 0 : null)
+      const awayScore = match.score?.fullTime?.away
+        ?? match.score?.halfTime?.away
+        ?? match.score?.currentScore?.away
+        ?? (match.status !== 'FINISHED' ? 0 : null)
       if (homeScore === null || homeScore === undefined) continue
 
       // Try matching by external_match_id first (most reliable)
