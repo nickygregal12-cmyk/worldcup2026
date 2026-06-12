@@ -260,7 +260,7 @@ function FinalStandingsView({ standings, matches, predictions, appSettings }) {
                 return (
                   <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
                     <span style={{ fontSize: '11px', fontWeight: '700', color: team.position <= 2 ? 'var(--accent-green)' : 'var(--text-muted)', width: '14px' }}>{team.position}</span>
-                    <span style={{ fontSize: '13px', flex: 1, fontWeight: team.position <= 2 ? '600' : '400' }}>{team.team_name}</span>
+                    <span style={{ fontSize: '13px', flex: 1, fontWeight: team.position <= 2 ? '600' : '400' }}>{team?.team?.name || team.team_name || '?'}</span>
                     <span style={{ fontWeight: '800', fontSize: '12px', fontFamily: 'var(--font-mono)', minWidth: '28px', textAlign: 'right' }}>{team.points}pts</span>
                     <span style={{ fontSize: '13px', minWidth: '18px', textAlign: 'center' }}>
                       {predTeam ? (correct ? '✅' : '❌') : '—'}
@@ -285,7 +285,7 @@ function FinalStandingsView({ standings, matches, predictions, appSettings }) {
           {thirdPlace.map((team, i) => (
             <div key={team.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px', borderRadius: 'var(--radius-sm)', marginBottom: '3px', background: i < 8 ? 'var(--accent-green-light)' : 'var(--bg-secondary)', border: i < 8 ? '1px solid rgba(0,122,51,0.15)' : 'none' }}>
               <span style={{ fontWeight: '700', fontSize: '11px', width: '16px', color: 'var(--text-muted)' }}>{i + 1}</span>
-              <span style={{ fontSize: '13px', flex: 1, fontWeight: '600' }}>{team.team_name}</span>
+              <span style={{ fontSize: '13px', flex: 1, fontWeight: '600' }}>{team?.team?.name || team.team_name || '?'}</span>
               <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Grp {team.group}</span>
               <span style={{ fontWeight: '800', fontFamily: 'var(--font-mono)' }}>{team.points}pts</span>
               <span style={{ fontSize: '11px', fontWeight: '700', color: i < 8 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{i < 8 ? '✓' : '✗'}</span>
@@ -371,7 +371,9 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
                       background: qualifies ? 'rgba(0,122,51,0.05)' : 'transparent',
                     }}>
                       <td style={{ padding: '8px 6px', fontWeight: '700', color: qualifies ? 'var(--accent-green)' : 'var(--text-muted)' }}>{team.position}</td>
-                      <td style={{ padding: '8px 6px', fontWeight: '600' }}>{team.team_name}</td>
+                      <td style={{ padding: '8px 6px', fontWeight: '600' }}>
+                        {team.team?.flag_emoji} {team.team?.name || '?'}
+                      </td>
                       <td style={{ padding: '8px 6px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.played}</td>
                       <td style={{ padding: '8px 6px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.won}</td>
                       <td style={{ padding: '8px 6px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.drawn}</td>
@@ -2060,7 +2062,7 @@ export default function Predictions() {
                         return (
                           <tr key={team.id || team.team_id} style={{ borderTop: '1px solid var(--border-light)', background: qualifies ? 'rgba(0,122,51,0.05)' : 'transparent' }}>
                             <td style={{ padding: '7px 4px', fontWeight: '800', color: qualifies ? 'var(--accent-green)' : 'var(--text-muted)' }}>{team.position}</td>
-                            <td style={{ padding: '7px 4px', fontWeight: '700' }}>{team.team_name}</td>
+                            <td style={{ padding: '7px 4px', fontWeight: '700' }}>{team?.team?.name || team.team_name || '?'}</td>
                             <td style={{ padding: '7px 4px', textAlign: 'center', color: 'var(--text-muted)' }}>{team.played}</td>
                             <td style={{ padding: '7px 4px', textAlign: 'center', color: team.goal_difference > 0 ? 'var(--accent-green)' : team.goal_difference < 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>
                               {team.goal_difference > 0 ? '+' : ''}{team.goal_difference}
