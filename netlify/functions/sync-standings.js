@@ -42,15 +42,24 @@ export const handler = async (event, context) => {
     const data = await response.json()
     const standings = data.standings || []
 
-    // Debug: return raw structure if empty so we can see what the API actually sends
-    if (!standings.length) {
+    // Debug: show structure of first standing entry
+    if (standings.length > 0) {
+      const first = standings[0]
       return { statusCode: 200, body: JSON.stringify({
         message: 'Standings synced',
         updated: 0,
         debug: {
-          topLevelKeys: Object.keys(data),
           standingsLength: standings.length,
-          rawSample: JSON.stringify(data).substring(0, 500)
+          firstType: first.type,
+          firstStage: first.stage,
+          firstGroup: first.group,
+          tableLength: first.table?.length,
+          firstEntry: first.table?.[0] ? {
+            teamName: first.table[0].team?.name,
+            position: first.table[0].position,
+            points: first.table[0].points,
+            played: first.table[0].playedGames,
+          } : null
         }
       })}
     }
