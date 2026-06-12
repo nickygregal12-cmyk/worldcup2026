@@ -42,27 +42,16 @@ export const handler = async (event, context) => {
     const data = await response.json()
     const standings = data.standings || []
 
-    // Debug: show structure of first standing entry
-    if (standings.length > 0) {
-      const first = standings[0]
-      return { statusCode: 200, body: JSON.stringify({
-        message: 'Standings synced',
-        updated: 0,
-        debug: {
-          standingsLength: standings.length,
-          firstType: first.type,
-          firstStage: first.stage,
-          firstGroup: first.group,
-          tableLength: first.table?.length,
-          firstEntry: first.table?.[0] ? {
-            teamName: first.table[0].team?.name,
-            position: first.table[0].position,
-            points: first.table[0].points,
-            played: first.table[0].playedGames,
-          } : null
-        }
-      })}
-    }
+    // TEMP DEBUG: always return to see full API structure
+    return { statusCode: 200, body: JSON.stringify({
+      message: 'Standings synced', updated: 0,
+      debug: {
+        topLevelKeys: Object.keys(data),
+        standingsLength: standings.length,
+        firstStanding: standings[0] ? { type: standings[0].type, stage: standings[0].stage, group: standings[0].group, tableLength: standings[0].table?.length, firstTeam: standings[0].table?.[0]?.team?.name } : null,
+        rawStart: JSON.stringify(data).substring(0, 400)
+      }
+    })}
 
     // Get all teams from DB for ID lookup
     const { data: teams } = await supabase.from('teams').select('id, name')
