@@ -14,7 +14,10 @@ const API_TO_DB = {
   'Korea Republic': 'South Korea',
   'Republic of Korea': 'South Korea',
   'DR Congo': 'DR Congo',
+  'Congo DR': 'DR Congo',
   'Cape Verde Islands': 'Cape Verde',
+  'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
+  'Curaçao': 'Curaçao',
 }
 
 const normalise = (name) => API_TO_DB[name] || name
