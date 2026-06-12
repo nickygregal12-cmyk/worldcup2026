@@ -821,6 +821,120 @@ export default function Home() {
       <div className="container" style={{ padding: '20px 16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
 
+          {/* ── Post-kickoff: Next Match countdown → flips to LIVE when it starts ── */}
+          {!loading && tournamentStarted && (liveMatches.length > 0 || nextMatch) && (
+            <div className="card fade-in" style={{
+              overflow: 'hidden',
+              border: liveMatches.length > 0 ? '2px solid #e53935' : '1px solid rgba(0,48,135,0.16)',
+              padding: '18px 16px',
+            }}>
+              {liveMatches.length > 0 ? (
+                /* ── LIVE STATE ── */
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ background: '#e53935', color: 'white', fontSize: '11px', fontWeight: '800', padding: '3px 8px', borderRadius: 'var(--radius-full)', letterSpacing: '0.08em', animation: 'pulse 2s infinite' }}>🔴 LIVE</span>
+                      <span style={{ fontWeight: '700', fontSize: '13px' }}>{liveMatches.length === 1 ? 'Match in Progress' : `${liveMatches.length} Matches in Progress`}</span>
+                    </div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Updates every 60s</span>
+                  </div>
+                  {liveMatches.map(match => {
+                    const pred = userPredictions[match.id]
+                    const predHome = pred?.home ?? null
+                    const predAway = pred?.away ?? null
+                    const onTrack = predHome !== null && (
+                      (predHome > predAway && match.home_score > match.away_score) ||
+                      (predHome < predAway && match.home_score < match.away_score) ||
+                      (predHome === predAway && match.home_score === match.away_score)
+                    )
+                    return (
+                      <div key={match.id} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '14px 16px', border: '1px solid rgba(229,57,53,0.2)' }}>
+                        {match.venue?.city && (
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', textAlign: 'center', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            {getVenueFlag(match.venue.city)} {match.venue.city}{formatWeather(matchWeather[match.id]) ? ` · ${formatWeather(matchWeather[match.id])}` : ''}
+                          </div>
+                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                            <span style={{ fontSize: '32px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</span>
+                            <span style={{ fontWeight: '800', fontSize: '13px', textAlign: 'center' }}>{match.home_team?.short_code}</span>
+                          </div>
+                          <div style={{ textAlign: 'center', flex: 1 }}>
+                            <div style={{ fontSize: '30px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1 }}>
+                              {match.home_score ?? 0} – {match.away_score ?? 0}
+                            </div>
+                            <div style={{ fontSize: '10px', color: '#e53935', fontWeight: '700', marginTop: '4px' }}>● LIVE</div>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                            <span style={{ fontSize: '32px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</span>
+                            <span style={{ fontWeight: '800', fontSize: '13px', textAlign: 'center' }}>{match.away_team?.short_code}</span>
+                          </div>
+                        </div>
+                        {predHome !== null && (
+                          <div style={{ marginTop: '10px', padding: '6px 10px', background: onTrack ? 'rgba(0,122,51,0.08)' : 'rgba(198,40,40,0.06)', borderRadius: 'var(--radius-sm)', border: `1px solid ${onTrack ? 'rgba(0,122,51,0.2)' : 'rgba(198,40,40,0.12)'}`, textAlign: 'center' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '700', color: onTrack ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+                              Your pick: {predHome}–{predAway} {pred?.joker ? '🃏 · 2× pts' : ''} · {onTrack ? '✓ On track' : '✗ Off track'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </>
+              ) : nextMatch ? (
+                /* ── COUNTDOWN STATE ── */
+                <>
+                  <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '16px', borderRadius: 'var(--radius-full)' }} />
+                  <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '900', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
+                      ⏱ Next match in
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                      {[
+                        { label: 'Days', value: mainCountdown.days ?? 0 },
+                        { label: 'Hours', value: mainCountdown.hours ?? 0 },
+                        { label: 'Mins', value: mainCountdown.minutes ?? 0 },
+                        { label: 'Secs', value: mainCountdown.seconds ?? 0 },
+                      ].map(item => (
+                        <div key={item.label} style={{ textAlign: 'center', padding: '10px 4px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                          <div style={{ fontWeight: '900', fontSize: 'clamp(24px, 7vw, 36px)', lineHeight: 1, fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)', letterSpacing: '-0.04em' }}>
+                            {String(item.value).padStart(2, '0')}
+                          </div>
+                          <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '6px' }}>{item.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <div style={{ fontWeight: '800', fontSize: '14px' }}>
+                        ⚽ {nextMatch.group ? `Group ${nextMatch.group.name}` : nextMatch.stage?.toUpperCase()}
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                        <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
+                        <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', lineHeight: 1.2 }}>{nextMatch.home_team?.name}</span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '900' }}>vs</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                        <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
+                        <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', lineHeight: 1.2 }}>{nextMatch.away_team?.name}</span>
+                      </div>
+                    </div>
+                    {nextMatch.venue?.city && (
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '10px', fontWeight: '600' }}>
+                        {getVenueFlag(nextMatch.venue.city)} {nextMatch.venue.city}
+                        {formatWeather(matchWeather[nextMatch.id]) && <span> · {formatWeather(matchWeather[nextMatch.id])}</span>}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : null}
+            </div>
+          )}
+
           {/* ── Tournament countdown / opening match — pre-tournament ── */}
           {!loading && !tournamentStarted && nextMatch && (
             <div className="card fade-in" style={{ overflow: 'hidden', border: '1px solid rgba(0,48,135,0.16)', padding: '22px 18px' }}>
@@ -1375,182 +1489,6 @@ export default function Home() {
                   </div>
                 </>
               )}
-            </div>
-          )}
-
-          {/* ── Live Matches ── */}
-          {liveMatches.length > 0 && (
-            <div className="card fade-in" style={{ border: '2px solid #e53935' }}>
-              <div className="section-header" style={{ marginBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{
-                    background: '#e53935', color: 'white',
-                    fontSize: '11px', fontWeight: '800', padding: '3px 8px',
-                    borderRadius: 'var(--radius-full)', letterSpacing: '0.08em',
-                    animation: 'pulse 2s infinite',
-                  }}>🔴 LIVE</span>
-                  <span className="section-title">
-                    {liveMatches.length === 1 ? 'Match in Progress' : `${liveMatches.length} Matches in Progress`}
-                  </span>
-                </div>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Updates every 60s</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {liveMatches.map(match => (
-                  <div key={match.id} style={{
-                    background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
-                    padding: '14px 16px', border: '1px solid rgba(229,57,53,0.2)',
-                  }}>
-                    {match.venue?.city && (
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', textAlign: 'center', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {getVenueFlag(match.venue.city)} {match.venue.city}{formatWeather(matchWeather[match.id]) ? ` · ${formatWeather(matchWeather[match.id])}` : ''}
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'space-between' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                        <span style={{ fontSize: '32px' }}>{match.home_team?.flag_emoji}</span>
-                        <span style={{ fontSize: '12px', fontWeight: '700' }}>{match.home_team?.short_code}</span>
-                      </div>
-                      <div style={{ textAlign: 'center', minWidth: '80px' }}>
-                        <div style={{ fontSize: '32px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1, letterSpacing: '-0.02em' }}>
-                          {match.home_score ?? 0} – {match.away_score ?? 0}
-                        </div>
-                        <div style={{ marginTop: '6px', fontSize: '10px', fontWeight: '800', color: '#e53935', textTransform: 'uppercase', letterSpacing: '0.1em' }}><span className="live-dot" />Live</div>
-                        {(() => {
-                          const pred = userPredictions?.[match.id]
-                          if (!pred || pred.home === undefined) return (
-                            <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--text-muted)' }}>No prediction</div>
-                          )
-                          const liveHome = match.home_score ?? 0
-                          const liveAway = match.away_score ?? 0
-                          const predHome = pred.home
-                          const predAway = pred.away
-                          const onTrack = (liveHome > liveAway && predHome > predAway) ||
-                                         (liveHome === liveAway && predHome === predAway) ||
-                                         (liveHome < liveAway && predHome < predAway)
-                          return (
-                            <div style={{ marginTop: '8px', padding: '4px 8px', background: onTrack ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.08)', borderRadius: 'var(--radius-sm)', border: `1px solid ${onTrack ? 'rgba(0,122,51,0.2)' : 'rgba(198,40,40,0.15)'}` }}>
-                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '1px' }}>Your pick {pred.joker ? '🃏' : ''}</div>
-                              <div style={{ fontSize: '14px', fontWeight: '800', fontFamily: 'var(--font-mono)', color: onTrack ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                {predHome} – {predAway}
-                              </div>
-                              <div style={{ fontSize: '10px', fontWeight: '700', color: onTrack ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-                                {onTrack ? '✓ On track' : '✗ Off track'}{pred.joker ? ' · 2× pts' : ''}
-                              </div>
-                            </div>
-                          )
-                        })()}
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                        <span style={{ fontSize: '32px' }}>{match.away_team?.flag_emoji}</span>
-                        <span style={{ fontSize: '12px', fontWeight: '700' }}>{match.away_team?.short_code}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Next match card (tournament live only) ── */}
-          {!loading && tournamentStarted && !tournamentOver && nextMatch && liveMatches.length === 0 && (() => {
-            const w = matchWeather[nextMatch.id]
-            const pillStyle = w?.available ? getWeatherPillStyle(w) : null
-            return (
-              <div className="card fade-in" style={{ overflow: 'hidden' }}>
-                <div style={{ height: '4px', background: 'var(--scottish-navy)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', padding: '0 16px' }}>
-                  <div style={{ fontWeight: '800', fontSize: '14px' }}>⏱️ Next Match</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center', padding: '0 16px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                    <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
-                    <span style={{ fontWeight: '800', fontSize: '13px' }}>{nextMatch.home_team?.name}</span>
-                  </div>
-                  <div style={{ fontSize: '16px', color: 'var(--text-muted)', fontWeight: '300' }}>vs</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                    <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
-                    <span style={{ fontWeight: '800', fontSize: '13px' }}>{nextMatch.away_team?.name}</span>
-                  </div>
-                </div>
-                {/* Venue + weather row */}
-                <div style={{ padding: '10px 16px 14px', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  {nextMatch.venue?.city && (
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>
-                      {getVenueFlag(nextMatch.venue.city)} {nextMatch.venue.city}
-                    </span>
-                  )}
-                  {pillStyle && (
-                    <>
-                      <span style={{ color: 'var(--border-light)' }}>·</span>
-                      <span style={{
-                        fontSize: '12px', fontWeight: '700', padding: '3px 10px',
-                        borderRadius: 'var(--radius-full)',
-                        background: pillStyle.bg, color: pillStyle.color,
-                      }}>
-                        {w.icon} {Math.round(w.temp_c)}°C · {w.condition}
-                      </span>
-                    </>
-                  )}
-                </div>
-                {/* Expanded weather stats row for next match */}
-                {w?.available && (w.humidity != null || w.wind_kph != null) && (
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-around',
-                    padding: '10px 16px', margin: '0 16px 14px',
-                    background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--border-light)',
-                  }}>
-                    {w.humidity != null && (
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{w.humidity}%</div>
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Humidity</div>
-                      </div>
-                    )}
-                    {w.wind_kph != null && (
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{Math.round(w.wind_kph)} km/h</div>
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Wind</div>
-                      </div>
-                    )}
-                    {w.feelslike_c != null && (
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>{Math.round(w.feelslike_c)}°C</div>
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Feels like</div>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {w?.alert && (
-                  <div style={{
-                    margin: '0 16px 14px', padding: '7px 12px',
-                    background: w.alert.includes('heat') || w.alert.includes('hot') ? 'rgba(230,81,0,0.08)' : 'rgba(94,53,177,0.08)',
-                    borderRadius: 'var(--radius-md)',
-                    fontSize: '11px', fontWeight: '600',
-                    color: w.alert.includes('heat') || w.alert.includes('hot') ? '#e65100' : '#5e35b1',
-                  }}>
-                    {w.alert.includes('heat') || w.alert.includes('hot') ? '🌡️' : '⛈️'} {w.alert} at kickoff
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-
-          {/* ── Next up compact (when live matches on) ── */}
-          {!loading && tournamentStarted && liveMatches.length > 0 && nextMatch && (
-            <div className="card fade-in">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontWeight: '700', fontSize: '14px' }}>📅 Next Up</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px' }}>
-                <span style={{ fontSize: '22px' }}>{nextMatch.home_team?.flag_emoji}</span>
-                <span style={{ fontWeight: '700', fontSize: '14px' }}>{nextMatch.home_team?.short_code}</span>
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)', flex: 1, textAlign: 'center' }}>vs</span>
-                <span style={{ fontWeight: '700', fontSize: '14px' }}>{nextMatch.away_team?.short_code}</span>
-                <span style={{ fontSize: '22px' }}>{nextMatch.away_team?.flag_emoji}</span>
-              </div>
             </div>
           )}
 
