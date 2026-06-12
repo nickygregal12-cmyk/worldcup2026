@@ -93,7 +93,7 @@ export const handler = async (event, context) => {
         played: entry.playedGames ?? 0, won: entry.won ?? 0,
         drawn: entry.draw ?? 0, lost: entry.lost ?? 0,
         goals_for: entry.goalsFor ?? 0, goals_against: entry.goalsAgainst ?? 0,
-        goal_difference: entry.goalDifference ?? 0, points: entry.points ?? 0,
+        points: entry.points ?? 0,
         updated_at: new Date().toISOString(),
       })
     }
