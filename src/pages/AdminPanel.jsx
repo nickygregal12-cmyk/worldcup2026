@@ -1608,16 +1608,12 @@ export default function AdminPanel() {
 
   const snapshotKickoffRanks = async () => {
     setSaving(prev => ({ ...prev, snapshot: true }))
-    // Rank all active players by total_points and write rank_at_kickoff.
-    // Run this ONCE just before the first match kicks off — it's the baseline
-    // for rank movement arrows throughout the tournament.
     const { data: ranked, error } = await supabase
       .from('profiles')
       .select('id, total_points')
       .eq('is_banned', false)
       .order('total_points', { ascending: false })
     if (error) { setActionResult(`❌ Snapshot failed: ${error.message}`); setSaving(prev => ({ ...prev, snapshot: false })); return }
-    // Batch update: assign rank position to each user
     let failed = 0
     for (let i = 0; i < (ranked || []).length; i++) {
       const { error: upErr } = await supabase
@@ -1626,9 +1622,25 @@ export default function AdminPanel() {
         .eq('id', ranked[i].id)
       if (upErr) failed++
     }
+
+    // Also snapshot per-league ranks
+    const { data: allLeagues } = await supabase.from('leagues').select('id')
+    for (const league of allLeagues || []) {
+      const { data: members } = await supabase
+        .from('league_members')
+        .select('id, league_points')
+        .eq('league_id', league.id)
+        .order('league_points', { ascending: false })
+      for (let i = 0; i < (members || []).length; i++) {
+        await supabase.from('league_members')
+          .update({ rank_snapshot: i + 1 })
+          .eq('id', members[i].id)
+      }
+    }
+
     await logAudit('SNAPSHOT_KICKOFF_RANKS', { player_count: ranked?.length, failed })
     setSaving(prev => ({ ...prev, snapshot: false }))
-    setActionResult(`✅ Kickoff ranks snapshotted for ${ranked?.length} players${failed > 0 ? ` (${failed} failed)` : ''} — rank movement now active`)
+    setActionResult(`✅ Ranks snapshotted — ${ranked?.length} global + ${allLeagues?.length} leagues — ↑↓ movement now active`)
   }
 
   const recalcAllPoints = async () => {
@@ -3522,7 +3534,17 @@ export default function AdminPanel() {
         {activeTab === 'points' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 
-            {/* League points amendment — based on Excel scoring */}
+            {/* Rank Snapshot — run before and after each match window */}
+            <div className="card" style={{ border: '2px solid var(--accent-gold)', background: 'rgba(245,158,11,0.04)' }}>
+              <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '4px' }}>📸 Snapshot Ranks</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: 1.5 }}>
+                Run <strong>before</strong> a match window to set the baseline, and <strong>after</strong> results come in to show movement. Updates ↑↓ arrows on the global leaderboard and all mini leagues.
+              </div>
+              <button onClick={snapshotKickoffRanks} disabled={saving.snapshot} className="btn btn-primary"
+                style={{ background: 'var(--accent-gold)', color: 'white', border: 'none', width: '100%' }}>
+                {saving.snapshot ? '⏳ Snapshotting...' : '📸 Snapshot All Ranks Now'}
+              </button>
+            </div>
             <div className="card" style={{ border: '1px solid var(--scottish-navy)' }}>
               <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '4px' }}>📊 League Points Amendment</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>

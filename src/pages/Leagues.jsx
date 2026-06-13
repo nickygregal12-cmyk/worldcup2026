@@ -640,7 +640,7 @@ export default function Leagues() {
     setLoadingMembers(prev => ({ ...prev, [leagueId]: true }))
     const { data } = await supabase
       .from('league_members')
-      .select('*, league_points, profile:user_id(id, username, total_points, display_name, streak_current, exact_scores, avatar_emoji)')
+      .select('*, league_points, rank_snapshot, profile:user_id(id, username, total_points, display_name, streak_current, exact_scores, avatar_emoji)')
       .eq('league_id', leagueId)
       .order('joined_at', { ascending: true })
 
@@ -1405,10 +1405,19 @@ export default function Leagues() {
                               borderLeft: isMe ? '3px solid var(--scottish-navy)' : '3px solid transparent',
                               cursor: 'pointer',
                             }}>
-                              {/* Rank */}
-                              <span style={{ fontSize: '13px', fontWeight: '800', width: '20px', flexShrink: 0, color: rank <= 3 ? rankColours[rank - 1] : 'var(--text-muted)' }}>
-                                {rank}
-                              </span>
+                          {/* Rank with movement */}
+                          <span style={{ fontSize: '13px', fontWeight: '800', width: '28px', flexShrink: 0, color: rank <= 3 ? rankColours[rank - 1] : 'var(--text-muted)' }}>
+                            {rank}
+                          </span>
+                          {(() => {
+                            const snap = member.rank_snapshot
+                            if (!snap) return null
+                            const diff = snap - rank
+                            if (diff === 0) return <span style={{ fontSize: '9px', color: 'var(--text-muted)', width: '16px' }}>–</span>
+                            return <span style={{ fontSize: '9px', fontWeight: '800', color: diff > 0 ? 'var(--accent-green)' : 'var(--accent-red)', width: '16px' }}>
+                              {diff > 0 ? `↑${diff}` : `↓${Math.abs(diff)}`}
+                            </span>
+                          })()}
 
                               {/* Avatar */}
                               <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : avatarColor(member.profile?.display_name || member.profile?.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: isMe ? 'white' : avatarColor(member.profile?.display_name || member.profile?.username).fg, flexShrink: 0 }}>
