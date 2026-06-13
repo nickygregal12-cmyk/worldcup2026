@@ -3702,15 +3702,6 @@ export default function AdminPanel() {
                 ))}
               </div>
             </div>
-            <div className="card" style={{ border: '2px solid var(--accent-gold)', marginBottom: '8px' }}>
-              <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '4px' }}>📸 Kickoff Rank Snapshot</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.5 }}>
-                Run this <strong>once, just before 20:00 tonight</strong>. Saves everyone's current rank as their baseline — powers the rank movement arrows (↑↓) on the leaderboard and home page throughout the tournament. Can only meaningfully be done once.
-              </div>
-              <button onClick={snapshotKickoffRanks} disabled={saving.snapshot} className="btn btn-primary" style={{ background: 'var(--accent-gold)', color: 'white', border: 'none' }}>
-                {saving.snapshot ? '⏳ Snapshotting...' : '📸 Snapshot Kickoff Ranks Now'}
-              </button>
-            </div>
             <button onClick={recalcAllPoints} disabled={saving.recalc} className="btn btn-primary">
               {saving.recalc ? '⏳ Recalculating...' : '🔄 Recalculate All Points'}
             </button>

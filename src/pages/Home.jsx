@@ -328,10 +328,18 @@ export default function Home() {
       const windowStart = new Date() // now
       const windowEnd   = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000)
 
-      const [liveRes, nextRes, upcomingRes, predictorRes, todayRes] = await Promise.all([
+      const [liveRes, liveFromKickoffRes, nextRes, upcomingRes, predictorRes, todayRes] = await Promise.all([
         supabase.from('matches')
           .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
           .eq('status', 'live').order('kickoff_time', { ascending: true }),
+
+        // Also treat scheduled matches past kickoff as live (API slow to update)
+        supabase.from('matches')
+          .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
+          .eq('status', 'scheduled')
+          .lt('kickoff_time', nowIso)
+          .gt('kickoff_time', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
+          .order('kickoff_time', { ascending: true }),
 
         supabase.from('matches')
           .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
@@ -354,7 +362,8 @@ export default function Home() {
           .order('kickoff_time', { ascending: true }),
       ])
 
-      setLiveMatches(liveRes.data || [])
+      const allLive = [...(liveRes.data || []), ...(liveFromKickoffRes.data || [])]
+      setLiveMatches(allLive)
       setNextMatch(nextRes.data || null)
       setUpcomingMatches(upcomingRes.data || [])
       setTopPredictors(predictorRes.data || [])
@@ -988,7 +997,7 @@ export default function Home() {
           )}
 
           {/* ── Matchday round-up share card ── */}
-          {roundUpData && user && tournamentStarted && (() => {
+          {roundUpData && user && tournamentStarted && roundUpData.totalPts > 0 && (() => {
             const { totalPts, correct, exact, jokerPaid, bestMatch, matches, preds } = roundUpData
             const shareText = () => {
               const lines = [

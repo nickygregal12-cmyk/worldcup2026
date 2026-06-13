@@ -123,20 +123,27 @@ export const handler = async (event, context) => {
       }
     }
 
+    const now = new Date()
     for (const match of matches) {
-      if (!['FINISHED', 'IN_PLAY', 'PAUSED'].includes(match.status)) continue
+      // Also process SCHEDULED matches where kickoff has passed (API slow to switch to IN_PLAY)
+      const kickoffPassed = match.utcDate && new Date(match.utcDate) <= now
+      const treatAsLive = match.status === 'SCHEDULED' && kickoffPassed
+      if (!['FINISHED', 'IN_PLAY', 'PAUSED'].includes(match.status) && !treatAsLive) continue
 
       // For live matches, football-data.org puts the running score in score.fullTime
-      // (updated in real time on paid tiers). Fall back to halfTime, then currentScore.
+      // (updated in real time on paid tiers). Fall back to halfTime, then currentScore, then 0-0.
       const homeScore = match.score?.fullTime?.home
         ?? match.score?.halfTime?.home
         ?? match.score?.currentScore?.home
-        ?? (match.status !== 'FINISHED' ? 0 : null)
+        ?? 0
       const awayScore = match.score?.fullTime?.away
         ?? match.score?.halfTime?.away
         ?? match.score?.currentScore?.away
-        ?? (match.status !== 'FINISHED' ? 0 : null)
-      if (homeScore === null || homeScore === undefined) continue
+        ?? 0
+      // Determine status — treat past-kickoff SCHEDULED as live
+      const newStatus = match.status === 'FINISHED' ? 'completed'
+        : (match.status === 'IN_PLAY' || match.status === 'PAUSED' || treatAsLive) ? 'live'
+        : 'scheduled'
 
       // Try matching by external_match_id first (most reliable)
       let { data: ourMatch } = await supabase
@@ -173,10 +180,15 @@ export const handler = async (event, context) => {
         }
       }
 
-      if (!ourMatch || ourMatch.use_manual_override) continue
+      if (!ourMatch || ourMatch.use_manual_override) {
+        // If manually overridden but API now confirms same completed result, clear the override
+        if (ourMatch?.use_manual_override && newStatus === 'completed' &&
+            ourMatch.home_score === homeScore && ourMatch.away_score === awayScore) {
+          await supabase.from('matches').update({ use_manual_override: false }).eq('id', ourMatch.id)
+        }
+        continue
+      }
       if (ourMatch.status === 'completed' && ourMatch.home_score === homeScore && ourMatch.away_score === awayScore) continue
-
-      const newStatus = match.status === 'FINISHED' ? 'completed' : 'live'
 
       // Snapshot ranks when a match first goes live
       // This gives us a baseline to show rank movement during the match
