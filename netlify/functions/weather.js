@@ -64,17 +64,24 @@ export async function handler(event) {
         })
         || data.forecast.forecastday[data.forecast.forecastday.length - 1]
 
-      // Find the hour closest to kickoff time using full timestamp comparison
-      // WeatherAPI returns local times per city — must compare by absolute time
-      const kickoffMs = date.getTime()
+      // WeatherAPI provides the venue's UTC offset via localtime vs localtime_epoch
+      // Use this to convert kickoff UTC to local hour, then find matching forecast hour
+      let kickoffLocalHour = date.getUTCHours() // default to UTC if no offset available
+      if (data.location?.localtime_epoch && data.location?.localtime) {
+        // localtime_epoch is Unix timestamp, localtime is "YYYY-MM-DD HH:MM" in local time
+        const localHourStr = data.location.localtime.split(' ')[1]?.split(':')[0]
+        const localHourNow = parseInt(localHourStr || '0', 10)
+        const utcHourNow = new Date(data.location.localtime_epoch * 1000).getUTCHours()
+        const offsetHours = (localHourNow - utcHourNow + 48) % 24
+        kickoffLocalHour = (date.getUTCHours() + offsetHours) % 24
+      }
       const hours = forecastDay.hour || []
       let bestHour = null
       let bestDiff = Infinity
       hours.forEach(h => {
-        // WeatherAPI hour.time is local time string e.g. "2026-06-13 20:00"
-        // Parse as UTC offset aware using the city's offset from location data
-        const hTime = new Date(h.time_epoch * 1000)
-        const diff = Math.abs(hTime.getTime() - kickoffMs)
+        // hour.time is "YYYY-MM-DD HH:MM" in local time
+        const localHour = parseInt((h.time || '').split(' ')[1]?.split(':')[0] || '0', 10)
+        const diff = Math.abs(localHour - kickoffLocalHour)
         if (diff < bestDiff) { bestDiff = diff; bestHour = h }
       })
 
