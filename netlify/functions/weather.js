@@ -52,19 +52,29 @@ export async function handler(event) {
     let feelslike_c = null
 
     if (useForecast && data.forecast?.forecastday?.length) {
-      // Pick the forecastday matching the kickoff date
+      // forecastday date uses local time at the city — match by closest day
+      // rather than strict UTC date string to handle timezone crossings
       const kickoffDateStr = date.toISOString().slice(0, 10)
       const forecastDay = data.forecast.forecastday.find(d => d.date === kickoffDateStr)
+        || data.forecast.forecastday.find(d => {
+          // Also check adjacent days in case UTC date differs from local date
+          const d0 = new Date(date.getTime() - 86400000).toISOString().slice(0, 10)
+          const d1 = new Date(date.getTime() + 86400000).toISOString().slice(0, 10)
+          return d.date === d0 || d.date === d1
+        })
         || data.forecast.forecastday[data.forecast.forecastday.length - 1]
 
-      // Find the hour closest to kickoff time for accuracy
-      const kickoffHour = date.getUTCHours()
+      // Find the hour closest to kickoff time using full timestamp comparison
+      // WeatherAPI returns local times per city — must compare by absolute time
+      const kickoffMs = date.getTime()
       const hours = forecastDay.hour || []
       let bestHour = null
       let bestDiff = Infinity
       hours.forEach(h => {
-        const hTime = new Date(h.time)
-        const diff = Math.abs(hTime.getUTCHours() - kickoffHour)
+        // WeatherAPI hour.time is local time string e.g. "2026-06-13 20:00"
+        // Parse as UTC offset aware using the city's offset from location data
+        const hTime = new Date(h.time_epoch * 1000)
+        const diff = Math.abs(hTime.getTime() - kickoffMs)
         if (diff < bestDiff) { bestDiff = diff; bestHour = h }
       })
 
