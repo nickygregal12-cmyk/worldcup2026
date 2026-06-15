@@ -486,6 +486,26 @@ export default function Leagues() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [expandedLeague, setExpandedLeague] = useState(null)
+  const [liveMatches, setLiveMatches] = useState([])
+  const [livePredictions, setLivePredictions] = useState({}) // matchId → { userId → pred }
+
+  // Load live matches and poll every 60s
+  useEffect(() => {
+    const loadLive = async () => {
+      const now = new Date().toISOString()
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+      const { data } = await supabase.from('matches')
+        .select('id, home_score, away_score, status, kickoff_time, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .or(`status.eq.live,and(status.eq.scheduled,kickoff_time.lte.${now},kickoff_time.gte.${twoHoursAgo})`)
+        .order('kickoff_time', { ascending: true })
+      setLiveMatches(data || [])
+    }
+    if (tournamentLive) {
+      loadLive()
+      const interval = setInterval(loadLive, 60000)
+      return () => clearInterval(interval)
+    }
+  }, [tournamentLive])
   const [leagueMembers, setLeagueMembers] = useState({})
   const [loadingMembers, setLoadingMembers] = useState({})
   const [confirmAction, setConfirmAction] = useState(null)
@@ -634,6 +654,25 @@ export default function Leagues() {
     await supabase.from('ko_leagues').delete().eq('id', leagueId)
     setSuccess(`Deleted "${leagueName}"`)
     loadMyKoLeagues()
+  }
+
+  const loadLivePredictions = async (leagueId, matchIds) => {
+    if (!matchIds.length) return
+    const memberIds = (leagueMembers[leagueId] || [])
+      .filter(m => !m.is_offline)
+      .map(m => m.user_id)
+    if (!memberIds.length) return
+    const { data } = await supabase.from('predictions')
+      .select('user_id, match_id, home_score, away_score, is_confident, points_awarded')
+      .in('match_id', matchIds)
+      .in('user_id', memberIds)
+    if (!data) return
+    const byMatch = {}
+    data.forEach(p => {
+      if (!byMatch[p.match_id]) byMatch[p.match_id] = {}
+      byMatch[p.match_id][p.user_id] = p
+    })
+    setLivePredictions(prev => ({ ...prev, ...byMatch }))
   }
 
   const loadLeagueMembers = async (leagueId) => {
@@ -861,6 +900,7 @@ export default function Leagues() {
     } else {
       setExpandedLeague(leagueId)
       if (!leagueMembers[leagueId]) await loadLeagueMembers(leagueId)
+      if (liveMatches.length > 0) await loadLivePredictions(leagueId, liveMatches.map(m => m.id))
     }
   }
 
@@ -1374,6 +1414,63 @@ export default function Leagues() {
                     <Link to="/how-to-play" style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textDecoration: 'none', flexShrink: 0, marginLeft: '8px' }}>Rules →</Link>
                   </div>
 
+                  {/* Live Match Predictions — show when a match is in play */}
+                  {liveMatches.length > 0 && liveMatches.map(liveMatch => {
+                    const matchPreds = livePredictions[liveMatch.id] || {}
+                    const members = sortedMembers(league.id)
+                    if (!members.length) return null
+                    const liveScore = liveMatch.home_score != null ? `${liveMatch.home_score}–${liveMatch.away_score}` : null
+                    return (
+                      <div key={liveMatch.id} style={{ borderBottom: '2px solid #e53935', background: 'rgba(229,57,53,0.03)' }}>
+                        <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ background: '#e53935', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: 'var(--radius-full)', letterSpacing: '0.06em' }}>🔴 LIVE</span>
+                            <span style={{ fontSize: '12px', fontWeight: '700' }}>
+                              {liveMatch.home_team?.flag_emoji} {liveMatch.home_team?.short_code} {liveScore ? <strong style={{ fontFamily: 'var(--font-mono)', color: '#e53935' }}>{liveScore}</strong> : '–'} {liveMatch.away_team?.short_code} {liveMatch.away_team?.flag_emoji}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>League picks</span>
+                        </div>
+                        <div style={{ padding: '0 8px 8px' }}>
+                          {members.map(member => {
+                            const pred = matchPreds[member.user_id]
+                            if (!pred) return (
+                              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', opacity: 0.4 }}>
+                                <span style={{ fontSize: '12px', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No pick</span>
+                              </div>
+                            )
+                            const predScore = `${pred.home_score}–${pred.away_score}`
+                            const homeWin = liveMatch.home_score > liveMatch.away_score
+                            const awayWin = liveMatch.home_score < liveMatch.away_score
+                            const draw = liveMatch.home_score === liveMatch.away_score
+                            const predHomeWin = pred.home_score > pred.away_score
+                            const predAwayWin = pred.home_score < pred.away_score
+                            const predDraw = pred.home_score === pred.away_score
+                            const hasScore = liveMatch.home_score != null
+                            const onTrack = hasScore && (
+                              (homeWin && predHomeWin) || (awayWin && predAwayWin) || (draw && predDraw)
+                            )
+                            const exact = hasScore && liveMatch.home_score === pred.home_score && liveMatch.away_score === pred.away_score
+                            return (
+                              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', background: exact ? 'rgba(0,122,51,0.08)' : onTrack ? 'rgba(0,122,51,0.04)' : hasScore ? 'rgba(229,57,53,0.04)' : 'transparent' }}>
+                                <span style={{ fontSize: '13px' }}>{member.profile?.avatar_emoji || '⚽'}</span>
+                                <span style={{ fontSize: '12px', fontWeight: '600', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
+                                {pred.is_confident && <span style={{ fontSize: '10px' }}>🃏</span>}
+                                <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: '800', color: exact ? 'var(--accent-green)' : onTrack ? 'var(--accent-green)' : hasScore ? 'var(--accent-red)' : 'var(--text-primary)' }}>
+                                  {predScore}
+                                </span>
+                                <span style={{ fontSize: '11px', width: '14px', textAlign: 'center' }}>
+                                  {!hasScore ? '' : exact ? '🎯' : onTrack ? '✓' : '✗'}
+                                </span>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+
                   {/* League table — always visible */}
                   <div>
                     {loadingMembers[league.id] ? (
@@ -1512,7 +1609,7 @@ export default function Leagues() {
                   {memberModal.isOffline ? '👤 ' : ''}{memberModal.username}'s Predictions
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                  {memberModal.lockedSnapshot ? `Locked league snapshot${memberModal.leagueName ? ` · ${memberModal.leagueName}` : ''}` : memberModal.isOffline ? 'Offline player · imported predictions' : 'Past picks always visible · Future picks if they\'ve enabled sharing'}
+                  {memberModal.lockedSnapshot ? `Locked league snapshot${memberModal.leagueName ? ` · ${memberModal.leagueName}` : ''}` : memberModal.isOffline ? 'Offline player · imported predictions' : 'Group picks visible once group kicks off · Future picks shown'}
                 </div>
               </div>
               <button onClick={() => setMemberModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
