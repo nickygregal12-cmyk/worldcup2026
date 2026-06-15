@@ -103,6 +103,7 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
 export default function Home() {
   const { user, profile, isAdmin } = useAuthStore()
   const [nextMatch, setNextMatch]         = useState(null)
+  const [liveLeaguePreds, setLiveLeaguePreds] = useState([]) // league members' picks for live match
   const [liveMatches, setLiveMatches]     = useState([])
   const [upcomingMatches, setUpcomingMatches] = useState([])
   const [topPredictors, setTopPredictors] = useState([])
@@ -364,6 +365,40 @@ export default function Home() {
 
       const allLive = [...(liveRes.data || []), ...(liveFromKickoffRes.data || [])]
       setLiveMatches(allLive)
+
+      // Load league members' predictions for live match(es)
+      if (allLive.length > 0 && user) {
+        const liveMatchIds = allLive.map(m => m.id)
+        // Get user's first league members
+        const { data: myLeague } = await supabase
+          .from('league_members')
+          .select('league_id')
+          .eq('user_id', user.id)
+          .limit(1)
+          .maybeSingle()
+        if (myLeague) {
+          const { data: members } = await supabase
+            .from('league_members')
+            .select('user_id, profile:user_id(display_name, username, avatar_emoji, avatar_color)')
+            .eq('league_id', myLeague.league_id)
+            .neq('user_id', user.id)
+            .limit(20)
+          if (members?.length) {
+            const memberIds = members.map(m => m.user_id)
+            const { data: preds } = await supabase
+              .from('predictions')
+              .select('user_id, match_id, home_score, away_score, is_confident, points_awarded')
+              .in('match_id', liveMatchIds)
+              .in('user_id', memberIds)
+            // Merge predictions with member profiles
+            const merged = members.map(m => ({
+              ...m,
+              preds: preds?.filter(p => p.user_id === m.user_id) || []
+            })).filter(m => m.preds.length > 0)
+            setLiveLeaguePreds(merged)
+          }
+        }
+      }
       setNextMatch(nextRes.data || null)
       setUpcomingMatches(upcomingRes.data || [])
       setTopPredictors(predictorRes.data || [])
@@ -872,7 +907,7 @@ export default function Home() {
                             <div style={{ fontSize: '30px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1, whiteSpace: 'nowrap' }}>
                               {(match.home_score != null && match.away_score != null)
                                 ? `${match.home_score} – ${match.away_score}`
-                                : '– –'}
+                                : match.status === 'live' ? '0 – 0' : '– –'}
                             </div>
                             <div style={{ fontSize: '10px', color: '#e53935', fontWeight: '700', marginTop: '4px' }}>● LIVE</div>
                           </div>
@@ -943,6 +978,57 @@ export default function Home() {
                   </div>
                 </>
               ) : null}
+            </div>
+          )}
+
+          {/* ── League picks for live match ── */}
+          {liveMatches.length > 0 && liveLeaguePreds.length > 0 && (
+            <div className="card fade-in" style={{ padding: '12px 14px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
+                👥 Your league's picks
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {liveLeaguePreds.map(member => {
+                  const name = member.profile?.display_name || member.profile?.username || '?'
+                  const initials = name.slice(0, 1).toUpperCase()
+                  const avatarColor = member.profile?.avatar_color || '#003087'
+                  return liveMatches.map(match => {
+                    const pred = member.preds.find(p => p.match_id === match.id)
+                    if (!pred) return null
+                    const liveH = match.home_score ?? 0
+                    const liveA = match.away_score ?? 0
+                    const predH = pred.home_score
+                    const predA = pred.away_score
+                    const onTrack = predH != null && (
+                      (predH > predA && liveH > liveA) ||
+                      (predH < predA && liveH < liveA) ||
+                      (predH === predA && liveH === liveA)
+                    )
+                    const pts = pred.points_awarded
+                    return (
+                      <div key={`${member.user_id}-${match.id}`}
+                        style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {/* Avatar */}
+                        <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: avatarColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: 'white', flexShrink: 0 }}>
+                          {member.profile?.avatar_emoji || initials}
+                        </div>
+                        {/* Name */}
+                        <span style={{ fontSize: '12px', fontWeight: '600', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {name}
+                        </span>
+                        {/* Their pick */}
+                        <span style={{ fontSize: '13px', fontWeight: '800', fontFamily: 'var(--font-mono)', color: pts != null ? (pts > 0 ? 'var(--accent-green)' : 'var(--accent-red)') : onTrack ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                          {predH != null ? `${predH}–${predA}` : '?'}{pred.is_confident ? ' 🃏' : ''}
+                        </span>
+                        {/* On track indicator */}
+                        <span style={{ fontSize: '10px', color: onTrack ? 'var(--accent-green)' : 'var(--text-muted)', flexShrink: 0 }}>
+                          {pts != null ? `${pts}pts` : predH != null ? (onTrack ? '✓' : '✗') : ''}
+                        </span>
+                      </div>
+                    )
+                  })
+                })}
+              </div>
             </div>
           )}
 
