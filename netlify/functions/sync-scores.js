@@ -203,7 +203,7 @@ export const handler = async (event, context) => {
       // Snapshot ranks when a match first goes live
       // This gives us a baseline to show rank movement during the match
       if (newStatus === 'live' && ourMatch.status === 'scheduled') {
-        await supabase.rpc('snapshot_user_ranks').catch(() => {})
+        try { await supabase.rpc('snapshot_user_ranks') } catch (_) {}
       }
 
       // Derive winner_team_id and outcome_type for knockout scoring
