@@ -555,22 +555,23 @@ export default function Leagues() {
         .select('id, home_score, away_score, status, kickoff_time, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
         .or(`status.eq.live,and(status.eq.scheduled,kickoff_time.lte.${now},kickoff_time.gte.${twoHoursAgo})`)
         .order('kickoff_time', { ascending: true })
-      const matches = data || []
-      setLiveMatches(matches)
-      // Auto-load predictions for expanded league whenever live matches refresh
-      if (expandedLeague && matches.length > 0) {
-        const members = leagueMembers[expandedLeague] || []
-        if (members.length > 0) {
-          await loadLivePredictions(expandedLeague, matches.map(m => m.id), members)
-        }
-      }
+      setLiveMatches(data || [])
     }
     loadLive()
     const interval = setInterval(loadLive, 60000)
     return () => clearInterval(interval)
-  }, [expandedLeague, leagueMembers])
+  }, [])
   const [leagueMembers, setLeagueMembers] = useState({})
   const [loadingMembers, setLoadingMembers] = useState({})
+
+  // Reload live predictions when expanded league or live matches change
+  useEffect(() => {
+    if (!expandedLeague || !liveMatches.length) return
+    const members = leagueMembers[expandedLeague]
+    if (members?.length > 0) {
+      loadLivePredictions(expandedLeague, liveMatches.map(m => m.id), members)
+    }
+  }, [expandedLeague, liveMatches, leagueMembers])
   const [confirmAction, setConfirmAction] = useState(null)
   const [memberModal, setMemberModal] = useState(null)
   const [memberPredictions, setMemberPredictions] = useState([])
