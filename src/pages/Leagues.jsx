@@ -1,3 +1,5 @@
+import React, { useEffect, useState } from 'react'
+
 function LiveMatchCard({ liveMatch, matchPreds, members }) {
   const [expanded, setExpanded] = useState(false)
   const liveScore = liveMatch.home_score != null ? `${liveMatch.home_score}–${liveMatch.away_score}` : null
