@@ -487,10 +487,12 @@ export default function Leagues() {
   const [success, setSuccess] = useState('')
   const [expandedLeague, setExpandedLeague] = useState(null)
   const [liveMatches, setLiveMatches] = useState([])
-  const [livePredictions, setLivePredictions] = useState({}) // matchId → { userId → pred }
+  const [livePredictions, setLivePredictions] = useState({})
 
   // Load live matches and poll every 60s
   useEffect(() => {
+    const isLive = new Date() >= new Date('2026-06-11T19:00:00Z')
+    if (!isLive) return
     const loadLive = async () => {
       const now = new Date().toISOString()
       const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
@@ -500,12 +502,10 @@ export default function Leagues() {
         .order('kickoff_time', { ascending: true })
       setLiveMatches(data || [])
     }
-    if (tournamentLive) {
-      loadLive()
-      const interval = setInterval(loadLive, 60000)
-      return () => clearInterval(interval)
-    }
-  }, [tournamentLive])
+    loadLive()
+    const interval = setInterval(loadLive, 60000)
+    return () => clearInterval(interval)
+  }, [])
   const [leagueMembers, setLeagueMembers] = useState({})
   const [loadingMembers, setLoadingMembers] = useState({})
   const [confirmAction, setConfirmAction] = useState(null)
