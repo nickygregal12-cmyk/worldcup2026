@@ -870,7 +870,9 @@ export default function Home() {
                           </div>
                           <div style={{ textAlign: 'center', minWidth: '80px' }}>
                             <div style={{ fontSize: '30px', fontWeight: '900', fontFamily: 'var(--font-mono)', lineHeight: 1, whiteSpace: 'nowrap' }}>
-                              {match.home_score ?? 0} – {match.away_score ?? 0}
+                              {(match.home_score != null && match.away_score != null)
+                                ? `${match.home_score} – ${match.away_score}`
+                                : '– –'}
                             </div>
                             <div style={{ fontSize: '10px', color: '#e53935', fontWeight: '700', marginTop: '4px' }}>● LIVE</div>
                           </div>

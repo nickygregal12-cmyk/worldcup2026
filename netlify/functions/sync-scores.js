@@ -188,7 +188,17 @@ export const handler = async (event, context) => {
         }
         continue
       }
-      if (ourMatch.status === 'completed' && ourMatch.home_score === homeScore && ourMatch.away_score === awayScore) continue
+      // For live matches: if API returns 0-0 but we already have a real score stored
+      // (from manual entry or a previous sync), keep the existing score
+      // The API only returns real-time scores on higher tiers — don't regress to 0-0
+      const effectiveHomeScore = (newStatus === 'live' && homeScore === 0 && awayScore === 0 && ourMatch.home_score != null)
+        ? ourMatch.home_score
+        : homeScore
+      const effectiveAwayScore = (newStatus === 'live' && homeScore === 0 && awayScore === 0 && ourMatch.away_score != null)
+        ? ourMatch.away_score
+        : awayScore
+
+      if (ourMatch.status === 'completed' && ourMatch.home_score === effectiveHomeScore && ourMatch.away_score === effectiveAwayScore) continue
 
       // Snapshot ranks when a match first goes live
       // This gives us a baseline to show rank movement during the match
@@ -222,8 +232,8 @@ export const handler = async (event, context) => {
       }
 
       const updateFields = {
-        home_score: homeScore,
-        away_score: awayScore,
+        home_score: effectiveHomeScore,
+        away_score: effectiveAwayScore,
         status: newStatus,
         external_match_id: match.id.toString(),
         api_synced_at: new Date().toISOString(),
