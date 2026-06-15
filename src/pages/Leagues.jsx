@@ -125,6 +125,7 @@ function LiveMatchCard({ match, members, supabase, mode }) {
   )
 }
 
+const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
 function MemberStandingsView({ predictions }) {
