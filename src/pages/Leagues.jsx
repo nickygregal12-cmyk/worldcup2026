@@ -1,4 +1,9 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
+import { supabase } from '../lib/supabase.js'
+import { avatarColor } from '../lib/avatarColor.js'
+import { useAuthStore, useAppStore } from '../store/index.js'
 
 function LiveMatchCard({ match, members, supabase, mode }) {
   // mode: 'upcoming' | 'live' | 'result'
