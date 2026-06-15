@@ -564,6 +564,23 @@ export default function Leagues() {
   const [leagueMembers, setLeagueMembers] = useState({})
   const [loadingMembers, setLoadingMembers] = useState({})
 
+  const loadLivePredictions = async (leagueId, matchIds, members) => {
+    if (!matchIds.length) return
+    const memberIds = (members || []).filter(m => !m.is_offline).map(m => m.user_id)
+    if (!memberIds.length) return
+    const { data } = await supabase.from('predictions')
+      .select('user_id, match_id, home_score, away_score, is_confident, points_awarded')
+      .in('match_id', matchIds)
+      .in('user_id', memberIds)
+    if (!data) return
+    const byMatch = {}
+    data.forEach(p => {
+      if (!byMatch[p.match_id]) byMatch[p.match_id] = {}
+      byMatch[p.match_id][p.user_id] = p
+    })
+    setLivePredictions(prev => ({ ...prev, ...byMatch }))
+  }
+
   // Reload live predictions when expanded league or live matches change
   useEffect(() => {
     if (!expandedLeague || !liveMatches.length) return
@@ -718,25 +735,6 @@ export default function Leagues() {
     await supabase.from('ko_leagues').delete().eq('id', leagueId)
     setSuccess(`Deleted "${leagueName}"`)
     loadMyKoLeagues()
-  }
-
-  const loadLivePredictions = async (leagueId, matchIds, members) => {
-    if (!matchIds.length) return
-    const memberIds = (members || [])
-      .filter(m => !m.is_offline)
-      .map(m => m.user_id)
-    if (!memberIds.length) return
-    const { data } = await supabase.from('predictions')
-      .select('user_id, match_id, home_score, away_score, is_confident, points_awarded')
-      .in('match_id', matchIds)
-      .in('user_id', memberIds)
-    if (!data) return
-    const byMatch = {}
-    data.forEach(p => {
-      if (!byMatch[p.match_id]) byMatch[p.match_id] = {}
-      byMatch[p.match_id][p.user_id] = p
-    })
-    setLivePredictions(prev => ({ ...prev, ...byMatch }))
   }
 
   const loadLeagueMembers = async (leagueId) => {
