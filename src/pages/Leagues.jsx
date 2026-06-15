@@ -1,10 +1,27 @@
 import React, { useEffect, useState } from 'react'
 
-function LiveMatchCard({ liveMatch, matchPreds, members }) {
+function LiveMatchCard({ liveMatch, members, supabase }) {
   const [expanded, setExpanded] = useState(false)
+  const [preds, setPreds] = useState({})
+
+  useEffect(() => {
+    if (!members?.length || !liveMatch?.id) return
+    const memberIds = members.filter(m => !m.is_offline).map(m => m.user_id)
+    if (!memberIds.length) return
+    supabase.from('predictions')
+      .select('user_id, home_score, away_score, is_confident')
+      .eq('match_id', liveMatch.id)
+      .in('user_id', memberIds)
+      .then(({ data }) => {
+        if (!data) return
+        const byUser = {}
+        data.forEach(p => { byUser[p.user_id] = p })
+        setPreds(byUser)
+      })
+  }, [liveMatch?.id, members])
   const liveScore = liveMatch.home_score != null ? `${liveMatch.home_score}–${liveMatch.away_score}` : null
   const onTrackCount = members.filter(m => {
-    const p = matchPreds[m.user_id]
+    const p = preds[m.user_id]
     if (!p || liveMatch.home_score == null) return false
     const hw = liveMatch.home_score > liveMatch.away_score, aw = liveMatch.home_score < liveMatch.away_score, d = liveMatch.home_score === liveMatch.away_score
     return (hw && p.home_score > p.away_score) || (aw && p.home_score < p.away_score) || (d && p.home_score === p.away_score)
@@ -25,7 +42,7 @@ function LiveMatchCard({ liveMatch, matchPreds, members }) {
       {expanded && (
         <div style={{ padding: '4px 8px 8px' }}>
           {members.map(member => {
-            const pred = matchPreds[member.user_id]
+            const pred = preds[member.user_id]
             if (!pred) return (
               <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 8px', opacity: 0.35 }}>
                 <span style={{ fontSize: '12px', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
@@ -1487,8 +1504,8 @@ export default function Leagues() {
                     <LiveMatchCard
                       key={liveMatch.id}
                       liveMatch={liveMatch}
-                      matchPreds={livePredictions[liveMatch.id] || {}}
                       members={sortedMembers(league.id)}
+                      supabase={supabase}
                     />
                   ))}
 
