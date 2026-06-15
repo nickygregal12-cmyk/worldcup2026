@@ -1,4 +1,57 @@
-import React, { useEffect, useState } from 'react'
+function LiveMatchCard({ liveMatch, matchPreds, members }) {
+  const [expanded, setExpanded] = useState(false)
+  const liveScore = liveMatch.home_score != null ? `${liveMatch.home_score}–${liveMatch.away_score}` : null
+  const onTrackCount = members.filter(m => {
+    const p = matchPreds[m.user_id]
+    if (!p || liveMatch.home_score == null) return false
+    const hw = liveMatch.home_score > liveMatch.away_score, aw = liveMatch.home_score < liveMatch.away_score, d = liveMatch.home_score === liveMatch.away_score
+    return (hw && p.home_score > p.away_score) || (aw && p.home_score < p.away_score) || (d && p.home_score === p.away_score)
+  }).length
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--border-light)' }}>
+      <button onClick={() => setExpanded(e => !e)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(229,57,53,0.04)', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+        <span style={{ background: '#e53935', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>🔴 LIVE</span>
+        <span style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>
+          {liveMatch.home_team?.flag_emoji} {liveMatch.home_team?.short_code}
+          {liveScore ? <span style={{ fontFamily: 'monospace', color: '#e53935', margin: '0 4px', fontWeight: '900' }}>{liveScore}</span> : <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>–</span>}
+          {liveMatch.away_team?.short_code} {liveMatch.away_team?.flag_emoji}
+        </span>
+        {liveMatch.home_score != null && <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', flexShrink: 0 }}>{onTrackCount}/{members.length} on track</span>}
+        <span style={{ fontSize: '10px', color: 'var(--text-muted)', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▼</span>
+      </button>
+      {expanded && (
+        <div style={{ padding: '4px 8px 8px' }}>
+          {members.map(member => {
+            const pred = matchPreds[member.user_id]
+            if (!pred) return (
+              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 8px', opacity: 0.35 }}>
+                <span style={{ fontSize: '12px', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No pick</span>
+              </div>
+            )
+            const hw = liveMatch.home_score > liveMatch.away_score, aw = liveMatch.home_score < liveMatch.away_score, d = liveMatch.home_score === liveMatch.away_score
+            const hasScore = liveMatch.home_score != null
+            const onTrack = hasScore && ((hw && pred.home_score > pred.away_score) || (aw && pred.home_score < pred.away_score) || (d && pred.home_score === pred.away_score))
+            const exact = hasScore && liveMatch.home_score === pred.home_score && liveMatch.away_score === pred.away_score
+            return (
+              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 8px', borderRadius: '6px', background: exact ? 'rgba(0,122,51,0.08)' : onTrack ? 'rgba(0,122,51,0.04)' : hasScore ? 'rgba(229,57,53,0.04)' : 'transparent' }}>
+                <span style={{ fontSize: '12px', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
+                {pred.is_confident && <span title="Joker" style={{ fontSize: '11px' }}>🃏</span>}
+                <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: '800', color: exact ? 'var(--accent-green)' : onTrack ? 'var(--accent-green)' : hasScore ? '#e53935' : 'var(--text-primary)' }}>
+                  {pred.home_score}–{pred.away_score}
+                </span>
+                <span style={{ fontSize: '12px', width: '16px', textAlign: 'center' }}>
+                  {!hasScore ? '' : exact ? '🎯' : onTrack ? '✓' : '✗'}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 import { Link } from 'react-router-dom'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
 import { supabase } from '../lib/supabase.js'
@@ -656,9 +709,9 @@ export default function Leagues() {
     loadMyKoLeagues()
   }
 
-  const loadLivePredictions = async (leagueId, matchIds) => {
+  const loadLivePredictions = async (leagueId, matchIds, members) => {
     if (!matchIds.length) return
-    const memberIds = (leagueMembers[leagueId] || [])
+    const memberIds = (members || [])
       .filter(m => !m.is_offline)
       .map(m => m.user_id)
     if (!memberIds.length) return
@@ -708,6 +761,7 @@ export default function Leagues() {
 
     setLeagueMembers(prev => ({ ...prev, [leagueId]: [...(data || []), ...offlineMembers] }))
     setLoadingMembers(prev => ({ ...prev, [leagueId]: false }))
+    return [...(data || []), ...offlineMembers]
 
     if (tournamentLive) {
       loadPreMatchStats(leagueId, data || [])
@@ -899,8 +953,9 @@ export default function Leagues() {
       setExpandedLeague(null)
     } else {
       setExpandedLeague(leagueId)
-      if (!leagueMembers[leagueId]) await loadLeagueMembers(leagueId)
-      if (liveMatches.length > 0) await loadLivePredictions(leagueId, liveMatches.map(m => m.id))
+      let members = leagueMembers[leagueId]
+      if (!members) members = await loadLeagueMembers(leagueId)
+      if (liveMatches.length > 0) await loadLivePredictions(leagueId, liveMatches.map(m => m.id), members)
     }
   }
 
@@ -1414,62 +1469,15 @@ export default function Leagues() {
                     <Link to="/how-to-play" style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textDecoration: 'none', flexShrink: 0, marginLeft: '8px' }}>Rules →</Link>
                   </div>
 
-                  {/* Live Match Predictions — show when a match is in play */}
-                  {liveMatches.length > 0 && liveMatches.map(liveMatch => {
-                    const matchPreds = livePredictions[liveMatch.id] || {}
-                    const members = sortedMembers(league.id)
-                    if (!members.length) return null
-                    const liveScore = liveMatch.home_score != null ? `${liveMatch.home_score}–${liveMatch.away_score}` : null
-                    return (
-                      <div key={liveMatch.id} style={{ borderBottom: '2px solid #e53935', background: 'rgba(229,57,53,0.03)' }}>
-                        <div style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ background: '#e53935', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: 'var(--radius-full)', letterSpacing: '0.06em' }}>🔴 LIVE</span>
-                            <span style={{ fontSize: '12px', fontWeight: '700' }}>
-                              {liveMatch.home_team?.flag_emoji} {liveMatch.home_team?.short_code} {liveScore ? <strong style={{ fontFamily: 'var(--font-mono)', color: '#e53935' }}>{liveScore}</strong> : '–'} {liveMatch.away_team?.short_code} {liveMatch.away_team?.flag_emoji}
-                            </span>
-                          </div>
-                          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>League picks</span>
-                        </div>
-                        <div style={{ padding: '0 8px 8px' }}>
-                          {members.map(member => {
-                            const pred = matchPreds[member.user_id]
-                            if (!pred) return (
-                              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', opacity: 0.4 }}>
-                                <span style={{ fontSize: '12px', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
-                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No pick</span>
-                              </div>
-                            )
-                            const predScore = `${pred.home_score}–${pred.away_score}`
-                            const homeWin = liveMatch.home_score > liveMatch.away_score
-                            const awayWin = liveMatch.home_score < liveMatch.away_score
-                            const draw = liveMatch.home_score === liveMatch.away_score
-                            const predHomeWin = pred.home_score > pred.away_score
-                            const predAwayWin = pred.home_score < pred.away_score
-                            const predDraw = pred.home_score === pred.away_score
-                            const hasScore = liveMatch.home_score != null
-                            const onTrack = hasScore && (
-                              (homeWin && predHomeWin) || (awayWin && predAwayWin) || (draw && predDraw)
-                            )
-                            const exact = hasScore && liveMatch.home_score === pred.home_score && liveMatch.away_score === pred.away_score
-                            return (
-                              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', borderRadius: 'var(--radius-sm)', background: exact ? 'rgba(0,122,51,0.08)' : onTrack ? 'rgba(0,122,51,0.04)' : hasScore ? 'rgba(229,57,53,0.04)' : 'transparent' }}>
-                                <span style={{ fontSize: '13px' }}>{member.profile?.avatar_emoji || '⚽'}</span>
-                                <span style={{ fontSize: '12px', fontWeight: '600', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
-                                {pred.is_confident && <span style={{ fontSize: '10px' }}>🃏</span>}
-                                <span style={{ fontSize: '12px', fontFamily: 'var(--font-mono)', fontWeight: '800', color: exact ? 'var(--accent-green)' : onTrack ? 'var(--accent-green)' : hasScore ? 'var(--accent-red)' : 'var(--text-primary)' }}>
-                                  {predScore}
-                                </span>
-                                <span style={{ fontSize: '11px', width: '14px', textAlign: 'center' }}>
-                                  {!hasScore ? '' : exact ? '🎯' : onTrack ? '✓' : '✗'}
-                                </span>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )
-                  })}
+                  {/* Live Match Predictions — collapsible card */}
+                  {liveMatches.length > 0 && liveMatches.map(liveMatch => (
+                    <LiveMatchCard
+                      key={liveMatch.id}
+                      liveMatch={liveMatch}
+                      matchPreds={livePredictions[liveMatch.id] || {}}
+                      members={sortedMembers(league.id)}
+                    />
+                  ))}
 
                   {/* League table — always visible */}
                   <div>
