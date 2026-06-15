@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react'
 
-function LiveMatchCard({ liveMatch, members, supabase }) {
+function LiveMatchCard({ match, members, supabase, mode }) {
+  // mode: 'upcoming' | 'live' | 'result'
   const [expanded, setExpanded] = useState(false)
   const [preds, setPreds] = useState({})
+  const [countdown, setCountdown] = useState('')
 
   useEffect(() => {
-    if (!members?.length || !liveMatch?.id) return
+    if (!members?.length || !match?.id) return
     const memberIds = members.filter(m => !m.is_offline).map(m => m.user_id)
     if (!memberIds.length) return
     supabase.from('predictions')
-      .select('user_id, home_score, away_score, is_confident')
-      .eq('match_id', liveMatch.id)
+      .select('user_id, home_score, away_score, is_confident, points_awarded')
+      .eq('match_id', match.id)
       .in('user_id', memberIds)
       .then(({ data }) => {
         if (!data) return
@@ -18,27 +20,67 @@ function LiveMatchCard({ liveMatch, members, supabase }) {
         data.forEach(p => { byUser[p.user_id] = p })
         setPreds(byUser)
       })
-  }, [liveMatch?.id, members])
-  const liveScore = liveMatch.home_score != null ? `${liveMatch.home_score}–${liveMatch.away_score}` : null
-  const onTrackCount = members.filter(m => {
+  }, [match?.id, members])
+
+  // Countdown timer for upcoming matches
+  useEffect(() => {
+    if (mode !== 'upcoming') return
+    const tick = () => {
+      const diff = new Date(match.kickoff_time) - new Date()
+      if (diff <= 0) { setCountdown('Kicking off now!'); return }
+      const h = Math.floor(diff / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setCountdown(h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`)
+    }
+    tick()
+    const i = setInterval(tick, 1000)
+    return () => clearInterval(i)
+  }, [mode, match?.kickoff_time])
+
+  const liveScore = match.home_score != null ? `${match.home_score}–${match.away_score}` : null
+  const hw = match.home_score > match.away_score
+  const aw = match.home_score < match.away_score
+  const dr = match.home_score === match.away_score
+  const hasScore = match.home_score != null
+
+  const onTrackCount = mode === 'live' ? members.filter(m => {
     const p = preds[m.user_id]
-    if (!p || liveMatch.home_score == null) return false
-    const hw = liveMatch.home_score > liveMatch.away_score, aw = liveMatch.home_score < liveMatch.away_score, d = liveMatch.home_score === liveMatch.away_score
-    return (hw && p.home_score > p.away_score) || (aw && p.home_score < p.away_score) || (d && p.home_score === p.away_score)
-  }).length
+    if (!p || !hasScore) return false
+    return (hw && p.home_score > p.away_score) || (aw && p.home_score < p.away_score) || (dr && p.home_score === p.away_score)
+  }).length : 0
+
+  const totalPts = mode === 'result' ? members.reduce((sum, m) => sum + (preds[m.user_id]?.points_awarded || 0), 0) : 0
+
+  const bgColour = mode === 'result' ? 'rgba(0,122,51,0.04)' : mode === 'live' ? 'rgba(229,57,53,0.04)' : 'rgba(21,88,176,0.04)'
+  const borderColour = mode === 'result' ? 'var(--accent-green)' : mode === 'live' ? '#e53935' : 'var(--scottish-navy)'
 
   return (
     <div style={{ borderBottom: '1px solid var(--border-light)' }}>
-      <button onClick={() => setExpanded(e => !e)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'rgba(229,57,53,0.04)', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-        <span style={{ background: '#e53935', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>🔴 LIVE</span>
+      <button onClick={() => setExpanded(e => !e)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: bgColour, border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+
+        {/* Status badge */}
+        {mode === 'live' && <span style={{ background: '#e53935', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>🔴 LIVE</span>}
+        {mode === 'upcoming' && <span style={{ background: 'var(--scottish-navy)', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>⏱ {countdown}</span>}
+        {mode === 'result' && <span style={{ background: 'var(--accent-green)', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>✓ FT</span>}
+
+        {/* Match */}
         <span style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>
-          {liveMatch.home_team?.flag_emoji} {liveMatch.home_team?.short_code}
-          {liveScore ? <span style={{ fontFamily: 'monospace', color: '#e53935', margin: '0 4px', fontWeight: '900' }}>{liveScore}</span> : <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>–</span>}
-          {liveMatch.away_team?.short_code} {liveMatch.away_team?.flag_emoji}
+          {match.home_team?.flag_emoji} {match.home_team?.short_code}
+          {mode !== 'upcoming'
+            ? <span style={{ fontFamily: 'monospace', margin: '0 4px', fontWeight: '900', color: mode === 'live' ? '#e53935' : 'var(--text-primary)' }}>{liveScore || '–'}</span>
+            : <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>vs</span>}
+          {match.away_team?.short_code} {match.away_team?.flag_emoji}
         </span>
-        {liveMatch.home_score != null && <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', flexShrink: 0 }}>{onTrackCount}/{members.length} on track</span>}
+
+        {/* Summary */}
+        {mode === 'live' && hasScore && <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', flexShrink: 0 }}>{onTrackCount}/{members.length} on track</span>}
+        {mode === 'result' && <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', flexShrink: 0 }}>{totalPts}pts earned</span>}
+        {mode === 'upcoming' && <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0 }}>Your picks</span>}
+
         <span style={{ fontSize: '10px', color: 'var(--text-muted)', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▼</span>
       </button>
+
       {expanded && (
         <div style={{ padding: '4px 8px 8px' }}>
           {members.map(member => {
@@ -49,20 +91,26 @@ function LiveMatchCard({ liveMatch, members, supabase }) {
                 <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No pick</span>
               </div>
             )
-            const hw = liveMatch.home_score > liveMatch.away_score, aw = liveMatch.home_score < liveMatch.away_score, d = liveMatch.home_score === liveMatch.away_score
-            const hasScore = liveMatch.home_score != null
-            const onTrack = hasScore && ((hw && pred.home_score > pred.away_score) || (aw && pred.home_score < pred.away_score) || (d && pred.home_score === pred.away_score))
-            const exact = hasScore && liveMatch.home_score === pred.home_score && liveMatch.away_score === pred.away_score
+            const onTrack = hasScore && ((hw && pred.home_score > pred.away_score) || (aw && pred.home_score < pred.away_score) || (dr && pred.home_score === pred.away_score))
+            const exact = hasScore && match.home_score === pred.home_score && match.away_score === pred.away_score
+            const pts = pred.points_awarded
             return (
-              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 8px', borderRadius: '6px', background: exact ? 'rgba(0,122,51,0.08)' : onTrack ? 'rgba(0,122,51,0.04)' : hasScore ? 'rgba(229,57,53,0.04)' : 'transparent' }}>
+              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 8px', borderRadius: '6px',
+                background: mode === 'result'
+                  ? (pts > 0 ? 'rgba(0,122,51,0.06)' : 'transparent')
+                  : (exact ? 'rgba(0,122,51,0.08)' : onTrack ? 'rgba(0,122,51,0.04)' : hasScore ? 'rgba(229,57,53,0.04)' : 'transparent')
+              }}>
                 <span style={{ fontSize: '12px', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
                 {pred.is_confident && <span title="Joker" style={{ fontSize: '11px' }}>🃏</span>}
-                <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: '800', color: exact ? 'var(--accent-green)' : onTrack ? 'var(--accent-green)' : hasScore ? '#e53935' : 'var(--text-primary)' }}>
+                <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: '800',
+                  color: mode === 'result'
+                    ? (pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)')
+                    : (exact ? 'var(--accent-green)' : onTrack ? 'var(--accent-green)' : hasScore ? '#e53935' : 'var(--text-primary)')
+                }}>
                   {pred.home_score}–{pred.away_score}
                 </span>
-                <span style={{ fontSize: '12px', width: '16px', textAlign: 'center' }}>
-                  {!hasScore ? '' : exact ? '🎯' : onTrack ? '✓' : '✗'}
-                </span>
+                {mode === 'result' && <span style={{ fontSize: '11px', fontWeight: '800', color: pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)', width: '32px', textAlign: 'right' }}>{pts != null ? `+${pts}` : '–'}</span>}
+                {mode === 'live' && <span style={{ fontSize: '12px', width: '16px', textAlign: 'center' }}>{!hasScore ? '' : exact ? '🎯' : onTrack ? '✓' : '✗'}</span>}
               </div>
             )
           })}
@@ -71,13 +119,7 @@ function LiveMatchCard({ liveMatch, members, supabase }) {
     </div>
   )
 }
-import { Link } from 'react-router-dom'
-import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
-import { supabase } from '../lib/supabase.js'
-import { avatarColor } from '../lib/avatarColor.js'
-import { useAuthStore, useAppStore } from '../store/index.js'
 
-const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
 function MemberStandingsView({ predictions }) {
@@ -559,23 +601,40 @@ export default function Leagues() {
   const [success, setSuccess] = useState('')
   const [expandedLeague, setExpandedLeague] = useState(null)
   const [liveMatches, setLiveMatches] = useState([])
-  const [livePredictions, setLivePredictions] = useState({})
+  const [upcomingMatch, setUpcomingMatch] = useState(null)
+  const [recentResult, setRecentResult] = useState(null)
 
-  // Load live matches and poll every 60s
+  // Load match strip data and poll every 60s
   useEffect(() => {
     const isLive = new Date() >= new Date('2026-06-11T19:00:00Z')
     if (!isLive) return
-    const loadLive = async () => {
-      const now = new Date().toISOString()
-      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+    const loadMatches = async () => {
+      const now = new Date()
+      const nowIso = now.toISOString()
+      const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000).toISOString()
+      const oneHourAhead = new Date(now.getTime() + 60 * 60 * 1000).toISOString()
+
       const { data } = await supabase.from('matches')
         .select('id, home_score, away_score, status, kickoff_time, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
-        .or(`status.eq.live,and(status.eq.scheduled,kickoff_time.lte.${now},kickoff_time.gte.${twoHoursAgo})`)
+        .or([
+          `status.eq.live`,
+          `and(status.eq.scheduled,kickoff_time.lte.${nowIso},kickoff_time.gte.${twoHoursAgo})`,
+          `and(status.eq.completed,kickoff_time.gte.${twoHoursAgo})`,
+          `and(status.eq.scheduled,kickoff_time.lte.${oneHourAhead},kickoff_time.gt.${nowIso})`,
+        ].join(','))
         .order('kickoff_time', { ascending: true })
-      setLiveMatches(data || [])
+
+      const matches = data || []
+      const live = matches.filter(m => m.status === 'live' || (m.status === 'scheduled' && new Date(m.kickoff_time) <= now))
+      const results = matches.filter(m => m.status === 'completed')
+      const upcoming = matches.filter(m => m.status === 'scheduled' && new Date(m.kickoff_time) > now)
+
+      setLiveMatches(live)
+      setRecentResult(results[results.length - 1] || null) // most recent completed
+      setUpcomingMatch(live.length === 0 ? (upcoming[0] || null) : null) // only show upcoming when nothing live
     }
-    loadLive()
-    const interval = setInterval(loadLive, 60000)
+    loadMatches()
+    const interval = setInterval(loadMatches, 60000)
     return () => clearInterval(interval)
   }, [])
   const [leagueMembers, setLeagueMembers] = useState({})
@@ -598,14 +657,6 @@ export default function Leagues() {
     setLivePredictions(prev => ({ ...prev, ...byMatch }))
   }
 
-  // Reload live predictions when expanded league or live matches change
-  useEffect(() => {
-    if (!expandedLeague || !liveMatches.length) return
-    const members = leagueMembers[expandedLeague]
-    if (members?.length > 0) {
-      loadLivePredictions(expandedLeague, liveMatches.map(m => m.id), members)
-    }
-  }, [expandedLeague, liveMatches, leagueMembers])
   const [confirmAction, setConfirmAction] = useState(null)
   const [memberModal, setMemberModal] = useState(null)
   const [memberPredictions, setMemberPredictions] = useState([])
@@ -1499,15 +1550,16 @@ export default function Leagues() {
                     <Link to="/how-to-play" style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textDecoration: 'none', flexShrink: 0, marginLeft: '8px' }}>Rules →</Link>
                   </div>
 
-                  {/* Live Match Predictions — collapsible card */}
-                  {liveMatches.length > 0 && liveMatches.map(liveMatch => (
-                    <LiveMatchCard
-                      key={liveMatch.id}
-                      liveMatch={liveMatch}
-                      members={sortedMembers(league.id)}
-                      supabase={supabase}
-                    />
+                  {/* Match strip — upcoming / live / result */}
+                  {recentResult && liveMatches.length === 0 && !upcomingMatch && (
+                    <LiveMatchCard key={recentResult.id} match={recentResult} members={sortedMembers(league.id)} supabase={supabase} mode="result" />
+                  )}
+                  {liveMatches.map(m => (
+                    <LiveMatchCard key={m.id} match={m} members={sortedMembers(league.id)} supabase={supabase} mode="live" />
                   ))}
+                  {upcomingMatch && !liveMatches.length && (
+                    <LiveMatchCard key={upcomingMatch.id} match={upcomingMatch} members={sortedMembers(league.id)} supabase={supabase} mode="upcoming" />
+                  )}
 
                   {/* League table — always visible */}
                   <div>
