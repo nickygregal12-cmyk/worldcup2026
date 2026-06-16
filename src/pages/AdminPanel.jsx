@@ -1448,30 +1448,43 @@ export default function AdminPanel() {
     // Score real users
     const { error: rpcErr } = await supabase.rpc('calculate_prediction_points', { p_match_id: match.id })
 
-    // Score offline players — read their predictions for this match and
-    // apply the same 3/5/2× formula, writing back to offline_players.league_points
-    const { data: offlinePreds } = await supabase
+    // Score offline players — idempotently recompute each affected player's
+    // TOTAL league_points from all their predictions (not additive)
+    const { data: affectedOffline } = await supabase
       .from('offline_predictions')
-      .select('offline_player_id, home_score, away_score, is_confident')
+      .select('offline_player_id')
       .eq('match_id', match.id)
 
-    if (offlinePreds?.length) {
-      const actH = homeScore, actA = awayScore
-      const actResult = actH > actA ? 'H' : actH < actA ? 'A' : 'D'
-      for (const op of offlinePreds) {
-        if (op.home_score === null || op.away_score === null) continue
-        const predH = op.home_score, predA = op.away_score
-        const predResult = predH > predA ? 'H' : predH < predA ? 'A' : 'D'
-        if (predResult !== actResult) continue
-        const exact = predH === actH && predA === actA
-        let pts = exact ? 5 : 3
-        if (op.is_confident) pts *= 2
-        // Add to existing league_points
-        const { data: player } = await supabase
-          .from('offline_players').select('league_points').eq('id', op.offline_player_id).single()
-        await supabase.from('offline_players')
-          .update({ league_points: (player?.league_points || 0) + pts })
-          .eq('id', op.offline_player_id)
+    if (affectedOffline?.length) {
+      const playerIds = [...new Set(affectedOffline.map(a => a.offline_player_id))]
+      // All completed match results
+      const { data: completed } = await supabase
+        .from('matches').select('id, home_score, away_score').eq('status', 'completed')
+      const resultMap = {}
+      ;(completed || []).forEach(m => {
+        if (m.home_score != null && m.away_score != null) resultMap[m.id] = { h: m.home_score, a: m.away_score }
+      })
+      // Include the match we just scored (may not be 'completed' in DB yet)
+      resultMap[match.id] = { h: homeScore, a: awayScore }
+
+      for (const playerId of playerIds) {
+        const { data: preds } = await supabase
+          .from('offline_predictions')
+          .select('match_id, home_score, away_score, is_confident')
+          .eq('offline_player_id', playerId)
+        let total = 0
+        for (const p of preds || []) {
+          const result = resultMap[p.match_id]
+          if (!result || p.home_score == null || p.away_score == null) continue
+          const actResult = result.h > result.a ? 'H' : result.h < result.a ? 'A' : 'D'
+          const predResult = p.home_score > p.away_score ? 'H' : p.home_score < p.away_score ? 'A' : 'D'
+          if (predResult !== actResult) continue
+          const exact = p.home_score === result.h && p.away_score === result.a
+          let pts = exact ? 5 : 3
+          if (p.is_confident) pts *= 2
+          total += pts
+        }
+        await supabase.from('offline_players').update({ league_points: total }).eq('id', playerId)
       }
     }
 

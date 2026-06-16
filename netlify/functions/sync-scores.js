@@ -5,6 +5,53 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 )
 
+// Idempotently recalculate league_points for every offline player who has a
+// prediction on this match. Recomputes each player's TOTAL from all their
+// predictions against completed matches — never additive, so safe to re-run.
+async function scoreOfflinePlayers(supabase, matchId) {
+  // Which offline players are affected by this match?
+  const { data: affected } = await supabase
+    .from('offline_predictions')
+    .select('offline_player_id')
+    .eq('match_id', matchId)
+  if (!affected?.length) return
+
+  const playerIds = [...new Set(affected.map(a => a.offline_player_id))]
+
+  // All completed matches with scores, for recompute
+  const { data: completedMatches } = await supabase
+    .from('matches')
+    .select('id, home_score, away_score, status')
+    .eq('status', 'completed')
+  const resultMap = {}
+  ;(completedMatches || []).forEach(m => {
+    if (m.home_score != null && m.away_score != null) {
+      resultMap[m.id] = { h: m.home_score, a: m.away_score }
+    }
+  })
+
+  for (const playerId of playerIds) {
+    const { data: preds } = await supabase
+      .from('offline_predictions')
+      .select('match_id, home_score, away_score, is_confident')
+      .eq('offline_player_id', playerId)
+
+    let total = 0
+    for (const p of preds || []) {
+      const result = resultMap[p.match_id]
+      if (!result || p.home_score == null || p.away_score == null) continue
+      const actResult = result.h > result.a ? 'H' : result.h < result.a ? 'A' : 'D'
+      const predResult = p.home_score > p.away_score ? 'H' : p.home_score < p.away_score ? 'A' : 'D'
+      if (predResult !== actResult) continue
+      const exact = p.home_score === result.h && p.away_score === result.a
+      let pts = exact ? 5 : 3
+      if (p.is_confident) pts *= 2
+      total += pts
+    }
+    await supabase.from('offline_players').update({ league_points: total }).eq('id', playerId)
+  }
+}
+
 // football-data.org name → our DB name
 const API_TO_DB = {
   'Czech Republic': 'Czechia',
@@ -257,7 +304,7 @@ export const handler = async (event, context) => {
           // Score main knockout bracket picks (team advancement)
           await supabase.rpc('calculate_knockout_points', { p_match_id: ourMatch.id })
           // Score KO Predictor picks (score/ET/PENS predictions) — separate game
-          await supabase.rpc('calculate_ko_prediction_points', { p_match_id: ourMatch.id }).catch(() => {})
+          try { await supabase.rpc('calculate_ko_prediction_points', { p_match_id: ourMatch.id }) } catch (_) {}
         } else {
           await supabase.rpc('calculate_prediction_points', { p_match_id: ourMatch.id })
         }
@@ -277,6 +324,15 @@ export const handler = async (event, context) => {
           for (const pred of preds || []) {
             await supabase.rpc('recalculate_user_total_points', { p_user_id: pred.user_id })
           }
+        }
+
+        // Score OFFLINE players for this match — idempotent recalc of their
+        // total league_points from all their predictions (not additive, so
+        // re-running never double-counts)
+        try {
+          await scoreOfflinePlayers(supabase, ourMatch.id)
+        } catch (e) {
+          console.error('Offline scoring failed:', e.message)
         }
       }
     }
