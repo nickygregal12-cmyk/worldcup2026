@@ -1665,9 +1665,43 @@ export default function AdminPanel() {
       const { error: rpcErr } = await supabase.rpc('recalculate_user_total_points', { p_user_id: u.id })
       if (rpcErr) failed++
     }
-    await logAudit('RECALC_ALL_POINTS', { user_count: userList?.length, failed })
+
+    // Recalculate offline players too — idempotent recompute from all their predictions
+    const { data: offlinePlayers } = await supabase.from('offline_players').select('id')
+    let offlineCount = 0
+    if (offlinePlayers?.length) {
+      // Build result map from all completed matches once
+      const { data: completed } = await supabase
+        .from('matches').select('id, home_score, away_score').eq('status', 'completed')
+      const resultMap = {}
+      ;(completed || []).forEach(m => {
+        if (m.home_score != null && m.away_score != null) resultMap[m.id] = { h: m.home_score, a: m.away_score }
+      })
+      for (const op of offlinePlayers) {
+        const { data: preds } = await supabase
+          .from('offline_predictions')
+          .select('match_id, home_score, away_score, is_confident')
+          .eq('offline_player_id', op.id)
+        let total = 0
+        for (const p of preds || []) {
+          const result = resultMap[p.match_id]
+          if (!result || p.home_score == null || p.away_score == null) continue
+          const actResult = result.h > result.a ? 'H' : result.h < result.a ? 'A' : 'D'
+          const predResult = p.home_score > p.away_score ? 'H' : p.home_score < p.away_score ? 'A' : 'D'
+          if (predResult !== actResult) continue
+          const exact = p.home_score === result.h && p.away_score === result.a
+          let pts = exact ? 5 : 3
+          if (p.is_confident) pts *= 2
+          total += pts
+        }
+        await supabase.from('offline_players').update({ league_points: total }).eq('id', op.id)
+        offlineCount++
+      }
+    }
+
+    await logAudit('RECALC_ALL_POINTS', { user_count: userList?.length, offline_count: offlineCount, failed })
     setSaving(prev => ({ ...prev, recalc: false }))
-    setActionResult(`Points recalculated for ${userList?.length} users${failed > 0 ? ` (${failed} failed)` : ''}`)
+    setActionResult(`Points recalculated for ${userList?.length} users + ${offlineCount} offline players${failed > 0 ? ` (${failed} failed)` : ''}`)
     loadUsers()
   }
 
