@@ -1512,14 +1512,18 @@ export default function Predictions() {
               <div style={{ fontWeight: '900', fontSize: '24px', fontFamily: 'var(--font-mono)', lineHeight: 1,
                 color: resultColour === 'gold' ? 'var(--accent-gold)' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
                 {(() => {
-                  // Use DB points_awarded if set and > 0, otherwise calculate client-side
-                  // Base: exact=5pts, correct=3pts, then ×2 for joker
+                  // ALWAYS trust the DB points_awarded — it's the source of truth.
+                  // The scoring function handles exact/correct/joker correctly.
+                  // Only fall back to a client estimate if points haven't been
+                  // calculated yet (null/undefined), never override a real value.
+                  if (pred.points_awarded != null) {
+                    return pred.points_awarded === 0 ? '0' : `+${pred.points_awarded}`
+                  }
+                  // Not yet scored — show estimated potential
                   const base = resultColour === 'gold' ? 5 : resultColour === 'green' ? 3 : 0
                   const multiplier = hasJoker && resultColour !== 'red' ? 2 : 1
-                  const pts = (pred.points_awarded !== undefined && pred.points_awarded !== null && pred.points_awarded !== 0)
-                    ? pred.points_awarded
-                    : base * multiplier
-                  return pts === 0 && resultColour !== 'red' ? `+${base * multiplier}` : pts === 0 ? '0' : `+${pts}`
+                  const est = base * multiplier
+                  return est === 0 ? '0' : `+${est}`
                 })()}
                 <span style={{ fontSize: '11px', fontWeight: '600' }}>pts</span>
               </div>
