@@ -4009,8 +4009,9 @@ export default function AdminPanel() {
                     }
                   })
 
-                  // Calculate predicted standings — returns { 'A': [...], 'B': [...] }
-                  const standingsMap = calcPredictedStandings(allMatches, predMap)
+                  // Calculate PURE predicted standings (pureMode=true) — shows what
+                  // the user actually predicted for all 6 games, ignoring real results
+                  const standingsMap = calcPredictedStandings(allMatches, predMap, true)
 
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>

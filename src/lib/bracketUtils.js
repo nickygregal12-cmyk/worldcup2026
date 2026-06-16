@@ -109,7 +109,12 @@ export const ALL_STAGES = [
  * Returns { A: [{team, pts, gd, gf}, ...], B: [...], ... }
  * Falls back to registration order if no predictions exist for a group
  */
-export function calcPredictedStandings(matches, predictions) {
+export function calcPredictedStandings(matches, predictions, pureMode = false) {
+  // pureMode = true: use ONLY the user's predictions, ignore real results.
+  //   Used by the admin "View predictions" tab to show what a user actually picked.
+  // pureMode = false (default): prefer real results for completed matches, fall
+  //   back to predictions for unplayed games. Used by the live bracket — once a
+  //   game is played the bracket reflects reality.
   const groups = {}
 
   // First pass — register all teams in each group (in match order = seeded order)
@@ -147,7 +152,7 @@ export function calcPredictedStandings(matches, predictions) {
     const awayId = match.away_team_id
 
     let homeScore, awayScore
-    if (match.status === 'completed') {
+    if (match.status === 'completed' && !pureMode) {
       homeScore = match.home_score
       awayScore = match.away_score
     } else {
