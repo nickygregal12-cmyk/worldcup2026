@@ -126,13 +126,13 @@ export function calcPredictedStandings(matches, predictions) {
     if (!groups[groupName][homeId]) {
       groups[groupName][homeId] = {
         team: match.home_team, id: homeId,
-        pts: 0, gd: 0, gf: 0, played: 0, order: Object.keys(groups[groupName]).length
+        pts: 0, gd: 0, gf: 0, w: 0, d: 0, l: 0, played: 0, order: Object.keys(groups[groupName]).length
       }
     }
     if (!groups[groupName][awayId]) {
       groups[groupName][awayId] = {
         team: match.away_team, id: awayId,
-        pts: 0, gd: 0, gf: 0, played: 0, order: Object.keys(groups[groupName]).length
+        pts: 0, gd: 0, gf: 0, w: 0, d: 0, l: 0, played: 0, order: Object.keys(groups[groupName]).length
       }
     }
   }
@@ -165,9 +165,9 @@ export function calcPredictedStandings(matches, predictions) {
     h.gf += homeScore; h.gd += homeScore - awayScore
     a.gf += awayScore; a.gd += awayScore - homeScore
 
-    if (homeScore > awayScore) { h.pts += 3 }
-    else if (homeScore === awayScore) { h.pts += 1; a.pts += 1 }
-    else { a.pts += 3 }
+    if (homeScore > awayScore) { h.pts += 3; h.w++; a.l++ }
+    else if (homeScore === awayScore) { h.pts += 1; a.pts += 1; h.d++; a.d++ }
+    else { a.pts += 3; a.w++; h.l++ }
   }
 
   // Sort each group: pts desc, gd desc, gf desc, then original order as tiebreak
