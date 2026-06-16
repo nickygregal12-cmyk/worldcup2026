@@ -1656,6 +1656,92 @@ export default function AdminPanel() {
     setActionResult(`✅ Ranks snapshotted — ${ranked?.length} global + ${allLeagues?.length} leagues — ↑↓ movement now active`)
   }
 
+  const backfillKnockoutMatchups = async () => {
+    setSaving(prev => ({ ...prev, backfillKo: true }))
+    setActionResult('⏳ Rebuilding knockout matchups from predictions...')
+
+    // Load all group matches once (needed for standings resolution)
+    const { data: groupMatchData } = await supabase
+      .from('matches')
+      .select('id, match_number, stage, group_id, home_team_id, away_team_id, home_score, away_score, status, group:group_id(name), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
+      .eq('stage', 'group')
+
+    const { data: userList } = await supabase.from('profiles').select('id')
+    const allMatchDefs = ALL_STAGES.flatMap(s => s.matches || [])
+    let usersFixed = 0, picksFixed = 0, failed = 0
+
+    for (const u of userList || []) {
+      try {
+        // Build this user's pure predicted standings
+        const { data: preds } = await supabase
+          .from('predictions')
+          .select('match_id, home_score, away_score')
+          .eq('user_id', u.id)
+        const predMap = {}
+        ;(preds || []).forEach(p => { predMap[p.match_id] = { home: p.home_score, away: p.away_score } })
+
+        // PURE mode — predicted standings only, ignore real results
+        const standings = calcPredictedStandings(groupMatchData || [], predMap, true)
+
+        // Load this user's knockout picks
+        const { data: koPicks } = await supabase
+          .from('knockout_picks')
+          .select('match_number, winner_team_id, home_team_id, away_team_id')
+          .eq('user_id', u.id)
+        if (!koPicks?.length) continue
+
+        const picksByNum = {}
+        koPicks.forEach(p => { picksByNum[p.match_number] = { winner_id: p.winner_team_id, home_id: p.home_team_id, away_id: p.away_team_id } })
+
+        // Resolve W-slots (winner of match N) from this user's own winner picks
+        const resolveWinner = (slot) => {
+          const mn = parseInt(slot.replace('W', ''))
+          const pick = picksByNum[mn]
+          if (!pick?.winner_id) return null
+          // Find team object
+          for (const m of groupMatchData || []) {
+            if (m.home_team?.id === pick.winner_id) return m.home_team
+            if (m.away_team?.id === pick.winner_id) return m.away_team
+          }
+          return { id: pick.winner_id }
+        }
+
+        // For each pick, recompute correct home/away from pure standings
+        for (const matchDef of allMatchDefs) {
+          const pick = picksByNum[matchDef.match_number]
+          if (!pick?.winner_id) continue
+
+          const resolve = (slot) => {
+            if (!slot) return null
+            if (slot.startsWith('W')) return resolveWinner(slot)
+            if (slot.startsWith('L')) return null
+            return resolveSlot(slot, standings, groupMatchData || [], predMap)
+          }
+          const home = resolve(matchDef.home_slot)
+          const away = resolve(matchDef.away_slot)
+
+          // Only update if we resolved both and they differ from stored
+          if (home?.id && away?.id && (home.id !== pick.home_id || away.id !== pick.away_id)) {
+            const { error } = await supabase
+              .from('knockout_picks')
+              .update({ home_team_id: home.id, away_team_id: away.id })
+              .eq('user_id', u.id)
+              .eq('match_number', matchDef.match_number)
+            if (!error) picksFixed++
+          }
+        }
+        usersFixed++
+      } catch (e) {
+        failed++
+        console.error(`Backfill failed for user ${u.id}:`, e.message)
+      }
+    }
+
+    await logAudit('BACKFILL_KO_MATCHUPS', { users_fixed: usersFixed, picks_fixed: picksFixed, failed })
+    setSaving(prev => ({ ...prev, backfillKo: false }))
+    setActionResult(`✅ Rebuilt matchups — ${usersFixed} users, ${picksFixed} picks corrected${failed > 0 ? ` (${failed} errors)` : ''}`)
+  }
+
   const recalcAllPoints = async () => {
     setSaving(prev => ({ ...prev, recalc: true }))
     const { data: userList, error } = await supabase.from('profiles').select('id')
@@ -3752,6 +3838,16 @@ export default function AdminPanel() {
             <button onClick={recalcAllPoints} disabled={saving.recalc} className="btn btn-primary">
               {saving.recalc ? '⏳ Recalculating...' : '🔄 Recalculate All Points'}
             </button>
+
+            <div className="card" style={{ border: '1px solid var(--border-light)', marginTop: '8px' }}>
+              <div style={{ fontWeight: '800', fontSize: '14px', marginBottom: '4px' }}>🔧 Rebuild Knockout Matchups</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.5 }}>
+                Recomputes every saved knockout pick's displayed teams from each user's <strong>predicted</strong> group standings. Fixes any matchups that showed wrong teams (e.g. "ENG vs CRO" displaying a Norway result). Winner picks and points are untouched — display only. Safe to run anytime.
+              </div>
+              <button onClick={backfillKnockoutMatchups} disabled={saving.backfillKo} className="btn btn-secondary" style={{ width: '100%' }}>
+                {saving.backfillKo ? '⏳ Rebuilding...' : '🔧 Rebuild All Knockout Matchups'}
+              </button>
+            </div>
           </div>
         )}
 
