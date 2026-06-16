@@ -624,7 +624,7 @@ export default function Home() {
           .from('predictions').select('match_id, home_score, away_score').eq('user_id', user.id)
         const predMap = {}
         ;(allPreds || []).forEach(p => { predMap[p.match_id] = { home: p.home_score, away: p.away_score } })
-        const standings = calcPredictedStandings(allGroupMatches, predMap)
+        const standings = calcPredictedStandings(allGroupMatches, predMap, true)
         const best3rd = getBest3rdTeams(standings) || []
 
         // Simulate knockout bracket randomly

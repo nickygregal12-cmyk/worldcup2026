@@ -63,6 +63,7 @@ export default function Knockout() {
   const [saved, setSaved] = useState({})
   const [m73Ready, setM73Ready] = useState(false)
   const smartStageAppliedRef = useRef(false)
+  const backfilledPicks = useRef(new Set())
 
   const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
   const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
@@ -160,7 +161,10 @@ export default function Knockout() {
         setKnockoutPicks(koMap)
       }
 
-      setStandings(calcPredictedStandings(matchData || [], predMap))
+      // Bracket is built from the user's PURE predicted standings (pureMode=true)
+      // — frozen at MD1, never blended with real results. The bracket shows the
+      // user's PREDICTED tournament; scoring compares it against reality separately.
+      setStandings(calcPredictedStandings(matchData || [], predMap, true))
       setLoadError(false)
     } catch (e) {
       console.error(e)
@@ -171,6 +175,16 @@ export default function Knockout() {
   }
 
   const resolveTeam = useCallback((slot) => resolveSlot(slot, standings, groupMatches, groupPredictions), [standings, groupMatches, groupPredictions])
+
+  // Lookup any team object by its id (built from group match data)
+  const teamById = useMemo(() => {
+    const map = {}
+    groupMatches.forEach(m => {
+      if (m.home_team?.id) map[m.home_team.id] = m.home_team
+      if (m.away_team?.id) map[m.away_team.id] = m.away_team
+    })
+    return map
+  }, [groupMatches])
 
   const resolveKnockoutWinner = useCallback((slot) => {
     const matchNum = parseInt(slot.replace('W', ''))
@@ -256,11 +270,6 @@ export default function Knockout() {
   }, [knockoutPicks, mainBracketLockTime, teamGroupCompleted, groupMatches])
 
   const getMatchTeams = useCallback((matchDef) => {
-    // Always resolve matchups LIVE from group predictions — never from stored
-    // opponent IDs. The stored home_id/away_id were a pick-time snapshot that
-    // could go stale when a group prediction (or the bracket structure) changed.
-    // Because group predictions themselves lock at MD1, live resolution is
-    // already stable after the lock — no snapshot needed, and never stale.
     const savedPick = knockoutPicks[matchDef.match_number]
 
     // After the full bracket lock, don't resolve UNSAVED paths from edited
@@ -270,13 +279,58 @@ export default function Knockout() {
       return { home: null, away: null }
     }
 
+    // FROZEN PICKS: once a pick is locked (its feeding groups have kicked off,
+    // or the bracket has fully locked), show the teams that were STORED at pick
+    // time — never re-resolve from live standings. Live standings blend real
+    // results with predictions and keep shifting as games finish, which was
+    // causing already-locked teams to visually change mid-tournament.
+    if (savedPick?.winner_id && isMainBracketPickFrozen(matchDef)) {
+      const storedHome = savedPick.home_id ? teamById[savedPick.home_id] : null
+      const storedAway = savedPick.away_id ? teamById[savedPick.away_id] : null
+      // Only use stored teams if we successfully resolved both — otherwise fall
+      // through to live resolution (handles older picks missing stored IDs)
+      if (storedHome && storedAway) {
+        return { home: storedHome, away: storedAway }
+      }
+      // Pick is frozen but has no stored matchup (older picks saved with only a
+      // winner). Resolve live, and persist ONLY when the feeding groups are
+      // fully COMPLETE (not just kicked off) — so the resolution is truly final
+      // and we never lock in a matchup that's still shifting. Self-healing.
+      const liveHome = matchDef.home_slot?.startsWith('W') ? resolveKnockoutWinner(matchDef.home_slot) : resolveTeam(matchDef.home_slot)
+      const liveAway = matchDef.away_slot?.startsWith('W') ? resolveKnockoutWinner(matchDef.away_slot) : resolveTeam(matchDef.away_slot)
+
+      // Are ALL groups feeding this match fully complete?
+      const feedingGroupsComplete = [matchDef.home_slot, matchDef.away_slot].every(slot => {
+        const direct = slot?.match(/^[123]([A-L])$/)
+        const bt3 = slot?.match(/^BT3_([A-L]+)$/)
+        const w = slot?.startsWith('W')
+        if (w) return true // winner-of-match slots resolve from winner chain, always safe
+        const groups = direct ? [direct[1]] : bt3 ? bt3[1].split('') : []
+        if (!groups.length) return false
+        return groups.every(gName => {
+          const gMatches = groupMatches.filter(m => m.group?.name === gName)
+          return gMatches.length > 0 && gMatches.every(m => m.status === 'completed')
+        })
+      })
+
+      if (liveHome?.id && liveAway?.id && user && feedingGroupsComplete && !backfilledPicks.current.has(matchDef.match_number)) {
+        backfilledPicks.current.add(matchDef.match_number)
+        supabase.from('knockout_picks')
+          .update({ home_team_id: liveHome.id, away_team_id: liveAway.id })
+          .eq('user_id', user.id)
+          .eq('match_number', matchDef.match_number)
+          .then(() => {})
+      }
+      return { home: liveHome, away: liveAway }
+    }
+
     const resolve = (slot) => {
       if (slot.startsWith('W')) return resolveKnockoutWinner(slot)
       if (slot.startsWith('L')) return null
       return resolveTeam(slot)
     }
     return { home: resolve(matchDef.home_slot), away: resolve(matchDef.away_slot) }
-  }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, mainBracketLockTime])
+  }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, mainBracketLockTime, isMainBracketPickFrozen, teamById, groupMatches, user])
 
   const getBracketLockReason = useCallback((matchDef) => {
     if (new Date() >= mainBracketLockTime) return 'Bracket fully locked. Saved teams and winners are frozen.'

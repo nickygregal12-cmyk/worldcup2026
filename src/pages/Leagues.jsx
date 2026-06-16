@@ -238,7 +238,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
   }, [userId, leagueId, lockedSnapshot])
 
   const groupMatches = React.useMemo(() => matches.filter(m => m.stage === 'group'), [matches])
-  const standings = React.useMemo(() => calcPredictedStandings(groupMatches, groupPreds), [groupMatches, groupPreds])
+  const standings = React.useMemo(() => calcPredictedStandings(groupMatches, groupPreds, true), [groupMatches, groupPreds])
   const teamsById = React.useMemo(() => {
     const map = {}
     matches.forEach(m => { if (m.home_team) map[m.home_team.id] = m.home_team; if (m.away_team) map[m.away_team.id] = m.away_team })

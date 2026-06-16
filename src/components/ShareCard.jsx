@@ -46,7 +46,7 @@ export default function ShareCard({ onClose }) {
     const predMap = {}
     preds?.forEach(p => { predMap[p.match_id] = { home: p.home_score, away: p.away_score } })
 
-    const standings = calcPredictedStandings(matches || [], predMap)
+    const standings = calcPredictedStandings(matches || [], predMap, true)
 
     // Get winner of each group
     const winners = GROUPS.map(g => {

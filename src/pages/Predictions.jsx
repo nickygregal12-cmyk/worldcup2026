@@ -908,7 +908,7 @@ export default function Predictions() {
   const getR32Snapshot = useCallback((predMap) => {
     const currentMatches = matchesRef.current
     const snapshot = {}
-    const predictedStandings = calcPredictedStandings(currentMatches, predMap)
+    const predictedStandings = calcPredictedStandings(currentMatches, predMap, true)
     const r32 = ALL_STAGES.find(stage => stage.key === 'r32')
 
     r32?.matches.forEach(matchDef => {
@@ -1051,8 +1051,8 @@ export default function Predictions() {
             ...currentPreds,
             [match.id]: { ...currentPreds[match.id], home: homeScore, away: awayScore },
           }
-          const before = calcPredictedStandings(matchesRef.current, currentPreds)
-          const after  = calcPredictedStandings(matchesRef.current, proposedPreds)
+          const before = calcPredictedStandings(matchesRef.current, currentPreds, true)
+          const after  = calcPredictedStandings(matchesRef.current, proposedPreds, true)
 
           const beforeOrder = (before[groupName] || []).map(t => t.id)
           const afterOrder  = (after[groupName]  || []).map(t => t.id)
@@ -1873,7 +1873,7 @@ export default function Predictions() {
     })
 
     // Work out where this group's 3rd place team ranks among all groups
-    const allStandings = calcPredictedStandings(matches, predictions)
+    const allStandings = calcPredictedStandings(matches, predictions, true)
     const best3rd = getBest3rdTeams(allStandings) || []
     const best3rdIds = new Set(best3rd.slice(0, 8).map(t => t?.id).filter(Boolean))
     const this3rd = standings[2]
@@ -1941,7 +1941,7 @@ export default function Predictions() {
 
   // All-groups standings (By Date view)
   const renderAllGroupsStandings = () => {
-    const allStandings = calcPredictedStandings(matches, predictions)
+    const allStandings = calcPredictedStandings(matches, predictions, true)
     const hasPreds = Object.values(allStandings).some(teams => teams.some(t => t.played > 0))
     if (!hasPreds) return null
 

@@ -64,7 +64,7 @@ export default function AdminUserBracketEditor({ userId, username, matches, onCl
     return () => { cancelled = true }
   }, [userId])
 
-  const standings = useMemo(() => calcPredictedStandings(groupMatches, groupPreds), [groupMatches, groupPreds])
+  const standings = useMemo(() => calcPredictedStandings(groupMatches, groupPreds, true), [groupMatches, groupPreds])
 
   // Resolve a slot to a team object — group slots from standings, W-slots from picks
   const resolveTeam = (slot) => {

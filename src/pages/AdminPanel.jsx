@@ -3411,7 +3411,7 @@ export default function AdminPanel() {
                           predMap[m.id] = { home: parseInt(val.home), away: parseInt(val.away) }
                         }
                       })
-                      const standings = calcPredictedStandings(groupMatches, predMap)
+                      const standings = calcPredictedStandings(groupMatches, predMap, true)
 
                       // Resolve a slot — handles both group slots (1A, 2B) and W slots (W73, W74)
                       const resolveOfflineSlot = (slot) => {
