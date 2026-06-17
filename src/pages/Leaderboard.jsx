@@ -42,11 +42,10 @@ export default function Leaderboard() {
         .order('username', { ascending: true })
         .limit(200),
       supabase.from('profiles')
-        .select('id, username, avatar_emoji, ko_points, ko_streak_current, ko_exact_scores')
+        .select('id, username, display_name, avatar_emoji, total_points, streak_current, exact_scores, ko_points, ko_streak_current, ko_exact_scores, rank_at_kickoff, is_banned')
         .order('ko_points', { ascending: false })
         .order('username', { ascending: true })
-        .limit(200)
-        .select('id, username, display_name, avatar_emoji, total_points, streak_current, exact_scores, ko_points, ko_streak_current, ko_exact_scores, rank_at_kickoff, is_banned'),
+        .limit(200),
       supabase.from('leaderboard_snapshots')
         .select('user_id, rank')
         .eq('snapshot_type', 'previous'),
@@ -207,7 +206,8 @@ export default function Leaderboard() {
           <>
             <div className="card" style={{ padding: '8px', marginBottom: '12px' }}>
               {paginated.map(player => {
-                const rank = currentPlayers.filter(other => (other.total_points || 0) > (player.total_points || 0)).length + 1
+                const playerPts = isTournament ? (player.total_points || 0) : (player.ko_points || 0)
+                const rank = currentPlayers.filter(other => (isTournament ? (other.total_points || 0) : (other.ko_points || 0)) > playerPts).length + 1
                 const isCurrentUser = user?.id === player.id
                 const movement = getRankMovement(player.id, rank)
                 const pts = appSettings?.points_maintenance === 'true' && !isAdmin 
