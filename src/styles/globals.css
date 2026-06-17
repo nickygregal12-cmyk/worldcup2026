@@ -654,7 +654,7 @@ img {
 .hide-desktop { display: block; }
 
 @media (min-width: 768px) {
-  .hide-mobile  { display: block; }
+  .hide-mobile  { display: flex; }
   .hide-desktop { display: none; }
 }
 
