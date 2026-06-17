@@ -917,7 +917,11 @@ export default function Home() {
                                 ? `${match.home_score} – ${match.away_score}`
                                 : match.status === 'live' ? '0 – 0' : '– –'}
                             </div>
-                            <div style={{ fontSize: '10px', color: '#e53935', fontWeight: '700', marginTop: '4px' }}>● LIVE</div>
+                            <div style={{ fontSize: '10px', color: '#e53935', fontWeight: '700', marginTop: '4px' }}>
+                              {match.live_minute != null
+                                ? `● ${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'`
+                                : '● LIVE'}
+                            </div>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
                             <span style={{ fontSize: '32px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</span>

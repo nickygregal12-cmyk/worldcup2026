@@ -109,7 +109,7 @@ export const handler = async (event, context) => {
   try {
     const response = await fetch(
       'https://api.football-data.org/v4/competitions/WC/matches?season=2026',
-      { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY } }
+      { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY, 'X-Api-Version': 'v4.1' } }
     )
 
     if (!response.ok) throw new Error(`API error: ${response.status}`)
@@ -286,6 +286,15 @@ export const handler = async (event, context) => {
         api_synced_at: new Date().toISOString(),
       }
 
+      // Live minute + injury time (v4.1 API). Store while live, clear when not.
+      if (newStatus === 'live') {
+        updateFields.live_minute = match.minute ?? null
+        updateFields.injury_time = match.injuryTime ?? null
+      } else {
+        updateFields.live_minute = null
+        updateFields.injury_time = null
+      }
+
       // Only write knockout-specific fields for knockout stages
       if (isKnockoutStage && match.status === 'FINISHED') {
         if (winnerTeamId) updateFields.winner_team_id = winnerTeamId
@@ -313,16 +322,26 @@ export const handler = async (event, context) => {
         // Batch recalc server-side: one RPC recalculates every affected user
         // (predictions AND knockout_picks users — fixes leaderboard not
         // updating after knockout matches)
-        const { data: recalcCount, error: recalcErr } = await supabase
-          .rpc('recalculate_match_user_points', { p_match_id: ourMatch.id })
-        if (recalcErr) {
-          // Fallback to old per-user loop if the function is missing
-          const { data: preds } = await supabase
-            .from('predictions')
-            .select('user_id')
-            .eq('match_id', ourMatch.id)
-          for (const pred of preds || []) {
-            await supabase.rpc('recalculate_user_total_points', { p_user_id: pred.user_id })
+        if (isKnockout) {
+          // Knockout progression scoring is bracket-wide: a completed R32 result
+          // can award points to ANY user who placed that team in their bracket,
+          // not just users with a pick on this exact match. So recalc everyone.
+          const { data: allUsers } = await supabase.from('profiles').select('id')
+          for (const u of allUsers || []) {
+            await supabase.rpc('recalculate_user_total_points', { p_user_id: u.id })
+          }
+        } else {
+          const { data: recalcCount, error: recalcErr } = await supabase
+            .rpc('recalculate_match_user_points', { p_match_id: ourMatch.id })
+          if (recalcErr) {
+            // Fallback to old per-user loop if the function is missing
+            const { data: preds } = await supabase
+              .from('predictions')
+              .select('user_id')
+              .eq('match_id', ourMatch.id)
+            for (const pred of preds || []) {
+              await supabase.rpc('recalculate_user_total_points', { p_user_id: pred.user_id })
+            }
           }
         }
 
