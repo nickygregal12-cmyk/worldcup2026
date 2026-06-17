@@ -316,6 +316,10 @@ export const handler = async (event, context) => {
           try { await supabase.rpc('calculate_ko_prediction_points', { p_match_id: ourMatch.id }) } catch (_) {}
         } else {
           await supabase.rpc('calculate_prediction_points', { p_match_id: ourMatch.id })
+          // Check if this match completing finishes a group — if so, award
+          // group position points (+2pts per correct position, +5 perfect group bonus).
+          // check_group_bonuses is idempotent: no-ops if the group isn't complete yet.
+          try { await supabase.rpc('check_group_bonuses', { p_match_id: ourMatch.id }) } catch (_) {}
         }
         pointsCalculated++
 
