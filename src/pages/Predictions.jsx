@@ -1688,6 +1688,9 @@ export default function Predictions() {
                     {match.away_team?.short_code} {awayPct}%{userResult === 'away' ? ' ✓' : ''}
                   </span>
                 </div>
+                <Link to={`/match/${match.id}/stats`} style={{ display: 'block', textAlign: 'center', marginTop: '10px', fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)' }}>
+                  📊 Full match stats →
+                </Link>
               </div>
             )
           })()}

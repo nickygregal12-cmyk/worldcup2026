@@ -26,6 +26,7 @@ import KOPredictor from './pages/KOPredictor.jsx'
 import ResetPassword from './pages/ResetPassword.jsx'
 import PublicLeague from './pages/PublicLeague.jsx'
 import GlobalStats from './pages/GlobalStats.jsx'
+import MatchStats from './pages/MatchStats.jsx'
 
 function ProtectedRoute({ children }) {
   const { user, isLoading } = useAuthStore()
@@ -112,6 +113,7 @@ export default function App() {
           <Route path="/admin" element={<AdminRoute><Suspense fallback={<div className="loading-screen"><div className="spinner" /></div>}><AdminPanel /></Suspense></AdminRoute>} />
           <Route path="/how-to-play" element={<HowToPlay />} />
           <Route path="/stats" element={<GlobalStats />} />
+          <Route path="/match/:matchId/stats" element={<MatchStats />} />
           <Route path="/ko-predictor" element={<KOPredictor />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="*" element={<Navigate to="/" replace />} />

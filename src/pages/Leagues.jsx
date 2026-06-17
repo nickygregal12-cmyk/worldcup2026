@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase.js'
 import { avatarColor } from '../lib/avatarColor.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
-function LiveMatchCard({ match, members, supabase, mode }) {
+function LiveMatchCard({ match, members, supabase, mode, leagueCode }) {
   // mode: 'upcoming' | 'live' | 'result'
   const [expanded, setExpanded] = useState(false)
   const [preds, setPreds] = useState({})
@@ -119,6 +119,9 @@ function LiveMatchCard({ match, members, supabase, mode }) {
               </div>
             )
           })}
+          <Link to={leagueCode ? `/match/${match.id}/stats?league=${leagueCode}` : `/match/${match.id}/stats`} style={{ display: 'block', textAlign: 'center', marginTop: '8px', padding: '6px', fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)' }}>
+            📊 Full match stats →
+          </Link>
         </div>
       )}
     </div>
@@ -1558,13 +1561,13 @@ export default function Leagues() {
 
                   {/* Match strip — upcoming / live / result */}
                   {recentResult && liveMatches.length === 0 && !upcomingMatch && (
-                    <LiveMatchCard key={recentResult.id} match={recentResult} members={sortedMembers(league.id)} supabase={supabase} mode="result" />
+                    <LiveMatchCard key={recentResult.id} match={recentResult} members={sortedMembers(league.id)} supabase={supabase} mode="result" leagueCode={league.code} />
                   )}
                   {liveMatches.map(m => (
-                    <LiveMatchCard key={m.id} match={m} members={sortedMembers(league.id)} supabase={supabase} mode="live" />
+                    <LiveMatchCard key={m.id} match={m} members={sortedMembers(league.id)} supabase={supabase} mode="live" leagueCode={league.code} />
                   ))}
                   {upcomingMatch && !liveMatches.length && (
-                    <LiveMatchCard key={upcomingMatch.id} match={upcomingMatch} members={sortedMembers(league.id)} supabase={supabase} mode="upcoming" />
+                    <LiveMatchCard key={upcomingMatch.id} match={upcomingMatch} members={sortedMembers(league.id)} supabase={supabase} mode="upcoming" leagueCode={league.code} />
                   )}
 
                   {/* League table — always visible */}
