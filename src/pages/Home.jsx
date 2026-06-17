@@ -727,22 +727,30 @@ export default function Home() {
 
       {/* ── Hero ── */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(0,30,80,0.82) 0%, rgba(0,60,140,0.78) 60%, rgba(0,30,80,0.82) 100%), url(/hero-bg.jpg) center/cover no-repeat',
-        padding: '36px 20px 32px', textAlign: 'center', color: 'white',
+        position: 'relative',
+        background: 'linear-gradient(135deg, rgba(0,30,80,0.84) 0%, rgba(0,60,140,0.80) 60%, rgba(0,30,80,0.84) 100%), url(/hero-bg.jpg) center/cover no-repeat',
+        padding: '38px 20px 34px', textAlign: 'center', color: 'white',
+        overflow: 'hidden',
       }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-          {/* Dynamic badge */}
-          <div style={{ fontSize: '13px', fontWeight: '700', letterSpacing: '0.1em', marginBottom: '10px', textTransform: 'uppercase',
+        {/* Woven saltire — ambient Scottish identity, subtle structural bands */}
+        <div aria-hidden style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.5 }}>
+          <div style={{ position: 'absolute', top: '50%', left: '50%', width: '220%', height: '13px', background: 'rgba(255,255,255,0.05)', transform: 'translate(-50%,-50%) rotate(27deg)' }} />
+          <div style={{ position: 'absolute', top: '50%', left: '50%', width: '220%', height: '13px', background: 'rgba(255,255,255,0.05)', transform: 'translate(-50%,-50%) rotate(-27deg)' }} />
+        </div>
+
+        <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
+          {/* Dynamic eyebrow — navigational, tells you where you are */}
+          <div style={{ fontSize: 'var(--t-tiny)', fontWeight: '700', letterSpacing: '0.14em', marginBottom: '10px', textTransform: 'uppercase',
             color: liveMatches.length > 0 ? '#ef5350' : 'var(--accent-green)',
           }}>
-            {liveMatches.length > 0 ? '🔴 Live · FIFA World Cup 2026' : tournamentOver ? '🏆 FIFA World Cup 2026' : 'FIFA World Cup 2026'}
+            {liveMatches.length > 0 ? '🔴 Live · FIFA World Cup 2026' : tournamentOver ? '🏆 FIFA World Cup 2026' : '🏴󠁧󠁢󠁳󠁣󠁴󠁿 FIFA World Cup 2026'}
           </div>
 
-          <h1 style={{ fontSize: 'clamp(26px, 6vw, 44px)', fontWeight: '900', letterSpacing: '-0.03em', marginBottom: '10px', lineHeight: 1.1 }}>
+          <h1 style={{ fontSize: 'clamp(26px, 6vw, 44px)', fontWeight: '800', letterSpacing: '-0.025em', marginBottom: '10px', lineHeight: 1.08 }}>
             WC26 Predictor
           </h1>
 
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '14px', marginBottom: '24px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.62)', fontSize: 'var(--t-small)', marginBottom: '24px', maxWidth: '34ch', marginLeft: 'auto', marginRight: 'auto' }}>
             {heroSubtitle}
           </p>
 
