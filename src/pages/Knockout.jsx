@@ -156,6 +156,7 @@ export default function Knockout() {
             winner_id: p.winner_team_id,
             home_id: p.home_team_id,
             away_id: p.away_team_id,
+            is_unlocked: p.is_unlocked,
           }
         })
         setKnockoutPicks(koMap)
@@ -231,10 +232,14 @@ export default function Knockout() {
   const isMainBracketPickFrozen = useCallback((matchDef) => {
     if (!matchDef) return false
 
+    const pick = knockoutPicks[matchDef.match_number]
+
+    // Admin unlock override — orphaned picks that were affected by the matchup
+    // bug are explicitly unlocked so the user can re-pick, even past normal locks
+    if (pick?.is_unlocked) return false
+
     // Always lock if the match itself has kicked off
     if (new Date() >= new Date(matchDef.kickoff)) return true
-
-    const pick = knockoutPicks[matchDef.match_number]
 
     // Lock if any team feeding into this match is from a group that has already kicked off
     // This prevents using real results to fill in empty bracket slots
@@ -449,7 +454,7 @@ export default function Knockout() {
     if (existingDb) {
       const { error } = await supabase
         .from('knockout_picks')
-        .update({ winner_team_id: winnerId, team_id: winnerId, home_team_id: home?.id, away_team_id: away?.id, bracket_version: 'fifa_v2' })
+        .update({ winner_team_id: winnerId, team_id: winnerId, home_team_id: home?.id, away_team_id: away?.id, is_unlocked: false, bracket_version: 'fifa_v2' })
         .eq('user_id', user.id)
         .eq('match_number', mn)
       upsertErr = error
