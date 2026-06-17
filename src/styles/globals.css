@@ -188,7 +188,7 @@ img {
 .main-content {
   flex: 1;
   padding-top: var(--nav-height);
-  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 8px);
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px) + 8px);
 }
 
 @media (min-width: 768px) {
