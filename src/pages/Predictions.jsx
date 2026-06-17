@@ -1164,21 +1164,52 @@ export default function Predictions() {
     // Don't allow joker changes after match has kicked off
     const match = matchesRef.current.find(m => m.id === matchId)
     if (!match || isLocked(match.kickoff_time)) return
-    if (!currentJoker && jokersRemaining <= 0) return
+
     const newJoker = !currentJoker
-    const newRemaining = newJoker ? jokersRemaining - 1 : jokersRemaining + 1
+
+    // ENFORCE THE 8-JOKER LIMIT AUTHORITATIVELY: when ADDING a joker, count the
+    // real is_confident predictions in the DB right now — never trust the local
+    // counter, which can drift/cache and has allowed >8 jokers. This is the
+    // server-truth gate.
+    if (newJoker) {
+      const { count, error: countErr } = await supabase
+        .from('predictions')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_confident', true)
+      if (countErr) return
+      const realUsed = count || 0
+      if (realUsed >= 8) {
+        // Already at the cap — refuse, and repair the local counter so the UI
+        // reflects reality instead of the stale value that let this slip through
+        setJokersRemaining(0)
+        await supabase.from('profiles').update({ jokers_group_remaining: 0 }).eq('id', user.id)
+        loadProfile(user.id)
+        setJokerConfirm(null)
+        return
+      }
+    }
+
     haptic.medium()
     // Optimistic update
     setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], joker: newJoker } }))
-    setJokersRemaining(newRemaining)
+
     // Save prediction joker flag
     await supabase.from('predictions').upsert({
       user_id: user.id, match_id: matchId,
       home_score: pred.home ?? 0, away_score: pred.away ?? 0,
       is_confident: newJoker, bracket_type: 'main',
     }, { onConflict: 'user_id,match_id,bracket_type' })
-    // Save count to DB and refresh store profile so it's never stale
-    await supabase.from('profiles').update({ jokers_group_remaining: newRemaining }).eq('id', user.id)
+
+    // Recompute remaining from the REAL saved jokers (authoritative), then persist
+    const { count: freshCount } = await supabase
+      .from('predictions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('is_confident', true)
+    const remaining = Math.max(0, 8 - (freshCount || 0))
+    setJokersRemaining(remaining)
+    await supabase.from('profiles').update({ jokers_group_remaining: remaining }).eq('id', user.id)
     loadProfile(user.id)
   }
 
