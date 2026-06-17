@@ -62,6 +62,15 @@
   --nav-height:        64px;
   --bottom-nav-height: 64px;
   --card-padding:      20px;
+
+  /* Type scale — strict ramp, map all text to these */
+  --t-hero:  28px;
+  --t-h1:    22px;
+  --t-h2:    18px;
+  --t-body:  15px;
+  --t-small: 13px;
+  --t-tiny:  11px;
+  --t-micro: 10px;
 }
 
 /* Dark Mode */
@@ -136,6 +145,34 @@ input, textarea, select {
   font-family: var(--font-sans);
 }
 
+/* ---- Signature: all mono numbers use tabular figures so they align ---- */
+.mono,
+[style*="font-mono"],
+[style*="--font-mono"] {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+}
+
+/* Reusable stat number — mono, tight, tabular */
+.stat-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum';
+  letter-spacing: -0.01em;
+}
+
+/* Card entry animation — subtle fade-up, respects reduced-motion */
+.fade-up {
+  animation: fadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-up { animation: none; }
+}
+
 img {
   max-width: 100%;
   height: auto;
@@ -194,15 +231,18 @@ img {
   border-radius: var(--radius-lg);
   padding: var(--card-padding);
   box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
 }
 
 .card-hover {
-  transition: box-shadow 0.2s, transform 0.2s;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
 }
 
 .card-hover:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  border-color: var(--border-medium);
 }
 
 /* ---- Buttons ---- */
