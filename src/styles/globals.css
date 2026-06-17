@@ -650,12 +650,12 @@ img {
 .rank-1::after { content: ''; }
 
 /* ---- Responsive Utilities ---- */
-.hide-mobile  { display: none; }
+.hide-mobile  { display: none !important; }
 .hide-desktop { display: block; }
 
 @media (min-width: 768px) {
-  .hide-mobile  { display: flex; }
-  .hide-desktop { display: none; }
+  .hide-mobile  { display: flex !important; }
+  .hide-desktop { display: none !important; }
 }
 
 /* ---- Animations ---- */
