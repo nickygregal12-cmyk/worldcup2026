@@ -23,7 +23,7 @@ export default function MatchStats() {
       // 1. The match
       const { data: m } = await supabase
         .from('matches')
-        .select('id, match_number, stage, home_score, away_score, status, kickoff_time, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .select('id, match_number, stage, home_score, away_score, status, kickoff_time, live_minute, injury_time, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
         .eq('id', matchId)
         .maybeSingle()
       setMatch(m)
@@ -86,7 +86,7 @@ export default function MatchStats() {
       {/* Match header */}
       <div className="card fade-up" style={{ marginBottom: '14px', textAlign: 'center' }}>
         <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
-          M{match.match_number} · {hasResult ? 'Full time' : match.status === 'live' ? '🔴 Live' : 'Predictions'}
+          M{match.match_number} · {hasResult ? 'Full time' : match.status === 'live' ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : ''}`.trim() : 'Predictions'}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
           <div style={{ textAlign: 'center', width: '88px' }}>

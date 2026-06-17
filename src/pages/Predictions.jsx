@@ -1594,7 +1594,7 @@ export default function Predictions() {
               {!effectiveLocked && hasPrediction && !hasJoker && <span className="badge badge-green">✓ Saved</span>}
               {(match.home_score !== null && match.home_score !== undefined) && (
                 <span className={`badge ${match.status === 'live' ? 'badge-red' : 'badge-gray'}`}>
-                  {match.status === 'live' ? '🔴 ' : ''}{match.home_score}–{match.away_score}
+                  {match.status === 'live' ? (match.live_minute != null ? `🔴 ${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}' ` : '🔴 ') : ''}{match.home_score}–{match.away_score}
                 </span>
               )}
             </div>

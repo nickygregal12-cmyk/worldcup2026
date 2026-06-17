@@ -65,7 +65,7 @@ function LiveMatchCard({ match, members, supabase, mode, leagueCode }) {
       <button onClick={() => setExpanded(e => !e)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: bgColour, border: 'none', cursor: 'pointer', textAlign: 'left' }}>
 
         {/* Status badge */}
-        {mode === 'live' && <span style={{ background: '#e53935', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>🔴 LIVE</span>}
+        {mode === 'live' && <span style={{ background: '#e53935', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>🔴 {match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : 'LIVE'}</span>}
         {mode === 'upcoming' && <span style={{ background: 'var(--scottish-navy)', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>⏱ {countdown}</span>}
         {mode === 'result' && <span style={{ background: 'var(--accent-green)', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>✓ FT</span>}
 
@@ -624,7 +624,7 @@ export default function Leagues() {
       const oneHourAhead = new Date(now.getTime() + 60 * 60 * 1000).toISOString()
 
       const { data } = await supabase.from('matches')
-        .select('id, home_score, away_score, status, kickoff_time, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .select('id, home_score, away_score, status, kickoff_time, live_minute, injury_time, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
         .or([
           `status.eq.live`,
           `and(status.eq.scheduled,kickoff_time.lte.${nowIso},kickoff_time.gte.${twoHoursAgo})`,
