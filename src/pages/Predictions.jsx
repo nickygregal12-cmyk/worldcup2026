@@ -2464,7 +2464,14 @@ export default function Predictions() {
               <>
                 {Object.entries(matchesByDate).map(([dateKey, dayMatches]) => {
                   const firstMatch = dayMatches[0]
-                  const shortDate = new Date(firstMatch.kickoff_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+                  const matchDate = new Date(firstMatch.kickoff_time)
+                  // Show "Today"/"Tomorrow" for those days, otherwise the date
+                  const today = new Date(); today.setHours(0,0,0,0)
+                  const md = new Date(matchDate); md.setHours(0,0,0,0)
+                  const dayDiff = Math.round((md - today) / 86400000)
+                  const shortDate = dayDiff === 0 ? 'Today'
+                    : dayDiff === 1 ? 'Tomorrow'
+                    : matchDate.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
                   const donePreds = dayMatches.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
                   const complete = donePreds === dayMatches.length
                   return (

@@ -1627,9 +1627,14 @@ export default function Leagues() {
                                   {isLeagueCreator && !league.is_global && <span style={{ fontSize: '11px' }}>👑</span>}
                                   {member.profile?.is_offline && <span style={{ fontSize: '9px', background: 'var(--bg-tertiary)', color: 'var(--text-muted)', padding: '1px 5px', borderRadius: '3px', fontWeight: '700', flexShrink: 0, border: '1px solid var(--border-light)' }}>👤 Offline</span>}
                                 </div>
-                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '6px', marginTop: '1px' }}>
-                                  {gap !== null && pts !== leaderPts && <span>-{gap}pts</span>}
-                                  {member.profile?.streak_current > 0 && <span>🔥{member.profile.streak_current}</span>}
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '8px', marginTop: '1px', alignItems: 'center' }}>
+                                  {gap !== null && pts !== leaderPts && (
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: 'var(--text-secondary)' }}>{gap}</span>
+                                      <span>behind leader</span>
+                                    </span>
+                                  )}
+                                  {member.profile?.streak_current > 2 && <span>🔥{member.profile.streak_current}</span>}
                                   {member.profile?.exact_scores > 0 && <span>🎯{member.profile.exact_scores}</span>}
                                 </div>
                               </div>
