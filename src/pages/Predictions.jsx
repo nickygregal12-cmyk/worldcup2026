@@ -1277,12 +1277,16 @@ export default function Predictions() {
 
   const clearPick = async (matchId) => {
     if (!user) return
+    // NEVER clear a locked prediction — once a match kicks off the pick is
+    // committed and can't be refilled, so clearing it would wipe it permanently.
+    const match = matchesRef.current.find(m => m.id === matchId)
+    if (!match || isLocked(match.kickoff_time)) return
     const hadJoker = predictions[matchId]?.joker === true
     setPredictions(prev => { const next = { ...prev }; delete next[matchId]; return next })
     delete savedPredictionsRef.current[matchId]
     await supabase.from('predictions').delete().eq('match_id', matchId).eq('user_id', user.id)
     if (hadJoker) {
-      const newRemaining = jokersRemaining + 1
+      const newRemaining = Math.min(8, jokersRemaining + 1)
       setJokersRemaining(newRemaining)
       await supabase.from('profiles').update({ jokers_group_remaining: newRemaining }).eq('id', user.id)
     }
