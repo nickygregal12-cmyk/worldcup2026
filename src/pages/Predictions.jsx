@@ -1688,7 +1688,7 @@ export default function Predictions() {
                     {match.away_team?.short_code} {awayPct}%{userResult === 'away' ? ' ✓' : ''}
                   </span>
                 </div>
-                <Link to={`/match/${match.id}/stats`} style={{ display: 'block', textAlign: 'center', marginTop: '10px', fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)' }}>
+                <Link to={`/match/${match.id}/stats`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '12px', padding: '10px', borderRadius: 'var(--radius-md)', background: 'rgba(0,48,135,0.06)', border: '1px solid rgba(0,48,135,0.12)', fontSize: '13px', fontWeight: '800', color: 'var(--scottish-navy)' }}>
                   📊 Full match stats →
                 </Link>
               </div>
@@ -1718,42 +1718,6 @@ export default function Predictions() {
               <div style={{ margin: '10px 0 0', padding: '8px 12px', background: 'rgba(230,81,0,0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(230,81,0,0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '16px' }}>😲</span>
                 <span style={{ fontSize: '12px', fontWeight: '700', color: '#e65100' }}>{upsetMsg}</span>
-              </div>
-            )
-          })()}
-
-          {/* Reactions — shown after match completes */}
-          {resultColour && user && (() => {
-            const r = reactions[match.id] || { fire: 0, laugh: 0, skull: 0, mine: null }
-            const EMOJIS = [
-              { key: 'fire',  emoji: '🔥', label: 'Called it!' },
-              { key: 'laugh', emoji: '😂', label: 'Disaster' },
-              { key: 'skull', emoji: '💀', label: 'Joker ruined' },
-            ]
-            const total = r.fire + r.laugh + r.skull
-            return (
-              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {EMOJIS.map(({ key, emoji, label }) => (
-                  <button key={key} onClick={() => toggleReaction(match.id, key)}
-                    title={label} aria-label={`${label} reaction${r.mine === key ? ' (selected)' : ''}`} aria-pressed={r.mine === key}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: '4px',
-                      padding: '5px 10px', borderRadius: 'var(--radius-full)',
-                      border: r.mine === key ? '1.5px solid var(--scottish-navy)' : '1px solid var(--border-light)',
-                      background: r.mine === key ? 'rgba(0,48,135,0.08)' : 'var(--bg-secondary)',
-                      cursor: 'pointer', fontSize: '14px', fontWeight: '700',
-                      color: 'var(--text-secondary)',
-                      transition: 'all 0.15s',
-                    }}>
-                    <span>{emoji}</span>
-                    {r[key] > 0 && <span style={{ fontSize: '12px', color: r.mine === key ? 'var(--scottish-navy)' : 'var(--text-muted)' }}>{r[key]}</span>}
-                  </button>
-                ))}
-                {total > 0 && (
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: 'auto' }}>
-                    {total} reaction{total !== 1 ? 's' : ''}
-                  </span>
-                )}
               </div>
             )
           })()}
@@ -1838,23 +1802,7 @@ export default function Predictions() {
             </div>
           )}
 
-          {/* Points summary after result */}
-          {match.status === 'completed' && hasPrediction && (
-            <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>
-                Your pick: <strong style={{ fontFamily: 'var(--font-mono)' }}>{pred.home}–{pred.away}</strong>
-                {hasJoker && <span style={{ marginLeft: '6px', color: 'var(--accent-gold)' }}>🃏</span>}
-              </span>
-              {(() => {
-                const base = resultColour === 'gold' ? 5 : resultColour === 'green' ? 3 : 0
-                const mult = hasJoker && resultColour !== 'red' ? 2 : 1
-                const pts = (pred.points_awarded !== undefined && pred.points_awarded !== null && pred.points_awarded !== 0)
-                  ? pred.points_awarded
-                  : base * mult
-                return <span style={{ fontWeight: '700', color: pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{pts} pts</span>
-              })()}
-            </div>
-          )}
+          {/* Points summary handled by the top result banner — no duplicate here */}
 
         </div>
       </div>
