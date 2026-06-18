@@ -5,6 +5,7 @@ import { useAuthStore, useAppStore } from '../store/index.js'
 import { predictMatchOdds, predictGoals, predictAwards } from '../lib/luckyDip.js'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
 import ShareCard from '../components/ShareCard.jsx'
+import MemberPredictionsModal, { useMemberPredictions } from '../components/MemberPredictionsModal.jsx'
 
 // ── Tournament phase dates ───────────────────────────────────────────────────
 const TOURNAMENT_START   = new Date('2026-06-11T19:00:00Z') // first kickoff
@@ -105,6 +106,7 @@ export default function Home() {
   const [nextMatch, setNextMatch]         = useState(null)
   const [liveLeaguePreds, setLiveLeaguePreds] = useState([]) // league members' picks for live match
   const [liveMatches, setLiveMatches]     = useState([])
+  const { memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, openProfile } = useMemberPredictions()
   const [upcomingMatches, setUpcomingMatches] = useState([])
   const [topPredictors, setTopPredictors] = useState([])
   const [predictionCount, setPredictionCount] = useState(0)
@@ -935,6 +937,15 @@ export default function Home() {
                             </span>
                           </div>
                         )}
+                        <Link to={`/match/${match.id}/stats`} style={{
+                          display: 'block', marginTop: '10px', padding: '8px',
+                          background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)',
+                          border: '1px solid var(--border-light)', textAlign: 'center',
+                          fontSize: '12px', fontWeight: '700', color: 'var(--scottish-navy)',
+                          textDecoration: 'none',
+                        }}>
+                          📊 Full match stats →
+                        </Link>
                       </div>
                     )
                   })}
@@ -1772,10 +1783,13 @@ export default function Home() {
                 {topPredictors.map((p, i) => {
                   const isMe = user?.id === p.id
                   return (
-                    <div key={p.id} className="leaderboard-row" style={{
+                    <div key={p.id} className="leaderboard-row" 
+                      onClick={() => openProfile(p, user?.id)}
+                      role="button" tabIndex={0}
+                      style={{
                       background: isMe ? 'var(--scottish-navy-light)' : 'var(--bg-card)',
                       border: isMe ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
-                      cursor: 'default',
+                      cursor: 'pointer',
                     }}>
                       {/* accent bar */}
                       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px',
@@ -1855,6 +1869,14 @@ export default function Home() {
         </div>
       </div>
       {showShareCard && <ShareCard onClose={() => setShowShareCard(false)} />}
+      <MemberPredictionsModal
+        memberModal={memberModal}
+        setMemberModal={setMemberModal}
+        memberPredictions={memberPredictions}
+        memberReactions={memberReactions}
+        loadingPreds={loadingPreds}
+        currentUserId={user?.id}
+      />
     </div>
   )
 }
