@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase.js'
 import { avatarColor } from '../lib/avatarColor.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import { useCountUp } from '../hooks/useCountUp.js'
+import MemberPredictionsModal, { useMemberPredictions } from '../components/MemberPredictionsModal.jsx'
 
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
@@ -23,6 +24,7 @@ export default function Leaderboard() {
   const [prevRanks, setPrevRanks] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const { memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, openProfile } = useMemberPredictions()
   const [page, setPage] = useState(0)
 
   const preTournament = new Date() < TOURNAMENT_START
@@ -216,9 +218,12 @@ export default function Leaderboard() {
                 const isTop3 = rank <= 3
 
                 return (
-                  <div key={player.id} className={`leaderboard-row${isCurrentUser ? ' current-user' : ''}`} style={{
+                  <div key={player.id} className={`leaderboard-row${isCurrentUser ? ' current-user' : ''}`}
+                    onClick={() => openProfile(player, user?.id)}
+                    role="button" tabIndex={0} style={{
                     background: isCurrentUser ? accentLight : 'var(--bg-card)',
                     border: isCurrentUser ? `1px solid ${accentColour}` : '1px solid var(--border-light)',
+                    cursor: 'pointer',
                   }}>
                     {/* Gold gradient bar for top 3 / accent bar for current user */}
                     <div style={{
@@ -321,6 +326,15 @@ export default function Leaderboard() {
           </>
         )}
       </div>
+
+      <MemberPredictionsModal
+        memberModal={memberModal}
+        setMemberModal={setMemberModal}
+        memberPredictions={memberPredictions}
+        memberReactions={memberReactions}
+        loadingPreds={loadingPreds}
+        currentUserId={user?.id}
+      />
     </div>
   )
 }

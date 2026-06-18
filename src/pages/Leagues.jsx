@@ -4,6 +4,7 @@ import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketU
 import { supabase } from '../lib/supabase.js'
 import { avatarColor } from '../lib/avatarColor.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
+import MemberPredictionsModal, { useMemberPredictions, getPredResult } from '../components/MemberPredictionsModal.jsx'
 
 function LiveMatchCard({ match, members, supabase, mode, leagueCode }) {
   // mode: 'upcoming' | 'live' | 'result'
@@ -667,10 +668,7 @@ export default function Leagues() {
   }
 
   const [confirmAction, setConfirmAction] = useState(null)
-  const [memberModal, setMemberModal] = useState(null)
-  const [memberPredictions, setMemberPredictions] = useState([])
-  const [memberReactions, setMemberReactions] = useState({}) // matchId -> reaction emoji
-  const [loadingPreds, setLoadingPreds] = useState(false)
+  const { memberModal, setMemberModal, memberPredictions, setMemberPredictions, memberReactions, setMemberReactions, loadingPreds, setLoadingPreds, openProfile } = useMemberPredictions()
   const [matchOdds, setMatchOdds] = useState({})
   const [showWelcome, setShowWelcome] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -704,22 +702,7 @@ export default function Leagues() {
     setLoadingOverall(false)
   }
 
-  const openOverallProfile = async (profile) => {
-    const displayName = profile.display_name || profile.username || 'Unknown'
-    const showFuture = profile.show_future_predictions !== false || profile.id === user.id
-    setMemberModal({
-      userId: profile.id,
-      username: displayName,
-      leagueId: null,
-      isOffline: false,
-      lockedSnapshot: false,
-      leagueName: 'Overall Rankings',
-      targetShowFuture: showFuture,
-      canRemoveMember: false,
-      memberName: displayName,
-    })
-    await loadMemberPredictions(profile.id, showFuture)
-  }
+  const openOverallProfile = (profile) => openProfile(profile, user?.id)
 
   const loadMyLeagues = async () => {
     const { data: memberships } = await supabase
@@ -1378,23 +1361,42 @@ export default function Leagues() {
                     <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
                   ) : overallRows.length === 0 ? (
                     <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>No rankings yet</div>
-                  ) : overallRows.map((profile, i) => {
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '6px' }}>
+                      {overallRows.map((profile, i) => {
                     const isMe = profile.id === user.id
                     return (
-                      <div key={profile.id} onClick={() => openOverallProfile(profile)} role="button" tabIndex={0} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', borderBottom: '1px solid var(--border-light)', background: isMe ? 'rgba(0,48,135,0.05)' : 'transparent', borderLeft: isMe ? '3px solid var(--scottish-navy)' : '3px solid transparent', cursor: 'pointer' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '900', width: '24px', color: i < 3 ? ['#d4a017','#64748b','#b06a2c'][i] : 'var(--text-muted)' }}>{i + 1}</span>
-                        <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : avatarColor(profile.display_name || profile.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: isMe ? 'white' : avatarColor(profile.display_name || profile.username).fg, flexShrink: 0 }}>
+                      <div key={profile.id} onClick={() => openOverallProfile(profile)} role="button" tabIndex={0}
+                        className="leaderboard-row"
+                        style={{
+                          background: isMe ? 'var(--scottish-navy-light)' : 'var(--bg-card)',
+                          border: isMe ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                          cursor: 'pointer',
+                        }}>
+                        {/* accent bar */}
+                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: isMe ? 'var(--scottish-navy)' : i < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
+                        <span style={{ fontSize: i < 3 ? '20px' : '13px', fontWeight: '900', minWidth: '36px', textAlign: 'center', flexShrink: 0, color: i < 3 ? 'inherit' : 'var(--text-muted)', fontFamily: i >= 3 ? 'var(--font-mono)' : 'inherit' }}>
+                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                        </span>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : avatarColor(profile.display_name || profile.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: isMe ? 'white' : avatarColor(profile.display_name || profile.username).fg, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.12)' }}>
                           {profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '13px', fontWeight: isMe ? '800' : '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'} {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '1px 5px', borderRadius: '3px', fontWeight: '700' }}>YOU</span>}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>{profile.exact_scores > 0 ? `🎯 ${profile.exact_scores} exact` : 'Overall player'}</div>
+                          <div style={{ fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'}</span>
+                            {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>{profile.exact_scores > 0 ? `🎯 ${profile.exact_scores} exact` : 'Overall player'}</div>
                         </div>
-                        <span style={{ fontWeight: '900', fontSize: '15px', fontVariantNumeric: 'tabular-nums' }}>{profile.total_points || 0}<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--text-muted)' }}>pts</span></span>
-                        <span style={{ fontSize: '18px', color: 'var(--text-muted)' }}>›</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '44px' }}>
+                          <span style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em', lineHeight: 1, color: isMe ? 'var(--scottish-navy)' : 'var(--text-primary)' }}>{profile.total_points || 0}</span>
+                          <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>pts</span>
+                        </div>
                       </div>
                     )
                   })}
+                    </div>
+                  )}
                 </div>
               </>
             )}
@@ -1593,44 +1595,44 @@ export default function Leagues() {
                           }).length + 1
 
                           return (
-                            <div key={member.user_id} onClick={() => openMemberModal(member, league.id)} role="button" tabIndex={0} style={{
-                              display: 'flex', alignItems: 'center', gap: '10px',
-                              padding: '11px 16px',
-                              borderBottom: '1px solid var(--border-light)',
-                              background: isMe ? 'rgba(0,48,135,0.05)' : 'transparent',
-                              borderLeft: isMe ? '3px solid var(--scottish-navy)' : '3px solid transparent',
-                              cursor: 'pointer',
-                            }}>
-                          {/* Rank with movement */}
-                          <span style={{ fontSize: '13px', fontWeight: '800', width: '28px', flexShrink: 0, color: rank <= 3 ? rankColours[rank - 1] : 'var(--text-muted)' }}>
-                            {rank}
-                          </span>
-                          {(() => {
-                            const snap = member.rank_snapshot
-                            if (!snap) return null
-                            const diff = snap - rank
-                            if (diff === 0) return <span style={{ fontSize: '9px', color: 'var(--text-muted)', width: '16px' }}>–</span>
-                            return <span style={{ fontSize: '9px', fontWeight: '800', color: diff > 0 ? 'var(--accent-green)' : 'var(--accent-red)', width: '16px' }}>
-                              {diff > 0 ? `↑${diff}` : `↓${Math.abs(diff)}`}
-                            </span>
-                          })()}
-
+                            <div key={member.user_id} onClick={() => openMemberModal(member, league.id)} role="button" tabIndex={0}
+                              className="leaderboard-row"
+                              style={{
+                                background: isMe ? 'var(--scottish-navy-light)' : 'var(--bg-card)',
+                                border: isMe ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                                cursor: 'pointer',
+                              }}>
+                              {/* accent bar */}
+                              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: isMe ? 'var(--scottish-navy)' : rank <= 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
+                              {/* Rank */}
+                              <span style={{ fontSize: rank <= 3 ? '20px' : '13px', fontWeight: '900', minWidth: '36px', textAlign: 'center', flexShrink: 0, color: rank > 3 ? 'var(--text-muted)' : 'inherit', fontFamily: rank > 3 ? 'var(--font-mono)' : 'inherit' }}>
+                                {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
+                              </span>
+                              {/* Movement */}
+                              {(() => {
+                                const snap = member.rank_snapshot
+                                if (!snap) return <span style={{ fontSize: '9px', color: 'transparent', width: '16px' }}>–</span>
+                                const diff = snap - rank
+                                if (diff === 0) return <span style={{ fontSize: '9px', color: 'var(--text-muted)', width: '16px' }}>–</span>
+                                return <span style={{ fontSize: '9px', fontWeight: '800', color: diff > 0 ? 'var(--accent-green)' : 'var(--accent-red)', width: '16px' }}>
+                                  {diff > 0 ? `↑${diff}` : `↓${Math.abs(diff)}`}
+                                </span>
+                              })()}
                               {/* Avatar */}
-                              <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : avatarColor(member.profile?.display_name || member.profile?.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: '800', color: isMe ? 'white' : avatarColor(member.profile?.display_name || member.profile?.username).fg, flexShrink: 0 }}>
+                              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : avatarColor(member.profile?.display_name || member.profile?.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: isMe ? 'white' : avatarColor(member.profile?.display_name || member.profile?.username).fg, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.12)' }}>
                                 {(member.profile?.display_name || member.profile?.username || '?')[0].toUpperCase()}
                               </div>
-
                               {/* Name + sub */}
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: '13px', fontWeight: isMe ? '700' : '500', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <div style={{ fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '5px' }}>
                                   <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                     {member.profile?.display_name || member.profile?.username || 'Unknown'}
                                   </span>
-                                  {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '1px 5px', borderRadius: '3px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
+                                  {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
                                   {isLeagueCreator && !league.is_global && <span style={{ fontSize: '11px' }}>👑</span>}
                                   {member.profile?.is_offline && <span style={{ fontSize: '9px', background: 'var(--bg-tertiary)', color: 'var(--text-muted)', padding: '1px 5px', borderRadius: '3px', fontWeight: '700', flexShrink: 0, border: '1px solid var(--border-light)' }}>👤 Offline</span>}
                                 </div>
-                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '8px', marginTop: '1px', alignItems: 'center' }}>
+                                <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '8px', marginTop: '3px', alignItems: 'center' }}>
                                   {gap !== null && pts !== leaderPts && (
                                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
                                       <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: 'var(--text-secondary)' }}>{gap}</span>
@@ -1641,14 +1643,11 @@ export default function Leagues() {
                                   {member.profile?.exact_scores > 0 && <span>🎯{member.profile.exact_scores}</span>}
                                 </div>
                               </div>
-
                               {/* Points */}
-                              <span style={{ fontWeight: '800', fontSize: '15px', fontVariantNumeric: 'tabular-nums', color: pts > 0 ? 'var(--text-primary)' : 'var(--text-muted)', flexShrink: 0 }}>
-                                {pts}<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--text-muted)' }}>pts</span>
-                              </span>
-
-                              {/* Row chevron */}
-                              <span style={{ fontSize: '18px', color: 'var(--text-muted)', flexShrink: 0 }}>›</span>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '44px' }}>
+                                <span style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em', lineHeight: 1, color: pts > 0 ? (isMe ? 'var(--scottish-navy)' : 'var(--text-primary)') : 'var(--text-muted)' }}>{pts}</span>
+                                <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>pts</span>
+                              </div>
                             </div>
                           )
                         })}
@@ -1703,7 +1702,16 @@ export default function Leagues() {
       </div>
 
       {/* Member predictions modal */}
-      {memberModal && (
+      <MemberPredictionsModal
+        memberModal={memberModal}
+        setMemberModal={setMemberModal}
+        memberPredictions={memberPredictions}
+        memberReactions={memberReactions}
+        loadingPreds={loadingPreds}
+        currentUserId={user?.id}
+      />
+
+      {false && memberModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
           onClick={() => setMemberModal(null)}>
           <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0', width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
@@ -1820,6 +1828,16 @@ export default function Leagues() {
           </div>
         </div>
       )}
+
+      {/* Shared member predictions modal */}
+      <MemberPredictionsModal
+        memberModal={memberModal}
+        setMemberModal={setMemberModal}
+        memberPredictions={memberPredictions}
+        memberReactions={memberReactions}
+        loadingPreds={loadingPreds}
+        currentUserId={user?.id}
+      />
 
       {/* Confirm dialog */}
 
