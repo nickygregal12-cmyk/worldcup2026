@@ -619,21 +619,27 @@ img {
 
 /* ---- Leaderboard ---- */
 .leaderboard-row {
-  display: grid;
-  grid-template-columns: 40px 1fr auto;
+  display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 12px 14px;
   border-radius: var(--radius-md);
-  transition: background 0.15s;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-card);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.15s;
 }
 
 .leaderboard-row:hover {
-  background: var(--bg-hover);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .leaderboard-row.current-user {
-  background: var(--accent-blue-light);
+  background: var(--scottish-navy-light);
+  border-color: var(--scottish-navy);
 }
 
 .rank-number {

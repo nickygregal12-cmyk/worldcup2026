@@ -204,7 +204,7 @@ export default function Leaderboard() {
           </div>
         ) : (
           <>
-            <div className="card" style={{ padding: '8px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
               {paginated.map(player => {
                 const playerPts = isTournament ? (player.total_points || 0) : (player.ko_points || 0)
                 const rank = currentPlayers.filter(other => (isTournament ? (other.total_points || 0) : (other.ko_points || 0)) > playerPts).length + 1
@@ -213,41 +213,55 @@ export default function Leaderboard() {
                 const pts = appSettings?.points_maintenance === 'true' && !isAdmin 
                   ? null 
                   : isTournament ? player.total_points : player.ko_points
+                const isTop3 = rank <= 3
 
                 return (
-                  <div key={player.id} className="leaderboard-row" style={{
-                    background: isCurrentUser ? accentLight : 'transparent',
-                    borderRadius: 'var(--radius-md)',
-                    border: isCurrentUser ? `1.5px solid ${accentColour}` : '1px solid transparent',
-                    marginBottom: '2px',
-                    borderLeft: isCurrentUser ? `4px solid ${accentColour}` : rank <= 3 ? '4px solid var(--accent-gold)' : '4px solid transparent',
+                  <div key={player.id} className={`leaderboard-row${isCurrentUser ? ' current-user' : ''}`} style={{
+                    background: isCurrentUser ? accentLight : 'var(--bg-card)',
+                    border: isCurrentUser ? `1px solid ${accentColour}` : '1px solid var(--border-light)',
                   }}>
+                    {/* Gold gradient bar for top 3 / accent bar for current user */}
+                    <div style={{
+                      position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px',
+                      background: isCurrentUser
+                        ? accentColour
+                        : isTop3
+                          ? 'linear-gradient(180deg, #f6c026, #b8860b)'
+                          : 'transparent',
+                    }} />
+
                     {/* Rank */}
                     <div style={{
-                      fontWeight: '800', fontSize: rank <= 3 ? '22px' : '14px',
-                      textAlign: 'center', fontFamily: rank > 3 ? 'var(--font-mono)' : 'inherit',
-                      color: rank > 3 ? 'var(--text-muted)' : 'inherit', minWidth: '40px',
+                      fontWeight: '800',
+                      fontSize: isTop3 ? '22px' : '13px',
+                      textAlign: 'center',
+                      fontFamily: !isTop3 ? 'var(--font-mono)' : 'inherit',
+                      color: !isTop3 ? 'var(--text-muted)' : 'inherit',
+                      minWidth: '36px',
+                      flexShrink: 0,
                     }}>
                       {getRankIcon(rank)}
                     </div>
 
                     {/* Avatar + name */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
                       <div style={{
-                        width: '36px', height: '36px', borderRadius: '50%',
+                        width: '40px', height: '40px', borderRadius: '50%',
                         background: isCurrentUser ? accentColour : avatarColor(player.display_name || player.username).bg,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: player.avatar_emoji ? '18px' : '15px', fontWeight: '700',
-                        color: isCurrentUser ? 'white' : avatarColor(player.display_name || player.username).fg, flexShrink: 0,
+                        fontSize: player.avatar_emoji ? '20px' : '15px', fontWeight: '700',
+                        color: isCurrentUser ? 'white' : avatarColor(player.display_name || player.username).fg,
+                        flexShrink: 0,
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
                       }}>
                         {player.avatar_emoji || player.username?.[0]?.toUpperCase()}
                       </div>
-                      <div>
-                        <div style={{ fontWeight: '600', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          {player.username}
-                          {isCurrentUser && <span style={{ fontSize: '10px', background: accentColour, color: 'white', padding: '1px 5px', borderRadius: '20px', fontWeight: '700' }}>YOU</span>}
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{player.username}</span>
+                          {isCurrentUser && <span style={{ fontSize: '9px', background: accentColour, color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0, letterSpacing: '0.02em' }}>YOU</span>}
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', marginTop: '2px', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '3px', alignItems: 'center' }}>
                           {isTournament && player.streak_current > 2 && <span style={{ fontSize: '11px', color: 'var(--accent-orange)' }}>🔥 {player.streak_current}</span>}
                           {isTournament && player.perfect_rounds > 0 && <span style={{ fontSize: '11px', color: 'var(--accent-green)' }}>🎯 {player.perfect_rounds}</span>}
                           {!isTournament && player.ko_exact_scores > 0 && <span style={{ fontSize: '11px', color: '#e65100' }}>🎯 {player.ko_exact_scores}</span>}
@@ -257,17 +271,20 @@ export default function Leaderboard() {
                     </div>
 
                     {/* Rank movement */}
-                    {movement && movement.dir !== 'same' && (
-                      <div style={{ fontSize: '11px', fontWeight: '700', minWidth: '28px', textAlign: 'center',
-                        color: movement.dir === 'up' ? 'var(--accent-green)' : '#e53935' }}>
-                        {movement.dir === 'up' ? `↑${movement.n}` : `↓${movement.n}`}
-                      </div>
-                    )}
+                    <div style={{ fontSize: '11px', fontWeight: '700', minWidth: '30px', textAlign: 'right',
+                      color: movement?.dir === 'up' ? 'var(--accent-green)' : movement?.dir === 'down' ? '#e53935' : 'transparent' }}>
+                      {movement?.dir === 'up' ? `↑${movement.n}` : movement?.dir === 'down' ? `↓${movement.n}` : '–'}
+                    </div>
 
-                    {/* Points */}
-                    <div style={{ fontWeight: '800', fontSize: '18px', fontFamily: 'var(--font-mono)',
-                      color: pts > 0 ? accentColour : 'var(--text-muted)' }}>
-                      {pts === null ? '—' : <AnimatedPoints value={pts || 0} />}
+                    {/* Points — stacked number + label */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '44px' }}>
+                      <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)',
+                        letterSpacing: '-0.02em', lineHeight: 1,
+                        color: pts > 0 ? accentColour : 'var(--text-muted)' }}>
+                        {pts === null ? '—' : <AnimatedPoints value={pts || 0} />}
+                      </div>
+                      <div style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)',
+                        textTransform: 'uppercase', letterSpacing: '0.04em' }}>pts</div>
                     </div>
                   </div>
                 )
