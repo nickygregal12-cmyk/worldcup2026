@@ -1768,33 +1768,54 @@ export default function Home() {
                 <div className="empty-state-desc">Leaderboard updates after first matches</div>
               </div>
             ) : (
-              <div>
-                {topPredictors.map((p, i) => (
-                  <div key={p.id} className="leaderboard-row" style={{
-                    background: user?.id === p.id ? 'var(--accent-blue-light)' : 'transparent',
-                  }}>
-                    <div className={`rank-number rank-${i + 1}`}>#{i + 1}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={{
-                        width: '32px', height: '32px', borderRadius: '50%',
-                        background: 'var(--bg-tertiary)',
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {topPredictors.map((p, i) => {
+                  const isMe = user?.id === p.id
+                  return (
+                    <div key={p.id} className="leaderboard-row" style={{
+                      background: isMe ? 'var(--scottish-navy-light)' : 'var(--bg-card)',
+                      border: isMe ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                      cursor: 'default',
+                    }}>
+                      {/* accent bar */}
+                      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px',
+                        background: isMe ? 'var(--scottish-navy)' : i < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
+                      {/* Rank */}
+                      <div style={{ fontWeight: '800', fontSize: i < 3 ? '20px' : '13px', minWidth: '36px',
+                        textAlign: 'center', flexShrink: 0, fontFamily: i >= 3 ? 'var(--font-mono)' : 'inherit',
+                        color: i >= 3 ? 'var(--text-muted)' : 'inherit' }}>
+                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                      </div>
+                      {/* Avatar */}
+                      <div style={{ width: '38px', height: '38px', borderRadius: '50%',
+                        background: isMe ? 'var(--scottish-navy)' : 'var(--bg-tertiary)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '14px', fontWeight: '700',
-                      }}>
+                        fontSize: '15px', fontWeight: '700', flexShrink: 0,
+                        color: isMe ? 'white' : 'var(--text-primary)',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
                         {p.username?.[0]?.toUpperCase()}
                       </div>
-                      <div>
-                        <div style={{ fontWeight: '600', fontSize: '14px' }}>{p.username}</div>
+                      {/* Name */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.username}</span>
+                          {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
+                        </div>
                         {p.streak_current > 2 && (
-                          <div style={{ fontSize: '11px', color: 'var(--accent-orange)' }}>🔥 {p.streak_current} streak</div>
+                          <div style={{ fontSize: '11px', color: 'var(--accent-orange)', marginTop: '2px' }}>🔥 {p.streak_current}</div>
                         )}
                       </div>
+                      {/* Points */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '44px' }}>
+                        <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)',
+                          letterSpacing: '-0.02em', lineHeight: 1,
+                          color: isMe ? 'var(--scottish-navy)' : 'var(--text-primary)' }}>{p.total_points}</div>
+                        <div style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)',
+                          textTransform: 'uppercase', letterSpacing: '0.04em' }}>pts</div>
+                      </div>
                     </div>
-                    <div style={{ fontWeight: '800', fontSize: '16px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)' }}>
-                      {p.total_points}
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>

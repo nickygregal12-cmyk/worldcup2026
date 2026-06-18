@@ -141,12 +141,21 @@ export default function Profile() {
   }
 
   const getResultColour = (pred, match) => {
-    if (!match || match.status !== 'completed') return 'var(--text-muted)'
+    if (!match || match.status !== 'completed') return 'var(--border-light)'
     const predResult = pred.home_score > pred.away_score ? 'H' : pred.home_score < pred.away_score ? 'A' : 'D'
     const actualResult = match.home_score > match.away_score ? 'H' : match.home_score < match.away_score ? 'A' : 'D'
-    if (pred.home_score === match.home_score && pred.away_score === match.away_score) return 'var(--accent-green)'
-    if (predResult === actualResult) return 'var(--accent-orange)'
-    return '#e53935'
+    if (pred.home_score === match.home_score && pred.away_score === match.away_score) return 'var(--accent-green)' // exact: green
+    if (predResult === actualResult) return 'var(--scottish-navy)' // correct result: navy (distinct from both green and red)
+    return '#c62828' // wrong: red
+  }
+
+  const getResultBg = (pred, match) => {
+    if (!match || match.status !== 'completed') return 'var(--bg-card)'
+    const predResult = pred.home_score > pred.away_score ? 'H' : pred.home_score < pred.away_score ? 'A' : 'D'
+    const actualResult = match.home_score > match.away_score ? 'H' : match.home_score < match.away_score ? 'A' : 'D'
+    if (pred.home_score === match.home_score && pred.away_score === match.away_score) return 'rgba(0,122,51,0.05)'
+    if (predResult === actualResult) return 'rgba(0,48,135,0.04)'
+    return 'rgba(198,40,40,0.04)'
   }
 
   const accuracy = profile?.prediction_accuracy || 0
@@ -547,7 +556,7 @@ export default function Profile() {
                   <div key={label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center' }}>
                     <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
                     <div style={{ fontWeight: '800', fontSize: '24px', fontFamily: 'var(--font-mono)' }}>{value}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>{label}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '2px' }}>{label}</div>
                     {desc && <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', opacity: 0.7, lineHeight: '1.3' }}>{desc}</div>}
                   </div>
                 ))}
@@ -792,25 +801,32 @@ export default function Profile() {
                 return (
                   <div key={pred.id} style={{
                     display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '10px 8px', borderBottom: '1px solid var(--border-light)',
+                    padding: '11px 14px',
+                    background: getResultBg(pred, match),
+                    border: '1px solid var(--border-light)',
                     borderLeft: `3px solid ${colour}`,
-                    paddingLeft: '12px', marginBottom: '2px',
-                    borderRadius: '0 var(--radius-sm) var(--radius-sm) 0',
+                    borderRadius: 'var(--radius-md)',
+                    marginBottom: '6px',
                   }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '2px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '700', marginBottom: '3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         {match.home_team?.flag_emoji} {match.home_team?.short_code} vs {match.away_team?.short_code} {match.away_team?.flag_emoji}
-                        {pred.is_confident && <span style={{ marginLeft: '4px', fontSize: '10px' }}>🃏</span>}
+                        {pred.is_confident && <span style={{ marginLeft: '2px', fontSize: '11px' }}>🃏</span>}
                       </div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                        Your pick: {pred.home_score}–{pred.away_score} · Actual: {match.home_score}–{match.away_score}
+                        Your pick: <strong>{pred.home_score}–{pred.away_score}</strong> · Actual: {match.home_score}–{match.away_score}
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: '800', fontSize: '16px', fontFamily: 'var(--font-mono)', color: colour }}>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontWeight: '900', fontSize: '18px', fontFamily: 'var(--font-mono)', color: colour, lineHeight: 1, letterSpacing: '-0.02em' }}>
                         +{pred.points_awarded || 0}
                       </div>
-                      {isExact && <div style={{ fontSize: '9px', color: 'var(--accent-green)', fontWeight: '700' }}>EXACT</div>}
+                      {isExact
+                        ? <div style={{ fontSize: '9px', color: 'var(--accent-green)', fontWeight: '700', marginTop: '2px' }}>EXACT</div>
+                        : pred.points_awarded > 0
+                          ? <div style={{ fontSize: '9px', color: 'var(--scottish-navy)', fontWeight: '700', marginTop: '2px' }}>CORRECT</div>
+                          : <div style={{ fontSize: '9px', color: '#c62828', fontWeight: '700', marginTop: '2px' }}>WRONG</div>
+                      }
                     </div>
                   </div>
                 )
