@@ -65,6 +65,8 @@ export default function Knockout() {
   const smartStageAppliedRef = useRef(false)
   const backfilledPicks = useRef(new Set())
 
+  const [realKoResults, setRealKoResults] = useState([]) // completed real KO matches
+
   const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
   const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
   const phaseOverride = appSettings?.game_phase_override || ''
@@ -166,6 +168,15 @@ export default function Knockout() {
       // — frozen at MD1, never blended with real results. The bracket shows the
       // user's PREDICTED tournament; scoring compares it against reality separately.
       setStandings(calcPredictedStandings(matchData || [], predMap, true))
+
+      // Load real knockout results to drive team-alive colours
+      const { data: koResults } = await supabase
+        .from('matches')
+        .select('id, match_number, stage, status, home_team_id, away_team_id, home_score, away_score, home_team:home_team_id(id), away_team:away_team_id(id)')
+        .neq('stage', 'group')
+        .eq('status', 'completed')
+      setRealKoResults(koResults || [])
+
       setLoadError(false)
     } catch (e) {
       console.error(e)
@@ -186,6 +197,20 @@ export default function Knockout() {
     })
     return map
   }, [groupMatches])
+
+  // Teams eliminated from the real tournament (lost a completed KO match)
+  const eliminatedTeams = useMemo(() => {
+    const out = new Set()
+    realKoResults.forEach(m => {
+      if (m.home_score == null || m.away_score == null) return
+      // In knockout, home_score > away_score means away is eliminated (and vice versa)
+      // Ties go to extra time/penalties — winner_team_id would be set by sync-scores
+      // We use score comparison; if equal, neither is eliminated yet (pens not tracked)
+      if (m.home_score > m.away_score && m.away_team_id) out.add(m.away_team_id)
+      else if (m.away_score > m.home_score && m.home_team_id) out.add(m.home_team_id)
+    })
+    return out
+  }, [realKoResults])
 
   const resolveKnockoutWinner = useCallback((slot) => {
     const matchNum = parseInt(slot.replace('W', ''))
@@ -594,15 +619,24 @@ export default function Knockout() {
 
     const isFinalMatch = matchDef.match_number === 104
 
+    // Team-alive colour logic (post-groups)
+    const pickedTeamId = pick?.winner_id
+    const teamEliminated = groupStageDone && pickedTeamId && eliminatedTeams.has(pickedTeamId)
+    const teamStillAlive = groupStageDone && isPicked && !teamEliminated
+    // Colour: gold=stale/final, red=eliminated, green=still alive, navy=picked/unknown, transparent=unpicked
     const accentColor = (isAffected || isStale) ? 'var(--accent-gold)'
       : isFinalMatch ? 'var(--accent-gold)'
-      : isPicked ? 'var(--accent-green)'
+      : teamEliminated ? 'var(--accent-red, #c62828)'
+      : teamStillAlive ? 'var(--accent-green)'
+      : isPicked ? 'var(--scottish-navy)'
       : 'transparent'
 
     const cardBorder = (isAffected || isStale) ? '2px solid var(--accent-gold)'
       : isFinalMatch && isPicked ? '2px solid var(--accent-gold)'
       : isFinalMatch ? '1.5px solid rgba(184,134,11,0.4)'
-      : isPicked ? '1.5px solid var(--accent-green)'
+      : teamEliminated ? '1.5px solid rgba(198,40,40,0.35)'
+      : teamStillAlive ? '1.5px solid rgba(0,122,51,0.35)'
+      : isPicked ? '1.5px solid rgba(0,48,135,0.3)'
       : '1.5px solid var(--border-light)'
 
     const cardBg = (isAffected || isStale) ? 'var(--accent-gold-light)'
@@ -640,7 +674,7 @@ export default function Knockout() {
               ⚠️ Your saved winner is no longer in this matchup, but it's locked and can't be changed
             </div>
           )}
-          {locked && lockedReason && (
+          {locked && lockedReason && !mainBracketLocked && (
             <div style={{ marginBottom: '12px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}>
               🔒 {lockedReason}
             </div>
@@ -653,7 +687,7 @@ export default function Knockout() {
               {matchDef.venue && <span> · {VENUE_FLAGS[matchDef.venue] || ''} {matchDef.venue}</span>}
             </div>
             <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
-              {locked && <span className="badge badge-red">🔒 Locked</span>}
+              {locked && !mainBracketLocked && <span className="badge badge-red">🔒 Locked</span>}
               {isPicked && !isAffected && !isStale && <span className="badge badge-green">✓ Picked</span>}
               {isStale && !locked && <span className="badge" style={{ background: 'var(--accent-gold)', color: 'white' }}>⚠️ Re-pick</span>}
               {saved[mn] && <span className="badge badge-green">Saved!</span>}
@@ -684,28 +718,36 @@ export default function Knockout() {
                           width: '100%', textAlign: 'left',
                           transition: 'all 0.15s',
                           border: isPickedTeam
-                            ? `2px solid ${isFinal ? 'var(--accent-gold)' : 'var(--accent-green)'}`
+                            ? `2px solid ${isFinal ? 'var(--accent-gold)' : teamEliminated ? 'rgba(198,40,40,0.4)' : teamStillAlive ? 'rgba(0,122,51,0.4)' : 'rgba(0,48,135,0.35)'}`
                             : '1.5px solid var(--border-light)',
                           background: isPickedTeam
-                            ? (isFinal ? 'var(--accent-gold-light)' : 'var(--accent-green-light)')
+                            ? (isFinal ? 'var(--accent-gold-light)' : teamEliminated ? 'rgba(198,40,40,0.06)' : teamStillAlive ? 'var(--accent-green-light)' : 'rgba(0,48,135,0.05)')
                             : 'var(--bg-secondary)',
                           cursor: canPickThisTeam ? 'pointer' : 'default',
-                          boxShadow: isPickedTeam ? `0 0 0 3px ${isFinal ? 'rgba(184,134,11,0.12)' : 'rgba(0,122,51,0.1)'}` : 'none',
+                          boxShadow: isPickedTeam ? `0 0 0 3px ${isFinal ? 'rgba(184,134,11,0.12)' : teamEliminated ? 'rgba(198,40,40,0.08)' : teamStillAlive ? 'rgba(0,122,51,0.1)' : 'rgba(0,48,135,0.08)'}` : 'none',
                         }}>
-                        <span style={{ fontSize: '30px', lineHeight: 1, flexShrink: 0 }}>{team.flag_emoji}</span>
+                        <span style={{ fontSize: '30px', lineHeight: 1, flexShrink: 0, opacity: isPickedTeam && teamEliminated ? 0.5 : 1 }}>{team.flag_emoji}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: '800', fontSize: '15px', letterSpacing: '-0.01em',
-                            color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : 'var(--accent-green)') : 'var(--text-primary)',
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : teamEliminated ? '#c62828' : teamStillAlive ? 'var(--accent-green)' : 'var(--scottish-navy)') : 'var(--text-primary)',
+                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            textDecoration: isPickedTeam && teamEliminated ? 'line-through' : 'none' }}>
                             {team.name}
                           </div>
-                          <div style={{ fontSize: '11px', color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : 'var(--accent-green)') : 'var(--text-muted)', fontWeight: '600', marginTop: '2px', opacity: 0.8 }}>
-                            {team.short_code}
+                          <div style={{ fontSize: '11px', fontWeight: '600', marginTop: '2px',
+                            color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : teamEliminated ? '#c62828' : teamStillAlive ? 'var(--accent-green)' : 'var(--scottish-navy)') : 'var(--text-muted)' }}>
+                            {isPickedTeam
+                              ? teamEliminated ? `${team.short_code} · Eliminated ✗`
+                              : teamStillAlive ? `${team.short_code} · Still in ✓`
+                              : `${team.short_code} · Your pick`
+                              : team.short_code}
                           </div>
                         </div>
                         {isPickedTeam && (
-                          <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: isFinal ? 'var(--accent-gold)' : 'var(--accent-green)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <span style={{ color: 'white', fontSize: '14px', fontWeight: '900' }}>✓</span>
+                          <div style={{ width: '24px', height: '24px', borderRadius: '50%',
+                            background: isFinal ? 'var(--accent-gold)' : teamEliminated ? '#c62828' : teamStillAlive ? 'var(--accent-green)' : 'var(--scottish-navy)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <span style={{ color: 'white', fontSize: teamEliminated ? '12px' : '14px', fontWeight: '900' }}>{teamEliminated ? '✗' : '✓'}</span>
                           </div>
                         )}
                       </button>
@@ -991,7 +1033,26 @@ export default function Knockout() {
 
       {/* ── Match cards ── */}
       <div className="container" style={{ padding: '16px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Single lock notice — replaces per-card Locked badges */}
+        {mainBracketLocked && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '8px',
+            padding: '9px 14px', marginBottom: '4px',
+            background: 'rgba(0,48,135,0.05)',
+            border: '1px solid rgba(0,48,135,0.12)',
+            borderRadius: 'var(--radius-md)',
+            fontSize: '12px', fontWeight: '600', color: 'var(--scottish-navy)',
+          }}>
+            <span>🔒</span>
+            <span style={{ flex: 1 }}>All picks locked · frozen from your saved bracket</span>
+            {groupStageDone && eliminatedTeams.size > 0 && (
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500' }}>
+                colours = team status
+              </span>
+            )}
+          </div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: mainBracketLocked ? '12px' : '0' }}>
           {stageMatches.map(renderMatch)}
         </div>
       </div>
