@@ -279,10 +279,18 @@ export function useMemberPredictions() {
 
   const loadMemberPredictions = async (userId, showFuture) => {
     setLoadingPreds(true)
-    const { data: preds } = await supabase
-      .from('predictions')
-      .select('*, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, group:group_id(name), home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))')
-      .eq('user_id', userId)
+    const [{ data: preds }, { data: profileData }] = await Promise.all([
+      supabase
+        .from('predictions')
+        .select('*, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, group:group_id(name), home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))')
+        .eq('user_id', userId),
+      supabase
+        .from('profiles')
+        .select('group_position_points, total_points, exact_scores')
+        .eq('id', userId)
+        .maybeSingle()
+    ])
+    const memberProfile = profileData || {}
 
     const filtered = (preds || [])
       .filter(p => {
@@ -298,6 +306,7 @@ export function useMemberPredictions() {
       })
       .sort((a, b) => new Date(a.match?.kickoff_time) - new Date(b.match?.kickoff_time))
     setMemberPredictions(filtered)
+    if (memberProfile) setMemberModal(prev => prev ? { ...prev, memberProfile } : prev)
 
     const completedMatchIds = filtered.filter(p => p.match?.status === 'completed').map(p => p.match_id || p.match?.id).filter(Boolean)
     if (completedMatchIds.length > 0) {
@@ -324,6 +333,7 @@ export function useMemberPredictions() {
       targetShowFuture: showFuture,
       canRemoveMember: false,
       memberName: displayName,
+      memberProfile: {},
     })
     await loadMemberPredictions(profile.id, showFuture)
   }
@@ -462,7 +472,26 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
                 })}
               </div>
             )
-          ) : activeTab === 'knockout' ? (
+          ) : null}
+          {/* Group position bonus subtotal — shown after groups complete */}
+          {activeTab === 'group' && memberModal.memberProfile?.group_position_points > 0 && (
+            <div style={{
+              marginTop: '12px', padding: '12px 14px',
+              background: 'rgba(0,122,51,0.07)',
+              border: '1px solid rgba(0,122,51,0.2)',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent-green)' }}>📊 Group position bonus</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>+2pts per correct position · +5pts perfect group</div>
+              </div>
+              <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)', letterSpacing: '-0.02em' }}>
+                +{memberModal.memberProfile.group_position_points}
+              </div>
+            </div>
+          )}
+          {activeTab === 'knockout' ? (
             <KnockoutPicksView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
           ) : activeTab === 'awards' ? (
             <AwardPredsView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
