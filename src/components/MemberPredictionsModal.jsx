@@ -393,15 +393,22 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
         )}
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', overflowX: 'auto', WebkitOverflowScrolling: 'touch', flexShrink: 0 }}>
           {tabs.map(tab => (
-            <button key={tab} onClick={() => setMemberModal(prev => ({ ...prev, tab }))} style={{
-              flex: 1, padding: '10px', fontSize: '12px', fontWeight: activeTab === tab ? '700' : '400',
-              color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
-              borderBottom: activeTab === tab ? '2px solid var(--scottish-navy)' : '2px solid transparent',
-              background: 'none', border: 'none', borderBottom: activeTab === tab ? '2px solid var(--scottish-navy)' : '2px solid transparent',
-              cursor: 'pointer', whiteSpace: 'nowrap', textTransform: 'capitalize',
-            }}>
+            <button
+              key={tab}
+              type="button"
+              onClick={e => { e.stopPropagation(); setMemberModal(prev => ({ ...prev, tab })) }}
+              style={{
+                flex: '0 0 auto', padding: '12px 14px', fontSize: '12px',
+                fontWeight: activeTab === tab ? '700' : '500',
+                color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
+                borderBottom: activeTab === tab ? '2px solid var(--scottish-navy)' : '2px solid transparent',
+                borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+                background: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                touchAction: 'manipulation', userSelect: 'none',
+              }}
+            >
               {tabLabel(tab)}
             </button>
           ))}
