@@ -2553,17 +2553,16 @@ export default function Predictions() {
               const isFillingThis = autoFillingDate === dayMatches[0]?.kickoff_time
               return (
                 <div key={date} id={`date-${date.replace(/[^a-z0-9]/gi, '-')}`}>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
-                    <span>{date}</span>
+                    <span style={{ fontSize: '11px', fontWeight: '600', color: 'var(--text-muted)', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>{date}</span>
                     <div style={{ flex: 1, height: '1px', background: 'var(--border-light)' }} />
-                    {/* Item 3: clear per day */}
                     {user && hasPreds && hasUnlocked && (
                       <button onClick={() => setShowClearConfirm(dayMatches)} style={{
-                        fontSize: '11px', padding: '3px 8px', borderRadius: 'var(--radius-full)',
-                        border: '1px solid var(--border-medium)', background: 'var(--bg-card)',
-                        color: 'var(--text-muted)', cursor: 'pointer',
-                      }}>🗑️ Clear</button>
+                        fontSize: '10px', padding: '2px 8px', borderRadius: 'var(--radius-full)',
+                        border: '1px solid var(--border-light)', background: 'var(--bg-card)',
+                        color: 'var(--text-muted)', cursor: 'pointer', flexShrink: 0,
+                      }}>Clear</button>
                     )}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

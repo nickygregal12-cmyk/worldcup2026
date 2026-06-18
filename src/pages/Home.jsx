@@ -862,8 +862,8 @@ export default function Home() {
                 borderRight: i < arr.length - 1 ? '1px solid var(--border-light)' : 'none',
                 padding: '0 8px',
               }}>
-                <div style={{ fontWeight: '800', fontSize: '15px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>{value}</div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>{label}</div>
+                <div style={{ fontWeight: '900', fontSize: '17px', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', letterSpacing: '-0.02em' }}>{value}</div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '500', marginTop: '3px' }}>{label}</div>
               </div>
             ))}
           </div>
