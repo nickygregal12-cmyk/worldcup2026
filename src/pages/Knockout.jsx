@@ -247,37 +247,50 @@ export default function Knockout() {
     return map
   }, [realGroupStandings])
 
-  // Resolve a slot against real current standings
+  // Resolve a slot against real current standings (no prediction check needed)
   const resolveRealSlot = useCallback((slot) => {
     if (!slot || !Object.keys(realStandingsMap).length) return null
-    // Winner/runner-up slots
+
+    // Winner/runner-up slots: '1A', '2B' etc
     const posMatch = slot.match(/^([12])([A-L])$/)
     if (posMatch) {
       const pos = parseInt(posMatch[1]) - 1
       const group = posMatch[2]
-      return realStandingsMap[group]?.[pos]?.team || null
+      const groupTeams = realStandingsMap[group]
+      // Only show if group has played at least one match
+      if (!groupTeams || groupTeams.every(t => t.played === 0)) return null
+      return groupTeams[pos]?.team || null
     }
-    // Best third slots
+
+    // Best-third slots: 'BT3_ABCDF' etc
+    // Only resolve when ALL 12 groups have completed all 3 matches
+    // (before that, the allocation is not final and would be misleading)
     const btMatch = slot.match(/^BT3_([A-L]+)$/)
     if (btMatch) {
-      const eligibleGroups = btMatch[1].split('')
-      // Get best 3rd from real standings (teams in position 3, sorted by pts/gd)
+      const groupsComplete = Object.values(realStandingsMap).filter(
+        teams => teams.length >= 4 && teams.every(t => t.played >= 3)
+      ).length
+      // Need all 12 groups finished for a correct allocation
+      if (groupsComplete < 12) return null
+      // Build best-third list from real standings
       const thirds = Object.entries(realStandingsMap)
-        .map(([g, teams]) => ({ group: g, team: teams[2]?.team, pts: teams[2]?.pts || 0, gd: teams[2]?.gd || 0, played: teams[2]?.played || 0 }))
-        .filter(t => t.team && t.played > 0)
-        .sort((a, b) => b.pts - a.pts || b.gd - a.gd)
-      const best8 = thirds.slice(0, 8)
-      // If we have enough data, try full allocation
-      if (best8.length >= 8) {
-        const allocation = allocateThirdPlaces(best8.map(t => t.group))
-        if (allocation?.[slot]) {
-          const assigned = best8.find(t => t.group === allocation[slot])
-          return assigned?.team || null
-        }
+        .map(([g, teams]) => ({
+          group: g,
+          team: teams[2]?.team,
+          pts: teams[2]?.pts || 0,
+          gd: teams[2]?.gd || 0,
+          gf: teams[2]?.gf || 0,
+        }))
+        .filter(t => t.team)
+        .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
+        .slice(0, 8)
+      if (thirds.length < 8) return null
+      const allocation = allocateThirdPlaces(thirds.map(t => t.group))
+      if (allocation?.[slot]) {
+        const assigned = thirds.find(t => t.group === allocation[slot])
+        return assigned?.team || null
       }
-      // Partial: only resolve if exactly one eligible
-      const matching = best8.filter(t => eligibleGroups.includes(t.group))
-      return matching.length === 1 ? matching[0].team : null
+      return null
     }
     return null
   }, [realStandingsMap])
@@ -308,10 +321,13 @@ export default function Knockout() {
       const userHome = resolveTeam(matchDef.home_slot)
       const userAway = resolveTeam(matchDef.away_slot)
 
-      // Real teams — ONLY use confirmed DB fixtures, never guess from standings
+      // Real teams:
+      // 1. If DB has confirmed teams (home_team_id set after groups complete) → use those
+      // 2. Otherwise resolve from real live standings (correct for 1A/2B slots,
+      //    TBC for BT3 slots until all groups finish)
       const confirmed = confirmedFixtures[matchDef.match_number]
-      const realHome = confirmed?.home_team || null
-      const realAway = confirmed?.away_team || null
+      const realHome = confirmed?.home_team || resolveRealSlot(matchDef.home_slot)
+      const realAway = confirmed?.away_team || resolveRealSlot(matchDef.away_slot)
       const isConfirmed = !!confirmed
 
       // Pick on track = user's picked team is one of the two real teams in this match
