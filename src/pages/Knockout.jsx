@@ -257,21 +257,19 @@ export default function Knockout() {
       const pos = parseInt(posMatch[1]) - 1
       const group = posMatch[2]
       const groupTeams = realStandingsMap[group]
-      // Only show if group has played at least one match
       if (!groupTeams || groupTeams.every(t => t.played === 0)) return null
-      return groupTeams[pos]?.team || null
+      const team = groupTeams[pos]?.team
+      if (!team) return null
+      // Confirmed = all 3 matches played in this group
+      const groupDone = groupTeams.every(t => t.played >= 3)
+      return { ...team, confirmed: groupDone, provisional: !groupDone }
     }
 
     // Best-third slots: 'BT3_ABCDF' etc
-    // Only resolve when ALL 12 groups have finished — partial allocation is unreliable
-    // and shows wrong teams mid-tournament. Show TBC until groups complete.
+    // Show provisional estimate from live standings, clearly marked as such
     const btMatch = slot.match(/^BT3_([A-L]+)$/)
     if (btMatch) {
-      const groupsComplete = Object.values(realStandingsMap).filter(
-        teams => teams.length >= 4 && teams.every(t => t.played >= 3)
-      ).length
-      if (groupsComplete < 12) return null // TBC until all groups done
-
+      const eligibleGroups = btMatch[1].split('')
       const thirds = Object.entries(realStandingsMap)
         .map(([g, teams]) => ({
           group: g,
@@ -279,17 +277,26 @@ export default function Knockout() {
           pts: teams[2]?.pts || 0,
           gd: teams[2]?.gd || 0,
           gf: teams[2]?.gf || 0,
+          played: teams[2]?.played || 0,
         }))
-        .filter(t => t.team)
+        .filter(t => t.team && t.played > 0)
         .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
-        .slice(0, 8)
 
-      if (thirds.length < 8) return null
-      const allocation = allocateThirdPlaces(thirds.map(t => t.group))
-      if (allocation?.[slot]) {
-        const assigned = thirds.find(t => t.group === allocation[slot])
-        return assigned?.team || null
+      const best8 = thirds.slice(0, 8)
+      if (best8.length < 1) return null
+
+      // Try full allocation if we have 8+ thirds
+      if (best8.length >= 8) {
+        const allocation = allocateThirdPlaces(best8.map(t => t.group))
+        if (allocation?.[slot]) {
+          const assigned = best8.find(t => t.group === allocation[slot])
+          if (assigned?.team) return { ...assigned.team, provisional: true }
+        }
       }
+
+      // Partial: if exactly one eligible third is in the current best 8, show it
+      const matching = best8.filter(t => eligibleGroups.includes(t.group))
+      if (matching.length === 1) return { ...matching[0].team, provisional: true }
       return null
     }
     return null
@@ -1363,20 +1370,42 @@ export default function Knockout() {
                             {!m.hasRealData ? (
                               <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>To be confirmed</span>
                             ) : (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: realH?.id === m.userPickId ? 1 : 0.5 }}>
-                                  <span style={{ fontSize: '18px' }}>{realH?.flag_emoji}</span>
-                                  <span style={{ fontSize: '12px', fontWeight: realH?.id === m.userPickId ? '800' : '500', color: realH?.id === m.userPickId ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                                    {realH?.short_code}
-                                  </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                  {/* Home team */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: realH ? (realH.id === m.userPickId ? 1 : 0.5) : 0.3 }}>
+                                    {realH ? (
+                                      <>
+                                        <span style={{ fontSize: '18px' }}>{realH.flag_emoji}</span>
+                                        <span style={{ fontSize: '12px', fontWeight: realH.id === m.userPickId ? '800' : '500', color: realH.id === m.userPickId ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                                          {realH.short_code}
+                                        </span>
+                                        {realH.confirmed && <span style={{ fontSize: '9px' }}>🔒</span>}
+                                        {realH.provisional && !realH.confirmed && <span style={{ fontSize: '9px', color: 'var(--accent-gold)' }}>~</span>}
+                                      </>
+                                    ) : <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>TBC</span>}
+                                  </div>
+                                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>v</span>
+                                  {/* Away team */}
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: realA ? (realA.id === m.userPickId ? 1 : 0.5) : 0.3 }}>
+                                    {realA ? (
+                                      <>
+                                        <span style={{ fontSize: '18px' }}>{realA.flag_emoji}</span>
+                                        <span style={{ fontSize: '12px', fontWeight: realA.id === m.userPickId ? '800' : '500', color: realA.id === m.userPickId ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                                          {realA.short_code}
+                                        </span>
+                                        {realA.confirmed && <span style={{ fontSize: '9px' }}>🔒</span>}
+                                        {realA.provisional && !realA.confirmed && <span style={{ fontSize: '9px', color: 'var(--accent-gold)' }}>~</span>}
+                                      </>
+                                    ) : <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>TBC</span>}
+                                  </div>
                                 </div>
-                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>v</span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: realA?.id === m.userPickId ? 1 : 0.5 }}>
-                                  <span style={{ fontSize: '18px' }}>{realA?.flag_emoji}</span>
-                                  <span style={{ fontSize: '12px', fontWeight: realA?.id === m.userPickId ? '800' : '500', color: realA?.id === m.userPickId ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                                    {realA?.short_code}
-                                  </span>
-                                </div>
+                                {/* Provisional note */}
+                                {(realH?.provisional || realA?.provisional) && (
+                                  <div style={{ fontSize: '9px', color: 'var(--accent-gold)', fontWeight: '600' }}>
+                                    ~ provisional · based on current standings
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
