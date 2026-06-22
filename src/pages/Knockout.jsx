@@ -1294,15 +1294,42 @@ export default function Knockout() {
 
                         {/* Two columns: Your pick to win | Real matchup */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                          {/* Your pick */}
+                          {/* Your predicted matchup + pick */}
                           <div>
-                            <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '5px' }}>Your pick to win</div>
-                            {userPick ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ fontSize: '20px' }}>{userPick.flag_emoji}</span>
-                                <span style={{ fontSize: '13px', fontWeight: '700', color: status === 'on-track' ? 'var(--accent-green)' : status === 'off-track' ? '#c62828' : 'var(--text-primary)' }}>
-                                  {userPick.short_code || userPick.name}
-                                </span>
+                            <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '5px' }}>Your predicted matchup</div>
+                            {m.userHome || m.userAway ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {/* Both predicted teams */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  {m.userHome && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px',
+                                      fontWeight: m.userHome.id === m.userPickId ? '800' : '500',
+                                      opacity: m.userHome.id === m.userPickId ? 1 : 0.6 }}>
+                                      <span style={{ fontSize: '16px' }}>{m.userHome.flag_emoji}</span>
+                                      <span style={{ fontSize: '12px' }}>{m.userHome.short_code}</span>
+                                    </span>
+                                  )}
+                                  {m.userHome && m.userAway && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>v</span>}
+                                  {m.userAway && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px',
+                                      fontWeight: m.userAway.id === m.userPickId ? '800' : '500',
+                                      opacity: m.userAway.id === m.userPickId ? 1 : 0.6 }}>
+                                      <span style={{ fontSize: '16px' }}>{m.userAway.flag_emoji}</span>
+                                      <span style={{ fontSize: '12px' }}>{m.userAway.short_code}</span>
+                                    </span>
+                                  )}
+                                </div>
+                                {/* Winner pick */}
+                                {userPick && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>→ Pick:</span>
+                                    <span style={{ fontSize: '12px' }}>{userPick.flag_emoji}</span>
+                                    <span style={{ fontSize: '12px', fontWeight: '800',
+                                      color: status === 'on-track' ? 'var(--accent-green)' : status === 'off-track' ? '#c62828' : 'var(--text-primary)' }}>
+                                      {userPick.short_code}
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No pick</span>
