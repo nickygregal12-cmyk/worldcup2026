@@ -73,11 +73,24 @@ const API_TO_DB = {
   'Congo, DR': 'DR Congo',
   'North Macedonia': 'North Macedonia',
   'Macedonia': 'North Macedonia',
+  'Ivory Coast': 'Ivory Coast',
+  'Iran': 'Iran',
+  'IR Iran': 'Iran',
+  'Saudi Arabia': 'Saudi Arabia',
+  'KSA': 'Saudi Arabia',
+  'Bosnia Herzegovina': 'Bosnia-Herzegovina',
+  'Bosnia & Herzegovina': 'Bosnia-Herzegovina',
+  'New Zealand': 'New Zealand',
+  'Aotearoa New Zealand': 'New Zealand',
 }
 
 const normalise = (name) => API_TO_DB[name] || name
 
 const stripAccents = (str) => str
+  .normalize('NFD')
+  .replace(/[̀-ͯ]/g, '') // remove combining diacritical marks
+  .toLowerCase()
+  .trim()
   .toLowerCase()
   .normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '')
