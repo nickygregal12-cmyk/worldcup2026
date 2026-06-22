@@ -1760,7 +1760,7 @@ export default function Predictions() {
           {/* Guest — no per-card CTA, handled by sticky banner */}
 
           {/* Joker + Clear + Save */}
-          {!isGuest && !locked && !resultColour && (
+          {!isGuest && !effectiveLocked && !resultColour && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '14px', borderTop: `1px solid ${hasJoker ? 'rgba(184,134,11,0.25)' : 'var(--border-light)'}` }}>
               <button
                 onClick={() => {
@@ -2436,7 +2436,7 @@ export default function Predictions() {
                     </button>
                   )
                 })}
-                {user && (
+                {user && matches.filter(m => m.group?.name === activeGroup).every(m => !isLocked(m.kickoff_time)) && (
                   <button onClick={() => setShowClearConfirm('group')} style={{
                     padding: '10px 10px', fontSize: '11px', color: 'var(--text-muted)',
                     background: 'none', border: 'none', borderBottom: '2px solid transparent',
@@ -2548,7 +2548,20 @@ export default function Predictions() {
           // By Date view — grouped by date
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             {Object.entries(matchesByDate).map(([date, dayMatches]) => {
-              const hasUnlocked = dayMatches.some(m => !isLocked(m.kickoff_time))
+              const hasUnlocked = dayMatches.some(m => {
+                if (isLocked(m.kickoff_time)) return false
+                // Also hide if group-locked (another match in same group already kicked off)
+                if (m.stage === 'group' && m.group?.name) {
+                  const groupLocked = matches.some(other =>
+                    other.stage === 'group' &&
+                    other.group?.name === m.group.name &&
+                    other.id !== m.id &&
+                    isLocked(other.kickoff_time)
+                  )
+                  if (groupLocked) return false
+                }
+                return true
+              })
               const hasPreds = dayMatches.some(m => predictions[m.id])
               const isFillingThis = autoFillingDate === dayMatches[0]?.kickoff_time
               return (
