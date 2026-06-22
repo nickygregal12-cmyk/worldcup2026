@@ -282,9 +282,9 @@ export default function Knockout() {
     return null
   }, [realStandingsMap])
 
-  // "As it stands" tracker — compare user's R32 picks against current real standings
+  // "As it stands" tracker — compare user's R32 picks against confirmed real fixtures
   const liveTrackerStats = useMemo(() => {
-    if (!Object.keys(realStandingsMap).length || !knockoutPicks) return null
+    if (!knockoutPicks) return null
 
     const r32Stage = ALL_STAGES.find(s => s.key === 'r32')
     if (!r32Stage) return null
@@ -293,41 +293,56 @@ export default function Knockout() {
       teams.every(t => t.played >= 3)
     ).length
 
-    // Per-match comparison: predicted team vs real current team for each R32 slot
+    // Build lookup of confirmed R32 fixtures by match_number
+    const confirmedFixtures = {}
+    realKoFixtures.filter(m => m.stage === 'r32').forEach(m => {
+      confirmedFixtures[m.match_number] = m
+    })
+
+    // Per-match comparison
     const matchComparisons = r32Stage.matches.map(matchDef => {
       const pick = knockoutPicks[matchDef.match_number]
       const userPickId = pick?.winner_id
-      // What team does the user predict for each slot
+      
+      // User's predicted teams for this slot (from their bracket)
       const userHome = resolveTeam(matchDef.home_slot)
       const userAway = resolveTeam(matchDef.away_slot)
-      // What team is ACTUALLY in each slot right now
-      const realHome = resolveRealSlot(matchDef.home_slot)
-      const realAway = resolveRealSlot(matchDef.away_slot)
-      // Is user's pick still valid (their picked team is actually in the matchup)
-      const pickOnTrack = userPickId && (
-        (realHome?.id === userPickId) || (realAway?.id === userPickId)
+
+      // Real teams — prefer confirmed DB fixtures, fall back to live standings resolver
+      const confirmed = confirmedFixtures[matchDef.match_number]
+      const realHome = confirmed?.home_team || resolveRealSlot(matchDef.home_slot)
+      const realAway = confirmed?.away_team || resolveRealSlot(matchDef.away_slot)
+      const isConfirmed = !!confirmed
+
+      // Pick on track = user's picked team is one of the two real teams in this match
+      const pickOnTrack = userPickId && realHome && realAway && (
+        realHome.id === userPickId || realAway.id === userPickId
       )
+      // Slot match = user predicted the right team for each side
       const homeSlotMatch = realHome && userHome && realHome.id === userHome.id
       const awaySlotMatch = realAway && userAway && realAway.id === userAway.id
+
       return {
         matchDef,
         userHome, userAway,
         realHome, realAway,
         userPickId,
         pickOnTrack,
-        homeSlotMatch,
-        awaySlotMatch,
+        homeSlotMatch, awaySlotMatch,
+        isConfirmed,
         hasPick: !!userPickId,
-        hasRealData: !!(realHome || realAway),
+        hasRealData: !!(realHome && realAway), // only count when BOTH teams known
       }
     })
 
-    const withPicks = matchComparisons.filter(m => m.hasPick)
-    const correct = withPicks.filter(m => m.pickOnTrack).length
-    const total = withPicks.length
+    // Only count matches where both real teams are confirmed for accuracy
+    const withBothKnown = matchComparisons.filter(m => m.hasPick && m.hasRealData)
+    const correct = withBothKnown.filter(m => m.pickOnTrack).length
+    const total = withBothKnown.length
+    const confirmedCount = matchComparisons.filter(m => m.isConfirmed).length
 
-    return { correct, total, groupsComplete, matchComparisons }
-  }, [realStandingsMap, knockoutPicks, resolveTeam, resolveRealSlot])
+    return { correct, total, groupsComplete, matchComparisons, confirmedCount }
+  }, [realStandingsMap, realKoFixtures, knockoutPicks, resolveTeam, resolveRealSlot])
 
   const resolveKnockoutWinner = useCallback((slot) => {
     const matchNum = parseInt(slot.replace('W', ''))
@@ -1187,11 +1202,13 @@ export default function Knockout() {
               }} onClick={() => setShowRealBracket(v => !v)}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '3px' }}>
-                    As it stands · {liveTrackerStats.groupsComplete}/12 groups done
+                    As it stands · {liveTrackerStats.groupsComplete}/12 groups done · {liveTrackerStats.confirmedCount || 0}/16 R32 fixtures confirmed
                   </div>
                   <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>
-                    <span style={{ color: colour }}>{liveTrackerStats.correct}/{liveTrackerStats.total}</span>
-                    {' '}R32 picks on track
+                    {liveTrackerStats.total > 0
+                      ? <><span style={{ color: colour }}>{liveTrackerStats.correct}/{liveTrackerStats.total}</span>{' '}R32 picks on track</>
+                      : <span style={{ color: 'var(--text-muted)' }}>Waiting for R32 fixtures to be confirmed</span>
+                    }
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1209,11 +1226,11 @@ export default function Knockout() {
               {showRealBracket && (
                 <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderTop: 'none', borderRadius: '0 0 var(--radius-md) var(--radius-md)', overflow: 'hidden' }}>
                   {/* Header row */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr 1fr', gap: '4px', padding: '7px 10px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)', fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr 40px', gap: '4px', padding: '7px 10px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)', fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     <span>#</span>
                     <span>Your pick</span>
-                    <span>Real (current)</span>
-                    <span style={{ textAlign: 'center' }}>Status</span>
+                    <span>Real matchup</span>
+                    <span style={{ textAlign: 'center' }}>✓/✗</span>
                   </div>
                   {liveTrackerStats.matchComparisons.filter(m => m.hasPick || m.hasRealData).map(m => {
                     const userPick = m.userPickId ? (m.userHome?.id === m.userPickId ? m.userHome : m.userAway) : null
@@ -1231,7 +1248,7 @@ export default function Knockout() {
                     const realMatchup = [realH, realA].filter(Boolean)
                     return (
                       <div key={m.matchDef.match_number} style={{
-                        display: 'grid', gridTemplateColumns: '32px 1fr 1fr 1fr', gap: '4px',
+                        display: 'grid', gridTemplateColumns: '32px 1fr 1fr 40px', gap: '4px',
                         padding: '8px 10px', borderBottom: '1px solid var(--border-light)',
                         background: status === 'on-track' ? 'rgba(0,122,51,0.03)' : status === 'off-track' ? 'rgba(198,40,40,0.03)' : 'transparent',
                         alignItems: 'center',
@@ -1248,13 +1265,18 @@ export default function Knockout() {
                         </div>
                         {/* Real current matchup */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'wrap' }}>
-                          {realMatchup.length > 0 ? realMatchup.map((t, i) => (
-                            <span key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '2px', opacity: (m.userPickId && t.id === m.userPickId) ? 1 : 0.55 }}>
-                              <span style={{ fontSize: '13px' }}>{t.flag_emoji}</span>
-                              <span style={{ fontSize: '10px', fontWeight: t.id === m.userPickId ? '800' : '500', color: t.id === m.userPickId ? 'var(--text-primary)' : 'var(--text-muted)' }}>{t.short_code}</span>
-                              {i === 0 && realMatchup.length > 1 && <span style={{ fontSize: '9px', color: 'var(--text-muted)', margin: '0 1px' }}>v</span>}
-                            </span>
-                          )) : <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>TBC</span>}
+                          {!m.hasRealData && !m.isConfirmed
+                            ? <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontStyle: 'italic' }}>TBC</span>
+                            : realMatchup.length > 0
+                              ? realMatchup.map((t, i) => (
+                                <span key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '2px', opacity: (m.userPickId && t.id === m.userPickId) ? 1 : 0.55 }}>
+                                  <span style={{ fontSize: '13px' }}>{t.flag_emoji}</span>
+                                  <span style={{ fontSize: '10px', fontWeight: t.id === m.userPickId ? '800' : '500', color: t.id === m.userPickId ? 'var(--text-primary)' : 'var(--text-muted)' }}>{t.short_code}</span>
+                                  {i === 0 && realMatchup.length > 1 && <span style={{ fontSize: '9px', color: 'var(--text-muted)', margin: '0 1px' }}>v</span>}
+                                </span>
+                              ))
+                              : <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>—</span>
+                          }
                         </div>
                         {/* Status */}
                         <div style={{ textAlign: 'center', fontWeight: '800', fontSize: '13px', color: statusColour }}>{statusLabel}</div>
