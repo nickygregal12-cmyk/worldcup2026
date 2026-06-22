@@ -1093,16 +1093,33 @@ export default function AdminPanel() {
   const toggleAdminJoker = async (userId, matchId, currentJoker, username) => {
     setJokerSaving(prev => ({ ...prev, [matchId]: true }))
     const newJoker = !currentJoker
+
+    // Update is_confident on the prediction
     await supabase.from('predictions').update({ is_confident: newJoker })
       .eq('user_id', userId).eq('match_id', matchId)
-    // Recount and update jokers_group_remaining
-    const { count } = await supabase.from('predictions')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId).eq('is_confident', true)
-    await supabase.from('profiles').update({ jokers_group_remaining: Math.max(0, 8 - (count || 0)) }).eq('id', userId)
-    await logAudit('ADMIN_TOGGLE_JOKER', { user_id: userId, username, match_id: matchId, joker: newJoker })
-    // Update local state
-    setJokerPreds(prev => prev.map(p => p.match_id === matchId ? { ...p, is_confident: newJoker } : p))
+
+    // Update local jokerPreds first so count is accurate
+    const updatedPreds = jokerPreds.map(p => p.match_id === matchId ? { ...p, is_confident: newJoker } : p)
+    setJokerPreds(updatedPreds)
+
+    // Count jokers from updated local state (avoids RLS issues with cross-user count)
+    const jokersUsed = updatedPreds.filter(p => p.is_confident).length
+    const remaining = Math.max(0, 8 - jokersUsed)
+
+    // Use RPC to bypass RLS for the profile update (admin updating another user's profile)
+    const { error: rpcErr } = await supabase.rpc('admin_set_jokers_remaining', {
+      p_user_id: userId,
+      p_remaining: remaining,
+    })
+
+    // Fallback: if RPC doesn't exist yet, try direct update (works if admin has bypass)
+    if (rpcErr) {
+      await supabase.from('profiles')
+        .update({ jokers_group_remaining: remaining })
+        .eq('id', userId)
+    }
+
+    await logAudit('ADMIN_TOGGLE_JOKER', { user_id: userId, username, match_id: matchId, joker: newJoker, remaining })
     setJokerSaving(prev => ({ ...prev, [matchId]: false }))
     loadUsers()
   }
