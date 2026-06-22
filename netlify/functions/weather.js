@@ -6,12 +6,37 @@ export async function handler(event) {
   }
 
   const params = event.queryStringParameters || {}
-  const city = params.city
+  const rawCity = params.city
   const kickoff = params.kickoff
 
-  if (!city) {
+  if (!rawCity) {
     return json({ available: false, error: 'Missing city' }, 400)
   }
+
+  // Map venue city names to WeatherAPI-resolvable query strings
+  // Some venue cities are ambiguous or use slash notation that confuses the API
+  const CITY_MAP = {
+    'East Rutherford': 'East Rutherford, New Jersey, USA',
+    'New York/NJ': 'East Rutherford, New Jersey, USA',
+    'New York': 'New York City, USA',
+    'New Jersey': 'East Rutherford, New Jersey, USA',
+    'Los Angeles': 'Los Angeles, California, USA',
+    'San Francisco': 'Santa Clara, California, USA',
+    'Kansas City': 'Kansas City, Missouri, USA',
+    'Dallas': 'Dallas, Texas, USA',
+    'Houston': 'Houston, Texas, USA',
+    'Atlanta': 'Atlanta, Georgia, USA',
+    'Seattle': 'Seattle, Washington, USA',
+    'Boston': 'Boston, Massachusetts, USA',
+    'Miami': 'Miami, Florida, USA',
+    'Philadelphia': 'Philadelphia, Pennsylvania, USA',
+    'Toronto': 'Toronto, Ontario, Canada',
+    'Vancouver': 'Vancouver, British Columbia, Canada',
+    'Mexico City': 'Mexico City, Mexico',
+    'Guadalajara': 'Guadalajara, Mexico',
+    'Monterrey': 'Monterrey, Mexico',
+  }
+  const city = CITY_MAP[rawCity] || rawCity
 
   try {
     const date = kickoff ? new Date(kickoff) : new Date()
