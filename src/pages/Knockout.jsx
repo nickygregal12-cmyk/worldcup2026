@@ -370,9 +370,11 @@ export default function Knockout() {
       const realHome = confirmed?.home_team || (activeStage === 'r32' ? resolveRealSlot(matchDef.home_slot) : null)
       const realAway = confirmed?.away_team || (activeStage === 'r32' ? resolveRealSlot(matchDef.away_slot) : null)
 
-      // ✓ = pick team appears in this stage anywhere (team-based scoring)
+      // Winner pick on track
       const pickOnTrack = userPickId && teamsInStage.has(userPickId)
-      const hasRealData = !!(realHome || realAway || teamsInStage.size > 0)
+      // Both predicted teams checked — both earn 5pts if they qualify
+      const userHomeOnTrack = userHome?.id && teamsInStage.has(userHome.id)
+      const userAwayOnTrack = userAway?.id && teamsInStage.has(userAway.id)
       const isConfirmed = !!confirmed
 
       return {
@@ -381,15 +383,24 @@ export default function Knockout() {
         realHome, realAway,
         userPickId,
         pickOnTrack,
+        userHomeOnTrack,
+        userAwayOnTrack,
         isConfirmed,
         hasPick: !!userPickId,
         hasRealData: !!(realHome || realAway),
       }
     })
 
-    const withData = matchComparisons.filter(m => m.hasPick)
-    const correct = withData.filter(m => m.pickOnTrack).length
-    const total = withData.length
+    // Count all 32 predicted teams (both slots per match)
+    // Both teams earn 5pts if they actually qualify — not just the winner pick
+    let correct = 0
+    let total = 0
+    if (teamsInStage.size > 0) {
+      matchComparisons.forEach(m => {
+        if (m.userHome?.id) { total++; if (m.userHomeOnTrack) correct++ }
+        if (m.userAway?.id) { total++; if (m.userAwayOnTrack) correct++ }
+      })
+    }
     const confirmedCount = matchComparisons.filter(m => m.isConfirmed).length
     const stageLabels = { r32: 'R32', r16: 'R16', qf: 'QF', sf: 'SF', final: 'Final' }
 
@@ -1290,29 +1301,37 @@ export default function Knockout() {
                       (m.userHome?.id === m.userPickId && realH?.id === m.userPickId) ||
                       (m.userAway?.id === m.userPickId && realA?.id === m.userPickId)
                     )
-                    const status = !m.hasPick ? 'no-pick'
-                      : !m.hasRealData ? 'pending'
-                      : m.pickOnTrack ? 'on-track'
+                    // Status based on both teams being on track
+                    const bothOnTrack = m.userHomeOnTrack && m.userAwayOnTrack
+                    const eitherOnTrack = m.userHomeOnTrack || m.userAwayOnTrack
+                    const status = !m.hasRealData ? 'pending'
+                      : bothOnTrack ? 'both-on-track'
+                      : eitherOnTrack ? 'partial'
                       : 'off-track'
-                    const accentBar = status === 'on-track' ? 'var(--accent-green)' : status === 'off-track' ? '#c62828' : 'var(--border-light)'
+                    const accentBar = status === 'both-on-track' ? 'var(--accent-green)' : status === 'partial' ? 'var(--accent-gold)' : status === 'off-track' ? '#c62828' : 'var(--border-light)'
                     return (
                       <div key={m.matchDef.match_number} style={{
                         padding: '10px 14px 12px',
                         borderBottom: '1px solid var(--border-light)',
                         borderLeft: `3px solid ${accentBar}`,
-                        background: status === 'on-track' ? 'rgba(0,122,51,0.03)' : status === 'off-track' ? 'rgba(198,40,40,0.03)' : 'transparent',
+                        background: status === 'both-on-track' ? 'rgba(0,122,51,0.03)' : status === 'partial' ? 'rgba(184,134,11,0.03)' : status === 'off-track' ? 'rgba(198,40,40,0.03)' : 'transparent',
                       }}>
                         {/* Header: match number + status badge */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                           <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)' }}>M{m.matchDef.match_number}</span>
-                          {status === 'on-track' && (
+                          {status === 'both-on-track' && (
                             <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
-                              ✓ In {liveTrackerStats.stageLabel} {inCorrectSlot ? '· correct slot' : '· different slot'}
+                              ✓ Both teams in {liveTrackerStats.stageLabel}
+                            </span>
+                          )}
+                          {status === 'partial' && (
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent-gold)', background: 'rgba(184,134,11,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
+                              ~ 1 of 2 teams in {liveTrackerStats.stageLabel}
                             </span>
                           )}
                           {status === 'off-track' && (
                             <span style={{ fontSize: '10px', fontWeight: '700', color: '#c62828', background: 'rgba(198,40,40,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
-                              ✗ Not qualifying
+                              ✗ Neither team qualifying
                             </span>
                           )}
                           {status === 'pending' && (
@@ -1327,23 +1346,31 @@ export default function Knockout() {
                             <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '5px' }}>Your predicted matchup</div>
                             {m.userHome || m.userAway ? (
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {/* Both predicted teams */}
+                                {/* Both predicted teams with per-team on-track status */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   {m.userHome && (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px',
-                                      fontWeight: m.userHome.id === m.userPickId ? '800' : '500',
-                                      opacity: m.userHome.id === m.userPickId ? 1 : 0.6 }}>
-                                      <span style={{ fontSize: '16px' }}>{m.userHome.flag_emoji}</span>
-                                      <span style={{ fontSize: '12px' }}>{m.userHome.short_code}</span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                      <span style={{ fontSize: '16px', opacity: m.hasRealData && !m.userHomeOnTrack ? 0.4 : 1 }}>{m.userHome.flag_emoji}</span>
+                                      <span style={{ fontSize: '12px', fontWeight: m.userHome.id === m.userPickId ? '800' : '500',
+                                        color: m.userHomeOnTrack ? 'var(--accent-green)' : m.hasRealData ? '#c62828' : 'var(--text-primary)' }}>
+                                        {m.userHome.short_code}
+                                      </span>
+                                      {m.hasRealData && (m.userHomeOnTrack
+                                        ? <span style={{ fontSize: '9px', color: 'var(--accent-green)' }}>✓</span>
+                                        : <span style={{ fontSize: '9px', color: '#c62828' }}>✗</span>)}
                                     </span>
                                   )}
                                   {m.userHome && m.userAway && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>v</span>}
                                   {m.userAway && (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px',
-                                      fontWeight: m.userAway.id === m.userPickId ? '800' : '500',
-                                      opacity: m.userAway.id === m.userPickId ? 1 : 0.6 }}>
-                                      <span style={{ fontSize: '16px' }}>{m.userAway.flag_emoji}</span>
-                                      <span style={{ fontSize: '12px' }}>{m.userAway.short_code}</span>
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                      <span style={{ fontSize: '16px', opacity: m.hasRealData && !m.userAwayOnTrack ? 0.4 : 1 }}>{m.userAway.flag_emoji}</span>
+                                      <span style={{ fontSize: '12px', fontWeight: m.userAway.id === m.userPickId ? '800' : '500',
+                                        color: m.userAwayOnTrack ? 'var(--accent-green)' : m.hasRealData ? '#c62828' : 'var(--text-primary)' }}>
+                                        {m.userAway.short_code}
+                                      </span>
+                                      {m.hasRealData && (m.userAwayOnTrack
+                                        ? <span style={{ fontSize: '9px', color: 'var(--accent-green)' }}>✓</span>
+                                        : <span style={{ fontSize: '9px', color: '#c62828' }}>✗</span>)}
                                     </span>
                                   )}
                                 </div>
@@ -1353,7 +1380,7 @@ export default function Knockout() {
                                     <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>→ Pick:</span>
                                     <span style={{ fontSize: '12px' }}>{userPick.flag_emoji}</span>
                                     <span style={{ fontSize: '12px', fontWeight: '800',
-                                      color: status === 'on-track' ? 'var(--accent-green)' : status === 'off-track' ? '#c62828' : 'var(--text-primary)' }}>
+                                      color: m.pickOnTrack ? 'var(--accent-green)' : m.hasRealData ? '#c62828' : 'var(--text-primary)' }}>
                                       {userPick.short_code}
                                     </span>
                                   </div>
