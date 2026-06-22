@@ -308,10 +308,10 @@ export default function Knockout() {
       const userHome = resolveTeam(matchDef.home_slot)
       const userAway = resolveTeam(matchDef.away_slot)
 
-      // Real teams — prefer confirmed DB fixtures, fall back to live standings resolver
+      // Real teams — ONLY use confirmed DB fixtures, never guess from standings
       const confirmed = confirmedFixtures[matchDef.match_number]
-      const realHome = confirmed?.home_team || resolveRealSlot(matchDef.home_slot)
-      const realAway = confirmed?.away_team || resolveRealSlot(matchDef.away_slot)
+      const realHome = confirmed?.home_team || null
+      const realAway = confirmed?.away_team || null
       const isConfirmed = !!confirmed
 
       // Pick on track = user's picked team is one of the two real teams in this match
