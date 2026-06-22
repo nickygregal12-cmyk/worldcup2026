@@ -916,6 +916,10 @@ export default function AdminPanel() {
   const [koMatches, setKoMatches] = useState([])
   const [koLeagues, setKoLeagues] = useState([])
   const [koUsers, setKoUsers] = useState([])
+  const [jokerManageUser, setJokerManageUser] = useState(null) // { id, username }
+  const [jokerPreds, setJokerPreds] = useState([]) // predictions for joker management
+  const [jokerLoading, setJokerLoading] = useState(false)
+  const [jokerSaving, setJokerSaving] = useState({})
   const [koEditingMatch, setKoEditingMatch] = useState(null)
   const [koScores, setKoScores] = useState({})
   const [koSaving, setKoSaving] = useState({})
@@ -1073,6 +1077,34 @@ export default function AdminPanel() {
       .order('created_at', { ascending: false })
       .limit(100)
     setUsers(data || [])
+  }
+
+  const loadJokerPreds = async (userId) => {
+    setJokerLoading(true)
+    const { data } = await supabase
+      .from('predictions')
+      .select('match_id, home_score, away_score, is_confident, match:match_id(match_number, kickoff_time, status, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code))')
+      .eq('user_id', userId)
+      .order('match_id')
+    setJokerPreds((data || []).sort((a, b) => a.match?.match_number - b.match?.match_number))
+    setJokerLoading(false)
+  }
+
+  const toggleAdminJoker = async (userId, matchId, currentJoker, username) => {
+    setJokerSaving(prev => ({ ...prev, [matchId]: true }))
+    const newJoker = !currentJoker
+    await supabase.from('predictions').update({ is_confident: newJoker })
+      .eq('user_id', userId).eq('match_id', matchId)
+    // Recount and update jokers_group_remaining
+    const { count } = await supabase.from('predictions')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId).eq('is_confident', true)
+    await supabase.from('profiles').update({ jokers_group_remaining: Math.max(0, 8 - (count || 0)) }).eq('id', userId)
+    await logAudit('ADMIN_TOGGLE_JOKER', { user_id: userId, username, match_id: matchId, joker: newJoker })
+    // Update local state
+    setJokerPreds(prev => prev.map(p => p.match_id === matchId ? { ...p, is_confident: newJoker } : p))
+    setJokerSaving(prev => ({ ...prev, [matchId]: false }))
+    loadUsers()
   }
 
   const loadLeagues = async () => {
@@ -2925,6 +2957,58 @@ export default function AdminPanel() {
                     </div>
                   </div>
                   {/* Edit display name / username inline form */}
+                  {/* Joker management panel */}
+                  {jokerManageUser?.id === u.id && (
+                    <div style={{ marginTop: '10px', padding: '12px 14px', background: 'rgba(184,134,11,0.06)', border: '1px solid rgba(184,134,11,0.2)', borderRadius: 'var(--radius-md)' }}>
+                      <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent-gold)', marginBottom: '10px' }}>
+                        🃏 Joker Management — {u.username}
+                        <span style={{ fontWeight: '500', fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>
+                          {jokerPreds.filter(p => p.is_confident).length}/8 jokers used · {u.jokers_group_remaining ?? 8} remaining
+                        </span>
+                      </div>
+                      {jokerLoading ? (
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Loading predictions...</div>
+                      ) : jokerPreds.length === 0 ? (
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No predictions found for this user.</div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '300px', overflowY: 'auto' }}>
+                          {jokerPreds.map(p => {
+                            const m = p.match
+                            const isLocked = m?.status === 'completed' || m?.status === 'live'
+                            return (
+                              <div key={p.match_id} style={{
+                                display: 'flex', alignItems: 'center', gap: '8px',
+                                padding: '6px 10px', borderRadius: 'var(--radius-sm)',
+                                background: p.is_confident ? 'rgba(184,134,11,0.1)' : 'var(--bg-secondary)',
+                                border: `1px solid ${p.is_confident ? 'rgba(184,134,11,0.3)' : 'var(--border-light)'}`,
+                                opacity: isLocked ? 0.7 : 1,
+                              }}>
+                                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', minWidth: '28px' }}>#{m?.match_number}</span>
+                                <span style={{ fontSize: '13px' }}>{m?.home_team?.flag_emoji}</span>
+                                <span style={{ fontSize: '11px', flex: 1 }}>{m?.home_team?.short_code} vs {m?.away_team?.short_code}</span>
+                                <span style={{ fontSize: '13px' }}>{m?.away_team?.flag_emoji}</span>
+                                <span style={{ fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-muted)', minWidth: '36px', textAlign: 'center' }}>
+                                  {p.home_score}–{p.away_score}
+                                </span>
+                                <button
+                                  onClick={() => toggleAdminJoker(u.id, p.match_id, p.is_confident, u.username)}
+                                  disabled={jokerSaving[p.match_id]}
+                                  style={{
+                                    fontSize: '10px', padding: '3px 8px', borderRadius: '20px', cursor: 'pointer',
+                                    fontWeight: '700', border: 'none',
+                                    background: p.is_confident ? 'var(--accent-gold)' : 'var(--bg-tertiary)',
+                                    color: p.is_confident ? 'white' : 'var(--text-muted)',
+                                  }}>
+                                  {jokerSaving[p.match_id] ? '...' : p.is_confident ? '🃏 ON' : 'OFF'}
+                                </button>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {editingUsername?.userId === u.id && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px', padding: '10px 12px', background: 'rgba(124,58,237,0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(124,58,237,0.2)' }}>
                       <div style={{ fontSize: '11px', color: '#7c3aed', fontWeight: '700' }}>
@@ -2970,6 +3054,10 @@ export default function AdminPanel() {
                     {!u.is_admin && u.admin_level === 'league_admin' && <button onClick={() => removeLeagueAdmin(u.id, u.username)} className="btn btn-sm" style={{ border: '1px solid var(--accent-red)', color: 'var(--accent-red)', background: 'none' }}>✕ Remove League Admin</button>}
                     <button onClick={() => setPointAdjUser(u.id)} className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none' }}>🎯 Points</button>
                     <button onClick={() => { setEditingUserPreds(u.id); loadUserPredictions(u.id) }} className="btn btn-sm" style={{ border: '1px solid var(--scottish-navy)', color: 'var(--scottish-navy)', background: 'none' }}>✏️ Predictions</button>
+                    <button onClick={() => {
+                      if (jokerManageUser?.id === u.id) { setJokerManageUser(null); setJokerPreds([]) }
+                      else { setJokerManageUser({ id: u.id, username: u.username }); loadJokerPreds(u.id) }
+                    }} className="btn btn-sm" style={{ border: '1px solid var(--accent-gold)', color: 'var(--accent-gold)', background: jokerManageUser?.id === u.id ? 'rgba(184,134,11,0.1)' : 'none' }}>🃏 Jokers ({8 - (u.jokers_group_remaining ?? 8)} used)</button>
                     <button onClick={async () => {
                       const newVal = !u.display_name_locked
                       await supabase.from('profiles').update({ display_name_locked: newVal }).eq('id', u.id)
