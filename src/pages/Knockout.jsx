@@ -1248,65 +1248,91 @@ export default function Knockout() {
                 </div>
               </div>
 
+
               {/* Expandable per-match breakdown */}
               {showRealBracket && (
                 <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderTop: 'none', borderRadius: '0 0 var(--radius-md) var(--radius-md)', overflow: 'hidden' }}>
-                  {/* Header row */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr 40px', gap: '4px', padding: '7px 10px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)', fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    <span>#</span>
-                    <span>Your pick</span>
-                    <span>Real matchup</span>
-                    <span style={{ textAlign: 'center' }}>✓/✗</span>
-                  </div>
                   {liveTrackerStats.matchComparisons.filter(m => m.hasPick || m.hasRealData).map(m => {
-                    // The team the user picked to WIN this R32 match
-                    const userPick = m.userPickId ? (m.userHome?.id === m.userPickId ? m.userHome : m.userAway?.id === m.userPickId ? m.userAway : null) : null
-                    // For display: show both real teams in the slot
-                    // Real matchup teams
+                    const userPick = m.userPickId
+                      ? (m.userHome?.id === m.userPickId ? m.userHome : m.userAway?.id === m.userPickId ? m.userAway : null)
+                      : null
                     const realH = m.realHome
                     const realA = m.realAway
+                    const inCorrectSlot = m.userPickId && (
+                      (m.userHome?.id === m.userPickId && realH?.id === m.userPickId) ||
+                      (m.userAway?.id === m.userPickId && realA?.id === m.userPickId)
+                    )
                     const status = !m.hasPick ? 'no-pick'
                       : !m.hasRealData ? 'pending'
                       : m.pickOnTrack ? 'on-track'
                       : 'off-track'
-                    const statusColour = status === 'on-track' ? 'var(--accent-green)' : status === 'off-track' ? '#c62828' : 'var(--text-muted)'
-                    const statusLabel = status === 'on-track' ? '✓' : status === 'off-track' ? '✗' : status === 'pending' ? '?' : '—'
-                    // What team is REALLY in this slot right now
-                    const realMatchup = [realH, realA].filter(Boolean)
+                    const accentBar = status === 'on-track' ? 'var(--accent-green)' : status === 'off-track' ? '#c62828' : 'var(--border-light)'
                     return (
                       <div key={m.matchDef.match_number} style={{
-                        display: 'grid', gridTemplateColumns: '32px 1fr 1fr 40px', gap: '4px',
-                        padding: '8px 10px', borderBottom: '1px solid var(--border-light)',
+                        padding: '10px 14px 12px',
+                        borderBottom: '1px solid var(--border-light)',
+                        borderLeft: `3px solid ${accentBar}`,
                         background: status === 'on-track' ? 'rgba(0,122,51,0.03)' : status === 'off-track' ? 'rgba(198,40,40,0.03)' : 'transparent',
-                        alignItems: 'center',
                       }}>
-                        <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)' }}>M{m.matchDef.match_number}</span>
-                        {/* User's pick */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          {userPick ? (
-                            <>
-                              <span style={{ fontSize: '14px' }}>{userPick.flag_emoji}</span>
-                              <span style={{ fontSize: '11px', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userPick.short_code || userPick.name}</span>
-                            </>
-                          ) : <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>—</span>}
+                        {/* Header: match number + status badge */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)' }}>M{m.matchDef.match_number}</span>
+                          {status === 'on-track' && (
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
+                              ✓ In R32 {inCorrectSlot ? '· correct slot' : '· different slot'}
+                            </span>
+                          )}
+                          {status === 'off-track' && (
+                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#c62828', background: 'rgba(198,40,40,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
+                              ✗ Not qualifying
+                            </span>
+                          )}
+                          {status === 'pending' && (
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontStyle: 'italic' }}>Pending</span>
+                          )}
                         </div>
-                        {/* Real current matchup */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'wrap' }}>
-                          {!m.hasRealData && !m.isConfirmed
-                            ? <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontStyle: 'italic' }}>TBC</span>
-                            : realMatchup.length > 0
-                              ? realMatchup.map((t, i) => (
-                                <span key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '2px', opacity: (m.userPickId && t.id === m.userPickId) ? 1 : 0.55 }}>
-                                  <span style={{ fontSize: '13px' }}>{t.flag_emoji}</span>
-                                  <span style={{ fontSize: '10px', fontWeight: t.id === m.userPickId ? '800' : '500', color: t.id === m.userPickId ? 'var(--text-primary)' : 'var(--text-muted)' }}>{t.short_code}</span>
-                                  {i === 0 && realMatchup.length > 1 && <span style={{ fontSize: '9px', color: 'var(--text-muted)', margin: '0 1px' }}>v</span>}
+
+                        {/* Two columns: Your pick to win | Real matchup */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                          {/* Your pick */}
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '5px' }}>Your pick to win</div>
+                            {userPick ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '20px' }}>{userPick.flag_emoji}</span>
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: status === 'on-track' ? 'var(--accent-green)' : status === 'off-track' ? '#c62828' : 'var(--text-primary)' }}>
+                                  {userPick.short_code || userPick.name}
                                 </span>
-                              ))
-                              : <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>—</span>
-                          }
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No pick</span>
+                            )}
+                          </div>
+
+                          {/* Real matchup */}
+                          <div>
+                            <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '5px' }}>Real matchup</div>
+                            {!m.hasRealData ? (
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>To be confirmed</span>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: realH?.id === m.userPickId ? 1 : 0.5 }}>
+                                  <span style={{ fontSize: '18px' }}>{realH?.flag_emoji}</span>
+                                  <span style={{ fontSize: '12px', fontWeight: realH?.id === m.userPickId ? '800' : '500', color: realH?.id === m.userPickId ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                                    {realH?.short_code}
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>v</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: realA?.id === m.userPickId ? 1 : 0.5 }}>
+                                  <span style={{ fontSize: '18px' }}>{realA?.flag_emoji}</span>
+                                  <span style={{ fontSize: '12px', fontWeight: realA?.id === m.userPickId ? '800' : '500', color: realA?.id === m.userPickId ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                                    {realA?.short_code}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        {/* Status */}
-                        <div style={{ textAlign: 'center', fontWeight: '800', fontSize: '13px', color: statusColour }}>{statusLabel}</div>
                       </div>
                     )
                   })}
