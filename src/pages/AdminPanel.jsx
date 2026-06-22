@@ -1094,9 +1094,17 @@ export default function AdminPanel() {
     setJokerSaving(prev => ({ ...prev, [matchId]: true }))
     const newJoker = !currentJoker
 
-    // Update is_confident on the prediction
-    await supabase.from('predictions').update({ is_confident: newJoker })
-      .eq('user_id', userId).eq('match_id', matchId)
+    // Update is_confident via RPC to bypass RLS (admin updating another user's prediction)
+    const { error: predErr } = await supabase.rpc('admin_set_joker', {
+      p_user_id: userId,
+      p_match_id: matchId,
+      p_is_confident: newJoker,
+    })
+    if (predErr) {
+      console.error('Failed to update joker:', predErr)
+      setJokerSaving(prev => ({ ...prev, [matchId]: false }))
+      return
+    }
 
     // Update local jokerPreds first so count is accurate
     const updatedPreds = jokerPreds.map(p => p.match_id === matchId ? { ...p, is_confident: newJoker } : p)
