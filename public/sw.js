@@ -1,5 +1,5 @@
 // WC26 Predictor — Service Worker
-const CACHE_NAME = 'wc26-v1'
+const CACHE_NAME = 'wc26-v2'
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
