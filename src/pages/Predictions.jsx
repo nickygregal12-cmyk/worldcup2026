@@ -1464,7 +1464,7 @@ export default function Predictions() {
     const hasPrediction = pred.home !== undefined && pred.home !== ''
     const isGuest = !user
     const hasJoker = pred.joker === true
-    const canUseJoker = !locked && user && hasPrediction && (jokersRemaining > 0 || hasJoker) // jokers only lock at own kickoff, not group lock
+    const canUseJoker = !locked && user && hasPrediction && (jokersRemaining > 0 || hasJoker) // jokers allowed until match kickoff, even if group is locked
     const standingsLockTime = getMD1LockTime(matches)
     const standingsLocked = match.stage === 'group' && new Date() >= standingsLockTime
     const resultColour = getResultColour(match, pred)
@@ -1759,8 +1759,8 @@ export default function Predictions() {
 
           {/* Guest — no per-card CTA, handled by sticky banner */}
 
-          {/* Joker + Clear + Save */}
-          {!isGuest && !effectiveLocked && !resultColour && (
+          {/* Joker button — visible if match itself hasn't kicked off, even if group is locked */}
+          {!isGuest && !locked && !resultColour && hasPrediction && (
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', paddingTop: '14px', borderTop: `1px solid ${hasJoker ? 'rgba(184,134,11,0.25)' : 'var(--border-light)'}` }}>
               <button
                 onClick={() => {
@@ -1788,7 +1788,7 @@ export default function Predictions() {
               </button>
 
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {hasPrediction && (
+                {hasPrediction && !effectiveLocked && (
                   <button
                     onClick={() => clearPick(match.id)}
                     style={{
@@ -1817,7 +1817,7 @@ export default function Predictions() {
                   }}
                   disabled={isSaving}
                   className={`btn btn-sm ${isSaved ? 'btn-save-success' : 'btn-save'}`}
-                  style={{ minWidth: '80px', borderRadius: 'var(--radius-full)' }}
+                  style={{ minWidth: '80px', borderRadius: 'var(--radius-full)', display: effectiveLocked ? 'none' : undefined }}
                 >
                   {isSaving
                     ? <div className="spinner" style={{ width: '14px', height: '14px', borderWidth: '2px', borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} />
