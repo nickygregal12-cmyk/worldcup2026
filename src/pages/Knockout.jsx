@@ -5,7 +5,7 @@ import { useAuthStore, useAppStore } from '../store/index.js'
 import { SkeletonCard, ErrorState } from '../components/PageState.jsx'
 import {
   ALL_STAGES,
-  calcPredictedStandings, resolveSlot, getBest3rdTeams, findAffectedPicks, groupFullyPredicted,
+  calcPredictedStandings, resolveSlot, getBest3rdTeams, allocateThirdPlaces, findAffectedPicks, groupFullyPredicted,
   getMD1LockTime, MD1_STANDINGS_LOCK_FALLBACK,
 } from '../lib/bracketUtils.js'
 import { predictKnockoutMatch } from '../lib/luckyDip.js'
@@ -226,60 +226,108 @@ export default function Knockout() {
     return out
   }, [realKoResults])
 
-  // "As it stands" tracker — compare user's R32 picks against current real standings
-  const liveTrackerStats = useMemo(() => {
-    if (!realGroupStandings.length || !knockoutPicks) return null
-
-    // Build map of group -> ordered teams by current real position
-    const groupMap = {}
+  // Build real standings map in same format as predicted standings (group -> [{team, pts, gd...}])
+  const realStandingsMap = useMemo(() => {
+    if (!realGroupStandings.length) return {}
+    const map = {}
     realGroupStandings.forEach(s => {
       const g = s.group_name
       if (!g) return
-      if (!groupMap[g]) groupMap[g] = []
-      groupMap[g].push(s)
+      if (!map[g]) map[g] = []
+      map[g].push({
+        team: s.team,
+        pts: s.points || 0,
+        gd: s.goal_difference || 0,
+        gf: s.goals_for || 0,
+        played: s.played || 0,
+        position: s.position || 99,
+      })
     })
-    // Sort each group by position
-    Object.keys(groupMap).forEach(g => {
-      groupMap[g].sort((a, b) => a.position - b.position)
-    })
+    Object.keys(map).forEach(g => map[g].sort((a, b) => a.position - b.position))
+    return map
+  }, [realGroupStandings])
 
-    // Get best 3rd-place teams (top 4 by points/gd among all 3rd-place finishers)
-    const thirdPlacers = Object.values(groupMap)
-      .map(teams => teams[2])
-      .filter(Boolean)
-      .sort((a, b) => (b.points || 0) - (a.points || 0) || (b.goal_difference || 0) - (a.goal_difference || 0))
-    const best4Third = thirdPlacers.slice(0, 4).map(t => t.team?.id).filter(Boolean)
+  // Resolve a slot against real current standings
+  const resolveRealSlot = useCallback((slot) => {
+    if (!slot || !Object.keys(realStandingsMap).length) return null
+    // Winner/runner-up slots
+    const posMatch = slot.match(/^([12])([A-L])$/)
+    if (posMatch) {
+      const pos = parseInt(posMatch[1]) - 1
+      const group = posMatch[2]
+      return realStandingsMap[group]?.[pos]?.team || null
+    }
+    // Best third slots
+    const btMatch = slot.match(/^BT3_([A-L]+)$/)
+    if (btMatch) {
+      const eligibleGroups = btMatch[1].split('')
+      // Get best 3rd from real standings (teams in position 3, sorted by pts/gd)
+      const thirds = Object.entries(realStandingsMap)
+        .map(([g, teams]) => ({ group: g, team: teams[2]?.team, pts: teams[2]?.pts || 0, gd: teams[2]?.gd || 0, played: teams[2]?.played || 0 }))
+        .filter(t => t.team && t.played > 0)
+        .sort((a, b) => b.pts - a.pts || b.gd - a.gd)
+      const best8 = thirds.slice(0, 8)
+      // If we have enough data, try full allocation
+      if (best8.length >= 8) {
+        const allocation = allocateThirdPlaces(best8.map(t => t.group))
+        if (allocation?.[slot]) {
+          const assigned = best8.find(t => t.group === allocation[slot])
+          return assigned?.team || null
+        }
+      }
+      // Partial: only resolve if exactly one eligible
+      const matching = best8.filter(t => eligibleGroups.includes(t.group))
+      return matching.length === 1 ? matching[0].team : null
+    }
+    return null
+  }, [realStandingsMap])
 
-    // All teams that would currently qualify (top 2 from each group + best 4 third)
-    const qualifiedIds = new Set()
-    Object.values(groupMap).forEach(teams => {
-      if (teams[0]?.team?.id) qualifiedIds.add(teams[0].team.id)
-      if (teams[1]?.team?.id) qualifiedIds.add(teams[1].team.id)
-    })
-    best4Third.forEach(id => qualifiedIds.add(id))
+  // "As it stands" tracker — compare user's R32 picks against current real standings
+  const liveTrackerStats = useMemo(() => {
+    if (!Object.keys(realStandingsMap).length || !knockoutPicks) return null
 
-    // Count user's R32 picks that are currently in qualifying positions
     const r32Stage = ALL_STAGES.find(s => s.key === 'r32')
     if (!r32Stage) return null
 
-    let correct = 0
-    let total = 0
-    r32Stage.matches.forEach(matchDef => {
-      const pick = knockoutPicks[matchDef.match_number]
-      if (!pick?.winner_id) return
-      total++
-      if (qualifiedIds.has(pick.winner_id)) correct++
-    })
-
-    // Groups that have played all matches (fully complete)
-    const groupsComplete = Object.values(groupMap).filter(teams =>
-      teams.every(t => (t.played || 0) >= 3)
+    const groupsComplete = Object.values(realStandingsMap).filter(teams =>
+      teams.every(t => t.played >= 3)
     ).length
 
-    const groupsWithData = Object.keys(groupMap).length
+    // Per-match comparison: predicted team vs real current team for each R32 slot
+    const matchComparisons = r32Stage.matches.map(matchDef => {
+      const pick = knockoutPicks[matchDef.match_number]
+      const userPickId = pick?.winner_id
+      // What team does the user predict for each slot
+      const userHome = resolveTeam(matchDef.home_slot)
+      const userAway = resolveTeam(matchDef.away_slot)
+      // What team is ACTUALLY in each slot right now
+      const realHome = resolveRealSlot(matchDef.home_slot)
+      const realAway = resolveRealSlot(matchDef.away_slot)
+      // Is user's pick still valid (their picked team is actually in the matchup)
+      const pickOnTrack = userPickId && (
+        (realHome?.id === userPickId) || (realAway?.id === userPickId)
+      )
+      const homeSlotMatch = realHome && userHome && realHome.id === userHome.id
+      const awaySlotMatch = realAway && userAway && realAway.id === userAway.id
+      return {
+        matchDef,
+        userHome, userAway,
+        realHome, realAway,
+        userPickId,
+        pickOnTrack,
+        homeSlotMatch,
+        awaySlotMatch,
+        hasPick: !!userPickId,
+        hasRealData: !!(realHome || realAway),
+      }
+    })
 
-    return { correct, total, groupsComplete, groupsWithData, qualifiedIds: qualifiedIds.size }
-  }, [realGroupStandings, knockoutPicks])
+    const withPicks = matchComparisons.filter(m => m.hasPick)
+    const correct = withPicks.filter(m => m.pickOnTrack).length
+    const total = withPicks.length
+
+    return { correct, total, groupsComplete, matchComparisons }
+  }, [realStandingsMap, knockoutPicks, resolveTeam, resolveRealSlot])
 
   const resolveKnockoutWinner = useCallback((slot) => {
     const matchNum = parseInt(slot.replace('W', ''))
@@ -1122,75 +1170,106 @@ export default function Knockout() {
           </div>
         )}
 
-        {/* "As it stands" live tracker — shows from first group match */}
-        {liveTrackerStats && liveTrackerStats.total > 0 && (
-          <div style={{
-            margin: '8px 16px 0',
-            padding: '10px 14px',
-            background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-light)',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex', alignItems: 'center', gap: '12px',
-          }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
-                As it stands · {liveTrackerStats.groupsComplete}/12 groups complete
+        {/* "As it stands" live tracker */}
+        {liveTrackerStats && liveTrackerStats.total > 0 && (() => {
+          const pct = Math.round((liveTrackerStats.correct / liveTrackerStats.total) * 100)
+          const colour = pct >= 75 ? 'var(--accent-green)' : pct >= 50 ? 'var(--scottish-navy)' : '#c62828'
+          return (
+            <div style={{ margin: '8px 16px 0' }}>
+              {/* Summary row */}
+              <div style={{
+                padding: '10px 14px',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-light)',
+                borderRadius: showRealBracket ? 'var(--radius-md) var(--radius-md) 0 0' : 'var(--radius-md)',
+                display: 'flex', alignItems: 'center', gap: '12px',
+                cursor: 'pointer',
+              }} onClick={() => setShowRealBracket(v => !v)}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '3px' }}>
+                    As it stands · {liveTrackerStats.groupsComplete}/12 groups done
+                  </div>
+                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                    <span style={{ color: colour }}>{liveTrackerStats.correct}/{liveTrackerStats.total}</span>
+                    {' '}R32 picks on track
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '56px' }}>
+                    <div style={{ height: '5px', background: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: '3px', width: `${pct}%`, background: colour, transition: 'width 0.5s ease' }} />
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'right', marginTop: '2px' }}>{pct}%</div>
+                  </div>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{showRealBracket ? '▲' : '▼'}</span>
+                </div>
               </div>
-              <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>
-                <span style={{ color: liveTrackerStats.correct / liveTrackerStats.total >= 0.75 ? 'var(--accent-green)' : liveTrackerStats.correct / liveTrackerStats.total >= 0.5 ? 'var(--scottish-navy)' : '#c62828' }}>
-                  {liveTrackerStats.correct}/{liveTrackerStats.total}
-                </span>
-                {' '}R32 picks currently on track
-              </div>
-            </div>
-            {/* Mini progress bar */}
-            <div style={{ width: '64px', flexShrink: 0 }}>
-              <div style={{ height: '6px', background: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%', borderRadius: '3px',
-                  width: `${Math.round((liveTrackerStats.correct / liveTrackerStats.total) * 100)}%`,
-                  background: liveTrackerStats.correct / liveTrackerStats.total >= 0.75 ? 'var(--accent-green)' : liveTrackerStats.correct / liveTrackerStats.total >= 0.5 ? 'var(--scottish-navy)' : '#c62828',
-                  transition: 'width 0.5s ease',
-                }} />
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'right', marginTop: '3px' }}>
-                {Math.round((liveTrackerStats.correct / liveTrackerStats.total) * 100)}%
-              </div>
-            </div>
-          </div>
-        )}
 
-        {/* Real bracket toggle — show when any KO fixtures have confirmed teams */}
-        {realKoFixtures.length > 0 && (
-          <div style={{ display: 'flex', gap: '6px', padding: '8px 16px 10px', borderTop: '1px solid var(--border-light)' }}>
-            <button
-              type="button"
-              onClick={() => setShowRealBracket(false)}
-              style={{
-                flex: 1, padding: '7px 10px', borderRadius: 'var(--radius-full)',
-                fontSize: '12px', fontWeight: !showRealBracket ? '800' : '500',
-                background: !showRealBracket ? 'var(--scottish-navy)' : 'var(--bg-secondary)',
-                color: !showRealBracket ? 'white' : 'var(--text-muted)',
-                border: 'none', cursor: 'pointer',
-              }}>
-              🔮 My Predictions
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowRealBracket(true)}
-              style={{
-                flex: 1, padding: '7px 10px', borderRadius: 'var(--radius-full)',
-                fontSize: '12px', fontWeight: showRealBracket ? '800' : '500',
-                background: showRealBracket ? 'var(--scottish-navy)' : 'var(--bg-secondary)',
-                color: showRealBracket ? 'white' : 'var(--text-muted)',
-                border: 'none', cursor: 'pointer',
-              }}>
-              🌍 Real Bracket ({realKoFixtures.length}/{activeStage === 'r32' ? 32 : activeStage === 'r16' ? 16 : activeStage === 'qf' ? 8 : activeStage === 'sf' ? 4 : 2} confirmed)
-            </button>
-          </div>
-        )}
-        {/* Real bracket view */}
-        {showRealBracket && (() => {
+              {/* Expandable per-match breakdown */}
+              {showRealBracket && (
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderTop: 'none', borderRadius: '0 0 var(--radius-md) var(--radius-md)', overflow: 'hidden' }}>
+                  {/* Header row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '32px 1fr 1fr 1fr', gap: '4px', padding: '7px 10px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)', fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <span>#</span>
+                    <span>Your pick</span>
+                    <span>Real (current)</span>
+                    <span style={{ textAlign: 'center' }}>Status</span>
+                  </div>
+                  {liveTrackerStats.matchComparisons.filter(m => m.hasPick || m.hasRealData).map(m => {
+                    const userPick = m.userPickId ? (m.userHome?.id === m.userPickId ? m.userHome : m.userAway) : null
+                    const realPick = m.realHome || m.realAway ? (m.realHome?.id === m.userPickId ? m.realHome : m.realAway?.id === m.userPickId ? m.realAway : null) : null
+                    // Real matchup teams
+                    const realH = m.realHome
+                    const realA = m.realAway
+                    const status = !m.hasPick ? 'no-pick'
+                      : !m.hasRealData ? 'pending'
+                      : m.pickOnTrack ? 'on-track'
+                      : 'off-track'
+                    const statusColour = status === 'on-track' ? 'var(--accent-green)' : status === 'off-track' ? '#c62828' : 'var(--text-muted)'
+                    const statusLabel = status === 'on-track' ? '✓' : status === 'off-track' ? '✗' : status === 'pending' ? '?' : '—'
+                    // What team is REALLY in this slot right now
+                    const realMatchup = [realH, realA].filter(Boolean)
+                    return (
+                      <div key={m.matchDef.match_number} style={{
+                        display: 'grid', gridTemplateColumns: '32px 1fr 1fr 1fr', gap: '4px',
+                        padding: '8px 10px', borderBottom: '1px solid var(--border-light)',
+                        background: status === 'on-track' ? 'rgba(0,122,51,0.03)' : status === 'off-track' ? 'rgba(198,40,40,0.03)' : 'transparent',
+                        alignItems: 'center',
+                      }}>
+                        <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)' }}>M{m.matchDef.match_number}</span>
+                        {/* User's pick */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {userPick ? (
+                            <>
+                              <span style={{ fontSize: '14px' }}>{userPick.flag_emoji}</span>
+                              <span style={{ fontSize: '11px', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userPick.short_code || userPick.name}</span>
+                            </>
+                          ) : <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>—</span>}
+                        </div>
+                        {/* Real current matchup */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'wrap' }}>
+                          {realMatchup.length > 0 ? realMatchup.map((t, i) => (
+                            <span key={t.id} style={{ display: 'flex', alignItems: 'center', gap: '2px', opacity: (m.userPickId && t.id === m.userPickId) ? 1 : 0.55 }}>
+                              <span style={{ fontSize: '13px' }}>{t.flag_emoji}</span>
+                              <span style={{ fontSize: '10px', fontWeight: t.id === m.userPickId ? '800' : '500', color: t.id === m.userPickId ? 'var(--text-primary)' : 'var(--text-muted)' }}>{t.short_code}</span>
+                              {i === 0 && realMatchup.length > 1 && <span style={{ fontSize: '9px', color: 'var(--text-muted)', margin: '0 1px' }}>v</span>}
+                            </span>
+                          )) : <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>TBC</span>}
+                        </div>
+                        {/* Status */}
+                        <div style={{ textAlign: 'center', fontWeight: '800', fontSize: '13px', color: statusColour }}>{statusLabel}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
+
+        {/* Real bracket view — disabled, now shown inline in tracker */}
+        {false && showRealBracket && (() => {
           const stageFixtures = realKoFixtures.filter(m => m.stage === activeStage)
           if (stageFixtures.length === 0) return (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
