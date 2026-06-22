@@ -263,11 +263,15 @@ export default function Knockout() {
     }
 
     // Best-third slots: 'BT3_ABCDF' etc
-    // Use live standings progressively — show best estimate as BBC does
+    // Only resolve when ALL 12 groups have finished — partial allocation is unreliable
+    // and shows wrong teams mid-tournament. Show TBC until groups complete.
     const btMatch = slot.match(/^BT3_([A-L]+)$/)
     if (btMatch) {
-      const eligibleGroups = btMatch[1].split('')
-      // Build best-third list from groups that have played at least 1 match
+      const groupsComplete = Object.values(realStandingsMap).filter(
+        teams => teams.length >= 4 && teams.every(t => t.played >= 3)
+      ).length
+      if (groupsComplete < 12) return null // TBC until all groups done
+
       const thirds = Object.entries(realStandingsMap)
         .map(([g, teams]) => ({
           group: g,
@@ -275,25 +279,18 @@ export default function Knockout() {
           pts: teams[2]?.pts || 0,
           gd: teams[2]?.gd || 0,
           gf: teams[2]?.gf || 0,
-          played: teams[2]?.played || 0,
         }))
-        .filter(t => t.team && t.played > 0)
+        .filter(t => t.team)
         .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
+        .slice(0, 8)
 
-      const best8 = thirds.slice(0, 8)
-
-      // If we have 8+ third-place teams with data, try full FIFA Annex C allocation
-      if (best8.length >= 8) {
-        const allocation = allocateThirdPlaces(best8.map(t => t.group))
-        if (allocation?.[slot]) {
-          const assigned = best8.find(t => t.group === allocation[slot])
-          return assigned?.team || null
-        }
+      if (thirds.length < 8) return null
+      const allocation = allocateThirdPlaces(thirds.map(t => t.group))
+      if (allocation?.[slot]) {
+        const assigned = thirds.find(t => t.group === allocation[slot])
+        return assigned?.team || null
       }
-
-      // Partial: if exactly one currently-qualifying third fits this slot's eligible groups, show it
-      const matchingThirds = best8.filter(t => eligibleGroups.includes(t.group))
-      return matchingThirds.length === 1 ? matchingThirds[0].team : null
+      return null
     }
     return null
   }, [realStandingsMap])
