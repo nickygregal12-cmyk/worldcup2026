@@ -263,16 +263,11 @@ export default function Knockout() {
     }
 
     // Best-third slots: 'BT3_ABCDF' etc
-    // Only resolve when ALL 12 groups have completed all 3 matches
-    // (before that, the allocation is not final and would be misleading)
+    // Use live standings progressively — show best estimate as BBC does
     const btMatch = slot.match(/^BT3_([A-L]+)$/)
     if (btMatch) {
-      const groupsComplete = Object.values(realStandingsMap).filter(
-        teams => teams.length >= 4 && teams.every(t => t.played >= 3)
-      ).length
-      // Need all 12 groups finished for a correct allocation
-      if (groupsComplete < 12) return null
-      // Build best-third list from real standings
+      const eligibleGroups = btMatch[1].split('')
+      // Build best-third list from groups that have played at least 1 match
       const thirds = Object.entries(realStandingsMap)
         .map(([g, teams]) => ({
           group: g,
@@ -280,17 +275,25 @@ export default function Knockout() {
           pts: teams[2]?.pts || 0,
           gd: teams[2]?.gd || 0,
           gf: teams[2]?.gf || 0,
+          played: teams[2]?.played || 0,
         }))
-        .filter(t => t.team)
+        .filter(t => t.team && t.played > 0)
         .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
-        .slice(0, 8)
-      if (thirds.length < 8) return null
-      const allocation = allocateThirdPlaces(thirds.map(t => t.group))
-      if (allocation?.[slot]) {
-        const assigned = thirds.find(t => t.group === allocation[slot])
-        return assigned?.team || null
+
+      const best8 = thirds.slice(0, 8)
+
+      // If we have 8+ third-place teams with data, try full FIFA Annex C allocation
+      if (best8.length >= 8) {
+        const allocation = allocateThirdPlaces(best8.map(t => t.group))
+        if (allocation?.[slot]) {
+          const assigned = best8.find(t => t.group === allocation[slot])
+          return assigned?.team || null
+        }
       }
-      return null
+
+      // Partial: if exactly one currently-qualifying third fits this slot's eligible groups, show it
+      const matchingThirds = best8.filter(t => eligibleGroups.includes(t.group))
+      return matchingThirds.length === 1 ? matchingThirds[0].team : null
     }
     return null
   }, [realStandingsMap])
@@ -312,31 +315,38 @@ export default function Knockout() {
       confirmedFixtures[m.match_number] = m
     })
 
+    // Build set of all team IDs currently in R32 (across ALL slots)
+    // This drives the ✓/✗ — you get points if your team qualifies anywhere, not just that slot
+    const allRealR32TeamIds = new Set()
+    r32Stage.matches.forEach(matchDef => {
+      const confirmed = confirmedFixtures[matchDef.match_number]
+      const rH = confirmed?.home_team || resolveRealSlot(matchDef.home_slot)
+      const rA = confirmed?.away_team || resolveRealSlot(matchDef.away_slot)
+      if (rH?.id) allRealR32TeamIds.add(rH.id)
+      if (rA?.id) allRealR32TeamIds.add(rA.id)
+    })
+
     // Per-match comparison
     const matchComparisons = r32Stage.matches.map(matchDef => {
       const pick = knockoutPicks[matchDef.match_number]
       const userPickId = pick?.winner_id
-      
+
       // User's predicted teams for this slot (from their bracket)
       const userHome = resolveTeam(matchDef.home_slot)
       const userAway = resolveTeam(matchDef.away_slot)
 
-      // Real teams:
-      // 1. If DB has confirmed teams (home_team_id set after groups complete) → use those
-      // 2. Otherwise resolve from real live standings (correct for 1A/2B slots,
-      //    TBC for BT3 slots until all groups finish)
+      // Real teams: confirmed DB fixtures first, then live standings
       const confirmed = confirmedFixtures[matchDef.match_number]
       const realHome = confirmed?.home_team || resolveRealSlot(matchDef.home_slot)
       const realAway = confirmed?.away_team || resolveRealSlot(matchDef.away_slot)
       const isConfirmed = !!confirmed
 
-      // Pick on track = user's picked team is one of the two real teams in this match
-      const pickOnTrack = userPickId && realHome && realAway && (
-        realHome.id === userPickId || realAway.id === userPickId
-      )
-      // Slot match = user predicted the right team for each side
-      const homeSlotMatch = realHome && userHome && realHome.id === userHome.id
-      const awaySlotMatch = realAway && userAway && realAway.id === userAway.id
+      // ✓ = user's picked team appears ANYWHERE in the real R32
+      // (scoring is team-based not slot-based — team in M76 still earns pts for M74 pick)
+      const pickOnTrack = userPickId && allRealR32TeamIds.has(userPickId)
+
+      // Both teams in THIS match's slot known?
+      const hasRealData = !!(realHome || realAway)
 
       return {
         matchDef,
@@ -344,17 +354,17 @@ export default function Knockout() {
         realHome, realAway,
         userPickId,
         pickOnTrack,
-        homeSlotMatch, awaySlotMatch,
         isConfirmed,
         hasPick: !!userPickId,
-        hasRealData: !!(realHome && realAway), // only count when BOTH teams known
+        hasRealData,
       }
     })
 
-    // Only count matches where both real teams are confirmed for accuracy
-    const withBothKnown = matchComparisons.filter(m => m.hasPick && m.hasRealData)
-    const correct = withBothKnown.filter(m => m.pickOnTrack).length
-    const total = withBothKnown.length
+    // Summary: picks on track = picked team is in R32 somewhere
+    // Only count when we have some real data to compare against
+    const withData = matchComparisons.filter(m => m.hasPick && allRealR32TeamIds.size > 0)
+    const correct = withData.filter(m => m.pickOnTrack).length
+    const total = withData.length
     const confirmedCount = matchComparisons.filter(m => m.isConfirmed).length
 
     return { correct, total, groupsComplete, matchComparisons, confirmedCount }
@@ -1249,8 +1259,9 @@ export default function Knockout() {
                     <span style={{ textAlign: 'center' }}>✓/✗</span>
                   </div>
                   {liveTrackerStats.matchComparisons.filter(m => m.hasPick || m.hasRealData).map(m => {
-                    const userPick = m.userPickId ? (m.userHome?.id === m.userPickId ? m.userHome : m.userAway) : null
-                    const realPick = m.realHome || m.realAway ? (m.realHome?.id === m.userPickId ? m.realHome : m.realAway?.id === m.userPickId ? m.realAway : null) : null
+                    // The team the user picked to WIN this R32 match
+                    const userPick = m.userPickId ? (m.userHome?.id === m.userPickId ? m.userHome : m.userAway?.id === m.userPickId ? m.userAway : null) : null
+                    // For display: show both real teams in the slot
                     // Real matchup teams
                     const realH = m.realHome
                     const realA = m.realAway
