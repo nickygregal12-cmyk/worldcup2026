@@ -298,55 +298,78 @@ export default function Knockout() {
     return null
   }, [realStandingsMap])
 
-  // "As it stands" tracker — compare user's R32 picks against confirmed real fixtures
+  // "As it stands" tracker — stage-aware, shows for active stage only
   const liveTrackerStats = useMemo(() => {
     if (!knockoutPicks) return null
 
-    const r32Stage = ALL_STAGES.find(s => s.key === 'r32')
-    if (!r32Stage) return null
+    const stageConfig = ALL_STAGES.find(s => s.key === activeStage)
+    if (!stageConfig) return null
 
     const groupsComplete = Object.values(realStandingsMap).filter(teams =>
       teams.every(t => t.played >= 3)
     ).length
 
-    // Build lookup of confirmed R32 fixtures by match_number
+    // Stage-specific: what teams are confirmed in THIS stage?
+    // R32: teams from confirmed fixtures + live standings
+    // R16+: teams that WON their previous round (from realKoResults)
+    const stageDbName = activeStage // 'r32','r16','qf','sf','final'
+    const prevStageDb = { r16: 'r32', qf: 'r16', sf: 'qf', final: 'sf' }[activeStage]
+
+    // Build set of teams confirmed in this stage
+    const teamsInStage = new Set()
+
+    if (activeStage === 'r32') {
+      // R32: use confirmed fixtures + live standings resolution
+      const confirmedR32 = {}
+      realKoFixtures.filter(m => m.stage === 'r32').forEach(m => { confirmedR32[m.match_number] = m })
+      stageConfig.matches.forEach(matchDef => {
+        const conf = confirmedR32[matchDef.match_number]
+        const rH = conf?.home_team || resolveRealSlot(matchDef.home_slot)
+        const rA = conf?.away_team || resolveRealSlot(matchDef.away_slot)
+        if (rH?.id) teamsInStage.add(rH.id)
+        if (rA?.id) teamsInStage.add(rA.id)
+      })
+    } else if (prevStageDb) {
+      // R16/QF/SF/Final: teams that won their match in the previous round
+      realKoResults
+        .filter(m => m.stage === prevStageDb && m.home_team?.id)
+        .forEach(m => {
+          // winner = team with higher score
+          if (m.home_score > m.away_score && m.home_team?.id) teamsInStage.add(m.home_team.id)
+          else if (m.away_score > m.home_score && m.away_team?.id) teamsInStage.add(m.away_team.id)
+          // Also include upcoming confirmed fixtures for this stage
+        })
+      // Also add teams from confirmed fixtures for this stage
+      realKoFixtures.filter(m => m.stage === stageDbName).forEach(m => {
+        if (m.home_team?.id) teamsInStage.add(m.home_team.id)
+        if (m.away_team?.id) teamsInStage.add(m.away_team.id)
+      })
+    }
+
+    // No data yet for this stage — don't show tracker
+    if (teamsInStage.size === 0) return null
+
+    // Build confirmed fixtures lookup for this stage
     const confirmedFixtures = {}
-    realKoFixtures.filter(m => m.stage === 'r32').forEach(m => {
+    realKoFixtures.filter(m => m.stage === stageDbName).forEach(m => {
       confirmedFixtures[m.match_number] = m
     })
 
-    // Build set of all team IDs currently in R32 (across ALL slots)
-    // This drives the ✓/✗ — you get points if your team qualifies anywhere, not just that slot
-    const allRealR32TeamIds = new Set()
-    r32Stage.matches.forEach(matchDef => {
-      const confirmed = confirmedFixtures[matchDef.match_number]
-      const rH = confirmed?.home_team || resolveRealSlot(matchDef.home_slot)
-      const rA = confirmed?.away_team || resolveRealSlot(matchDef.away_slot)
-      if (rH?.id) allRealR32TeamIds.add(rH.id)
-      if (rA?.id) allRealR32TeamIds.add(rA.id)
-    })
-
     // Per-match comparison
-    const matchComparisons = r32Stage.matches.map(matchDef => {
+    const matchComparisons = stageConfig.matches.map(matchDef => {
       const pick = knockoutPicks[matchDef.match_number]
       const userPickId = pick?.winner_id
-
-      // User's predicted teams for this slot (from their bracket)
       const userHome = resolveTeam(matchDef.home_slot)
       const userAway = resolveTeam(matchDef.away_slot)
 
-      // Real teams: confirmed DB fixtures first, then live standings
       const confirmed = confirmedFixtures[matchDef.match_number]
-      const realHome = confirmed?.home_team || resolveRealSlot(matchDef.home_slot)
-      const realAway = confirmed?.away_team || resolveRealSlot(matchDef.away_slot)
+      const realHome = confirmed?.home_team || (activeStage === 'r32' ? resolveRealSlot(matchDef.home_slot) : null)
+      const realAway = confirmed?.away_team || (activeStage === 'r32' ? resolveRealSlot(matchDef.away_slot) : null)
+
+      // ✓ = pick team appears in this stage anywhere (team-based scoring)
+      const pickOnTrack = userPickId && teamsInStage.has(userPickId)
+      const hasRealData = !!(realHome || realAway || teamsInStage.size > 0)
       const isConfirmed = !!confirmed
-
-      // ✓ = user's picked team appears ANYWHERE in the real R32
-      // (scoring is team-based not slot-based — team in M76 still earns pts for M74 pick)
-      const pickOnTrack = userPickId && allRealR32TeamIds.has(userPickId)
-
-      // Both teams in THIS match's slot known?
-      const hasRealData = !!(realHome || realAway)
 
       return {
         matchDef,
@@ -356,19 +379,18 @@ export default function Knockout() {
         pickOnTrack,
         isConfirmed,
         hasPick: !!userPickId,
-        hasRealData,
+        hasRealData: !!(realHome || realAway),
       }
     })
 
-    // Summary: picks on track = picked team is in R32 somewhere
-    // Only count when we have some real data to compare against
-    const withData = matchComparisons.filter(m => m.hasPick && allRealR32TeamIds.size > 0)
+    const withData = matchComparisons.filter(m => m.hasPick)
     const correct = withData.filter(m => m.pickOnTrack).length
     const total = withData.length
     const confirmedCount = matchComparisons.filter(m => m.isConfirmed).length
+    const stageLabels = { r32: 'R32', r16: 'R16', qf: 'QF', sf: 'SF', final: 'Final' }
 
-    return { correct, total, groupsComplete, matchComparisons, confirmedCount }
-  }, [realStandingsMap, realKoFixtures, knockoutPicks, resolveTeam, resolveRealSlot])
+    return { correct, total, groupsComplete, matchComparisons, confirmedCount, stageLabel: stageLabels[activeStage] || activeStage }
+  }, [activeStage, realStandingsMap, realKoFixtures, realKoResults, knockoutPicks, resolveTeam, resolveRealSlot])
 
   const resolveKnockoutWinner = useCallback((slot) => {
     const matchNum = parseInt(slot.replace('W', ''))
@@ -1228,12 +1250,14 @@ export default function Knockout() {
               }} onClick={() => setShowRealBracket(v => !v)}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '3px' }}>
-                    As it stands · {liveTrackerStats.groupsComplete}/12 groups done · {liveTrackerStats.confirmedCount || 0}/16 R32 fixtures confirmed
+                    {liveTrackerStats.stageLabel} tracker
+                    {activeStage === 'r32' && ` · ${liveTrackerStats.groupsComplete}/12 groups done`}
+                    {liveTrackerStats.confirmedCount > 0 && ` · ${liveTrackerStats.confirmedCount} fixtures confirmed`}
                   </div>
                   <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>
                     {liveTrackerStats.total > 0
-                      ? <><span style={{ color: colour }}>{liveTrackerStats.correct}/{liveTrackerStats.total}</span>{' '}R32 picks on track</>
-                      : <span style={{ color: 'var(--text-muted)' }}>Waiting for R32 fixtures to be confirmed</span>
+                      ? <><span style={{ color: colour }}>{liveTrackerStats.correct}/{liveTrackerStats.total}</span>{' '}{liveTrackerStats.stageLabel} picks on track</>
+                      : <span style={{ color: 'var(--text-muted)' }}>Waiting for {liveTrackerStats.stageLabel} fixtures to be confirmed</span>
                     }
                   </div>
                 </div>
@@ -1279,7 +1303,7 @@ export default function Knockout() {
                           <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)' }}>M{m.matchDef.match_number}</span>
                           {status === 'on-track' && (
                             <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
-                              ✓ In R32 {inCorrectSlot ? '· correct slot' : '· different slot'}
+                              ✓ In {liveTrackerStats.stageLabel} {inCorrectSlot ? '· correct slot' : '· different slot'}
                             </span>
                           )}
                           {status === 'off-track' && (
