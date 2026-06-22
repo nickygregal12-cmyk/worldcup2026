@@ -66,6 +66,9 @@ export default function Knockout() {
   const backfilledPicks = useRef(new Set())
 
   const [realKoResults, setRealKoResults] = useState([]) // completed real KO matches
+  const [realKoFixtures, setRealKoFixtures] = useState([]) // all KO fixtures with confirmed teams
+  const [showRealBracket, setShowRealBracket] = useState(false)
+  const [realGroupStandings, setRealGroupStandings] = useState([]) // live real group standings
 
   const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
   const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
@@ -169,13 +172,24 @@ export default function Knockout() {
       // user's PREDICTED tournament; scoring compares it against reality separately.
       setStandings(calcPredictedStandings(matchData || [], predMap, true))
 
-      // Load real knockout results to drive team-alive colours
-      const { data: koResults } = await supabase
-        .from('matches')
-        .select('id, match_number, stage, status, home_team_id, away_team_id, home_score, away_score, home_team:home_team_id(id), away_team:away_team_id(id)')
-        .neq('stage', 'group')
-        .eq('status', 'completed')
+      // Load real knockout results (completed) + confirmed fixtures (teams set)
+      const [{ data: koResults }, { data: koFixtures }, { data: groupStandings }] = await Promise.all([
+        supabase.from('matches')
+          .select('id, match_number, stage, status, home_team_id, away_team_id, home_score, away_score, home_team:home_team_id(id), away_team:away_team_id(id)')
+          .neq('stage', 'group')
+          .eq('status', 'completed'),
+        supabase.from('matches')
+          .select('id, match_number, stage, status, kickoff_time, home_team_id, away_team_id, home_score, away_score, home_team:home_team_id(id, name, flag_emoji, short_code), away_team:away_team_id(id, name, flag_emoji, short_code)')
+          .neq('stage', 'group')
+          .not('home_team_id', 'is', null)
+          .order('kickoff_time', { ascending: true }),
+        supabase.from('group_standings')
+          .select('*, group:group_id(id, name), team:team_id(id, name, flag_emoji, short_code)')
+          .order('position')
+      ])
       setRealKoResults(koResults || [])
+      setRealKoFixtures(koFixtures || [])
+      setRealGroupStandings((groupStandings || []).map(s => ({ ...s, group_name: s.group?.name || '' })))
 
       setLoadError(false)
     } catch (e) {
@@ -211,6 +225,61 @@ export default function Knockout() {
     })
     return out
   }, [realKoResults])
+
+  // "As it stands" tracker — compare user's R32 picks against current real standings
+  const liveTrackerStats = useMemo(() => {
+    if (!realGroupStandings.length || !knockoutPicks) return null
+
+    // Build map of group -> ordered teams by current real position
+    const groupMap = {}
+    realGroupStandings.forEach(s => {
+      const g = s.group_name
+      if (!g) return
+      if (!groupMap[g]) groupMap[g] = []
+      groupMap[g].push(s)
+    })
+    // Sort each group by position
+    Object.keys(groupMap).forEach(g => {
+      groupMap[g].sort((a, b) => a.position - b.position)
+    })
+
+    // Get best 3rd-place teams (top 4 by points/gd among all 3rd-place finishers)
+    const thirdPlacers = Object.values(groupMap)
+      .map(teams => teams[2])
+      .filter(Boolean)
+      .sort((a, b) => (b.points || 0) - (a.points || 0) || (b.goal_difference || 0) - (a.goal_difference || 0))
+    const best4Third = thirdPlacers.slice(0, 4).map(t => t.team?.id).filter(Boolean)
+
+    // All teams that would currently qualify (top 2 from each group + best 4 third)
+    const qualifiedIds = new Set()
+    Object.values(groupMap).forEach(teams => {
+      if (teams[0]?.team?.id) qualifiedIds.add(teams[0].team.id)
+      if (teams[1]?.team?.id) qualifiedIds.add(teams[1].team.id)
+    })
+    best4Third.forEach(id => qualifiedIds.add(id))
+
+    // Count user's R32 picks that are currently in qualifying positions
+    const r32Stage = ALL_STAGES.find(s => s.key === 'r32')
+    if (!r32Stage) return null
+
+    let correct = 0
+    let total = 0
+    r32Stage.matches.forEach(matchDef => {
+      const pick = knockoutPicks[matchDef.match_number]
+      if (!pick?.winner_id) return
+      total++
+      if (qualifiedIds.has(pick.winner_id)) correct++
+    })
+
+    // Groups that have played all matches (fully complete)
+    const groupsComplete = Object.values(groupMap).filter(teams =>
+      teams.every(t => (t.played || 0) >= 3)
+    ).length
+
+    const groupsWithData = Object.keys(groupMap).length
+
+    return { correct, total, groupsComplete, groupsWithData, qualifiedIds: qualifiedIds.size }
+  }, [realGroupStandings, knockoutPicks])
 
   const resolveKnockoutWinner = useCallback((slot) => {
     const matchNum = parseInt(slot.replace('W', ''))
@@ -1052,9 +1121,175 @@ export default function Knockout() {
             )}
           </div>
         )}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: mainBracketLocked ? '12px' : '0' }}>
+
+        {/* "As it stands" live tracker — shows from first group match */}
+        {liveTrackerStats && liveTrackerStats.total > 0 && (
+          <div style={{
+            margin: '8px 16px 0',
+            padding: '10px 14px',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-light)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex', alignItems: 'center', gap: '12px',
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>
+                As it stands · {liveTrackerStats.groupsComplete}/12 groups complete
+              </div>
+              <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>
+                <span style={{ color: liveTrackerStats.correct / liveTrackerStats.total >= 0.75 ? 'var(--accent-green)' : liveTrackerStats.correct / liveTrackerStats.total >= 0.5 ? 'var(--scottish-navy)' : '#c62828' }}>
+                  {liveTrackerStats.correct}/{liveTrackerStats.total}
+                </span>
+                {' '}R32 picks currently on track
+              </div>
+            </div>
+            {/* Mini progress bar */}
+            <div style={{ width: '64px', flexShrink: 0 }}>
+              <div style={{ height: '6px', background: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: '3px',
+                  width: `${Math.round((liveTrackerStats.correct / liveTrackerStats.total) * 100)}%`,
+                  background: liveTrackerStats.correct / liveTrackerStats.total >= 0.75 ? 'var(--accent-green)' : liveTrackerStats.correct / liveTrackerStats.total >= 0.5 ? 'var(--scottish-navy)' : '#c62828',
+                  transition: 'width 0.5s ease',
+                }} />
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'right', marginTop: '3px' }}>
+                {Math.round((liveTrackerStats.correct / liveTrackerStats.total) * 100)}%
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Real bracket toggle — show when any KO fixtures have confirmed teams */}
+        {realKoFixtures.length > 0 && (
+          <div style={{ display: 'flex', gap: '6px', padding: '8px 16px 10px', borderTop: '1px solid var(--border-light)' }}>
+            <button
+              type="button"
+              onClick={() => setShowRealBracket(false)}
+              style={{
+                flex: 1, padding: '7px 10px', borderRadius: 'var(--radius-full)',
+                fontSize: '12px', fontWeight: !showRealBracket ? '800' : '500',
+                background: !showRealBracket ? 'var(--scottish-navy)' : 'var(--bg-secondary)',
+                color: !showRealBracket ? 'white' : 'var(--text-muted)',
+                border: 'none', cursor: 'pointer',
+              }}>
+              🔮 My Predictions
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowRealBracket(true)}
+              style={{
+                flex: 1, padding: '7px 10px', borderRadius: 'var(--radius-full)',
+                fontSize: '12px', fontWeight: showRealBracket ? '800' : '500',
+                background: showRealBracket ? 'var(--scottish-navy)' : 'var(--bg-secondary)',
+                color: showRealBracket ? 'white' : 'var(--text-muted)',
+                border: 'none', cursor: 'pointer',
+              }}>
+              🌍 Real Bracket ({realKoFixtures.length}/{activeStage === 'r32' ? 32 : activeStage === 'r16' ? 16 : activeStage === 'qf' ? 8 : activeStage === 'sf' ? 4 : 2} confirmed)
+            </button>
+          </div>
+        )}
+        {/* Real bracket view */}
+        {showRealBracket && (() => {
+          const stageFixtures = realKoFixtures.filter(m => m.stage === activeStage)
+          if (stageFixtures.length === 0) return (
+            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px' }}>⏳</div>
+              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '4px' }}>Not confirmed yet</div>
+              <div style={{ fontSize: '13px' }}>Teams will appear here once groups complete</div>
+            </div>
+          )
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+              {stageFixtures.map(m => {
+                const isCompleted = m.status === 'completed'
+                const homeWon = isCompleted && m.home_score > m.away_score
+                const awayWon = isCompleted && m.away_score > m.home_score
+                // Check if user predicted this team
+                const currentStageDef = ALL_STAGES.find(s => s.key === activeStage)
+                const matchDef = currentStageDef?.matches?.find(md => md.match_number === m.match_number)
+                const userPick = matchDef ? knockoutPicks[m.match_number]?.winner_id : null
+                const userPickedHome = userPick && m.home_team?.id === userPick
+                const userPickedAway = userPick && m.away_team?.id === userPick
+                return (
+                  <div key={m.id} style={{
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-light)',
+                    borderRadius: 'var(--radius-md)',
+                    overflow: 'hidden',
+                    boxShadow: 'var(--shadow-card)',
+                  }}>
+                    {/* Match header */}
+                    <div style={{ padding: '8px 14px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        M{m.match_number} · {new Date(m.kickoff_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} · {new Date(m.kickoff_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} BST
+                      </span>
+                      {isCompleted && (
+                        <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', background: 'rgba(0,122,51,0.1)', color: 'var(--accent-green)' }}>✓ Final</span>
+                      )}
+                    </div>
+                    {/* Teams */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
+                      {/* Home team */}
+                      <div style={{
+                        flex: 1, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '10px',
+                        background: homeWon ? 'rgba(0,122,51,0.06)' : 'transparent',
+                        opacity: isCompleted && awayWon ? 0.45 : 1,
+                      }}>
+                        <span style={{ fontSize: '28px' }}>{m.home_team?.flag_emoji}</span>
+                        <div>
+                          <div style={{ fontWeight: homeWon ? '900' : '700', fontSize: '14px', color: homeWon ? 'var(--accent-green)' : 'var(--text-primary)' }}>
+                            {m.home_team?.name}
+                            {homeWon && <span style={{ marginLeft: '4px' }}>✓</span>}
+                          </div>
+                          {userPickedHome && (
+                            <div style={{ fontSize: '10px', fontWeight: '700', color: homeWon ? 'var(--accent-green)' : awayWon ? '#c62828' : 'var(--scottish-navy)', marginTop: '2px' }}>
+                              {homeWon ? '🎯 Your pick — correct!' : awayWon ? '✗ Your pick — eliminated' : '⭐ Your pick'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {/* Score / VS */}
+                      <div style={{ padding: '0 12px', textAlign: 'center', flexShrink: 0 }}>
+                        {isCompleted ? (
+                          <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
+                            {m.home_score} – {m.away_score}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)' }}>vs</div>
+                        )}
+                      </div>
+                      {/* Away team */}
+                      <div style={{
+                        flex: 1, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '10px', flexDirection: 'row-reverse', textAlign: 'right',
+                        background: awayWon ? 'rgba(0,122,51,0.06)' : 'transparent',
+                        opacity: isCompleted && homeWon ? 0.45 : 1,
+                      }}>
+                        <span style={{ fontSize: '28px' }}>{m.away_team?.flag_emoji}</span>
+                        <div>
+                          <div style={{ fontWeight: awayWon ? '900' : '700', fontSize: '14px', color: awayWon ? 'var(--accent-green)' : 'var(--text-primary)' }}>
+                            {awayWon && <span style={{ marginRight: '4px' }}>✓</span>}
+                            {m.away_team?.name}
+                          </div>
+                          {userPickedAway && (
+                            <div style={{ fontSize: '10px', fontWeight: '700', color: awayWon ? 'var(--accent-green)' : homeWon ? '#c62828' : 'var(--scottish-navy)', marginTop: '2px' }}>
+                              {awayWon ? '🎯 Your pick — correct!' : homeWon ? '✗ Your pick — eliminated' : '⭐ Your pick'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })()}
+
+        {/* Prediction cards — hidden when showing real bracket */}
+        {!showRealBracket && <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: mainBracketLocked ? '12px' : '0' }}>
           {stageMatches.map(renderMatch)}
-        </div>
+        </div>}
       </div>
 
       {/* ── Champion Route Card (Final tab only) ── */}
