@@ -66,6 +66,7 @@ export default function Knockout() {
   const backfilledPicks = useRef(new Set())
 
   const [realKoResults, setRealKoResults] = useState([]) // completed real KO matches
+  const [bracketPtsBreakdown, setBracketPtsBreakdown] = useState(null) // per-stage pts breakdown
   const [realKoFixtures, setRealKoFixtures] = useState([]) // all KO fixtures with confirmed teams
   const [showRealBracket, setShowRealBracket] = useState(false)
   const [realGroupStandings, setRealGroupStandings] = useState([]) // live real group standings
@@ -184,8 +185,8 @@ export default function Knockout() {
           .not('home_team_id', 'is', null)
           .order('kickoff_time', { ascending: true }),
         supabase.from('group_standings')
-          .select('*, group:group_id(id, name), team:team_id(id, name, flag_emoji, short_code)')
-          .order('position')
+          .select('*, group:group_id(id, name), team:team_id(id, name, flag_emoji, short_code, fifa_ranking)')
+          .order('group_id').order('position')
       ])
       setRealKoResults(koResults || [])
       setRealKoFixtures(koFixtures || [])
@@ -237,12 +238,16 @@ export default function Knockout() {
       map[g].push({
         team: s.team,
         pts: s.points || 0,
-        gd: s.goal_difference || 0,
+        gd: s.goal_difference ?? (s.goals_for - s.goals_against) ?? 0,
         gf: s.goals_for || 0,
         played: s.played || 0,
         position: s.position || 99,
+        qualified: s.qualified,
+        qualificationType: s.qualification_type,
+        fifaRanking: s.team?.fifa_ranking || 999,
       })
     })
+    // Sort by API position (already FIFA-correct, don't re-sort)
     Object.keys(map).forEach(g => map[g].sort((a, b) => a.position - b.position))
     return map
   }, [realGroupStandings])
@@ -258,11 +263,13 @@ export default function Knockout() {
       const group = posMatch[2]
       const groupTeams = realStandingsMap[group]
       if (!groupTeams || groupTeams.every(t => t.played === 0)) return null
-      const team = groupTeams[pos]?.team
-      if (!team) return null
-      // Confirmed = all 3 matches played in this group
+      const entry = groupTeams[pos]
+      if (!entry?.team) return null
+      // Confirmed = API has set qualification_type (official), fallback = all 3 played
       const groupDone = groupTeams.every(t => t.played >= 3)
-      return { ...team, confirmed: groupDone, provisional: !groupDone }
+      const apiConfirmed = !!(entry.qualificationType)
+      const confirmed = apiConfirmed || groupDone
+      return { ...entry.team, confirmed, provisional: !confirmed }
     }
 
     // Best-third slots: 'BT3_ABCDF' etc
@@ -278,9 +285,12 @@ export default function Knockout() {
           gd: teams[2]?.gd || 0,
           gf: teams[2]?.gf || 0,
           played: teams[2]?.played || 0,
+          fifaRanking: teams[2]?.team?.fifa_ranking || 999,
+          qualificationType: teams[2]?.qualificationType,
         }))
         .filter(t => t.team && t.played > 0)
-        .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
+        // FIFA tiebreaker order: pts → gd → gf → FIFA ranking (lower = better)
+        .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.fifaRanking - b.fifaRanking)
 
       const best8 = thirds.slice(0, 8)
       if (best8.length < 1) return null
@@ -406,6 +416,60 @@ export default function Knockout() {
 
     return { correct, total, groupsComplete, matchComparisons, confirmedCount, stageLabel: stageLabels[activeStage] || activeStage }
   }, [activeStage, realStandingsMap, realKoFixtures, realKoResults, knockoutPicks, resolveTeam, resolveRealSlot])
+
+  // Bracket points earned — computed from real results vs user picks
+  const bracketPtsEarned = useMemo(() => {
+    if (!knockoutPicks || !user) return null
+    const stages = [
+      { key: 'r32', label: 'Round of 32', pts: 5 },
+      { key: 'r16', label: 'Round of 16', pts: 8 },
+      { key: 'qf',  label: 'Quarter-finals', pts: 12 },
+      { key: 'sf',  label: 'Semi-finals', pts: 16 },
+      { key: 'final', label: 'Final', pts: 20 },
+    ]
+
+    // Build confirmed teams per stage from real results
+    const confirmedInStage = {
+      r32: new Set([
+        ...realKoFixtures.filter(m => m.stage === 'r32').flatMap(m => [m.home_team?.id, m.away_team?.id]),
+        ...Object.values(realStandingsMap).flatMap(teams => [teams[0]?.team?.id, teams[1]?.team?.id]).filter(Boolean),
+      ].filter(Boolean)),
+      r16: new Set(realKoResults.filter(m => m.stage === 'r32').flatMap(m => m.winner_team_id ? [m.winner_team_id] : [])),
+      qf:  new Set(realKoResults.filter(m => m.stage === 'r16').flatMap(m => m.winner_team_id ? [m.winner_team_id] : [])),
+      sf:  new Set(realKoResults.filter(m => m.stage === 'qf' ).flatMap(m => m.winner_team_id ? [m.winner_team_id] : [])),
+      final: new Set(realKoResults.filter(m => m.stage === 'sf').flatMap(m => m.winner_team_id ? [m.winner_team_id] : [])),
+    }
+
+    // Get all teams user picked per stage depth
+    const userTeamDepth = {} // teamId -> max depth index (0=r32, 1=r16, etc)
+    Object.values(knockoutPicks).forEach(pick => {
+      if (!pick?.winner_id) return
+      const stageIdx = stages.findIndex(s => s.key === pick.stage)
+      if (stageIdx < 0) return
+      if (userTeamDepth[pick.winner_id] === undefined || stageIdx > userTeamDepth[pick.winner_id]) {
+        userTeamDepth[pick.winner_id] = stageIdx
+      }
+    })
+
+    let totalEarned = 0
+    const breakdown = stages.map((stage, idx) => {
+      const confirmed = confirmedInStage[stage.key]
+      if (!confirmed || confirmed.size === 0) return { ...stage, earned: 0, possible: 0, teams: [], active: false }
+
+      // Teams user picked to reach at least this stage
+      const userTeamsHere = Object.entries(userTeamDepth)
+        .filter(([, depth]) => depth >= idx)
+        .map(([teamId]) => teamId)
+
+      const correct = userTeamsHere.filter(id => confirmed.has(id))
+      const earned = correct.length * stage.pts
+      totalEarned += earned
+
+      return { ...stage, earned, possible: userTeamsHere.length * stage.pts, correct: correct.length, total: userTeamsHere.length, active: true }
+    }).filter(s => s.active)
+
+    return { breakdown, totalEarned }
+  }, [knockoutPicks, realKoFixtures, realKoResults, realStandingsMap, user])
 
   const resolveKnockoutWinner = useCallback((slot) => {
     const matchNum = parseInt(slot.replace('W', ''))

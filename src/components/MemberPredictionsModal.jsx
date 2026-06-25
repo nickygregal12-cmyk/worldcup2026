@@ -287,7 +287,7 @@ export function useMemberPredictions() {
         .eq('user_id', userId),
       supabase
         .from('profiles')
-        .select('group_position_points, total_points, exact_scores')
+        .select('group_position_points, bracket_points, total_points, exact_scores')
         .eq('id', userId)
         .maybeSingle(),
       supabase
@@ -487,6 +487,17 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
               </div>
             )
           ) : null}
+          {/* Bracket progression points */}
+          {activeTab === 'overview' && memberModal.memberProfile?.bracket_points > 0 && (
+            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(0,48,135,0.05)', border: '1px solid rgba(0,48,135,0.15)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--scottish-navy)' }}>🏆 Bracket progression points</div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>Teams predicted to reach each round</div>
+              </div>
+              <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)', letterSpacing: '-0.02em' }}>+{memberModal.memberProfile.bracket_points}</div>
+            </div>
+          )}
+
           {/* Group position bonus breakdown — per group */}
           {activeTab === 'group' && groupPositionBreakdown.length > 0 && (() => {
             // Group by group_name

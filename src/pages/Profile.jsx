@@ -561,6 +561,7 @@ export default function Profile() {
                   { label: 'Exact Scores', value: profile.exact_scores || 0, icon: '💎', desc: 'Perfect predictions' },
                   { label: 'Jokers Left', value: profile.jokers_group_remaining ?? 8, icon: '🃏', desc: 'Double points remaining' },
                   ...(profile.group_position_points > 0 ? [{ label: 'Group Pos Bonus', value: `+${profile.group_position_points}`, icon: '📊', desc: 'Position & perfect group' }] : []),
+                  ...(profile.bracket_points > 0 ? [{ label: 'Bracket Points', value: `+${profile.bracket_points}`, icon: '🏆', desc: 'KO bracket progression' }] : []),
                 ].map(({ label, value, icon, desc }) => (
                   <div key={label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center' }}>
                     <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
