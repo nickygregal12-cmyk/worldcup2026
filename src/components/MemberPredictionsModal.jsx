@@ -510,9 +510,10 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
                 </div>
                 {/* Per-group breakdown */}
                 {Object.entries(byGroup).map(([groupName, rows]) => {
-                  const groupPts = rows.reduce((sum, r) => sum + (r.points_awarded || 0), 0)
+                  const positionPts = rows.reduce((sum, r) => sum + (r.points_awarded || 0), 0)
                   const correct = rows.filter(r => r.points_awarded > 0).length
                   const isPerfect = correct === 4
+                  const groupPts = positionPts + (isPerfect ? 5 : 0)
                   return (
                     <div key={groupName} style={{ padding: '8px 14px', borderTop: '1px solid var(--border-light)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -528,10 +529,17 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
                             <span style={{ fontSize: '14px' }}>{row.team?.flag_emoji}</span>
                             <span style={{ flex: 1, color: row.points_awarded > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{row.team?.short_code}</span>
                             <span style={{ fontWeight: '700', color: row.points_awarded > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                              {row.points_awarded > 0 ? `✓ +${row.points_awarded}` : '✗'}
+                              {row.points_awarded > 0 ? `✓ +${row.points_awarded}pts` : '✗'}
                             </span>
                           </div>
                         ))}
+                        {isPerfect && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', marginTop: '2px' }}>
+                            <span style={{ minWidth: '16px' }}>🎯</span>
+                            <span style={{ flex: 1, fontWeight: '700', color: 'var(--accent-gold)' }}>Perfect group bonus</span>
+                            <span style={{ fontWeight: '800', color: 'var(--accent-gold)' }}>+5pts</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )

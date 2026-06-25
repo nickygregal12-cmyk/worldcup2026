@@ -2165,7 +2165,14 @@ export default function Predictions() {
 
     // All groups combined view
     const groupBonusRows = groupPositionBreakdown
-    const totalBonus = groupBonusRows.reduce((s, r) => s + (r.points_awarded || 0), 0)
+    // Total includes 2pts per correct position + 5pts perfect group bonus per group
+    const byGroupForTotal = {}
+    groupBonusRows.forEach(r => { if (!byGroupForTotal[r.group_name]) byGroupForTotal[r.group_name] = []; byGroupForTotal[r.group_name].push(r) })
+    const totalBonus = Object.values(byGroupForTotal).reduce((sum, rows) => {
+      const posPoints = rows.reduce((s, r) => s + (r.points_awarded || 0), 0)
+      const perfect = rows.filter(r => r.points_awarded > 0).length === 4 ? 5 : 0
+      return sum + posPoints + perfect
+    }, 0)
     const completedGroupNames = [...new Set(groupBonusRows.map(r => r.group_name))]
 
     return (
@@ -2193,7 +2200,13 @@ export default function Predictions() {
           }).sort((a, b) => a.position - b.position)
 
           const groupMatches_g = matches.filter(m => m.group?.name === g)
-          const { standings: predStandings } = calcGroupStandings(groupMatches_g, predictions)
+          // Ensure home_team_id/away_team_id are set (may need to derive from team object)
+          const groupMatchesNorm = groupMatches_g.map(m => ({
+            ...m,
+            home_team_id: m.home_team_id || m.home_team?.id,
+            away_team_id: m.away_team_id || m.away_team?.id,
+          }))
+          const { standings: predStandings } = calcGroupStandings(groupMatchesNorm, predictions)
           const hasPred = predStandings.some(s => s.played > 0)
           const hasReal = realGroup.length > 0 && liveTablesAvailable
           const groupComplete = realGroup.length > 0 && realGroup.every(s => s.played >= 3)
@@ -2240,14 +2253,18 @@ export default function Predictions() {
                       Your prediction
                     </div>
                     {predStandings.map((s, i) => {
-                      const bonusRow = bonusRows.find(r => r.team?.short_code === s.short_code || r.team?.name === s.name)
+                      // Match bonus row by team id
+                      const bonusRow = bonusRows.find(r => r.team && (
+                        r.team.short_code === s.team?.short_code ||
+                        r.team.name === s.team?.name
+                      ))
                       const correct = !!bonusRow?.points_awarded
                       const wrong = bonusRows.length > 0 && bonusRow && !bonusRow.points_awarded
                       return (
                         <div key={s.id || i} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
                           <span style={{ fontSize: '11px', fontWeight: '700', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', minWidth: '14px' }}>{i + 1}</span>
-                          <span style={{ fontSize: '14px' }}>{s.flag}</span>
-                          <span style={{ flex: 1, fontSize: '11px', fontWeight: i < 2 ? '700' : '400', color: i < 2 ? 'var(--text-primary)' : 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.short_code || s.name}</span>
+                          <span style={{ fontSize: '14px' }}>{s.team?.flag_emoji}</span>
+                          <span style={{ flex: 1, fontSize: '11px', fontWeight: i < 2 ? '700' : '400', color: i < 2 ? 'var(--text-primary)' : 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.team?.short_code || s.team?.name}</span>
                           <span style={{ fontSize: '11px', fontWeight: '700', fontFamily: 'var(--font-mono)', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{s.pts}pt</span>
                           {correct && <span style={{ fontSize: '10px', color: 'var(--accent-green)' }}>✓</span>}
                           {wrong && <span style={{ fontSize: '10px', color: '#c62828' }}>✗</span>}
@@ -2260,12 +2277,17 @@ export default function Predictions() {
 
               {/* Per-position bonus detail if group complete */}
               {bonusRows.length > 0 && groupComplete && (
-                <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                   {bonusRows.map((r, i) => (
                     <span key={i} style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '20px', background: r.points_awarded > 0 ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.07)', color: r.points_awarded > 0 ? 'var(--accent-green)' : '#c62828', fontWeight: '700' }}>
                       #{r.predicted_position} {r.team?.flag_emoji} {r.points_awarded > 0 ? `+${r.points_awarded}pts` : '✗'}
                     </span>
                   ))}
+                  {isPerfect && (
+                    <span style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '20px', background: 'rgba(184,134,11,0.12)', color: 'var(--accent-gold)', fontWeight: '800' }}>
+                      🎯 +5pts perfect bonus
+                    </span>
+                  )}
                 </div>
               )}
             </div>
