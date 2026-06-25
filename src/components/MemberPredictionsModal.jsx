@@ -536,7 +536,7 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
             const sections = [
               { icon: '⚽', label: 'Match predictions', pts: matchPts, sub: `${mp.exact_scores || 0} exact scores`, tab: 'group', colour: 'var(--scottish-navy)' },
               { icon: '📊', label: 'Group position bonus', pts: groupPts, sub: '+2pts per position · +5pts perfect', tab: 'standings', colour: 'var(--accent-green)', hide: groupPts === 0 },
-              { icon: '🏆', label: 'Bracket progression', pts: bracketPts, sub: 'Teams predicted to reach each round', tab: 'knockout', colour: 'var(--scottish-navy)', hide: bracketPts === 0 },
+              { icon: '🏆', label: 'Bracket progression', pts: bracketPts, sub: 'Teams predicted to reach each round', tab: 'knockout', colour: 'var(--scottish-navy)' },
               { icon: '🥇', label: 'Awards', pts: awardPts, sub: 'Golden boot, POTY etc', tab: 'awards', hide: awardPts === 0 },
             ].filter(s => !s.hide || totalPts === 0)
             return (
