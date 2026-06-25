@@ -345,7 +345,7 @@ export function useMemberPredictions() {
     await loadMemberPredictions(profile.id, showFuture)
   }
 
-  return { memberModal, setMemberModal, memberPredictions, setMemberPredictions, memberReactions, setMemberReactions, loadingPreds, setLoadingPreds, openProfile, groupPositionBreakdown }
+  return { memberModal, setMemberModal, memberPredictions, setMemberPredictions, memberReactions, setMemberReactions, loadingPreds, setLoadingPreds, openProfile, groupPositionBreakdown, setGroupPositionBreakdown }
 }
 
 // ─── main modal component ────────────────────────────────────────────────────

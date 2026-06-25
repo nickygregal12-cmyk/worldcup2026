@@ -668,7 +668,7 @@ export default function Leagues() {
   }
 
   const [confirmAction, setConfirmAction] = useState(null)
-  const { memberModal, setMemberModal, memberPredictions, setMemberPredictions, memberReactions, setMemberReactions, loadingPreds, setLoadingPreds, openProfile, groupPositionBreakdown } = useMemberPredictions()
+  const { memberModal, setMemberModal, memberPredictions, setMemberPredictions, memberReactions, setMemberReactions, loadingPreds, setLoadingPreds, openProfile, groupPositionBreakdown, setGroupPositionBreakdown } = useMemberPredictions()
   const [matchOdds, setMatchOdds] = useState({})
   const [showWelcome, setShowWelcome] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -1008,11 +1008,19 @@ export default function Leagues() {
       }).sort((a, b) => new Date(a.match?.kickoff_time) - new Date(b.match?.kickoff_time))
 
       setMemberPredictions(filtered)
+      // Fetch group position breakdown for offline players too
+      const { data: gpData } = await supabase
+        .from('predicted_group_positions')
+        .select('group_name, predicted_position, actual_position, points_awarded, team:team_id(name, flag_emoji, short_code)')
+        .eq('user_id', member.user_id)
+        .order('group_name').order('predicted_position')
+      if (gpData) setGroupPositionBreakdown(gpData)
     } else {
       const { data: profile } = await supabase
         .from('profiles').select('show_future_predictions').eq('id', member.user_id).single()
       const showFuture = profile?.show_future_predictions !== false || member.user_id === user.id
       setMemberModal(prev => ({ ...prev, targetShowFuture: showFuture }))
+      // loadMemberPredictions already fetches groupPositionBreakdown internally
       await loadMemberPredictions(member.user_id, showFuture)
     }
   }
