@@ -75,7 +75,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
   const [picks, setPicks] = useState({})
   const [groupPreds, setGroupPreds] = useState({})
   const [matches, setMatches] = useState([])
-  const [realR32Teams, setRealR32Teams] = useState(new Set()) // team IDs confirmed in real R32
+  const [realConfirmedByStage, setRealConfirmedByStage] = useState({}) // stage -> Set of confirmed team IDs
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -104,13 +104,27 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
         .select('stage, home_team_id, away_team_id, status, winner_team_id')
         .neq('stage', 'group')
       if (!cancelled && r32Fixtures) {
-        const r32Set = new Set()
-        // Teams confirmed in R32 (home_team_id/away_team_id set on r32 matches)
-        r32Fixtures.filter(m => m.stage === 'r32').forEach(m => {
-          if (m.home_team_id) r32Set.add(m.home_team_id)
-          if (m.away_team_id) r32Set.add(m.away_team_id)
+        // Build per-stage confirmed teams:
+        // R32: teams with home_team_id/away_team_id set
+        // R16+: teams that WON their previous round (winner_team_id)
+        const byStage = {
+          r32: new Set(),
+          r16: new Set(),
+          qf: new Set(),
+          sf: new Set(),
+          final: new Set(),
+        }
+        r32Fixtures.forEach(m => {
+          if (m.stage === 'r32') {
+            if (m.home_team_id) byStage.r32.add(m.home_team_id)
+            if (m.away_team_id) byStage.r32.add(m.away_team_id)
+          } else if (m.status === 'completed' && m.winner_team_id) {
+            // Winner of r32 goes to r16, winner of r16 goes to qf, etc
+            const nextStage = { r32: 'r16', r16: 'qf', qf: 'sf', sf: 'final' }[m.stage]
+            if (nextStage && byStage[nextStage]) byStage[nextStage].add(m.winner_team_id)
+          }
         })
-        setRealR32Teams(r32Set)
+        setRealConfirmedByStage(byStage)
       }
       setPicks(km); setGroupPreds(pm); setMatches(matchRes.data || []); setLoading(false)
     }
@@ -146,7 +160,8 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
           <div key={stage.key}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stage.label}</div>
-              {stage.key === 'r32' && realR32Teams.size > 0 && (() => {
+              {realConfirmedByStage[stage.key]?.size > 0 && (() => {
+                const confirmedSet = realConfirmedByStage[stage.key]
                 const stageTeams = stage.matches.flatMap(md => {
                   const pick = picks[md.match_number]
                   if (!pick?.winner_id) return []
@@ -154,7 +169,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                   const away = resolveTeam(md.away_slot)
                   return [home?.id, away?.id].filter(Boolean)
                 })
-                const confirmed = stageTeams.filter(id => realR32Teams.has(id))
+                const confirmed = stageTeams.filter(id => confirmedSet.has(id))
                 const pts = confirmed.length * stage.points
                 return pts > 0 ? (
                   <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
@@ -171,8 +186,9 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                 const winner = teamsById[pick.winner_id]
                 const isHomeWinner = home && home.id === pick.winner_id
                 const isAwayWinner = away && away.id === pick.winner_id
-                const homeEarned = home && realR32Teams.has(home.id)
-                const awayEarned = away && realR32Teams.has(away.id)
+                const confirmedSet = realConfirmedByStage[stage.key] || new Set()
+                const homeEarned = home && confirmedSet.has(home.id)
+                const awayEarned = away && confirmedSet.has(away.id)
                 const anyEarned = homeEarned || awayEarned
                 return (
                   <div key={md.match_number} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: anyEarned ? 'rgba(0,122,51,0.05)' : 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: anyEarned ? '1px solid rgba(0,122,51,0.2)' : '1px solid transparent' }}>

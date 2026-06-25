@@ -994,7 +994,11 @@ export default function Leagues() {
     const isLeagueCreator = league?.created_by === member.user_id
     const canRemoveMember = (league?.created_by === user?.id || isAdmin) && !isMe && !isLeagueCreator && !league?.is_global
     setGroupPositionBreakdown([]) // clear stale data from previous modal
-    setMemberModal({ userId: member.user_id, username: displayName, leagueId, isOffline, lockedSnapshot, leagueName: league?.name, targetShowFuture: lockedSnapshot || false, canRemoveMember, memberName: displayName })
+    // Pre-fetch profile so Overview shows bracket_points immediately
+    const { data: preProfile } = await supabase.from('profiles')
+      .select('group_position_points, bracket_points, total_points, exact_scores')
+      .eq('id', member.user_id).maybeSingle()
+    setMemberModal({ userId: member.user_id, username: displayName, leagueId, isOffline, lockedSnapshot, leagueName: league?.name, targetShowFuture: lockedSnapshot || false, canRemoveMember, memberName: displayName, memberProfile: preProfile || {} })
 
     if (lockedSnapshot) {
       await loadLockedMemberPredictions(leagueId, member.user_id)
