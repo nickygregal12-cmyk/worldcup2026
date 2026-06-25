@@ -964,6 +964,7 @@ export default function Leagues() {
     const isMe = member.user_id === user.id
     const isLeagueCreator = league?.created_by === member.user_id
     const canRemoveMember = (league?.created_by === user?.id || isAdmin) && !isMe && !isLeagueCreator && !league?.is_global
+    setGroupPositionBreakdown([]) // clear stale data from previous modal
     setMemberModal({ userId: member.user_id, username: displayName, leagueId, isOffline, lockedSnapshot, leagueName: league?.name, targetShowFuture: lockedSnapshot || false, canRemoveMember, memberName: displayName })
 
     if (lockedSnapshot) {

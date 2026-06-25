@@ -557,7 +557,51 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
           ) : activeTab === 'compare' ? (
             <CompareWithMeView myUserId={currentUserId} targetUserId={memberModal.userId} targetName={memberModal.username} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} targetShowFuture={memberModal.targetShowFuture} />
           ) : activeTab === 'standings' ? (
-            <MemberStandingsView predictions={memberPredictions} />
+            <>
+              <MemberStandingsView predictions={memberPredictions} />
+              {groupPositionBreakdown.length > 0 && (() => {
+                const byGroup = {}
+                groupPositionBreakdown.forEach(row => {
+                  if (!byGroup[row.group_name]) byGroup[row.group_name] = []
+                  byGroup[row.group_name].push(row)
+                })
+                const total = Object.values(byGroup).reduce((sum, rows) => {
+                  const pp = rows.reduce((s, r) => s + (r.points_awarded || 0), 0)
+                  const isPerfect = rows.filter(r => r.points_awarded > 0).length === 4
+                  return sum + pp + (isPerfect ? 5 : 0)
+                }, 0)
+                return (
+                  <div style={{ marginTop: '16px', border: '1px solid rgba(0,122,51,0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                    <div style={{ padding: '10px 14px', background: 'rgba(0,122,51,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent-green)' }}>📊 Group position bonus</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>+2pts per correct position · +5pts perfect group</div>
+                      </div>
+                      <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)', letterSpacing: '-0.02em' }}>+{total}</div>
+                    </div>
+                    {Object.entries(byGroup).map(([groupName, rows]) => {
+                      const correct = rows.filter(r => r.points_awarded > 0).length
+                      const isPerfect = correct === 4
+                      const groupPts = rows.reduce((s, r) => s + (r.points_awarded || 0), 0) + (isPerfect ? 5 : 0)
+                      return (
+                        <div key={groupName} style={{ padding: '8px 14px', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: '700', fontSize: '12px', minWidth: '60px' }}>Group {groupName}</span>
+                          <div style={{ flex: 1, display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                            {rows.map((r, i) => (
+                              <span key={i} style={{ fontSize: '10px', padding: '2px 5px', borderRadius: '20px', background: r.points_awarded > 0 ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.07)', color: r.points_awarded > 0 ? 'var(--accent-green)' : '#c62828', fontWeight: '700' }}>
+                                {r.team?.flag_emoji} {r.points_awarded > 0 ? `+${r.points_awarded}` : '✗'}
+                              </span>
+                            ))}
+                            {isPerfect && <span style={{ fontSize: '10px', padding: '2px 5px', borderRadius: '20px', background: 'rgba(184,134,11,0.1)', color: 'var(--accent-gold)', fontWeight: '700' }}>🎯+5</span>}
+                          </div>
+                          <span style={{ fontSize: '11px', fontWeight: '700', color: groupPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{groupPts}pts</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+            </>
           ) : null}
         </div>
       </div>
