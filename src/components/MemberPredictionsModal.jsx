@@ -198,10 +198,10 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {stageMatches.map(md => {
                 const pick = picks[md.match_number]
-                // Use confirmed fixture teams first, fall back to resolving from picks
-                const fixture = confirmedFixtures[md.match_number]
-                const home = fixture?.homeTeam || resolveTeam(md.home_slot)
-                const away = fixture?.awayTeam || resolveTeam(md.away_slot)
+                // Always show USER'S predicted teams (from their group picks)
+                // confirmedFixtures is only used for points earned check below
+                const home = resolveTeam(md.home_slot)
+                const away = resolveTeam(md.away_slot)
                 const winner = teamsById[pick.winner_id]
                 const isHomeWinner = winner && home && home.id === winner.id
                 const isAwayWinner = winner && away && away.id === winner.id
