@@ -933,6 +933,14 @@ export default function Leagues() {
       setMemberReactions({})
     }
 
+    // Fetch group position bonus breakdown for this member
+    const { data: gpData } = await supabase
+      .from('predicted_group_positions')
+      .select('group_name, predicted_position, actual_position, points_awarded, team:team_id(name, flag_emoji, short_code)')
+      .eq('user_id', userId)
+      .order('group_name').order('predicted_position')
+    setGroupPositionBreakdown(gpData || [])
+
     setLoadingPreds(false)
   }
 
@@ -952,6 +960,15 @@ export default function Leagues() {
 
     const sorted = (preds || []).sort((a, b) => new Date(a.match?.kickoff_time) - new Date(b.match?.kickoff_time))
     setMemberPredictions(sorted)
+
+    // Fetch group position bonus for locked snapshot leagues too
+    const { data: gpData } = await supabase
+      .from('predicted_group_positions')
+      .select('group_name, predicted_position, actual_position, points_awarded, team:team_id(name, flag_emoji, short_code)')
+      .eq('user_id', userId)
+      .order('group_name').order('predicted_position')
+    setGroupPositionBreakdown(gpData || [])
+
     setLoadingPreds(false)
   }
 
