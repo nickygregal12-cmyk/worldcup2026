@@ -227,6 +227,16 @@ export default function Knockout() {
     return out
   }, [realKoResults])
 
+  // Teams confirmed in real R32 (home_team_id/away_team_id set on r32 fixtures)
+  const confirmedR32Teams = useMemo(() => {
+    const out = new Set()
+    realKoFixtures.filter(m => m.stage === 'r32').forEach(m => {
+      if (m.home_team?.id) out.add(m.home_team.id)
+      if (m.away_team?.id) out.add(m.away_team.id)
+    })
+    return out
+  }, [realKoFixtures])
+
   // Build real standings map in same format as predicted standings (group -> [{team, pts, gd...}])
   const realStandingsMap = useMemo(() => {
     if (!realGroupStandings.length) return {}
@@ -964,6 +974,9 @@ export default function Knockout() {
                 const isPickedTeam = pick?.winner_id === team?.id
                 const isFinal = matchDef.match_number === 104
                 const canPickThisTeam = canPick && bothTeamsKnown && !!team
+                // Confirmed in real R32 (works for both picked and non-picked team)
+                const isConfirmedInR32 = activeStage === 'r32' && team?.id && confirmedR32Teams.has(team.id)
+                const isEliminatedFromR32 = activeStage === 'r32' && team?.id && groupStageDone && eliminatedTeams.has(team.id)
                 return (
                   <div key={team?.id || slot}>
                     {team ? (
@@ -988,17 +1001,26 @@ export default function Knockout() {
                         <span style={{ fontSize: '30px', lineHeight: 1, flexShrink: 0, opacity: isPickedTeam && teamEliminated ? 0.5 : 1 }}>{team.flag_emoji}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontWeight: '800', fontSize: '15px', letterSpacing: '-0.01em',
-                            color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : teamEliminated ? '#c62828' : teamStillAlive ? 'var(--accent-green)' : 'var(--scottish-navy)') : 'var(--text-primary)',
+                            color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : teamEliminated ? '#c62828' : teamStillAlive ? 'var(--accent-green)' : 'var(--scottish-navy)')
+                              : isConfirmedInR32 ? 'var(--accent-green)'
+                              : isEliminatedFromR32 ? '#c62828'
+                              : 'var(--text-primary)',
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                             textDecoration: isPickedTeam && teamEliminated ? 'line-through' : 'none' }}>
                             {team.name}
                           </div>
                           <div style={{ fontSize: '11px', fontWeight: '600', marginTop: '2px',
-                            color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : teamEliminated ? '#c62828' : teamStillAlive ? 'var(--accent-green)' : 'var(--scottish-navy)') : 'var(--text-muted)' }}>
+                            color: isPickedTeam ? (isFinal ? 'var(--accent-gold)' : teamEliminated ? '#c62828' : teamStillAlive ? 'var(--accent-green)' : 'var(--scottish-navy)')
+                              : isConfirmedInR32 ? 'var(--accent-green)'
+                              : isEliminatedFromR32 ? '#c62828'
+                              : 'var(--text-muted)' }}>
                             {isPickedTeam
                               ? teamEliminated ? `${team.short_code} · Eliminated ✗`
                               : teamStillAlive ? `${team.short_code} · Still in ✓`
+                              : isConfirmedInR32 ? `${team.short_code} · Your pick ✓`
                               : `${team.short_code} · Your pick`
+                              : isConfirmedInR32 ? `${team.short_code} · In R32 +5pts`
+                              : isEliminatedFromR32 ? `${team.short_code} · Eliminated ✗`
                               : team.short_code}
                           </div>
                         </div>
