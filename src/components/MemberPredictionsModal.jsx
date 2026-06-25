@@ -425,20 +425,56 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
         <div style={{ overflowY: 'auto', padding: '16px', flex: 1 }}>
           {loadingPreds ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-          ) : activeTab === 'overview' ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ textAlign: 'center', padding: '16px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--scottish-navy)', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', fontWeight: '900', marginBottom: '8px' }}>
-                  {(memberModal.username || '?')[0].toUpperCase()}
+          ) : activeTab === 'overview' ? ((() => {
+            const mp = memberModal.memberProfile || {}
+            const matchPts = (mp.total_points || 0) - (mp.group_position_points || 0) - (mp.bracket_points || 0)
+            const groupPts = mp.group_position_points || 0
+            const bracketPts = mp.bracket_points || 0
+            const totalPts = mp.total_points || 0
+            // Award points = remaining (total minus match, group, bracket)
+            const awardPts = Math.max(0, totalPts - matchPts - groupPts - bracketPts)
+            const sections = [
+              { icon: '⚽', label: 'Match predictions', pts: matchPts, sub: `${mp.exact_scores || 0} exact scores`, tab: 'group', colour: 'var(--scottish-navy)' },
+              { icon: '📊', label: 'Group position bonus', pts: groupPts, sub: '+2pts per position · +5pts perfect', tab: 'group', colour: 'var(--accent-green)', hide: groupPts === 0 },
+              { icon: '🏆', label: 'Bracket progression', pts: bracketPts, sub: 'Teams predicted to reach each round', tab: 'knockout', colour: 'var(--scottish-navy)', hide: bracketPts === 0 },
+              { icon: '🥇', label: 'Awards', pts: awardPts, sub: 'Golden boot, POTY etc', tab: 'awards', hide: awardPts === 0 },
+            ].filter(s => !s.hide || totalPts === 0)
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* Player card */}
+                <div style={{ textAlign: 'center', padding: '14px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+                  <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'var(--scottish-navy)', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '900', marginBottom: '6px' }}>
+                    {(memberModal.username || '?')[0].toUpperCase()}
+                  </div>
+                  <div style={{ fontSize: '17px', fontWeight: '900' }}>{memberModal.username}</div>
+                  {totalPts > 0 && <div style={{ fontSize: '22px', fontWeight: '900', fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)', marginTop: '4px' }}>{totalPts}pts</div>}
                 </div>
-                <div style={{ fontSize: '18px', fontWeight: '900' }}>{memberModal.username}</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  {memberModal.lockedSnapshot ? 'Locked league profile' : 'Player profile'}
-                </div>
+
+                {/* Points breakdown — clickable sections */}
+                {totalPts > 0 && (
+                  <div style={{ border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                    {sections.map((s, i) => (
+                      <button key={s.tab + i} type="button"
+                        onClick={() => setMemberModal(prev => ({ ...prev, tab: s.tab }))}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: 'var(--bg-card)', border: 'none', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none', cursor: 'pointer', textAlign: 'left' }}>
+                        <span style={{ fontSize: '20px', flexShrink: 0 }}>{s.icon}</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>{s.label}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>{s.sub}</div>
+                        </div>
+                        <div style={{ fontWeight: '900', fontSize: '18px', fontFamily: 'var(--font-mono)', color: s.pts > 0 ? s.colour : 'var(--text-muted)', letterSpacing: '-0.02em', flexShrink: 0 }}>
+                          +{s.pts}
+                        </div>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', flexShrink: 0 }}>›</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <button onClick={() => setMemberModal(prev => ({ ...prev, tab: 'compare' }))} className="btn btn-primary btn-full" style={{ marginTop: '2px' }}>⚔️ Compare with me</button>
               </div>
-              <button onClick={() => setMemberModal(prev => ({ ...prev, tab: 'compare' }))} className="btn btn-primary btn-full">⚔️ Compare with me</button>
-              <button onClick={() => setMemberModal(prev => ({ ...prev, tab: 'group' }))} className="btn btn-secondary btn-full">View predictions</button>
-            </div>
+            )
+          })()
           ) : activeTab === 'group' ? (
             memberPredictions.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
@@ -487,17 +523,6 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
               </div>
             )
           ) : null}
-          {/* Bracket progression points */}
-          {activeTab === 'overview' && memberModal.memberProfile?.bracket_points > 0 && (
-            <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(0,48,135,0.05)', border: '1px solid rgba(0,48,135,0.15)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--scottish-navy)' }}>🏆 Bracket progression points</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>Teams predicted to reach each round</div>
-              </div>
-              <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)', letterSpacing: '-0.02em' }}>+{memberModal.memberProfile.bracket_points}</div>
-            </div>
-          )}
-
           {/* Group position bonus breakdown — per group */}
           {activeTab === 'group' && groupPositionBreakdown.length > 0 && (() => {
             // Group by group_name
