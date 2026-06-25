@@ -801,7 +801,7 @@ export default function Leagues() {
     setLoadingMembers(prev => ({ ...prev, [leagueId]: true }))
     const { data } = await supabase
       .from('league_members')
-      .select('*, league_points, rank_snapshot, profile:user_id(id, username, total_points, display_name, streak_current, exact_scores, avatar_emoji)')
+      .select('*, league_points, rank_snapshot, profile:user_id(id, username, total_points, bracket_points, group_position_points, display_name, streak_current, exact_scores, avatar_emoji)')
       .eq('league_id', leagueId)
       .order('joined_at', { ascending: true })
 

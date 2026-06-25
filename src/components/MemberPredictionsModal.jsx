@@ -84,7 +84,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
     const load = async () => {
       setLoading(true)
       const koTable = lockedSnapshot ? 'league_knockout_picks' : 'knockout_picks'
-      let koQuery = supabase.from(koTable).select('match_number, stage, winner_team_id, is_joker').eq('user_id', userId)
+      let koQuery = supabase.from(koTable).select('match_number, stage, winner_team_id, home_team_id, away_team_id, is_joker').eq('user_id', userId)
       if (lockedSnapshot && leagueId) koQuery = koQuery.eq('league_id', leagueId)
       const predTable = lockedSnapshot ? 'league_predictions' : 'predictions'
       let predQuery = supabase.from(predTable).select('match_id, home_score, away_score').eq('user_id', userId)
@@ -96,7 +96,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
       ])
       if (cancelled) return
       const km = {};
-      (koRes.data || []).forEach(p => { km[p.match_number] = { winner_id: p.winner_team_id, is_joker: p.is_joker, stage: p.stage } })
+      (koRes.data || []).forEach(p => { km[p.match_number] = { winner_id: p.winner_team_id, home_team_id: p.home_team_id, away_team_id: p.away_team_id, is_joker: p.is_joker, stage: p.stage } })
       const pm = {};
       (predRes.data || []).forEach(p => { if (p.home_score !== null && p.away_score !== null) pm[p.match_id] = { home: p.home_score, away: p.away_score } })
       // Load real confirmed R32 teams
@@ -153,6 +153,19 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
     return map
   }, [matches])
 
+  // Map of match_number -> {home, away} team IDs from stored knockout_picks
+  const pickHomeAway = React.useMemo(() => {
+    const map = {}
+    Object.entries(picks).forEach(([matchNum, pick]) => {
+      map[parseInt(matchNum)] = {
+        home: pick.home_team_id || null,
+        away: pick.away_team_id || null,
+        winner: pick.winner_id,
+      }
+    })
+    return map
+  }, [picks])
+
   const resolveTeam = (slot) => {
     if (!slot) return null
     if (slot.startsWith('W')) { const mn = parseInt(slot.replace('W', '')); const wid = picks[mn]?.winner_id; return wid ? (teamsById[wid] || null) : null }
@@ -175,19 +188,21 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
               <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stage.label}</div>
               {realConfirmedByStage[stage.key]?.size > 0 && (() => {
                 const confirmedSet = realConfirmedByStage[stage.key]
-                const stageTeams = stage.matches.flatMap(md => {
+                // Count pts: for each match, check both home_team_id and away_team_id from picks
+                // (both teams in predicted matchup earn pts if confirmed in that stage)
+                let earnedPtsTotal = 0
+                stage.matches.forEach(md => {
                   const pick = picks[md.match_number]
-                  if (!pick?.winner_id) return []
-                  // For R32: count BOTH teams in each match (winner + opponent)
-                  const fixture = confirmedFixtures[md.match_number]
-                  const home = fixture?.homeTeam || resolveTeam(md.home_slot)
-                  const away = fixture?.awayTeam || resolveTeam(md.away_slot)
-                  if (stage.key === 'r32') return [home?.id, away?.id].filter(Boolean)
-                  // For R16+: only count winner pick
-                  return [pick.winner_id]
+                  if (!pick?.winner_id) return
+                  // Check home team of this pick
+                  const homeId = pickHomeAway[md.match_number]?.home
+                  const awayId = pickHomeAway[md.match_number]?.away
+                  if (homeId && confirmedSet.has(homeId)) earnedPtsTotal += stage.points
+                  if (awayId && confirmedSet.has(awayId)) earnedPtsTotal += stage.points
+                  // Fallback: if no home/away stored, just check winner
+                  if (!homeId && !awayId && confirmedSet.has(pick.winner_id)) earnedPtsTotal += stage.points
                 })
-                const confirmed = stageTeams.filter(id => confirmedSet.has(id))
-                const pts = confirmed.length * stage.points
+                const pts = earnedPtsTotal
                 return pts > 0 ? (
                   <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
                     +{pts}pts earned
@@ -206,8 +221,14 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                 const isHomeWinner = winner && home && home.id === winner.id
                 const isAwayWinner = winner && away && away.id === winner.id
                 const confirmedSet = realConfirmedByStage[stage.key] || new Set()
-                const homeEarned = home && confirmedSet.has(home.id)
-                const awayEarned = away && confirmedSet.has(away.id)
+                // Use stored home/away team IDs for earned check (most accurate)
+                const storedHome = pickHomeAway[md.match_number]?.home
+                const storedAway = pickHomeAway[md.match_number]?.away
+                const storedHomeEarned = storedHome && confirmedSet.has(storedHome)
+                const storedAwayEarned = storedAway && confirmedSet.has(storedAway)
+                // Fall back to displayed teams if not stored
+                const homeEarned = storedHomeEarned || (!storedHome && home && confirmedSet.has(home.id))
+                const awayEarned = storedAwayEarned || (!storedAway && away && confirmedSet.has(away.id))
                 const anyEarned = homeEarned || awayEarned
                 return (
                   <div key={md.match_number} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: anyEarned ? 'rgba(0,122,51,0.05)' : 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: anyEarned ? '1px solid rgba(0,122,51,0.2)' : '1px solid transparent' }}>
@@ -252,8 +273,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                       })()}
                     </div>
                     {anyEarned && (() => {
-                      const earnedCount = [homeEarned, awayEarned].filter(Boolean).length
-                      const earnedPts = earnedCount * stage.points
+                      const earnedPts = [homeEarned, awayEarned].filter(Boolean).length * stage.points
                       return <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--accent-green)', whiteSpace: 'nowrap' }}>+{earnedPts}pts</span>
                     })()}
                     {pick.is_joker && <span style={{ fontSize: '12px' }}>🃏</span>}
