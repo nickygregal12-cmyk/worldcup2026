@@ -297,7 +297,7 @@ function FinalStandingsView({ standings, matches, predictions, appSettings }) {
   )
 }
 
-function StandingsView({ standings, activeGroup, matches, predictions, appSettings }) {
+function StandingsView({ standings, activeGroup, matches, predictions, appSettings, groupPositionBreakdown = [] }) {
   const groupStandings = standings.filter(s => {
     const groupLetter = s.group_name?.replace('GROUP_', '').replace('Group ', '')
     return groupLetter === activeGroup
@@ -2112,8 +2112,35 @@ export default function Predictions() {
       return <FinalStandingsView standings={standings} matches={matches} predictions={predictions} appSettings={{ ...appSettings, show_group_tables: 'false' }} />
     }
 
+    // Group bonus summary banner — shown when any groups are complete
+    const totalBonus = groupPositionBreakdown.reduce((s, r) => s + (r.points_awarded || 0), 0)
+    const completedGroups = [...new Set(groupPositionBreakdown.map(r => r.group_name))].length
+    const groupBonusBanner = completedGroups > 0 ? (
+      <div style={{
+        marginBottom: '12px', padding: '10px 14px',
+        background: totalBonus > 0 ? 'rgba(0,122,51,0.07)' : 'var(--bg-secondary)',
+        border: `1px solid ${totalBonus > 0 ? 'rgba(0,122,51,0.2)' : 'var(--border-light)'}`,
+        borderRadius: 'var(--radius-md)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        cursor: 'pointer',
+      }} onClick={() => setActiveTab('tables')}>
+        <div>
+          <div style={{ fontWeight: '700', fontSize: '13px', color: totalBonus > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+            📊 Group position bonus · {completedGroups}/12 groups done
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>
+            Tap to see per-group breakdown
+          </div>
+        </div>
+        <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: totalBonus > 0 ? 'var(--accent-green)' : 'var(--text-muted)', letterSpacing: '-0.02em' }}>
+          +{totalBonus}pts
+        </div>
+      </div>
+    ) : null
+
     const overview = renderGroupStandings()
-    return overview || (
+    if (overview) return <>{groupBonusBanner}{overview}</>
+    return (
       <div className="card" style={{ textAlign: 'center', padding: '32px 20px' }}>
         <div style={{ fontSize: '34px', marginBottom: '10px' }}>🔮</div>
         <div style={{ fontWeight: '900', fontSize: '17px', marginBottom: '6px' }}>No predicted table yet</div>
@@ -2128,10 +2155,124 @@ export default function Predictions() {
   }
 
   const renderTablesContent = () => {
-    if (!liveTablesAvailable) return renderTablesLocked()
-    return viewMode === 'date'
-      ? renderAllLiveTables()
-      : <StandingsView standings={standings} activeGroup={activeGroup} matches={matches} predictions={predictions} appSettings={appSettings} />
+    // By date: show all live tables
+    if (viewMode === 'date') {
+      return liveTablesAvailable ? renderAllLiveTables() : renderTablesLocked()
+    }
+
+    // By group: show real vs predicted combined view
+    const GROUPS_ALL = ['A','B','C','D','E','F','G','H','I','J','K','L']
+
+    // All groups combined view
+    const groupBonusRows = groupPositionBreakdown
+    const totalBonus = groupBonusRows.reduce((s, r) => s + (r.points_awarded || 0), 0)
+    const completedGroupNames = [...new Set(groupBonusRows.map(r => r.group_name))]
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        {/* Bonus summary — only if any groups complete */}
+        {completedGroupNames.length > 0 && (
+          <div style={{ padding: '12px 14px', background: totalBonus > 0 ? 'rgba(0,122,51,0.07)' : 'var(--bg-card)', border: `1px solid ${totalBonus > 0 ? 'rgba(0,122,51,0.2)' : 'var(--border-light)'}`, borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: '700', fontSize: '13px', color: totalBonus > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                📊 Group position bonus · {completedGroupNames.length}/12 groups done
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>+2pts per correct position · +5pts perfect group</div>
+            </div>
+            <div style={{ fontWeight: '900', fontSize: '22px', fontFamily: 'var(--font-mono)', color: totalBonus > 0 ? 'var(--accent-green)' : 'var(--text-muted)', letterSpacing: '-0.02em' }}>
+              +{totalBonus}pts
+            </div>
+          </div>
+        )}
+
+        {/* Per-group: real standings vs predicted */}
+        {GROUPS_ALL.map(g => {
+          const realGroup = standings.filter(s => {
+            const gl = s.group_name?.replace('GROUP_', '').replace('Group ', '')
+            return gl === g
+          }).sort((a, b) => a.position - b.position)
+
+          const groupMatches_g = matches.filter(m => m.group?.name === g)
+          const { standings: predStandings } = calcGroupStandings(groupMatches_g, predictions)
+          const hasPred = predStandings.some(s => s.played > 0)
+          const hasReal = realGroup.length > 0 && liveTablesAvailable
+          const groupComplete = realGroup.length > 0 && realGroup.every(s => s.played >= 3)
+          const bonusRows = groupBonusRows.filter(r => r.group_name === g)
+          const groupBonus = bonusRows.reduce((s, r) => s + (r.points_awarded || 0), 0)
+          const correctPos = bonusRows.filter(r => r.points_awarded > 0).length
+          const isPerfect = correctPos === 4
+
+          if (!hasPred && !hasReal) return null
+
+          return (
+            <div key={g} className="card" style={{ padding: '14px 16px', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ fontWeight: '800', fontSize: '14px' }}>Group {g}</div>
+                {bonusRows.length > 0 && (
+                  <div style={{ fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '20px', background: groupBonus > 0 ? 'rgba(0,122,51,0.1)' : 'var(--bg-secondary)', color: groupBonus > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                    {isPerfect ? '🎯 Perfect! ' : ''}{groupBonus > 0 ? `+${groupBonus}pts` : '0pts'}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: hasReal && hasPred ? '1fr 1fr' : '1fr', gap: '8px' }}>
+                {/* Real standings */}
+                {hasReal && (
+                  <div>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                      Real {groupComplete ? '✓ Final' : '· Live'}
+                    </div>
+                    {realGroup.map((s, i) => (
+                      <div key={s.team_id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', minWidth: '14px' }}>{i + 1}</span>
+                        <span style={{ fontSize: '14px' }}>{s.team?.flag_emoji}</span>
+                        <span style={{ flex: 1, fontSize: '11px', fontWeight: i < 2 ? '700' : '400', color: i < 2 ? 'var(--text-primary)' : 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.team?.short_code || s.team?.name}</span>
+                        <span style={{ fontSize: '11px', fontWeight: '700', fontFamily: 'var(--font-mono)', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{s.points}pt</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Predicted standings */}
+                {hasPred && (
+                  <div>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>
+                      Your prediction
+                    </div>
+                    {predStandings.map((s, i) => {
+                      const bonusRow = bonusRows.find(r => r.team?.short_code === s.short_code || r.team?.name === s.name)
+                      const correct = !!bonusRow?.points_awarded
+                      const wrong = bonusRows.length > 0 && bonusRow && !bonusRow.points_awarded
+                      return (
+                        <div key={s.id || i} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
+                          <span style={{ fontSize: '11px', fontWeight: '700', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)', minWidth: '14px' }}>{i + 1}</span>
+                          <span style={{ fontSize: '14px' }}>{s.flag}</span>
+                          <span style={{ flex: 1, fontSize: '11px', fontWeight: i < 2 ? '700' : '400', color: i < 2 ? 'var(--text-primary)' : 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.short_code || s.name}</span>
+                          <span style={{ fontSize: '11px', fontWeight: '700', fontFamily: 'var(--font-mono)', color: i < 2 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{s.pts}pt</span>
+                          {correct && <span style={{ fontSize: '10px', color: 'var(--accent-green)' }}>✓</span>}
+                          {wrong && <span style={{ fontSize: '10px', color: '#c62828' }}>✗</span>}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Per-position bonus detail if group complete */}
+              {bonusRows.length > 0 && groupComplete && (
+                <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {bonusRows.map((r, i) => (
+                    <span key={i} style={{ fontSize: '10px', padding: '2px 6px', borderRadius: '20px', background: r.points_awarded > 0 ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.07)', color: r.points_awarded > 0 ? 'var(--accent-green)' : '#c62828', fontWeight: '700' }}>
+                      #{r.predicted_position} {r.team?.flag_emoji} {r.points_awarded > 0 ? `+${r.points_awarded}pts` : '✗'}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    )
   }
 
   return (
@@ -2392,8 +2533,7 @@ export default function Predictions() {
               <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px', width: '100%', maxWidth: '420px' }}>
                 {[
                   { key: 'picks', label: '⚽ Picks' },
-                  { key: 'overview', label: viewMode === 'group' ? '🔮 Predicted Table' : '🔮 Overview' },
-                  { key: 'standings', label: '📊 Tables' },
+                  { key: 'standings', label: '📊 Real vs Predicted' },
                 ].map(tab => (
                   <button
                     key={tab.key}
@@ -2523,9 +2663,7 @@ export default function Predictions() {
 
       {/* Matches / Standings */}
       <div className="container" style={{ padding: '16px' }}>
-        {activeTab === 'overview' ? (
-          renderOverviewContent()
-        ) : activeTab === 'standings' ? (
+        {activeTab === 'standings' ? (
           renderTablesContent()
         ) : showTeamSearch && teamSearch ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
