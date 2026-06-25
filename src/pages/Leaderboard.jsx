@@ -24,7 +24,7 @@ export default function Leaderboard() {
   const [prevRanks, setPrevRanks] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const { memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, openProfile } = useMemberPredictions()
+  const { memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, openProfile, groupPositionBreakdown } = useMemberPredictions()
   const [page, setPage] = useState(0)
 
   const preTournament = new Date() < TOURNAMENT_START
@@ -333,6 +333,7 @@ export default function Leaderboard() {
         memberPredictions={memberPredictions}
         memberReactions={memberReactions}
         loadingPreds={loadingPreds}
+        groupPositionBreakdown={groupPositionBreakdown}
         currentUserId={user?.id}
       />
     </div>

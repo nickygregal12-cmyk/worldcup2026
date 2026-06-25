@@ -472,30 +472,38 @@ function StandingsView({ standings, activeGroup, matches, predictions, appSettin
             </table>
           </div>
         )}
-        {/* Group position bonus summary — shown when group is complete and real standings exist */}
-        {showReal && groupStandings.length > 0 && hasPredictions && (() => {
-          // Count correct positions
-          let correct = 0
-          predTable.forEach((team, i) => {
-            const realEntry = groupStandings.find(s => s.team_id === team.id)
-            if (realEntry && realEntry.position === i + 1) correct++
-          })
+        {/* Group position bonus — from DB (populated after group completes) */}
+        {(() => {
+          const groupRows = groupPositionBreakdown.filter(r => r.group_name === activeGroup)
+          if (groupRows.length === 0) return null
+          const groupPts = groupRows.reduce((sum, r) => sum + (r.points_awarded || 0), 0)
+          const correct = groupRows.filter(r => r.points_awarded > 0).length
           const isPerfect = correct === 4
-          const bonusPts = (correct * 2) + (isPerfect ? 5 : 0)
           return (
-            <div style={{ marginTop: '10px', padding: '10px 12px', background: bonusPts > 0 ? 'rgba(0,122,51,0.06)' : 'rgba(0,0,0,0.03)', borderRadius: 'var(--radius-md)', border: `1px solid ${bonusPts > 0 ? 'rgba(0,122,51,0.15)' : 'var(--border-light)'}` }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ marginTop: '10px', border: `1px solid ${groupPts > 0 ? 'rgba(0,122,51,0.2)' : 'var(--border-light)'}`, borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+              <div style={{ padding: '9px 12px', background: groupPts > 0 ? 'rgba(0,122,51,0.06)' : 'var(--bg-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: '700', fontSize: '13px', color: bonusPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                    {isPerfect ? '🎯 Perfect group!' : correct > 0 ? `✓ ${correct}/4 positions correct` : '✗ No positions correct'}
+                  <div style={{ fontWeight: '700', fontSize: '13px', color: groupPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                    {isPerfect ? '🎯 Perfect group!' : correct > 0 ? `📊 ${correct}/4 positions correct` : '📊 No positions correct'}
                   </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>
-                    {isPerfect ? '+8pts positions + 5pts perfect bonus' : `+${correct * 2}pts from standings`}
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>+2pts per correct position · +5pts perfect group</div>
+                </div>
+                <div style={{ fontWeight: '900', fontSize: '20px', color: groupPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  +{groupPts}pts
+                </div>
+              </div>
+              {/* Per-team breakdown */}
+              <div style={{ padding: '6px 12px 8px' }}>
+                {groupRows.map((row, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', minWidth: '20px' }}>#{row.predicted_position}</span>
+                    <span style={{ fontSize: '16px' }}>{row.team?.flag_emoji}</span>
+                    <span style={{ flex: 1, fontSize: '12px', color: row.points_awarded > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{row.team?.short_code}</span>
+                    <span style={{ fontSize: '12px', fontWeight: '700', color: row.points_awarded > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                      {row.points_awarded > 0 ? `✓ +${row.points_awarded}pts` : '✗'}
+                    </span>
                   </div>
-                </div>
-                <div style={{ fontWeight: '900', fontSize: '20px', color: bonusPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                  +{bonusPts}pts
-                </div>
+                ))}
               </div>
             </div>
           )
@@ -552,6 +560,7 @@ export default function Predictions() {
   const [activeTab, setActiveTab] = useState('picks') // picks | overview | standings
   const [teamSearch, setTeamSearch] = useState('')
   const [standings, setStandings] = useState([])
+  const [groupPositionBreakdown, setGroupPositionBreakdown] = useState([])
   const [matches, setMatches] = useState([])
   const [communityPicks, setCommunityPicks] = useState({})
   const [reactions, setReactions] = useState({}) // { matchId: { fire: N, laugh: N, skull: N, mine: 'fire'|null } } // matchId -> {home, draw, away, total}
@@ -580,6 +589,7 @@ export default function Predictions() {
       loadPredictions()
       loadKnockoutPicks()
       loadFreshJokerCount()
+      loadGroupPositionBreakdown()
       checkJokerReminder()
     }
   }, [user])
@@ -605,6 +615,16 @@ export default function Predictions() {
       .from('profiles')
       .update({ jokers_group_remaining: remaining })
       .eq('id', user.id)
+  }
+
+  const loadGroupPositionBreakdown = async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('predicted_group_positions')
+      .select('group_name, predicted_position, actual_position, points_awarded, team:team_id(name, flag_emoji, short_code)')
+      .eq('user_id', user.id)
+      .order('group_name').order('predicted_position')
+    setGroupPositionBreakdown(data || [])
   }
 
   const loadStandings = async () => {

@@ -106,7 +106,7 @@ export default function Home() {
   const [nextMatch, setNextMatch]         = useState(null)
   const [liveLeaguePreds, setLiveLeaguePreds] = useState([]) // league members' picks for live match
   const [liveMatches, setLiveMatches]     = useState([])
-  const { memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, openProfile } = useMemberPredictions()
+  const { memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, openProfile, groupPositionBreakdown } = useMemberPredictions()
   const [upcomingMatches, setUpcomingMatches] = useState([])
   const [topPredictors, setTopPredictors] = useState([])
   const [predictionCount, setPredictionCount] = useState(0)
@@ -1875,6 +1875,7 @@ export default function Home() {
         memberPredictions={memberPredictions}
         memberReactions={memberReactions}
         loadingPreds={loadingPreds}
+        groupPositionBreakdown={groupPositionBreakdown}
         currentUserId={user?.id}
       />
     </div>

@@ -668,7 +668,7 @@ export default function Leagues() {
   }
 
   const [confirmAction, setConfirmAction] = useState(null)
-  const { memberModal, setMemberModal, memberPredictions, setMemberPredictions, memberReactions, setMemberReactions, loadingPreds, setLoadingPreds, openProfile } = useMemberPredictions()
+  const { memberModal, setMemberModal, memberPredictions, setMemberPredictions, memberReactions, setMemberReactions, loadingPreds, setLoadingPreds, openProfile, groupPositionBreakdown } = useMemberPredictions()
   const [matchOdds, setMatchOdds] = useState({})
   const [showWelcome, setShowWelcome] = useState(() => {
     if (typeof window === 'undefined') return false
@@ -1708,6 +1708,7 @@ export default function Leagues() {
         memberPredictions={memberPredictions}
         memberReactions={memberReactions}
         loadingPreds={loadingPreds}
+        groupPositionBreakdown={groupPositionBreakdown}
         currentUserId={user?.id}
       />
 
@@ -1836,6 +1837,7 @@ export default function Leagues() {
         memberPredictions={memberPredictions}
         memberReactions={memberReactions}
         loadingPreds={loadingPreds}
+        groupPositionBreakdown={groupPositionBreakdown}
         currentUserId={user?.id}
       />
 

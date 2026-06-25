@@ -276,10 +276,11 @@ export function useMemberPredictions() {
   const [memberPredictions, setMemberPredictions] = useState([])
   const [memberReactions, setMemberReactions] = useState({})
   const [loadingPreds, setLoadingPreds] = useState(false)
+  const [groupPositionBreakdown, setGroupPositionBreakdown] = useState([])
 
   const loadMemberPredictions = async (userId, showFuture) => {
     setLoadingPreds(true)
-    const [{ data: preds }, { data: profileData }] = await Promise.all([
+    const [{ data: preds }, { data: profileData }, { data: groupPosData }] = await Promise.all([
       supabase
         .from('predictions')
         .select('*, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, group:group_id(name), home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))')
@@ -288,9 +289,15 @@ export function useMemberPredictions() {
         .from('profiles')
         .select('group_position_points, total_points, exact_scores')
         .eq('id', userId)
-        .maybeSingle()
+        .maybeSingle(),
+      supabase
+        .from('predicted_group_positions')
+        .select('group_name, predicted_position, actual_position, points_awarded, team:team_id(name, flag_emoji, short_code)')
+        .eq('user_id', userId)
+        .order('group_name').order('predicted_position')
     ])
     const memberProfile = profileData || {}
+    setGroupPositionBreakdown(groupPosData || [])
 
     const filtered = (preds || [])
       .filter(p => {
@@ -338,12 +345,12 @@ export function useMemberPredictions() {
     await loadMemberPredictions(profile.id, showFuture)
   }
 
-  return { memberModal, setMemberModal, memberPredictions, setMemberPredictions, memberReactions, setMemberReactions, loadingPreds, setLoadingPreds, openProfile }
+  return { memberModal, setMemberModal, memberPredictions, setMemberPredictions, memberReactions, setMemberReactions, loadingPreds, setLoadingPreds, openProfile, groupPositionBreakdown }
 }
 
 // ─── main modal component ────────────────────────────────────────────────────
 
-export default function MemberPredictionsModal({ memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, currentUserId }) {
+export default function MemberPredictionsModal({ memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, groupPositionBreakdown = [], currentUserId }) {
   const tournamentLive = new Date() >= TOURNAMENT_START
 
   if (!memberModal) return null
@@ -480,24 +487,58 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
               </div>
             )
           ) : null}
-          {/* Group position bonus subtotal — shown after groups complete */}
-          {activeTab === 'group' && memberModal.memberProfile?.group_position_points > 0 && (
-            <div style={{
-              marginTop: '12px', padding: '12px 14px',
-              background: 'rgba(0,122,51,0.07)',
-              border: '1px solid rgba(0,122,51,0.2)',
-              borderRadius: 'var(--radius-md)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            }}>
-              <div>
-                <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent-green)' }}>📊 Group position bonus</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>+2pts per correct position · +5pts perfect group</div>
+          {/* Group position bonus breakdown — per group */}
+          {activeTab === 'group' && groupPositionBreakdown.length > 0 && (() => {
+            // Group by group_name
+            const byGroup = {}
+            groupPositionBreakdown.forEach(row => {
+              if (!byGroup[row.group_name]) byGroup[row.group_name] = []
+              byGroup[row.group_name].push(row)
+            })
+            const groupsWithBonus = Object.entries(byGroup).filter(([, rows]) => rows.some(r => r.points_awarded > 0))
+            if (groupsWithBonus.length === 0 && !memberModal.memberProfile?.group_position_points) return null
+            const total = memberModal.memberProfile?.group_position_points || 0
+            return (
+              <div style={{ marginTop: '12px', border: '1px solid rgba(0,122,51,0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                {/* Header */}
+                <div style={{ padding: '10px 14px', background: 'rgba(0,122,51,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent-green)' }}>📊 Group position bonus</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>+2pts per correct position · +5pts perfect group</div>
+                  </div>
+                  <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)', letterSpacing: '-0.02em' }}>+{total}</div>
+                </div>
+                {/* Per-group breakdown */}
+                {Object.entries(byGroup).map(([groupName, rows]) => {
+                  const groupPts = rows.reduce((sum, r) => sum + (r.points_awarded || 0), 0)
+                  const correct = rows.filter(r => r.points_awarded > 0).length
+                  const isPerfect = correct === 4
+                  return (
+                    <div key={groupName} style={{ padding: '8px 14px', borderTop: '1px solid var(--border-light)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <span style={{ fontWeight: '700', fontSize: '12px' }}>Group {groupName}</span>
+                        <span style={{ fontSize: '11px', fontWeight: '700', color: groupPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                          {isPerfect ? '🎯 Perfect! ' : ''}{groupPts > 0 ? `+${groupPts}pts` : '0pts'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        {rows.map((row, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px' }}>
+                            <span style={{ color: 'var(--text-muted)', minWidth: '16px', fontWeight: '700' }}>#{row.predicted_position}</span>
+                            <span style={{ fontSize: '14px' }}>{row.team?.flag_emoji}</span>
+                            <span style={{ flex: 1, color: row.points_awarded > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{row.team?.short_code}</span>
+                            <span style={{ fontWeight: '700', color: row.points_awarded > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                              {row.points_awarded > 0 ? `✓ +${row.points_awarded}` : '✗'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-              <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)', letterSpacing: '-0.02em' }}>
-                +{memberModal.memberProfile.group_position_points}
-              </div>
-            </div>
-          )}
+            )
+          })()}
           {activeTab === 'knockout' ? (
             <KnockoutPicksView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
           ) : activeTab === 'awards' ? (
