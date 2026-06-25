@@ -495,9 +495,12 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
               if (!byGroup[row.group_name]) byGroup[row.group_name] = []
               byGroup[row.group_name].push(row)
             })
-            const groupsWithBonus = Object.entries(byGroup).filter(([, rows]) => rows.some(r => r.points_awarded > 0))
-            if (groupsWithBonus.length === 0 && !memberModal.memberProfile?.group_position_points) return null
-            const total = memberModal.memberProfile?.group_position_points || 0
+            // Calculate total including perfect bonuses
+            const total = Object.values(byGroup).reduce((sum, rows) => {
+              const pp = rows.reduce((s, r) => s + (r.points_awarded || 0), 0)
+              const isPerfect = rows.filter(r => r.points_awarded > 0).length === 4
+              return sum + pp + (isPerfect ? 5 : 0)
+            }, 0)
             return (
               <div style={{ marginTop: '12px', border: '1px solid rgba(0,122,51,0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
                 {/* Header */}
