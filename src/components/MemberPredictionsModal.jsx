@@ -193,21 +193,34 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                 return (
                   <div key={md.match_number} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: anyEarned ? 'rgba(0,122,51,0.05)' : 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: anyEarned ? '1px solid rgba(0,122,51,0.2)' : '1px solid transparent' }}>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '24px' }}>#{md.match_number}</span>
-                    {home && away ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
-                        <span style={{ fontSize: '16px', opacity: isHomeWinner ? 1 : 0.5 }}>{home.flag_emoji}</span>
-                        <span style={{ fontSize: '13px', fontWeight: isHomeWinner ? '800' : '500', color: homeEarned ? 'var(--accent-green)' : isHomeWinner ? 'var(--text-primary)' : 'var(--text-muted)' }}>{home.short_code || home.name}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>v</span>
-                        <span style={{ fontSize: '16px', opacity: isAwayWinner ? 1 : 0.5 }}>{away.flag_emoji}</span>
-                        <span style={{ fontSize: '13px', fontWeight: isAwayWinner ? '800' : '500', color: awayEarned ? 'var(--accent-green)' : isAwayWinner ? 'var(--text-primary)' : 'var(--text-muted)' }}>{away.short_code || away.name}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', marginLeft: '6px', whiteSpace: 'nowrap' }}>→ {winner?.short_code || winner?.name || '?'}</span>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                        <span style={{ fontSize: '18px' }}>{winner?.flag_emoji}</span>
-                        <span style={{ fontSize: '13px', fontWeight: '700' }}>{winner?.name || '?'}</span>
-                      </div>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                      {/* If slot resolves use it; otherwise if winner fills this side, use winner; else show opponent's side */}
+                      {(() => {
+                        // Fill in unresolved slots using winner pick
+                        const displayHome = home || (isHomeWinner ? winner : null)
+                        const displayAway = away || (isAwayWinner ? winner : null)
+                        const dHomeEarned = displayHome && confirmedSet.has(displayHome.id)
+                        const dAwayEarned = displayAway && confirmedSet.has(displayAway.id)
+                        return (
+                          <>
+                            {displayHome && (
+                              <>
+                                <span style={{ fontSize: '16px', opacity: isHomeWinner ? 1 : 0.5 }}>{displayHome.flag_emoji}</span>
+                                <span style={{ fontSize: '13px', fontWeight: isHomeWinner ? '800' : '500', color: dHomeEarned ? 'var(--accent-green)' : isHomeWinner ? 'var(--text-primary)' : 'var(--text-muted)' }}>{displayHome.short_code || displayHome.name}</span>
+                              </>
+                            )}
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>v</span>
+                            {displayAway && (
+                              <>
+                                <span style={{ fontSize: '16px', opacity: isAwayWinner ? 1 : 0.5 }}>{displayAway.flag_emoji}</span>
+                                <span style={{ fontSize: '13px', fontWeight: isAwayWinner ? '800' : '500', color: dAwayEarned ? 'var(--accent-green)' : isAwayWinner ? 'var(--text-primary)' : 'var(--text-muted)' }}>{displayAway.short_code || displayAway.name}</span>
+                              </>
+                            )}
+                            <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', marginLeft: '4px', whiteSpace: 'nowrap' }}>→ {winner?.short_code || winner?.name || '?'}</span>
+                          </>
+                        )
+                      })()}
+                    </div>
                     {anyEarned && <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--accent-green)', whiteSpace: 'nowrap' }}>+{stage.points}pts</span>}
                     {pick.is_joker && <span style={{ fontSize: '12px' }}>🃏</span>}
                   </div>
