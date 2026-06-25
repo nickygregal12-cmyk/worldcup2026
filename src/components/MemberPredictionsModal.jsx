@@ -215,32 +215,47 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
                       {/* If slot resolves use it; otherwise if winner fills this side, use winner; else show opponent's side */}
                       {(() => {
-                        // Fill in unresolved slots using winner pick
+                        // Use confirmed fixture or resolve from picks; fill winner side if needed
                         const displayHome = home || (isHomeWinner ? winner : null)
                         const displayAway = away || (isAwayWinner ? winner : null)
                         const dHomeEarned = displayHome && confirmedSet.has(displayHome.id)
                         const dAwayEarned = displayAway && confirmedSet.has(displayAway.id)
+                        // If neither slot resolved, show winner prominently vs unknown
+                        const neitherResolved = !displayHome && !displayAway
+                        if (neitherResolved && winner) {
+                          return (
+                            <>
+                              <span style={{ fontSize: '16px' }}>{winner.flag_emoji}</span>
+                              <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary)' }}>{winner.short_code || winner.name}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 3px' }}>v</span>
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>TBD</span>
+                              <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', marginLeft: '4px' }}>→ {winner.short_code || winner.name}</span>
+                            </>
+                          )
+                        }
+                        const TeamDisplay = ({ team, isWinner, earned, slot }) => team ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                            <span style={{ fontSize: '16px', opacity: isWinner ? 1 : 0.5 }}>{team.flag_emoji}</span>
+                            <span style={{ fontSize: '13px', fontWeight: isWinner ? '800' : '500', color: earned ? 'var(--accent-green)' : isWinner ? 'var(--text-primary)' : 'var(--text-muted)' }}>{team.short_code || team.name}</span>
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>TBD</span>
+                        )
                         return (
                           <>
-                            {displayHome && (
-                              <>
-                                <span style={{ fontSize: '16px', opacity: isHomeWinner ? 1 : 0.5 }}>{displayHome.flag_emoji}</span>
-                                <span style={{ fontSize: '13px', fontWeight: isHomeWinner ? '800' : '500', color: dHomeEarned ? 'var(--accent-green)' : isHomeWinner ? 'var(--text-primary)' : 'var(--text-muted)' }}>{displayHome.short_code || displayHome.name}</span>
-                              </>
-                            )}
-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>v</span>
-                            {displayAway && (
-                              <>
-                                <span style={{ fontSize: '16px', opacity: isAwayWinner ? 1 : 0.5 }}>{displayAway.flag_emoji}</span>
-                                <span style={{ fontSize: '13px', fontWeight: isAwayWinner ? '800' : '500', color: dAwayEarned ? 'var(--accent-green)' : isAwayWinner ? 'var(--text-primary)' : 'var(--text-muted)' }}>{displayAway.short_code || displayAway.name}</span>
-                              </>
-                            )}
+                            <TeamDisplay team={displayHome} isWinner={isHomeWinner} earned={dHomeEarned} slot={md.home_slot} />
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 3px' }}>v</span>
+                            <TeamDisplay team={displayAway} isWinner={isAwayWinner} earned={dAwayEarned} slot={md.away_slot} />
                             <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', marginLeft: '4px', whiteSpace: 'nowrap' }}>→ {winner?.short_code || winner?.name || '?'}</span>
                           </>
                         )
                       })()}
                     </div>
-                    {anyEarned && <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--accent-green)', whiteSpace: 'nowrap' }}>+{stage.points}pts</span>}
+                    {anyEarned && (() => {
+                      const earnedCount = [homeEarned, awayEarned].filter(Boolean).length
+                      const earnedPts = earnedCount * stage.points
+                      return <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--accent-green)', whiteSpace: 'nowrap' }}>+{earnedPts}pts</span>
+                    })()}
                     {pick.is_joker && <span style={{ fontSize: '12px' }}>🃏</span>}
                   </div>
                 )
