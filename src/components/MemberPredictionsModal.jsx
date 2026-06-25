@@ -76,6 +76,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
   const [groupPreds, setGroupPreds] = useState({})
   const [matches, setMatches] = useState([])
   const [realConfirmedByStage, setRealConfirmedByStage] = useState({}) // stage -> Set of confirmed team IDs
+  const [confirmedFixtures, setConfirmedFixtures] = useState({}) // match_number -> {homeTeam, awayTeam}
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -91,7 +92,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
       const [koRes, predRes, matchRes] = await Promise.all([
         koQuery.order('match_number', { ascending: true }),
         predQuery,
-        supabase.from('matches').select('id, match_number, stage, home_team_id, away_team_id, group:group_id(name), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)'),
+        supabase.from('matches').select('id, match_number, stage, status, home_team_id, away_team_id, winner_team_id, group:group_id(name), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)'),
       ])
       if (cancelled) return
       const km = {};
@@ -126,7 +127,19 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
         })
         setRealConfirmedByStage(byStage)
       }
-      setPicks(km); setGroupPreds(pm); setMatches(matchRes.data || []); setLoading(false)
+      if (!cancelled) {
+        const confMap = {}
+        ;(matchRes.data || []).forEach(m => {
+          if (m.home_team_id && m.away_team_id && m.stage !== 'group') {
+            confMap[m.match_number] = { homeTeam: m.home_team, awayTeam: m.away_team }
+          }
+        })
+        setPicks(km)
+        setGroupPreds(pm)
+        setMatches(matchRes.data || [])
+        setConfirmedFixtures(confMap)
+      }
+      setLoading(false)
     }
     load()
     return () => { cancelled = true }
@@ -165,9 +178,13 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                 const stageTeams = stage.matches.flatMap(md => {
                   const pick = picks[md.match_number]
                   if (!pick?.winner_id) return []
-                  const home = resolveTeam(md.home_slot)
-                  const away = resolveTeam(md.away_slot)
-                  return [home?.id, away?.id].filter(Boolean)
+                  // For R32: count BOTH teams in each match (winner + opponent)
+                  const fixture = confirmedFixtures[md.match_number]
+                  const home = fixture?.homeTeam || resolveTeam(md.home_slot)
+                  const away = fixture?.awayTeam || resolveTeam(md.away_slot)
+                  if (stage.key === 'r32') return [home?.id, away?.id].filter(Boolean)
+                  // For R16+: only count winner pick
+                  return [pick.winner_id]
                 })
                 const confirmed = stageTeams.filter(id => confirmedSet.has(id))
                 const pts = confirmed.length * stage.points
@@ -181,11 +198,13 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {stageMatches.map(md => {
                 const pick = picks[md.match_number]
-                const home = resolveTeam(md.home_slot)
-                const away = resolveTeam(md.away_slot)
+                // Use confirmed fixture teams first, fall back to resolving from picks
+                const fixture = confirmedFixtures[md.match_number]
+                const home = fixture?.homeTeam || resolveTeam(md.home_slot)
+                const away = fixture?.awayTeam || resolveTeam(md.away_slot)
                 const winner = teamsById[pick.winner_id]
-                const isHomeWinner = home && home.id === pick.winner_id
-                const isAwayWinner = away && away.id === pick.winner_id
+                const isHomeWinner = winner && home && home.id === winner.id
+                const isAwayWinner = winner && away && away.id === winner.id
                 const confirmedSet = realConfirmedByStage[stage.key] || new Set()
                 const homeEarned = home && confirmedSet.has(home.id)
                 const awayEarned = away && confirmedSet.has(away.id)
