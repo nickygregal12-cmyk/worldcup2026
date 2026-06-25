@@ -25,6 +25,7 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState('stats') // stats | history
   const [history, setHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [groupPositionBreakdown, setGroupPositionBreakdown] = useState([])
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
   const [showShareCard, setShowShareCard] = useState(false)
   const [importPreview, setImportPreview] = useState(null)
@@ -49,6 +50,14 @@ export default function Profile() {
   const loadHistory = async () => {
     if (history.length > 0) return
     setHistoryLoading(true)
+    // Load group position breakdown alongside history
+    if (user) {
+      supabase.from('predicted_group_positions')
+        .select('group_name, predicted_position, actual_position, points_awarded, team:team_id(name, flag_emoji, short_code)')
+        .eq('user_id', user.id)
+        .order('group_name').order('predicted_position')
+        .then(({ data }) => setGroupPositionBreakdown(data || []))
+    }
     const { data } = await supabase
       .from('predictions')
       .select(`
@@ -832,6 +841,67 @@ export default function Profile() {
                 )
               })
             )}
+
+            {/* Group position bonus breakdown in history */}
+            {groupPositionBreakdown.length > 0 && (() => {
+              // Group by group_name, only show completed groups (have points_awarded set)
+              const byGroup = {}
+              groupPositionBreakdown.forEach(r => {
+                if (!byGroup[r.group_name]) byGroup[r.group_name] = []
+                byGroup[r.group_name].push(r)
+              })
+              const totalBonus = Object.values(byGroup).reduce((sum, rows) => {
+                const pp = rows.reduce((s, r) => s + (r.points_awarded || 0), 0)
+                const isPerfect = rows.filter(r => r.points_awarded > 0).length === 4
+                return sum + pp + (isPerfect ? 5 : 0)
+              }, 0)
+              if (groupPositionBreakdown.length === 0) return null
+              return (
+                <div style={{ marginTop: '16px' }}>
+                  <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>📊 Group Position Bonus</span>
+                    <span style={{ color: totalBonus > 0 ? 'var(--accent-green)' : 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>+{totalBonus}pts</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {Object.entries(byGroup).sort().map(([groupName, rows]) => {
+                      const correct = rows.filter(r => r.points_awarded > 0).length
+                      const isPerfect = correct === 4
+                      const groupPts = rows.reduce((s, r) => s + (r.points_awarded || 0), 0) + (isPerfect ? 5 : 0)
+                      return (
+                        <div key={groupName} style={{
+                          padding: '10px 14px',
+                          background: 'var(--bg-card)',
+                          border: `1px solid ${groupPts > 0 ? 'rgba(0,122,51,0.2)' : 'var(--border-light)'}`,
+                          borderLeft: `3px solid ${isPerfect ? 'var(--accent-gold)' : groupPts > 0 ? 'var(--accent-green)' : 'var(--border-light)'}`,
+                          borderRadius: 'var(--radius-md)',
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                            <span style={{ fontWeight: '700', fontSize: '12px' }}>
+                              {isPerfect ? '🎯 ' : ''}Group {groupName}
+                            </span>
+                            <span style={{ fontWeight: '800', fontSize: '13px', fontFamily: 'var(--font-mono)', color: groupPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                              +{groupPts}pts
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            {rows.map((r, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px' }}>
+                                <span style={{ color: 'var(--text-muted)', minWidth: '18px', fontWeight: '700' }}>#{r.predicted_position}</span>
+                                <span style={{ fontSize: '14px' }}>{r.team?.flag_emoji}</span>
+                                <span style={{ flex: 1, color: r.points_awarded > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{r.team?.short_code}</span>
+                                <span style={{ fontWeight: '700', color: r.points_awarded > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                                  {r.points_awarded > 0 ? `✓ +${r.points_awarded}pts` : '✗'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>

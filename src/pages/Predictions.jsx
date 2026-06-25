@@ -11,6 +11,30 @@ import { ALL_STAGES, calcPredictedStandings, getBest3rdTeams, groupFullyPredicte
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 const TOTAL_GROUP_MATCHES = 72 // 12 groups × 6 matches
 
+// Pure prediction standings — always uses user picks, never real scores
+const calcPredOnlyStandings = (matches, predictions) => {
+  const teams = {}
+  for (const match of matches) {
+    const hId = match.home_team_id || match.home_team?.id
+    const aId = match.away_team_id || match.away_team?.id
+    if (!hId || !aId) continue
+    if (!teams[hId]) teams[hId] = { team: match.home_team, id: hId, pts: 0, gd: 0, gf: 0, played: 0 }
+    if (!teams[aId]) teams[aId] = { team: match.away_team, id: aId, pts: 0, gd: 0, gf: 0, played: 0 }
+    const pred = predictions[match.id]
+    if (!pred || pred.home === undefined || pred.home === '' || pred.away === undefined || pred.away === '') continue
+    const hs = Number(pred.home), as_ = Number(pred.away)
+    if (isNaN(hs) || isNaN(as_)) continue
+    const h = teams[hId], a = teams[aId]
+    h.played++; a.played++
+    h.gf += hs; h.gd += hs - as_
+    a.gf += as_; a.gd += as_ - hs
+    if (hs > as_) { h.pts += 3 }
+    else if (hs === as_) { h.pts += 1; a.pts += 1 }
+    else { a.pts += 3 }
+  }
+  return Object.values(teams).sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf)
+}
+
 // ELO-based autofill
 const predictScore = (homeRank, awayRank) => {
   const homeStrength = 1 / (homeRank || 20)
@@ -2155,9 +2179,24 @@ export default function Predictions() {
   }
 
   const renderTablesContent = () => {
-    // By date: show all live tables
+    // By date: show bonus summary + live tables
     if (viewMode === 'date') {
-      return liveTablesAvailable ? renderAllLiveTables() : renderTablesLocked()
+      const totalBonus2 = Object.values(byGroupForTotal).reduce((sum, rows) => {
+        const pp = rows.reduce((s, r) => s + (r.points_awarded || 0), 0)
+        return sum + pp + (rows.filter(r => r.points_awarded > 0).length === 4 ? 5 : 0)
+      }, 0)
+      const completedCount = completedGroupNames.length
+      const bonusBanner = completedCount > 0 ? (
+        <div style={{ marginBottom: '12px', padding: '12px 14px', background: totalBonus2 > 0 ? 'rgba(0,122,51,0.07)' : 'var(--bg-card)', border: `1px solid ${totalBonus2 > 0 ? 'rgba(0,122,51,0.2)' : 'var(--border-light)'}`, borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: '700', fontSize: '13px', color: totalBonus2 > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>📊 Group position bonus · {completedCount}/12 done</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>+2pts per correct position · +5pts perfect group</div>
+          </div>
+          <div style={{ fontWeight: '900', fontSize: '22px', fontFamily: 'var(--font-mono)', color: totalBonus2 > 0 ? 'var(--accent-green)' : 'var(--text-muted)', letterSpacing: '-0.02em' }}>+{totalBonus2}pts</div>
+        </div>
+      ) : null
+      if (!liveTablesAvailable) return <>{bonusBanner}{renderTablesLocked()}</>
+      return <>{bonusBanner}{renderAllLiveTables()}</>
     }
 
     // By group: show real vs predicted combined view
@@ -2200,20 +2239,15 @@ export default function Predictions() {
           }).sort((a, b) => a.position - b.position)
 
           const groupMatches_g = matches.filter(m => m.group?.name === g)
-          // Ensure home_team_id/away_team_id are set (may need to derive from team object)
-          const groupMatchesNorm = groupMatches_g.map(m => ({
-            ...m,
-            home_team_id: m.home_team_id || m.home_team?.id,
-            away_team_id: m.away_team_id || m.away_team?.id,
-          }))
-          const { standings: predStandings } = calcGroupStandings(groupMatchesNorm, predictions)
+          // Pure prediction standings — only uses user picks, never real scores
+          const predStandings = calcPredOnlyStandings(groupMatches_g, predictions)
           const hasPred = predStandings.some(s => s.played > 0)
           const hasReal = realGroup.length > 0 && liveTablesAvailable
           const groupComplete = realGroup.length > 0 && realGroup.every(s => s.played >= 3)
           const bonusRows = groupBonusRows.filter(r => r.group_name === g)
-          const groupBonus = bonusRows.reduce((s, r) => s + (r.points_awarded || 0), 0)
           const correctPos = bonusRows.filter(r => r.points_awarded > 0).length
           const isPerfect = correctPos === 4
+          const groupBonus = bonusRows.reduce((s, r) => s + (r.points_awarded || 0), 0) + (isPerfect ? 5 : 0)
 
           if (!hasPred && !hasReal) return null
 
@@ -2223,7 +2257,7 @@ export default function Predictions() {
                 <div style={{ fontWeight: '800', fontSize: '14px' }}>Group {g}</div>
                 {bonusRows.length > 0 && (
                   <div style={{ fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '20px', background: groupBonus > 0 ? 'rgba(0,122,51,0.1)' : 'var(--bg-secondary)', color: groupBonus > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                    {isPerfect ? '🎯 Perfect! ' : ''}{groupBonus > 0 ? `+${groupBonus}pts` : '0pts'}
+                    {isPerfect ? '🎯 Perfect! +13pts' : groupBonus > 0 ? `+${groupBonus}pts` : '0pts'}
                   </div>
                 )}
               </div>
