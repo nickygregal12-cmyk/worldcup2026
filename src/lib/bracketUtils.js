@@ -223,9 +223,12 @@ export function getBest3rdTeams(standings) {
       thirds.push({ ...teams[2], group })
     }
   }
-  // Sort by pts, then gd, then gf
+  // Sort by pts, gd, gf, then team id (stable) — the same final tiebreak the
+  // scoring SQL uses, so the bracket, the predictions modal and the points all
+  // agree on which thirds qualify when teams are level.
   return thirds.sort((a, b) =>
     b.pts - a.pts || b.gd - a.gd || b.gf - a.gf
+    || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
   ).slice(0, 8)
 }
 
