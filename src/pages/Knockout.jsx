@@ -399,8 +399,12 @@ export default function Knockout() {
       const userAway = resolveTeam(matchDef.away_slot)
 
       const confirmed = confirmedFixtures[matchDef.match_number]
-      const realHome = confirmed?.home_team || (activeStage === 'r32' ? resolveRealSlot(matchDef.home_slot) : null)
-      const realAway = confirmed?.away_team || (activeStage === 'r32' ? resolveRealSlot(matchDef.away_slot) : null)
+      // For real matchup: use confirmed fixture first, then resolve non-BT3 slots only
+      // BT3 slots are provisional until all groups complete — don't show them to avoid duplicates
+      const isBT3Home = matchDef.home_slot?.startsWith('BT3_')
+      const isBT3Away = matchDef.away_slot?.startsWith('BT3_')
+      const realHome = confirmed?.home_team || (activeStage === 'r32' && !isBT3Home ? resolveRealSlot(matchDef.home_slot) : null)
+      const realAway = confirmed?.away_team || (activeStage === 'r32' && !isBT3Away ? resolveRealSlot(matchDef.away_slot) : null)
 
       // Winner pick on track
       const pickOnTrack = userPickId && teamsInStage.has(userPickId)
