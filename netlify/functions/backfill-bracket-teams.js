@@ -5,6 +5,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 )
 
+// R32 bracket structure. home/away are SLOT descriptors, not teams.
 const R32_MATCHES = [
   { match_number: 73, home_slot: '2A', away_slot: '2B' },
   { match_number: 76, home_slot: '1C', away_slot: '2F' },
@@ -24,11 +25,14 @@ const R32_MATCHES = [
   { match_number: 86, home_slot: '1J', away_slot: '2H' },
 ]
 
+// Standings for one group from a user's predictions. Tie-break matches the app's
+// calcPredictedStandings: pts, gd, gf, then registration order (NOT team id), so
+// the columns we write line up with what the bracket views resolve.
 function calcStandings(groupMatches, predictions, groupName) {
   const teams = {}
   groupMatches.forEach(m => {
-    if (!teams[m.home_team_id]) teams[m.home_team_id] = { id: m.home_team_id, pts: 0, gd: 0, gf: 0, played: 0 }
-    if (!teams[m.away_team_id]) teams[m.away_team_id] = { id: m.away_team_id, pts: 0, gd: 0, gf: 0, played: 0 }
+    if (!teams[m.home_team_id]) teams[m.home_team_id] = { id: m.home_team_id, pts: 0, gd: 0, gf: 0, played: 0, order: Object.keys(teams).length }
+    if (!teams[m.away_team_id]) teams[m.away_team_id] = { id: m.away_team_id, pts: 0, gd: 0, gf: 0, played: 0, order: Object.keys(teams).length }
     const pred = predictions[m.id]
     if (!pred || pred.home_score === null || pred.away_score === null) return
     const h = parseInt(pred.home_score), a = parseInt(pred.away_score)
@@ -38,29 +42,86 @@ function calcStandings(groupMatches, predictions, groupName) {
     else if (h < a) { teams[m.away_team_id].pts += 3 }
     else { teams[m.home_team_id].pts += 1; teams[m.away_team_id].pts += 1 }
   })
-  return Object.values(teams).sort((a, b) =>
-    b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.id.localeCompare(b.id)
-  ).map((t, i) => ({ ...t, position: i + 1, group: groupName }))
+  return Object.values(teams)
+    .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.order - b.order)
+    .map((t, i) => ({ ...t, position: i + 1, group: groupName }))
 }
 
-function resolveSlot(slot, standingsMap) {
+// Whether every match in a group has a complete prediction.
+function groupFullyPredicted(groupMatches, predictions) {
+  if (!groupMatches.length) return false
+  return groupMatches.every(m => {
+    const p = predictions[m.id]
+    return p && p.home_score !== null && p.away_score !== null && p.home_score !== '' && p.away_score !== ''
+  })
+}
+
+// The 8 best third-placed teams across all groups, best first.
+function getBest3rds(standingsMap) {
+  const thirds = []
+  for (const arr of Object.values(standingsMap)) {
+    const t = arr.find(x => x.position === 3)
+    if (t) thirds.push(t)
+  }
+  return thirds
+    .sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.id.localeCompare(b.id))
+    .slice(0, 8)
+}
+
+// FIFA-legal global allocation of the 8 qualifying third-place GROUPS to the 8
+// best-third R32 slots. Deterministic backtracking - most-constrained slot first.
+// This is the part the old code got wrong: it assigned each slot independently,
+// so one team could fill several slots. Mirrors allocateThirdPlaces in bracketUtils.
+function allocateThirdPlaces(qualifiedGroups) {
+  if (!qualifiedGroups || qualifiedGroups.length !== 8) return null
+  const slotKeys = R32_MATCHES.map(m => m.away_slot).filter(s => /^BT3_[A-L]+$/.test(s))
+  const slots = slotKeys.map(key => ({
+    key,
+    eligible: key.slice(4).split('').filter(g => qualifiedGroups.includes(g)).sort(),
+  }))
+  const order = [...slots].sort((a, b) => a.eligible.length - b.eligible.length || a.key.localeCompare(b.key))
+  const used = new Set()
+  const assign = {}
+  const backtrack = (i) => {
+    if (i === order.length) return true
+    const slot = order[i]
+    for (const g of slot.eligible) {
+      if (used.has(g)) continue
+      used.add(g); assign[slot.key] = g
+      if (backtrack(i + 1)) return true
+      used.delete(g); delete assign[slot.key]
+    }
+    return false
+  }
+  return backtrack(0) ? assign : null
+}
+
+// Resolve any slot to a team id, using a precomputed best-third allocation so
+// each third lands in exactly one slot (matches the live app's resolveSlot).
+function resolveSlot(slot, standingsMap, allocation, best3rds, predictedGroups) {
   if (!slot) return null
+
   const posMatch = slot.match(/^([12])([A-L])$/)
   if (posMatch) {
     const pos = parseInt(posMatch[1]), grp = posMatch[2]
-    const grpStandings = standingsMap[grp] || []
-    return grpStandings.find(t => t.position === pos)?.id || null
+    if (!predictedGroups.has(grp)) return null
+    return (standingsMap[grp] || []).find(t => t.position === pos)?.id || null
   }
-  if (slot.startsWith('BT3_')) {
-    const groups = slot.replace('BT3_', '').split('')
-    const thirds = groups.map(g => {
-      const s = standingsMap[g] || []
-      return s.find(t => t.position === 3) || null
-    }).filter(Boolean)
-    if (thirds.length < groups.length) return null // not all groups done
-    thirds.sort((a, b) => b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.id.localeCompare(b.id))
-    return thirds[0]?.id || null
+
+  const bt3 = slot.match(/^BT3_([A-L]+)$/)
+  if (bt3) {
+    const eligibleGroups = bt3[1].split('')
+    if (predictedGroups.size < 4) return null
+    // Full bracket predicted -> use the global FIFA-legal allocation.
+    if (predictedGroups.size === 12 && allocation && allocation[slot]) {
+      const grp = allocation[slot]
+      return best3rds.find(t => t.group === grp)?.id || null
+    }
+    // Partial: only resolve when exactly one qualifying third fits this slot.
+    const matching = best3rds.filter(t => eligibleGroups.includes(t.group))
+    return matching.length === 1 ? matching[0].id : null
   }
+
   return null
 }
 
@@ -70,8 +131,10 @@ export const handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
   }
 
+  // ?dry=1 reports what WOULD change without writing.
+  const dryRun = event.queryStringParameters?.dry === '1'
+
   try {
-    // Fetch all group matches with their IDs
     const { data: groupMatches } = await supabase
       .from('matches')
       .select('id, match_number, group_id, home_team_id, away_team_id, groups:group_id(name)')
@@ -83,10 +146,6 @@ export const handler = async (event) => {
       if (g) { if (!groupsByName[g]) groupsByName[g] = []; groupsByName[g].push(m) }
     })
 
-    // Fetch all users
-    const { data: users } = await supabase.from('profiles').select('id, username')
-    
-    // Fetch all predictions
     const { data: allPreds } = await supabase
       .from('predictions')
       .select('user_id, match_id, home_score, away_score')
@@ -97,39 +156,56 @@ export const handler = async (event) => {
       predsByUser[p.user_id][p.match_id] = p
     })
 
-    // Fetch all R32 knockout picks
+    // Every R32 pick - we re-resolve ALL of them (the corruption is in already
+    // populated rows, so we no longer skip rows that have teams).
     const { data: r32Picks } = await supabase
       .from('knockout_picks')
       .select('id, user_id, match_number, home_team_id, away_team_id, winner_team_id')
       .eq('stage', 'r32')
 
     const updates = []
-    let skipped = 0
+    let unchanged = 0
 
     for (const pick of r32Picks) {
-      // Skip if already populated
-      if (pick.home_team_id && pick.away_team_id) { skipped++; continue }
-
       const matchDef = R32_MATCHES.find(m => m.match_number === pick.match_number)
       if (!matchDef) continue
 
       const userPreds = predsByUser[pick.user_id] || {}
-      
-      // Build standings for each group from user predictions
+
       const standingsMap = {}
+      const predictedGroups = new Set()
       for (const [grp, matches] of Object.entries(groupsByName)) {
         standingsMap[grp] = calcStandings(matches, userPreds, grp)
+        if (groupFullyPredicted(matches, userPreds)) predictedGroups.add(grp)
       }
 
-      const homeId = resolveSlot(matchDef.home_slot, standingsMap)
-      const awayId = resolveSlot(matchDef.away_slot, standingsMap)
+      const best3rds = getBest3rds(standingsMap)
+      const allocation = (predictedGroups.size === 12 && best3rds.length === 8)
+        ? allocateThirdPlaces(best3rds.map(t => t.group))
+        : null
 
-      if (homeId || awayId) {
-        updates.push({ id: pick.id, home_team_id: homeId, away_team_id: awayId })
+      const homeId = resolveSlot(matchDef.home_slot, standingsMap, allocation, best3rds, predictedGroups)
+      const awayId = resolveSlot(matchDef.away_slot, standingsMap, allocation, best3rds, predictedGroups)
+
+      // Don't wipe a previously-resolved team if we can't resolve it now
+      // (e.g. incomplete predictions) - only write when we have a value.
+      const newHome = homeId || pick.home_team_id || null
+      const newAway = awayId || pick.away_team_id || null
+
+      if (newHome === pick.home_team_id && newAway === pick.away_team_id) {
+        unchanged++
+        continue
+      }
+      updates.push({ id: pick.id, home_team_id: newHome, away_team_id: newAway })
+    }
+
+    if (dryRun) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ message: 'Dry run - no writes', wouldUpdate: updates.length, unchanged, total: r32Picks.length }),
       }
     }
 
-    // Batch update in chunks of 50
     let updated = 0
     for (let i = 0; i < updates.length; i += 50) {
       const chunk = updates.slice(i, i + 50)
@@ -144,7 +220,7 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Backfill complete', updated, skipped, total: r32Picks.length })
+      body: JSON.stringify({ message: 'Backfill complete', updated, unchanged, total: r32Picks.length }),
     }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
