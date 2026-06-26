@@ -169,6 +169,33 @@ export const handler = async (event, context) => {
       const teamByName = {}
       for (const t of allTeams || []) teamByName[stripAccents(normalise(t.name))] = t.id
 
+      // Real group positions (from completed groups) so we can verify a fixture's
+      // teams actually belong in a row's slots before writing — the API sometimes
+      // hands back provisional/placeholder teams for a not-yet-final slot, and we
+      // must not stamp e.g. USA(1D) v BIH(3B) onto M83 (2K v 2L).
+      const { data: gsRows } = await supabase
+        .from('group_standings')
+        .select('team_id, position, played, group:group_id(name)')
+        .eq('played', 3)
+      const realPos = {}
+      for (const r of gsRows || []) realPos[r.team_id] = { group: r.group?.name, position: r.position }
+
+      const R32_SLOTS = {
+        73:['2A','2B'],76:['1C','2F'],77:['1I','BT3_CDFGH'],74:['1E','BT3_ABCDF'],
+        79:['1A','BT3_CEFHI'],75:['1F','2C'],80:['1L','BT3_EHIJK'],78:['2E','2I'],
+        81:['1D','BT3_BEFIJ'],82:['1G','BT3_AEHIJ'],83:['2K','2L'],87:['1K','BT3_DEIJL'],
+        84:['1H','2J'],85:['1B','BT3_EFGIJ'],88:['2D','2G'],86:['1J','2H'],
+      }
+      const fitsSlot = (teamId, slot) => {
+        const rp = realPos[teamId]
+        if (!rp || !rp.group) return false
+        const pos = slot.match(/^([12])([A-L])$/)
+        if (pos) return rp.position === parseInt(pos[1]) && rp.group === pos[2]
+        const bt3 = slot.match(/^BT3_([A-L]+)$/)
+        if (bt3) return rp.position === 3 && bt3[1].includes(rp.group)
+        return false
+      }
+
       for (const apiFx of koApiFixtures) {
         const ourStage = API_STAGE_TO_OURS[apiFx.stage]
         const ourRow = (koRows || []).find(r =>
@@ -184,9 +211,24 @@ export const handler = async (event, context) => {
           errors.push(`KO fixture M${ourRow.match_number}: unknown team ${apiFx.homeTeam.name} / ${apiFx.awayTeam.name}`)
           continue
         }
+
+        // R32 eligibility guard: only write if the teams actually fit this row's
+        // slots (per real group standings). Prevents a placeholder/provisional API
+        // fixture from stamping the wrong teams into a slot (e.g. USA v BIH → M83).
+        let writeHome = homeId, writeAway = awayId
+        if (ourStage === 'r32') {
+          const slots = R32_SLOTS[ourRow.match_number]
+          if (slots) {
+            const directOk = fitsSlot(homeId, slots[0]) && fitsSlot(awayId, slots[1])
+            const swapOk   = fitsSlot(awayId, slots[0]) && fitsSlot(homeId, slots[1])
+            if (!directOk && !swapOk) continue           // teams don't belong here — skip
+            if (!directOk && swapOk) { writeHome = awayId; writeAway = homeId } // align to bracket order
+          }
+        }
+
         const { error: fxErr } = await supabase.from('matches').update({
-          home_team_id: ourRow.home_team_id || homeId,
-          away_team_id: ourRow.away_team_id || awayId,
+          home_team_id: ourRow.home_team_id || writeHome,
+          away_team_id: ourRow.away_team_id || writeAway,
           external_match_id: apiFx.id.toString(),
         }).eq('id', ourRow.id)
         if (!fxErr) fixturesPopulated++
