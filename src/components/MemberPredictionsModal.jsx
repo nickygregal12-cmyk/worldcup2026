@@ -120,11 +120,15 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
             if (m.home_team_id) byStage.r32.add(m.home_team_id)
             if (m.away_team_id) byStage.r32.add(m.away_team_id)
           } else if (m.status === 'completed' && m.winner_team_id) {
-            // Winner of r32 goes to r16, winner of r16 goes to qf, etc
             const nextStage = { r32: 'r16', r16: 'qf', qf: 'sf', sf: 'final' }[m.stage]
             if (nextStage && byStage[nextStage]) byStage[nextStage].add(m.winner_team_id)
           }
         })
+        // Also add top-2 finishers from completed groups
+        const { data: gsData } = await supabase
+          .from('group_standings').select('team_id, position, played')
+          .eq('played', 3).lte('position', 2)
+        ;(gsData || []).forEach(gs => { if (gs.team_id) byStage.r32.add(gs.team_id) })
         setRealConfirmedByStage(byStage)
       }
       if (!cancelled) {

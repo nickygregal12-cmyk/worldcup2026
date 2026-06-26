@@ -227,15 +227,25 @@ export default function Knockout() {
     return out
   }, [realKoResults])
 
-  // Teams confirmed in real R32 (home_team_id/away_team_id set on r32 fixtures)
+  // Teams confirmed in real R32:
+  // 1. home/away team IDs set on r32 fixtures
+  // 2. Teams that finished top 2 in completed groups (played=3, position<=2)
   const confirmedR32Teams = useMemo(() => {
     const out = new Set()
+    // From confirmed fixtures
     realKoFixtures.filter(m => m.stage === 'r32').forEach(m => {
       if (m.home_team?.id) out.add(m.home_team.id)
       if (m.away_team?.id) out.add(m.away_team.id)
     })
+    // From completed group standings (top 2 with all 3 played)
+    Object.values(realStandingsMap).forEach(teams => {
+      if (teams.every(t => t.played >= 3)) {
+        const top2 = teams.filter(t => t.position <= 2)
+        top2.forEach(t => { if (t.team?.id) out.add(t.team.id) })
+      }
+    })
     return out
-  }, [realKoFixtures])
+  }, [realKoFixtures, realStandingsMap])
 
   // Build real standings map in same format as predicted standings (group -> [{team, pts, gd...}])
   const realStandingsMap = useMemo(() => {
@@ -255,6 +265,7 @@ export default function Knockout() {
         qualified: s.qualified,
         qualificationType: s.qualification_type,
         fifaRanking: s.team?.fifa_ranking || 999,
+        confirmedR32: s.played >= 3 && s.position <= 2,
       })
     })
     // Sort by API position (already FIFA-correct, don't re-sort)
