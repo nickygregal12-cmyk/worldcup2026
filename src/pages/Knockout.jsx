@@ -230,22 +230,6 @@ export default function Knockout() {
   // Teams confirmed in real R32:
   // 1. home/away team IDs set on r32 fixtures
   // 2. Teams that finished top 2 in completed groups (played=3, position<=2)
-  const confirmedR32Teams = useMemo(() => {
-    const out = new Set()
-    // From confirmed fixtures
-    realKoFixtures.filter(m => m.stage === 'r32').forEach(m => {
-      if (m.home_team?.id) out.add(m.home_team.id)
-      if (m.away_team?.id) out.add(m.away_team.id)
-    })
-    // From completed group standings (top 2 with all 3 played)
-    Object.values(realStandingsMap).forEach(teams => {
-      if (teams.every(t => t.played >= 3)) {
-        const top2 = teams.filter(t => t.position <= 2)
-        top2.forEach(t => { if (t.team?.id) out.add(t.team.id) })
-      }
-    })
-    return out
-  }, [realKoFixtures, realStandingsMap])
 
   // Build real standings map in same format as predicted standings (group -> [{team, pts, gd...}])
   const realStandingsMap = useMemo(() => {
@@ -272,6 +256,23 @@ export default function Knockout() {
     Object.keys(map).forEach(g => map[g].sort((a, b) => a.position - b.position))
     return map
   }, [realGroupStandings])
+
+  const confirmedR32Teams = useMemo(() => {
+    const out = new Set()
+    // From confirmed fixtures
+    realKoFixtures.filter(m => m.stage === 'r32').forEach(m => {
+      if (m.home_team?.id) out.add(m.home_team.id)
+      if (m.away_team?.id) out.add(m.away_team.id)
+    })
+    // From completed group standings (top 2 with all 3 played)
+    Object.values(realStandingsMap).forEach(teams => {
+      if (teams.every(t => t.played >= 3)) {
+        const top2 = teams.filter(t => t.position <= 2)
+        top2.forEach(t => { if (t.team?.id) out.add(t.team.id) })
+      }
+    })
+    return out
+  }, [realKoFixtures, realStandingsMap])
 
   // Resolve a slot against real current standings (no prediction check needed)
   const resolveRealSlot = useCallback((slot) => {
