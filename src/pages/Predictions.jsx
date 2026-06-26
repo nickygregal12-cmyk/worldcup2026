@@ -2179,10 +2179,11 @@ export default function Predictions() {
   }
 
   const renderTablesContent = () => {
-    // Pre-compute byGroupForTotal needed in both date and group views
+    // Pre-compute variables needed in both date and group views
     const groupBonusRowsAll = groupPositionBreakdown
     const byGroupForTotal = {}
     groupBonusRowsAll.forEach(r => { if (!byGroupForTotal[r.group_name]) byGroupForTotal[r.group_name] = []; byGroupForTotal[r.group_name].push(r) })
+    const completedGroupNames = [...new Set(groupBonusRowsAll.map(r => r.group_name))]
 
     // By date: show bonus summary + live tables
     if (viewMode === 'date') {
@@ -2214,7 +2215,7 @@ export default function Predictions() {
       const perfect = rows.filter(r => r.points_awarded > 0).length === 4 ? 5 : 0
       return sum + posPoints + perfect
     }, 0)
-    const completedGroupNames = [...new Set(groupBonusRows.map(r => r.group_name))]
+    // completedGroupNames already declared above
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>

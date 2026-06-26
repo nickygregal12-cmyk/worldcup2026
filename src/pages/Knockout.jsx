@@ -264,11 +264,11 @@ export default function Knockout() {
       if (m.home_team?.id) out.add(m.home_team.id)
       if (m.away_team?.id) out.add(m.away_team.id)
     })
-    // From completed group standings (top 2 with all 3 played)
+    // From completed group standings (position 1 or 2 with all 3 matches played)
     Object.values(realStandingsMap).forEach(teams => {
-      if (teams.every(t => t.played >= 3)) {
-        const top2 = teams.filter(t => t.position <= 2)
-        top2.forEach(t => { if (t.team?.id) out.add(t.team.id) })
+      const allPlayed = teams.every(t => t.played >= 3)
+      if (allPlayed) {
+        teams.filter(t => t.position <= 2).forEach(t => { if (t.team?.id) out.add(t.team.id) })
       }
     })
     return out
@@ -1029,9 +1029,9 @@ export default function Knockout() {
                             {isPickedTeam
                               ? teamEliminated ? `${team.short_code} · Eliminated ✗`
                               : teamStillAlive ? `${team.short_code} · Still in ✓`
-                              : isConfirmedInR32 ? `${team.short_code} · Your pick ✓`
+                              : isConfirmedInR32 ? `${team.short_code} · Your pick · +5pts`
                               : `${team.short_code} · Your pick`
-                              : isConfirmedInR32 ? `${team.short_code} · In R32 +5pts`
+                              : isConfirmedInR32 ? `${team.short_code} · In R32 · +5pts`
                               : isEliminatedFromR32 ? `${team.short_code} · Eliminated ✗`
                               : team.short_code}
                           </div>
