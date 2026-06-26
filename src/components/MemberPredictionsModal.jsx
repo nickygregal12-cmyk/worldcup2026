@@ -77,6 +77,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
   const [matches, setMatches] = useState([])
   const [realConfirmedByStage, setRealConfirmedByStage] = useState({}) // stage -> Set of confirmed team IDs
   const [confirmedFixtures, setConfirmedFixtures] = useState({}) // match_number -> {homeTeam, awayTeam}
+  const [allTeams, setAllTeams] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -89,10 +90,11 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
       const predTable = lockedSnapshot ? 'league_predictions' : 'predictions'
       let predQuery = supabase.from(predTable).select('match_id, home_score, away_score').eq('user_id', userId)
       if (lockedSnapshot && leagueId) predQuery = predQuery.eq('league_id', leagueId)
-      const [koRes, predRes, matchRes] = await Promise.all([
+      const [koRes, predRes, matchRes, teamsRes] = await Promise.all([
         koQuery.order('match_number', { ascending: true }),
         predQuery,
         supabase.from('matches').select('id, match_number, stage, status, home_team_id, away_team_id, winner_team_id, group:group_id(name), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)'),
+        supabase.from('teams').select('id, name, flag_emoji, short_code'),
       ])
       if (cancelled) return
       const km = {};
@@ -142,6 +144,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
         setGroupPreds(pm)
         setMatches(matchRes.data || [])
         setConfirmedFixtures(confMap)
+        setAllTeams(teamsRes.data || [])
       }
       setLoading(false)
     }
@@ -153,9 +156,12 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
   const standings = React.useMemo(() => calcPredictedStandings(groupMatches, groupPreds, true), [groupMatches, groupPreds])
   const teamsById = React.useMemo(() => {
     const map = {}
+    // From matches (group stage)
     matches.forEach(m => { if (m.home_team) map[m.home_team.id] = m.home_team; if (m.away_team) map[m.away_team.id] = m.away_team })
+    // From allTeams fetch (includes all 48 teams for KO display)
+    allTeams.forEach(t => { if (t.id) map[t.id] = t })
     return map
-  }, [matches])
+  }, [matches, allTeams])
 
   // Map of match_number -> {home, away} team IDs from stored knockout_picks
   const pickHomeAway = React.useMemo(() => {
@@ -217,10 +223,11 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
               {stageMatches.map(md => {
                 const pick = picks[md.match_number]
-                // Always show USER'S predicted teams (from their group picks)
-                // confirmedFixtures is only used for points earned check below
-                const home = resolveTeam(md.home_slot)
-                const away = resolveTeam(md.away_slot)
+                // Use stored home/away team IDs first (most accurate), fall back to slot resolution
+                const storedHomeId = pick.home_team_id
+                const storedAwayId = pick.away_team_id
+                const home = storedHomeId ? teamsById[storedHomeId] || { id: storedHomeId } : resolveTeam(md.home_slot)
+                const away = storedAwayId ? teamsById[storedAwayId] || { id: storedAwayId } : resolveTeam(md.away_slot)
                 const winner = teamsById[pick.winner_id]
                 const isHomeWinner = winner && home && home.id === winner.id
                 const isAwayWinner = winner && away && away.id === winner.id
