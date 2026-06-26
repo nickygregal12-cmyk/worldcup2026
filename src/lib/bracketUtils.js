@@ -142,7 +142,9 @@ export function calcPredictedStandings(matches, predictions, pureMode = false) {
     }
   }
 
-  // Second pass — apply predictions/results
+  // Second pass — apply predictions/results, and record head-to-head points
+  // (used only to break exact pts/gd/gf ties deterministically below).
+  const h2h = {} // group -> { `${idA}|${idB}`: points A took off B }
   for (const match of matches) {
     if (match.stage !== 'group') continue
     const groupName = match.group?.name
@@ -170,16 +172,26 @@ export function calcPredictedStandings(matches, predictions, pureMode = false) {
     h.gf += homeScore; h.gd += homeScore - awayScore
     a.gf += awayScore; a.gd += awayScore - homeScore
 
-    if (homeScore > awayScore) { h.pts += 3; h.w++; a.l++ }
-    else if (homeScore === awayScore) { h.pts += 1; a.pts += 1; h.d++; a.d++ }
-    else { a.pts += 3; a.w++; h.l++ }
+    let hH2h, aH2h
+    if (homeScore > awayScore) { h.pts += 3; h.w++; a.l++; hH2h = 3; aH2h = 0 }
+    else if (homeScore === awayScore) { h.pts += 1; a.pts += 1; h.d++; a.d++; hH2h = 1; aH2h = 1 }
+    else { a.pts += 3; a.w++; h.l++; hH2h = 0; aH2h = 3 }
+
+    if (!h2h[groupName]) h2h[groupName] = {}
+    h2h[groupName][`${homeId}|${awayId}`] = hH2h
+    h2h[groupName][`${awayId}|${homeId}`] = aH2h
   }
 
-  // Sort each group: pts desc, gd desc, gf desc, then original order as tiebreak
+  // Sort each group: pts desc, gd desc, gf desc, then head-to-head between the
+  // two tied teams, then team id (stable) so every surface — and the scoring —
+  // agrees on positions even when a user's predictions leave teams level.
   const standings = {}
   for (const [group, teams] of Object.entries(groups)) {
+    const gh2h = h2h[group] || {}
     standings[group] = Object.values(teams).sort((a, b) =>
-      b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || a.order - b.order
+      b.pts - a.pts || b.gd - a.gd || b.gf - a.gf
+      || (gh2h[`${b.id}|${a.id}`] || 0) - (gh2h[`${a.id}|${b.id}`] || 0)
+      || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
     )
   }
   return standings
