@@ -193,15 +193,27 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
         const stageMatches = stage.matches.filter(md => picks[md.match_number]?.winner_id)
         if (stageMatches.length === 0) return null
         const confirmedSet = realConfirmedByStage[stage.key] || new Set()
-        // Total pts earned this stage
+        // Resolve each match's two teams from THIS user's own predicted bracket
+        // (pure mode), never from the stored home/away columns — those can hold
+        // real teams or go stale after a group-prediction edit, which is what
+        // produced nonsense like "CUW v SEN · pick: NOR". The winner is then
+        // always one of the two resolved teams (or flagged as no longer in it).
+        const resolvedFor = (md) => {
+          const pick = picks[md.match_number]
+          let home = resolveTeam(md.home_slot)
+          let away = resolveTeam(md.away_slot)
+          // Fallback to stored teams only if the slot can't resolve yet
+          if (!home && pick?.home_team_id) home = teamsById[pick.home_team_id] || null
+          if (!away && pick?.away_team_id) away = teamsById[pick.away_team_id] || null
+          return { home, away }
+        }
+        // Total pts earned this stage — 5/8/12... per predicted team that really reached this round
         let stagePtsEarned = 0
         stageMatches.forEach(md => {
-          const pick = picks[md.match_number]
-          const homeId = pick.home_team_id || null
-          const awayId = pick.away_team_id || null
-          if (homeId && confirmedSet.has(homeId)) stagePtsEarned += stage.points
-          if (awayId && confirmedSet.has(awayId)) stagePtsEarned += stage.points
-          if (!homeId && !awayId && confirmedSet.has(pick.winner_id)) stagePtsEarned += stage.points
+          const { home, away } = resolvedFor(md)
+          if (home && confirmedSet.has(home.id)) stagePtsEarned += stage.points
+          if (away && confirmedSet.has(away.id)) stagePtsEarned += stage.points
+          if (!home && !away && confirmedSet.has(picks[md.match_number].winner_id)) stagePtsEarned += stage.points
         })
         return (
           <div key={stage.key}>
@@ -216,14 +228,18 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
               {stageMatches.map(md => {
                 const pick = picks[md.match_number]
-                const hasStoredTeams = !!(pick.home_team_id && pick.away_team_id)
-                const home = pick.home_team_id ? teamsById[pick.home_team_id] : null
-                const away = pick.away_team_id ? teamsById[pick.away_team_id] : null
+                const { home, away } = resolvedFor(md)
+                const bothKnown = !!(home && away)
                 const winner = teamsById[pick.winner_id]
+                // Is the saved winner still one of this match's two teams? If the
+                // user edited their group picks after choosing a winner, it may
+                // not be — show it as "no longer in this match" rather than as a
+                // pick that makes no sense next to the two teams shown.
+                const winnerInMatch = winner && (winner.id === home?.id || winner.id === away?.id)
                 const homeEarned = home && confirmedSet.has(home.id)
                 const awayEarned = away && confirmedSet.has(away.id)
                 const winnerEarned = winner && confirmedSet.has(winner.id)
-                const earnedPts = hasStoredTeams
+                const earnedPts = bothKnown
                   ? [homeEarned, awayEarned].filter(Boolean).length * stage.points
                   : (winnerEarned ? stage.points : 0)
                 const anyEarned = earnedPts > 0
@@ -236,7 +252,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                     border: `1px solid ${anyEarned ? 'rgba(0,122,51,0.2)' : 'transparent'}`,
                   }}>
                     <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '26px', fontWeight: '600' }}>#{md.match_number}</span>
-                    {hasStoredTeams && home && away ? (
+                    {bothKnown ? (
                       <>
                         <span style={{ fontSize: '18px', opacity: homeEarned ? 1 : 0.45 }}>{home.flag_emoji}</span>
                         <span style={{ fontSize: '13px', fontWeight: home.id === pick.winner_id ? '700' : '400', color: homeEarned ? 'var(--accent-green)' : home.id === pick.winner_id ? 'var(--text-primary)' : 'var(--text-muted)' }}>{home.short_code}</span>
@@ -244,9 +260,17 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                         <span style={{ fontSize: '18px', opacity: awayEarned ? 1 : 0.45 }}>{away.flag_emoji}</span>
                         <span style={{ fontSize: '13px', fontWeight: away.id === pick.winner_id ? '700' : '400', color: awayEarned ? 'var(--accent-green)' : away.id === pick.winner_id ? 'var(--text-primary)' : 'var(--text-muted)' }}>{away.short_code}</span>
                         <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 4px' }}>·</span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>pick:</span>
-                        <span style={{ fontSize: '18px', marginLeft: '2px' }}>{winner?.flag_emoji}</span>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: winnerEarned ? 'var(--accent-green)' : 'var(--text-primary)', flex: 1 }}>{winner?.short_code}</span>
+                        {winnerInMatch ? (
+                          <>
+                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>pick:</span>
+                            <span style={{ fontSize: '18px', marginLeft: '2px' }}>{winner?.flag_emoji}</span>
+                            <span style={{ fontSize: '13px', fontWeight: '700', color: winnerEarned ? 'var(--accent-green)' : 'var(--text-primary)', flex: 1 }}>{winner?.short_code}</span>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: 'var(--accent-gold, #b8860b)', fontWeight: '600', flex: 1 }}>
+                            winner pick {winner?.short_code ? `(${winner.short_code}) ` : ''}no longer in this match
+                          </span>
+                        )}
                       </>
                     ) : (
                       <>
