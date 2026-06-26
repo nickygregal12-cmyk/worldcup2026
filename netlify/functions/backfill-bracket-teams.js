@@ -6,6 +6,8 @@ const supabase = createClient(
 )
 
 // R32 bracket structure. home/away are SLOT descriptors, not teams.
+const BACKFILL_VERSION = 'v3-relaxed-gate'
+
 const R32_MATCHES = [
   { match_number: 73, home_slot: '2A', away_slot: '2B' },
   { match_number: 76, home_slot: '1C', away_slot: '2F' },
@@ -206,7 +208,7 @@ export const handler = async (event) => {
     if (dryRun) {
       return {
         statusCode: 200,
-        body: JSON.stringify({ message: 'Dry run - no writes', wouldUpdate: updates.length, unchanged, total: r32Picks.length }),
+        body: JSON.stringify({ version: BACKFILL_VERSION, message: 'Dry run - no writes', wouldUpdate: updates.length, unchanged, total: r32Picks.length }),
       }
     }
 
@@ -224,7 +226,7 @@ export const handler = async (event) => {
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ message: 'Backfill complete', updated, unchanged, total: r32Picks.length }),
+      body: JSON.stringify({ version: BACKFILL_VERSION, message: 'Backfill complete', updated, unchanged, total: r32Picks.length }),
     }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
