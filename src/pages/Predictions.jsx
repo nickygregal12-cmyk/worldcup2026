@@ -2179,6 +2179,11 @@ export default function Predictions() {
   }
 
   const renderTablesContent = () => {
+    // Pre-compute byGroupForTotal needed in both date and group views
+    const groupBonusRowsAll = groupPositionBreakdown
+    const byGroupForTotal = {}
+    groupBonusRowsAll.forEach(r => { if (!byGroupForTotal[r.group_name]) byGroupForTotal[r.group_name] = []; byGroupForTotal[r.group_name].push(r) })
+
     // By date: show bonus summary + live tables
     if (viewMode === 'date') {
       const totalBonus2 = Object.values(byGroupForTotal).reduce((sum, rows) => {
@@ -2204,9 +2209,6 @@ export default function Predictions() {
 
     // All groups combined view
     const groupBonusRows = groupPositionBreakdown
-    // Total includes 2pts per correct position + 5pts perfect group bonus per group
-    const byGroupForTotal = {}
-    groupBonusRows.forEach(r => { if (!byGroupForTotal[r.group_name]) byGroupForTotal[r.group_name] = []; byGroupForTotal[r.group_name].push(r) })
     const totalBonus = Object.values(byGroupForTotal).reduce((sum, rows) => {
       const posPoints = rows.reduce((s, r) => s + (r.points_awarded || 0), 0)
       const perfect = rows.filter(r => r.points_awarded > 0).length === 4 ? 5 : 0
