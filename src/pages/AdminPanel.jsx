@@ -2520,6 +2520,20 @@ export default function AdminPanel() {
                 <button onClick={prepopulateMatchIds} disabled={saving.prepopulate} className="btn btn-primary" style={{ background: 'var(--accent-orange)' }}>
                   {saving.prepopulate ? '⏳ Running...' : '🔗 Pre-populate Match IDs'}
                 </button>
+                <button onClick={async () => {
+                  setSaving(prev => ({ ...prev, backfillBracket: true }))
+                  try {
+                    const res = await fetch('/.netlify/functions/backfill-bracket-teams', { method: 'POST', headers: adminHeaders })
+                    const data = await res.json()
+                    setActionResult(`✅ Bracket backfill: ${data.updated} updated, ${data.skipped} already done, ${data.total} total picks`)
+                  } catch (e) {
+                    setActionResult(`❌ Bracket backfill failed: ${e.message}`)
+                  } finally {
+                    setSaving(prev => ({ ...prev, backfillBracket: false }))
+                  }
+                }} disabled={saving.backfillBracket} className="btn btn-primary" style={{ background: 'var(--scottish-navy)' }}>
+                  {saving.backfillBracket ? '⏳ Backfilling...' : '🏆 Backfill R32 Bracket Teams'}
+                </button>
                 <button onClick={recalcAllPoints} disabled={saving.recalc} className="btn btn-secondary">
                   {saving.recalc ? 'Recalculating...' : '🔄 Recalculate All Points'}
                 </button>
