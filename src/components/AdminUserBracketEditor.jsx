@@ -54,7 +54,7 @@ export default function AdminUserBracketEditor({ userId, username, matches, onCl
       })
       const km = {}
       ;(koRes.data || []).forEach(p => {
-        km[p.match_number] = { winner_id: p.winner_team_id }
+        km[p.match_number] = { winner_id: p.winner_team_id, home_id: p.home_team_id, away_id: p.away_team_id }
       })
       setGroupPreds(pm)
       setPicks(km)
@@ -76,6 +76,25 @@ export default function AdminUserBracketEditor({ userId, username, matches, onCl
     }
     if (slot.startsWith('L')) return null // 3rd-place loser slots not used in this game
     return resolveSlot(slot, standings, groupMatches, groupPreds)
+  }
+
+  // The two teams to show for a match. A saved pick is a frozen snapshot: the
+  // teams that were in the slot when it was picked (winner one of them). Trust it
+  // when coherent so the matchup matches the winner and stays consistent with the
+  // Knockout tab and the view-predictions modal; otherwise resolve from predictions.
+  const matchTeams = (matchDef) => {
+    const pick = picks[matchDef.match_number]
+    const sH = pick?.home_id ? allTeams[pick.home_id] : null
+    const sA = pick?.away_id ? allTeams[pick.away_id] : null
+    const w = pick?.winner_id
+    if (sH && sA && (!w || w === sH.id || w === sA.id)) {
+      return { home: sH, away: sA }
+    }
+    let home = resolveTeam(matchDef.home_slot)
+    let away = resolveTeam(matchDef.away_slot)
+    if (!home && sH) home = sH
+    if (!away && sA) away = sA
+    return { home, away }
   }
 
   // Has any match in this slot's feeding group kicked off? (progressive lock)
@@ -134,8 +153,7 @@ export default function AdminUserBracketEditor({ userId, username, matches, onCl
     if (!teamId) return
     const team = allTeams[teamId]
     // For an override we keep whatever home/away are resolvable, but force winner
-    const home = resolveTeam(matchDef.home_slot)
-    const away = resolveTeam(matchDef.away_slot)
+    const { home, away } = matchTeams(matchDef)
     await savePick(matchDef, dbMatch, teamId, home || team, away || team)
   }
 
@@ -170,8 +188,7 @@ export default function AdminUserBracketEditor({ userId, username, matches, onCl
                 const dbMatch = matches.find(m => m.match_number === matchDef.match_number)
                 if (!dbMatch) return null
                 const pick = picks[matchDef.match_number]
-                const homeTeam = resolveTeam(matchDef.home_slot)
-                const awayTeam = resolveTeam(matchDef.away_slot)
+                const { home: homeTeam, away: awayTeam } = matchTeams(matchDef)
                 const teams = [homeTeam, awayTeam].filter(Boolean)
                 const frozen = slotFrozen(matchDef.home_slot) || slotFrozen(matchDef.away_slot)
                 const pickedTeam = pick?.winner_id ? allTeams[pick.winner_id] : null

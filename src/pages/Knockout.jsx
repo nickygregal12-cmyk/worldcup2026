@@ -593,18 +593,23 @@ export default function Knockout() {
       return { home: null, away: null }
     }
 
-    // SINGLE SOURCE OF TRUTH — resolve every match from the user's OWN predicted
-    // bracket: pure predicted standings (resolveTeam) plus their own winner picks
-    // (resolveKnockoutWinner). This is exactly what the bracket editor and the
-    // view-predictions modal use, so all three pages always show the same teams,
-    // and the two teams shown are precisely the matchup the user picked their
-    // winner against (so the saved winner is always one of them).
-    //
-    // We deliberately do NOT read the stored home_team_id/away_team_id columns
-    // for display. Admin edits and real-result ingestion can leave those pointing
-    // at teams the user never predicted, which is what produced the mismatched
-    // "real teams vs stale winner" cards. Predictions are pure and frozen, so
-    // this resolution is stable and never shifts as real games finish.
+    // FROZEN SNAPSHOT — a saved pick keeps the exact two teams that were in the
+    // match when it was picked, with the winner one of them. We treat that as
+    // correct even if group predictions (or the best-third allocation) later
+    // moved: it was right when they saved it, and it carries forward to later
+    // rounds via the winner. We only trust the snapshot when it's coherent
+    // (winner is one of the two saved teams), which guards against legacy rows
+    // whose teams were auto-filled and no longer match the winner.
+    const sH = savedPick?.home_id ? teamById[savedPick.home_id] : null
+    const sA = savedPick?.away_id ? teamById[savedPick.away_id] : null
+    const w = savedPick?.winner_id
+    if (w && sH && sA && (w === sH.id || w === sA.id)) {
+      return { home: sH, away: sA }
+    }
+
+    // Otherwise resolve from the user's own predicted bracket — pure predicted
+    // standings (resolveTeam) plus their own winner picks (resolveKnockoutWinner).
+    // Used for unpicked matches and for the rare pick with no usable snapshot.
     const resolve = (slot) => {
       if (slot?.startsWith('W')) return resolveKnockoutWinner(slot)
       if (slot?.startsWith('L')) return null
@@ -612,14 +617,8 @@ export default function Knockout() {
     }
     let home = resolve(matchDef.home_slot)
     let away = resolve(matchDef.away_slot)
-
-    // Last-resort fallback only when a slot genuinely can't resolve from the
-    // user's predictions (e.g. an older pick whose feeding groups are incomplete)
-    // — use the stored team so the card isn't blank. Never overrides a resolved
-    // team, and never writes back to the database.
-    if (!home && savedPick?.home_id) home = teamById[savedPick.home_id] || null
-    if (!away && savedPick?.away_id) away = teamById[savedPick.away_id] || null
-
+    if (!home && sH) home = sH
+    if (!away && sA) away = sA
     return { home, away }
   }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, mainBracketLockTime, teamById])
 

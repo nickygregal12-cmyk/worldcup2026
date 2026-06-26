@@ -193,18 +193,25 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
         const stageMatches = stage.matches.filter(md => picks[md.match_number]?.winner_id)
         if (stageMatches.length === 0) return null
         const confirmedSet = realConfirmedByStage[stage.key] || new Set()
-        // Resolve each match's two teams from THIS user's own predicted bracket
-        // (pure mode), never from the stored home/away columns — those can hold
-        // real teams or go stale after a group-prediction edit, which is what
-        // produced nonsense like "CUW v SEN · pick: NOR". The winner is then
-        // always one of the two resolved teams (or flagged as no longer in it).
+        // Resolve each match's two teams. A saved pick is a FROZEN SNAPSHOT: the
+        // two teams that were in that slot when the user picked, plus their winner.
+        // We trust it whenever it's coherent (the winner is one of those two teams)
+        // — the matchup was correct when they saved it, and it's not their fault
+        // the bracket later moved. Only when there's no usable snapshot (older pick,
+        // or a legacy row whose filled teams don't match the winner) do we fall back
+        // to resolving from the user's own predicted bracket.
         const resolvedFor = (md) => {
           const pick = picks[md.match_number]
+          const sH = pick?.home_team_id ? teamsById[pick.home_team_id] : null
+          const sA = pick?.away_team_id ? teamsById[pick.away_team_id] : null
+          const w = pick?.winner_id
+          if (sH && sA && (!w || w === sH.id || w === sA.id)) {
+            return { home: sH, away: sA }
+          }
           let home = resolveTeam(md.home_slot)
           let away = resolveTeam(md.away_slot)
-          // Fallback to stored teams only if the slot can't resolve yet
-          if (!home && pick?.home_team_id) home = teamsById[pick.home_team_id] || null
-          if (!away && pick?.away_team_id) away = teamsById[pick.away_team_id] || null
+          if (!home && sH) home = sH
+          if (!away && sA) away = sA
           return { home, away }
         }
         // Total pts earned this stage — 5/8/12... per predicted team that really reached this round
@@ -252,7 +259,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                     border: `1px solid ${anyEarned ? 'rgba(0,122,51,0.2)' : 'transparent'}`,
                   }}>
                     <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '26px', fontWeight: '600' }}>#{md.match_number}</span>
-                    {bothKnown ? (
+                    {bothKnown && winnerInMatch ? (
                       <>
                         <span style={{ fontSize: '18px', opacity: homeEarned ? 1 : 0.45 }}>{home.flag_emoji}</span>
                         <span style={{ fontSize: '13px', fontWeight: home.id === pick.winner_id ? '700' : '400', color: homeEarned ? 'var(--accent-green)' : home.id === pick.winner_id ? 'var(--text-primary)' : 'var(--text-muted)' }}>{home.short_code}</span>
@@ -260,17 +267,22 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                         <span style={{ fontSize: '18px', opacity: awayEarned ? 1 : 0.45 }}>{away.flag_emoji}</span>
                         <span style={{ fontSize: '13px', fontWeight: away.id === pick.winner_id ? '700' : '400', color: awayEarned ? 'var(--accent-green)' : away.id === pick.winner_id ? 'var(--text-primary)' : 'var(--text-muted)' }}>{away.short_code}</span>
                         <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 4px' }}>·</span>
-                        {winnerInMatch ? (
-                          <>
-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>pick:</span>
-                            <span style={{ fontSize: '18px', marginLeft: '2px' }}>{winner?.flag_emoji}</span>
-                            <span style={{ fontSize: '13px', fontWeight: '700', color: winnerEarned ? 'var(--accent-green)' : 'var(--text-primary)', flex: 1 }}>{winner?.short_code}</span>
-                          </>
-                        ) : (
-                          <span style={{ fontSize: '11px', color: 'var(--accent-gold, #b8860b)', fontWeight: '600', flex: 1 }}>
-                            winner pick {winner?.short_code ? `(${winner.short_code}) ` : ''}no longer in this match
-                          </span>
-                        )}
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>pick:</span>
+                        <span style={{ fontSize: '18px', marginLeft: '2px' }}>{winner?.flag_emoji}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: winnerEarned ? 'var(--accent-green)' : 'var(--text-primary)', flex: 1 }}>{winner?.short_code}</span>
+                      </>
+                    ) : bothKnown ? (
+                      // Winner pick predates a group-prediction change, so it isn't one
+                      // of these two teams. R32 points come from the predicted teams that
+                      // reach the round (shown here), not the KO winner — so we show the
+                      // matchup cleanly and just omit the now-inconsistent winner segment,
+                      // rather than printing a contradictory "pick: OTHER_TEAM".
+                      <>
+                        <span style={{ fontSize: '18px', opacity: homeEarned ? 1 : 0.45 }}>{home.flag_emoji}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '400', color: homeEarned ? 'var(--accent-green)' : 'var(--text-muted)' }}>{home.short_code}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>v</span>
+                        <span style={{ fontSize: '18px', opacity: awayEarned ? 1 : 0.45 }}>{away.flag_emoji}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '400', color: awayEarned ? 'var(--accent-green)' : 'var(--text-muted)', flex: 1 }}>{away.short_code}</span>
                       </>
                     ) : (
                       <>
