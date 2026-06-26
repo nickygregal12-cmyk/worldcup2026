@@ -405,6 +405,17 @@ export const handler = async (event, context) => {
       .update({ value: new Date().toISOString() })
       .eq('key', 'last_sync_at')
 
+    // Auto-trigger standings sync if any group matches were updated
+    if (updated > 0) {
+      try {
+        const siteUrl = process.env.URL || 'https://wc26predictor1.netlify.app'
+        await fetch(`${siteUrl}/.netlify/functions/sync-standings`, {
+          method: 'POST',
+          headers: { 'x-admin-secret': process.env.ADMIN_FUNCTION_SECRET }
+        })
+      } catch(e) { errors.push(`Standings auto-sync failed: ${e.message}`) }
+    }
+
     return { statusCode: 200, body: JSON.stringify({ message: 'Sync complete', updated, pointsCalculated, fixturesPopulated, errors }) }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
