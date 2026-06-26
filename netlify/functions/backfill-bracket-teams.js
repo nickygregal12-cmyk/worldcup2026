@@ -47,10 +47,14 @@ function calcStandings(groupMatches, predictions, groupName) {
     .map((t, i) => ({ ...t, position: i + 1, group: groupName }))
 }
 
-// Whether every match in a group has a complete prediction.
+// Whether a group is resolvable: every match is completed (group stage over) or
+// has a complete prediction. Mirrors the app's groupFullyPredicted, which treats
+// completed matches as satisfied — so the best-third allocation runs as it does
+// in the live bracket views.
 function groupFullyPredicted(groupMatches, predictions) {
   if (!groupMatches.length) return false
   return groupMatches.every(m => {
+    if (m.status === 'completed') return true
     const p = predictions[m.id]
     return p && p.home_score !== null && p.away_score !== null && p.home_score !== '' && p.away_score !== ''
   })
@@ -137,7 +141,7 @@ export const handler = async (event) => {
   try {
     const { data: groupMatches } = await supabase
       .from('matches')
-      .select('id, match_number, group_id, home_team_id, away_team_id, groups:group_id(name)')
+      .select('id, match_number, group_id, status, home_team_id, away_team_id, groups:group_id(name)')
       .eq('stage', 'group')
 
     const groupsByName = {}
