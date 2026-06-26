@@ -14,6 +14,7 @@ import Login from './pages/Login.jsx'
 import ClaimAccount from './pages/ClaimAccount.jsx'
 import Register from './pages/Register.jsx'
 import Predictions from './pages/Predictions.jsx'
+import PointsSummary from './pages/PointsSummary.jsx'
 import Knockout from './pages/Knockout.jsx'
 import Awards from './pages/Awards.jsx'
 import Leagues from './pages/Leagues.jsx'
@@ -105,6 +106,8 @@ export default function App() {
           <Route path="/league/:code" element={<PublicLeague />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/predictions" element={<Predictions />} />
+          <Route path="/points" element={<ProtectedRoute><PointsSummary /></ProtectedRoute>} />
+          <Route path="/points/:userId" element={<PointsSummary />} />
           <Route path="/knockout" element={<Knockout />} />
           <Route path="/awards" element={<Awards />} />
           <Route path="/leagues" element={<ProtectedRoute><Leagues /></ProtectedRoute>} />

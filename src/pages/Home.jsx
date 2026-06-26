@@ -727,6 +727,12 @@ export default function Home() {
   const countdownTarget = !tournamentStarted ? TOURNAMENT_START.toISOString() : nextMatch?.kickoff_time
   const mainCountdown = useCountdown(countdownTarget)
 
+  // All matches kicking off at the same (earliest) time as nextMatch — several
+  // games often share a slot, so the card shows every one, not just the first.
+  const nextSlotMatches = nextMatch
+    ? [nextMatch, ...upcomingMatches.filter(m => m.kickoff_time === nextMatch.kickoff_time && m.id !== nextMatch.id)]
+    : []
+
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
@@ -990,30 +996,34 @@ export default function Home() {
                       ))}
                     </div>
                   </div>
-                  <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <div style={{ fontWeight: '800', fontSize: '14px' }}>
-                        ⚽ {nextMatch.group ? `Group ${nextMatch.group.name}` : nextMatch.stage?.toUpperCase()}
+                  <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '14px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {nextSlotMatches.map((mt) => (
+                      <div key={mt.id}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                          <div style={{ fontWeight: '800', fontSize: '14px' }}>
+                            ⚽ {mt.group ? `Group ${mt.group.name}` : mt.stage?.toUpperCase()}
+                          </div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>{formatKickoff(mt.kickoff_time)}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                            <span style={{ fontSize: '36px', lineHeight: 1 }}>{mt.home_team?.flag_emoji}</span>
+                            <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', lineHeight: 1.2 }}>{mt.home_team?.name}</span>
+                          </div>
+                          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '900' }}>vs</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
+                            <span style={{ fontSize: '36px', lineHeight: 1 }}>{mt.away_team?.flag_emoji}</span>
+                            <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', lineHeight: 1.2 }}>{mt.away_team?.name}</span>
+                          </div>
+                        </div>
+                        {mt.venue?.city && (
+                          <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '10px', fontWeight: '600' }}>
+                            {getVenueFlag(mt.venue.city)} {mt.venue.city}
+                            {formatWeather(matchWeather[mt.id]) && <span> · {formatWeather(matchWeather[mt.id])}</span>}
+                          </div>
+                        )}
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                        <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
-                        <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', lineHeight: 1.2 }}>{nextMatch.home_team?.name}</span>
-                      </div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '900' }}>vs</div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flex: 1 }}>
-                        <span style={{ fontSize: '36px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
-                        <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', lineHeight: 1.2 }}>{nextMatch.away_team?.name}</span>
-                      </div>
-                    </div>
-                    {nextMatch.venue?.city && (
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '10px', fontWeight: '600' }}>
-                        {getVenueFlag(nextMatch.venue.city)} {nextMatch.venue.city}
-                        {formatWeather(matchWeather[nextMatch.id]) && <span> · {formatWeather(matchWeather[nextMatch.id])}</span>}
-                      </div>
-                    )}
+                    ))}
                   </div>
                 </>
               ) : null}
@@ -1178,38 +1188,11 @@ export default function Home() {
                   <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)' }}>wc26predictor1.netlify.app</span>
                 </div>
 
-                {/* Share button — hidden during capture */}
+                {/* Full points breakdown link */}
                 <div style={{ display: sharingRoundUp ? 'none' : 'block' }}>
-                <button
-                  onClick={async () => {
-                    setSharingRoundUp(true)
-                    try {
-                      const html2canvas = (await import('html2canvas')).default
-                      const canvas = await html2canvas(roundUpCardRef.current, {
-                        scale: 2, backgroundColor: '#003087', useCORS: true, logging: false,
-                      })
-                      canvas.toBlob(async (blob) => {
-                        const file = new File([blob], 'wc26-score.png', { type: 'image/png' })
-                        if (navigator.share && navigator.canShare({ files: [file] })) {
-                          await navigator.share({
-                            title: 'My WC26 Score',
-                            text: 'Make your own predictions at wc26predictor1.netlify.app',
-                            files: [file],
-                          })
-                        } else {
-                          const url = URL.createObjectURL(blob)
-                          const a = document.createElement('a')
-                          a.href = url; a.download = 'wc26-score.png'; a.click()
-                          URL.revokeObjectURL(url)
-                        }
-                        setSharingRoundUp(false)
-                      }, 'image/png')
-                    } catch (e) { setSharingRoundUp(false) }
-                  }}
-                  disabled={sharingRoundUp}
-                  style={{ width: '100%', padding: '11px', background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontWeight: '800', fontSize: '14px', cursor: sharingRoundUp ? 'wait' : 'pointer', opacity: sharingRoundUp ? 0.7 : 1 }}>
-                  {sharingRoundUp ? '⏳ Generating...' : '📤 Share my score'}
-                </button>
+                  <Link to="/points" style={{ display: 'block', width: '100%', padding: '11px', background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontWeight: '800', fontSize: '14px', textAlign: 'center', textDecoration: 'none' }}>
+                    See every point you've earned →
+                  </Link>
                 </div>
               </div>
             )
