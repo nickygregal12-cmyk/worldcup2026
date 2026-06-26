@@ -193,26 +193,30 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
         const stageMatches = stage.matches.filter(md => picks[md.match_number]?.winner_id)
         if (stageMatches.length === 0) return null
         const confirmedSet = realConfirmedByStage[stage.key] || new Set()
-        // Resolve each match's two teams. A saved pick is a FROZEN SNAPSHOT: the
-        // two teams that were in that slot when the user picked, plus their winner.
-        // We trust it whenever it's coherent (the winner is one of those two teams)
-        // — the matchup was correct when they saved it, and it's not their fault
-        // the bracket later moved. Only when there's no usable snapshot (older pick,
-        // or a legacy row whose filled teams don't match the winner) do we fall back
-        // to resolving from the user's own predicted bracket.
+        // Resolve each match's two teams from the user's OWN group predictions
+        // (resolveTeam) — this is the bracket they predicted, and it never puts the
+        // same team in two slots (unlike the stored snapshot columns, whose
+        // best-third teams were corrupted by an old backfill). The winner they
+        // chose is always shown inside the match: normally it's already one of the
+        // two resolved teams; if their group prediction for that slot changed after
+        // they picked, we keep their actual winner and pair it with the resolved
+        // opponent, so we never drop or contradict the team they chose.
         const resolvedFor = (md) => {
           const pick = picks[md.match_number]
-          const sH = pick?.home_team_id ? teamsById[pick.home_team_id] : null
-          const sA = pick?.away_team_id ? teamsById[pick.away_team_id] : null
-          const w = pick?.winner_id
-          if (sH && sA && (!w || w === sH.id || w === sA.id)) {
-            return { home: sH, away: sA }
+          const pureHome = resolveTeam(md.home_slot)
+          const pureAway = resolveTeam(md.away_slot)
+          const winnerId = pick?.winner_id
+          if (!winnerId) return { home: pureHome, away: pureAway }
+          if (winnerId === pureHome?.id || winnerId === pureAway?.id) {
+            return { home: pureHome, away: pureAway }
           }
-          let home = resolveTeam(md.home_slot)
-          let away = resolveTeam(md.away_slot)
-          if (!home && sH) home = sH
-          if (!away && sA) away = sA
-          return { home, away }
+          const winner = teamsById[winnerId] || null
+          // Orphan: drop the winner onto the side it was saved on, keep the other
+          // side as the resolved opponent.
+          if (pick?.away_team_id === winnerId && pick?.home_team_id !== winnerId) {
+            return { home: pureHome, away: winner }
+          }
+          return { home: winner, away: pureAway }
         }
         // Total pts earned this stage — 5/8/12... per predicted team that really reached this round
         let stagePtsEarned = 0

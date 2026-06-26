@@ -593,33 +593,34 @@ export default function Knockout() {
       return { home: null, away: null }
     }
 
-    // FROZEN SNAPSHOT — a saved pick keeps the exact two teams that were in the
-    // match when it was picked, with the winner one of them. We treat that as
-    // correct even if group predictions (or the best-third allocation) later
-    // moved: it was right when they saved it, and it carries forward to later
-    // rounds via the winner. We only trust the snapshot when it's coherent
-    // (winner is one of the two saved teams), which guards against legacy rows
-    // whose teams were auto-filled and no longer match the winner.
-    const sH = savedPick?.home_id ? teamById[savedPick.home_id] : null
-    const sA = savedPick?.away_id ? teamById[savedPick.away_id] : null
-    const w = savedPick?.winner_id
-    if (w && sH && sA && (w === sH.id || w === sA.id)) {
-      return { home: sH, away: sA }
-    }
-
-    // Otherwise resolve from the user's own predicted bracket — pure predicted
+    // Resolve the two teams from the user's OWN predicted bracket — pure predicted
     // standings (resolveTeam) plus their own winner picks (resolveKnockoutWinner).
-    // Used for unpicked matches and for the rare pick with no usable snapshot.
+    // This is the bracket they predicted and never duplicates a team across slots
+    // (unlike the stored snapshot columns, whose best-third teams were corrupted by
+    // an old backfill).
     const resolve = (slot) => {
       if (slot?.startsWith('W')) return resolveKnockoutWinner(slot)
       if (slot?.startsWith('L')) return null
       return resolveTeam(slot)
     }
-    let home = resolve(matchDef.home_slot)
-    let away = resolve(matchDef.away_slot)
-    if (!home && sH) home = sH
-    if (!away && sA) away = sA
-    return { home, away }
+    const pureHome = resolve(matchDef.home_slot)
+    const pureAway = resolve(matchDef.away_slot)
+    const w = savedPick?.winner_id
+    if (!w) return { home: pureHome, away: pureAway }
+
+    // The winner they chose is always shown inside its match. Normally it's already
+    // one of the two resolved teams. If their group prediction for this slot moved
+    // after they picked, keep their actual winner and pair it with the resolved
+    // opponent — never drop or contradict the team they chose. It still carries
+    // forward to later rounds via the winner.
+    if (w === pureHome?.id || w === pureAway?.id) {
+      return { home: pureHome, away: pureAway }
+    }
+    const winnerTeam = teamById[w] || (savedPick?.winner_team || null)
+    if (savedPick?.away_id === w && savedPick?.home_id !== w) {
+      return { home: pureHome, away: winnerTeam }
+    }
+    return { home: winnerTeam, away: pureAway }
   }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, mainBracketLockTime, teamById])
 
   const getBracketLockReason = useCallback((matchDef) => {

@@ -78,23 +78,22 @@ export default function AdminUserBracketEditor({ userId, username, matches, onCl
     return resolveSlot(slot, standings, groupMatches, groupPreds)
   }
 
-  // The two teams to show for a match. A saved pick is a frozen snapshot: the
-  // teams that were in the slot when it was picked (winner one of them). Trust it
-  // when coherent so the matchup matches the winner and stays consistent with the
-  // Knockout tab and the view-predictions modal; otherwise resolve from predictions.
+  // The two teams to show for a match. Resolve from the user's group predictions
+  // (distinct teams, never duplicated across slots), and always keep the winner
+  // they chose inside the match — consistent with the Knockout tab and the
+  // view-predictions modal. For an orphaned pick (their group prediction for the
+  // slot changed after they picked) we pair their actual winner with the resolved
+  // opponent rather than dropping it.
   const matchTeams = (matchDef) => {
     const pick = picks[matchDef.match_number]
-    const sH = pick?.home_id ? allTeams[pick.home_id] : null
-    const sA = pick?.away_id ? allTeams[pick.away_id] : null
+    const pureHome = resolveTeam(matchDef.home_slot)
+    const pureAway = resolveTeam(matchDef.away_slot)
     const w = pick?.winner_id
-    if (sH && sA && (!w || w === sH.id || w === sA.id)) {
-      return { home: sH, away: sA }
-    }
-    let home = resolveTeam(matchDef.home_slot)
-    let away = resolveTeam(matchDef.away_slot)
-    if (!home && sH) home = sH
-    if (!away && sA) away = sA
-    return { home, away }
+    if (!w) return { home: pureHome, away: pureAway }
+    if (w === pureHome?.id || w === pureAway?.id) return { home: pureHome, away: pureAway }
+    const winner = allTeams[w] || { id: w, name: '?', flag_emoji: '🏳️', short_code: '???' }
+    if (pick?.away_id === w && pick?.home_id !== w) return { home: pureHome, away: winner }
+    return { home: winner, away: pureAway }
   }
 
   // Has any match in this slot's feeding group kicked off? (progressive lock)
