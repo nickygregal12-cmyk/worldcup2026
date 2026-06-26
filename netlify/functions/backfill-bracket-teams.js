@@ -169,6 +169,60 @@ export const handler = async (event) => {
       .select('id, user_id, match_number, home_team_id, away_team_id, winner_team_id')
       .eq('stage', 'r32')
 
+    // ?debug=<user_id> dumps exactly what we compute for one user, no writes.
+    const debugUser = event.queryStringParameters?.debug
+    if (debugUser) {
+      const userPreds = predsByUser[debugUser] || {}
+      const predCount = Object.keys(userPreds).length
+      const standingsMap = {}
+      const predictedGroups = []
+      const groupStatus = {}
+      for (const [grp, matches] of Object.entries(groupsByName)) {
+        standingsMap[grp] = calcStandings(matches, userPreds, grp)
+        const ok = groupFullyPredicted(matches, userPreds)
+        if (ok) predictedGroups.push(grp)
+        groupStatus[grp] = {
+          fully: ok,
+          statuses: matches.map(m => m.status),
+          predicted: matches.map(m => !!userPreds[m.id]),
+        }
+      }
+      const best3rds = getBest3rds(standingsMap)
+      const allocation = (predictedGroups.length === 12 && best3rds.length === 8)
+        ? allocateThirdPlaces(best3rds.map(t => t.group))
+        : null
+      const sample = r32Picks
+        .filter(p => p.user_id === debugUser)
+        .map(p => {
+          const md = R32_MATCHES.find(m => m.match_number === p.match_number)
+          if (!md) return null
+          return {
+            match: p.match_number,
+            slots: `${md.home_slot} v ${md.away_slot}`,
+            stored: [p.home_team_id, p.away_team_id],
+            resolved: [
+              resolveSlot(md.home_slot, standingsMap, allocation, best3rds, new Set(predictedGroups)),
+              resolveSlot(md.away_slot, standingsMap, allocation, best3rds, new Set(predictedGroups)),
+            ],
+          }
+        })
+        .filter(Boolean)
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          version: BACKFILL_VERSION,
+          user: debugUser,
+          predictionCount: predCount,
+          predictedGroupsCount: predictedGroups.length,
+          predictedGroups,
+          groupStatus,
+          best3rds: best3rds.map(t => ({ group: t.group, id: t.id, pts: t.pts })),
+          allocation,
+          sample,
+        }, null, 2),
+      }
+    }
+
     const updates = []
     let unchanged = 0
 
