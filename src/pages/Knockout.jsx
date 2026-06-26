@@ -440,7 +440,7 @@ export default function Knockout() {
     const confirmedCount = matchComparisons.filter(m => m.isConfirmed).length
     const stageLabels = { r32: 'R32', r16: 'R16', qf: 'QF', sf: 'SF', final: 'Final' }
 
-    return { correct, total, groupsComplete, matchComparisons, confirmedCount, stageLabel: stageLabels[activeStage] || activeStage }
+    return { correct, total, groupsComplete, matchComparisons, confirmedCount, stageLabel: stageLabels[activeStage] || activeStage, teamsInStage, stagePoints: stageConfig.points }
   }, [activeStage, realStandingsMap, realKoFixtures, realKoResults, knockoutPicks, resolveTeam, resolveRealSlot])
 
   // Bracket points earned — computed from real results vs user picks
@@ -1393,255 +1393,57 @@ export default function Knockout() {
               {/* Expandable per-match breakdown */}
               {showRealBracket && (
                 <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderTop: 'none', borderRadius: '0 0 var(--radius-md) var(--radius-md)', overflow: 'hidden' }}>
-                  {liveTrackerStats.matchComparisons.filter(m => m.hasPick || m.hasRealData).map(m => {
+                  {liveTrackerStats.matchComparisons.filter(m => m.hasPick).map(m => {
+                    // Points earned for this match's predicted teams
+                    const homeEarned = m.userHome?.id && liveTrackerStats.teamsInStage?.has(m.userHome.id)
+                    const awayEarned = m.userAway?.id && liveTrackerStats.teamsInStage?.has(m.userAway.id)
+                    const earnedPts = ([homeEarned, awayEarned].filter(Boolean).length) * (liveTrackerStats.stagePoints || 5)
+                    const anyEarned = homeEarned || awayEarned
+                    const bothEarned = homeEarned && awayEarned
+                    const accentBar = bothEarned ? 'var(--accent-green)' : anyEarned ? 'var(--accent-gold)' : 'var(--border-light)'
                     const userPick = m.userPickId
                       ? (m.userHome?.id === m.userPickId ? m.userHome : m.userAway?.id === m.userPickId ? m.userAway : null)
                       : null
-                    const realH = m.realHome
-                    const realA = m.realAway
-                    const inCorrectSlot = m.userPickId && (
-                      (m.userHome?.id === m.userPickId && realH?.id === m.userPickId) ||
-                      (m.userAway?.id === m.userPickId && realA?.id === m.userPickId)
-                    )
-                    // Status based on both teams being on track
-                    const bothOnTrack = m.userHomeOnTrack && m.userAwayOnTrack
-                    const eitherOnTrack = m.userHomeOnTrack || m.userAwayOnTrack
-                    const status = !m.hasRealData ? 'pending'
-                      : bothOnTrack ? 'both-on-track'
-                      : eitherOnTrack ? 'partial'
-                      : 'off-track'
-                    const accentBar = status === 'both-on-track' ? 'var(--accent-green)' : status === 'partial' ? 'var(--accent-gold)' : status === 'off-track' ? '#c62828' : 'var(--border-light)'
                     return (
                       <div key={m.matchDef.match_number} style={{
-                        padding: '10px 14px 12px',
+                        display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '10px 14px',
                         borderBottom: '1px solid var(--border-light)',
                         borderLeft: `3px solid ${accentBar}`,
-                        background: status === 'both-on-track' ? 'rgba(0,122,51,0.03)' : status === 'partial' ? 'rgba(184,134,11,0.03)' : status === 'off-track' ? 'rgba(198,40,40,0.03)' : 'transparent',
+                        background: bothEarned ? 'rgba(0,122,51,0.03)' : anyEarned ? 'rgba(184,134,11,0.02)' : 'transparent',
                       }}>
-                        {/* Header: match number + status badge */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)' }}>M{m.matchDef.match_number}</span>
-                          {status === 'both-on-track' && (
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
-                              ✓ Both teams in {liveTrackerStats.stageLabel}
-                            </span>
-                          )}
-                          {status === 'partial' && (
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--accent-gold)', background: 'rgba(184,134,11,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
-                              ~ 1 of 2 teams in {liveTrackerStats.stageLabel}
-                            </span>
-                          )}
-                          {status === 'off-track' && (
-                            <span style={{ fontSize: '10px', fontWeight: '700', color: '#c62828', background: 'rgba(198,40,40,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
-                              ✗ Neither team qualifying
-                            </span>
-                          )}
-                          {status === 'pending' && (
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontStyle: 'italic' }}>Pending</span>
-                          )}
-                        </div>
-
-                        {/* Two columns: Your pick to win | Real matchup */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                          {/* Your predicted matchup + pick */}
-                          <div>
-                            <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '5px' }}>Your predicted matchup</div>
-                            {m.userHome || m.userAway ? (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {/* Both predicted teams with per-team on-track status */}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  {m.userHome && (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                      <span style={{ fontSize: '16px', opacity: m.hasRealData && !m.userHomeOnTrack ? 0.4 : 1 }}>{m.userHome.flag_emoji}</span>
-                                      <span style={{ fontSize: '12px', fontWeight: m.userHome.id === m.userPickId ? '800' : '500',
-                                        color: m.userHomeOnTrack ? 'var(--accent-green)' : m.hasRealData ? '#c62828' : 'var(--text-primary)' }}>
-                                        {m.userHome.short_code}
-                                      </span>
-                                      {m.hasRealData && (m.userHomeOnTrack
-                                        ? <span style={{ fontSize: '9px', color: 'var(--accent-green)' }}>✓</span>
-                                        : <span style={{ fontSize: '9px', color: '#c62828' }}>✗</span>)}
-                                    </span>
-                                  )}
-                                  {m.userHome && m.userAway && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>v</span>}
-                                  {m.userAway && (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                                      <span style={{ fontSize: '16px', opacity: m.hasRealData && !m.userAwayOnTrack ? 0.4 : 1 }}>{m.userAway.flag_emoji}</span>
-                                      <span style={{ fontSize: '12px', fontWeight: m.userAway.id === m.userPickId ? '800' : '500',
-                                        color: m.userAwayOnTrack ? 'var(--accent-green)' : m.hasRealData ? '#c62828' : 'var(--text-primary)' }}>
-                                        {m.userAway.short_code}
-                                      </span>
-                                      {m.hasRealData && (m.userAwayOnTrack
-                                        ? <span style={{ fontSize: '9px', color: 'var(--accent-green)' }}>✓</span>
-                                        : <span style={{ fontSize: '9px', color: '#c62828' }}>✗</span>)}
-                                    </span>
-                                  )}
-                                </div>
-                                {/* Winner pick */}
-                                {userPick && (
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>→ Pick:</span>
-                                    <span style={{ fontSize: '12px' }}>{userPick.flag_emoji}</span>
-                                    <span style={{ fontSize: '12px', fontWeight: '800',
-                                      color: m.pickOnTrack ? 'var(--accent-green)' : m.hasRealData ? '#c62828' : 'var(--text-primary)' }}>
-                                      {userPick.short_code}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No pick</span>
-                            )}
-                          </div>
-
-                          {/* Real matchup */}
-                          <div>
-                            <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '5px' }}>Real matchup</div>
-                            {!m.hasRealData ? (
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>To be confirmed</span>
-                            ) : (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                  {/* Home team */}
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: realH ? (realH.id === m.userPickId ? 1 : 0.5) : 0.3 }}>
-                                    {realH ? (
-                                      <>
-                                        <span style={{ fontSize: '18px' }}>{realH.flag_emoji}</span>
-                                        <span style={{ fontSize: '12px', fontWeight: realH.id === m.userPickId ? '800' : '500', color: realH.id === m.userPickId ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                                          {realH.short_code}
-                                        </span>
-                                        {realH.confirmed && <span style={{ fontSize: '9px' }}>🔒</span>}
-                                        {realH.provisional && !realH.confirmed && <span style={{ fontSize: '9px', color: 'var(--accent-gold)' }}>~</span>}
-                                      </>
-                                    ) : <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>TBC</span>}
-                                  </div>
-                                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>v</span>
-                                  {/* Away team */}
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '3px', opacity: realA ? (realA.id === m.userPickId ? 1 : 0.5) : 0.3 }}>
-                                    {realA ? (
-                                      <>
-                                        <span style={{ fontSize: '18px' }}>{realA.flag_emoji}</span>
-                                        <span style={{ fontSize: '12px', fontWeight: realA.id === m.userPickId ? '800' : '500', color: realA.id === m.userPickId ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                                          {realA.short_code}
-                                        </span>
-                                        {realA.confirmed && <span style={{ fontSize: '9px' }}>🔒</span>}
-                                        {realA.provisional && !realA.confirmed && <span style={{ fontSize: '9px', color: 'var(--accent-gold)' }}>~</span>}
-                                      </>
-                                    ) : <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontStyle: 'italic' }}>TBC</span>}
-                                  </div>
-                                </div>
-                                {/* Provisional note */}
-                                {(realH?.provisional || realA?.provisional) && (
-                                  <div style={{ fontSize: '9px', color: 'var(--accent-gold)', fontWeight: '600' }}>
-                                    ~ provisional · based on current standings
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                        <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', minWidth: '28px' }}>M{m.matchDef.match_number}</span>
+                        {/* Home team */}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '18px', opacity: homeEarned ? 1 : 0.45 }}>{m.userHome?.flag_emoji}</span>
+                          <span style={{ fontSize: '13px', fontWeight: m.userPickId === m.userHome?.id ? '800' : '500',
+                            color: homeEarned ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                            {m.userHome?.short_code}
+                          </span>
+                        </span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>v</span>
+                        {/* Away team */}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
+                          <span style={{ fontSize: '18px', opacity: awayEarned ? 1 : 0.45 }}>{m.userAway?.flag_emoji}</span>
+                          <span style={{ fontSize: '13px', fontWeight: m.userPickId === m.userAway?.id ? '800' : '500',
+                            color: awayEarned ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                            {m.userAway?.short_code}
+                          </span>
+                        </span>
+                        {/* Points badge */}
+                        {earnedPts > 0 && (
+                          <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--accent-green)',
+                            background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px', whiteSpace: 'nowrap' }}>
+                            +{earnedPts}pts
+                          </span>
+                        )}
                       </div>
                     )
                   })}
                 </div>
               )}
-            </div>
-          )
-        })()}
 
 
-        {/* Real bracket view — disabled, now shown inline in tracker */}
-        {false && showRealBracket && (() => {
-          const stageFixtures = realKoFixtures.filter(m => m.stage === activeStage)
-          if (stageFixtures.length === 0) return (
-            <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>⏳</div>
-              <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '4px' }}>Not confirmed yet</div>
-              <div style={{ fontSize: '13px' }}>Teams will appear here once groups complete</div>
-            </div>
-          )
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-              {stageFixtures.map(m => {
-                const isCompleted = m.status === 'completed'
-                const homeWon = isCompleted && m.home_score > m.away_score
-                const awayWon = isCompleted && m.away_score > m.home_score
-                // Check if user predicted this team
-                const currentStageDef = ALL_STAGES.find(s => s.key === activeStage)
-                const matchDef = currentStageDef?.matches?.find(md => md.match_number === m.match_number)
-                const userPick = matchDef ? knockoutPicks[m.match_number]?.winner_id : null
-                const userPickedHome = userPick && m.home_team?.id === userPick
-                const userPickedAway = userPick && m.away_team?.id === userPick
-                return (
-                  <div key={m.id} style={{
-                    background: 'var(--bg-card)',
-                    border: '1px solid var(--border-light)',
-                    borderRadius: 'var(--radius-md)',
-                    overflow: 'hidden',
-                    boxShadow: 'var(--shadow-card)',
-                  }}>
-                    {/* Match header */}
-                    <div style={{ padding: '8px 14px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                        M{m.match_number} · {new Date(m.kickoff_time).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} · {new Date(m.kickoff_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} BST
-                      </span>
-                      {isCompleted && (
-                        <span style={{ fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '20px', background: 'rgba(0,122,51,0.1)', color: 'var(--accent-green)' }}>✓ Final</span>
-                      )}
-                    </div>
-                    {/* Teams */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0' }}>
-                      {/* Home team */}
-                      <div style={{
-                        flex: 1, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '10px',
-                        background: homeWon ? 'rgba(0,122,51,0.06)' : 'transparent',
-                        opacity: isCompleted && awayWon ? 0.45 : 1,
-                      }}>
-                        <span style={{ fontSize: '28px' }}>{m.home_team?.flag_emoji}</span>
-                        <div>
-                          <div style={{ fontWeight: homeWon ? '900' : '700', fontSize: '14px', color: homeWon ? 'var(--accent-green)' : 'var(--text-primary)' }}>
-                            {m.home_team?.name}
-                            {homeWon && <span style={{ marginLeft: '4px' }}>✓</span>}
-                          </div>
-                          {userPickedHome && (
-                            <div style={{ fontSize: '10px', fontWeight: '700', color: homeWon ? 'var(--accent-green)' : awayWon ? '#c62828' : 'var(--scottish-navy)', marginTop: '2px' }}>
-                              {homeWon ? '🎯 Your pick — correct!' : awayWon ? '✗ Your pick — eliminated' : '⭐ Your pick'}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      {/* Score / VS */}
-                      <div style={{ padding: '0 12px', textAlign: 'center', flexShrink: 0 }}>
-                        {isCompleted ? (
-                          <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
-                            {m.home_score} – {m.away_score}
-                          </div>
-                        ) : (
-                          <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-muted)' }}>vs</div>
-                        )}
-                      </div>
-                      {/* Away team */}
-                      <div style={{
-                        flex: 1, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: '10px', flexDirection: 'row-reverse', textAlign: 'right',
-                        background: awayWon ? 'rgba(0,122,51,0.06)' : 'transparent',
-                        opacity: isCompleted && homeWon ? 0.45 : 1,
-                      }}>
-                        <span style={{ fontSize: '28px' }}>{m.away_team?.flag_emoji}</span>
-                        <div>
-                          <div style={{ fontWeight: awayWon ? '900' : '700', fontSize: '14px', color: awayWon ? 'var(--accent-green)' : 'var(--text-primary)' }}>
-                            {awayWon && <span style={{ marginRight: '4px' }}>✓</span>}
-                            {m.away_team?.name}
-                          </div>
-                          {userPickedAway && (
-                            <div style={{ fontSize: '10px', fontWeight: '700', color: awayWon ? 'var(--accent-green)' : homeWon ? '#c62828' : 'var(--scottish-navy)', marginTop: '2px' }}>
-                              {awayWon ? '🎯 Your pick — correct!' : homeWon ? '✗ Your pick — eliminated' : '⭐ Your pick'}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
             </div>
           )
         })()}
