@@ -111,6 +111,7 @@ export default function Home() {
   const [topPredictors, setTopPredictors] = useState([])
   const [predictionCount, setPredictionCount] = useState(0)
   const [knockoutPickCount, setKnockoutPickCount] = useState(0)
+  const [koOpenByData, setKoOpenByData] = useState(false) // true once first R32 match (M73) has both real teams
   const [awardPickCount, setAwardPickCount] = useState(0)
   const [jokerAssignedCount, setJokerAssignedCount] = useState(0)
   const [leaderPosition, setLeaderPosition]   = useState(null)
@@ -146,14 +147,29 @@ export default function Home() {
     : now >= GROUP_STAGE_END
   const showKnockoutBanner = phaseOverride
     ? ['knockout_banner','ko_predictor','post_tournament'].includes(phaseOverride)
-    : now >= KNOCKOUT_BANNER
+    : (koOpenByData || now >= KNOCKOUT_BANNER)
   const knockoutLive = phaseOverride === 'ko_predictor'
     ? true
     : phaseOverride && phaseOverride !== 'ko_predictor' ? false
-    : now >= KNOCKOUT_LIVE
+    : koOpenByData || now >= KNOCKOUT_LIVE
   const tournamentOver = phaseOverride === 'post_tournament' ? true : now >= TOURNAMENT_END
 
   useEffect(() => { loadData(); loadDailyQuestion(); loadRoundUp() }, [user])
+
+  // The KO Predictor opens the moment the first R32 match (M73) has both real
+  // teams — mirror that here so the home banner goes live at the same time the
+  // page does, rather than waiting on a fixed date.
+  useEffect(() => {
+    let cancelled = false
+    supabase.from('matches')
+      .select('home_team_id, away_team_id')
+      .eq('match_number', 73)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled && data?.home_team_id && data?.away_team_id) setKoOpenByData(true)
+      })
+    return () => { cancelled = true }
+  }, [])
 
   // Load user predictions for live matches so we can show pick vs score
   useEffect(() => {
@@ -1452,32 +1468,46 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Knockout Predictor Banner (20 Jun – 26 Jun teaser, 27 Jun+ live) ── */}
+          {/* ── Knockout Predictor Banner — clickable once KO Predictor is open ── */}
           {showKnockoutBanner && (
-            <div style={{
-              background: knockoutLive
-                ? 'linear-gradient(135deg, #e65100, #ff9800)'
-                : 'linear-gradient(135deg, #1a0800, #2a1400)',
-              borderRadius: 'var(--radius-lg)', padding: '16px 20px',
-              border: `1px solid ${knockoutLive ? 'rgba(255,152,0,0.5)' : 'rgba(230,81,0,0.3)'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
-            }}>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: '800', color: knockoutLive ? 'white' : '#ff9800', marginBottom: '2px' }}>
-                  🔥 {knockoutLive ? 'KO Predictor is LIVE!' : 'KO Predictor — coming soon'}
+            knockoutLive ? (
+              <Link to="/ko-predictor" style={{
+                background: 'linear-gradient(135deg, #e65100, #ff9800)',
+                borderRadius: 'var(--radius-lg)', padding: '16px 20px',
+                border: '1px solid rgba(255,152,0,0.5)', textDecoration: 'none',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+              }}>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', marginBottom: '2px' }}>
+                    🔥 KO Predictor is LIVE!
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)' }}>
+                    Your Second Chance — predict the real knockout matches as they're confirmed
+                  </div>
                 </div>
-                <div style={{ fontSize: '12px', color: knockoutLive ? 'rgba(255,255,255,0.8)' : 'rgba(255,152,0,0.6)' }}>
-                  {knockoutLive ? 'Your Second Chance — predict all 32 knockout matches' : 'Opens when the first Round of 32 teams are confirmed — fresh start, separate leaderboard'}
-                </div>
-              </div>
-              {knockoutLive && (
-                <Link to="/ko-predictor" style={{
+                <span style={{
                   background: 'white', color: '#e65100', padding: '8px 14px',
                   borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '800',
-                  textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0,
-                }}>Play now →</Link>
-              )}
-            </div>
+                  whiteSpace: 'nowrap', flexShrink: 0,
+                }}>Play now →</span>
+              </Link>
+            ) : (
+              <div style={{
+                background: 'linear-gradient(135deg, #1a0800, #2a1400)',
+                borderRadius: 'var(--radius-lg)', padding: '16px 20px',
+                border: '1px solid rgba(230,81,0,0.3)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
+              }}>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#ff9800', marginBottom: '2px' }}>
+                    🔥 KO Predictor — coming soon
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'rgba(255,152,0,0.6)' }}>
+                    Opens when the first Round of 32 teams are confirmed — fresh start, separate leaderboard
+                  </div>
+                </div>
+              </div>
+            )
           )}
 
           {/* ── First-time guidance ── */}
