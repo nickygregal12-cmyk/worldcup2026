@@ -134,6 +134,16 @@ export const handler = async (event, context) => {
     let fixturesPopulated = 0
     const errors = []
 
+    // ── PASS 0: Fill the "easy" R32 slots (group winners/runners-up) the moment
+    // their group finishes — straight from real standings. Best-third slots are
+    // left for PASS 1 (the API) once FIFA's Annex C allocation is published.
+    // Idempotent and fill-only, so it never overwrites a real team with null.
+    try {
+      await supabase.rpc('populate_r32_known_slots')
+    } catch (e) {
+      errors.push(`populate_r32_known_slots: ${e.message}`)
+    }
+
     // ── PASS 1: Auto-populate knockout fixtures from FIFA's real bracket ──
     // Once groups complete, FIFA applies its Annex C allocation and the API
     // publishes the real R32 (then R16/QF/SF/F) fixtures with actual teams.

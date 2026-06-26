@@ -254,7 +254,8 @@ export default function KOPredictor() {
 
   const getSmartKOMatch = (stageKey = null) => {
     const now = new Date()
-    const scope = stageKey ? matches.filter(m => m.stage === stageKey) : matches
+    const base = matches.filter(isConfirmed)
+    const scope = stageKey ? base.filter(m => m.stage === stageKey) : base
     const ordered = [...scope].sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
     return ordered.find(m => !isLocked(m.kickoff_time) && !hasPredictionForMatch(m))
       || ordered.find(m => new Date(m.kickoff_time) >= now)
@@ -282,9 +283,19 @@ export default function KOPredictor() {
     goToSmartKOStage()
   }, [loading, matches.length, predictions])
 
-  const stageMatches = matches.filter(m => m.stage === activeStage)
+  // A KO match is "confirmed" once both real teams are set (not null and not a
+  // "Winner of.."/"Runner-up.." placeholder). Undecided matches are hidden until
+  // their teams are known, rather than shown as empty cards.
+  const isConfirmed = (m) =>
+    !!(m.home_team_id && m.away_team_id) &&
+    !/Winner|Runner/.test(m.home_team?.name || '') &&
+    !/Winner|Runner/.test(m.away_team?.name || '')
+
+  const stageMatches = matches.filter(m => m.stage === activeStage && isConfirmed(m))
+  const stagePending = matches.filter(m => m.stage === activeStage && !isConfirmed(m)).length
+  const confirmedTotal = matches.filter(isConfirmed).length
   const getPredCount = (stage) => {
-    const sm = matches.filter(m => m.stage === stage)
+    const sm = matches.filter(m => m.stage === stage && isConfirmed(m))
     return sm.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
   }
 
@@ -667,7 +678,7 @@ export default function KOPredictor() {
                 🃏 {jokersRemaining} left
               </div>
               <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>
-                {Object.keys(predictions).length} / {matches.length}
+                {Object.keys(predictions).length} / {confirmedTotal}
               </span>
             </div>
           </div>
@@ -676,7 +687,7 @@ export default function KOPredictor() {
           <div style={{ display: 'flex', overflowX: 'auto', borderTop: '1px solid rgba(255,255,255,0.2)', scrollbarWidth: 'none' }}>
             {STAGES.map(stage => {
               const done = getPredCount(stage.key)
-              const total = matches.filter(m => m.stage === stage.key).length
+              const total = matches.filter(m => m.stage === stage.key && isConfirmed(m)).length
               const complete = done === total && total > 0
               const isActive = activeStage === stage.key
               return (
@@ -717,12 +728,23 @@ export default function KOPredictor() {
         ) : stageMatches.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>
             <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
-            <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '8px' }}>No matches yet for this round</div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Teams will be confirmed as results come in</div>
+            <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '8px' }}>
+              {stagePending > 0 ? 'Matchups not confirmed yet' : 'No matches yet for this round'}
+            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+              {stagePending > 0
+                ? `${stagePending} ${stagePending === 1 ? 'match' : 'matches'} will appear here once the teams are confirmed.`
+                : 'Teams will be confirmed as results come in'}
+            </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {stageMatches.map(renderMatch)}
+            {stagePending > 0 && (
+              <div style={{ textAlign: 'center', padding: '14px', color: 'var(--text-muted)', fontSize: '13px', fontWeight: '600' }}>
+                ⏳ {stagePending} more {stagePending === 1 ? 'match' : 'matches'} to be confirmed — they'll appear here automatically.
+              </div>
+            )}
           </div>
         )}
       </div>
