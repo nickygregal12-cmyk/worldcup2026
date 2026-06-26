@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase.js'
-import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
+import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
 
 const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 
@@ -218,14 +218,45 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
           }
           return { home: winner, away: pureAway }
         }
-        // Total pts earned this stage — 5/8/12... per predicted team that really reached this round
+        // Points earned this stage. For the R32 we mirror the server scorer
+        // exactly: 5pts per team the user predicted to reach the R32 (predicted
+        // top-2 of every group + 8 best predicted thirds) that actually got
+        // there. This is slot-independent — a predicted best-third can qualify
+        // before FIFA's allocation fixes which bracket slot it fills, so we must
+        // credit it even though it can't be painted into a match yet. Later
+        // rounds still score off the winner picks shown in their slots.
+        const isR32 = stage.key === 'r32'
+        let r32CreditTeams = []
+        if (isR32) {
+          const top2 = Object.values(standings).flatMap(arr => (arr || []).slice(0, 2).map(e => e.team))
+          const thirds = getBest3rdTeams(standings).slice(0, 8).map(t => t.team)
+          const seen = new Set()
+          const predicted = [...top2, ...thirds].filter(t => t && !seen.has(t.id) && (seen.add(t.id), true))
+          r32CreditTeams = predicted.filter(t => confirmedSet.has(t.id))
+        }
         let stagePtsEarned = 0
-        stageMatches.forEach(md => {
-          const { home, away } = resolvedFor(md)
-          if (home && confirmedSet.has(home.id)) stagePtsEarned += stage.points
-          if (away && confirmedSet.has(away.id)) stagePtsEarned += stage.points
-          if (!home && !away && confirmedSet.has(picks[md.match_number].winner_id)) stagePtsEarned += stage.points
-        })
+        if (isR32) {
+          stagePtsEarned = r32CreditTeams.length * stage.points
+        } else {
+          stageMatches.forEach(md => {
+            const { home, away } = resolvedFor(md)
+            if (home && confirmedSet.has(home.id)) stagePtsEarned += stage.points
+            if (away && confirmedSet.has(away.id)) stagePtsEarned += stage.points
+            if (!home && !away && confirmedSet.has(picks[md.match_number].winner_id)) stagePtsEarned += stage.points
+          })
+        }
+        // Credited R32 teams not shown in any slotted match (e.g. a best-third
+        // whose bracket slot isn't fixed yet) — listed below so the visible
+        // total matches the header.
+        const shownIds = new Set()
+        if (isR32) {
+          stageMatches.forEach(md => {
+            const { home, away } = resolvedFor(md)
+            if (home) shownIds.add(home.id)
+            if (away) shownIds.add(away.id)
+          })
+        }
+        const unslottedCredits = isR32 ? r32CreditTeams.filter(t => !shownIds.has(t.id)) : []
         return (
           <div key={stage.key}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -304,6 +335,21 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                   </div>
                 )
               })}
+              {unslottedCredits.map(t => (
+                <div key={`credit-${t.id}`} style={{
+                  display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px',
+                  background: 'rgba(0,122,51,0.05)', borderRadius: 'var(--radius-md)',
+                  border: '1px dashed rgba(0,122,51,0.25)',
+                }}>
+                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '26px', fontWeight: '600' }}>3rd</span>
+                  <span style={{ fontSize: '18px' }}>{t.flag_emoji}</span>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent-green)' }}>{t.short_code}</span>
+                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', flex: 1 }}>best-3rd qualified · slot confirmed once groups finish</span>
+                  <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.12)', padding: '1px 7px', borderRadius: '20px', whiteSpace: 'nowrap' }}>
+                    +{stage.points}pts
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         )
