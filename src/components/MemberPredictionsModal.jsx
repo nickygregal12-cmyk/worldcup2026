@@ -192,102 +192,75 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
       {ALL_STAGES.map(stage => {
         const stageMatches = stage.matches.filter(md => picks[md.match_number]?.winner_id)
         if (stageMatches.length === 0) return null
+        const confirmedSet = realConfirmedByStage[stage.key] || new Set()
+        // Total pts earned this stage
+        let stagePtsEarned = 0
+        stageMatches.forEach(md => {
+          const pick = picks[md.match_number]
+          const homeId = pick.home_team_id || null
+          const awayId = pick.away_team_id || null
+          if (homeId && confirmedSet.has(homeId)) stagePtsEarned += stage.points
+          if (awayId && confirmedSet.has(awayId)) stagePtsEarned += stage.points
+          if (!homeId && !awayId && confirmedSet.has(pick.winner_id)) stagePtsEarned += stage.points
+        })
         return (
           <div key={stage.key}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stage.label}</div>
-              {realConfirmedByStage[stage.key]?.size > 0 && (() => {
-                const confirmedSet = realConfirmedByStage[stage.key]
-                // Count pts: for each match, check both home_team_id and away_team_id from picks
-                // (both teams in predicted matchup earn pts if confirmed in that stage)
-                let earnedPtsTotal = 0
-                stage.matches.forEach(md => {
-                  const pick = picks[md.match_number]
-                  if (!pick?.winner_id) return
-                  // Check home team of this pick
-                  const homeId = pickHomeAway[md.match_number]?.home
-                  const awayId = pickHomeAway[md.match_number]?.away
-                  if (homeId && confirmedSet.has(homeId)) earnedPtsTotal += stage.points
-                  if (awayId && confirmedSet.has(awayId)) earnedPtsTotal += stage.points
-                  // Fallback: if no home/away stored, just check winner
-                  if (!homeId && !awayId && confirmedSet.has(pick.winner_id)) earnedPtsTotal += stage.points
-                })
-                const pts = earnedPtsTotal
-                return pts > 0 ? (
-                  <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
-                    +{pts}pts earned
-                  </span>
-                ) : null
-              })()}
+              {stagePtsEarned > 0 && (
+                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
+                  +{stagePtsEarned}pts earned
+                </span>
+              )}
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
               {stageMatches.map(md => {
                 const pick = picks[md.match_number]
-                // Use stored home/away team IDs first (most accurate), fall back to slot resolution
-                const storedHomeId = pick.home_team_id
-                const storedAwayId = pick.away_team_id
-                const home = storedHomeId ? teamsById[storedHomeId] || { id: storedHomeId } : resolveTeam(md.home_slot)
-                const away = storedAwayId ? teamsById[storedAwayId] || { id: storedAwayId } : resolveTeam(md.away_slot)
+                const hasStoredTeams = !!(pick.home_team_id && pick.away_team_id)
+                const home = pick.home_team_id ? teamsById[pick.home_team_id] : null
+                const away = pick.away_team_id ? teamsById[pick.away_team_id] : null
                 const winner = teamsById[pick.winner_id]
-                const isHomeWinner = winner && home && home.id === winner.id
-                const isAwayWinner = winner && away && away.id === winner.id
-                const confirmedSet = realConfirmedByStage[stage.key] || new Set()
-                // Use stored home/away team IDs for earned check (most accurate)
-                const storedHome = pickHomeAway[md.match_number]?.home
-                const storedAway = pickHomeAway[md.match_number]?.away
-                const storedHomeEarned = storedHome && confirmedSet.has(storedHome)
-                const storedAwayEarned = storedAway && confirmedSet.has(storedAway)
-                // Fall back to displayed teams if not stored
-                const homeEarned = storedHomeEarned || (!storedHome && home && confirmedSet.has(home.id))
-                const awayEarned = storedAwayEarned || (!storedAway && away && confirmedSet.has(away.id))
-                const anyEarned = homeEarned || awayEarned
+                const homeEarned = home && confirmedSet.has(home.id)
+                const awayEarned = away && confirmedSet.has(away.id)
+                const winnerEarned = winner && confirmedSet.has(winner.id)
+                const earnedPts = hasStoredTeams
+                  ? [homeEarned, awayEarned].filter(Boolean).length * stage.points
+                  : (winnerEarned ? stage.points : 0)
+                const anyEarned = earnedPts > 0
                 return (
-                  <div key={md.match_number} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: anyEarned ? 'rgba(0,122,51,0.05)' : 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: anyEarned ? '1px solid rgba(0,122,51,0.2)' : '1px solid transparent' }}>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '24px' }}>#{md.match_number}</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
-                      {/* If slot resolves use it; otherwise if winner fills this side, use winner; else show opponent's side */}
-                      {(() => {
-                        // Use confirmed fixture or resolve from picks; fill winner side if needed
-                        const displayHome = home || (isHomeWinner ? winner : null)
-                        const displayAway = away || (isAwayWinner ? winner : null)
-                        const dHomeEarned = displayHome && confirmedSet.has(displayHome.id)
-                        const dAwayEarned = displayAway && confirmedSet.has(displayAway.id)
-                        // If neither slot resolved, show winner prominently vs unknown
-                        const neitherResolved = !displayHome && !displayAway
-                        if (neitherResolved && winner) {
-                          return (
-                            <>
-                              <span style={{ fontSize: '16px' }}>{winner.flag_emoji}</span>
-                              <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary)' }}>{winner.short_code || winner.name}</span>
-                              <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 3px' }}>v</span>
-                              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>TBD</span>
-                              <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', marginLeft: '4px' }}>→ {winner.short_code || winner.name}</span>
-                            </>
-                          )
-                        }
-                        const TeamDisplay = ({ team, isWinner, earned, slot }) => team ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                            <span style={{ fontSize: '16px', opacity: isWinner ? 1 : 0.5 }}>{team.flag_emoji}</span>
-                            <span style={{ fontSize: '13px', fontWeight: isWinner ? '800' : '500', color: earned ? 'var(--accent-green)' : isWinner ? 'var(--text-primary)' : 'var(--text-muted)' }}>{team.short_code || team.name}</span>
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>TBD</span>
-                        )
-                        return (
-                          <>
-                            <TeamDisplay team={displayHome} isWinner={isHomeWinner} earned={dHomeEarned} slot={md.home_slot} />
-                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 3px' }}>v</span>
-                            <TeamDisplay team={displayAway} isWinner={isAwayWinner} earned={dAwayEarned} slot={md.away_slot} />
-                            <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', marginLeft: '4px', whiteSpace: 'nowrap' }}>→ {winner?.short_code || winner?.name || '?'}</span>
-                          </>
-                        )
-                      })()}
-                    </div>
-                    {anyEarned && (() => {
-                      const earnedPts = [homeEarned, awayEarned].filter(Boolean).length * stage.points
-                      return <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--accent-green)', whiteSpace: 'nowrap' }}>+{earnedPts}pts</span>
-                    })()}
-                    {pick.is_joker && <span style={{ fontSize: '12px' }}>🃏</span>}
+                  <div key={md.match_number} style={{
+                    display: 'flex', alignItems: 'center', gap: '8px',
+                    padding: '8px 10px',
+                    background: anyEarned ? 'rgba(0,122,51,0.05)' : 'var(--bg-secondary)',
+                    borderRadius: 'var(--radius-md)',
+                    border: `1px solid ${anyEarned ? 'rgba(0,122,51,0.2)' : 'transparent'}`,
+                  }}>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '26px', fontWeight: '600' }}>#{md.match_number}</span>
+                    {hasStoredTeams && home && away ? (
+                      <>
+                        <span style={{ fontSize: '18px', opacity: homeEarned ? 1 : 0.45 }}>{home.flag_emoji}</span>
+                        <span style={{ fontSize: '13px', fontWeight: home.id === pick.winner_id ? '700' : '400', color: homeEarned ? 'var(--accent-green)' : home.id === pick.winner_id ? 'var(--text-primary)' : 'var(--text-muted)' }}>{home.short_code}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>v</span>
+                        <span style={{ fontSize: '18px', opacity: awayEarned ? 1 : 0.45 }}>{away.flag_emoji}</span>
+                        <span style={{ fontSize: '13px', fontWeight: away.id === pick.winner_id ? '700' : '400', color: awayEarned ? 'var(--accent-green)' : away.id === pick.winner_id ? 'var(--text-primary)' : 'var(--text-muted)' }}>{away.short_code}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 4px' }}>·</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>pick:</span>
+                        <span style={{ fontSize: '18px', marginLeft: '2px' }}>{winner?.flag_emoji}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: winnerEarned ? 'var(--accent-green)' : 'var(--text-primary)', flex: 1 }}>{winner?.short_code}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: '18px' }}>{winner?.flag_emoji}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: winnerEarned ? 'var(--accent-green)' : 'var(--text-primary)', flex: 1 }}>{winner?.short_code || winner?.name}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>· pick to win</span>
+                      </>
+                    )}
+                    {earnedPts > 0 && (
+                      <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.12)', padding: '1px 7px', borderRadius: '20px', whiteSpace: 'nowrap', marginLeft: '4px' }}>
+                        +{earnedPts}pts
+                      </span>
+                    )}
+                    {pick.is_joker && <span style={{ fontSize: '11px', marginLeft: '2px' }}>🃏</span>}
                   </div>
                 )
               })}
