@@ -1151,17 +1151,25 @@ export default function Leagues() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
+  // For a normal (standard-scoring, always-editable) league the authoritative
+  // total is the member's live profiles.total_points — which always includes
+  // bracket/KO points. We only fall back to the stored league_points for leagues
+  // where it's genuinely a different number: custom scoring, or a pre-tournament
+  // locked snapshot. (Offline players carry their league_points as a synthetic
+  // profile.total_points, so total_points is correct for them too.)
+  const leagueUsesStoredPoints = (lg) => {
+    const isCustom = lg?.scoring_preset && lg.scoring_preset !== 'standard'
+    const isSnapshot = lg?.lock_type === 'pre_tournament' && !!lg?.snapshot_taken_at
+    return !!(isCustom || isSnapshot)
+  }
+  const memberPoints = (member, lg) =>
+    leagueUsesStoredPoints(lg) ? (member.league_points || 0) : (member.profile?.total_points || 0)
+
   const sortedMembers = (leagueId) => {
-    const league = myLeagues.find(m => m.league_id === leagueId)
-    const hasCustomScoring = league?.league?.scoring_preset && league.league.scoring_preset !== 'standard'
-    return [...(leagueMembers[leagueId] || [])].sort((a, b) => {
-      // Use league_points if any member has them, otherwise total_points
-      const aLeaguePts = a.league_points ?? 0
-      const bLeaguePts = b.league_points ?? 0
-      const hasLeaguePts = (leagueMembers[leagueId] || []).some(m => (m.league_points ?? 0) > 0)
-      if (hasLeaguePts || hasCustomScoring) return bLeaguePts - aLeaguePts
-      return (b.profile?.total_points || 0) - (a.profile?.total_points || 0)
-    })
+    const lg = myLeagues.find(m => m.league_id === leagueId)?.league
+    return [...(leagueMembers[leagueId] || [])].sort((a, b) =>
+      memberPoints(b, lg) - memberPoints(a, lg)
+    )
   }
 
   const getPredResult = (pred) => {
@@ -1624,16 +1632,14 @@ export default function Leagues() {
                           const isMe = member.user_id === user.id
                           const isLeagueCreator = league.created_by === member.user_id
                           const canRemove = (isCreator || isAdmin) && !isMe && !isLeagueCreator && !league.is_global
-                          const hasLeaguePts = members.some(m => (m.league_points ?? 0) > 0)
-                          const pts = hasLeaguePts ? (member.league_points || 0) : (member.profile?.total_points || 0)
-                          const leaderPts = members[0]?.profile?.total_points || 0
+                          const pts = memberPoints(member, league)
+                          const leaderPts = members[0] ? memberPoints(members[0], league) : 0
                           const gap = i > 0 && pts !== leaderPts ? leaderPts - pts : null
                           const rankColours = ['#f59e0b', '#9ca3af', '#cd7f32']
 
                           // Dense ranking: count how many members have strictly more points
                           const rank = visibleMembers.filter((m, j) => {
-                            const mPts = hasLeaguePts ? (m.league_points || 0) : (m.profile?.total_points || 0)
-                            return mPts > pts
+                            return memberPoints(m, league) > pts
                           }).length + 1
 
                           return (
