@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase.js'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
 import BracketHealth from '../components/BracketHealth.jsx'
 import AdminUserBracketEditor from '../components/AdminUserBracketEditor.jsx'
+import AdminKOFixtures from '../components/AdminKOFixtures.jsx'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
 const TABS = [
@@ -11,6 +12,7 @@ const TABS = [
   { key: 'matches',  label: '⚽ Matches',        superOnly: true },
   { key: 'awards',   label: '🥇 Awards',         superOnly: true },
   { key: 'ko',       label: '🔥 KO Predictor',   superOnly: true },
+  { key: 'kofixtures', label: '🏟️ KO Fixtures',   superOnly: true },
   { key: 'users',    label: '👥 Users',           superOnly: true },
   { key: 'leagues',  label: '🏆 Leagues',         superOnly: false },
   { key: 'offline',  label: '👤 Offline',         superOnly: false },
@@ -2956,6 +2958,13 @@ export default function AdminPanel() {
               )}
             </div>
 
+          </div>
+        )}
+
+        {/* ── KO FIXTURES (manual fallback editor) ── */}
+        {activeTab === 'kofixtures' && (
+          <div>
+            <AdminKOFixtures />
           </div>
         )}
 
