@@ -128,7 +128,24 @@ export const handler = async (event, context) => {
       }
     }
 
-    return { statusCode: 200, body: JSON.stringify({ message: 'Standings synced', updated, skipped, firstSkipped, v: 5 }) }
+    if (updated > 0) {
+      const { error: recalcError } = await supabase.rpc('recalculate_all_points_safe')
+      if (recalcError) {
+        throw new Error(`Standings saved, but points recalculation failed: ${recalcError.message}`)
+      }
+    }
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        message: 'Standings synced',
+        updated,
+        skipped,
+        firstSkipped,
+        pointsRecalculated: updated > 0,
+        v: 6,
+      }),
+    }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
   }

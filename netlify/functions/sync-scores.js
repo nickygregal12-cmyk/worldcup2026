@@ -152,6 +152,7 @@ export const handler = async (event) => {
     let updated = 0
     let pointsCalculated = 0
     let fixturesPopulated = 0
+    let standingsSynced = false
     const errors = []
 
     // ── PASS 0: Fill the "easy" R32 slots (group winners/runners-up) the moment
@@ -503,7 +504,18 @@ export const handler = async (event) => {
           headers: { 'x-admin-secret': process.env.ADMIN_FUNCTION_SECRET }
         })
         if (!standingsResponse.ok) throw new Error(`HTTP ${standingsResponse.status}`)
+        standingsSynced = true
       } catch(e) { errors.push(`Standings auto-sync failed: ${e.message}`) }
+    }
+
+    // New knockout participants can change bracket-progression points even when
+    // no group standings were updated in this run.
+    if (fixturesPopulated > 0 && !standingsSynced) {
+      try {
+        await runRpc('recalculate_all_points_safe')
+      } catch (e) {
+        errors.push(`Bracket points refresh failed: ${e.message}`)
+      }
     }
 
     return { statusCode: 200, body: JSON.stringify({ message: 'Sync complete', updated, pointsCalculated, fixturesPopulated, errors }) }
