@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
 import { supabase } from '../lib/supabase.js'
@@ -611,6 +611,18 @@ export default function Leagues() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [expandedLeague, setExpandedLeague] = useState(null)
+  const [collapsedLeagueIds, setCollapsedLeagueIds] = useState(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const saved = window.localStorage.getItem('wc26_league_collapsed')
+      return saved ? JSON.parse(saved) : null
+    } catch { return null }
+  })
+  const [leagueOrder, setLeagueOrder] = useState(() => {
+    if (typeof window === 'undefined') return []
+    try { return JSON.parse(window.localStorage.getItem('wc26_league_order') || '[]') } catch { return [] }
+  })
+  const [reorderMode, setReorderMode] = useState(false)
   const [liveMatches, setLiveMatches] = useState([])
   const [upcomingMatch, setUpcomingMatch] = useState(null)
   const [recentResult, setRecentResult] = useState(null)
@@ -691,6 +703,44 @@ export default function Leagues() {
     : new Date() >= KO_OPEN_DATE
 
   useEffect(() => { if (user) { loadMyLeagues(); loadMyKoLeagues(); loadOverallRankings() } }, [user])
+
+  useEffect(() => {
+    if (collapsedLeagueIds === null || typeof window === 'undefined') return
+    window.localStorage.setItem('wc26_league_collapsed', JSON.stringify(collapsedLeagueIds))
+  }, [collapsedLeagueIds])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.localStorage.setItem('wc26_league_order', JSON.stringify(leagueOrder))
+  }, [leagueOrder])
+
+  useEffect(() => {
+    if (collapsedLeagueIds !== null || !myLeagues.length) return
+    const privateIds = myLeagues.filter(m => m.league && !m.league.is_global).map(m => m.league_id)
+    setCollapsedLeagueIds(privateIds.slice(1))
+  }, [myLeagues, collapsedLeagueIds])
+
+  const toggleLeagueCollapsed = leagueId => {
+    setCollapsedLeagueIds(prev => {
+      const current = prev || []
+      return current.includes(leagueId) ? current.filter(id => id !== leagueId) : [...current, leagueId]
+    })
+  }
+
+  const setAllLeaguesCollapsed = collapse => {
+    const ids = myLeagues.filter(m => m.league && !m.league.is_global).map(m => m.league_id)
+    setCollapsedLeagueIds(collapse ? ids : [])
+  }
+
+  const moveLeague = (leagueId, direction) => {
+    const ids = orderedTournamentLeagues.map(m => m.league_id)
+    const index = ids.indexOf(leagueId)
+    const nextIndex = index + direction
+    if (index < 0 || nextIndex < 0 || nextIndex >= ids.length) return
+    const next = [...ids]
+    ;[next[index], next[nextIndex]] = [next[nextIndex], next[index]]
+    setLeagueOrder(next)
+  }
 
   const loadOverallRankings = async () => {
     setLoadingOverall(true)
@@ -1138,6 +1188,19 @@ export default function Leagues() {
     return 'wrong'
   }
 
+  const orderedTournamentLeagues = useMemo(() => {
+    const list = myLeagues.filter(({ league }) => league && !league.is_global)
+    const positions = new Map(leagueOrder.map((id, index) => [id, index]))
+    return [...list].sort((a, b) => {
+      const ai = positions.has(a.league_id) ? positions.get(a.league_id) : Number.MAX_SAFE_INTEGER
+      const bi = positions.has(b.league_id) ? positions.get(b.league_id) : Number.MAX_SAFE_INTEGER
+      if (ai !== bi) return ai - bi
+      return 0
+    })
+  }, [myLeagues, leagueOrder])
+
+  const allTournamentLeaguesCollapsed = orderedTournamentLeagues.length > 0 && orderedTournamentLeagues.every(m => (collapsedLeagueIds || []).includes(m.league_id))
+
   // Guest view
   if (!user) {
     return (
@@ -1482,15 +1545,19 @@ export default function Leagues() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <MyPredictionsProgress userId={user?.id} />
-            <div className="card" style={{ padding: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-              <button onClick={() => { setShowCreate(true); setShowJoin(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-primary btn-sm">+ Create League</button>
-              <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-secondary btn-sm">Join League</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
+              <button onClick={() => { setShowCreate(true); setShowJoin(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-primary btn-sm" style={{ padding: '7px 11px' }}>＋ New league</button>
+              <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-secondary btn-sm" style={{ padding: '7px 11px' }}>Join</button>
+              <div style={{ flex: 1 }} />
+              <button onClick={() => setReorderMode(v => !v)} className="btn btn-secondary btn-sm" style={{ padding: '7px 10px' }}>{reorderMode ? 'Done' : '↕ Reorder'}</button>
+              <button onClick={() => setAllLeaguesCollapsed(!allTournamentLeaguesCollapsed)} className="btn btn-secondary btn-sm" style={{ padding: '7px 10px' }}>{allTournamentLeaguesCollapsed ? 'Expand all' : 'Collapse all'}</button>
             </div>
-            {[...myLeagues].sort((a, b) => {
-              if (a.league?.is_global && !b.league?.is_global) return -1
-              if (!a.league?.is_global && b.league?.is_global) return 1
-              return 0
-            }).filter(({ league }) => !league?.is_global).map(({ league, memberCount }) => {
+            {reorderMode && (
+              <div style={{ padding: '9px 11px', borderRadius: 'var(--radius-md)', background: 'rgba(21,88,176,0.07)', color: 'var(--text-muted)', fontSize: '11px', fontWeight: '700' }}>
+                Use the arrows on each league to set your preferred order. It is saved on this device.
+              </div>
+            )}
+            {orderedTournamentLeagues.map(({ league, memberCount }, leagueIndex) => {
               if (!league) return null
               const isCreator = league.created_by === user.id
               const isExpanded = expandedLeague === league.id
@@ -1498,6 +1565,7 @@ export default function Leagues() {
               const myRank = members.findIndex(m => m.user_id === user?.id) + 1
               const showAll = expandedLeague === `${league.id}-all`
               const visibleMembers = league.is_global && !showAll ? members.slice(0, 5) : members
+              const isCollapsed = (collapsedLeagueIds || []).includes(league.id)
 
               return (
                 <div key={league.id} style={{
@@ -1505,7 +1573,7 @@ export default function Leagues() {
                   borderRadius: 'var(--radius-lg)',
                   overflow: 'hidden',
                   boxShadow: 'var(--shadow-sm)',
-                  border: '1px solid var(--border-light)',
+                  border: reorderMode ? '2px dashed rgba(21,88,176,0.35)' : '1px solid var(--border-light)',
                 }}>
                   {/* League header */}
                   <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-light)' }}>
@@ -1538,15 +1606,26 @@ export default function Leagues() {
                           </div>
                         </div>
                       </div>
-                      {myRank > 0 && (
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Your rank</div>
-                          <div style={{ fontSize: '18px', fontWeight: '900', color: myRank <= 3 ? ['#d4a017','#64748b','#b06a2c'][myRank-1] : 'var(--scottish-navy)' }}>#{myRank}</div>
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {myRank > 0 && (
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Your rank</div>
+                            <div style={{ fontSize: '18px', fontWeight: '900', color: myRank <= 3 ? ['#d4a017','#64748b','#b06a2c'][myRank-1] : 'var(--scottish-navy)' }}>#{myRank}</div>
+                          </div>
+                        )}
+                        {reorderMode ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                            <button disabled={leagueIndex === 0} onClick={() => moveLeague(league.id, -1)} aria-label={`Move ${league.name} up`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === 0 ? 'not-allowed' : 'pointer', opacity: leagueIndex === 0 ? 0.35 : 1 }}>↑</button>
+                            <button disabled={leagueIndex === orderedTournamentLeagues.length - 1} onClick={() => moveLeague(league.id, 1)} aria-label={`Move ${league.name} down`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === orderedTournamentLeagues.length - 1 ? 'not-allowed' : 'pointer', opacity: leagueIndex === orderedTournamentLeagues.length - 1 ? 0.35 : 1 }}>↓</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => toggleLeagueCollapsed(league.id)} aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${league.name}`} style={{ width: '34px', height: '34px', borderRadius: '10px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', fontWeight: '900', cursor: 'pointer' }}>{isCollapsed ? '⌄' : '⌃'}</button>
+                        )}
+                      </div>
                     </div>
                   </div>
 
+                  {!isCollapsed && <>
                   {!league.is_global && (
                     <div style={{ padding: '8px 16px', background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.08)' : 'rgba(21,88,176,0.05)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: league.lock_type === 'pre_tournament' ? '#92400e' : 'var(--accent-blue)', fontWeight: '800' }}>
                       {league.lock_type === 'pre_tournament'
@@ -1693,10 +1772,16 @@ export default function Leagues() {
                       </div>
                     </div>
                   )}
+                  </>}
 
                 </div>
               )
             })}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', padding: '2px 0 6px', color: 'var(--text-muted)', fontSize: '11px' }}>
+              <button onClick={() => { setShowCreate(true); setShowJoin(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ border: 0, background: 'none', color: 'var(--text-muted)', fontSize: '11px', fontWeight: '700', textDecoration: 'underline', cursor: 'pointer' }}>Create another league</button>
+              <span>·</span>
+              <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ border: 0, background: 'none', color: 'var(--text-muted)', fontSize: '11px', fontWeight: '700', textDecoration: 'underline', cursor: 'pointer' }}>Join with code</button>
+            </div>
           </div>
         )}
       </div>
