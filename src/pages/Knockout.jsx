@@ -1369,6 +1369,11 @@ export default function Knockout() {
               {/* Expandable per-match breakdown */}
               {showRealBracket && (
                 <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderTop: 'none', borderRadius: '0 0 var(--radius-md) var(--radius-md)', overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', gap: '14px', padding: '8px 14px', borderBottom: '1px solid var(--border-light)', fontSize: '10px', fontWeight: '700' }}>
+                    <span style={{ color: 'var(--accent-green)' }}>● Through</span>
+                    <span style={{ color: 'var(--text-muted)' }}>● Still to play</span>
+                    <span style={{ color: '#c62828' }}>● Out</span>
+                  </div>
                   {liveTrackerStats.matchComparisons.filter(m => m.hasPick).map(m => {
                     // Points earned for this match's predicted teams
                     const homeEarned = m.userHome?.id && liveTrackerStats.teamsInStage?.has(m.userHome.id)
@@ -1376,6 +1381,8 @@ export default function Knockout() {
                     const earnedPts = ([homeEarned, awayEarned].filter(Boolean).length) * (liveTrackerStats.stagePoints || 5)
                     const anyEarned = homeEarned || awayEarned
                     const bothEarned = homeEarned && awayEarned
+                    const homeOut = m.userHome?.id && eliminatedTeams.has(m.userHome.id)
+                    const awayOut = m.userAway?.id && eliminatedTeams.has(m.userAway.id)
                     const accentBar = bothEarned ? 'var(--accent-green)' : anyEarned ? 'var(--accent-gold)' : 'var(--border-light)'
                     const userPick = m.userPickId
                       ? (m.userHome?.id === m.userPickId ? m.userHome : m.userAway?.id === m.userPickId ? m.userAway : null)
@@ -1391,20 +1398,24 @@ export default function Knockout() {
                         <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', minWidth: '28px' }}>M{m.matchDef.match_number}</span>
                         {/* Home team */}
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '18px', opacity: homeEarned ? 1 : 0.45 }}>{m.userHome?.flag_emoji}</span>
+                          <span style={{ fontSize: '18px', opacity: homeEarned ? 1 : homeOut ? 0.35 : 0.45 }}>{m.userHome?.flag_emoji}</span>
                           <span style={{ fontSize: '13px', fontWeight: m.userPickId === m.userHome?.id ? '800' : '500',
-                            color: homeEarned ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                            color: homeEarned ? 'var(--accent-green)' : homeOut ? '#c62828' : 'var(--text-muted)',
+                            textDecoration: homeOut && !homeEarned ? 'line-through' : 'none' }}>
                             {m.userHome?.short_code}
                           </span>
+                          {homeOut && !homeEarned && <span style={{ fontSize: '9px', fontWeight: '800', color: '#c62828' }}>✗</span>}
                         </span>
                         <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>v</span>
                         {/* Away team */}
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
-                          <span style={{ fontSize: '18px', opacity: awayEarned ? 1 : 0.45 }}>{m.userAway?.flag_emoji}</span>
+                          <span style={{ fontSize: '18px', opacity: awayEarned ? 1 : awayOut ? 0.35 : 0.45 }}>{m.userAway?.flag_emoji}</span>
                           <span style={{ fontSize: '13px', fontWeight: m.userPickId === m.userAway?.id ? '800' : '500',
-                            color: awayEarned ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                            color: awayEarned ? 'var(--accent-green)' : awayOut ? '#c62828' : 'var(--text-muted)',
+                            textDecoration: awayOut && !awayEarned ? 'line-through' : 'none' }}>
                             {m.userAway?.short_code}
                           </span>
+                          {awayOut && !awayEarned && <span style={{ fontSize: '9px', fontWeight: '800', color: '#c62828' }}>✗</span>}
                         </span>
                         {/* Points badge */}
                         {earnedPts > 0 && (
