@@ -903,7 +903,7 @@ export default function Home() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
 
           {/* ── Group matchday hub: countdown → live scores → full-time recap ── */}
-          {!loading && user && tournamentStarted && !groupStageDone && (
+          {!loading && user && tournamentStarted && !groupStageDone && liveMatches.length > 0 && (
             <GroupMatchdayHub user={user} profile={profile} />
           )}
 
@@ -912,8 +912,8 @@ export default function Home() {
             <KnockoutMatchdayHub user={user} profile={profile} />
           )}
 
-          {/* ── Public group-stage countdown/live card for signed-out visitors ── */}
-          {!loading && !user && tournamentStarted && !groupStageDone && (liveMatches.length > 0 || nextMatch) && (
+          {/* ── Existing countdown card before kickoff; public live card for signed-out visitors ── */}
+          {!loading && tournamentStarted && !groupStageDone && (liveMatches.length > 0 || nextMatch) && (!user || liveMatches.length === 0) && (
             <div className="card fade-in" style={{
               overflow: 'hidden',
               border: liveMatches.length > 0 ? '2px solid #e53935' : '1px solid rgba(0,48,135,0.16)',

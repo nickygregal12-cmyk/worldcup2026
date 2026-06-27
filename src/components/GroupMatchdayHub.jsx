@@ -310,11 +310,28 @@ function GroupMatchCard({ match, mode, prediction, groupMatches, predictionMap, 
         mode={mode}
       />
 
-      <div style={{ display: 'grid', gridTemplateColumns: rivalId ? '1fr 1fr' : '1fr', gap: '7px', padding: '0 14px 14px' }}>
-        <Link to={matchCentre} className="btn" style={{ textDecoration: 'none', justifyContent: 'center', textAlign: 'center', background: 'var(--scottish-navy)', color: 'white' }}>
-          Open Match Centre
-        </Link>
-        {rivalId && (
+      <div style={{ display: 'grid', gridTemplateColumns: mode !== 'prematch' && rivalId ? '1fr 1fr' : '1fr', gap: '7px', padding: '0 14px 14px' }}>
+        {mode === 'prematch' ? (
+          <div
+            aria-disabled="true"
+            className="btn"
+            style={{
+              justifyContent: 'center',
+              textAlign: 'center',
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-muted)',
+              border: '1px solid var(--border-light)',
+              cursor: 'not-allowed',
+            }}
+          >
+            🔒 Match Centre opens at kickoff
+          </div>
+        ) : (
+          <Link to={matchCentre} className="btn" style={{ textDecoration: 'none', justifyContent: 'center', textAlign: 'center', background: 'var(--scottish-navy)', color: 'white' }}>
+            Open Match Centre
+          </Link>
+        )}
+        {mode !== 'prematch' && rivalId && (
           <Link to={`/h2h/${rivalId}`} className="btn btn-outline" style={{ textDecoration: 'none', justifyContent: 'center', textAlign: 'center' }}>
             Compare closest rival
           </Link>
