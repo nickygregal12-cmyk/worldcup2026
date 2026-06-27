@@ -273,22 +273,38 @@ export default function Knockout() {
     return out
   }, [realKoFixtures, realStandingsMap])
 
-  // Games played per team in the real group stage (3 = their group is finished)
-  const groupPlayedMap = useMemo(() => {
+  // Per-team real group-stage standing (games played + final position)
+  const teamStandInfo = useMemo(() => {
     const m = {}
-    realGroupStandings.forEach(r => { if (r.team?.id) m[r.team.id] = r.played || 0 })
+    realGroupStandings.forEach(r => { if (r.team?.id) m[r.team.id] = { played: r.played || 0, position: r.position || 99 } })
     return m
   }, [realGroupStandings])
 
-  // A team is OUT of the real tournament if it either lost a completed KO match,
-  // OR its group is finished and it did not make the real R32 (e.g. eliminated in
-  // the group stage). This is what drives the strike-out across the bracket.
+  // Once every group is finished we can rank the 3rd-placed teams ourselves to
+  // know which 8 qualify as best thirds — even before the R32 fixtures populate.
+  const realBestThirdIds = useMemo(() => {
+    const groups = Object.values(realStandingsMap)
+    const allDone = groups.length >= 12 && groups.every(arr => arr.length >= 4 && arr.every(t => (t.played || 0) >= 3))
+    if (!allDone) return null
+    return new Set(getBest3rdTeams(realStandingsMap).slice(0, 8).map(t => t.id).filter(Boolean))
+  }, [realStandingsMap])
+
+  // A team is OUT of the real tournament if it lost a completed KO match, OR its
+  // group is finished and it can't reach the R32. 4th place is out immediately;
+  // 3rd place is only ruled out once the best thirds are known (all groups done,
+  // or the R32 fully drawn) — so qualifying best thirds are never wrongly struck.
   const isTeamOut = useCallback((id) => {
     if (!id) return false
     if (eliminatedTeams.has(id)) return true
-    if ((groupPlayedMap[id] || 0) >= 3 && !confirmedR32Teams.has(id)) return true
+    const st = teamStandInfo[id]
+    if (!st || st.played < 3) return false
+    if (st.position <= 2) return false
+    if (st.position >= 4) return true
+    // 3rd place — verdict only when we actually know the qualifying best thirds
+    if (realBestThirdIds) return !realBestThirdIds.has(id)
+    if (confirmedR32Teams.size >= 32) return !confirmedR32Teams.has(id)
     return false
-  }, [eliminatedTeams, groupPlayedMap, confirmedR32Teams])
+  }, [eliminatedTeams, teamStandInfo, realBestThirdIds, confirmedR32Teams])
 
   // Resolve a slot against real current standings (no prediction check needed)
   const resolveRealSlot = useCallback((slot) => {
