@@ -578,7 +578,7 @@ export function useMemberPredictions() {
         .eq('user_id', userId),
       supabase
         .from('profiles')
-        .select('group_position_points, bracket_points, total_points, exact_scores')
+        .select('group_position_points, bracket_points, total_points, exact_scores, ko_points, ko_exact_scores, ko_streak_current')
         .eq('id', userId)
         .maybeSingle(),
       supabase
@@ -618,7 +618,7 @@ export function useMemberPredictions() {
     setLoadingPreds(false)
   }
 
-  const openProfile = async (profile, currentUserId) => {
+  const openProfile = async (profile, currentUserId, viewContext = 'tournament') => {
     const displayName = profile.display_name || profile.username || 'Unknown'
     const showFuture = profile.show_future_predictions !== false || profile.id === currentUserId
     setMemberModal({
@@ -627,7 +627,9 @@ export function useMemberPredictions() {
       leagueId: null,
       isOffline: false,
       lockedSnapshot: false,
-      leagueName: 'Overall Rankings',
+      leagueName: viewContext === 'ko' ? 'KO Predictor Leaderboard' : 'Overall Rankings',
+      viewContext,
+      tab: viewContext === 'ko' ? 'koPredictor' : 'overview',
       targetShowFuture: showFuture,
       canRemoveMember: false,
       memberName: displayName,
@@ -656,15 +658,23 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
 
   if (!memberModal) return null
 
+  const viewContext = memberModal.viewContext || 'tournament'
+  const isKoContext = viewContext === 'ko'
   const tabs = memberModal.isOffline
     ? ['group', 'standings']
-    : ['overview', 'group', 'knockout', 'koPredictor', 'awards', 'standings']
-  const activeTab = memberModal.tab || (memberModal.isOffline ? 'group' : 'overview')
+    : isKoContext
+      ? ['koPredictor']
+      : ['overview', 'group', 'knockout', 'awards', 'standings']
+  const requestedTab = memberModal.tab || (memberModal.isOffline ? 'group' : isKoContext ? 'koPredictor' : 'overview')
+  const activeTab = tabs.includes(requestedTab) ? requestedTab : tabs[0]
   const mp = memberModal.memberProfile || {}
   const totalPts = Number(mp.total_points || 0)
   const groupPts = Number(mp.group_position_points || 0)
   const bracketPts = Number(mp.bracket_points || 0)
   const matchPts = Math.max(0, totalPts - groupPts - bracketPts)
+  const koPts = Number(mp.ko_points || 0)
+  const koExactScores = Number(mp.ko_exact_scores || 0)
+  const koStreak = Number(mp.ko_streak_current || 0)
 
   const completedPredictions = memberPredictions
     .filter(pred => pred.match?.status === 'completed')
@@ -785,7 +795,7 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
         {/* Player summary */}
         <header style={{ flexShrink: 0, padding: '17px 18px 13px', color: 'white', background: 'linear-gradient(135deg, var(--scottish-navy), #0b356b)', position: 'relative' }}>
           <div style={{ position: 'absolute', right: '12px', top: '10px', display: 'flex', gap: '6px' }}>
-            <button type="button" onClick={() => setShowOptions(true)} aria-label="View options" style={{ width: '32px', height: '32px', display: 'grid', placeItems: 'center', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)', background: 'rgba(255,255,255,0.10)', color: 'white', fontSize: '15px', cursor: 'pointer' }}>⋯</button>
+            {!isKoContext && <button type="button" onClick={() => setShowOptions(true)} aria-label="View options" style={{ width: '32px', height: '32px', display: 'grid', placeItems: 'center', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)', background: 'rgba(255,255,255,0.10)', color: 'white', fontSize: '15px', cursor: 'pointer' }}>⋯</button>}
             <button type="button" onClick={() => setMemberModal(null)} aria-label="Close" style={{ width: '32px', height: '32px', display: 'grid', placeItems: 'center', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)', background: 'rgba(255,255,255,0.10)', color: 'white', fontSize: '21px', cursor: 'pointer' }}>×</button>
           </div>
 
@@ -796,25 +806,33 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: '17px', fontWeight: '900', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{memberModal.username}</div>
               <div style={{ fontSize: '11px', opacity: 0.76, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {memberModal.lockedSnapshot
-                  ? `Locked snapshot${memberModal.leagueName ? ` · ${memberModal.leagueName}` : ''}`
-                  : memberModal.isOffline
-                    ? 'Offline player · imported predictions'
-                    : memberModal.leagueName || 'Overall Rankings'}
+                {isKoContext
+                  ? 'KO Predictor · separate competition'
+                  : memberModal.lockedSnapshot
+                    ? `Locked snapshot${memberModal.leagueName ? ` · ${memberModal.leagueName}` : ''}`
+                    : memberModal.isOffline
+                      ? 'Offline player · imported predictions'
+                      : memberModal.leagueName || 'Overall Rankings'}
               </div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontSize: '25px', lineHeight: 1, fontWeight: '950', fontFamily: 'var(--font-mono)' }}>{totalPts}</div>
-              <div style={{ fontSize: '9px', opacity: 0.72, marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>total points</div>
+              <div style={{ fontSize: '25px', lineHeight: 1, fontWeight: '950', fontFamily: 'var(--font-mono)' }}>{isKoContext ? koPts : totalPts}</div>
+              <div style={{ fontSize: '9px', opacity: 0.72, marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{isKoContext ? 'KO points' : 'total points'}</div>
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '7px', marginTop: '13px' }}>
-            {[
-              { label: 'Matches', value: matchPts },
-              { label: 'Groups', value: groupPts },
-              { label: 'Bracket', value: bracketPts },
-            ].map(item => (
+          <div style={{ display: 'grid', gridTemplateColumns: isKoContext ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '7px', marginTop: '13px' }}>
+            {(isKoContext
+              ? [
+                  { label: 'Exact scores', value: koExactScores },
+                  { label: 'KO streak', value: koStreak ? `${koStreak}🔥` : 0 },
+                ]
+              : [
+                  { label: 'Matches', value: matchPts },
+                  { label: 'Groups', value: groupPts },
+                  { label: 'Bracket', value: bracketPts },
+                ]
+            ).map(item => (
               <div key={item.label} style={{ textAlign: 'center', padding: '7px 5px', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.13)', borderRadius: '10px' }}>
                 <div style={{ fontSize: '16px', fontWeight: '900', fontFamily: 'var(--font-mono)' }}>{item.value}</div>
                 <div style={{ fontSize: '9px', opacity: 0.72, marginTop: '1px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</div>
@@ -829,7 +847,7 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
           </div>
         )}
 
-        {!memberModal.isOffline && (
+        {!memberModal.isOffline && !isKoContext && (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px 12px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', flexShrink: 0 }}>
             <button type="button" onClick={() => { setMemberModal(null); navigate(`/points/${memberModal.userId}`) }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '9px 11px', borderRadius: '10px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '11px', fontWeight: '800', cursor: 'pointer' }}>
               <span>Full points breakdown</span><span style={{ color: 'var(--text-muted)' }}>→</span>

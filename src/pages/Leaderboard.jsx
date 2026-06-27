@@ -223,7 +223,7 @@ export default function Leaderboard() {
 
                 return (
                   <div key={player.id} className={`leaderboard-row${isCurrentUser ? ' current-user' : ''}`}
-                    onClick={() => openProfile(player, user?.id)}
+                    onClick={() => openProfile(player, user?.id, isTournament ? 'tournament' : 'ko')}
                     role="button" tabIndex={0} style={{
                     background: isCurrentUser ? accentLight : 'var(--bg-card)',
                     border: isCurrentUser ? `1px solid ${accentColour}` : '1px solid var(--border-light)',

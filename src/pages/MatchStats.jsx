@@ -9,6 +9,7 @@ export default function MatchStats() {
   const { matchId } = useParams()
   const [searchParams] = useSearchParams()
   const leagueCode = searchParams.get('league')
+  const koLeagueCode = searchParams.get('koLeague')
   const navigate = useNavigate()
 
   const [slotIds, setSlotIds] = useState(null)
@@ -42,12 +43,12 @@ export default function MatchStats() {
 
       {slotIds && slotIds.length > 1 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', marginBottom: '14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
-          ⏱️ <span>{slotIds.length} games kicking off together — both shown below.</span>
+          ⏱️ <span>{slotIds.length} games kicking off together — all shown below.</span>
         </div>
       )}
 
       {(slotIds || []).map((id, i) => (
-        <MatchCentre key={id} matchId={id} leagueCode={leagueCode} divider={i > 0} />
+        <MatchCentre key={id} matchId={id} leagueCode={leagueCode} koLeagueCode={koLeagueCode} divider={i > 0} />
       ))}
 
       {slotIds && slotIds.length === 0 && (
@@ -57,7 +58,7 @@ export default function MatchStats() {
   )
 }
 
-function MatchCentre({ matchId, leagueCode, divider }) {
+function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
   const { user } = useAuthStore()
 
   const [loading, setLoading] = useState(true)
@@ -68,49 +69,102 @@ function MatchCentre({ matchId, leagueCode, divider }) {
   const [myLine, setMyLine] = useState(null)
   const [notLocked, setNotLocked] = useState(false)
   const [scopeDenied, setScopeDenied] = useState(false)
+  const [scopeMessage, setScopeMessage] = useState('')
+  const [koScopeLabel, setKoScopeLabel] = useState('Everyone')
+  const [showKoRivals, setShowKoRivals] = useState(true)
   const [koMine, setKoMine] = useState(null)
   const [koRivals, setKoRivals] = useState([])
   const [bracketImpact, setBracketImpact] = useState([])
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true); setNotLocked(false); setScopeDenied(false)
+      setLoading(true)
+      setNotLocked(false)
+      setScopeDenied(false)
+      setScopeMessage('')
+      setScopeLabel('Everyone')
+      setKoScopeLabel('Everyone')
+      setShowKoRivals(true)
+      setStats(null)
+      setRanked([])
+      setMyLine(null)
+      setKoMine(null)
+      setKoRivals([])
+      setBracketImpact([])
 
       const { data: m } = await supabase
         .from('matches')
-        .select('id, match_number, stage, home_score, away_score, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .select('id, match_number, stage, home_score, away_score, home_penalty_score, away_penalty_score, winner_team_id, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
         .eq('id', matchId).maybeSingle()
       setMatch(m)
 
       const locked = m && (m.status === 'live' || m.status === 'completed' || new Date(m.kickoff_time) <= new Date())
       if (!locked) { setNotLocked(true); setLoading(false); return }
 
-      // scope
+      // Scope tournament stats and KO Predictor stats separately.
       let userIdFilter = null
-      if (leagueCode) {
+      if (m.stage === 'group' && leagueCode) {
         const { data: league } = await supabase.from('leagues').select('id, name').eq('invite_code', leagueCode).maybeSingle()
-        if (league) {
-          const { data: members } = await supabase.from('league_members').select('user_id').eq('league_id', league.id)
-          userIdFilter = (members || []).map(mm => mm.user_id)
-          if (!user?.id || !userIdFilter.includes(user.id)) { setScopeDenied(true); setLoading(false); return }
-          setScopeLabel(league.name)
+        if (!league) {
+          setScopeDenied(true)
+          setScopeMessage('League not found.')
+          setLoading(false)
+          return
         }
+        const { data: members } = await supabase.from('league_members').select('user_id').eq('league_id', league.id)
+        userIdFilter = (members || []).map(mm => mm.user_id)
+        if (!user?.id || !userIdFilter.includes(user.id)) {
+          setScopeDenied(true)
+          setScopeMessage('You need to be a member of this league to view its predictions.')
+          setLoading(false)
+          return
+        }
+        setScopeLabel(league.name)
       }
 
       // ── Knockout match: KO Predictor picks + bracket impact ──
       if (m.stage !== 'group') {
+        let koUserIds = null
+        if (koLeagueCode) {
+          const { data: koLeague } = await supabase.from('ko_leagues').select('id, name').eq('invite_code', koLeagueCode).maybeSingle()
+          if (!koLeague) {
+            setScopeDenied(true)
+            setScopeMessage('KO Predictor league not found.')
+            setLoading(false)
+            return
+          }
+          const { data: koMembers } = await supabase.from('ko_league_members').select('user_id').eq('league_id', koLeague.id)
+          koUserIds = (koMembers || []).map(mm => mm.user_id)
+          if (!user?.id || !koUserIds.includes(user.id)) {
+            setScopeDenied(true)
+            setScopeMessage('You need to be a member of this KO Predictor league to view its picks.')
+            setLoading(false)
+            return
+          }
+          setKoScopeLabel(koLeague.name)
+          setShowKoRivals(true)
+        } else if (leagueCode) {
+          // Tournament mini-leagues and KO Predictor are separate competitions.
+          // Keep the viewer's own KO pick visible, but do not present unrelated KO standings.
+          koUserIds = user?.id ? [user.id] : []
+          setKoScopeLabel('KO Predictor')
+          setShowKoRivals(false)
+        }
+
         let koQ = supabase.from('ko_predictions')
           .select('user_id, home_score, away_score, winner_team_id, is_joker')
           .eq('match_id', matchId)
-        if (userIdFilter) koQ = koQ.in('user_id', userIdFilter)
-        const { data: koPreds } = await koQ
-        const koIds = [...new Set((koPreds || []).map(p => p.user_id))]
+        if (koUserIds?.length) koQ = koQ.in('user_id', koUserIds)
+        const koPreds = koUserIds && koUserIds.length === 0
+          ? []
+          : ((await koQ).data || [])
+        const koIds = [...new Set(koPreds.map(p => p.user_id))]
         const koNames = {}
         if (koIds.length) {
           const { data: kp } = await supabase.from('profiles').select('id, username, display_name, avatar_emoji').in('id', koIds)
           ;(kp || []).forEach(pr => { koNames[pr.id] = pr })
         }
-        const rivals = (koPreds || []).map(p => {
+        const rivals = koPreds.map(p => {
           const prof = koNames[p.user_id] || {}
           const side = p.winner_team_id === m.home_team_id ? 'home' : p.winner_team_id === m.away_team_id ? 'away' : null
           return { userId: p.user_id, name: prof.display_name || prof.username || 'Player', avatar: prof.avatar_emoji, side, home: p.home_score, away: p.away_score, joker: !!p.is_joker }
@@ -118,9 +172,15 @@ function MatchCentre({ matchId, leagueCode, divider }) {
         setKoRivals(rivals)
         setKoMine(rivals.find(r => r.userId === user?.id) || null)
 
-        const { data: kpicks } = await supabase.from('knockout_picks').select('match_number, winner_id').eq('user_id', user?.id)
+        const { data: kpicks } = user?.id
+          ? await supabase.from('knockout_picks').select('match_number, winner_team_id').eq('user_id', user.id)
+          : { data: [] }
         const deepest = {}
-        ;(kpicks || []).forEach(k => { if (k.winner_id && (deepest[k.winner_id] == null || k.match_number > deepest[k.winner_id])) deepest[k.winner_id] = k.match_number })
+        ;(kpicks || []).forEach(k => {
+          if (k.winner_team_id && (deepest[k.winner_team_id] == null || k.match_number > deepest[k.winner_team_id])) {
+            deepest[k.winner_team_id] = k.match_number
+          }
+        })
         const reachLabel = (mn) => mn == null ? null
           : mn >= 104 ? 'win it all 🏆'
           : mn >= 101 ? 'the Final'
@@ -162,14 +222,14 @@ function MatchCentre({ matchId, leagueCode, divider }) {
       setLoading(false)
     }
     if (matchId) load()
-  }, [matchId, leagueCode, user?.id])
+  }, [matchId, leagueCode, koLeagueCode, user?.id])
 
   const wrap = (children) => (
     <div style={{ marginTop: divider ? '6px' : 0, paddingTop: divider ? '18px' : 0, borderTop: divider ? '2px solid var(--border-light)' : 'none' }}>{children}</div>
   )
 
   if (loading) return wrap(<div style={{ textAlign: 'center', padding: '24px' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>)
-  if (scopeDenied) return wrap(<p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '16px' }}>You need to be a member of this league to view its predictions.</p>)
+  if (scopeDenied) return wrap(<p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '16px' }}>{scopeMessage || 'You do not have access to this view.'}</p>)
   if (!match) return wrap(<p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '16px' }}>Match not found.</p>)
   if (notLocked) return wrap(
     <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
@@ -180,7 +240,16 @@ function MatchCentre({ matchId, leagueCode, divider }) {
 
   const hasResult = match.home_score != null && match.away_score != null
   const live = match.status === 'live'
-  const lead = hasResult ? (match.home_score > match.away_score ? 'home' : match.away_score > match.home_score ? 'away' : 'draw') : null
+  const completed = match.status === 'completed'
+  const scoreLead = hasResult ? (match.home_score > match.away_score ? 'home' : match.away_score > match.home_score ? 'away' : 'draw') : null
+  const winnerSide = completed && match.winner_team_id
+    ? match.winner_team_id === match.home_team_id
+      ? 'home'
+      : match.winner_team_id === match.away_team_id
+        ? 'away'
+        : null
+    : null
+  const lead = winnerSide || scoreLead
 
   // ── Knockout centre ──
   if (match.stage !== 'group') {
@@ -193,7 +262,9 @@ function MatchCentre({ matchId, leagueCode, divider }) {
       <KOHeader match={match} hasResult={hasResult} live={live} />
 
       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', padding: '8px 12px', marginBottom: '12px', background: 'rgba(230,81,0,0.08)', border: '1px solid rgba(230,81,0,0.2)', borderRadius: 'var(--radius-md)', fontSize: '11.5px', fontWeight: 700, color: '#e65100' }}>
-        🔥 <span>KO Predictor is a separate competition — doesn't affect your Tournament score.</span>
+        🔥 <span>{leagueCode && !koLeagueCode
+          ? 'KO Predictor is separate from this Tournament mini-league. Open the KO Predictor leaderboard to compare other players.'
+          : 'KO Predictor is a separate competition — it does not affect your Tournament score.'}</span>
       </div>
 
       <div className="card fade-up" style={{ marginBottom: '14px', border: `2px solid ${myOnTrack ? 'var(--accent-green)' : 'var(--border-light)'}` }}>
@@ -205,7 +276,7 @@ function MatchCentre({ matchId, leagueCode, divider }) {
               <div style={{ fontWeight: 800, fontSize: '15px' }}>{myWinner?.name} to advance {koMine.joker && '🃏'}</div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Your score: {koMine.home}–{koMine.away}</div>
             </div>
-            {hasResult && <span style={{ fontSize: '11px', fontWeight: 800, color: myOnTrack ? 'var(--accent-green)' : 'var(--text-muted)' }}>{lead === 'draw' ? 'Level' : myOnTrack ? (live ? 'On track' : '✓ Through') : (live ? 'Trailing' : '✗ Missed')}</span>}
+            {hasResult && <span style={{ fontSize: '11px', fontWeight: 800, color: myOnTrack ? 'var(--accent-green)' : 'var(--text-muted)' }}>{live && lead === 'draw' ? 'Level' : myOnTrack ? (live ? 'On track' : '✓ Through') : (live ? 'Trailing' : '✗ Missed')}</span>}
           </div>
         ) : (
           <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>You haven't predicted this one. <Link to="/ko-predictor" style={{ color: '#e65100', fontWeight: 700 }}>Make your KO pick →</Link></div>
@@ -222,7 +293,7 @@ function MatchCentre({ matchId, leagueCode, divider }) {
                   <b>{b.team?.name}</b>
                   <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>{b.reach ? `You predicted them to ${b.reach}` : 'Not one of your deep bracket picks'}</div>
                 </div>
-                {hasResult && !live && lead !== 'draw' && (
+                {completed && winnerSide && (
                   <span style={{ fontSize: '11px', fontWeight: 800, color: lead === b.side ? 'var(--accent-green)' : '#c62828' }}>
                     {lead === b.side ? 'Advances ✓' : 'Out ✗'}
                   </span>
@@ -234,8 +305,8 @@ function MatchCentre({ matchId, leagueCode, divider }) {
         </StatCard>
       )}
 
-      {totalBackers > 0 && (
-        <StatCard title={`${scopeLabel} · who's backing who`}>
+      {showKoRivals && totalBackers > 0 && (
+        <StatCard title={`${koScopeLabel} · who's backing who`}>
           <div>
             <div style={{ display: 'flex', height: '30px', borderRadius: '8px', overflow: 'hidden', fontWeight: 800, fontSize: '12px', color: '#fff', marginBottom: '12px' }}>
               <div style={{ width: `${homeBackers / totalBackers * 100}%`, background: 'var(--scottish-navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: homeBackers ? '46px' : 0 }}>{match.home_team?.short_code} {homeBackers}</div>
@@ -256,7 +327,7 @@ function MatchCentre({ matchId, leagueCode, divider }) {
         </StatCard>
       )}
 
-      {totalBackers === 0 && (
+      {showKoRivals && totalBackers === 0 && (
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', padding: '8px 0' }}>No KO Predictor picks in yet for this match.</p>
       )}
     </>)
@@ -349,18 +420,18 @@ function MatchCentre({ matchId, leagueCode, divider }) {
     </div>
 
     {hasResult && (
-      <StatCard title="Got it spot on 🎯">
+      <StatCard title={live ? 'Currently spot on 🎯' : 'Got it spot on 🎯'}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
           <span className="stat-num" style={{ fontSize: '32px', fontWeight: '700', color: 'var(--accent-green)' }}>{stats.exactPct}%</span>
           <span style={{ fontSize: 'var(--t-small)', color: 'var(--text-muted)' }}>
-            predicted {match.home_score}–{match.away_score} exactly ({stats.exactCount} {stats.exactCount === 1 ? 'person' : 'people'})
+            {live ? 'currently match' : 'predicted'} {match.home_score}–{match.away_score} exactly ({stats.exactCount} {stats.exactCount === 1 ? 'person' : 'people'})
           </span>
         </div>
       </StatCard>
     )}
 
     {hasResult && stats.actualResultPct != null && (
-      <StatCard title="Upset meter">
+      <StatCard title={live ? 'Live upset meter' : 'Upset meter'}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <div style={{ flex: 1 }}>
             <div style={{ height: '8px', borderRadius: 'var(--radius-full)', background: 'var(--bg-tertiary)', overflow: 'hidden' }}>
@@ -372,7 +443,7 @@ function MatchCentre({ matchId, leagueCode, divider }) {
           </span>
         </div>
         <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '6px' }}>
-          Only <span className="stat-num" style={{ fontWeight: '700' }}>{stats.actualResultPct}%</span> predicted this result
+          Only <span className="stat-num" style={{ fontWeight: '700' }}>{stats.actualResultPct}%</span> {live ? 'currently back this result' : 'predicted this result'}
         </div>
       </StatCard>
     )}
@@ -393,7 +464,11 @@ function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel }) {
   return (
     <div className="card fade-up" style={{ marginBottom: '14px', textAlign: 'center' }}>
       <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
-        M{match.match_number} · {hasResult ? 'Full time' : live ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : ''}`.trim() : 'Predictions'}
+        M{match.match_number} · {live
+          ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : ''}`.trim()
+          : match.status === 'completed'
+            ? 'Full time'
+            : 'Predictions'}
       </div>
       <ScoreRow match={match} hasResult={hasResult} />
       <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '12px' }}>
@@ -407,7 +482,11 @@ function KOHeader({ match, hasResult, live }) {
   return (
     <div className="card fade-up" style={{ marginBottom: '12px', textAlign: 'center' }}>
       <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
-        {STAGE_LABELS[match.stage] || 'Knockout'} · M{match.match_number} · {hasResult ? 'Full time' : live ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}'` : ''}`.trim() : 'KO Predictor'}
+        {STAGE_LABELS[match.stage] || 'Knockout'} · M{match.match_number} · {live
+          ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : ''}`.trim()
+          : match.status === 'completed'
+            ? 'Full time'
+            : 'KO Predictor'}
       </div>
       <ScoreRow match={match} hasResult={hasResult} />
     </div>
@@ -421,8 +500,15 @@ function ScoreRow({ match, hasResult }) {
         <div style={{ fontSize: '34px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</div>
         <div style={{ fontWeight: '800', fontSize: 'var(--t-small)', marginTop: '4px' }}>{match.home_team?.short_code}</div>
       </div>
-      <div className="stat-num" style={{ fontSize: '32px', fontWeight: '500', minWidth: '80px' }}>
-        {hasResult ? `${match.home_score} – ${match.away_score}` : 'vs'}
+      <div style={{ minWidth: '92px', textAlign: 'center' }}>
+        <div className="stat-num" style={{ fontSize: '32px', fontWeight: '500' }}>
+          {hasResult ? `${match.home_score} – ${match.away_score}` : 'vs'}
+        </div>
+        {match.home_penalty_score != null && match.away_penalty_score != null && (
+          <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', marginTop: '2px' }}>
+            Pens {match.home_penalty_score}–{match.away_penalty_score}
+          </div>
+        )}
       </div>
       <div style={{ textAlign: 'center', width: '88px' }}>
         <div style={{ fontSize: '34px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</div>
