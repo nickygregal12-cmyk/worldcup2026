@@ -1020,7 +1020,7 @@ export default function Home() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
 
           {/* ── Group matchday hub: countdown → live scores → full-time recap ── */}
-          {!loading && user && tournamentStarted && !groupFixturesActuallyComplete && (
+          {!loading && user && tournamentStarted && !groupFixturesActuallyComplete && (liveMatches.length > 0 || nextMatch) && (
             <GroupMatchdayHub user={user} profile={profile} />
           )}
 
@@ -1030,7 +1030,7 @@ export default function Home() {
           )}
 
           {/* ── Existing countdown card before kickoff; public live card for signed-out visitors ── */}
-          {!loading && tournamentStarted && !groupFixturesActuallyComplete && (liveMatches.length > 0 || nextMatch) && (!user || liveMatches.length === 0) && (
+          {!loading && tournamentStarted && !groupFixturesActuallyComplete && (liveMatches.length > 0 || nextMatch) && !user && (
             <div className="card fade-in" style={{
               overflow: 'hidden',
               border: liveMatches.length > 0 ? '2px solid #e53935' : '1px solid rgba(0,48,135,0.16)',

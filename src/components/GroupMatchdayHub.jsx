@@ -572,35 +572,55 @@ export default function GroupMatchdayHub({ user, profile }) {
 
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <div style={{ background: 'linear-gradient(145deg, var(--scottish-navy), #163d6a)', color: 'white', borderRadius: 'var(--radius-lg)', padding: '18px 16px', overflow: 'hidden', position: 'relative' }}>
-        <div style={{ position: 'absolute', width: '160px', height: '160px', borderRadius: '50%', right: '-55px', top: '-82px', background: 'radial-gradient(circle, rgba(255,193,7,0.3), transparent 70%)' }} />
-        <WorldCupLogo variant="watermark" size={148} opacity={0.11} style={{ right: '-8px', top: '48%' }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.66)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em' }}>{modeCopy.eyebrow}</div>
-          <div style={{ fontSize: '21px', fontWeight: 900, marginTop: '4px' }}>{modeCopy.title}</div>
-          <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '5px', maxWidth: '520px' }}>{modeCopy.description}</div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '14px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.09)', borderRadius: 'var(--radius-md)', padding: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.58)', textTransform: 'uppercase', fontWeight: 800 }}>{slot.mode === 'prematch' ? 'Kickoff in' : slot.mode === 'live' ? 'Live points' : 'Slot points'}</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: slot.mode === 'prematch' ? '14px' : '20px', fontWeight: 900, marginTop: slot.mode === 'prematch' ? '6px' : '2px', color: slot.mode === 'prematch' ? '#ffcc80' : 'white' }}>
-                {slot.mode === 'prematch'
-                  ? `${String(countdown.hours || 0).padStart(2, '0')}:${String(countdown.minutes || 0).padStart(2, '0')}:${String(countdown.seconds || 0).padStart(2, '0')}`
-                  : `${slotPoints > 0 ? '+' : ''}${slotPoints}`}
+      {slot.mode === 'prematch' ? (
+        <div className="card fade-in" style={{ padding: '18px 16px', border: '1px solid rgba(0,48,135,0.16)', overflow: 'hidden' }}>
+          <div style={{ height: '4px', background: 'var(--scottish-navy)', borderRadius: 'var(--radius-full)', marginBottom: '15px' }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.09em' }}>{modeCopy.eyebrow}</div>
+            <div style={{ fontSize: '20px', fontWeight: 900, marginTop: '4px' }}>{modeCopy.title}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '4px' }}>{modeCopy.description}</div>
+          </div>
+          <div style={{ fontSize: '11px', fontWeight: 900, color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center', margin: '16px 0 10px' }}>⏱ Next match in</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '7px' }}>
+            {[
+              { label: 'Days', value: countdown.days || 0 },
+              { label: 'Hours', value: countdown.hours || 0 },
+              { label: 'Mins', value: countdown.minutes || 0 },
+              { label: 'Secs', value: countdown.seconds || 0 },
+            ].map(item => (
+              <div key={item.label} style={{ textAlign: 'center', padding: '11px 4px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'clamp(24px, 6vw, 34px)', lineHeight: 1, fontWeight: 900, color: 'var(--scottish-navy)', letterSpacing: '-0.04em' }}>{String(item.value).padStart(2, '0')}</div>
+                <div style={{ fontSize: '8.5px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '6px' }}>{item.label}</div>
               </div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.09)', borderRadius: 'var(--radius-md)', padding: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.58)', textTransform: 'uppercase', fontWeight: 800 }}>Tournament total</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '20px', fontWeight: 900, marginTop: '2px' }}>{currentTotal}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.09)', borderRadius: 'var(--radius-md)', padding: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.58)', textTransform: 'uppercase', fontWeight: 800 }}>Overall rank</div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '20px', fontWeight: 900, marginTop: '2px' }}>{overallRank ? `${overallRank}${overallRank === 1 ? 'st' : overallRank === 2 ? 'nd' : overallRank === 3 ? 'rd' : 'th'}` : '—'}</div>
-              {rankMove ? <div style={{ fontSize: '9px', color: rankMove > 0 ? '#b9f6ca' : '#ffccbc', fontWeight: 800, marginTop: '2px' }}>{rankMove > 0 ? `▲ ${rankMove}` : `▼ ${Math.abs(rankMove)}`} since kickoff</div> : null}
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div style={{ background: 'linear-gradient(145deg, var(--scottish-navy), #163d6a)', color: 'white', borderRadius: 'var(--radius-lg)', padding: '18px 16px', overflow: 'hidden', position: 'relative' }}>
+          <div style={{ position: 'absolute', width: '160px', height: '160px', borderRadius: '50%', right: '-55px', top: '-82px', background: 'radial-gradient(circle, rgba(255,193,7,0.3), transparent 70%)' }} />
+          <WorldCupLogo variant="watermark" size={148} opacity={0.11} style={{ right: '-8px', top: '48%' }} />
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.66)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em' }}>{modeCopy.eyebrow}</div>
+            <div style={{ fontSize: '21px', fontWeight: 900, marginTop: '4px' }}>{modeCopy.title}</div>
+            <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.45, marginTop: '5px', maxWidth: '520px' }}>{modeCopy.description}</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '14px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.09)', borderRadius: 'var(--radius-md)', padding: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.58)', textTransform: 'uppercase', fontWeight: 800 }}>{slot.mode === 'live' ? 'Live points' : 'Slot points'}</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '20px', fontWeight: 900, marginTop: '2px' }}>{slotPoints > 0 ? '+' : ''}{slotPoints}</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.09)', borderRadius: 'var(--radius-md)', padding: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.58)', textTransform: 'uppercase', fontWeight: 800 }}>Tournament total</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '20px', fontWeight: 900, marginTop: '2px' }}>{currentTotal}</div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.09)', borderRadius: 'var(--radius-md)', padding: '10px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.58)', textTransform: 'uppercase', fontWeight: 800 }}>Overall rank</div>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '20px', fontWeight: 900, marginTop: '2px' }}>{overallRank ? `${overallRank}${overallRank === 1 ? 'st' : overallRank === 2 ? 'nd' : overallRank === 3 ? 'rd' : 'th'}` : '—'}</div>
+                {rankMove ? <div style={{ fontSize: '9px', color: rankMove > 0 ? '#b9f6ca' : '#ffccbc', fontWeight: 800, marginTop: '2px' }}>{rankMove > 0 ? `▲ ${rankMove}` : `▼ ${Math.abs(rankMove)}`} since kickoff</div> : null}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {slot.matches.length > 1 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 11px', borderRadius: 'var(--radius-md)', background: 'rgba(255,193,7,0.12)', border: '1px solid rgba(255,193,7,0.28)', color: '#755500', fontSize: '10.5px', fontWeight: 800 }}>
