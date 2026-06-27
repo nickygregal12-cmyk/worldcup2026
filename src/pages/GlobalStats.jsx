@@ -1,243 +1,159 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../lib/supabase.js'
+import { loadTournamentPulse } from '../lib/tournamentPulse.js'
+import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
 export default function GlobalStats() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
+  const [error, setError] = useState('')
 
-  useEffect(() => { loadStats() }, [])
-
-  const loadStats = async () => {
-    setLoading(true)
-    try {
-      const [
-        profilesRes,
-        predictionsRes,
-        matchesRes,
-        awardPredsRes,
-        topScorersRes,
-        leaguesRes,
-      ] = await Promise.all([
-        supabase.from('profiles').select('total_points, exact_scores, streak_best, prediction_accuracy').order('total_points', { ascending: false }),
-        supabase.from('predictions').select('match_id, home_score, away_score, is_confident').not('home_score', 'is', null),
-        supabase.from('matches').select('id, home_score, away_score, status, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code), group:group_id(name)').eq('stage', 'group'),
-        supabase.from('award_predictions').select('award_type, predicted_player_name').eq('award_type', 'golden_boot'),
-        supabase.from('tournament_scorers').select('*').order('goals', { ascending: false }).limit(5),
-        supabase.from('leagues').select('id').neq('is_global', true),
-      ])
-
-      const profiles = profilesRes.data || []
-      const predictions = predictionsRes.data || []
-      const matches = matchesRes.data || []
-      const awardPreds = awardPredsRes.data || []
-      const topScorers = topScorersRes.data || []
-      const leagueCount = leaguesRes.data?.length || 0
-
-      // User stats
-      const totalUsers = profiles.length
-      const usersWithPreds = profiles.filter(p => p.total_points > 0 || p.exact_scores > 0).length
-      const totalPoints = profiles.reduce((s, p) => s + (p.total_points || 0), 0)
-      const avgPoints = totalUsers > 0 ? Math.round(totalPoints / totalUsers) : 0
-      const topScore = profiles[0]?.total_points || 0
-      const totalExact = profiles.reduce((s, p) => s + (p.exact_scores || 0), 0)
-      const bestStreak = Math.max(...profiles.map(p => p.streak_best || 0))
-
-      // Prediction stats
-      const totalPredictions = predictions.length
-      const jokerCount = predictions.filter(p => p.is_confident).length
-
-      // Most predicted scores overall
-      const scoreCounts = {}
-      predictions.forEach(p => {
-        const key = `${p.home_score}-${p.away_score}`
-        scoreCounts[key] = (scoreCounts[key] || 0) + 1
+  useEffect(() => {
+    let active = true
+    loadTournamentPulse()
+      .then(data => { if (active) setStats(data) })
+      .catch(err => {
+        console.error(err)
+        if (active) setError(err.message || 'Tournament Pulse could not load.')
       })
-      const topScores = Object.entries(scoreCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([score, count]) => ({ score, count, pct: Math.round((count / totalPredictions) * 100) }))
-
-      // Match community picks — for completed matches
-      const completedMatches = matches.filter(m => m.status === 'completed')
-      const matchPredMap = {}
-      predictions.forEach(p => {
-        if (!matchPredMap[p.match_id]) matchPredMap[p.match_id] = { home: 0, draw: 0, away: 0, total: 0 }
-        matchPredMap[p.match_id].total++
-        if (p.home_score > p.away_score) matchPredMap[p.match_id].home++
-        else if (p.home_score === p.away_score) matchPredMap[p.match_id].draw++
-        else matchPredMap[p.match_id].away++
-      })
-
-      // Biggest upsets — match where actual result was least predicted
-      const upsets = completedMatches
-        .filter(m => m.home_score !== null && matchPredMap[m.id]?.total >= 5)
-        .map(m => {
-          const cp = matchPredMap[m.id]
-          const actualResult = m.home_score > m.away_score ? 'home' : m.home_score === m.away_score ? 'draw' : 'away'
-          const actualPct = Math.round((cp[actualResult] / cp.total) * 100)
-          return { match: m, actualResult, actualPct, cp }
-        })
-        .sort((a, b) => a.actualPct - b.actualPct)
-        .slice(0, 3)
-
-      // Most popular Golden Boot picks
-      const bootCounts = {}
-      awardPreds.forEach(p => {
-        if (p.predicted_player_name) {
-          bootCounts[p.predicted_player_name] = (bootCounts[p.predicted_player_name] || 0) + 1
-        }
-      })
-      const topBootPicks = Object.entries(bootCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([name, count]) => ({ name, count, pct: Math.round((count / awardPreds.length) * 100) }))
-
-      setStats({
-        totalUsers, usersWithPreds, avgPoints, topScore, totalExact,
-        bestStreak, totalPredictions, jokerCount, leagueCount,
-        topScores, upsets, topBootPicks, topScorers,
-        totalAwardPreds: awardPreds.length,
-      })
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
-    }
-  }
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [])
 
   if (loading) return <div className="loading-screen"><div className="spinner" /></div>
-  if (!stats) return null
 
-  const Section = ({ title, children }) => (
-    <div className="card" style={{ marginBottom: '12px' }}>
-      <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '14px', paddingBottom: '10px', borderBottom: '1px solid var(--border-light)' }}>{title}</div>
-      {children}
-    </div>
-  )
-
-  const StatRow = ({ label, value, sub }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid var(--border-light)' }}>
-      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{label}</span>
-      <div style={{ textAlign: 'right' }}>
-        <span style={{ fontWeight: '800', fontSize: '14px', fontFamily: 'var(--font-mono)' }}>{value}</span>
-        {sub && <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{sub}</div>}
+  if (error || !stats) {
+    return (
+      <div className="container" style={{ padding: '40px 16px', textAlign: 'center' }}>
+        <div style={{ color: 'var(--accent-red)', marginBottom: '12px' }}>{error || 'Tournament Pulse could not load.'}</div>
+        <Link to="/" style={{ color: 'var(--scottish-navy)', fontWeight: 800 }}>Return home →</Link>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
-      {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(0,20,60,0.9) 0%, rgba(0,50,120,0.88) 100%)', padding: '28px 20px 32px', color: 'white' }}>
-        <Link to="/" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '16px' }}>← Back</Link>
-        <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '4px' }}>🌍 Tournament Stats</div>
-        <div style={{ fontSize: '14px', opacity: 0.7 }}>How everyone's predicting WC26</div>
+    <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh', paddingBottom: '90px' }}>
+      <div style={{ background: 'linear-gradient(145deg, var(--scottish-navy), #163d73)', color: '#fff', padding: '24px 18px 26px', position: 'relative', overflow: 'hidden' }}>
+        <WorldCupLogo variant="watermark" size={190} opacity={0.09} style={{ right: '-28px', top: '48%' }} />
+        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
+          <Link to="/" style={{ color: 'rgba(255,255,255,0.72)', fontSize: '12px', textDecoration: 'none', fontWeight: 700 }}>← Back</Link>
+          <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.11em', color: 'rgba(255,255,255,0.62)', fontWeight: 800, marginTop: '15px' }}>Tournament Pulse</div>
+          <h1 style={{ fontSize: '28px', lineHeight: 1.1, margin: '6px 0 5px', fontWeight: 900 }}>What the predictor community is thinking</h1>
+          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.5, maxWidth: '600px', margin: 0 }}>
+            Community trends, biggest shocks, popular scorelines and predictor records across WC26.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '16px' }}>
+            <HeroStat value={stats.activeUsers} label="Active predictors" />
+            <HeroStat value={stats.totalPredictions.toLocaleString()} label="Predictions made" />
+            <HeroStat value={`${stats.communityAccuracy}%`} label="Community accuracy" />
+          </div>
+        </div>
       </div>
 
       <div className="container" style={{ padding: '16px' }}>
-
-        {/* Community overview */}
-        <Section title="👥 Community Overview">
-          <StatRow label="Total predictors" value={stats.totalUsers.toLocaleString()} />
-          <StatRow label="Active predictors" value={stats.usersWithPreds.toLocaleString()} sub="with predictions" />
-          <StatRow label="Private leagues" value={stats.leagueCount} />
-          <StatRow label="Total predictions made" value={stats.totalPredictions.toLocaleString()} />
-          <StatRow label="Jokers used" value={stats.jokerCount.toLocaleString()} sub={`${Math.round((stats.jokerCount / stats.totalPredictions) * 100)}% of predictions`} />
-        </Section>
-
-        {/* Points stats */}
-        <Section title="🏅 Points & Performance">
-          <StatRow label="Highest score" value={`${stats.topScore} pts`} />
-          <StatRow label="Average score" value={`${stats.avgPoints} pts`} />
-          <StatRow label="Total exact scores" value={stats.totalExact.toLocaleString()} sub="across all predictors" />
-          <StatRow label="Best streak" value={`${stats.bestStreak} correct`} sub="in a row" />
-        </Section>
-
-        {/* Most popular scores */}
-        {stats.topScores.length > 0 && (
-          <Section title="⚽ Most Predicted Scores">
-            {stats.topScores.map(({ score, count, pct }, i) => (
-              <div key={score} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: i < stats.topScores.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
-                <span style={{ fontWeight: '800', fontSize: '13px', width: '20px', color: 'var(--text-muted)' }}>{i + 1}</span>
-                <span style={{ fontWeight: '900', fontSize: '16px', fontFamily: 'var(--font-mono)', flex: 1 }}>{score}</span>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontWeight: '700', fontSize: '13px' }}>{count.toLocaleString()} picks</div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{pct}% of predictions</div>
+        <Section title="Community consensus" sub="Strongest shared opinions from matches that have locked.">
+          {stats.consensus.length ? stats.consensus.slice(0, 5).map((row, index) => {
+            const m = row.match
+            const label = row.outcome.key === 'draw'
+              ? 'Draw'
+              : `${row.outcome.team?.flag_emoji || ''} ${row.outcome.team?.short_code || row.outcome.team?.name || 'Team'}`
+            return (
+              <div key={m.id} style={{ padding: '11px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '8px', alignItems: 'center', fontSize: '12px', fontWeight: 800 }}>
+                  <span>{m.home_team?.flag_emoji} {m.home_team?.short_code}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '17px', color: 'var(--accent-gold-dark, #a9871f)' }}>{row.pct}%</span>
+                  <span style={{ textAlign: 'right' }}>{m.away_team?.short_code} {m.away_team?.flag_emoji}</span>
                 </div>
+                <div style={{ height: '8px', background: 'var(--bg-tertiary)', borderRadius: '999px', overflow: 'hidden', marginTop: '7px' }}>
+                  <div style={{ width: `${row.pct}%`, height: '100%', background: 'var(--scottish-navy)' }} />
+                </div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '5px' }}>{label} was the community pick · {row.total} predictions</div>
               </div>
-            ))}
-          </Section>
-        )}
+            )
+          }) : <Empty text="Consensus appears once matches lock." />}
+        </Section>
 
-        {/* Biggest upsets */}
-        {stats.upsets.length > 0 && (
-          <Section title="😱 Biggest Upsets">
-            {stats.upsets.map(({ match, actualResult, actualPct, cp }, i) => {
-              const winner = actualResult === 'home' ? match.home_team : actualResult === 'away' ? match.away_team : null
-              return (
-                <div key={match.id} style={{ padding: '10px 0', borderBottom: i < stats.upsets.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '18px' }}>{match.home_team?.flag_emoji}</span>
-                    <span style={{ fontWeight: '700', fontSize: '13px' }}>{match.home_team?.short_code}</span>
-                    <span style={{ fontWeight: '900', fontFamily: 'var(--font-mono)', fontSize: '14px', padding: '0 4px' }}>{match.home_score}–{match.away_score}</span>
-                    <span style={{ fontWeight: '700', fontSize: '13px' }}>{match.away_team?.short_code}</span>
-                    <span style={{ fontSize: '18px' }}>{match.away_team?.flag_emoji}</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '3px', height: '5px', borderRadius: '3px', overflow: 'hidden', marginBottom: '5px' }}>
-                    <div style={{ width: `${Math.round((cp.home/cp.total)*100)}%`, background: 'var(--scottish-navy)' }} />
-                    <div style={{ width: `${Math.round((cp.draw/cp.total)*100)}%`, background: 'var(--text-muted)', opacity: 0.4 }} />
-                    <div style={{ width: `${Math.round((cp.away/cp.total)*100)}%`, background: '#c62828' }} />
-                  </div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                    Only <strong style={{ color: 'var(--accent-red)' }}>{actualPct}%</strong> predicted {actualResult === 'draw' ? 'a draw' : `${winner?.short_code} to win`} · {cp.total} predictions
-                  </div>
-                </div>
-              )
-            })}
-          </Section>
-        )}
-
-        {/* Golden Boot picks */}
-        {stats.topBootPicks.length > 0 && (
-          <Section title="👟 Most Picked Golden Boot">
-            {stats.topBootPicks.map(({ name, count, pct }, i) => {
-              const liveScorer = stats.topScorers.find(s => s.player_name === name)
-              return (
-                <div key={name} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: i < stats.topBootPicks.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
-                  <span style={{ fontWeight: '800', fontSize: '13px', width: '20px', color: 'var(--text-muted)' }}>{i + 1}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: '700', fontSize: '13px' }}>{name}</div>
-                    {liveScorer && <div style={{ fontSize: '11px', color: '#e65100', fontWeight: '600' }}>⚽ {liveScorer.goals} goals so far</div>}
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: '700', fontSize: '13px' }}>{count} picks</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{pct}%</div>
-                  </div>
-                </div>
-              )
-            })}
-          </Section>
-        )}
-
-        {/* Live top scorers */}
-        {stats.topScorers.length > 0 && (
-          <Section title="🥇 Live Top Scorers">
-            {stats.topScorers.map((s, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 0', borderBottom: i < stats.topScorers.length - 1 ? '1px solid var(--border-light)' : 'none' }}>
-                <span style={{ fontWeight: '800', fontSize: '13px', width: '20px', color: 'var(--text-muted)' }}>{i + 1}</span>
+        <Section title="Biggest shocks" sub="Completed results that the fewest predictors expected.">
+          {stats.upsets.length ? stats.upsets.slice(0, 5).map((row, index) => {
+            const m = row.match
+            return (
+              <div key={m.id} style={{ display: 'flex', gap: '11px', padding: '11px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(198,40,40,0.1)', flexShrink: 0 }}>{index === 0 ? '🚨' : '😲'}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: '700', fontSize: '13px' }}>{s.player_name}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{s.team_name}</div>
+                  <div style={{ fontSize: '13px', fontWeight: 800 }}>{m.home_team?.flag_emoji} {m.home_team?.short_code} {m.home_score}–{m.away_score} {m.away_team?.short_code} {m.away_team?.flag_emoji}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '3px' }}>Only {row.actualPct}% predicted the result · {row.exactCount} exact {row.exactCount === 1 ? 'score' : 'scores'}</div>
                 </div>
-                <span style={{ fontWeight: '900', fontSize: '18px', fontFamily: 'var(--font-mono)', color: '#e65100' }}>{s.goals}⚽</span>
               </div>
-            ))}
-          </Section>
-        )}
+            )
+          }) : <Empty text="Upsets appear after completed matches." />}
+        </Section>
 
-        <div style={{ height: '16px' }} />
+        <Section title="Most popular scorelines" sub="Across all saved group-stage predictions.">
+          {stats.topScores.map((row, index) => (
+            <div key={row.score} style={{ display: 'grid', gridTemplateColumns: '24px 1fr auto', gap: '10px', alignItems: 'center', padding: '9px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 900 }}>{index + 1}</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '18px', fontWeight: 900 }}>{row.score}</span>
+              <div style={{ textAlign: 'right' }}><b style={{ fontSize: '12px' }}>{row.count.toLocaleString()} picks</b><div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{row.pct}%</div></div>
+            </div>
+          ))}
+        </Section>
+
+        <Section title="Golden Boot race" sub="Actual scorers compared with the community’s pre-tournament picks.">
+          {stats.scorers.length ? stats.scorers.slice(0, 5).map((scorer, index) => {
+            const playerName = scorer.player_name || scorer.name || 'Player'
+            const pick = stats.topBootPicks.find(p => p.name.toLowerCase() === playerName.toLowerCase())
+            return (
+              <div key={`${playerName}-${index}`} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 48px 78px', gap: '8px', alignItems: 'center', padding: '9px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
+                <span style={{ color: 'var(--text-muted)', fontWeight: 900 }}>{index + 1}</span>
+                <div><b style={{ fontSize: '12px' }}>{playerName}</b><div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{scorer.team_name || ''}</div></div>
+                <span style={{ textAlign: 'right', fontWeight: 900 }}>{scorer.goals || 0}⚽</span>
+                <span style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-muted)' }}>{pick ? `${pick.count} picks` : 'No top picks'}</span>
+              </div>
+            )
+          }) : <Empty text="Top scorers have not been added yet." />}
+        </Section>
+
+        <Section title="Predictor records" sub="Current community leaders.">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <Record value={stats.records.exact?.value ?? 0} label="Most exact scores" name={stats.records.exact?.name} />
+            <Record value={stats.records.streak?.value ?? 0} label="Best streak" name={stats.records.streak?.name} />
+            <Record value={stats.records.topScore?.value ?? 0} label="Highest score" name={stats.records.topScore?.name} />
+          </div>
+        </Section>
+
+        <Section title="Community overview">
+          <StatRow label="Total registered predictors" value={stats.totalUsers.toLocaleString()} />
+          <StatRow label="Active predictors" value={stats.activeUsers.toLocaleString()} />
+          <StatRow label="Private leagues" value={stats.privateLeagueCount.toLocaleString()} />
+          <StatRow label="Jokers used" value={stats.jokerCount.toLocaleString()} />
+          <StatRow label="Average total score" value={`${stats.avgPoints} pts`} />
+          <StatRow label="Total exact scores" value={stats.totalExact.toLocaleString()} />
+        </Section>
+
+        <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', padding: '3px 12px 12px', lineHeight: 1.45 }}>
+          Statistics are loaded in paginated batches so totals are not limited to the first 1,000 prediction rows.
+        </div>
       </div>
     </div>
   )
+}
+
+function HeroStat({ value, label }) {
+  return <div style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: '12px', padding: '11px', textAlign: 'center' }}><div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '20px' }}>{value}</div><div style={{ fontSize: '8.5px', color: 'rgba(255,255,255,0.58)', marginTop: '3px', textTransform: 'uppercase' }}>{label}</div></div>
+}
+
+function Section({ title, sub, children }) {
+  return <div className="card fade-in" style={{ marginBottom: '12px', padding: '15px' }}><div style={{ marginBottom: '10px' }}><div style={{ fontSize: '14px', fontWeight: 900 }}>{title}</div>{sub && <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '3px' }}>{sub}</div>}</div>{children}</div>
+}
+
+function StatRow({ label, value }) {
+  return <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: '1px solid var(--border-light)', fontSize: '12px' }}><span style={{ color: 'var(--text-secondary)' }}>{label}</span><b style={{ fontFamily: 'var(--font-mono)' }}>{value}</b></div>
+}
+
+function Record({ value, label, name }) {
+  return <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '11px', textAlign: 'center' }}><div style={{ fontFamily: 'var(--font-mono)', fontSize: '21px', fontWeight: 900, color: 'var(--scottish-navy)' }}>{value}</div><div style={{ fontSize: '8.5px', color: 'var(--text-muted)', marginTop: '3px', textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--accent-gold-dark, #a9871f)', marginTop: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || '—'}</div></div>
+}
+
+function Empty({ text }) {
+  return <div style={{ color: 'var(--text-muted)', fontSize: '11px', padding: '8px 0' }}>{text}</div>
 }

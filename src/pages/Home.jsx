@@ -9,6 +9,7 @@ import MemberPredictionsModal, { useMemberPredictions } from '../components/Memb
 import KnockoutMatchdayHub from '../components/KnockoutMatchdayHub.jsx'
 import GroupMatchdayHub from '../components/GroupMatchdayHub.jsx'
 import WorldCupLogo from '../components/WorldCupLogo.jsx'
+import TournamentPulsePreview from '../components/TournamentPulsePreview.jsx'
 import { DATES } from '../lib/tournamentDates.js'
 
 // ── Tournament phase dates ───────────────────────────────────────────────────
@@ -910,6 +911,19 @@ export default function Home() {
           {/* ── Knockout matchday hub: team-based bracket impact + separate KO picks ── */}
           {!loading && user && groupStageDone && knockoutLive && (
             <KnockoutMatchdayHub user={user} profile={profile} />
+          )}
+
+          {/* Tournament Pulse stays discoverable in both Home states.
+              It is compact beneath an active matchday hub and fuller when Home is quiet. */}
+          {!loading && (
+            <TournamentPulsePreview
+              compact={Boolean(
+                user && (
+                  (tournamentStarted && !groupStageDone && liveMatches.length > 0) ||
+                  (groupStageDone && knockoutLive)
+                )
+              )}
+            />
           )}
 
           {/* ── Existing countdown card before kickoff; public live card for signed-out visitors ── */}
