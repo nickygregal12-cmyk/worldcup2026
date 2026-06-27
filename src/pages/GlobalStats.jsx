@@ -3,6 +3,12 @@ import { Link } from 'react-router-dom'
 import { loadTournamentPulse } from '../lib/tournamentPulse.js'
 import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
+const normalisePlayerName = (value = '') => String(value)
+  .normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '')
+  .toLowerCase()
+  .replace(/[^a-z0-9]/g, '')
+
 export default function GlobalStats() {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState(null)
@@ -10,7 +16,7 @@ export default function GlobalStats() {
 
   useEffect(() => {
     let active = true
-    loadTournamentPulse()
+    loadTournamentPulse({ force: true })
       .then(data => { if (active) setStats(data) })
       .catch(err => {
         console.error(err)
@@ -38,39 +44,73 @@ export default function GlobalStats() {
         <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <Link to="/" style={{ color: 'rgba(255,255,255,0.72)', fontSize: '12px', textDecoration: 'none', fontWeight: 700 }}>← Back</Link>
           <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.11em', color: 'rgba(255,255,255,0.62)', fontWeight: 800, marginTop: '15px' }}>Tournament Pulse</div>
-          <h1 style={{ fontSize: '28px', lineHeight: 1.1, margin: '6px 0 5px', fontWeight: 900 }}>What the predictor community is thinking</h1>
+          <h1 style={{ fontSize: '28px', lineHeight: 1.1, margin: '6px 0 5px', fontWeight: 900 }}>The story of the predictor so far</h1>
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.5, maxWidth: '600px', margin: 0 }}>
-            Community trends, biggest shocks, popular scorelines and predictor records across WC26.
+            Community trends, predictor records, bracket leaders and the calls nobody saw coming.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '16px' }}>
-            <HeroStat value={stats.activeUsers} label="Active predictors" />
-            <HeroStat value={stats.totalPredictions.toLocaleString()} label="Predictions made" />
-            <HeroStat value={`${stats.communityAccuracy}%`} label="Community accuracy" />
+            <HeroStat value={stats.activeUsers} label="Predictors" />
+            <HeroStat value={stats.completedMatches} label="Matches played" />
+            <HeroStat value={`${stats.communityAccuracy}%`} label="Accuracy" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '8px' }}>
+            <HeroStat value={stats.totalPredictions.toLocaleString()} label="Predictions" />
+            <HeroStat value={stats.tournamentGoals} label="Goals" />
+            <HeroStat value={stats.totalExact.toLocaleString()} label="Exact scores" />
           </div>
         </div>
       </div>
 
       <div className="container" style={{ padding: '16px' }}>
-        <Section title="Community consensus" sub="Strongest shared opinions from matches that have locked.">
-          {stats.consensus.length ? stats.consensus.slice(0, 5).map((row, index) => {
-            const m = row.match
-            const label = row.outcome.key === 'draw'
-              ? 'Draw'
-              : `${row.outcome.team?.flag_emoji || ''} ${row.outcome.team?.short_code || row.outcome.team?.name || 'Team'}`
+        <Section title="Predictor records" sub="The current leaders across every part of the game.">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
+            <Record icon="✅" value={stats.records.correct?.value ?? 0} label="Most correct results" name={stats.records.correct?.name} />
+            <Record icon="🎯" value={stats.records.exact?.value ?? 0} label="Most exact scores" name={stats.records.exact?.name} />
+            <Record icon="⚽" value={stats.records.matchPoints?.value ?? 0} label="Match points" name={stats.records.matchPoints?.name} />
+            <Record icon="🃏" value={stats.records.successfulJokers?.value ?? 0} label="Jokers paid off" name={stats.records.successfulJokers?.name} />
+            <Record icon="🔥" value={stats.records.streak?.value ?? 0} label="Best streak" name={stats.records.streak?.name} />
+            <Record icon="🏅" value={stats.records.topScore?.value ?? 0} label="Highest total" name={stats.records.topScore?.name} />
+          </div>
+        </Section>
+
+        <Section title="Bracket race" sub="Who has correctly carried the most teams into each real knockout round.">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
+            <Record icon="32" value={stats.records.r16Teams?.value ?? 0} label="R16 teams right" name={stats.records.r16Teams?.name} />
+            <Record icon="16" value={stats.records.qfTeams?.value ?? 0} label="QF teams right" name={stats.records.qfTeams?.name} />
+            <Record icon="8" value={stats.records.sfTeams?.value ?? 0} label="SF teams right" name={stats.records.sfTeams?.name} />
+            <Record icon="4" value={stats.records.finalTeams?.value ?? 0} label="Finalists right" name={stats.records.finalTeams?.name} />
+          </div>
+          <div style={{ marginTop: '8px' }}>
+            <Record icon="🏆" value={stats.records.bracketPoints?.value ?? 0} label="Most bracket points so far" name={stats.records.bracketPoints?.name} wide />
+          </div>
+          <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '9px' }}>
+            Records only count rounds whose real teams have been confirmed. Values will grow as the tournament progresses.
+          </div>
+        </Section>
+
+        <Section title="Golden Boot race" sub="Actual scorers compared with every saved pre-tournament pick.">
+          {stats.scorers.length ? stats.scorers.slice(0, 8).map((scorer, index) => {
+            const playerName = scorer.player_name || scorer.name || 'Player'
+            const pick = stats.bootPickCounts?.[normalisePlayerName(playerName)]
             return (
-              <div key={m.id} style={{ padding: '11px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '8px', alignItems: 'center', fontSize: '12px', fontWeight: 800 }}>
-                  <span>{m.home_team?.flag_emoji} {m.home_team?.short_code}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '17px', color: 'var(--accent-gold-dark, #a9871f)' }}>{row.pct}%</span>
-                  <span style={{ textAlign: 'right' }}>{m.away_team?.short_code} {m.away_team?.flag_emoji}</span>
-                </div>
-                <div style={{ height: '8px', background: 'var(--bg-tertiary)', borderRadius: '999px', overflow: 'hidden', marginTop: '7px' }}>
-                  <div style={{ width: `${row.pct}%`, height: '100%', background: 'var(--scottish-navy)' }} />
-                </div>
-                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '5px' }}>{label} was the community pick · {row.total} predictions</div>
+              <div key={`${playerName}-${index}`} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 48px 82px', gap: '8px', alignItems: 'center', padding: '10px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
+                <span style={{ color: 'var(--text-muted)', fontWeight: 900 }}>{index + 1}</span>
+                <div><b style={{ fontSize: '12px' }}>{playerName}</b><div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{scorer.team_name || ''}</div></div>
+                <span style={{ textAlign: 'right', fontWeight: 900 }}>{scorer.goals || 0}⚽</span>
+                <span style={{ textAlign: 'right', fontSize: '10px', fontWeight: pick ? 800 : 500, color: pick ? 'var(--accent-gold-dark, #a9871f)' : 'var(--text-muted)' }}>
+                  {pick ? `${pick.count} ${pick.count === 1 ? 'pick' : 'picks'}` : '0 picks'}
+                </span>
               </div>
             )
-          }) : <Empty text="Consensus appears once matches lock." />}
+          }) : <Empty text="Top scorers have not been added yet." />}
+          {stats.topBootPicks?.length > 0 && (
+            <div style={{ borderTop: '1px solid var(--border-light)', marginTop: '6px', paddingTop: '10px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '7px' }}>Most selected before kickoff</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {stats.topBootPicks.slice(0, 5).map(p => <span key={p.key} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: '999px', padding: '6px 9px', fontSize: '10px', fontWeight: 800 }}>{p.name} · {p.count}</span>)}
+              </div>
+            </div>
+          )}
         </Section>
 
         <Section title="Biggest shocks" sub="Completed results that the fewest predictors expected.">
@@ -88,6 +128,39 @@ export default function GlobalStats() {
           }) : <Empty text="Upsets appear after completed matches." />}
         </Section>
 
+        <Section title="Most predictable matches" sub="The results the community called most confidently.">
+          {stats.predictable?.length ? stats.predictable.map((row, index) => {
+            const m = row.match
+            return <TrendRow key={m.id} index={index} title={`${m.home_team?.flag_emoji} ${m.home_team?.short_code} ${m.home_score}–${m.away_score} ${m.away_team?.short_code} ${m.away_team?.flag_emoji}`} detail={`${row.actualPct}% called the result correctly · ${row.total} predictions`} />
+          }) : <Empty text="Predictability records appear after completed matches." />}
+        </Section>
+
+        <Section title="Joker traps" sub="Matches where the most doubled predictions failed to pay off.">
+          {stats.jokerTraps?.length ? stats.jokerTraps.map((row, index) => {
+            const m = row.match
+            const failed = Math.max(0, (row.jokers || 0) - (row.paidJokers || 0))
+            return <TrendRow key={m.id} index={index} title={`${m.home_team?.flag_emoji} ${m.home_team?.short_code} ${m.home_score}–${m.away_score} ${m.away_team?.short_code} ${m.away_team?.flag_emoji}`} detail={`${failed} of ${row.jokers} Jokers failed`} />
+          }) : <Empty text="Joker records appear once Joker matches are completed." />}
+        </Section>
+
+        <Section title="Community consensus" sub="Strongest shared opinions from matches that have locked.">
+          {stats.consensus.length ? stats.consensus.slice(0, 5).map((row, index) => {
+            const m = row.match
+            const label = row.outcome.key === 'draw' ? 'Draw' : `${row.outcome.team?.flag_emoji || ''} ${row.outcome.team?.short_code || row.outcome.team?.name || 'Team'}`
+            return (
+              <div key={m.id} style={{ padding: '11px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '8px', alignItems: 'center', fontSize: '12px', fontWeight: 800 }}>
+                  <span>{m.home_team?.flag_emoji} {m.home_team?.short_code}</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '17px', color: 'var(--accent-gold-dark, #a9871f)' }}>{row.pct}%</span>
+                  <span style={{ textAlign: 'right' }}>{m.away_team?.short_code} {m.away_team?.flag_emoji}</span>
+                </div>
+                <div style={{ height: '8px', background: 'var(--bg-tertiary)', borderRadius: '999px', overflow: 'hidden', marginTop: '7px' }}><div style={{ width: `${row.pct}%`, height: '100%', background: 'var(--scottish-navy)' }} /></div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '5px' }}>{label} was the community pick · {row.total} predictions</div>
+              </div>
+            )
+          }) : <Empty text="Consensus appears once matches lock." />}
+        </Section>
+
         <Section title="Most popular scorelines" sub="Across all saved group-stage predictions.">
           {stats.topScores.map((row, index) => (
             <div key={row.score} style={{ display: 'grid', gridTemplateColumns: '24px 1fr auto', gap: '10px', alignItems: 'center', padding: '9px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
@@ -96,29 +169,6 @@ export default function GlobalStats() {
               <div style={{ textAlign: 'right' }}><b style={{ fontSize: '12px' }}>{row.count.toLocaleString()} picks</b><div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{row.pct}%</div></div>
             </div>
           ))}
-        </Section>
-
-        <Section title="Golden Boot race" sub="Actual scorers compared with the community’s pre-tournament picks.">
-          {stats.scorers.length ? stats.scorers.slice(0, 5).map((scorer, index) => {
-            const playerName = scorer.player_name || scorer.name || 'Player'
-            const pick = stats.topBootPicks.find(p => p.name.toLowerCase() === playerName.toLowerCase())
-            return (
-              <div key={`${playerName}-${index}`} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 48px 78px', gap: '8px', alignItems: 'center', padding: '9px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
-                <span style={{ color: 'var(--text-muted)', fontWeight: 900 }}>{index + 1}</span>
-                <div><b style={{ fontSize: '12px' }}>{playerName}</b><div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{scorer.team_name || ''}</div></div>
-                <span style={{ textAlign: 'right', fontWeight: 900 }}>{scorer.goals || 0}⚽</span>
-                <span style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-muted)' }}>{pick ? `${pick.count} picks` : 'No top picks'}</span>
-              </div>
-            )
-          }) : <Empty text="Top scorers have not been added yet." />}
-        </Section>
-
-        <Section title="Predictor records" sub="Current community leaders.">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-            <Record value={stats.records.exact?.value ?? 0} label="Most exact scores" name={stats.records.exact?.name} />
-            <Record value={stats.records.streak?.value ?? 0} label="Best streak" name={stats.records.streak?.name} />
-            <Record value={stats.records.topScore?.value ?? 0} label="Highest score" name={stats.records.topScore?.name} />
-          </div>
         </Section>
 
         <Section title="Community overview">
@@ -131,7 +181,7 @@ export default function GlobalStats() {
         </Section>
 
         <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', padding: '3px 12px 12px', lineHeight: 1.45 }}>
-          Statistics are loaded in paginated batches so totals are not limited to the first 1,000 prediction rows.
+          Statistics are calculated from all visible saved predictions and refresh every five minutes.
         </div>
       </div>
     </div>
@@ -139,7 +189,7 @@ export default function GlobalStats() {
 }
 
 function HeroStat({ value, label }) {
-  return <div style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: '12px', padding: '11px', textAlign: 'center' }}><div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '20px' }}>{value}</div><div style={{ fontSize: '8.5px', color: 'rgba(255,255,255,0.58)', marginTop: '3px', textTransform: 'uppercase' }}>{label}</div></div>
+  return <div style={{ background: 'rgba(255,255,255,0.09)', border: '1px solid rgba(255,255,255,0.11)', borderRadius: '12px', padding: '11px 6px', textAlign: 'center' }}><div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '20px' }}>{value}</div><div style={{ fontSize: '8px', color: 'rgba(255,255,255,0.58)', marginTop: '3px', textTransform: 'uppercase' }}>{label}</div></div>
 }
 
 function Section({ title, sub, children }) {
@@ -150,8 +200,16 @@ function StatRow({ label, value }) {
   return <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: '1px solid var(--border-light)', fontSize: '12px' }}><span style={{ color: 'var(--text-secondary)' }}>{label}</span><b style={{ fontFamily: 'var(--font-mono)' }}>{value}</b></div>
 }
 
-function Record({ value, label, name }) {
-  return <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '11px', textAlign: 'center' }}><div style={{ fontFamily: 'var(--font-mono)', fontSize: '21px', fontWeight: 900, color: 'var(--scottish-navy)' }}>{value}</div><div style={{ fontSize: '8.5px', color: 'var(--text-muted)', marginTop: '3px', textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--accent-gold-dark, #a9871f)', marginTop: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || '—'}</div></div>
+function Record({ icon, value, label, name, wide = false }) {
+  return <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '11px', textAlign: 'center', display: wide ? 'grid' : 'block', gridTemplateColumns: wide ? '44px 1fr auto' : undefined, gap: wide ? '10px' : undefined, alignItems: wide ? 'center' : undefined }}>
+    <div style={{ fontSize: wide ? '22px' : '17px', fontWeight: 900 }}>{icon}</div>
+    <div style={{ textAlign: wide ? 'left' : 'center' }}><div style={{ fontSize: '8.5px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--accent-gold-dark, #a9871f)', marginTop: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name || '—'}</div></div>
+    <div style={{ fontFamily: 'var(--font-mono)', fontSize: '21px', fontWeight: 900, color: 'var(--scottish-navy)' }}>{value}</div>
+  </div>
+}
+
+function TrendRow({ index, title, detail }) {
+  return <div style={{ display: 'grid', gridTemplateColumns: '25px 1fr', gap: '9px', padding: '10px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}><div style={{ color: 'var(--text-muted)', fontWeight: 900 }}>{index + 1}</div><div><div style={{ fontSize: '12px', fontWeight: 800 }}>{title}</div><div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '3px' }}>{detail}</div></div></div>
 }
 
 function Empty({ text }) {
