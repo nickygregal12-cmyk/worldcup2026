@@ -226,10 +226,27 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
       setKoRivals([])
       setBracketImpact([])
 
-      const { data: m } = await supabase
+      // Load the fixture independently from venue metadata. A missing or renamed
+      // venue column must never make the entire Match Centre query return null.
+      const { data: matchRow, error: matchError } = await supabase
         .from('matches')
-        .select('id, match_number, stage, home_score, away_score, winner_team_id, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, venue:venue_id(id, name, stadium_name, city, country), home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
-        .eq('id', matchId).maybeSingle()
+        .select('id, match_number, stage, home_score, away_score, winner_team_id, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, venue_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .eq('id', matchId)
+        .maybeSingle()
+
+      if (matchError) console.error('Match Centre fixture query failed:', matchError)
+
+      let m = matchRow
+      if (m?.venue_id) {
+        const { data: venue, error: venueError } = await supabase
+          .from('venues')
+          .select('*')
+          .eq('id', m.venue_id)
+          .maybeSingle()
+        if (venueError) console.warn('Match Centre venue query failed:', venueError)
+        if (venue) m = { ...m, venue }
+      }
+
       setMatch(m)
       setWeather(null)
       if (m?.venue?.city && m?.kickoff_time) {
@@ -653,11 +670,6 @@ function ScoreRow({ match, hasResult }) {
         <div className="stat-num" style={{ fontSize: '32px', fontWeight: '500' }}>
           {hasResult ? `${match.home_score} – ${match.away_score}` : 'vs'}
         </div>
-        {match.home_penalty_score != null && match.away_penalty_score != null && (
-          <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', marginTop: '2px' }}>
-            Pens {match.home_penalty_score}–{match.away_penalty_score}
-          </div>
-        )}
       </div>
       <div style={{ textAlign: 'center', width: '88px' }}>
         <div style={{ fontSize: '34px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</div>
