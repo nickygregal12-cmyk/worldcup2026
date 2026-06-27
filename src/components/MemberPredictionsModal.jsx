@@ -149,6 +149,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
   const [matches, setMatches] = useState([])
   const [allTeams, setAllTeams] = useState([])
   const [actualParticipantsByStage, setActualParticipantsByStage] = useState({})
+  const [actualGroupPositions, setActualGroupPositions] = useState({})
   const [loading, setLoading] = useState(true)
   const [activeStageKey, setActiveStageKey] = useState('r32')
 
@@ -175,7 +176,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
         predQuery,
         supabase.from('matches').select('id, match_number, stage, status, kickoff_time, home_score, away_score, outcome_type, home_team_id, away_team_id, winner_team_id, group:group_id(name), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)'),
         supabase.from('teams').select('id, name, flag_emoji, short_code'),
-        supabase.from('group_standings').select('team_id, position, played').eq('played', 3).lte('position', 2),
+        supabase.from('group_standings').select('team_id, position, played').eq('played', 3),
       ])
 
       if (cancelled) return
@@ -209,8 +210,11 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
           if (nextStage) participantMap[nextStage].add(match.winner_team_id)
         }
       })
+      const groupPositionMap = {}
       ;(standingsRes.data || []).forEach(row => {
-        if (row.team_id) participantMap.r32.add(row.team_id)
+        if (!row.team_id) return
+        groupPositionMap[row.team_id] = Number(row.position)
+        if (Number(row.position) <= 2) participantMap.r32.add(row.team_id)
       })
 
       setPicks(pickMap)
@@ -218,6 +222,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
       setMatches(matchRes.data || [])
       setAllTeams(teamsRes.data || [])
       setActualParticipantsByStage(participantMap)
+      setActualGroupPositions(groupPositionMap)
       setLoading(false)
     }
 
@@ -289,7 +294,35 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
     const actualMatch = actualMatchForTeam(team.id, stage.key)
 
     if (!reached) {
-      if (stageIsSettled(stage.key)) return { points: 0, status: 'missed', label: stage.key === 'r32' ? 'Did not qualify' : 'Did not reach round', actualMatch }
+      if (stage.key === 'r32') {
+        const groupPosition = actualGroupPositions[team.id]
+        const r32Matches = matches.filter(match => match.stage === 'r32')
+        const r32FieldResolved = r32Matches.length === 16 && r32Matches.every(match => match.home_team_id && match.away_team_id)
+
+        // A completed fourth-place finish is an immediate elimination. A third-place
+        // team stays pending until the best-third-place field has been finalised.
+        if (groupPosition >= 4) {
+          return { points: 0, status: 'missed', label: 'Eliminated', actualMatch }
+        }
+        if (groupPosition === 3 && (r32FieldResolved || stageIsSettled('r32'))) {
+          return { points: 0, status: 'missed', label: 'Did not qualify', actualMatch }
+        }
+      } else {
+        const previous = previousStageKey[stage.key]
+        const previousMatch = previous
+          ? matches.find(match => match.stage === previous && (match.home_team_id === team.id || match.away_team_id === team.id))
+          : null
+
+        // As soon as this team loses its real previous-round match, its later-round
+        // card can be marked eliminated without waiting for every tie in the round.
+        if (previousMatch?.status === 'completed' && previousMatch.winner_team_id && previousMatch.winner_team_id !== team.id) {
+          return { points: 0, status: 'missed', label: 'Eliminated', actualMatch: previousMatch }
+        }
+      }
+
+      if (stageIsSettled(stage.key)) {
+        return { points: 0, status: 'missed', label: stage.key === 'r32' ? 'Did not qualify' : 'Did not reach round', actualMatch }
+      }
       return { points: 0, status: 'pending', label: '—', actualMatch }
     }
 
