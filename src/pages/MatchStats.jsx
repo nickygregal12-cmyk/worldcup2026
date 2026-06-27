@@ -102,13 +102,58 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
       setKoRivals([])
       setBracketImpact([])
 
-      const { data: m } = await supabase
+      // Load the match with its team details. Some production databases do not
+      // yet contain every optional live/penalty column, so fall back to the
+      // core match fields instead of treating a PostgREST select error as a
+      // missing match.
+      const richResult = await supabase
         .from('matches')
         .select('id, match_number, stage, home_score, away_score, home_penalty_score, away_penalty_score, winner_team_id, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
-        .eq('id', matchId).maybeSingle()
-      setMatch(m)
+        .eq('id', matchId)
+        .maybeSingle()
 
-      const locked = m && (m.status === 'live' || m.status === 'completed' || new Date(m.kickoff_time) <= new Date())
+      let m = richResult.data
+
+      if (!m && richResult.error) {
+        console.warn('MatchStats rich match query failed; using core fields.', richResult.error)
+
+        const { data: coreMatch, error: coreError } = await supabase
+          .from('matches')
+          .select('id, match_number, stage, home_score, away_score, winner_team_id, status, kickoff_time, home_team_id, away_team_id')
+          .eq('id', matchId)
+          .maybeSingle()
+
+        if (coreError) console.error('MatchStats core match query failed.', coreError)
+
+        if (coreMatch) {
+          const teamIds = [coreMatch.home_team_id, coreMatch.away_team_id].filter(Boolean)
+          const { data: teams, error: teamsError } = teamIds.length
+            ? await supabase.from('teams').select('id, name, flag_emoji, short_code').in('id', teamIds)
+            : { data: [], error: null }
+
+          if (teamsError) console.error('MatchStats team query failed.', teamsError)
+
+          const teamMap = Object.fromEntries((teams || []).map(team => [team.id, team]))
+          m = {
+            ...coreMatch,
+            home_penalty_score: null,
+            away_penalty_score: null,
+            live_minute: null,
+            injury_time: null,
+            home_team: teamMap[coreMatch.home_team_id] || null,
+            away_team: teamMap[coreMatch.away_team_id] || null,
+          }
+        }
+      }
+
+      setMatch(m || null)
+
+      if (!m) {
+        setLoading(false)
+        return
+      }
+
+      const locked = m.status === 'live' || m.status === 'completed' || new Date(m.kickoff_time) <= new Date()
       if (!locked) { setNotLocked(true); setLoading(false); return }
 
       // Scope tournament stats and KO Predictor stats separately.
