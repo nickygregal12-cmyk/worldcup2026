@@ -1160,20 +1160,28 @@ html {
 }
 
 
-/* Phase 3: member prediction view behaves like a full page on mobile */
+/* Member prediction modal: keep the header and close button below the app header on mobile. */
 @media (max-width: 700px) {
   .member-predictions-backdrop {
-    padding: 0 !important;
-    align-items: stretch !important;
-    background: var(--bg-secondary) !important;
-    backdrop-filter: none !important;
+    padding:
+      calc(var(--app-header-height, 64px) + env(safe-area-inset-top, 0px) + 8px)
+      10px
+      0 !important;
+    align-items: flex-end !important;
+    background: rgba(4, 14, 31, 0.72) !important;
+    backdrop-filter: blur(3px) !important;
+    -webkit-backdrop-filter: blur(3px) !important;
   }
+
   .member-predictions-panel {
-    max-width: none !important;
-    max-height: 100dvh !important;
-    height: 100dvh !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 640px !important;
+    height: auto !important;
+    max-height: calc(
+      100dvh - var(--app-header-height, 64px) - env(safe-area-inset-top, 0px) - 8px
+    ) !important;
+    border-radius: 20px 20px 0 0 !important;
+    box-shadow: 0 -12px 45px rgba(0, 0, 0, 0.28) !important;
   }
 }
 
