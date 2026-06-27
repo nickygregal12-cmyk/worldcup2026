@@ -170,6 +170,11 @@ export default function Leaderboard() {
       </div>
 
       <div className="container" style={{ padding: '16px' }}>
+        {!isTournament && koLive && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', marginBottom: '14px', background: 'rgba(230,81,0,0.08)', border: '1px solid rgba(230,81,0,0.2)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: '#e65100' }}>
+            🔥 <span>A separate competition — these points don't affect your Tournament score.</span>
+          </div>
+        )}
         {loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
             <div className="spinner" />

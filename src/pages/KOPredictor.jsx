@@ -670,8 +670,9 @@ export default function KOPredictor() {
         <div className="container">
           {/* Row 1: Title + joker counter */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
               <span style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>🔥 KO Predictor</span>
+              <span style={{ fontSize: '10.5px', fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>Separate game · doesn't affect your Tournament score</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', fontSize: '12px', fontWeight: '700', color: 'white' }}>

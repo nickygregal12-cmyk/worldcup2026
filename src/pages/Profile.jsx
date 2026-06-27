@@ -572,6 +572,10 @@ export default function Profile() {
                 ))}
               </div>
 
+              <Link to="/points" style={{ display: 'block', marginTop: '12px', padding: '11px', textAlign: 'center', background: 'var(--scottish-navy)', color: 'white', borderRadius: 'var(--radius-md)', fontWeight: '800', fontSize: '13px', textDecoration: 'none' }}>
+                📊 See your full points breakdown →
+              </Link>
+
               {/* Daily Question stat */}
               {(profile.question_total > 0 || profile.question_streak > 0) && (
                 <>
