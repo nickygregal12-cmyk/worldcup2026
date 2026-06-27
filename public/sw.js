@@ -1,66 +1,77 @@
 // WC26 Predictor — Service Worker
-const CACHE_NAME = 'wc26-v2'
-const STATIC_ASSETS = [
+const VERSION = 'wc26-v3'
+const APP_CACHE = `${VERSION}-app`
+const ASSET_CACHE = `${VERSION}-assets`
+const PAGE_CACHE = `${VERSION}-pages`
+const CORE_ASSETS = [
   '/',
   '/manifest.json',
+  '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
   '/offline.html',
 ]
 
-// Install — cache static assets
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  )
+  event.waitUntil(caches.open(APP_CACHE).then((cache) => cache.addAll(CORE_ASSETS)))
   self.skipWaiting()
 })
 
-// Activate — clean up old caches
 self.addEventListener('activate', (event) => {
+  const currentCaches = new Set([APP_CACHE, ASSET_CACHE, PAGE_CACHE])
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    caches.keys().then((keys) => Promise.all(
+      keys.filter((key) => !currentCaches.has(key)).map((key) => caches.delete(key))
+    ))
   )
   self.clients.claim()
 })
 
-// Fetch — network first, fall back to cache for navigation
+async function networkFirst(request, cacheName, fallback) {
+  const cache = await caches.open(cacheName)
+  try {
+    const response = await fetch(request)
+    if (response?.ok) cache.put(request, response.clone())
+    return response
+  } catch {
+    return (await cache.match(request)) || (fallback ? caches.match(fallback) : Response.error())
+  }
+}
+
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(ASSET_CACHE)
+  const cached = await cache.match(request)
+  const network = fetch(request).then((response) => {
+    if (response?.ok) cache.put(request, response.clone())
+    return response
+  }).catch(() => null)
+  return cached || network || Response.error()
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
 
-  // Skip non-GET, cross-origin, and Supabase/API requests
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return
   if (
-    request.method !== 'GET' ||
-    url.origin !== self.location.origin ||
     url.pathname.startsWith('/rest/') ||
     url.pathname.startsWith('/auth/') ||
     url.pathname.startsWith('/.netlify/')
-  ) {
-    return
-  }
+  ) return
 
-  // Navigation requests: network first, fall back to offline page
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => caches.match('/offline.html'))
-    )
+    event.respondWith(networkFirst(request, PAGE_CACHE, '/offline.html'))
     return
   }
 
-  // Static assets: cache first
   if (
-    url.pathname.match(/\.(png|jpg|svg|ico|webp|woff2?)$/) ||
+    url.pathname.startsWith('/assets/') ||
+    /\.(?:js|css|png|jpe?g|svg|ico|webp|woff2?)$/.test(url.pathname) ||
     url.pathname === '/manifest.json'
   ) {
-    event.respondWith(
-      caches.match(request).then((cached) => cached || fetch(request))
-    )
+    event.respondWith(staleWhileRevalidate(request))
     return
   }
 
-  // Everything else: network first
-  event.respondWith(fetch(request).catch(() => caches.match(request)))
+  event.respondWith(networkFirst(request, APP_CACHE))
 })
