@@ -124,6 +124,7 @@ export default function Home() {
   const [nextMatch, setNextMatch]         = useState(null)
   const [liveLeaguePreds, setLiveLeaguePreds] = useState([]) // league members' picks for live match
   const [liveMatches, setLiveMatches]     = useState([])
+  const [remainingGroupMatches, setRemainingGroupMatches] = useState(null)
   const { memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, openProfile, groupPositionBreakdown } = useMemberPredictions()
   const [upcomingMatches, setUpcomingMatches] = useState([])
   const [topPredictors, setTopPredictors] = useState([])
@@ -176,6 +177,10 @@ export default function Home() {
   // Live match data takes priority over date/phase overrides. The final group
   // fixtures must keep the group Matchday Hub visible until they are finished.
   const hasLiveGroupMatches = liveMatches.some(match => match.stage === 'group')
+  // Hub phase follows the real fixture data, not the KO predictor opening date or
+  // an admin phase override. This keeps the group hub active through the final
+  // group fixtures and only hands Home to the knockout hub once all 72 are complete.
+  const groupFixturesActuallyComplete = remainingGroupMatches === 0
 
   useEffect(() => { loadData(); loadDailyQuestion(); loadRoundUp() }, [user])
 
@@ -370,7 +375,7 @@ export default function Home() {
       const windowStart = new Date() // now
       const windowEnd   = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000)
 
-      const [liveRes, liveFromKickoffRes, nextRes, upcomingRes, predictorRes, todayRes] = await Promise.all([
+      const [liveRes, liveFromKickoffRes, nextRes, upcomingRes, predictorRes, todayRes, remainingGroupsRes] = await Promise.all([
         supabase.from('matches')
           .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
           .eq('status', 'live').order('kickoff_time', { ascending: true }),
@@ -402,6 +407,13 @@ export default function Home() {
           .gte('kickoff_time', windowStart.toISOString())
           .lte('kickoff_time', windowEnd.toISOString())
           .order('kickoff_time', { ascending: true }),
+
+        // Source of truth for the Home hub phase. KO picks can open before the
+        // final group fixtures finish, so dates/phase overrides are not enough.
+        supabase.from('matches')
+          .select('id', { count: 'exact', head: true })
+          .eq('stage', 'group')
+          .neq('status', 'completed'),
       ])
 
       const allLive = [...(liveRes.data || []), ...(liveFromKickoffRes.data || [])]
@@ -444,6 +456,7 @@ export default function Home() {
       setUpcomingMatches(upcomingRes.data || [])
       setTopPredictors(predictorRes.data || [])
       setTodayMatches(todayRes.data || [])
+      setRemainingGroupMatches(remainingGroupsRes.count ?? null)
 
       // Load user completion counts from source tables so Home doesn't rely on stale cached profile values.
       if (user) {
@@ -1007,17 +1020,17 @@ export default function Home() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
 
           {/* ── Group matchday hub: countdown → live scores → full-time recap ── */}
-          {!loading && user && tournamentStarted && hasLiveGroupMatches && (
+          {!loading && user && tournamentStarted && !groupFixturesActuallyComplete && (
             <GroupMatchdayHub user={user} profile={profile} />
           )}
 
           {/* ── Knockout matchday hub: only after no group match is still live ── */}
-          {!loading && user && !hasLiveGroupMatches && groupStageDone && knockoutLive && (
+          {!loading && user && groupFixturesActuallyComplete && knockoutLive && (
             <KnockoutMatchdayHub user={user} profile={profile} />
           )}
 
           {/* ── Existing countdown card before kickoff; public live card for signed-out visitors ── */}
-          {!loading && tournamentStarted && (hasLiveGroupMatches || !groupStageDone) && (liveMatches.length > 0 || nextMatch) && (!user || liveMatches.length === 0) && (
+          {!loading && tournamentStarted && !groupFixturesActuallyComplete && (liveMatches.length > 0 || nextMatch) && (!user || liveMatches.length === 0) && (
             <div className="card fade-in" style={{
               overflow: 'hidden',
               border: liveMatches.length > 0 ? '2px solid #e53935' : '1px solid rgba(0,48,135,0.16)',
@@ -1155,8 +1168,8 @@ export default function Home() {
             <TournamentPulsePreview
               compact={Boolean(
                 user && (
-                  hasLiveGroupMatches ||
-                  (!hasLiveGroupMatches && groupStageDone && knockoutLive)
+                  !groupFixturesActuallyComplete ||
+                  (groupFixturesActuallyComplete && knockoutLive)
                 )
               )}
             />
