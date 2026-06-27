@@ -15,6 +15,7 @@ import ClaimAccount from './pages/ClaimAccount.jsx'
 import Register from './pages/Register.jsx'
 import Predictions from './pages/Predictions.jsx'
 import PointsSummary from './pages/PointsSummary.jsx'
+import HeadToHead from './pages/HeadToHead.jsx'
 import Knockout from './pages/Knockout.jsx'
 import Awards from './pages/Awards.jsx'
 import Leagues from './pages/Leagues.jsx'
@@ -108,6 +109,7 @@ export default function App() {
           <Route path="/predictions" element={<Predictions />} />
           <Route path="/points" element={<ProtectedRoute><PointsSummary /></ProtectedRoute>} />
           <Route path="/points/:userId" element={<PointsSummary />} />
+          <Route path="/h2h/:userId" element={<ProtectedRoute><HeadToHead /></ProtectedRoute>} />
           <Route path="/knockout" element={<Knockout />} />
           <Route path="/awards" element={<Awards />} />
           <Route path="/leagues" element={<ProtectedRoute><Leagues /></ProtectedRoute>} />

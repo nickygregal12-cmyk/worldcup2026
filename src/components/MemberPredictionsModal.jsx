@@ -547,7 +547,7 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
 
   if (!memberModal) return null
 
-  const tabs = memberModal.isOffline ? ['group', 'standings'] : ['overview', 'group', 'knockout', 'awards', 'compare', 'standings']
+  const tabs = memberModal.isOffline ? ['group', 'standings'] : ['overview', 'group', 'knockout', 'awards', 'standings']
   const activeTab = memberModal.tab || 'overview'
 
   const tabLabel = (tab) => {
@@ -670,7 +670,7 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
                   </button>
                 )}
 
-                <button onClick={() => setMemberModal(prev => ({ ...prev, tab: 'compare' }))} className="btn btn-primary btn-full" style={{ marginTop: '2px' }}>⚔️ Compare with me</button>
+                <button onClick={() => { setMemberModal(null); navigate(`/h2h/${memberModal.userId}`) }} className="btn btn-primary btn-full" style={{ marginTop: '2px' }}>⚔️ Head to Head</button>
               </div>
             )
           })()
