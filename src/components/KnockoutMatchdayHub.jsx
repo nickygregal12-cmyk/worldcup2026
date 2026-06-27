@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import WorldCupLogo from './WorldCupLogo.jsx'
 
 const KO_STAGES = ['r32', 'r16', 'qf', 'sf', '3rd', 'final']
 const ADVANCEMENT_STAGES = ['r32', 'r16', 'qf', 'sf', 'final']
@@ -220,11 +219,6 @@ function KnockoutMatchCard({ match, bracketPick, teamsById, advancementSets, koP
             <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '20px' }}>
               {hasScore ? `${match.home_score}–${match.away_score}` : 'vs'}
             </div>
-            {match.home_penalty_score != null && match.away_penalty_score != null && (
-              <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                Pens {match.home_penalty_score}–{match.away_penalty_score}
-              </div>
-            )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '7px', minWidth: 0 }}>
             <span style={{ fontSize: '12px', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.away_team?.short_code}</span>
@@ -233,7 +227,7 @@ function KnockoutMatchCard({ match, bracketPick, teamsById, advancementSets, koP
         </div>
 
         <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>
-          {fmtDate(match.kickoff_time)} · <Link to={`/match/${match.match_number || match.id}/stats`} style={{ color: 'var(--scottish-navy)', fontWeight: 800 }}>Match centre →</Link>
+          {fmtDate(match.kickoff_time)} · <Link to={`/match/${match.id}/stats`} style={{ color: 'var(--scottish-navy)', fontWeight: 800 }}>Match centre →</Link>
         </div>
       </div>
 
@@ -342,10 +336,11 @@ export default function KnockoutMatchdayHub({ user, profile }) {
         const now = new Date()
         const windowStart = new Date(now.getTime() - 10 * 60 * 60 * 1000)
         const windowEnd = new Date(now.getTime() + 32 * 60 * 60 * 1000)
+        const matchSelect = 'id, match_number, stage, status, kickoff_time, home_score, away_score, live_minute, injury_time, home_team_id, away_team_id, winner_team_id, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)'
 
         let matchRes = await supabase
           .from('matches')
-          .select('id, match_number, stage, status, kickoff_time, home_score, away_score, home_penalty_score, away_penalty_score, live_minute, injury_time, home_team_id, away_team_id, winner_team_id, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
+          .select(matchSelect)
           .in('stage', KO_STAGES)
           .not('home_team_id', 'is', null)
           .not('away_team_id', 'is', null)
@@ -359,7 +354,7 @@ export default function KnockoutMatchdayHub({ user, profile }) {
         if (matchData.length === 0) {
           const nextRes = await supabase
             .from('matches')
-            .select('id, match_number, stage, status, kickoff_time, home_score, away_score, home_penalty_score, away_penalty_score, live_minute, injury_time, home_team_id, away_team_id, winner_team_id, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
+            .select(matchSelect)
             .in('stage', KO_STAGES)
             .not('home_team_id', 'is', null)
             .not('away_team_id', 'is', null)
@@ -389,7 +384,7 @@ export default function KnockoutMatchdayHub({ user, profile }) {
 
         const bracketData = bracketRes.data || []
         const extraTeamIds = [...new Set(bracketData.flatMap(pick => [pick.home_team_id, pick.away_team_id, pick.winner_team_id]).filter(Boolean))]
-        let teamMap = {}
+        const teamMap = {}
         if (extraTeamIds.length) {
           const teamRes = await supabase.from('teams').select('id,name,flag_emoji,short_code').in('id', extraTeamIds)
           if (teamRes.error) throw teamRes.error
@@ -485,8 +480,7 @@ export default function KnockoutMatchdayHub({ user, profile }) {
         color: 'white', borderRadius: 'var(--radius-lg)', padding: '18px 16px', overflow: 'hidden', position: 'relative',
       }}>
         <div style={{ position: 'absolute', width: '150px', height: '150px', borderRadius: '50%', right: '-55px', top: '-75px', background: 'radial-gradient(circle, rgba(255,193,7,0.28), transparent 70%)' }} />
-        <WorldCupLogo variant="watermark" size={154} opacity={0.11} style={{ right: '-8px', top: '48%' }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ position: 'relative' }}>
           <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.66)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em' }}>
             Knockout matchday
           </div>
