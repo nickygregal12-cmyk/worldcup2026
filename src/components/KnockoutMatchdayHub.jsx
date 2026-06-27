@@ -233,7 +233,7 @@ function KnockoutMatchCard({ match, bracketPick, teamsById, advancementSets, koP
         </div>
 
         <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>
-          {fmtDate(match.kickoff_time)} · <Link to={`/match/${match.id}/stats`} style={{ color: 'var(--scottish-navy)', fontWeight: 800 }}>Match centre →</Link>
+          {fmtDate(match.kickoff_time)} · <Link to={`/match/${match.match_number || match.id}/stats`} style={{ color: 'var(--scottish-navy)', fontWeight: 800 }}>Match centre →</Link>
         </div>
       </div>
 

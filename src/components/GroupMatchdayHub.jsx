@@ -259,7 +259,7 @@ function GroupMatchCard({ match, mode, prediction, groupMatches, predictionMap, 
   const points = predictionPoints(prediction, match)
   const statusText = predictionStatus(prediction, match)
   const good = points > 0
-  const matchCentre = `/match/${match.id}/stats${leagueCode ? `?league=${encodeURIComponent(leagueCode)}` : ''}`
+  const matchCentre = `/match/${match.match_number || match.id}/stats${leagueCode ? `?league=${encodeURIComponent(leagueCode)}` : ''}`
 
   return (
     <article className="card fade-in" style={{ overflow: 'hidden', border: mode === 'live' ? '2px solid #d32f2f' : '1px solid var(--border-light)' }}>

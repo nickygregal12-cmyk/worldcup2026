@@ -1006,7 +1006,7 @@ export default function Home() {
                             </span>
                           </div>
                         )}
-                        <Link to={`/match/${match.id}/stats`} style={{
+                        <Link to={`/match/${match.match_number || match.id}/stats`} style={{
                           display: 'block', marginTop: '10px', padding: '8px',
                           background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)',
                           border: '1px solid var(--border-light)', textAlign: 'center',
@@ -1589,12 +1589,29 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Your tournament summary ── */}
+
+          {/* ── "You're X pts behind 1st" nudge ── */}
+          {tournamentStarted && user && profile && leaderPosition && leaderPosition > 1 && topPredictors.length > 0 && (
+            <div style={{
+              background: 'var(--accent-blue-light)', border: '1px solid rgba(21,88,176,0.2)',
+              borderRadius: 'var(--radius-lg)', padding: '12px 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <div style={{ fontSize: '13px', color: 'var(--accent-blue)', fontWeight: '600' }}>
+                📊 You're <strong>{(topPredictors[0]?.total_points || 0) - (profile.total_points || 0)} pts</strong> behind {topPredictors[0]?.username}
+              </div>
+              <Link to="/leaderboard" style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700', textDecoration: 'none' }}>
+                Rankings →
+              </Link>
+            </div>
+          )}
+
+          {/* ── User Stats ── */}
           {user && profile && (tournamentStarted || knockoutLive || (profile.total_points || 0) > 0) && (
             <div className="card fade-in">
               <div className="section-header">
-                <span className="section-title">🏅 Your Tournament</span>
-                <Link to="/points" className="section-link">Full breakdown →</Link>
+                <span className="section-title">👋 Your Stats</span>
+                <Link to="/profile" className="section-link">View profile →</Link>
               </div>
 
               {/* Tournament stats */}
@@ -1631,9 +1648,9 @@ export default function Home() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: knockoutLive ? '14px' : '0' }}>
                 {[
-                  { label: leaderPosition ? `Rank #${leaderPosition}` : 'Rank', value: profile.total_points || 0, icon: '🏅' },
-                  { label: 'Current streak', value: profile.streak_current || 0, icon: '🔥' },
-                  { label: 'Exact scores', value: profile.exact_scores || 0, icon: '🎯' },
+                  { label: 'Points', value: profile.total_points || 0, icon: '🏅' },
+                  { label: 'Streak', value: profile.streak_current || 0, icon: '🔥' },
+                  { label: 'Exact Scores', value: profile.exact_scores || 0, icon: '🎯' },
                 ].map(({ label, value, icon }) => (
                   <div key={label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center' }}>
                     <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
@@ -1825,7 +1842,7 @@ export default function Home() {
           {tournamentStarted && (
           <div className="card fade-in">
             <div className="section-header">
-              <span className="section-title">🏆 Leaderboard</span>
+              <span className="section-title">🏆 Top Predictors</span>
               <Link to="/leaderboard" className="section-link">Full table →</Link>
             </div>
             {topPredictors.length === 0 ? (

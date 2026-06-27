@@ -1764,7 +1764,7 @@ export default function Predictions() {
 
           {/* Full match stats — always shown on locked matches */}
           {effectiveLocked && (
-            <Link to={`/match/${match.id}/stats`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '12px', padding: '10px', borderRadius: 'var(--radius-md)', background: 'rgba(0,48,135,0.06)', border: '1px solid rgba(0,48,135,0.12)', fontSize: '13px', fontWeight: '800', color: 'var(--scottish-navy)', textDecoration: 'none' }}>
+            <Link to={`/match/${match.match_number || match.id}/stats`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '12px', padding: '10px', borderRadius: 'var(--radius-md)', background: 'rgba(0,48,135,0.06)', border: '1px solid rgba(0,48,135,0.12)', fontSize: '13px', fontWeight: '800', color: 'var(--scottish-navy)', textDecoration: 'none' }}>
               📊 Full match stats →
             </Link>
           )}

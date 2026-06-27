@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/index.js'
 const STAGE_LABELS = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-final', sf: 'Semi-final', '3rd': 'Third-place', final: 'Final' }
 
 export default function MatchStats() {
-  const { matchId } = useParams()
+  const { matchId: matchRef } = useParams()
   const [searchParams] = useSearchParams()
   const leagueCode = searchParams.get('league')
   const koLeagueCode = searchParams.get('koLeague')
@@ -18,18 +18,28 @@ export default function MatchStats() {
   useEffect(() => {
     const loadSlot = async () => {
       setLoadingSlot(true)
-      const { data: m } = await supabase
-        .from('matches').select('id, kickoff_time').eq('id', matchId).maybeSingle()
+      // Match links now use the stable FIFA match number. Keep UUID support so
+      // older saved/shared links continue to work as well.
+      const isMatchNumber = /^\d+$/.test(String(matchRef || ''))
+      let matchQuery = supabase
+        .from('matches')
+        .select('id, match_number, kickoff_time')
+
+      matchQuery = isMatchNumber
+        ? matchQuery.eq('match_number', Number(matchRef))
+        : matchQuery.eq('id', matchRef)
+
+      const { data: m } = await matchQuery.maybeSingle()
       if (!m) { setSlotIds([]); setLoadingSlot(false); return }
       // every match kicking off at the same instant — shown together
       const { data: siblings } = await supabase
         .from('matches').select('id, match_number').eq('kickoff_time', m.kickoff_time).order('match_number')
       const ids = (siblings || []).map(s => s.id)
-      setSlotIds([matchId, ...ids.filter(i => i !== matchId)])
+      setSlotIds([m.id, ...ids.filter(i => i !== m.id)])
       setLoadingSlot(false)
     }
-    if (matchId) loadSlot()
-  }, [matchId])
+    if (matchRef) loadSlot()
+  }, [matchRef])
 
   if (loadingSlot) {
     return <div className="container" style={{ padding: '40px 16px', textAlign: 'center' }}>
