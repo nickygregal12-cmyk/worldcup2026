@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
+import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
 import { DATES } from '../lib/tournamentDates.js'
 
 
@@ -72,289 +72,331 @@ function MemberStandingsView({ predictions }) {
   )
 }
 
+
+function GroupTablesScoreView({ predictions, breakdown = [], totalPoints = 0 }) {
+  if (!breakdown.length) {
+    return <MemberStandingsView predictions={predictions} />
+  }
+
+  const byGroup = breakdown.reduce((acc, row) => {
+    const groupName = row.group_name || 'Other'
+    if (!acc[groupName]) acc[groupName] = []
+    acc[groupName].push(row)
+    return acc
+  }, {})
+
+  const groupNames = Object.keys(byGroup).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+
+  return (
+    <div>
+      <section style={{ marginBottom: '12px', background: 'var(--bg-card)', border: '1px solid rgba(0,122,51,0.22)', borderRadius: '14px', overflow: 'hidden' }}>
+        <div style={{ padding: '12px 14px', background: 'rgba(0,122,51,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+          <div>
+            <div style={{ fontWeight: '900', fontSize: '13px', color: 'var(--accent-green)' }}>Group position bonus</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>+2 per correct position · +5 for a perfect group</div>
+          </div>
+          <div style={{ fontWeight: '950', fontSize: '22px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)' }}>+{Number(totalPoints || 0)}</div>
+        </div>
+      </section>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '10px' }}>
+        {groupNames.map(groupName => {
+          const rows = [...byGroup[groupName]].sort((a, b) => Number(a.predicted_position || 99) - Number(b.predicted_position || 99))
+          const decidedRows = rows.filter(row => row.actual_position != null)
+          const perfect = rows.length === 4 && decidedRows.length === 4 && rows.every(row => Number(row.points_awarded || 0) > 0)
+          const positionPoints = rows.reduce((sum, row) => sum + Number(row.points_awarded || 0), 0)
+          const groupTotal = positionPoints + (perfect ? 5 : 0)
+
+          return (
+            <section key={groupName} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px', overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '10px 12px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)' }}>
+                <strong style={{ fontSize: '13px', color: 'var(--scottish-navy)' }}>GROUP {groupName}</strong>
+                <strong style={{ fontSize: '14px', fontFamily: 'var(--font-mono)', color: groupTotal > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{groupTotal}</strong>
+              </div>
+
+              <div style={{ padding: '3px 12px 7px' }}>
+                {rows.map((row, index) => {
+                  const awarded = Number(row.points_awarded || 0)
+                  const decided = row.actual_position != null
+                  const correct = awarded > 0
+                  return (
+                    <div key={`${groupName}-${row.team?.short_code || index}`} style={{ display: 'grid', gridTemplateColumns: '20px minmax(0, 1fr) 68px 34px', gap: '7px', alignItems: 'center', padding: '8px 0', borderTop: index > 0 ? '1px solid var(--border-light)' : 'none' }}>
+                      <span style={{ fontSize: '10px', fontWeight: '850', color: correct ? 'var(--accent-green)' : 'var(--text-muted)' }}>{row.predicted_position}</span>
+                      <span style={{ minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: '800', overflow: 'hidden' }}>
+                        <span style={{ fontSize: '15px', flexShrink: 0 }}>{row.team?.flag_emoji}</span>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.team?.name || row.team?.short_code || 'Team'}</span>
+                      </span>
+                      <span style={{ fontSize: '9px', color: 'var(--text-muted)', textAlign: 'center', whiteSpace: 'nowrap' }}>{decided ? `Actual ${row.actual_position}` : 'Pending'}</span>
+                      <span style={{ fontSize: '10px', fontWeight: '900', textAlign: 'right', color: correct ? 'var(--accent-green)' : decided ? 'var(--accent-red)' : 'var(--text-muted)' }}>{decided ? (correct ? `+${awarded}` : '0') : '—'}</span>
+                    </div>
+                  )
+                })}
+                {perfect && (
+                  <div style={{ marginTop: '5px', padding: '7px 9px', borderRadius: '9px', background: 'rgba(184,134,11,0.10)', color: 'var(--accent-gold)', fontSize: '10px', fontWeight: '900' }}>🎯 Perfect group +5</div>
+                )}
+              </div>
+            </section>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
   const [picks, setPicks] = useState({})
   const [groupPreds, setGroupPreds] = useState({})
   const [matches, setMatches] = useState([])
-  const [realConfirmedByStage, setRealConfirmedByStage] = useState({}) // stage -> Set of confirmed team IDs
-  const [confirmedFixtures, setConfirmedFixtures] = useState({}) // match_number -> {homeTeam, awayTeam}
   const [allTeams, setAllTeams] = useState([])
+  const [actualParticipantsByStage, setActualParticipantsByStage] = useState({})
   const [loading, setLoading] = useState(true)
+  const [activeStageKey, setActiveStageKey] = useState('r32')
 
   useEffect(() => {
     let cancelled = false
     const load = async () => {
       setLoading(true)
       const koTable = lockedSnapshot ? 'league_knockout_picks' : 'knockout_picks'
-      let koQuery = supabase.from(koTable).select('match_number, stage, winner_team_id, home_team_id, away_team_id, is_joker').eq('user_id', userId)
+      let koQuery = supabase
+        .from(koTable)
+        .select('match_number, stage, winner_team_id, home_team_id, away_team_id, is_joker')
+        .eq('user_id', userId)
       if (lockedSnapshot && leagueId) koQuery = koQuery.eq('league_id', leagueId)
+
       const predTable = lockedSnapshot ? 'league_predictions' : 'predictions'
-      let predQuery = supabase.from(predTable).select('match_id, home_score, away_score').eq('user_id', userId)
+      let predQuery = supabase
+        .from(predTable)
+        .select('match_id, home_score, away_score')
+        .eq('user_id', userId)
       if (lockedSnapshot && leagueId) predQuery = predQuery.eq('league_id', leagueId)
-      const [koRes, predRes, matchRes, teamsRes] = await Promise.all([
+
+      const [koRes, predRes, matchRes, teamsRes, standingsRes] = await Promise.all([
         koQuery.order('match_number', { ascending: true }),
         predQuery,
-        supabase.from('matches').select('id, match_number, stage, status, home_team_id, away_team_id, winner_team_id, group:group_id(name), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)'),
+        supabase.from('matches').select('id, match_number, stage, status, kickoff_time, home_score, away_score, outcome_type, home_team_id, away_team_id, winner_team_id, group:group_id(name), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)'),
         supabase.from('teams').select('id, name, flag_emoji, short_code'),
+        supabase.from('group_standings').select('team_id, position, played').eq('played', 3).lte('position', 2),
       ])
+
       if (cancelled) return
-      const km = {};
-      (koRes.data || []).forEach(p => { km[p.match_number] = { winner_id: p.winner_team_id, home_team_id: p.home_team_id, away_team_id: p.away_team_id, is_joker: p.is_joker, stage: p.stage } })
-      const pm = {};
-      (predRes.data || []).forEach(p => { if (p.home_score !== null && p.away_score !== null) pm[p.match_id] = { home: p.home_score, away: p.away_score } })
-      // Load real confirmed R32 teams
-      const { data: r32Fixtures } = await supabase
-        .from('matches')
-        .select('stage, home_team_id, away_team_id, status, winner_team_id')
-        .neq('stage', 'group')
-      if (!cancelled && r32Fixtures) {
-        // Build per-stage confirmed teams:
-        // R32: teams with home_team_id/away_team_id set
-        // R16+: teams that WON their previous round (winner_team_id)
-        const byStage = {
-          r32: new Set(),
-          r16: new Set(),
-          qf: new Set(),
-          sf: new Set(),
-          final: new Set(),
+
+      const pickMap = {}
+      ;(koRes.data || []).forEach(pick => {
+        pickMap[pick.match_number] = {
+          winner_id: pick.winner_team_id,
+          home_team_id: pick.home_team_id,
+          away_team_id: pick.away_team_id,
+          is_joker: pick.is_joker,
+          stage: pick.stage,
         }
-        r32Fixtures.forEach(m => {
-          if (m.stage === 'r32') {
-            if (m.home_team_id) byStage.r32.add(m.home_team_id)
-            if (m.away_team_id) byStage.r32.add(m.away_team_id)
-          } else if (m.status === 'completed' && m.winner_team_id) {
-            const nextStage = { r32: 'r16', r16: 'qf', qf: 'sf', sf: 'final' }[m.stage]
-            if (nextStage && byStage[nextStage]) byStage[nextStage].add(m.winner_team_id)
-          }
-        })
-        // Also add top-2 finishers from completed groups
-        const { data: gsData } = await supabase
-          .from('group_standings').select('team_id, position, played')
-          .eq('played', 3).lte('position', 2)
-        ;(gsData || []).forEach(gs => { if (gs.team_id) byStage.r32.add(gs.team_id) })
-        setRealConfirmedByStage(byStage)
-      }
-      if (!cancelled) {
-        const confMap = {}
-        ;(matchRes.data || []).forEach(m => {
-          if (m.home_team_id && m.away_team_id && m.stage !== 'group') {
-            confMap[m.match_number] = { homeTeam: m.home_team, awayTeam: m.away_team }
-          }
-        })
-        setPicks(km)
-        setGroupPreds(pm)
-        setMatches(matchRes.data || [])
-        setConfirmedFixtures(confMap)
-        setAllTeams(teamsRes.data || [])
-      }
+      })
+
+      const predictionMap = {}
+      ;(predRes.data || []).forEach(prediction => {
+        if (prediction.home_score != null && prediction.away_score != null) {
+          predictionMap[prediction.match_id] = { home: prediction.home_score, away: prediction.away_score }
+        }
+      })
+
+      const participantMap = { r32: new Set(), r16: new Set(), qf: new Set(), sf: new Set(), final: new Set() }
+      ;(matchRes.data || []).forEach(match => {
+        if (participantMap[match.stage]) {
+          if (match.home_team_id) participantMap[match.stage].add(match.home_team_id)
+          if (match.away_team_id) participantMap[match.stage].add(match.away_team_id)
+        }
+        if (match.status === 'completed' && match.winner_team_id) {
+          const nextStage = { r32: 'r16', r16: 'qf', qf: 'sf', sf: 'final' }[match.stage]
+          if (nextStage) participantMap[nextStage].add(match.winner_team_id)
+        }
+      })
+      ;(standingsRes.data || []).forEach(row => {
+        if (row.team_id) participantMap.r32.add(row.team_id)
+      })
+
+      setPicks(pickMap)
+      setGroupPreds(predictionMap)
+      setMatches(matchRes.data || [])
+      setAllTeams(teamsRes.data || [])
+      setActualParticipantsByStage(participantMap)
       setLoading(false)
     }
+
     load()
     return () => { cancelled = true }
   }, [userId, leagueId, lockedSnapshot])
 
-  const groupMatches = React.useMemo(() => matches.filter(m => m.stage === 'group'), [matches])
+  const groupMatches = React.useMemo(() => matches.filter(match => match.stage === 'group'), [matches])
   const standings = React.useMemo(() => calcPredictedStandings(groupMatches, groupPreds, true), [groupMatches, groupPreds])
   const teamsById = React.useMemo(() => {
     const map = {}
-    // From matches (group stage)
-    matches.forEach(m => { if (m.home_team) map[m.home_team.id] = m.home_team; if (m.away_team) map[m.away_team.id] = m.away_team })
-    // From allTeams fetch (includes all 48 teams for KO display)
-    allTeams.forEach(t => { if (t.id) map[t.id] = t })
+    matches.forEach(match => {
+      if (match.home_team) map[match.home_team.id] = match.home_team
+      if (match.away_team) map[match.away_team.id] = match.away_team
+    })
+    allTeams.forEach(team => { if (team.id) map[team.id] = team })
     return map
   }, [matches, allTeams])
 
-  // Map of match_number -> {home, away} team IDs from stored knockout_picks
-  const pickHomeAway = React.useMemo(() => {
-    const map = {}
-    Object.entries(picks).forEach(([matchNum, pick]) => {
-      map[parseInt(matchNum)] = {
-        home: pick.home_team_id || null,
-        away: pick.away_team_id || null,
-        winner: pick.winner_id,
-      }
-    })
-    return map
-  }, [picks])
-
   const resolveTeam = (slot) => {
     if (!slot) return null
-    if (slot.startsWith('W')) { const mn = parseInt(slot.replace('W', '')); const wid = picks[mn]?.winner_id; return wid ? (teamsById[wid] || null) : null }
+    if (slot.startsWith('W')) {
+      const matchNumber = parseInt(slot.replace('W', ''), 10)
+      const winnerId = picks[matchNumber]?.winner_id
+      return winnerId ? teamsById[winnerId] || null : null
+    }
     if (slot.startsWith('L')) return null
     return resolveSlot(slot, standings, groupMatches, groupPreds)
   }
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-  if (Object.keys(picks).length === 0) return <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}><div style={{ fontSize: '32px', marginBottom: '8px' }}>🏆</div><div style={{ fontWeight: '700' }}>No knockout picks yet</div></div>
+  const resolvedFor = (matchDefinition) => {
+    const pick = picks[matchDefinition.match_number]
+    const pureHome = resolveTeam(matchDefinition.home_slot)
+    const pureAway = resolveTeam(matchDefinition.away_slot)
+    const winnerId = pick?.winner_id
 
-  const teamStyle = (won) => ({ fontSize: '13px', fontWeight: won ? '800' : '500', color: won ? 'var(--text-primary)' : 'var(--text-muted)' })
+    if (!winnerId || winnerId === pureHome?.id || winnerId === pureAway?.id) {
+      return { home: pureHome, away: pureAway }
+    }
+
+    const savedWinner = teamsById[winnerId] || null
+    if (pick?.away_team_id === winnerId && pick?.home_team_id !== winnerId) {
+      return { home: pureHome, away: savedWinner }
+    }
+    return { home: savedWinner, away: pureAway }
+  }
+
+  const availableStages = ALL_STAGES.filter(stage => stage.matches.some(match => picks[match.match_number]?.winner_id))
+  const activeStage = availableStages.find(stage => stage.key === activeStageKey) || availableStages[0]
+
+  const previousStageKey = { r16: 'r32', qf: 'r16', sf: 'qf', final: 'sf' }
+  const stageIsSettled = (stageKey) => {
+    if (stageKey === 'r32') {
+      const groupFixtures = matches.filter(match => match.stage === 'group')
+      return groupFixtures.length > 0 && groupFixtures.every(match => match.status === 'completed')
+    }
+    const previous = previousStageKey[stageKey]
+    const previousMatches = matches.filter(match => match.stage === previous)
+    return previousMatches.length > 0 && previousMatches.every(match => match.status === 'completed')
+  }
+
+  const actualMatchForTeam = (teamId, stageKey) => matches.find(match =>
+    match.stage === stageKey && (match.home_team_id === teamId || match.away_team_id === teamId)
+  )
+
+  const teamOutcome = (team, stage) => {
+    if (!team) return { points: 0, status: 'pending', label: '—', actualMatch: null }
+    const reached = actualParticipantsByStage[stage.key]?.has(team.id) || false
+    const actualMatch = actualMatchForTeam(team.id, stage.key)
+
+    if (!reached) {
+      if (stageIsSettled(stage.key)) return { points: 0, status: 'missed', label: stage.key === 'r32' ? 'Did not qualify' : 'Did not reach round', actualMatch }
+      return { points: 0, status: 'pending', label: '—', actualMatch }
+    }
+
+    if (actualMatch?.status === 'completed' && actualMatch.winner_team_id) {
+      if (actualMatch.winner_team_id === team.id) {
+        return { points: stage.points, status: 'advanced', label: stage.key === 'final' ? 'Champion' : 'Advanced', actualMatch }
+      }
+      return { points: stage.points, status: 'eliminated', label: 'Eliminated', actualMatch }
+    }
+
+    return { points: stage.points, status: 'reached', label: 'In round', actualMatch }
+  }
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
+  if (!availableStages.length) return <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}><div style={{ fontSize: '32px', marginBottom: '8px' }}>🏆</div><div style={{ fontWeight: '700' }}>No knockout picks yet</div></div>
+
+  const stageMatches = activeStage.matches.filter(match => picks[match.match_number]?.winner_id)
+  const uniqueStageTeams = new Map()
+  stageMatches.forEach(matchDefinition => {
+    const { home, away } = resolvedFor(matchDefinition)
+    if (home?.id) uniqueStageTeams.set(home.id, home)
+    if (away?.id) uniqueStageTeams.set(away.id, away)
+  })
+  const stagePoints = [...uniqueStageTeams.values()].reduce((sum, team) => sum + teamOutcome(team, activeStage).points, 0)
+
+  const outcomeStyle = (outcome) => {
+    if (outcome.status === 'advanced') return { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.09)', border: 'rgba(0,122,51,0.24)' }
+    if (outcome.status === 'eliminated' || outcome.status === 'missed') return { colour: 'var(--accent-red)', bg: 'rgba(198,40,40,0.06)', border: 'rgba(198,40,40,0.18)' }
+    if (outcome.status === 'reached') return { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.06)', border: 'rgba(0,122,51,0.18)' }
+    return { colour: 'var(--text-muted)', bg: 'var(--bg-secondary)', border: 'var(--border-light)' }
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      {ALL_STAGES.map(stage => {
-        const stageMatches = stage.matches.filter(md => picks[md.match_number]?.winner_id)
-        if (stageMatches.length === 0) return null
-        const confirmedSet = realConfirmedByStage[stage.key] || new Set()
-        // Resolve each match's two teams from the user's OWN group predictions
-        // (resolveTeam) — this is the bracket they predicted, and it never puts the
-        // same team in two slots (unlike the stored snapshot columns, whose
-        // best-third teams were corrupted by an old backfill). The winner they
-        // chose is always shown inside the match: normally it's already one of the
-        // two resolved teams; if their group prediction for that slot changed after
-        // they picked, we keep their actual winner and pair it with the resolved
-        // opponent, so we never drop or contradict the team they chose.
-        const resolvedFor = (md) => {
-          const pick = picks[md.match_number]
-          const pureHome = resolveTeam(md.home_slot)
-          const pureAway = resolveTeam(md.away_slot)
-          const winnerId = pick?.winner_id
-          if (!winnerId) return { home: pureHome, away: pureAway }
-          if (winnerId === pureHome?.id || winnerId === pureAway?.id) {
-            return { home: pureHome, away: pureAway }
-          }
-          const winner = teamsById[winnerId] || null
-          // Orphan: drop the winner onto the side it was saved on, keep the other
-          // side as the resolved opponent.
-          if (pick?.away_team_id === winnerId && pick?.home_team_id !== winnerId) {
-            return { home: pureHome, away: winner }
-          }
-          return { home: winner, away: pureAway }
-        }
-        // Points earned this stage. For the R32 we mirror the server scorer
-        // exactly: 5pts per team the user predicted to reach the R32 (predicted
-        // top-2 of every group + 8 best predicted thirds) that actually got
-        // there. This is slot-independent — a predicted best-third can qualify
-        // before FIFA's allocation fixes which bracket slot it fills, so we must
-        // credit it even though it can't be painted into a match yet. Later
-        // rounds still score off the winner picks shown in their slots.
-        const isR32 = stage.key === 'r32'
-        let r32CreditTeams = []
-        if (isR32) {
-          const top2 = Object.values(standings).flatMap(arr => (arr || []).slice(0, 2).map(e => e.team))
-          const thirds = getBest3rdTeams(standings).slice(0, 8).map(t => t.team)
-          const seen = new Set()
-          const predicted = [...top2, ...thirds].filter(t => t && !seen.has(t.id) && (seen.add(t.id), true))
-          r32CreditTeams = predicted.filter(t => confirmedSet.has(t.id))
-        }
-        let stagePtsEarned = 0
-        if (isR32) {
-          stagePtsEarned = r32CreditTeams.length * stage.points
-        } else {
-          stageMatches.forEach(md => {
-            const { home, away } = resolvedFor(md)
-            if (home && confirmedSet.has(home.id)) stagePtsEarned += stage.points
-            if (away && confirmedSet.has(away.id)) stagePtsEarned += stage.points
-            if (!home && !away && confirmedSet.has(picks[md.match_number].winner_id)) stagePtsEarned += stage.points
-          })
-        }
-        // Credited R32 teams not shown in any slotted match (e.g. a best-third
-        // whose bracket slot isn't fixed yet) — listed below so the visible
-        // total matches the header.
-        const shownIds = new Set()
-        if (isR32) {
-          stageMatches.forEach(md => {
-            const { home, away } = resolvedFor(md)
-            if (home) shownIds.add(home.id)
-            if (away) shownIds.add(away.id)
-          })
-        }
-        const unslottedCredits = isR32 ? r32CreditTeams.filter(t => !shownIds.has(t.id)) : []
-        return (
-          <div key={stage.key}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{stage.label}</div>
-              {stagePtsEarned > 0 && (
-                <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px' }}>
-                  +{stagePtsEarned}pts earned
-                </span>
-              )}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              {stageMatches.map(md => {
-                const pick = picks[md.match_number]
-                const { home, away } = resolvedFor(md)
-                const bothKnown = !!(home && away)
-                const winner = teamsById[pick.winner_id]
-                // Is the saved winner still one of this match's two teams? If the
-                // user edited their group picks after choosing a winner, it may
-                // not be — show it as "no longer in this match" rather than as a
-                // pick that makes no sense next to the two teams shown.
-                const winnerInMatch = winner && (winner.id === home?.id || winner.id === away?.id)
-                const homeEarned = home && confirmedSet.has(home.id)
-                const awayEarned = away && confirmedSet.has(away.id)
-                const winnerEarned = winner && confirmedSet.has(winner.id)
-                const earnedPts = bothKnown
-                  ? [homeEarned, awayEarned].filter(Boolean).length * stage.points
-                  : (winnerEarned ? stage.points : 0)
-                const anyEarned = earnedPts > 0
-                return (
-                  <div key={md.match_number} style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    padding: '8px 10px',
-                    background: anyEarned ? 'rgba(0,122,51,0.05)' : 'var(--bg-secondary)',
-                    borderRadius: 'var(--radius-md)',
-                    border: `1px solid ${anyEarned ? 'rgba(0,122,51,0.2)' : 'transparent'}`,
-                  }}>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '26px', fontWeight: '600' }}>#{md.match_number}</span>
-                    {bothKnown && winnerInMatch ? (
-                      <>
-                        <span style={{ fontSize: '18px', opacity: homeEarned ? 1 : 0.45 }}>{home.flag_emoji}</span>
-                        <span style={{ fontSize: '13px', fontWeight: home.id === pick.winner_id ? '700' : '400', color: homeEarned ? 'var(--accent-green)' : home.id === pick.winner_id ? 'var(--text-primary)' : 'var(--text-muted)' }}>{home.short_code}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>v</span>
-                        <span style={{ fontSize: '18px', opacity: awayEarned ? 1 : 0.45 }}>{away.flag_emoji}</span>
-                        <span style={{ fontSize: '13px', fontWeight: away.id === pick.winner_id ? '700' : '400', color: awayEarned ? 'var(--accent-green)' : away.id === pick.winner_id ? 'var(--text-primary)' : 'var(--text-muted)' }}>{away.short_code}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 4px' }}>·</span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>pick:</span>
-                        <span style={{ fontSize: '18px', marginLeft: '2px' }}>{winner?.flag_emoji}</span>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: winnerEarned ? 'var(--accent-green)' : 'var(--text-primary)', flex: 1 }}>{winner?.short_code}</span>
-                      </>
-                    ) : bothKnown ? (
-                      // Winner pick predates a group-prediction change, so it isn't one
-                      // of these two teams. R32 points come from the predicted teams that
-                      // reach the round (shown here), not the KO winner — so we show the
-                      // matchup cleanly and just omit the now-inconsistent winner segment,
-                      // rather than printing a contradictory "pick: OTHER_TEAM".
-                      <>
-                        <span style={{ fontSize: '18px', opacity: homeEarned ? 1 : 0.45 }}>{home.flag_emoji}</span>
-                        <span style={{ fontSize: '13px', fontWeight: '400', color: homeEarned ? 'var(--accent-green)' : 'var(--text-muted)' }}>{home.short_code}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '0 2px' }}>v</span>
-                        <span style={{ fontSize: '18px', opacity: awayEarned ? 1 : 0.45 }}>{away.flag_emoji}</span>
-                        <span style={{ fontSize: '13px', fontWeight: '400', color: awayEarned ? 'var(--accent-green)' : 'var(--text-muted)', flex: 1 }}>{away.short_code}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span style={{ fontSize: '18px' }}>{winner?.flag_emoji}</span>
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: winnerEarned ? 'var(--accent-green)' : 'var(--text-primary)', flex: 1 }}>{winner?.short_code || winner?.name}</span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>· pick to win</span>
-                      </>
-                    )}
-                    {earnedPts > 0 && (
-                      <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.12)', padding: '1px 7px', borderRadius: '20px', whiteSpace: 'nowrap', marginLeft: '4px' }}>
-                        +{earnedPts}pts
-                      </span>
-                    )}
-                    {pick.is_joker && <span style={{ fontSize: '11px', marginLeft: '2px' }}>🃏</span>}
-                  </div>
-                )
-              })}
-              {unslottedCredits.map(t => (
-                <div key={`credit-${t.id}`} style={{
-                  display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px',
-                  background: 'rgba(0,122,51,0.05)', borderRadius: 'var(--radius-md)',
-                  border: '1px dashed rgba(0,122,51,0.25)',
-                }}>
-                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '26px', fontWeight: '600' }}>3rd</span>
-                  <span style={{ fontSize: '18px' }}>{t.flag_emoji}</span>
-                  <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent-green)' }}>{t.short_code}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', flex: 1 }}>best-3rd qualified · slot confirmed once groups finish</span>
-                  <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--accent-green)', background: 'rgba(0,122,51,0.12)', padding: '1px 7px', borderRadius: '20px', whiteSpace: 'nowrap' }}>
-                    +{stage.points}pts
-                  </span>
+    <div>
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '3px', marginBottom: '12px', scrollbarWidth: 'none' }}>
+        {availableStages.map(stage => (
+          <button
+            key={stage.key}
+            type="button"
+            onClick={() => setActiveStageKey(stage.key)}
+            style={{
+              whiteSpace: 'nowrap', padding: '7px 11px', borderRadius: '999px', cursor: 'pointer',
+              border: stage.key === activeStage.key ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+              background: stage.key === activeStage.key ? 'var(--scottish-navy)' : 'var(--bg-card)',
+              color: stage.key === activeStage.key ? 'white' : 'var(--text-muted)',
+              fontSize: '10px', fontWeight: '850',
+            }}
+          >
+            {stage.label}
+          </button>
+        ))}
+      </div>
+
+      <section style={{ marginBottom: '11px', padding: '11px 13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '13px' }}>
+        <div>
+          <div style={{ fontSize: '12px', fontWeight: '900' }}>{activeStage.label}</div>
+          <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>Teams score for reaching this round, even if they are later eliminated.</div>
+        </div>
+        <strong style={{ fontSize: '18px', fontFamily: 'var(--font-mono)', color: stagePoints > 0 ? 'var(--accent-green)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>+{stagePoints}</strong>
+      </section>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '10px' }}>
+        {stageMatches.map(matchDefinition => {
+          const pick = picks[matchDefinition.match_number]
+          const { home, away } = resolvedFor(matchDefinition)
+          const homeOutcome = teamOutcome(home, activeStage)
+          const awayOutcome = teamOutcome(away, activeStage)
+          const sharedActualMatch = homeOutcome.actualMatch && awayOutcome.actualMatch && homeOutcome.actualMatch.id === awayOutcome.actualMatch.id
+            ? homeOutcome.actualMatch
+            : null
+
+          const renderTeamCard = (team, outcome) => {
+            const selected = team?.id === pick.winner_id
+            const style = outcomeStyle(outcome)
+            return (
+              <div style={{ position: 'relative', minHeight: '128px', padding: '13px 10px 11px', borderRadius: '13px', textAlign: 'center', background: selected ? 'rgba(11,63,145,0.06)' : style.bg, border: `2px solid ${selected ? 'var(--scottish-navy)' : style.border}` }}>
+                {selected && <span style={{ position: 'absolute', top: '7px', right: '7px', padding: '3px 6px', borderRadius: '999px', background: 'var(--scottish-navy)', color: 'white', fontSize: '8px', fontWeight: '900' }}>YOUR PICK</span>}
+                <div style={{ fontSize: '27px', lineHeight: 1, marginTop: selected ? '13px' : '4px' }}>{team?.flag_emoji || '🏳️'}</div>
+                <div style={{ marginTop: '7px', fontSize: '12px', fontWeight: '900', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{team?.name || team?.short_code || 'TBC'}</div>
+                <div style={{ marginTop: '12px', fontSize: '12px', fontWeight: '900', color: style.colour }}>
+                  {outcome.points > 0 ? `+${outcome.points} pts` : outcome.status === 'pending' ? '—' : '0 pts'}
                 </div>
-              ))}
-            </div>
-          </div>
-        )
-      })}
+                <div style={{ marginTop: '2px', fontSize: '9px', fontWeight: '800', color: style.colour }}>{outcome.label}</div>
+              </div>
+            )
+          }
+
+          return (
+            <article key={matchDefinition.match_number} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px', padding: '11px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '9px', color: 'var(--text-muted)', fontSize: '9px', fontWeight: '850', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <span>Predicted M{matchDefinition.match_number}</span>
+                <span>{activeStage.label}</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                {renderTeamCard(home, homeOutcome)}
+                {renderTeamCard(away, awayOutcome)}
+              </div>
+              <div style={{ marginTop: '8px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '9px', lineHeight: 1.4 }}>
+                {sharedActualMatch?.status === 'completed' && sharedActualMatch.home_score != null && sharedActualMatch.away_score != null
+                  ? `${sharedActualMatch.home_team?.short_code} ${sharedActualMatch.home_score}–${sharedActualMatch.away_score} ${sharedActualMatch.away_team?.short_code}`
+                  : 'Original predicted matchup · each team is tracked in its real fixture'}
+              </div>
+              {pick.is_joker && <div style={{ marginTop: '6px', textAlign: 'center', fontSize: '9px', fontWeight: '850', color: 'var(--accent-gold)' }}>🃏 Joker selection</div>}
+            </article>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -648,12 +690,14 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
   const [showOptions, setShowOptions] = useState(false)
   const [compactRows, setCompactRows] = useState(false)
   const [onlyScoring, setOnlyScoring] = useState(false)
+  const [groupOrder, setGroupOrder] = useState('group')
   const tournamentLive = new Date() >= DATES.TOURNAMENT_START
 
   useEffect(() => {
     setShowOptions(false)
     setCompactRows(false)
     setOnlyScoring(false)
+    setGroupOrder('group')
   }, [memberModal?.userId])
 
   if (!memberModal) return null
@@ -664,7 +708,7 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
     ? ['group', 'standings']
     : isKoContext
       ? ['koPredictor']
-      : ['overview', 'group', 'knockout', 'awards', 'standings']
+      : ['overview', 'group', 'standings', 'knockout', 'awards']
   const requestedTab = memberModal.tab || (memberModal.isOffline ? 'group' : isKoContext ? 'koPredictor' : 'overview')
   const activeTab = tabs.includes(requestedTab) ? requestedTab : tabs[0]
   const mp = memberModal.memberProfile || {}
@@ -692,6 +736,7 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
   const latestPredictions = completedPredictions.slice(0, 4)
 
   const visibleGroupPredictions = memberPredictions.filter(pred => {
+    if (pred.match?.stage && pred.match.stage !== 'group') return false
     if (!onlyScoring) return true
     return ['exact', 'correct'].includes(getPredResult(pred))
   })
@@ -701,6 +746,19 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
     acc[groupName].push(pred)
     return acc
   }, {})
+  const predictionsByDate = visibleGroupPredictions.reduce((acc, pred) => {
+    const kickoff = pred.match?.kickoff_time ? new Date(pred.match.kickoff_time) : null
+    const key = kickoff && !Number.isNaN(kickoff.getTime())
+      ? kickoff.toISOString().slice(0, 10)
+      : 'unknown'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(pred)
+    return acc
+  }, {})
+  const formatDateHeading = (key) => {
+    if (key === 'unknown') return 'Date not available'
+    return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).format(new Date(`${key}T12:00:00`))
+  }
 
   const tabLabel = (tab) => {
     switch (tab) {
@@ -920,20 +978,35 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
             </div>
           ) : activeTab === 'group' ? (
             <div>
-              {sectionTitle('Match predictions', onlyScoring ? 'Only scoring picks shown' : 'Grouped by tournament group')}
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: '10px', margin: '2px 2px 10px' }}>
+                <div>
+                  <strong style={{ display: 'block', fontSize: '13px', color: 'var(--text-primary)' }}>Group-stage predictions</strong>
+                  <span style={{ display: 'block', marginTop: '2px', fontSize: '9px', color: 'var(--text-muted)' }}>{onlyScoring ? 'Only scoring picks shown' : groupOrder === 'group' ? 'Ordered by tournament group' : 'Ordered by match date'}</span>
+                </div>
+                <div style={{ display: 'flex', padding: '3px', gap: '3px', borderRadius: '10px', background: 'var(--bg-tertiary)' }}>
+                  {[
+                    { key: 'group', label: 'By group' },
+                    { key: 'date', label: 'By date' },
+                  ].map(option => (
+                    <button key={option.key} type="button" onClick={() => setGroupOrder(option.key)} style={{ padding: '6px 9px', borderRadius: '8px', border: 'none', cursor: 'pointer', background: groupOrder === option.key ? 'var(--bg-card)' : 'transparent', color: groupOrder === option.key ? 'var(--scottish-navy)' : 'var(--text-muted)', fontSize: '9px', fontWeight: '850', boxShadow: groupOrder === option.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none' }}>{option.label}</button>
+                  ))}
+                </div>
+              </div>
+
               {memberPredictions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '34px 18px', color: 'var(--text-muted)', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px' }}>
                   <div style={{ fontSize: '30px', marginBottom: '7px' }}>{memberModal.isOffline ? '👤' : '🔒'}</div>
                   <div style={{ fontWeight: '800', marginBottom: '4px' }}>{memberModal.isOffline ? 'No predictions entered yet' : 'Picks are private'}</div>
                   <div style={{ fontSize: '11px' }}>{tournamentLive ? 'This user has chosen to keep their predictions private' : 'Picks become visible once matches kick off'}</div>
                 </div>
-              ) : Object.keys(predictionsByGroup).length === 0 ? (
+              ) : visibleGroupPredictions.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px 18px', color: 'var(--text-muted)', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: '800' }}>No scoring picks match this filter</div>
+                  <div style={{ fontSize: '12px', fontWeight: '800' }}>No group predictions match this filter</div>
                 </div>
-              ) : (
+              ) : groupOrder === 'group' ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {Object.entries(predictionsByGroup).sort(([a], [b]) => a.localeCompare(b)).map(([groupName, predictions]) => {
+                  {Object.entries(predictionsByGroup).sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true })).map(([groupName, predictions]) => {
+                    const orderedPredictions = [...predictions].sort((a, b) => new Date(a.match?.kickoff_time || 0) - new Date(b.match?.kickoff_time || 0))
                     const groupTotal = predictions.reduce((sum, pred) => sum + Number(pred.points_awarded || 0), 0)
                     return (
                       <section key={groupName} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px', overflow: 'hidden' }}>
@@ -947,55 +1020,30 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
                           </div>
                           <span style={{ fontSize: '12px', fontWeight: '900', fontFamily: 'var(--font-mono)', color: groupTotal > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{groupTotal}</span>
                         </div>
-                        {predictions.map(renderPredictionRow)}
+                        {orderedPredictions.map(renderPredictionRow)}
+                      </section>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {Object.entries(predictionsByDate).sort(([a], [b]) => a.localeCompare(b)).map(([dateKey, predictions]) => {
+                    const dayTotal = predictions.reduce((sum, pred) => sum + Number(pred.points_awarded || 0), 0)
+                    return (
+                      <section key={dateKey} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)' }}>
+                          <div>
+                            <div style={{ fontSize: '12px', fontWeight: '850' }}>{formatDateHeading(dateKey)}</div>
+                            <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '1px' }}>{predictions.length} visible predictions</div>
+                          </div>
+                          <span style={{ fontSize: '12px', fontWeight: '900', fontFamily: 'var(--font-mono)', color: dayTotal > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{dayTotal}</span>
+                        </div>
+                        {[...predictions].sort((a, b) => new Date(a.match?.kickoff_time || 0) - new Date(b.match?.kickoff_time || 0)).map(renderPredictionRow)}
                       </section>
                     )
                   })}
                 </div>
               )}
-
-              {groupPositionBreakdown.length > 0 && (() => {
-                const byGroup = {}
-                groupPositionBreakdown.forEach(row => {
-                  if (!byGroup[row.group_name]) byGroup[row.group_name] = []
-                  byGroup[row.group_name].push(row)
-                })
-                const total = Object.values(byGroup).reduce((sum, rows) => {
-                  const positionPoints = rows.reduce((s, row) => s + Number(row.points_awarded || 0), 0)
-                  const perfect = rows.filter(row => Number(row.points_awarded || 0) > 0).length === 4
-                  return sum + positionPoints + (perfect ? 5 : 0)
-                }, 0)
-                return (
-                  <section style={{ marginTop: '12px', background: 'var(--bg-card)', border: '1px solid rgba(0,122,51,0.22)', borderRadius: '14px', overflow: 'hidden' }}>
-                    <div style={{ padding: '10px 12px', background: 'rgba(0,122,51,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontWeight: '850', fontSize: '12px', color: 'var(--accent-green)' }}>Group position bonus</div>
-                        <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>+2 per correct position · +5 perfect group</div>
-                      </div>
-                      <div style={{ fontWeight: '950', fontSize: '18px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)' }}>+{total}</div>
-                    </div>
-                    {Object.entries(byGroup).map(([groupName, rows]) => {
-                      const correct = rows.filter(row => Number(row.points_awarded || 0) > 0).length
-                      const perfect = correct === 4
-                      const points = rows.reduce((sum, row) => sum + Number(row.points_awarded || 0), 0) + (perfect ? 5 : 0)
-                      return (
-                        <div key={groupName} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderTop: '1px solid var(--border-light)' }}>
-                          <strong style={{ minWidth: '54px', fontSize: '10px' }}>Group {groupName}</strong>
-                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', flex: 1 }}>
-                            {rows.map((row, index) => (
-                              <span key={index} style={{ padding: '2px 5px', borderRadius: '999px', background: Number(row.points_awarded || 0) > 0 ? 'rgba(0,122,51,0.10)' : 'rgba(198,40,40,0.07)', color: Number(row.points_awarded || 0) > 0 ? 'var(--accent-green)' : 'var(--accent-red)', fontSize: '9px', fontWeight: '850' }}>
-                                {row.team?.flag_emoji} {Number(row.points_awarded || 0) > 0 ? `+${row.points_awarded}` : '✕'}
-                              </span>
-                            ))}
-                            {perfect && <span style={{ padding: '2px 5px', borderRadius: '999px', background: 'rgba(184,134,11,0.10)', color: 'var(--accent-gold)', fontSize: '9px', fontWeight: '850' }}>🎯 +5</span>}
-                          </div>
-                          <strong style={{ fontSize: '10px', color: points > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{points}</strong>
-                        </div>
-                      )
-                    })}
-                  </section>
-                )
-              })()}
             </div>
           ) : activeTab === 'knockout' ? (
             <KnockoutPicksView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
@@ -1007,8 +1055,8 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
             <CompareWithMeView myUserId={currentUserId} targetUserId={memberModal.userId} targetName={memberModal.username} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} targetShowFuture={memberModal.targetShowFuture} />
           ) : activeTab === 'standings' ? (
             <div>
-              {sectionTitle('Predicted group tables', 'Based on this player’s score predictions')}
-              <MemberStandingsView predictions={memberPredictions} />
+              {sectionTitle('Predicted group tables & points', groupPositionBreakdown.length ? 'Predicted finish, actual finish and points awarded' : 'Based on this player’s score predictions')}
+              <GroupTablesScoreView predictions={memberPredictions} breakdown={groupPositionBreakdown} totalPoints={groupPts} />
             </div>
           ) : null}
         </div>
