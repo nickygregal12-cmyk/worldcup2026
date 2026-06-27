@@ -21,6 +21,7 @@ export default function PointsSummary() {
   const [matchLines, setMatchLines] = useState([])
   const [groupLines, setGroupLines] = useState([])
   const [bracketLines, setBracketLines] = useState([])
+  const [stats, setStats] = useState(null)
   const [open, setOpen] = useState({ match: true, group: false, bracket: false, awards: false })
 
   // search
@@ -30,13 +31,14 @@ export default function PointsSummary() {
 
   const load = useCallback(async (uid) => {
     setLoading(true)
-    const [{ data: prof }, { data: preds }, { data: gpos }, { data: groupMatchRows }, { data: r32Rows }, { data: gsRows }] = await Promise.all([
+    const [{ data: prof }, { data: preds }, { data: gpos }, { data: groupMatchRows }, { data: r32Rows }, { data: gsRows }, { data: allTotals }] = await Promise.all([
       supabase.from('profiles').select('id, username, display_name, avatar_emoji, total_points, group_position_points, bracket_points, exact_scores, streak_current').eq('id', uid).maybeSingle(),
       supabase.from('predictions').select('home_score, away_score, is_confident, points_awarded, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, home_team:home_team_id(short_code, flag_emoji), away_team:away_team_id(short_code, flag_emoji))').eq('user_id', uid),
       supabase.from('predicted_group_positions').select('group_name, predicted_position, points_awarded, team:team_id(short_code, flag_emoji)').eq('user_id', uid).order('group_name').order('predicted_position'),
       supabase.from('matches').select('id, match_number, stage, status, home_score, away_score, home_team_id, away_team_id, group:group_id(name), home_team:home_team_id(id, name, short_code, flag_emoji), away_team:away_team_id(id, name, short_code, flag_emoji)').eq('stage', 'group'),
       supabase.from('matches').select('home_team_id, away_team_id, group:group_id(name)').eq('stage', 'r32'),
       supabase.from('group_standings').select('team_id, position, played, group:group_id(name)').eq('played', 3).lte('position', 2),
+      supabase.from('profiles').select('total_points'),
     ])
     setProfile(prof)
 
@@ -113,6 +115,43 @@ export default function PointsSummary() {
       }
     })
     setBracketLines(bl)
+
+    // ── Your Tournament stats ──
+    const completed = (preds || []).filter(p => p.match && p.match.status === 'completed' && p.points_awarded != null)
+    const correct = completed.filter(p => p.points_awarded > 0).length
+    const accuracy = completed.length ? Math.round((correct / completed.length) * 100) : 0
+    const jokersPlayed = (preds || []).filter(p => p.is_confident).length
+    const jokersPaid = completed.filter(p => p.is_confident && p.points_awarded > 0).length
+    const byDay = {}
+    completed.forEach(p => { const d = (p.match.kickoff_time || '').slice(0, 10); byDay[d] = (byDay[d] || 0) + p.points_awarded })
+    let bestDay = null
+    Object.entries(byDay).forEach(([d, v]) => { if (!bestDay || v > bestDay.pts) bestDay = { date: d, pts: v } })
+    let best = null
+    completed.forEach(p => { if (p.points_awarded > 0 && (!best || p.points_awarded > best.points_awarded)) best = p })
+    let miss = null
+    completed.forEach(p => { if (p.points_awarded === 0) { if (!miss || (p.is_confident && !miss.is_confident)) miss = p } })
+    const totals = (allTotals || []).map(r => r.total_points || 0)
+    const myTotal = prof?.total_points || 0
+    const rank = totals.filter(t => t > myTotal).length + 1
+    const players = totals.length
+    const beaten = players > 1 ? Math.round(((players - rank) / (players - 1)) * 100) : 100
+    const fieldAvg = totals.length ? Math.round(totals.reduce((s, t) => s + t, 0) / totals.length) : 0
+    const fieldAcc = null
+    const fmtCall = (p) => p ? {
+      label: `${p.match.home_team?.flag_emoji || ''} ${p.match.home_team?.short_code} ${p.match.home_score}–${p.match.away_score} ${p.match.away_team?.short_code} ${p.match.away_team?.flag_emoji || ''}`,
+      you: `${p.home_score}–${p.away_score}`,
+      pts: p.points_awarded, joker: !!p.is_confident,
+      exact: p.home_score === p.match.home_score && p.away_score === p.match.away_score,
+    } : null
+    setStats({
+      accuracy, correct, completed: completed.length,
+      exact: prof?.exact_scores || 0,
+      jokersPlayed, jokersPaid,
+      bestDay, streak: prof?.streak_current || 0,
+      rank, players, beaten, fieldAvg,
+      best: fmtCall(best), miss: fmtCall(miss),
+    })
+
     setLoading(false)
   }, [])
 
@@ -199,6 +238,47 @@ export default function PointsSummary() {
           <Legend c="#4caf7d" label="Bracket" v={totals.bracket} />
         </div>
       </div>
+
+      {/* Your tournament stats */}
+      {stats && (
+        <div style={{ padding: '6px 0 0' }}>
+          <div style={{ padding: '6px 16px 2px', display: 'flex', alignItems: 'baseline' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{isMe ? 'Your tournament' : `${name}'s tournament`}</span>
+            <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)' }}>#{stats.rank} of {stats.players}</span>
+          </div>
+
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '16px', margin: '8px 16px', padding: '15px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <svg width="84" height="84" viewBox="0 0 84 84" style={{ flexShrink: 0 }}>
+              <circle cx="42" cy="42" r="36" fill="none" stroke="var(--border-light)" strokeWidth="9" />
+              <circle cx="42" cy="42" r="36" fill="none" stroke="var(--accent-green)" strokeWidth="9" strokeLinecap="round"
+                strokeDasharray="226" strokeDashoffset={226 * (1 - stats.accuracy / 100)} transform="rotate(-90 42 42)" />
+              <text x="42" y="40" textAnchor="middle" fontSize="19" fontWeight="800" fill="var(--text-primary)" style={mono}>{stats.accuracy}%</text>
+              <text x="42" y="54" textAnchor="middle" fontSize="8" fontWeight="700" fill="var(--text-muted)">CORRECT</text>
+            </svg>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '14px' }}>{stats.correct} of {stats.completed} results right</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                {isMe ? 'You\u2019re' : 'They\u2019re'} ahead of {stats.beaten}% of the field · field avg {stats.fieldAvg} pts
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', margin: '0 16px' }}>
+            <Tile n={stats.exact} l="Exact scores" s="🎯 spot on" />
+            <Tile n={stats.jokersPlayed} l="Jokers played" s={`${stats.jokersPaid} paid off 🃏`} />
+            <Tile n={stats.bestDay ? `+${stats.bestDay.pts}` : '—'} l="Best matchday" s={stats.bestDay ? fmtDate(stats.bestDay.date) : ''} />
+            <Tile n={stats.streak ? `${stats.streak}🔥` : '0'} l="Scoring streak" s="matchdays" />
+          </div>
+
+          {(stats.best || stats.miss) && (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '16px', margin: '10px 16px', padding: '13px' }}>
+              <div style={{ fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '2px' }}>Best &amp; toughest calls</div>
+              {stats.best && <Call tone="good" c={stats.best} />}
+              {stats.miss && <Call tone="bad" c={stats.miss} />}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Ledger */}
       <div style={{ padding: '12px 0' }}>
@@ -293,4 +373,33 @@ function Category({ icon, iconBg, title, sub, pts, muted, open, onToggle, childr
 
 function Empty({ t }) {
   return <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>{t}</div>
+}
+
+function Tile({ n, l, s }) {
+  return (
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '15px', padding: '13px' }}>
+      <div style={{ ...mono, fontSize: '24px', fontWeight: 800, color: 'var(--scottish-navy)' }}>{n}</div>
+      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, marginTop: '1px' }}>{l}</div>
+      {s && <div style={{ fontSize: '10.5px', color: 'var(--accent-green)', fontWeight: 800, marginTop: '3px' }}>{s}</div>}
+    </div>
+  )
+}
+
+function Call({ tone, c }) {
+  const good = tone === 'good'
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '11px', padding: '10px', borderRadius: '12px', background: good ? '#e7f5ec' : '#fbeae6', marginTop: '8px' }}>
+      <span style={{ fontSize: '20px' }}>{good ? (c.exact ? '🎯' : '✅') : '😬'}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: '12.5px' }}>{c.label}</div>
+        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>You: {c.you}{c.joker ? ' · 🃏' : ''}{good ? '' : ' · didn\u2019t land'}</div>
+      </div>
+      <span style={{ ...mono, fontWeight: 800, fontSize: '13px', color: good ? 'var(--accent-green)' : 'var(--text-muted)' }}>{c.pts > 0 ? '+' : ''}{c.pts}</span>
+    </div>
+  )
+}
+
+function fmtDate(d) {
+  if (!d) return ''
+  try { return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) } catch { return d }
 }
