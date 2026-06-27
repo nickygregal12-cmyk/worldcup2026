@@ -132,6 +132,7 @@ export default function Home() {
   const [knockoutPickCount, setKnockoutPickCount] = useState(0)
   const [koPredictionCount, setKoPredictionCount] = useState(0)
   const [koAvailableCount, setKoAvailableCount] = useState(0)
+  const [koBonusMissingCount, setKoBonusMissingCount] = useState(0)
   const [koOpenByData, setKoOpenByData] = useState(false) // true once first R32 match (M73) has both real teams
   const [awardPickCount, setAwardPickCount] = useState(0)
   const [jokerAssignedCount, setJokerAssignedCount] = useState(0)
@@ -512,15 +513,17 @@ export default function Home() {
         if (availableKoIds.length) {
           const { data: koPredictions } = await supabase
             .from('ko_predictions')
-            .select('match_id, home_score, away_score, outcome_type, winner_team_id')
+            .select('match_id, home_score, away_score, outcome_type, winner_team_id, first_goal_band')
             .eq('user_id', user.id)
             .in('match_id', availableKoIds)
 
-          validKoPredictionCount = (koPredictions || []).filter(prediction => {
+          const validPredictions = (koPredictions || []).filter(prediction => {
             if (prediction.home_score == null || prediction.away_score == null) return false
             const outcomeType = prediction.outcome_type || '90mins'
             return !['et', 'penalties'].includes(outcomeType) || Boolean(prediction.winner_team_id)
-          }).length
+          })
+          validKoPredictionCount = validPredictions.length
+          setKoBonusMissingCount(validPredictions.filter(prediction => !prediction.first_goal_band).length)
         }
 
         const awardsCount = (awardCountRes.count || 0) + (totalGoalsRes.count || 0)
@@ -530,6 +533,7 @@ export default function Home() {
         setKnockoutPickCount(koCount)
         setKoPredictionCount(validKoPredictionCount)
         setKoAvailableCount(availableKoCount)
+        if (!availableKoIds.length) setKoBonusMissingCount(0)
         setAwardPickCount(awardsCount)
 
         // Repair cached profile counters used by other screens, but keep Home based on live counts above.
@@ -557,6 +561,7 @@ export default function Home() {
         setKnockoutPickCount(0)
         setKoPredictionCount(0)
         setKoAvailableCount(0)
+        setKoBonusMissingCount(0)
         setAwardPickCount(0)
         setLeaderPosition(null)
       }
@@ -961,9 +966,11 @@ export default function Home() {
             </div>
           )}
 
-          {!loading && user && knockoutLive && koAvailableCount > 0 && koProgressRemaining > 0 && (
-            <div style={{ color: 'rgba(255,255,255,0.66)', fontSize: '10.5px', marginTop: '9px' }}>
-              {koProgressRemaining} available KO Predictor match{koProgressRemaining === 1 ? '' : 'es'} still need a prediction
+          {!loading && user && knockoutLive && koAvailableCount > 0 && (koProgressRemaining > 0 || koBonusMissingCount > 0) && (
+            <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '10.5px', marginTop: '9px', lineHeight: 1.45 }}>
+              {koProgressRemaining > 0 && <span>{koProgressRemaining} available KO Predictor match{koProgressRemaining === 1 ? '' : 'es'} still need a prediction</span>}
+              {koProgressRemaining > 0 && koBonusMissingCount > 0 && <span> · </span>}
+              {koBonusMissingCount > 0 && <span>{koBonusMissingCount} first-goal bonus pick{koBonusMissingCount === 1 ? '' : 's'} missing</span>}
             </div>
           )}
         </div>
