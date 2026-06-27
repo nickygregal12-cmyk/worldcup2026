@@ -53,14 +53,14 @@ export const R32_MATCHES = [
   { match_number: 76, home_slot: '1C',  away_slot: '2F',        venue: 'Los Angeles',   kickoff: '2026-06-29T17:00:00Z' },
   { match_number: 77, home_slot: '1I',  away_slot: 'BT3_CDFGH', venue: 'Los Angeles',   kickoff: '2026-06-30T21:00:00Z' },
   { match_number: 74, home_slot: '1E',  away_slot: 'BT3_ABCDF', venue: 'New York/NJ',   kickoff: '2026-06-29T20:30:00Z' },
-  { match_number: 79, home_slot: '1A',  away_slot: 'BT3_CEFHI', venue: 'Boston',        kickoff: '2026-07-01T00:00:00Z' },
+  { match_number: 79, home_slot: '1A',  away_slot: 'BT3_CEFHI', venue: 'Boston',        kickoff: '2026-07-01T01:00:00Z' },
   { match_number: 75, home_slot: '1F',  away_slot: '2C',        venue: 'Dallas',        kickoff: '2026-06-30T01:00:00Z' },
-  { match_number: 80, home_slot: '1L',  away_slot: 'BT3_EHIJK', venue: 'Houston',       kickoff: '2026-07-01T00:00:00Z' },
+  { match_number: 80, home_slot: '1L',  away_slot: 'BT3_EHIJK', venue: 'Houston',       kickoff: '2026-07-01T16:00:00Z' },
   { match_number: 78, home_slot: '2E',  away_slot: '2I',        venue: 'Philadelphia',  kickoff: '2026-06-30T17:00:00Z' },
   { match_number: 81, home_slot: '1D',  away_slot: 'BT3_BEFIJ', venue: 'Seattle',       kickoff: '2026-07-02T00:00:00Z' },
-  { match_number: 82, home_slot: '1G',  away_slot: 'BT3_AEHIJ', venue: 'San Francisco', kickoff: '2026-07-01T01:00:00Z' },
-  { match_number: 83, home_slot: '2K',  away_slot: '2L',        venue: 'Kansas City',   kickoff: '2026-07-02T00:00:00Z' },
-  { match_number: 87, home_slot: '1K',  away_slot: 'BT3_DEIJL', venue: 'Monterrey',     kickoff: '2026-07-02T01:30:00Z' },
+  { match_number: 82, home_slot: '1G',  away_slot: 'BT3_AEHIJ', venue: 'San Francisco', kickoff: '2026-07-01T20:00:00Z' },
+  { match_number: 83, home_slot: '2K',  away_slot: '2L',        venue: 'Kansas City',   kickoff: '2026-07-02T23:00:00Z' },
+  { match_number: 87, home_slot: '1K',  away_slot: 'BT3_DEIJL', venue: 'Monterrey',     kickoff: '2026-07-04T01:30:00Z' },
   { match_number: 84, home_slot: '1H',  away_slot: '2J',        venue: 'Miami',         kickoff: '2026-07-02T19:00:00Z' },
   { match_number: 85, home_slot: '1B',  away_slot: 'BT3_EFGIJ', venue: 'Toronto',       kickoff: '2026-07-03T03:00:00Z' },
   { match_number: 88, home_slot: '2D',  away_slot: '2G',        venue: 'Guadalajara',   kickoff: '2026-07-03T18:00:00Z' },
@@ -71,29 +71,29 @@ export const R32_MATCHES = [
 export const R16_MATCHES = [
   { match_number: 90, home_slot: 'W73', away_slot: 'W75', venue: 'Dallas',        kickoff: '2026-07-04T17:00:00Z' },
   { match_number: 89, home_slot: 'W74', away_slot: 'W77', venue: 'New York/NJ',   kickoff: '2026-07-04T21:00:00Z' },
-  { match_number: 91, home_slot: 'W76', away_slot: 'W78', venue: 'Los Angeles',   kickoff: '2026-07-05T00:00:00Z' },
-  { match_number: 93, home_slot: 'W83', away_slot: 'W84', venue: 'Philadelphia',  kickoff: '2026-07-05T19:00:00Z' },
+  { match_number: 91, home_slot: 'W76', away_slot: 'W78', venue: 'Los Angeles',   kickoff: '2026-07-05T20:00:00Z' },
+  { match_number: 93, home_slot: 'W83', away_slot: 'W84', venue: 'Philadelphia',  kickoff: '2026-07-06T19:00:00Z' },
   { match_number: 92, home_slot: 'W79', away_slot: 'W80', venue: 'Los Angeles',   kickoff: '2026-07-06T00:00:00Z' },
-  { match_number: 95, home_slot: 'W86', away_slot: 'W88', venue: 'Seattle',       kickoff: '2026-07-06T21:00:00Z' },
+  { match_number: 95, home_slot: 'W86', away_slot: 'W88', venue: 'Seattle',       kickoff: '2026-07-07T16:00:00Z' },
   { match_number: 94, home_slot: 'W81', away_slot: 'W82', venue: 'Boston',        kickoff: '2026-07-07T00:00:00Z' },
-  { match_number: 96, home_slot: 'W85', away_slot: 'W87', venue: 'Houston',       kickoff: '2026-07-08T00:00:00Z' },
+  { match_number: 96, home_slot: 'W85', away_slot: 'W87', venue: 'Houston',       kickoff: '2026-07-07T20:00:00Z' },
 ]
 
 // QF bracket
 export const QF_MATCHES = [
-  { match_number: 97,  home_slot: 'W89', away_slot: 'W90', venue: 'New York/NJ', kickoff: '2026-07-09T19:00:00Z' },
-  { match_number: 99,  home_slot: 'W91', away_slot: 'W92', venue: 'Los Angeles', kickoff: '2026-07-09T23:00:00Z' },
+  { match_number: 97,  home_slot: 'W89', away_slot: 'W90', venue: 'New York/NJ', kickoff: '2026-07-09T20:00:00Z' },
+  { match_number: 99,  home_slot: 'W91', away_slot: 'W92', venue: 'Los Angeles', kickoff: '2026-07-11T21:00:00Z' },
   { match_number: 98,  home_slot: 'W93', away_slot: 'W94', venue: 'Dallas',      kickoff: '2026-07-10T19:00:00Z' },
-  { match_number: 100, home_slot: 'W95', away_slot: 'W96', venue: 'Los Angeles', kickoff: '2026-07-11T19:00:00Z' },
+  { match_number: 100, home_slot: 'W95', away_slot: 'W96', venue: 'Los Angeles', kickoff: '2026-07-12T01:00:00Z' },
 ]
 
 // SF bracket
 export const SF_MATCHES = [
-  { match_number: 101, home_slot: 'W97', away_slot: 'W98',  venue: 'New York/NJ', kickoff: '2026-07-14T23:00:00Z' },
-  { match_number: 102, home_slot: 'W99', away_slot: 'W100', venue: 'Dallas',       kickoff: '2026-07-15T23:00:00Z' },
+  { match_number: 101, home_slot: 'W97', away_slot: 'W98',  venue: 'New York/NJ', kickoff: '2026-07-14T19:00:00Z' },
+  { match_number: 102, home_slot: 'W99', away_slot: 'W100', venue: 'Dallas',       kickoff: '2026-07-15T19:00:00Z' },
 ]
 
-export const THIRD_PLACE = { match_number: 103, home_slot: 'L101', away_slot: 'L102', venue: 'Los Angeles', kickoff: '2026-07-18T23:00:00Z' }
+export const THIRD_PLACE = { match_number: 103, home_slot: 'L101', away_slot: 'L102', venue: 'Los Angeles', kickoff: '2026-07-18T21:00:00Z' }
 export const FINAL = { match_number: 104, home_slot: 'W101', away_slot: 'W102', venue: 'New York/NJ', kickoff: '2026-07-19T19:00:00Z' }
 
 export const ALL_STAGES = [
