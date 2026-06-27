@@ -85,9 +85,63 @@ function PredictionRow({match,pred,kind,saving,onSave,onDelete}){
 }
 
 function BracketRow({pick,userId,reload,logAudit,setActionResult}){
- const teams=[pick.home_team,pick.away_team].filter(Boolean); const [team,setTeam]=useState(pick.winner_team_id||pick.team_id||'')
- const save=async()=>{const {error}=await supabase.from('knockout_picks').update({team_id:team,winner_team_id:team}).eq('user_id',userId).eq('match_number',pick.match_number); if(error)return setActionResult(error.message); await logAudit('ADMIN_EDIT_BRACKET_PICK',{user_id:userId,match_number:pick.match_number,team_id:team}); setActionResult(`Bracket pick M${pick.match_number} updated.`); reload()}
- return <div style={{padding:'12px',border:'1px solid var(--border-light)',borderRadius:'12px'}}><b>M{pick.match_number} · {pick.stage?.toUpperCase()}</b><div style={{display:'flex',gap:'7px',marginTop:'8px'}}><select className="input" value={team} onChange={e=>setTeam(e.target.value)}><option value="">No selection</option>{teams.map(t=><option key={t.id} value={t.id}>{t.flag_emoji} {t.name}</option>)}</select><button className="btn btn-primary btn-sm" onClick={save}>Save</button></div></div>
+  const teams=[pick.home_team,pick.away_team].filter(Boolean)
+  const originalTeam=pick.winner_team_id||pick.team_id||''
+  const [team,setTeam]=useState(originalTeam)
+  const [saving,setSaving]=useState(false)
+
+  useEffect(()=>setTeam(originalTeam),[originalTeam,pick.id])
+
+  const save=async()=>{
+    if(!team) return setActionResult(`Choose a winner for M${pick.match_number}.`)
+    setSaving(true)
+    const {error}=await supabase.from('knockout_picks')
+      .update({team_id:team,winner_team_id:team})
+      .eq('user_id',userId)
+      .eq('match_number',pick.match_number)
+    if(error){ setActionResult(error.message); setSaving(false); return }
+    await logAudit('ADMIN_EDIT_BRACKET_PICK',{user_id:userId,match_number:pick.match_number,team_id:team})
+    setActionResult(`Bracket winner for M${pick.match_number} updated.`)
+    await reload()
+    setSaving(false)
+  }
+
+  return <div style={{padding:'13px',border:'1px solid var(--border-light)',borderRadius:'14px',background:'var(--bg-card)'}}>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'10px',marginBottom:'10px'}}>
+      <b>M{pick.match_number} · {pick.stage?.toUpperCase()}</b>
+      <span style={{fontSize:'10px',fontWeight:800,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'.05em'}}>Click the winner</span>
+    </div>
+
+    {teams.length===2 ? <div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr',gap:'8px',alignItems:'stretch'}}>
+      <BracketTeamButton team={teams[0]} selected={team===teams[0].id} onClick={()=>setTeam(teams[0].id)} />
+      <div style={{display:'grid',placeItems:'center',fontWeight:900,color:'var(--text-muted)',fontSize:'12px'}}>vs</div>
+      <BracketTeamButton team={teams[1]} selected={team===teams[1].id} onClick={()=>setTeam(teams[1].id)} />
+    </div> : <div style={{padding:'12px',borderRadius:'10px',background:'var(--bg-secondary)',color:'var(--text-muted)',fontSize:'12px'}}>
+      This saved bracket matchup does not currently have both teams available.
+    </div>}
+
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',marginTop:'10px'}}>
+      <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setTeam('')} disabled={!team||saving}>Clear</button>
+      <button className="btn btn-primary btn-sm" onClick={save} disabled={!team||team===originalTeam||saving}>
+        {saving?'Saving…':team===originalTeam?'Saved winner':'Save winner'}
+      </button>
+    </div>
+  </div>
+}
+
+function BracketTeamButton({team,selected,onClick}){
+  return <button type="button" onClick={onClick} style={{
+    minHeight:'92px',padding:'12px 10px',borderRadius:'12px',cursor:'pointer',
+    border:selected?'2px solid var(--scottish-navy)':'1px solid var(--border-light)',
+    background:selected?'rgba(0,48,135,0.08)':'var(--bg-secondary)',
+    color:'var(--text-primary)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'5px'
+  }}>
+    <span style={{fontSize:'27px',lineHeight:1}}>{team.flag_emoji}</span>
+    <span style={{fontSize:'13px',fontWeight:900,textAlign:'center'}}>{team.name}</span>
+    <span style={{fontSize:'9.5px',fontWeight:900,color:selected?'var(--scottish-navy)':'var(--text-muted)',textTransform:'uppercase'}}>
+      {selected?'✓ Selected winner':'Choose winner'}
+    </span>
+  </button>
 }
 
 function AwardsEditor({userId,awards,totals,players,reload,logAudit,setActionResult}){
