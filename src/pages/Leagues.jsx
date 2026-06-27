@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase.js'
 import { avatarColor } from '../lib/avatarColor.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import MemberPredictionsModal, { useMemberPredictions, getPredResult } from '../components/MemberPredictionsModal.jsx'
-import { DATES } from '../lib/tournamentDates.js'
 
 function LiveMatchCard({ match, members, supabase, mode, leagueCode }) {
   // mode: 'upcoming' | 'live' | 'result'
@@ -130,8 +129,8 @@ function LiveMatchCard({ match, members, supabase, mode, leagueCode }) {
   )
 }
 
-const TOURNAMENT_START = DATES.TOURNAMENT_START
-const KO_OPEN_DATE = DATES.KO_PREDICTOR_OPEN
+const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
+const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
 function MemberStandingsView({ predictions }) {
   const standings = {}
@@ -614,12 +613,10 @@ export default function Leagues() {
   const [liveMatches, setLiveMatches] = useState([])
   const [upcomingMatch, setUpcomingMatch] = useState(null)
   const [recentResult, setRecentResult] = useState(null)
-  const [livePredictions, setLivePredictions] = useState({})
-  const livePredictionCount = Object.values(livePredictions).reduce((total, rows) => total + Object.keys(rows || {}).length, 0)
 
   // Load match strip data and poll every 60s
   useEffect(() => {
-    const isLive = new Date() >= DATES.TOURNAMENT_START
+    const isLive = new Date() >= new Date('2026-06-11T19:00:00Z')
     if (!isLive) return
     const loadMatches = async () => {
       const now = new Date()
@@ -672,6 +669,7 @@ export default function Leagues() {
 
   const [confirmAction, setConfirmAction] = useState(null)
   const { memberModal, setMemberModal, memberPredictions, setMemberPredictions, memberReactions, setMemberReactions, loadingPreds, setLoadingPreds, openProfile, groupPositionBreakdown, setGroupPositionBreakdown } = useMemberPredictions()
+  const [matchOdds, setMatchOdds] = useState({})
   const [showWelcome, setShowWelcome] = useState(() => {
     if (typeof window === 'undefined') return false
     return window.localStorage.getItem('wc26_seen_welcome') !== 'true'
@@ -834,6 +832,9 @@ export default function Leagues() {
     setLoadingMembers(prev => ({ ...prev, [leagueId]: false }))
     return [...(data || []), ...offlineMembers]
 
+    if (tournamentLive) {
+      loadPreMatchStats(leagueId, data || [])
+    }
   }
 
   // Reload league members when leagues change to pick up offline players
@@ -845,11 +846,56 @@ export default function Leagues() {
     }
   }, [myLeagues.length])
 
+  // Item 5: Pre-match % — what % of league picked each outcome for next matches
+  const loadPreMatchStats = async (leagueId, members) => {
+    const now = new Date().toISOString()
+    const memberIds = members.map(m => m.user_id)
+    if (!memberIds.length) return
+
+    // Get next 3 upcoming matches
+    const { data: upcoming } = await supabase
+      .from('matches')
+      .select('id, kickoff_time, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code)')
+      .eq('status', 'scheduled')
+      .gt('kickoff_time', now)
+      .order('kickoff_time', { ascending: true })
+      .limit(3)
+
+    if (!upcoming?.length) return
+
+    // Get all member predictions for those matches
+    const matchIds = upcoming.map(m => m.id)
+    const { data: preds } = await supabase
+      .from('predictions')
+      .select('user_id, match_id, home_score, away_score')
+      .in('match_id', matchIds)
+      .in('user_id', memberIds)
+
+    // Calculate % for each match
+    const stats = {}
+    upcoming.forEach(match => {
+      const matchPreds = (preds || []).filter(p => p.match_id === match.id)
+      const total = matchPreds.length
+      if (!total) return
+      const homeWins = matchPreds.filter(p => p.home_score > p.away_score).length
+      const draws    = matchPreds.filter(p => p.home_score === p.away_score).length
+      const awayWins = matchPreds.filter(p => p.home_score < p.away_score).length
+      stats[match.id] = {
+        match,
+        total,
+        home: Math.round((homeWins / total) * 100),
+        draw: Math.round((draws / total) * 100),
+        away: Math.round((awayWins / total) * 100),
+      }
+    })
+    setMatchOdds(prev => ({ ...prev, [leagueId]: stats }))
+  }
+
   const loadMemberPredictions = async (userId, showFuture) => {
     setLoadingPreds(true)
     const { data: preds, error } = await supabase
       .from('predictions')
-      .select(`*, match:match_id(id, match_number, kickoff_time, stage, status, home_score, away_score, group:group_id(name), home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))`)
+      .select(`*, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, group:group_id(name), home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))`)
       .eq('user_id', userId)
 
     const filtered = (preds || [])
@@ -1141,7 +1187,7 @@ export default function Leagues() {
   // Guest view
   if (!user) {
     return (
-      <div data-live-prediction-count={livePredictionCount} style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
+      <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
         <div style={{
           background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat',
           padding: '40px 20px 32px', color: 'white', textAlign: 'center',
@@ -1495,6 +1541,8 @@ export default function Leagues() {
               const isCreator = league.created_by === user.id
               const isExpanded = expandedLeague === league.id
               const members = sortedMembers(league.id)
+              const leagueStats = matchOdds[league.id] || {}
+
               const myRank = members.findIndex(m => m.user_id === user?.id) + 1
               const showAll = expandedLeague === `${league.id}-all`
               const visibleMembers = league.is_global && !showAll ? members.slice(0, 5) : members

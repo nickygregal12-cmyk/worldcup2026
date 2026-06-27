@@ -1,6 +1,4 @@
-/* global process */
 import { createClient } from '@supabase/supabase-js'
-import { requireAdmin } from './_adminAuth.js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -39,8 +37,12 @@ const stripAccents = (str) => str
   .trim()
 
 export const handler = async (event, context) => {
-  const auth = await requireAdmin(event)
-  if (!auth.ok) return auth.response
+  // Auth check — reject requests without valid admin secret
+  // pg_cron calls pass this header; direct calls from AdminPanel pass it too
+  const secret = (event.headers || {})['x-admin-secret']
+  if (!process.env.ADMIN_FUNCTION_SECRET || secret !== process.env.ADMIN_FUNCTION_SECRET) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
+  }
 
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
@@ -85,7 +87,7 @@ export const handler = async (event, context) => {
         const a = stripAccents(c.away_team?.name || '')
         const apiH = stripAccents(homeDb)
         const apiA = stripAccents(awayDb)
-        return h === apiH && a === apiA
+        return (h === apiH && a === apiA) || (h === apiA && a === apiH)
       })
 
       if (ourMatch) {

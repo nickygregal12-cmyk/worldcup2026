@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
-import { DATES } from '../lib/tournamentDates.js'
 
+const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -359,106 +359,6 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
   )
 }
 
-
-function KOPredictorScoresView({ userId }) {
-  const [rows, setRows] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      setLoading(true)
-      setError('')
-      const { data: matchData, error: matchError } = await supabase
-        .from('matches')
-        .select('id, match_number, stage, kickoff_time, status, home_score, away_score, winner_team_id, outcome_type, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
-        .in('stage', ['r32', 'r16', 'qf', 'sf', '3rd', 'final'])
-        .order('kickoff_time', { ascending: true })
-
-      if (matchError) {
-        if (!cancelled) { setError(matchError.message); setLoading(false) }
-        return
-      }
-
-      const now = new Date()
-      const lockedMatches = (matchData || []).filter(match =>
-        match.status === 'live' || match.status === 'completed' || new Date(match.kickoff_time) <= now
-      )
-      const lockedIds = lockedMatches.map(match => match.id)
-      if (lockedIds.length === 0) {
-        if (!cancelled) { setRows([]); setLoading(false) }
-        return
-      }
-
-      const { data: predData, error: predError } = await supabase
-        .from('ko_predictions')
-        .select('match_id, home_score, away_score, outcome_type, winner_team_id, first_goal_band, is_joker, points_awarded, points_breakdown')
-        .eq('user_id', userId)
-        .in('match_id', lockedIds)
-
-      if (predError) {
-        if (!cancelled) { setError(predError.message); setLoading(false) }
-        return
-      }
-
-      const predictionsByMatch = Object.fromEntries((predData || []).map(pred => [pred.match_id, pred]))
-      if (!cancelled) {
-        setRows(lockedMatches.map(match => ({ match, prediction: predictionsByMatch[match.id] || null })))
-        setLoading(false)
-      }
-    }
-    load()
-    return () => { cancelled = true }
-  }, [userId])
-
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-  if (error) return <div style={{ textAlign: 'center', padding: '28px', color: 'var(--accent-red)' }}>Could not load KO Predictor picks: {error}</div>
-  if (rows.length === 0) return <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}><div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div><div style={{ fontWeight: '700' }}>No KO Predictor matches have locked yet</div></div>
-
-  const stageLabels = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-finals', sf: 'Semi-finals', '3rd': 'Third-place play-off', final: 'Final' }
-  const outcomeLabels = { '90mins': '90 mins', et: 'Extra time', penalties: 'Penalties' }
-  const goalBandLabels = { '1-15': '1–15', '16-30': '16–30', '31-45': '31–45', '46-60': '46–60', '61-75': '61–75', '76-90': '76–90+', et: 'Extra time', no_goals: 'No goals' }
-
-  return (
-    <div>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px' }}>Only matches that have kicked off are shown.</div>
-      {rows.map(({ match, prediction }, index) => {
-        const showStage = index === 0 || rows[index - 1]?.match?.stage !== match.stage
-        const winner = prediction?.winner_team_id === match.home_team?.id
-          ? match.home_team
-          : prediction?.winner_team_id === match.away_team?.id ? match.away_team : null
-        return (
-          <React.Fragment key={match.id}>
-            {showStage && <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>{stageLabels[match.stage] || match.stage}</div>}
-            <div style={{ padding: '10px 12px', marginBottom: '7px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '28px' }}>M{match.match_number}</span>
-                <span style={{ fontSize: '18px' }}>{match.home_team?.flag_emoji}</span>
-                <span style={{ fontSize: '12px', fontWeight: '800', flex: 1 }}>{match.home_team?.short_code} v {match.away_team?.short_code}</span>
-                <span style={{ fontSize: '18px' }}>{match.away_team?.flag_emoji}</span>
-                {match.status === 'completed' && <span style={{ fontSize: '12px', fontWeight: '800' }}>{match.home_score}–{match.away_score}</span>}
-              </div>
-              {prediction ? (
-                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '15px', fontWeight: '900' }}>{prediction.home_score}–{prediction.away_score}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{outcomeLabels[prediction.outcome_type] || prediction.outcome_type || '90 mins'}</span>
-                  {winner && <span style={{ fontSize: '11px', fontWeight: '700' }}>Winner: {winner.flag_emoji} {winner.short_code}</span>}
-                  {prediction.first_goal_band && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>First goal: {goalBandLabels[prediction.first_goal_band] || prediction.first_goal_band}</span>}
-                  {prediction.is_joker && <span title="Joker">🃏</span>}
-                  {match.status === 'completed' && <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '900', color: (prediction.points_awarded || 0) > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{prediction.points_awarded || 0}pts</span>}
-                </div>
-              ) : (
-                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', fontSize: '11px', color: 'var(--text-muted)' }}>No prediction made</div>
-              )}
-            </div>
-          </React.Fragment>
-        )
-      })}
-    </div>
-  )
-}
-
 function AwardPredsView({ userId, leagueId, lockedSnapshot = false }) {
   const [preds, setPreds] = useState([])
   const [goals, setGoals] = useState([])
@@ -574,7 +474,7 @@ export function useMemberPredictions() {
     const [{ data: preds }, { data: profileData }, { data: groupPosData }] = await Promise.all([
       supabase
         .from('predictions')
-        .select('*, match:match_id(id, match_number, kickoff_time, stage, status, home_score, away_score, group:group_id(name), home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))')
+        .select('*, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, group:group_id(name), home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code))')
         .eq('user_id', userId),
       supabase
         .from('profiles')
@@ -643,19 +543,18 @@ export function useMemberPredictions() {
 
 export default function MemberPredictionsModal({ memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, groupPositionBreakdown = [], currentUserId }) {
   const navigate = useNavigate()
-  const tournamentLive = new Date() >= DATES.TOURNAMENT_START
+  const tournamentLive = new Date() >= TOURNAMENT_START
 
   if (!memberModal) return null
 
-  const tabs = memberModal.isOffline ? ['group', 'standings'] : ['overview', 'group', 'knockout', 'koPredictor', 'awards', 'standings']
+  const tabs = memberModal.isOffline ? ['group', 'standings'] : ['overview', 'group', 'knockout', 'awards', 'standings']
   const activeTab = memberModal.tab || 'overview'
 
   const tabLabel = (tab) => {
     switch (tab) {
       case 'overview': return '👤 Overview'
       case 'group': return '⚽ Groups'
-      case 'knockout': return '🏆 Bracket'
-      case 'koPredictor': return '🔥 KO Pred'
+      case 'knockout': return '🏆 Knockout'
       case 'awards': return '🥇 Awards'
       case 'compare': return '⚔️ Compare'
       case 'standings': return '📊 Standings'
@@ -888,8 +787,6 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
           })()}
           {activeTab === 'knockout' ? (
             <KnockoutPicksView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
-          ) : activeTab === 'koPredictor' ? (
-            <KOPredictorScoresView userId={memberModal.userId} />
           ) : activeTab === 'awards' ? (
             <AwardPredsView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
           ) : activeTab === 'compare' ? (

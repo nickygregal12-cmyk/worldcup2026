@@ -9,8 +9,8 @@ import {
   getMD1LockTime, MD1_STANDINGS_LOCK_FALLBACK,
 } from '../lib/bracketUtils.js'
 import { predictKnockoutMatch } from '../lib/luckyDip.js'
-import { DATES } from '../lib/tournamentDates.js'
 
+const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
 const VENUE_FLAGS = {
   'New York': '🇺🇸', 'New Jersey': '🇺🇸', 'New York/NJ': '🇺🇸', 'Los Angeles': '🇺🇸',
@@ -70,12 +70,12 @@ export default function Knockout() {
   const [showRealBracket, setShowRealBracket] = useState(false)
   const [realGroupStandings, setRealGroupStandings] = useState([]) // live real group standings
 
-  const isPreTournament = new Date() < DATES.TOURNAMENT_START
-  const groupStageDone = new Date() >= DATES.GROUP_STAGE_END
+  const isPreTournament = new Date() < new Date('2026-06-11T19:00:00Z')
+  const groupStageDone = new Date() >= new Date('2026-06-27T22:00:00Z')
   const phaseOverride = appSettings?.game_phase_override || ''
   const koLive = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
     ? true : phaseOverride && phaseOverride !== 'ko_predictor' ? false
-    : m73Ready || new Date() >= DATES.KO_PREDICTOR_OPEN
+    : m73Ready || new Date() >= KO_OPEN_DATE
   const mainBracketLockTime = useMemo(() => getMatchdayTwoFullTime(groupMatches), [groupMatches])
   const mainBracketLocked = new Date() >= mainBracketLockTime
 
@@ -217,10 +217,10 @@ export default function Knockout() {
     const out = new Set()
     realKoResults.forEach(m => {
       if (m.home_score == null || m.away_score == null) return
-      if (m.winner_team_id) {
-        if (m.winner_team_id === m.home_team_id && m.away_team_id) out.add(m.away_team_id)
-        else if (m.winner_team_id === m.away_team_id && m.home_team_id) out.add(m.home_team_id)
-      } else if (m.home_score > m.away_score && m.away_team_id) out.add(m.away_team_id)
+      // In knockout, home_score > away_score means away is eliminated (and vice versa)
+      // Ties go to extra time/penalties — winner_team_id would be set by sync-scores
+      // We use score comparison; if equal, neither is eliminated yet (pens not tracked)
+      if (m.home_score > m.away_score && m.away_team_id) out.add(m.away_team_id)
       else if (m.away_score > m.home_score && m.home_team_id) out.add(m.home_team_id)
     })
     return out
@@ -241,7 +241,7 @@ export default function Knockout() {
       map[g].push({
         team: s.team,
         pts: s.points || 0,
-        gd: Number.isFinite(Number(s.goal_difference)) ? Number(s.goal_difference) : (Number(s.goals_for) || 0) - (Number(s.goals_against) || 0),
+        gd: s.goal_difference ?? (s.goals_for - s.goals_against) ?? 0,
         gf: s.goals_for || 0,
         played: s.played || 0,
         position: s.position || 99,

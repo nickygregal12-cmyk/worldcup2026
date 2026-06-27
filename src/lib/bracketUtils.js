@@ -17,7 +17,7 @@
  * Both locks are derived dynamically from fixture data (MD1 = matches at index 0,1 per group).
  * These fallbacks are used only if fixture data is unavailable.
  */
-export const MD1_STANDINGS_LOCK_FALLBACK = new Date('2026-06-18T06:00:00Z') // Thu 18 Jun 07:00 BST
+export const MD1_STANDINGS_LOCK_FALLBACK = new Date('2026-06-18T06:00:00Z') // Wed 18 Jun 07:00 BST
 export const MD1_LOCK_BUFFER_MS = 2 * 60 * 60 * 1000 // 2hr buffer after last kickoff
 
 /**

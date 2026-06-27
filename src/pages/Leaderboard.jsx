@@ -4,8 +4,9 @@ import { avatarColor } from '../lib/avatarColor.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import { useCountUp } from '../hooks/useCountUp.js'
 import MemberPredictionsModal, { useMemberPredictions } from '../components/MemberPredictionsModal.jsx'
-import { DATES } from '../lib/tournamentDates.js'
 
+const TOURNAMENT_START = new Date('2026-06-11T19:00:00Z')
+const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 const PAGE_SIZE = 25
 
 // Animated count-up for points values
@@ -26,8 +27,8 @@ export default function Leaderboard() {
   const { memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, openProfile, groupPositionBreakdown } = useMemberPredictions()
   const [page, setPage] = useState(0)
 
-  const preTournament = new Date() < DATES.TOURNAMENT_START
-  const koLive = new Date() >= DATES.KO_PREDICTOR_OPEN
+  const preTournament = new Date() < TOURNAMENT_START
+  const koLive = new Date() >= KO_OPEN_DATE
 
   useEffect(() => {
     loadAll()
@@ -82,7 +83,7 @@ export default function Leaderboard() {
     return { dir: 'same', n: 0 }
   }
 
-  const GROUP_STAGE_END = DATES.GROUP_STAGE_END
+  const GROUP_STAGE_END = new Date('2026-06-27T22:00:00Z')
   const groupStageOver = new Date() >= GROUP_STAGE_END
   const MIN_PREDICTIONS = 10
 

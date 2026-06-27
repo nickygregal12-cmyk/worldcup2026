@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
-import { DATES } from '../lib/tournamentDates.js'
 
 // Reordered: awards first, goals last. Final Four removed.
 const AWARDS = [
@@ -63,7 +62,7 @@ export default function Awards() {
   const [allGroupPredicted, setAllGroupPredicted] = useState(false)
   const ESTIMATED_KNOCKOUT_GOALS = 69
 
-  const tournamentStarted = new Date() >= DATES.TOURNAMENT_START
+  const tournamentStarted = new Date() >= new Date('2026-06-11T19:00:00Z')
 
   // Live tournament data (post-kickoff)
   const [awardResults, setAwardResults] = useState({}) // actual winners set by admin

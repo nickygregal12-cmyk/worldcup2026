@@ -1,13 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
-import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
+import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
 import BracketHealth from '../components/BracketHealth.jsx'
 import AdminUserBracketEditor from '../components/AdminUserBracketEditor.jsx'
 import AdminKOFixtures from '../components/AdminKOFixtures.jsx'
 import { useAuthStore, useAppStore } from '../store/index.js'
-import { calculateGroupPredictionPoints } from '../lib/scoring.js'
-import { DATES } from '../lib/tournamentDates.js'
 
 const TABS = [
   { key: 'health',   label: '🩺 Health',        superOnly: true },
@@ -223,21 +221,657 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
     </div>
   )
 }
-async function callAdminFunction(path, options = {}) {
-  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-  if (sessionError || !session?.access_token) throw new Error('Your admin session has expired. Sign in again.')
+function SnapshotCounts({ leagueId, supabase }) {
+  const [counts, setCounts] = useState(null)
 
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${session.access_token}`,
-      ...(options.headers || {}),
-    },
+  useEffect(() => {
+    let cancelled = false
+
+    const countRows = async (table, extra = null) => {
+      let query = supabase
+        .from(table)
+        .select('id', { count: 'exact', head: true })
+        .eq('league_id', leagueId)
+
+      if (extra) query = extra(query)
+
+      const { count, error } = await query
+      if (error) return null
+      return count || 0
+    }
+
+    const load = async () => {
+      const [matches, knockout, awards, goals] = await Promise.all([
+        countRows('league_predictions'),
+        countRows('league_knockout_picks'),
+        countRows('league_award_predictions'),
+        countRows('league_tournament_predictions', q => q.eq('prediction_type', 'total_goals')),
+      ])
+
+      if (!cancelled) setCounts({ matches, knockout, awards, goals })
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [leagueId, supabase])
+
+  if (!counts) {
+    return <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>Loading locked prediction counts...</div>
+  }
+
+  const itemStyle = { padding: '5px 8px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)', fontSize: '11px', fontWeight: '700' }
+
+  return (
+    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+      <span style={itemStyle}>⚽ Matches: {counts.matches}</span>
+      <span style={itemStyle}>🏆 Knockout: {counts.knockout}</span>
+      <span style={itemStyle}>🥇 Awards: {counts.awards}</span>
+      <span style={itemStyle}>🎯 Goals: {counts.goals}</span>
+    </div>
+  )
+}
+
+function CommittedScoreEditor({ leagueId, members, matches, supabase, onClose, logAudit }) {
+  const [activeEditorTab, setActiveEditorTab] = useState('matches')
+  const [committedPreds, setCommittedPreds] = useState({})
+  const [awardPreds, setAwardPreds] = useState({})
+  const [goalPreds, setGoalPreds] = useState({})
+  const [knockoutPreds, setKnockoutPreds] = useState([])
+  const [teamsById, setTeamsById] = useState({})
+  const [selectedUserId, setSelectedUserId] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      setLoaded(false)
+
+      const [matchRes, awardRes, goalRes, knockoutRes, teamRes] = await Promise.all([
+        supabase.from('league_predictions')
+          .select('user_id, match_id, home_score, away_score, is_confident')
+          .eq('league_id', leagueId),
+        supabase.from('league_award_predictions')
+          .select('user_id, award_type, bracket_type, predicted_player_name, predicted_team_id')
+          .eq('league_id', leagueId),
+        supabase.from('league_tournament_predictions')
+          .select('user_id, prediction_type, int_value, team_id')
+          .eq('league_id', leagueId),
+        supabase.from('league_knockout_picks')
+          .select('id, user_id, stage, team_id, is_joker, match_number, home_team_id, away_team_id, winner_team_id, result_type')
+          .eq('league_id', leagueId)
+          .order('match_number', { ascending: true }),
+        supabase.from('teams')
+          .select('id, name, short_code, flag_emoji')
+      ])
+
+      if (cancelled) return
+
+      const matchMap = {}
+      ;(matchRes.data || []).forEach(p => {
+        matchMap[`${p.user_id}-${p.match_id}`] = { home: p.home_score, away: p.away_score, joker: p.is_confident }
+      })
+      setCommittedPreds(matchMap)
+
+      const awardMap = {}
+      ;(awardRes.data || []).forEach(p => {
+        const bracket = p.bracket_type || 'main'
+        awardMap[`${p.user_id}-${p.award_type}-${bracket}`] = {
+          player: p.predicted_player_name || '',
+          teamId: p.predicted_team_id || null,
+          bracket,
+        }
+      })
+      setAwardPreds(awardMap)
+
+      const goalMap = {}
+      ;(goalRes.data || []).forEach(p => {
+        goalMap[`${p.user_id}-${p.prediction_type}`] = {
+          value: p.int_value ?? '',
+          teamId: p.team_id || null,
+        }
+      })
+      setGoalPreds(goalMap)
+
+      setKnockoutPreds(knockoutRes.data || [])
+      const teamMap = {}
+      ;(teamRes.data || []).forEach(t => { teamMap[t.id] = t })
+      setTeamsById(teamMap)
+
+      setLoaded(true)
+    }
+
+    load()
+    return () => { cancelled = true }
+  }, [leagueId, supabase])
+
+  const saveScore = async (userId, matchId, home, away, joker) => {
+    if (home === '' || away === '' || isNaN(parseInt(home)) || isNaN(parseInt(away))) return
+    setSaving(true)
+    await supabase.from('league_predictions').upsert({
+      league_id: leagueId, user_id: userId, match_id: matchId,
+      home_score: parseInt(home), away_score: parseInt(away), is_confident: joker || false,
+    }, { onConflict: 'league_id,user_id,match_id' })
+    await logAudit('EDIT_COMMITTED_SCORE', { league_id: leagueId, user_id: userId, match_id: matchId, home, away })
+    setCommittedPreds(prev => ({ ...prev, [`${userId}-${matchId}`]: { home, away, joker } }))
+    setSaving(false)
+  }
+
+  const saveAward = async (userId, awardType, value) => {
+    const cleaned = (value || '').trim()
+    if (!cleaned) return
+
+    const key = `${userId}-${awardType}-main`
+    const current = awardPreds[key] || {}
+
+    setSaving(true)
+    await supabase.from('league_award_predictions').upsert({
+      league_id: leagueId,
+      user_id: userId,
+      award_type: awardType,
+      bracket_type: 'main',
+      predicted_player_name: cleaned,
+      predicted_team_id: current.teamId || null,
+      is_locked: true,
+      committed_at: new Date().toISOString(),
+    }, { onConflict: 'league_id,user_id,award_type,bracket_type' })
+    await logAudit('EDIT_COMMITTED_AWARD', { league_id: leagueId, user_id: userId, award_type: awardType, predicted_player_name: cleaned })
+    setAwardPreds(prev => ({ ...prev, [key]: { ...current, player: cleaned, bracket: 'main' } }))
+    setSaving(false)
+  }
+
+  const saveGoal = async (userId, predictionType, value) => {
+    if (value === '' || isNaN(parseInt(value))) return
+
+    const key = `${userId}-${predictionType}`
+    const current = goalPreds[key] || {}
+
+    setSaving(true)
+    await supabase.from('league_tournament_predictions').upsert({
+      league_id: leagueId,
+      user_id: userId,
+      prediction_type: predictionType,
+      int_value: parseInt(value),
+      team_id: current.teamId || null,
+      is_locked: true,
+      committed_at: new Date().toISOString(),
+    }, { onConflict: 'league_id,user_id,prediction_type,team_id' })
+    await logAudit('EDIT_COMMITTED_GOALS', { league_id: leagueId, user_id: userId, prediction_type: predictionType, int_value: parseInt(value) })
+    setGoalPreds(prev => ({ ...prev, [key]: { ...current, value: parseInt(value) } }))
+    setSaving(false)
+  }
+
+  const saveKnockoutPick = async (pickId, winnerTeamId) => {
+    if (!pickId || !winnerTeamId) return
+    const current = knockoutPreds.find(p => p.id === pickId)
+    if (!current) return
+
+    setSaving(true)
+    const { error } = await supabase.from('league_knockout_picks')
+      .update({
+        winner_team_id: winnerTeamId,
+        team_id: winnerTeamId,
+        committed_at: new Date().toISOString(),
+      })
+      .eq('id', pickId)
+      .eq('league_id', leagueId)
+
+    if (!error) {
+      await logAudit('EDIT_COMMITTED_KNOCKOUT', { league_id: leagueId, user_id: current.user_id, pick_id: pickId, match_number: current.match_number, winner_team_id: winnerTeamId })
+      setKnockoutPreds(prev => prev.map(p => p.id === pickId ? { ...p, winner_team_id: winnerTeamId, team_id: winnerTeamId } : p))
+    }
+    setSaving(false)
+  }
+
+  const groupMatches = matches.filter(m => m.stage === 'group')
+  const selectedMember = members?.find(m => m.user_id === selectedUserId)
+  const memberName = selectedMember?.profile?.display_name || selectedMember?.profile?.username || 'Selected member'
+
+  const editorTabs = [
+    { key: 'matches', label: '⚽ Matches' },
+    { key: 'goals', label: '🎯 Goals' },
+    { key: 'awards', label: '🥇 Awards' },
+    { key: 'knockout', label: '🏆 Knockout' },
+  ]
+
+  const goalTypes = [
+    { key: 'total_goals', label: 'Tournament total goals' },
+  ]
+
+  const awardTypes = [
+    { key: 'golden_boot', label: 'Golden Boot' },
+    { key: 'golden_glove', label: 'Golden Glove' },
+    { key: 'player_of_tournament', label: 'Player of the Tournament' },
+  ]
+
+  const stageLabels = {
+    r32: 'Round of 32',
+    r16: 'Round of 16',
+    qf: 'Quarter-final',
+    sf: 'Semi-final',
+    '3rd': 'Third-place play-off',
+    final: 'Final',
+  }
+
+  const teamLabel = (teamId) => {
+    const team = teamsById[teamId]
+    if (!team) return teamId ? 'Unknown team' : 'TBC'
+    return `${team.flag_emoji || ''} ${team.short_code || team.name}`.trim()
+  }
+
+  return (
+    <div style={{ marginTop: '10px', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+        <div>
+          <div style={{ fontWeight: '700', fontSize: '13px' }}>✏️ Edit committed snapshot</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Admin-only fixes for frozen pre-tournament league data.</div>
+        </div>
+        {saving && <span style={{ fontSize: '11px', color: 'var(--accent-blue)', fontWeight: '700' }}>Saving...</span>}
+      </div>
+
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+        {editorTabs.map(tab => (
+          <button key={tab.key} onClick={() => setActiveEditorTab(tab.key)}
+            className="btn btn-sm"
+            style={{
+              background: activeEditorTab === tab.key ? 'var(--scottish-navy)' : 'var(--bg-secondary)',
+              color: activeEditorTab === tab.key ? 'white' : 'var(--text-primary)',
+              border: '1px solid var(--border-light)',
+              fontSize: '11px'
+            }}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <select className="input" value={selectedUserId} onChange={e => setSelectedUserId(e.target.value)} style={{ marginBottom: '8px' }}>
+        <option value="">Select member...</option>
+        {(members || []).map(m => (
+          <option key={m.user_id} value={m.user_id}>
+            {m.profile?.display_name || m.profile?.username || '?'}{m.is_offline ? ' (offline)' : ''}
+          </option>
+        ))}
+      </select>
+
+      {!selectedUserId && <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '8px 0' }}>Choose a member to edit their locked snapshot.</div>}
+
+      {selectedUserId && loaded && activeEditorTab === 'matches' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '300px', overflowY: 'auto' }}>
+          {groupMatches.map(match => {
+            const key = `${selectedUserId}-${match.id}`
+            const val = committedPreds[key] || {}
+            const hasPred = val.home !== undefined && val.home !== null
+            return (
+              <div key={match.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 8px', background: hasPred ? 'rgba(0,122,51,0.05)' : 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: hasPred ? '1px solid rgba(0,122,51,0.2)' : '1px solid var(--border-light)' }}>
+                <span style={{ fontSize: '11px', flex: 1 }}>
+                  {match.home_team?.flag_emoji} {match.home_team?.short_code} vs {match.away_team?.short_code} {match.away_team?.flag_emoji}
+                </span>
+                <input type="number" min="0" max="20" placeholder="H" value={val.home ?? ''}
+                  onChange={e => setCommittedPreds(prev => ({ ...prev, [key]: { ...prev[key], home: e.target.value } }))}
+                  onBlur={() => saveScore(selectedUserId, match.id, val.home, val.away, val.joker)}
+                  style={{ width: '34px', textAlign: 'center', padding: '3px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '12px', fontWeight: '700' }} />
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>–</span>
+                <input type="number" min="0" max="20" placeholder="A" value={val.away ?? ''}
+                  onChange={e => setCommittedPreds(prev => ({ ...prev, [key]: { ...prev[key], away: e.target.value } }))}
+                  onBlur={() => saveScore(selectedUserId, match.id, val.home, val.away, val.joker)}
+                  style={{ width: '34px', textAlign: 'center', padding: '3px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '12px', fontWeight: '700' }} />
+                {hasPred && <span style={{ fontSize: '10px', color: 'var(--accent-green)' }}>✓</span>}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {selectedUserId && loaded && activeEditorTab === 'goals' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '2px' }}>{memberName}'s locked goals totals</div>
+          {goalTypes.map(goal => {
+            const key = `${selectedUserId}-${goal.key}`
+            const val = goalPreds[key] || {}
+            return (
+              <div key={goal.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                <span style={{ flex: 1, fontSize: '12px', fontWeight: '700' }}>{goal.label}</span>
+                <input type="number" min="0" placeholder="0" value={val.value ?? ''}
+                  onChange={e => setGoalPreds(prev => ({ ...prev, [key]: { ...prev[key], value: e.target.value } }))}
+                  style={{ width: '72px', textAlign: 'center', padding: '5px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '12px', fontWeight: '700' }} />
+                <button onClick={() => saveGoal(selectedUserId, goal.key, goalPreds[key]?.value)}
+                  className="btn btn-primary btn-sm" style={{ fontSize: '11px' }}>Save</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {selectedUserId && loaded && activeEditorTab === 'awards' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '2px' }}>{memberName}'s locked award picks</div>
+          {awardTypes.map(award => {
+            const key = `${selectedUserId}-${award.key}-main`
+            const val = awardPreds[key] || {}
+            return (
+              <div key={award.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                <span style={{ flex: '0 0 120px', fontSize: '12px', fontWeight: '700' }}>{award.label}</span>
+                <input type="text" placeholder="Player name" value={val.player ?? ''}
+                  onChange={e => setAwardPreds(prev => ({ ...prev, [key]: { ...prev[key], player: e.target.value } }))}
+                  style={{ flex: 1, padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--border-light)', fontSize: '12px' }} />
+                <button onClick={() => saveAward(selectedUserId, award.key, awardPreds[key]?.player)}
+                  className="btn btn-primary btn-sm" style={{ fontSize: '11px' }}>Save</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {selectedUserId && loaded && activeEditorTab === 'knockout' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '360px', overflowY: 'auto' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '2px' }}>
+            {memberName}'s locked knockout winners. Only the winner can be changed; match path data stays frozen.
+          </div>
+          {knockoutPreds.filter(p => p.user_id === selectedUserId).length === 0 && (
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)' }}>
+              No locked knockout picks found for this member.
+            </div>
+          )}
+          {knockoutPreds.filter(p => p.user_id === selectedUserId).map(pick => {
+            const homeLabel = teamLabel(pick.home_team_id)
+            const awayLabel = teamLabel(pick.away_team_id)
+            const currentWinner = pick.winner_team_id || pick.team_id || ''
+            const options = [pick.home_team_id, pick.away_team_id].filter(Boolean)
+            return (
+              <div key={pick.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 8px', background: 'var(--bg-card)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-light)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '12px', fontWeight: '800' }}>
+                    {stageLabels[pick.stage] || pick.stage || 'Knockout'} · Match {pick.match_number || '?'} {pick.is_joker ? '🃏' : ''}
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {homeLabel} v {awayLabel}
+                  </div>
+                </div>
+                <select
+                  className="input"
+                  value={currentWinner}
+                  onChange={e => saveKnockoutPick(pick.id, e.target.value)}
+                  style={{ flex: '0 0 150px', minWidth: '150px', fontSize: '12px', padding: '6px 8px' }}
+                >
+                  <option value="">Select winner</option>
+                  {options.map(teamId => <option key={teamId} value={teamId}>{teamLabel(teamId)}</option>)}
+                  {currentWinner && !options.includes(currentWinner) && <option value={currentWinner}>{teamLabel(currentWinner)}</option>}
+                </select>
+                <span style={{ fontSize: '10px', color: 'var(--accent-green)', width: '12px' }}>{currentWinner ? '✓' : ''}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      <button onClick={onClose} className="btn btn-secondary btn-sm" style={{ marginTop: '8px' }}>Close</button>
+    </div>
+  )
+}
+
+function DailyQuestionsTab() {
+  const [questions, setQuestions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editingQ, setEditingQ] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({
+    question: '',
+    type: 'yes_no',
+    options: ['', '', '', ''],
+    scheduled_date: '',
   })
-  const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(payload.error || `Request failed (${response.status})`)
-  return payload
+
+  useEffect(() => { loadQuestions() }, [])
+
+  const loadQuestions = async () => {
+    setLoading(true)
+    const { data } = await supabase
+      .from('daily_questions')
+      .select('*, answers:daily_answers(count)')
+      .order('scheduled_date', { ascending: false })
+    setQuestions(data || [])
+    setLoading(false)
+  }
+
+  const openForm = (q = null) => {
+    if (q) {
+      setForm({
+        question: q.question,
+        type: q.type,
+        options: q.options ? [...q.options, '', '', '', ''].slice(0, 4) : ['', '', '', ''],
+        scheduled_date: q.scheduled_date,
+      })
+      setEditingQ(q)
+    } else {
+      setForm({ question: '', type: 'yes_no', options: ['', '', '', ''], scheduled_date: '' })
+      setEditingQ(null)
+    }
+    setShowForm(true)
+  }
+
+  const saveQuestion = async () => {
+    if (!form.question.trim() || !form.scheduled_date) return
+    setSaving(true)
+    const payload = {
+      question: form.question.trim(),
+      type: form.type,
+      options: form.type === 'multiple_choice' ? form.options.filter(o => o.trim()) : null,
+      scheduled_date: form.scheduled_date,
+      status: 'scheduled',
+    }
+    if (editingQ) {
+      const { error } = await supabase.from('daily_questions').update(payload).eq('id', editingQ.id)
+      if (error) { alert(`Save failed: ${error.message}`); setSaving(false); return }
+    } else {
+      const { error } = await supabase.from('daily_questions').insert(payload)
+      if (error) { alert(`Save failed: ${error.message}`); setSaving(false); return }
+    }
+    setSaving(false)
+    setShowForm(false)
+    loadQuestions()
+  }
+
+  const deleteQuestion = async (id) => {
+    if (!confirm('Delete this question?')) return
+    await supabase.from('daily_questions').delete().eq('id', id)
+    loadQuestions()
+  }
+
+  const [settingResult, setSettingResult] = useState(null) // question id being set
+
+  const setQuestionResult = async (q, answer) => {
+    setSaving(true)
+    // Save correct answer
+    await supabase.from('daily_questions').update({ correct_answer: answer }).eq('id', q.id)
+    // Mark answers correct/incorrect and update profile totals
+    await supabase.rpc('mark_correct_answers', { p_question_id: q.id, p_correct_answer: answer })
+    setSettingResult(null)
+    setSaving(false)
+    loadQuestions()
+  }
+
+  const statusColour = { live: 'var(--accent-green)', scheduled: 'var(--scottish-navy)', expired: 'var(--text-muted)' }
+  const today = new Date().toISOString().split('T')[0]
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+          <div style={{ fontWeight: '800', fontSize: '16px' }}>❓ Daily Questions</div>
+          <button onClick={() => openForm()} className="btn btn-primary btn-sm">+ New Question</button>
+        </div>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+          One question per day — goes live at midnight UTC. Schedule ahead to keep the bank full.
+        </div>
+      </div>
+
+      {/* Question form */}
+      {showForm && (
+        <div className="card" style={{ border: '2px solid var(--scottish-navy)' }}>
+          <div style={{ fontWeight: '700', fontSize: '15px', marginBottom: '14px' }}>
+            {editingQ ? '✏️ Edit Question' : '➕ New Question'}
+          </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label className="label">Question</label>
+            <input className="input" value={form.question}
+              onChange={e => setForm(f => ({ ...f, question: e.target.value }))}
+              placeholder="e.g. Will there be a VAR controversy today?" />
+          </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label className="label">Scheduled Date</label>
+            <input className="input" type="date" value={form.scheduled_date} min={today}
+              onChange={e => setForm(f => ({ ...f, scheduled_date: e.target.value }))} />
+          </div>
+
+          <div style={{ marginBottom: '12px' }}>
+            <label className="label">Type</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {[
+                { key: 'yes_no', label: '👍 Yes / No' },
+                { key: 'multiple_choice', label: '📋 Multiple Choice' },
+                { key: 'number', label: '🔢 Number' },
+              ].map(t => (
+                <button key={t.key} onClick={() => setForm(f => ({ ...f, type: t.key }))}
+                  className="btn btn-sm"
+                  style={{ background: form.type === t.key ? 'var(--scottish-navy)' : 'var(--bg-tertiary)', color: form.type === t.key ? 'white' : 'var(--text-secondary)', border: '1px solid var(--border-light)' }}>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {form.type === 'multiple_choice' && (
+            <div style={{ marginBottom: '12px' }}>
+              <label className="label">Options (2–4)</label>
+              {form.options.map((opt, i) => (
+                <input key={i} className="input" value={opt}
+                  onChange={e => setForm(f => {
+                    const opts = [...f.options]
+                    opts[i] = e.target.value
+                    return { ...f, options: opts }
+                  })}
+                  placeholder={`Option ${i + 1}${i < 2 ? ' (required)' : ' (optional)'}`}
+                  style={{ marginBottom: '6px' }} />
+              ))}
+            </div>
+          )}
+
+          {form.type === 'number' && (
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
+              💡 Users will enter any number as their answer. Community average will be shown after answering.
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={saveQuestion} disabled={saving || !form.question.trim() || !form.scheduled_date}
+              className="btn btn-primary">{saving ? 'Saving...' : editingQ ? 'Save Changes' : 'Schedule Question'}</button>
+            <button onClick={() => setShowForm(false)} className="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Questions list */}
+      {loading ? (
+        <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Loading...</div>
+      ) : questions.length === 0 ? (
+        <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+          No questions yet — create your first one above.
+        </div>
+      ) : questions.map(q => (
+        <div key={q.id} className="card" style={{ borderLeft: `3px solid ${statusColour[q.status]}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '700', textTransform: 'uppercase',
+                  color: statusColour[q.status], letterSpacing: '0.05em' }}>
+                  {q.status === 'live' ? '🟢 Live' : q.status === 'scheduled' ? '🕐 Scheduled' : '✓ Expired'}
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{q.scheduled_date}</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>·</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {q.type === 'yes_no' ? '👍 Yes/No' : q.type === 'multiple_choice' ? '📋 Multiple choice' : '🔢 Number'}
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>·</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {q.answers?.[0]?.count || 0} answers
+                </span>
+              </div>
+              <div style={{ fontWeight: '600', fontSize: '14px', marginBottom: q.options ? '6px' : 0 }}>{q.question}</div>
+              {q.options && (
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '4px' }}>
+                  {q.options.map((opt, i) => (
+                    <span key={i} style={{ fontSize: '11px', padding: '2px 8px', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-full)', color: 'var(--text-secondary)' }}>
+                      {opt}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              {q.status === 'expired' && !q.correct_answer && (
+                <button onClick={() => setSettingResult(q.id)} className="btn btn-sm"
+                  style={{ background: 'rgba(0,122,51,0.1)', color: 'var(--accent-green)', border: '1px solid rgba(0,122,51,0.2)', fontWeight: '700' }}>
+                  ✓ Set Result
+                </button>
+              )}
+              {q.correct_answer && (
+                <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--accent-green)', padding: '4px 8px', background: 'rgba(0,122,51,0.1)', borderRadius: 'var(--radius-full)' }}>
+                  ✓ {q.correct_answer}
+                </span>
+              )}
+              {q.status !== 'expired' && (
+                <button onClick={() => openForm(q)} className="btn btn-secondary btn-sm">Edit</button>
+              )}
+              <button onClick={() => deleteQuestion(q.id)} className="btn btn-sm"
+                style={{ background: 'rgba(229,57,53,0.1)', color: '#e53935', border: '1px solid rgba(229,57,53,0.2)' }}>
+                Delete
+              </button>
+            </div>
+          </div>
+        {/* Result picker for this question */}
+        {settingResult === q.id && (
+          <div style={{ marginTop: '10px', padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+            <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Select correct answer
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {(q.type === 'yes_no' ? ['Yes', 'No'] : q.type === 'multiple_choice' ? q.options : null)?.map(opt => (
+                <button key={opt} onClick={() => setQuestionResult(q, opt)} disabled={saving}
+                  className="btn btn-sm"
+                  style={{ background: 'var(--scottish-navy)', color: 'white', fontWeight: '600' }}>
+                  {saving ? '...' : opt}
+                </button>
+              ))}
+              {q.type === 'number' && (
+                <div style={{ display: 'flex', gap: '6px', width: '100%' }}>
+                  <input className="input" type="number" placeholder="Correct number"
+                    id={`result-${q.id}`} style={{ flex: 1 }} />
+                  <button onClick={() => {
+                    const val = document.getElementById(`result-${q.id}`).value
+                    if (val) setQuestionResult(q, val)
+                  }} disabled={saving} className="btn btn-primary btn-sm">
+                    {saving ? '...' : 'Confirm'}
+                  </button>
+                </div>
+              )}
+              <button onClick={() => setSettingResult(null)} className="btn btn-secondary btn-sm">Cancel</button>
+            </div>
+          </div>
+        )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const ADMIN_SECRET = import.meta.env.VITE_ADMIN_FUNCTION_SECRET || ''
+const adminHeaders = {
+  'Content-Type': 'application/json',
+  'x-admin-secret': ADMIN_SECRET,
 }
 
 export default function AdminPanel() {
@@ -327,6 +961,7 @@ export default function AdminPanel() {
   const [newLeaguePreset, setNewLeaguePreset] = useState('standard')
   const [showCustomScoring, setShowCustomScoring] = useState(false)
   const [newLockType, setNewLockType] = useState('rolling')
+  const [editingCommittedLeague, setEditingCommittedLeague] = useState(null)
   const [newLeagueScoring, setNewLeagueScoring] = useState({
     group_correct: 3, group_exact: 5, group_jokers: 8, joker_multiplier: 2,
     ko_correct: 3, ko_exact: 5, ko_jokers: 5,
@@ -550,7 +1185,8 @@ export default function AdminPanel() {
   const syncScoresNow = async () => {
     setSaving(prev => ({ ...prev, sync: true }))
     try {
-      const data = await callAdminFunction('/.netlify/functions/sync-scores', { method: 'POST' })
+      const res = await fetch('/.netlify/functions/sync-scores', { method: 'POST', headers: adminHeaders })
+      const data = await res.json()
       setActionResult(`Sync complete — ${data.updated || 0} matches updated, ${data.pointsCalculated || 0} points calculated`)
       await logAudit('MANUAL_SYNC', { updated: data.updated, pointsCalculated: data.pointsCalculated })
       loadHealth()
@@ -563,7 +1199,8 @@ export default function AdminPanel() {
   const prepopulateMatchIds = async () => {
     setSaving(prev => ({ ...prev, prepopulate: true }))
     try {
-      const data = await callAdminFunction('/.netlify/functions/prepopulate-matches', { method: 'POST' })
+      const res = await fetch('/.netlify/functions/prepopulate-matches', { method: 'GET', headers: adminHeaders })
+      const data = await res.json()
       if (data.error) {
         setActionResult(`Pre-populate error: ${data.error}`)
       } else {
@@ -828,14 +1465,15 @@ export default function AdminPanel() {
       const predResult = p.home_score > p.away_score ? 'H' : p.away_score > p.home_score ? 'A' : 'D'
       const exact = p.home_score === homeScore && p.away_score === awayScore
       const correct = predResult === actualResult
-      const points = calculateGroupPredictionPoints(p, { home_score: homeScore, away_score: awayScore })
+      const base = exact ? 10 : correct ? 5 : 0
+      const joker = p.is_confident ? 2 : 1
       return {
         username: p.profiles?.username || 'Unknown',
         home: p.home_score,
         away: p.away_score,
         exact,
         correct,
-        points,
+        points: base * joker,
       }
     }).sort((a, b) => b.points - a.points)
 
@@ -1871,7 +2509,8 @@ export default function AdminPanel() {
                 <button onClick={async () => {
                   setSaving(prev => ({ ...prev, standings: true }))
                   try {
-                    const data = await callAdminFunction('/.netlify/functions/sync-standings', { method: 'POST' })
+                    const res = await fetch('/.netlify/functions/sync-standings', { method: 'POST', headers: adminHeaders })
+                    const data = await res.json()
                     setActionResult(`✅ Standings synced: ${data.updated || 0} rows updated, ${data.skipped || 0} skipped${data.firstSkipped ? ` (first skip: "${data.firstSkipped}")` : ''}${data.note ? ` | ${data.note}` : ''}${data.v ? ` [v${data.v}]` : ''}`)
                   } catch (e) {
                     setActionResult(`❌ Standings sync failed: ${e.message}`)
@@ -1886,7 +2525,8 @@ export default function AdminPanel() {
                 <button onClick={async () => {
                   setSaving(prev => ({ ...prev, backfillBracket: true }))
                   try {
-                    const data = await callAdminFunction('/.netlify/functions/backfill-bracket-teams', { method: 'POST' })
+                    const res = await fetch('/.netlify/functions/backfill-bracket-teams', { method: 'POST', headers: adminHeaders })
+                    const data = await res.json()
                     setActionResult(`✅ Bracket backfill: ${data.updated} updated, ${data.skipped} already done, ${data.total} total picks`)
                   } catch (e) {
                     setActionResult(`❌ Bracket backfill failed: ${e.message}`)
@@ -2719,6 +3359,57 @@ export default function AdminPanel() {
                   🗑️ Delete League
                 </button>
 
+                {/* Snapshot controls for pre_tournament leagues */}
+                {league.lock_type === 'pre_tournament' && (
+                  <div style={{ marginTop: '8px', padding: '8px 10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700' }}>🔒 Pre-tournament lock</span>
+                      {league.snapshot_taken_at
+                        ? <span style={{ fontSize: '11px', color: 'var(--accent-green)' }}>✅ Snapshot taken {new Date(league.snapshot_taken_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        : <span style={{ fontSize: '11px', color: 'var(--accent-gold)' }}>⏳ Snapshot pending (11 Jun 13:00)</span>
+                      }
+                    </div>
+                    {league.snapshot_taken_at && (
+                      <SnapshotCounts leagueId={league.id} supabase={supabase} />
+                    )}
+
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                      {!league.snapshot_taken_at && (
+                        <button onClick={async () => {
+                          if (!confirm(`Take snapshot now for "${league.name}"? This locks all predictions immediately.`)) return
+                          const res = await fetch('/.netlify/functions/snapshot-league-predictions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ league_id: league.id })
+                          })
+                          const data = await res.json()
+                          if (!res.ok) { setActionResult(`❌ Snapshot failed: ${data.error || 'Unknown error'}`); return }
+                          const detail = [
+                            `${data.matchPredictions ?? data.predictions ?? 0} matches`,
+                            `${data.knockoutPicks ?? 0} knockout`,
+                            `${data.awardPredictions ?? 0} awards`,
+                            `${data.tournamentPredictions ?? 0} goals`
+                          ].join(' · ')
+                          setActionResult(`✅ ${data.message} — ${detail}`)
+                          loadLeagues()
+                        }} className="btn btn-sm" style={{ background: 'var(--scottish-navy)', color: 'white', border: 'none', fontSize: '11px' }}>
+                          📸 Snapshot now
+                        </button>
+                      )}
+                      {league.snapshot_taken_at && (
+                        <button onClick={() => setEditingCommittedLeague(editingCommittedLeague === league.id ? null : league.id)}
+                          className="btn btn-sm" style={{ border: '1px solid var(--accent-blue)', color: 'var(--accent-blue)', background: 'none', fontSize: '11px' }}>
+                          ✏️ Edit committed snapshot
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Edit committed snapshot */}
+                    {editingCommittedLeague === league.id && (
+                      <CommittedScoreEditor leagueId={league.id} members={league.members} matches={matches} supabase={supabase} onClose={() => setEditingCommittedLeague(null)} logAudit={logAudit} />
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -3331,7 +4022,7 @@ export default function AdminPanel() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '14px' }}>
                 {[
-                  { key: 'auto', label: '🔄 Auto (use real dates)', desc: `Currently: ${new Date() < DATES.TOURNAMENT_START ? 'Pre-Tournament' : new Date() < DATES.GROUP_STAGE_END ? 'Group Stage' : 'KO Predictor'}` },
+                  { key: 'auto', label: '🔄 Auto (use real dates)', desc: `Currently: ${new Date() < new Date('2026-06-11T19:00:00Z') ? 'Pre-Tournament' : new Date() < new Date('2026-06-27T22:00:00Z') ? 'Group Stage' : 'KO Predictor'}` },
                   { key: 'pre_tournament', label: '⏳ Pre-Tournament', desc: 'Before 11 Jun — predictions open, no scores yet' },
                   { key: 'group_stage', label: '⚽ Group Stage', desc: '11–27 Jun — matches live, scores coming in' },
                   { key: 'knockout_banner', label: '📣 KO Banner Live', desc: '20 Jun+ — teaser banner showing on home' },

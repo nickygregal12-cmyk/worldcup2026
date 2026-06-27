@@ -7,7 +7,6 @@ import { toApiName, normalise } from '../lib/teamNames.js'
 import { ErrorState, SkeletonCard } from '../components/PageState.jsx'
 import { StandingsRow, StandingsHeader, StandingsLegend } from '../components/GroupStandingsTable.jsx'
 import { ALL_STAGES, calcPredictedStandings, getBest3rdTeams, groupFullyPredicted, resolveSlot, getMD1LockTime, MD1_STANDINGS_LOCK_FALLBACK } from '../lib/bracketUtils.js'
-import { DATES } from '../lib/tournamentDates.js'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 const TOTAL_GROUP_MATCHES = 72 // 12 groups × 6 matches
@@ -579,8 +578,8 @@ export default function Predictions() {
   const { appSettings } = useAppStore()
   const navigate = useNavigate()
   const [activeGroup, setActiveGroup] = useState('A')
-  const tournamentKickoff = DATES.TOURNAMENT_START
-  const [viewMode, setViewMode] = useState(() => new Date() >= DATES.TOURNAMENT_START ? 'date' : 'group')
+  const tournamentKickoff = new Date('2026-06-11T19:00:00Z')
+  const [viewMode, setViewMode] = useState(() => new Date() >= new Date('2026-06-11T19:00:00Z') ? 'date' : 'group')
   const [activeDateId, setActiveDateId] = useState(null)
   const [activeTab, setActiveTab] = useState('picks') // picks | overview | standings
   const [teamSearch, setTeamSearch] = useState('')
@@ -686,7 +685,7 @@ export default function Predictions() {
   }, [location.key])
 
   const checkJokerReminder = async () => {
-    const lastGroupMatch = DATES.GROUP_STAGE_END
+    const lastGroupMatch = new Date('2026-06-28T20:00:00Z')
     const now = new Date()
     const hoursUntilEnd = (lastGroupMatch - now) / (1000 * 60 * 60)
     const jokers = profile?.jokers_group_remaining ?? 8
@@ -698,7 +697,7 @@ export default function Predictions() {
 
   const getJokerMessage = () => {
     const used = 8 - jokersRemaining
-    const lastGroupMatch = DATES.GROUP_STAGE_END
+    const lastGroupMatch = new Date('2026-06-28T20:00:00Z')
     const hoursUntilEnd = (lastGroupMatch - new Date()) / (1000 * 60 * 60)
     const urgent = hoursUntilEnd > 0 && hoursUntilEnd < 24
 
@@ -752,7 +751,7 @@ export default function Predictions() {
       setLoadError(false)
 
       // Auto-scroll to most relevant date when in date view post-kickoff
-      if (new Date() >= DATES.TOURNAMENT_START) {
+      if (new Date() >= new Date('2026-06-11T19:00:00Z')) {
         setTimeout(() => {
           const now = new Date()
           const allMatches = data || []

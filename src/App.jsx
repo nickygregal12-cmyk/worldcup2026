@@ -38,9 +38,9 @@ function ProtectedRoute({ children }) {
 }
 
 function AdminRoute({ children }) {
-  const { user, isAdmin, isLeagueAdmin, isLoading } = useAuthStore()
+  const { user, isAdmin, isLoading } = useAuthStore()
   if (isLoading) return <div className="loading-screen"><div className="spinner" /></div>
-  if (!user || (!isAdmin && !isLeagueAdmin)) return <Navigate to="/" replace />
+  if (!user || !isAdmin) return <Navigate to="/" replace />
   return children
 }
 

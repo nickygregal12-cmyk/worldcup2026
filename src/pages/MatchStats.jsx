@@ -14,16 +14,13 @@ export default function MatchStats() {
   const [match, setMatch] = useState(null)
   const [stats, setStats] = useState(null)
   const [scopeLabel, setScopeLabel] = useState('Everyone')
+  const [leagueName, setLeagueName] = useState(null)
   const [ranked, setRanked] = useState([])
   const [myLine, setMyLine] = useState(null)
-  const [notLocked, setNotLocked] = useState(false)
-  const [scopeDenied, setScopeDenied] = useState(false)
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
-      setNotLocked(false)
-      setScopeDenied(false)
 
       // 1. The match
       const { data: m } = await supabase
@@ -33,28 +30,17 @@ export default function MatchStats() {
         .maybeSingle()
       setMatch(m)
 
-      const locked = m && (m.status === 'live' || m.status === 'completed' || new Date(m.kickoff_time) <= new Date())
-      if (!locked) {
-        setNotLocked(true)
-        setLoading(false)
-        return
-      }
-
       // 2. Determine scope — league members or everyone
       let userIdFilter = null
       if (leagueCode) {
         const { data: league } = await supabase
-          .from('leagues').select('id, name').eq('invite_code', leagueCode).maybeSingle()
+          .from('leagues').select('id, name').eq('code', leagueCode).maybeSingle()
         if (league) {
+          setLeagueName(league.name)
+          setScopeLabel(league.name)
           const { data: members } = await supabase
             .from('league_members').select('user_id').eq('league_id', league.id)
           userIdFilter = (members || []).map(mm => mm.user_id)
-          if (!user?.id || !userIdFilter.includes(user.id)) {
-            setScopeDenied(true)
-            setLoading(false)
-            return
-          }
-          setScopeLabel(league.name)
         }
       }
 
@@ -104,21 +90,6 @@ export default function MatchStats() {
   if (loading) {
     return <div className="container" style={{ padding: '40px 16px', textAlign: 'center' }}>
       <div className="spinner" style={{ margin: '0 auto' }} />
-    </div>
-  }
-
-  if (scopeDenied) {
-    return <div className="container" style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-      <button onClick={() => navigate(-1)} style={{ marginBottom: '16px', color: 'var(--scottish-navy)', fontWeight: '700', fontSize: '14px' }}>← Back</button>
-      <p>You need to be a member of this league to view its match predictions.</p>
-    </div>
-  }
-
-  if (notLocked) {
-    return <div className="container" style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-      <button onClick={() => navigate(-1)} style={{ marginBottom: '16px', color: 'var(--scottish-navy)', fontWeight: '700', fontSize: '14px' }}>← Back</button>
-      <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔒</div>
-      <p>Other players’ predictions will appear once this match kicks off.</p>
     </div>
   }
 
@@ -359,13 +330,12 @@ function computeStats(preds, reactions, match) {
 
   const homePct = Math.round((home / total) * 100)
   const drawPct = Math.round((draw / total) * 100)
-  const awayPct = Math.round((away / total) * 100)
 
   return {
     total,
     homePct,
     drawPct,
-    awayPct,
+    awayPct: 100 - homePct - drawPct,
     topScore,
     topScorePct: Math.round((topCount / total) * 100),
     jokers,

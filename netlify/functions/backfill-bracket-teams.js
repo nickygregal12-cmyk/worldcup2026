@@ -1,6 +1,4 @@
-/* global process */
 import { createClient } from '@supabase/supabase-js'
-import { requireAdmin } from './_adminAuth.js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -134,11 +132,9 @@ function resolveSlot(slot, standingsMap, allocation, best3rds, predictedGroups) 
 }
 
 export const handler = async (event) => {
-  const auth = await requireAdmin(event)
-  if (!auth.ok) return auth.response
-
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
+  const secret = event.headers['x-admin-secret']
+  if (!secret || secret !== process.env.ADMIN_FUNCTION_SECRET) {
+    return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
   }
 
   // ?dry=1 reports what WOULD change without writing.

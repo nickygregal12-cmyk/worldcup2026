@@ -2,8 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
-import { DATES } from '../lib/tournamentDates.js'
 
+const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z') // 27 Jun 23:00 BST
 const STAGES = [
   { key: 'r32',   label: 'R32',       full: 'Round of 32',    total: 16 },
   { key: 'r16',   label: 'R16',       full: 'Round of 16',    total: 8 },
@@ -53,7 +53,7 @@ export default function KOPredictor() {
   const isOpen = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
     ? true
     : phaseOverride && phaseOverride !== 'ko_predictor' ? false
-    : m73Ready || new Date() >= DATES.KO_PREDICTOR_OPEN
+    : m73Ready || new Date() >= KO_OPEN_DATE
   const isLocked = (kickoffTime) => new Date() >= new Date(kickoffTime)
 
   useEffect(() => {
@@ -207,7 +207,7 @@ export default function KOPredictor() {
     setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: null } }))
     setSaving(prev => ({ ...prev, [match.id]: true }))
 
-    const { error } = await supabase.from('ko_predictions').upsert({
+    await supabase.from('ko_predictions').upsert({
       user_id: user.id,
       match_id: match.id,
       home_score: homeScore,
@@ -220,10 +220,6 @@ export default function KOPredictor() {
     }, { onConflict: 'user_id,match_id,bracket_type' })
 
     setSaving(prev => ({ ...prev, [match.id]: false }))
-    if (error) {
-      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: error.message } }))
-      return
-    }
     setSaved(prev => ({ ...prev, [match.id]: true }))
     setTimeout(() => setSaved(prev => ({ ...prev, [match.id]: false })), 2000)
   }
@@ -237,19 +233,13 @@ export default function KOPredictor() {
     const newRemaining = newJoker ? jokersRemaining - 1 : jokersRemaining + 1
     setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], is_joker: newJoker } }))
     setJokersRemaining(newRemaining)
-    const { error } = await supabase.from('ko_predictions').upsert({
+    await supabase.from('ko_predictions').upsert({
       user_id: user.id, match_id: matchId,
       home_score: pred.home ?? 0, away_score: pred.away ?? 0,
       outcome_type: pred.outcome_type || '90mins',
       winner_team_id: pred.winner_team_id || null,
-      first_goal_band: pred.first_goal_band || null,
       is_joker: newJoker, bracket_type: 'main',
     }, { onConflict: 'user_id,match_id,bracket_type' })
-    if (error) {
-      setPredictions(prev => ({ ...prev, [matchId]: { ...prev[matchId], is_joker: currentJoker, _error: error.message } }))
-      setJokersRemaining(jokersRemaining)
-      return
-    }
     await supabase.from('profiles').update({ ko_jokers_remaining: newRemaining }).eq('id', user.id)
     await loadFreshJokerCount()
   }
