@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, signUpWithEmail, signInWithGoogle } from '../lib/supabase.js'
 import { validateDisplayName } from '../lib/validateDisplayName.js'
 import { DATES } from '../lib/tournamentDates.js'
+import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18">
@@ -87,7 +88,7 @@ export default function Register() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', background: 'linear-gradient(135deg, rgba(0,30,80,0.88) 0%, rgba(0,60,140,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat' }}>
       <div style={{ width: '100%', maxWidth: '400px' }} className="fade-in">
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>🏆</div>
+          <WorldCupLogo variant="hero" size={104} />
           <h1 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.03em' }}>Join WC26 Predictor</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '6px', fontSize: '15px' }}>
             Predict all 104 matches, build your bracket and compete with friends.
@@ -105,6 +106,8 @@ export default function Register() {
             ))}
           </div>
         </div>
+
+        <div style={{ textAlign: 'center', fontSize: '10px', color: 'rgba(255,255,255,0.52)', margin: '-14px 0 18px' }}>Unofficial fan predictor · not affiliated with or endorsed by FIFA</div>
 
         {/* Step indicator */}
         <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', justifyContent: 'center' }}>

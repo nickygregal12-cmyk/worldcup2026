@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 import { calcPredictedStandings } from '../lib/bracketUtils.js'
+import WorldCupLogo from './WorldCupLogo.jsx'
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
@@ -176,13 +177,7 @@ export default function ShareCard({ onClose }) {
               🏴󠁧󠁢󠁳󠁣󠁴󠁿 {displayName}
             </div>
           </div>
-          <div style={{
-            width: '40px', height: '40px', borderRadius: '50%',
-            background: 'radial-gradient(circle at 35% 30%, #f5e7a3, #b8860b)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.5)',
-            flexShrink: 0,
-          }}>🏆</div>
+          <WorldCupLogo variant="share" size={58} />
         </div>
 
         {loading ? (
@@ -262,7 +257,7 @@ export default function ShareCard({ onClose }) {
             {/* Footer */}
             <div style={{ borderTop: '1px solid rgba(255,255,255,0.12)', paddingTop: '10px', textAlign: 'center' }}>
               <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.45)', fontWeight: '600', letterSpacing: '0.04em' }}>
-                ⚽ wc26predictor1.netlify.app
+                wc26predictor1.netlify.app · unofficial fan predictor
               </div>
             </div>
           </>

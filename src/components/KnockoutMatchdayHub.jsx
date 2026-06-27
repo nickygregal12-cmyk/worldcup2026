@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
+import WorldCupLogo from './WorldCupLogo.jsx'
 
 const KO_STAGES = ['r32', 'r16', 'qf', 'sf', '3rd', 'final']
 const ADVANCEMENT_STAGES = ['r32', 'r16', 'qf', 'sf', 'final']
@@ -484,7 +485,8 @@ export default function KnockoutMatchdayHub({ user, profile }) {
         color: 'white', borderRadius: 'var(--radius-lg)', padding: '18px 16px', overflow: 'hidden', position: 'relative',
       }}>
         <div style={{ position: 'absolute', width: '150px', height: '150px', borderRadius: '50%', right: '-55px', top: '-75px', background: 'radial-gradient(circle, rgba(255,193,7,0.28), transparent 70%)' }} />
-        <div style={{ position: 'relative' }}>
+        <WorldCupLogo variant="watermark" size={154} opacity={0.11} style={{ right: '-8px', top: '48%' }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.66)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em' }}>
             Knockout matchday
           </div>

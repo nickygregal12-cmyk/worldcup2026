@@ -5,6 +5,7 @@ import { useAuthStore, useAppStore } from '../store/index.js'
 import { useCountUp } from '../hooks/useCountUp.js'
 import MemberPredictionsModal, { useMemberPredictions } from '../components/MemberPredictionsModal.jsx'
 import { DATES } from '../lib/tournamentDates.js'
+import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
 const PAGE_SIZE = 25
 
@@ -121,8 +122,9 @@ export default function Leaderboard() {
       )}
 
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/leaderboard-bg.jpg) center/cover no-repeat', padding: '28px 20px 20px', color: 'white', textAlign: 'center' }}>
-        <div className="container">
+      <div style={{ background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/leaderboard-bg.jpg) center/cover no-repeat', padding: '28px 20px 20px', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <WorldCupLogo variant="watermark" size={178} opacity={0.09} style={{ right: '-18px' }} />
+        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ fontSize: '12px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>FIFA World Cup 2026</div>
           <h1 style={{ fontSize: '26px', fontWeight: '900', letterSpacing: '-0.03em', marginBottom: '4px' }}>🏆 Leaderboard</h1>
           <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '16px' }}>

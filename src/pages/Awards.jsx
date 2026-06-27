@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 import { DATES } from '../lib/tournamentDates.js'
+import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
 // Reordered: awards first, goals last. Final Four removed.
 const AWARDS = [
@@ -246,7 +247,9 @@ export default function Awards() {
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(0,30,80,0.85) 0%, rgba(0,60,140,0.80) 100%), url(/awards-bg.jpg) center/cover no-repeat', padding: '24px 20px', color: 'white', textAlign: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(0,30,80,0.85) 0%, rgba(0,60,140,0.80) 100%), url(/awards-bg.jpg) center/cover no-repeat', padding: '24px 20px', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <WorldCupLogo variant="watermark" size={166} opacity={0.1} style={{ right: '-16px' }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
         <h1 style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px' }}>🏅 Tournament Predictions</h1>
         <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', marginBottom: '16px' }}>
           {tournamentStarted ? 'Predictions locked at tournament kickoff' : 'Lock at kickoff · 11 Jun 20:00 BST'}
@@ -273,6 +276,7 @@ export default function Awards() {
           </div>
         </div>
         <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', marginTop: '8px' }}>{totalDone}/{totalPossible} sections complete</div>
+        </div>
       </div>
 
       {!user && (

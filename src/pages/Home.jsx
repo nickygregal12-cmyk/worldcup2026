@@ -7,6 +7,8 @@ import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from
 import ShareCard from '../components/ShareCard.jsx'
 import MemberPredictionsModal, { useMemberPredictions } from '../components/MemberPredictionsModal.jsx'
 import KnockoutMatchdayHub from '../components/KnockoutMatchdayHub.jsx'
+import GroupMatchdayHub from '../components/GroupMatchdayHub.jsx'
+import WorldCupLogo from '../components/WorldCupLogo.jsx'
 import { DATES } from '../lib/tournamentDates.js'
 
 // ── Tournament phase dates ───────────────────────────────────────────────────
@@ -763,8 +765,9 @@ export default function Home() {
           <div style={{ position: 'absolute', top: '50%', left: '50%', width: '220%', height: '13px', background: 'rgba(255,255,255,0.05)', transform: 'translate(-50%,-50%) rotate(27deg)' }} />
           <div style={{ position: 'absolute', top: '50%', left: '50%', width: '220%', height: '13px', background: 'rgba(255,255,255,0.05)', transform: 'translate(-50%,-50%) rotate(-27deg)' }} />
         </div>
+        <WorldCupLogo variant="watermark" size={214} opacity={0.085} style={{ right: '-34px', top: '50%' }} />
 
-        <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '600px', margin: '0 auto' }}>
           {/* Dynamic eyebrow — navigational, tells you where you are */}
           <div style={{ fontSize: 'var(--t-tiny)', fontWeight: '700', letterSpacing: '0.14em', marginBottom: '10px', textTransform: 'uppercase',
             color: liveMatches.length > 0 ? '#ef5350' : 'var(--accent-green)',
@@ -899,13 +902,18 @@ export default function Home() {
       <div className="container" style={{ padding: '20px 16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
 
+          {/* ── Group matchday hub: countdown → live scores → full-time recap ── */}
+          {!loading && user && tournamentStarted && !groupStageDone && (
+            <GroupMatchdayHub user={user} profile={profile} />
+          )}
+
           {/* ── Knockout matchday hub: team-based bracket impact + separate KO picks ── */}
           {!loading && user && groupStageDone && knockoutLive && (
             <KnockoutMatchdayHub user={user} profile={profile} />
           )}
 
-          {/* ── Post-kickoff: Next Match countdown → flips to LIVE when it starts ── */}
-          {!loading && tournamentStarted && !groupStageDone && (liveMatches.length > 0 || nextMatch) && (
+          {/* ── Public group-stage countdown/live card for signed-out visitors ── */}
+          {!loading && !user && tournamentStarted && !groupStageDone && (liveMatches.length > 0 || nextMatch) && (
             <div className="card fade-in" style={{
               overflow: 'hidden',
               border: liveMatches.length > 0 ? '2px solid #e53935' : '1px solid rgba(0,48,135,0.16)',
@@ -1038,7 +1046,7 @@ export default function Home() {
           )}
 
           {/* ── League picks for live match ── */}
-          {liveMatches.length > 0 && liveLeaguePreds.length > 0 && (
+          {!user && liveMatches.length > 0 && liveLeaguePreds.length > 0 && (
             <div className="card fade-in" style={{ padding: '12px 14px' }}>
               <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '10px' }}>
                 👥 Your league's picks
@@ -1642,7 +1650,7 @@ export default function Home() {
           )}
 
           {/* ── Upcoming matches in next 24hrs — weather-first card ── */}
-          {todayMatches.length > 0 && tournamentStarted && !groupStageDone && (() => {
+          {!user && todayMatches.length > 0 && tournamentStarted && !groupStageDone && (() => {
             const now2 = new Date()
             const liveIds = new Set(liveMatches.map(m => m.id))
             // Exclude currently-live matches (already shown in LIVE card above)
@@ -1754,7 +1762,7 @@ export default function Home() {
           })()}
 
           {/* ── Coming Up fallback — shown when nothing in next 24hrs ── */}
-          {liveMatches.length === 0 && todayMatches.length === 0 && upcomingMatches.length > 0 && nextMatch && !countdown.started && tournamentStarted && (
+          {!user && liveMatches.length === 0 && todayMatches.length === 0 && upcomingMatches.length > 0 && nextMatch && !countdown.started && tournamentStarted && (
             <div className="card fade-in">
               <div className="section-header">
                 <span className="section-title">📅 Coming Up</span>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DATES } from '../lib/tournamentDates.js'
+import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
 const SCORING = [
   {
@@ -142,13 +143,16 @@ export default function HowToPlay() {
       {/* Header */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/howtoplay-bg.jpg) center bottom/cover no-repeat',
-        padding: '28px 20px 32px', color: 'white',
+        padding: '28px 20px 32px', color: 'white', position: 'relative', overflow: 'hidden',
       }}>
+        <WorldCupLogo variant="watermark" size={170} opacity={0.1} style={{ right: '-18px' }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
         <Link to="/" style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '16px' }}>
           ← Back
         </Link>
         <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '6px' }}>How to Play</div>
         <div style={{ fontSize: '14px', opacity: 0.8 }}>Everything you need to know about WC26 Predictor</div>
+        </div>
       </div>
 
       <div className="container" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>

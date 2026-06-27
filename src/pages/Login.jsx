@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase, signInWithEmail, signInWithGoogle } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
+import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 18 18">
@@ -141,7 +142,7 @@ export default function Login() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', background: 'linear-gradient(135deg, rgba(0,30,80,0.88) 0%, rgba(0,60,140,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat' }}>
       <div style={{ width: '100%', maxWidth: '400px' }} className="fade-in">
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚽</div>
+          <WorldCupLogo variant="hero" size={104} />
           <h1 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.03em' }}>Welcome back</h1>
           <p style={{ color: 'var(--text-muted)', marginTop: '6px', fontSize: '15px' }}>Sign in to edit your predictions, check leagues and follow your points.</p>
         </div>
@@ -210,7 +211,9 @@ export default function Login() {
           </form>
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: 'var(--text-muted)' }}>
+        <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '10px', color: 'rgba(255,255,255,0.52)' }}>Unofficial fan predictor · not affiliated with or endorsed by FIFA</p>
+
+        <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '14px', color: 'var(--text-muted)' }}>
           Don't have an account?{' '}
           <Link to="/register" style={{ color: 'var(--text-primary)', fontWeight: '600' }}>Register free</Link>
         </p>

@@ -10,6 +10,7 @@ import {
 } from '../lib/bracketUtils.js'
 import { predictKnockoutMatch } from '../lib/luckyDip.js'
 import { DATES } from '../lib/tournamentDates.js'
+import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
 
 const VENUE_FLAGS = {
@@ -1140,9 +1141,10 @@ export default function Knockout() {
       {/* ── Hero ── */}
       <div style={{
         background: 'linear-gradient(135deg, rgba(0,20,60,0.85) 0%, rgba(0,48,135,0.88) 60%, rgba(0,20,60,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat',
-        padding: '28px 20px 24px', color: 'white', textAlign: 'center',
+        padding: '28px 20px 24px', color: 'white', textAlign: 'center', position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+        <WorldCupLogo variant="watermark" size={184} opacity={0.09} style={{ right: '-20px' }} />
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '600px', margin: '0 auto' }}>
           <div style={{ fontSize: '12px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginBottom: '8px' }}>
             FIFA World Cup 2026
           </div>

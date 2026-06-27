@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import { DATES } from '../lib/tournamentDates.js'
+import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
 const STAGES = [
   { key: 'r32',   label: 'R32',       full: 'Round of 32',    total: 16 },
@@ -638,8 +639,8 @@ export default function KOPredictor() {
       <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
         <div style={{ background: 'linear-gradient(135deg, #e65100, #ff9800)', padding: '32px 20px', color: 'white', textAlign: 'center' }}>
           <div className="container">
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔥</div>
-            <h1 style={{ fontSize: '26px', fontWeight: '900', marginBottom: '8px' }}>Knockout Predictor</h1>
+            <WorldCupLogo variant="hero" size={104} />
+            <h1 style={{ fontSize: '26px', fontWeight: '900', marginBottom: '8px' }}>🔥 Knockout Predictor</h1>
             <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '15px', marginBottom: '4px' }}>Separate game · fresh start · everyone on 0pts</p>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Opens as soon as the Round of 32 teams are confirmed</p>
           </div>
@@ -679,8 +680,9 @@ export default function KOPredictor() {
       <div style={{ background: 'linear-gradient(135deg, #e65100, #ff9800)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50 }}>
         <div className="container">
           {/* Row 1: Title + joker counter */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 8px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 8px', gap: '10px' }}>
+            <WorldCupLogo variant="compact" size={42} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flex: 1 }}>
               <span style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>🔥 KO Predictor</span>
               <span style={{ fontSize: '10.5px', fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>Separate game · doesn't affect your Tournament score</span>
             </div>
