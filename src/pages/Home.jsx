@@ -6,6 +6,7 @@ import { predictMatchOdds, predictGoals, predictAwards } from '../lib/luckyDip.j
 import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
 import ShareCard from '../components/ShareCard.jsx'
 import MemberPredictionsModal, { useMemberPredictions } from '../components/MemberPredictionsModal.jsx'
+import KnockoutMatchdayHub from '../components/KnockoutMatchdayHub.jsx'
 import { DATES } from '../lib/tournamentDates.js'
 
 // ── Tournament phase dates ───────────────────────────────────────────────────
@@ -898,8 +899,13 @@ export default function Home() {
       <div className="container" style={{ padding: '20px 16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
 
+          {/* ── Knockout matchday hub: team-based bracket impact + separate KO picks ── */}
+          {!loading && user && groupStageDone && knockoutLive && (
+            <KnockoutMatchdayHub user={user} profile={profile} />
+          )}
+
           {/* ── Post-kickoff: Next Match countdown → flips to LIVE when it starts ── */}
-          {!loading && tournamentStarted && (liveMatches.length > 0 || nextMatch) && (
+          {!loading && tournamentStarted && !groupStageDone && (liveMatches.length > 0 || nextMatch) && (
             <div className="card fade-in" style={{
               overflow: 'hidden',
               border: liveMatches.length > 0 ? '2px solid #e53935' : '1px solid rgba(0,48,135,0.16)',
@@ -1636,7 +1642,7 @@ export default function Home() {
           )}
 
           {/* ── Upcoming matches in next 24hrs — weather-first card ── */}
-          {todayMatches.length > 0 && tournamentStarted && (() => {
+          {todayMatches.length > 0 && tournamentStarted && !groupStageDone && (() => {
             const now2 = new Date()
             const liveIds = new Set(liveMatches.map(m => m.id))
             // Exclude currently-live matches (already shown in LIVE card above)
