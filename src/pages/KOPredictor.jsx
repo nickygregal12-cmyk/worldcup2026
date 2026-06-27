@@ -291,7 +291,7 @@ export default function KOPredictor() {
     !/Winner|Runner/.test(m.home_team?.name || '') &&
     !/Winner|Runner/.test(m.away_team?.name || '')
 
-  const stageMatches = matches.filter(m => m.stage === activeStage && isConfirmed(m))
+  const stageMatches = matches.filter(m => m.stage === activeStage && isConfirmed(m)).sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
   const stagePending = matches.filter(m => m.stage === activeStage && !isConfirmed(m)).length
   const confirmedTotal = matches.filter(isConfirmed).length
   const getPredCount = (stage) => {
