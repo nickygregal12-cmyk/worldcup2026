@@ -860,7 +860,7 @@ export default function Knockout() {
 
   const best3rd = getBest3rdTeams(standings) || []
   const currentStage = ALL_STAGES.find(s => s.key === activeStage)
-  const stageMatches = currentStage?.matches || []
+  const stageMatches = [...(currentStage?.matches || [])].sort((a, b) => new Date(a.kickoff) - new Date(b.kickoff))
   const stagePicks = stageMatches.filter(m => knockoutPicks[m.match_number]?.winner_id).length
   // A pick counts toward completion only if its stored winner is still one of
   // the two teams the bracket CURRENTLY resolves for that match. This catches
