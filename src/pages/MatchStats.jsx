@@ -114,8 +114,15 @@ export default function MatchStats() {
   useEffect(() => {
     const loadSlot = async () => {
       setLoadingSlot(true)
-      const { data: m } = await supabase
-        .from('matches').select('id, kickoff_time').eq('id', matchId).maybeSingle()
+      // Links around the app may contain either the database UUID or the public
+      // match number. Resolve both so older and newer links remain valid.
+      const numericMatchNumber = /^\d+$/.test(String(matchId || '')) ? Number(matchId) : null
+      let matchQuery = supabase.from('matches').select('id, kickoff_time')
+      matchQuery = numericMatchNumber !== null
+        ? matchQuery.eq('match_number', numericMatchNumber)
+        : matchQuery.eq('id', matchId)
+      const { data: m, error: matchError } = await matchQuery.maybeSingle()
+      if (matchError) console.error('Match Centre lookup failed:', matchError)
       if (!m) { setSlotIds([]); setLoadingSlot(false); return }
       // every match kicking off at the same instant — shown together
       const { data: siblings } = await supabase

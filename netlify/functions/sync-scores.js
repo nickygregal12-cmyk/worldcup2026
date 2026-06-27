@@ -121,23 +121,6 @@ const inferOrientation = (ourMatch, apiMatch) => {
   return { matches: false, reversed: false }
 }
 
-const getFootballDataKey = () =>
-  process.env.FOOTBALL_DATA_KEY ||
-  process.env.FOOTBALL_API_KEY ||
-  process.env.API_FOOTBALL_KEY ||
-  process.env.VITE_FOOTBALL_DATA_KEY ||
-  ''
-
-async function providerError(response) {
-  const body = await response.text().catch(() => '')
-  let detail = body
-  try {
-    const parsed = JSON.parse(body)
-    detail = parsed.message || parsed.error || body
-  } catch (_) {}
-  return `football-data.org returned ${response.status}${detail ? `: ${String(detail).slice(0, 240)}` : ''}`
-}
-
 export const handler = async (event) => {
   const auth = await requireAdmin(event)
   if (!auth.ok) return auth.response
@@ -153,33 +136,37 @@ export const handler = async (event) => {
     .single()
 
   if (settings?.value !== 'true') {
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        message: 'Live score API is disabled in Admin → Settings.',
-        disabled: true,
-        skipped: true,
-      }),
-    }
+    return { statusCode: 200, body: JSON.stringify({ message: 'Live API disabled' }) }
   }
 
   try {
-    const footballDataKey = getFootballDataKey()
-    if (!footballDataKey) {
-      throw new Error(
-        'No football-data.org key is configured. Add FOOTBALL_DATA_KEY to the Netlify Production environment and redeploy.'
-      )
-    }
-
     const response = await fetch(
       'https://api.football-data.org/v4/competitions/WC/matches?season=2026',
-      { headers: { 'X-Auth-Token': footballDataKey, 'X-Api-Version': 'v4.1' } }
+      { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY, 'X-Api-Version': 'v4.1' } }
     )
 
-    if (!response.ok) throw new Error(await providerError(response))
+    if (!response.ok) throw new Error(`API error: ${response.status}`)
 
     const data = await response.json()
-    const matches = data.matches || []
+    let matches = data.matches || []
+
+    // Competition match lists can be folded by football-data.org. Fetch the
+    // individual resource for live games so minute and injuryTime are present.
+    const liveStatuses = new Set(['IN_PLAY', 'PAUSED'])
+    matches = await Promise.all(matches.map(async match => {
+      if (!liveStatuses.has(match.status) || !match.id) return match
+      try {
+        const detailResponse = await fetch(
+          `https://api.football-data.org/v4/matches/${match.id}`,
+          { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY, 'X-Api-Version': 'v4.1' } }
+        )
+        if (!detailResponse.ok) return match
+        const detail = await detailResponse.json()
+        return { ...match, ...detail }
+      } catch (_) {
+        return match
+      }
+    }))
     let updated = 0
     let pointsCalculated = 0
     let fixturesPopulated = 0
@@ -315,7 +302,7 @@ export const handler = async (event) => {
 
       let { data: ourMatch, error: lookupError } = await supabase
         .from('matches')
-        .select('id, match_number, external_match_id, status, home_score, away_score, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name)')
+        .select('id, match_number, external_match_id, status, home_score, away_score, live_minute, injury_time, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name)')
         .eq('external_match_id', match.id.toString())
         .maybeSingle()
 
@@ -331,7 +318,7 @@ export const handler = async (event) => {
         if (!matchDate) continue
         const { data: candidates, error: candidateError } = await supabase
           .from('matches')
-          .select('id, match_number, external_match_id, status, home_score, away_score, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
+          .select('id, match_number, external_match_id, status, home_score, away_score, live_minute, injury_time, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
           .gte('kickoff_time', `${matchDate}T00:00:00Z`)
           .lte('kickoff_time', `${matchDate}T23:59:59Z`)
 
@@ -410,11 +397,14 @@ export const handler = async (event) => {
         }
       }
 
+      const nextLiveMinute = newStatus === 'live' ? (match.minute ?? null) : null
+      const nextInjuryTime = newStatus === 'live' ? (match.injuryTime ?? null) : null
       const scoreChanged = ourMatch.home_score !== effectiveHomeScore || ourMatch.away_score !== effectiveAwayScore
       const statusChanged = ourMatch.status !== newStatus
+      const minuteChanged = ourMatch.live_minute !== nextLiveMinute || ourMatch.injury_time !== nextInjuryTime
       const koResultChanged = isKnockout && newStatus === 'completed' &&
         (ourMatch.winner_team_id !== winnerTeamId || ourMatch.outcome_type !== outcomeType)
-      const needsUpdate = scoreChanged || statusChanged || koResultChanged || ourMatch.external_match_id !== match.id.toString()
+      const needsUpdate = scoreChanged || statusChanged || minuteChanged || koResultChanged || ourMatch.external_match_id !== match.id.toString()
       if (!needsUpdate) continue
 
       if (newStatus === 'live' && ourMatch.status === 'scheduled') {
@@ -427,8 +417,8 @@ export const handler = async (event) => {
         status: newStatus,
         external_match_id: match.id.toString(),
         api_synced_at: new Date().toISOString(),
-        live_minute: newStatus === 'live' ? (match.minute ?? null) : null,
-        injury_time: newStatus === 'live' ? (match.injuryTime ?? null) : null,
+        live_minute: nextLiveMinute,
+        injury_time: nextInjuryTime,
       }
       if (isKnockout && newStatus === 'completed') {
         updateFields.winner_team_id = winnerTeamId
@@ -530,21 +520,11 @@ export const handler = async (event) => {
     if (updated > 0) {
       try {
         const siteUrl = process.env.URL || 'https://wc26predictor1.netlify.app'
-        const authHeader = event.headers?.authorization || event.headers?.Authorization
-        const standingsHeaders = { 'Content-Type': 'application/json' }
-        if (authHeader) standingsHeaders.Authorization = authHeader
-        if (process.env.ADMIN_FUNCTION_SECRET) {
-          standingsHeaders['x-admin-secret'] = process.env.ADMIN_FUNCTION_SECRET
-        }
-
         const standingsResponse = await fetch(`${siteUrl}/.netlify/functions/sync-standings`, {
           method: 'POST',
-          headers: standingsHeaders,
+          headers: { 'x-admin-secret': process.env.ADMIN_FUNCTION_SECRET }
         })
-        if (!standingsResponse.ok) {
-          const detail = await standingsResponse.text().catch(() => '')
-          throw new Error(`HTTP ${standingsResponse.status}${detail ? `: ${detail.slice(0, 180)}` : ''}`)
-        }
+        if (!standingsResponse.ok) throw new Error(`HTTP ${standingsResponse.status}`)
         standingsSynced = true
       } catch(e) { errors.push(`Standings auto-sync failed: ${e.message}`) }
     }
@@ -559,7 +539,7 @@ export const handler = async (event) => {
       }
     }
 
-    return { statusCode: 200, body: JSON.stringify({ message: 'Sync complete', updated, pointsCalculated, fixturesPopulated, standingsSynced, errors }) }
+    return { statusCode: 200, body: JSON.stringify({ message: 'Sync complete', updated, pointsCalculated, fixturesPopulated, errors }) }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
   }
