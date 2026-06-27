@@ -1,4 +1,6 @@
+/* global process */
 import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from './_adminAuth.js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -97,13 +99,31 @@ const stripAccents = (str) => str
   .replace(/[^a-z0-9 ]/g, '')
   .trim()
 
-export const handler = async (event, context) => {
-  // Auth check — reject requests without valid admin secret
-  // pg_cron calls pass this header; direct calls from AdminPanel pass it too
-  const secret = (event.headers || {})['x-admin-secret']
-  if (!process.env.ADMIN_FUNCTION_SECRET || secret !== process.env.ADMIN_FUNCTION_SECRET) {
-    return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) }
-  }
+
+const KO_STAGES = new Set(['r32', 'r16', 'qf', 'sf', '3rd', 'final'])
+
+const firstDefined = (...values) => values.find(value => value !== null && value !== undefined)
+
+async function runRpc(name, args = {}) {
+  const { data, error } = await supabase.rpc(name, args)
+  if (error) throw new Error(`${name}: ${error.message}`)
+  return data
+}
+
+const inferOrientation = (ourMatch, apiMatch) => {
+  const localHome = stripAccents(ourMatch.home_team?.name || '')
+  const localAway = stripAccents(ourMatch.away_team?.name || '')
+  const apiHome = stripAccents(normalise(apiMatch.homeTeam?.name || ''))
+  const apiAway = stripAccents(normalise(apiMatch.awayTeam?.name || ''))
+  if (!localHome || !localAway || !apiHome || !apiAway) return { matches: false, reversed: false }
+  if (localHome === apiHome && localAway === apiAway) return { matches: true, reversed: false }
+  if (localHome === apiAway && localAway === apiHome) return { matches: true, reversed: true }
+  return { matches: false, reversed: false }
+}
+
+export const handler = async (event) => {
+  const auth = await requireAdmin(event)
+  if (!auth.ok) return auth.response
 
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) }
@@ -139,9 +159,9 @@ export const handler = async (event, context) => {
     // left for PASS 1 (the API) once FIFA's Annex C allocation is published.
     // Idempotent and fill-only, so it never overwrites a real team with null.
     try {
-      await supabase.rpc('populate_r32_known_slots')
+      await runRpc('populate_r32_known_slots')
     } catch (e) {
-      errors.push(`populate_r32_known_slots: ${e.message}`)
+      errors.push(e.message)
     }
 
     // ── PASS 1: Auto-populate knockout fixtures from FIFA's real bracket ──
@@ -237,192 +257,209 @@ export const handler = async (event, context) => {
 
     const now = new Date()
     for (const match of matches) {
-      // Also process SCHEDULED matches where kickoff has passed (API slow to switch to IN_PLAY)
       const kickoffPassed = match.utcDate && new Date(match.utcDate) <= now
       const treatAsLive = match.status === 'SCHEDULED' && kickoffPassed
       if (!['FINISHED', 'IN_PLAY', 'PAUSED'].includes(match.status) && !treatAsLive) continue
 
-      // For live matches, football-data.org puts the running score in score.fullTime
-      // (updated in real time on paid tiers). Fall back to halfTime, then currentScore, then 0-0.
-      const homeScore = match.score?.fullTime?.home
-        ?? match.score?.halfTime?.home
-        ?? match.score?.currentScore?.home
-        ?? 0
-      const awayScore = match.score?.fullTime?.away
-        ?? match.score?.halfTime?.away
-        ?? match.score?.currentScore?.away
-        ?? 0
-      // Determine status — treat past-kickoff SCHEDULED as live
-      const newStatus = match.status === 'FINISHED' ? 'completed'
-        : (match.status === 'IN_PLAY' || match.status === 'PAUSED' || treatAsLive) ? 'live'
-        : 'scheduled'
+      const apiHomeScore = firstDefined(
+        match.score?.fullTime?.home,
+        match.score?.halfTime?.home,
+        match.score?.currentScore?.home
+      )
+      const apiAwayScore = firstDefined(
+        match.score?.fullTime?.away,
+        match.score?.halfTime?.away,
+        match.score?.currentScore?.away
+      )
+      const hasApiScore = apiHomeScore !== undefined && apiAwayScore !== undefined
+      const newStatus = match.status === 'FINISHED'
+        ? 'completed'
+        : (match.status === 'IN_PLAY' || match.status === 'PAUSED' || treatAsLive) ? 'live' : 'scheduled'
 
-      // Try matching by external_match_id first (most reliable)
-      let { data: ourMatch } = await supabase
+      if (newStatus === 'completed' && !hasApiScore) {
+        errors.push(`M${match.id}: provider marked FINISHED without a complete score`)
+        continue
+      }
+
+      let { data: ourMatch, error: lookupError } = await supabase
         .from('matches')
-        .select('id, status, home_score, away_score, use_manual_override, stage, home_team_id, away_team_id')
+        .select('id, match_number, external_match_id, status, home_score, away_score, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name)')
         .eq('external_match_id', match.id.toString())
         .maybeSingle()
 
-      // Fallback: match by normalised team names + date
-      if (!ourMatch) {
-        const homeDb = normalise(match.homeTeam?.name || '')
-        const awayDb = normalise(match.awayTeam?.name || '')
-        const matchDate = match.utcDate?.substring(0, 10)
+      if (lookupError) {
+        errors.push(`External match lookup ${match.id}: ${lookupError.message}`)
+        continue
+      }
 
-        const { data: candidates } = await supabase
+      let orientation = ourMatch ? inferOrientation(ourMatch, match) : { matches: false, reversed: false }
+
+      if (!ourMatch) {
+        const matchDate = match.utcDate?.substring(0, 10)
+        if (!matchDate) continue
+        const { data: candidates, error: candidateError } = await supabase
           .from('matches')
-          .select('id, status, home_score, away_score, use_manual_override, stage, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
+          .select('id, match_number, external_match_id, status, home_score, away_score, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
           .gte('kickoff_time', `${matchDate}T00:00:00Z`)
           .lte('kickoff_time', `${matchDate}T23:59:59Z`)
 
-        ourMatch = candidates?.find(c => {
-          const h = stripAccents(c.home_team?.name || '')
-          const a = stripAccents(c.away_team?.name || '')
-          const apiH = stripAccents(homeDb)
-          const apiA = stripAccents(awayDb)
-          return (h === apiH && a === apiA) || (h === apiA && a === apiH)
-        }) || null
+        if (candidateError) {
+          errors.push(`Candidate lookup ${match.id}: ${candidateError.message}`)
+          continue
+        }
 
-        // If found by name, store the external_match_id for future syncs
+        const direct = (candidates || []).find(candidate => {
+          const result = inferOrientation(candidate, match)
+          return result.matches && !result.reversed
+        })
+        const reversed = !direct ? (candidates || []).find(candidate => {
+          const result = inferOrientation(candidate, match)
+          return result.matches && result.reversed
+        }) : null
+        ourMatch = direct || reversed || null
+        orientation = ourMatch ? inferOrientation(ourMatch, match) : { matches: false, reversed: false }
+
         if (ourMatch) {
-          await supabase.from('matches')
+          const { error: externalIdError } = await supabase
+            .from('matches')
             .update({ external_match_id: match.id.toString() })
             .eq('id', ourMatch.id)
+          if (externalIdError) errors.push(`Store external ID M${ourMatch.match_number}: ${externalIdError.message}`)
         }
       }
 
-      if (!ourMatch || ourMatch.use_manual_override) {
-        // If manually overridden but API now confirms same completed result, clear the override
-        if (ourMatch?.use_manual_override && newStatus === 'completed' &&
-            ourMatch.home_score === homeScore && ourMatch.away_score === awayScore) {
-          await supabase.from('matches').update({ use_manual_override: false }).eq('id', ourMatch.id)
+      if (!ourMatch) continue
+      if (!orientation.matches) {
+        errors.push(`M${ourMatch.match_number}: external match ${match.id} teams do not match local fixture`)
+        continue
+      }
+
+      const orientedHomeScore = hasApiScore ? (orientation.reversed ? apiAwayScore : apiHomeScore) : undefined
+      const orientedAwayScore = hasApiScore ? (orientation.reversed ? apiHomeScore : apiAwayScore) : undefined
+
+      if (ourMatch.use_manual_override) {
+        if (newStatus === 'completed' && hasApiScore &&
+            ourMatch.home_score === orientedHomeScore && ourMatch.away_score === orientedAwayScore) {
+          const { error: overrideError } = await supabase
+            .from('matches')
+            .update({ use_manual_override: false })
+            .eq('id', ourMatch.id)
+          if (overrideError) errors.push(`Clear manual override M${ourMatch.match_number}: ${overrideError.message}`)
         }
         continue
       }
-      // For live matches: if API returns 0-0 but we already have a real score stored
-      // (from manual entry or a previous sync), keep the existing score
-      // The API only returns real-time scores on higher tiers — don't regress to 0-0
-      const effectiveHomeScore = (newStatus === 'live' && homeScore === 0 && awayScore === 0 && ourMatch.home_score != null)
-        ? ourMatch.home_score
-        : homeScore
-      const effectiveAwayScore = (newStatus === 'live' && homeScore === 0 && awayScore === 0 && ourMatch.away_score != null)
-        ? ourMatch.away_score
-        : awayScore
 
-      if (ourMatch.status === 'completed' && ourMatch.home_score === effectiveHomeScore && ourMatch.away_score === effectiveAwayScore) continue
-
-      // Snapshot ranks when a match first goes live
-      // This gives us a baseline to show rank movement during the match
-      if (newStatus === 'live' && ourMatch.status === 'scheduled') {
-        try { await supabase.rpc('snapshot_user_ranks') } catch (_) {}
+      let effectiveHomeScore = hasApiScore ? orientedHomeScore : ourMatch.home_score
+      let effectiveAwayScore = hasApiScore ? orientedAwayScore : ourMatch.away_score
+      if (newStatus === 'live' && hasApiScore && orientedHomeScore === 0 && orientedAwayScore === 0 &&
+          ((ourMatch.home_score || 0) > 0 || (ourMatch.away_score || 0) > 0)) {
+        effectiveHomeScore = ourMatch.home_score
+        effectiveAwayScore = ourMatch.away_score
       }
 
-      // Derive winner_team_id and outcome_type for knockout scoring
-      // football-data.org: score.winner = HOME_TEAM | AWAY_TEAM | DRAW
-      // score.duration = REGULAR | EXTRA_TIME | PENALTY_SHOOTOUT
-      let winnerTeamId = null
-      let outcomeType = '90mins'
-      const isKnockoutStage = ['r32','r16','qf','sf','3rd','final'].includes(ourMatch.stage)
+      const isKnockout = KO_STAGES.has(ourMatch.stage)
+      let winnerTeamId = ourMatch.winner_team_id || null
+      let outcomeType = ourMatch.outcome_type || '90mins'
 
-      if (match.status === 'FINISHED' && isKnockoutStage) {
+      if (newStatus === 'completed' && isKnockout) {
         const winner = match.score?.winner
         const duration = match.score?.duration
+        outcomeType = duration === 'EXTRA_TIME' ? 'et'
+          : duration === 'PENALTY_SHOOTOUT' ? 'penalties' : '90mins'
 
-        // Map duration to our outcome_type
-        if (duration === 'EXTRA_TIME') outcomeType = 'et'
-        else if (duration === 'PENALTY_SHOOTOUT') outcomeType = 'penalties'
-        else outcomeType = '90mins'
-
-        // Resolve winner team ID
         if (winner === 'HOME_TEAM') {
-          winnerTeamId = ourMatch.home_team_id
+          winnerTeamId = orientation.reversed ? ourMatch.away_team_id : ourMatch.home_team_id
         } else if (winner === 'AWAY_TEAM') {
+          winnerTeamId = orientation.reversed ? ourMatch.home_team_id : ourMatch.away_team_id
+        } else if (effectiveHomeScore > effectiveAwayScore) {
+          winnerTeamId = ourMatch.home_team_id
+        } else if (effectiveAwayScore > effectiveHomeScore) {
           winnerTeamId = ourMatch.away_team_id
         }
-        // DRAW at 90mins shouldn't happen in knockout — winner will be set after ET/PENS
+      }
+
+      const scoreChanged = ourMatch.home_score !== effectiveHomeScore || ourMatch.away_score !== effectiveAwayScore
+      const statusChanged = ourMatch.status !== newStatus
+      const koResultChanged = isKnockout && newStatus === 'completed' &&
+        (ourMatch.winner_team_id !== winnerTeamId || ourMatch.outcome_type !== outcomeType)
+      const needsUpdate = scoreChanged || statusChanged || koResultChanged || ourMatch.external_match_id !== match.id.toString()
+      if (!needsUpdate) continue
+
+      if (newStatus === 'live' && ourMatch.status === 'scheduled') {
+        try { await runRpc('snapshot_user_ranks') } catch (error) { errors.push(error.message) }
       }
 
       const updateFields = {
-        home_score: effectiveHomeScore,
-        away_score: effectiveAwayScore,
+        home_score: effectiveHomeScore ?? null,
+        away_score: effectiveAwayScore ?? null,
         status: newStatus,
         external_match_id: match.id.toString(),
         api_synced_at: new Date().toISOString(),
+        live_minute: newStatus === 'live' ? (match.minute ?? null) : null,
+        injury_time: newStatus === 'live' ? (match.injuryTime ?? null) : null,
       }
-
-      // Live minute + injury time (v4.1 API). Store while live, clear when not.
-      if (newStatus === 'live') {
-        updateFields.live_minute = match.minute ?? null
-        updateFields.injury_time = match.injuryTime ?? null
-      } else {
-        updateFields.live_minute = null
-        updateFields.injury_time = null
-      }
-
-      // Only write knockout-specific fields for knockout stages
-      if (isKnockoutStage && match.status === 'FINISHED') {
-        if (winnerTeamId) updateFields.winner_team_id = winnerTeamId
+      if (isKnockout && newStatus === 'completed') {
+        updateFields.winner_team_id = winnerTeamId
         updateFields.outcome_type = outcomeType
       }
 
-      const { error } = await supabase.from('matches').update(updateFields).eq('id', ourMatch.id)
-
-      if (error) { errors.push(error.message); continue }
+      const { error: updateError } = await supabase.from('matches').update(updateFields).eq('id', ourMatch.id)
+      if (updateError) {
+        errors.push(`Update M${ourMatch.match_number}: ${updateError.message}`)
+        continue
+      }
       updated++
 
-      if (match.status === 'FINISHED' && ourMatch.status !== 'completed') {
-        // Use appropriate scoring function based on stage
-        const isKnockout = ['r32','r16','qf','sf','3rd','final'].includes(ourMatch.stage)
-        if (isKnockout) {
-          // Score main knockout bracket picks (team advancement)
-          await supabase.rpc('calculate_knockout_points', { p_match_id: ourMatch.id })
-          // Score KO Predictor picks (score/ET/PENS predictions) — separate game
-          try { await supabase.rpc('calculate_ko_prediction_points', { p_match_id: ourMatch.id }) } catch (_) {}
-        } else {
-          await supabase.rpc('calculate_prediction_points', { p_match_id: ourMatch.id })
-          // Check if this match completing finishes a group — if so, award
-          // group position points (+2pts per correct position, +5 perfect group bonus).
-          // check_group_bonuses is idempotent: no-ops if the group isn't complete yet.
-          try { await supabase.rpc('check_group_bonuses', { p_match_id: ourMatch.id }) } catch (_) {}
-        }
-        pointsCalculated++
+      const shouldRescore = newStatus === 'completed' && (statusChanged || scoreChanged || koResultChanged)
+      if (!shouldRescore) continue
 
-        // Batch recalc server-side: one RPC recalculates every affected user
-        // (predictions AND knockout_picks users — fixes leaderboard not
-        // updating after knockout matches)
+      let scoringSucceeded = true
+      try {
         if (isKnockout) {
-          // Knockout progression scoring is bracket-wide: a completed R32 result
-          // can award points to ANY user who placed that team in their bracket,
-          // not just users with a pick on this exact match. So recalc everyone.
-          const { data: allUsers } = await supabase.from('profiles').select('id')
-          for (const u of allUsers || []) {
-            await supabase.rpc('recalculate_user_total_points', { p_user_id: u.id })
+          await runRpc('calculate_knockout_points', { p_match_id: ourMatch.id })
+          await runRpc('calculate_ko_prediction_points', { p_match_id: ourMatch.id })
+        } else {
+          await runRpc('calculate_prediction_points', { p_match_id: ourMatch.id })
+          await runRpc('check_group_bonuses', { p_match_id: ourMatch.id })
+        }
+      } catch (error) {
+        scoringSucceeded = false
+        errors.push(`Scoring M${ourMatch.match_number}: ${error.message}`)
+      }
+
+      try {
+        if (isKnockout) {
+          const { data: allUsers, error: usersError } = await supabase.from('profiles').select('id')
+          if (usersError) throw usersError
+          for (const profile of allUsers || []) {
+            await runRpc('recalculate_user_total_points', { p_user_id: profile.id })
           }
         } else {
-          const { data: recalcCount, error: recalcErr } = await supabase
-            .rpc('recalculate_match_user_points', { p_match_id: ourMatch.id })
-          if (recalcErr) {
-            // Fallback to old per-user loop if the function is missing
-            const { data: preds } = await supabase
+          const { error: recalcError } = await supabase.rpc('recalculate_match_user_points', { p_match_id: ourMatch.id })
+          if (recalcError) {
+            const { data: preds, error: predsError } = await supabase
               .from('predictions')
               .select('user_id')
               .eq('match_id', ourMatch.id)
+            if (predsError) throw predsError
             for (const pred of preds || []) {
-              await supabase.rpc('recalculate_user_total_points', { p_user_id: pred.user_id })
+              await runRpc('recalculate_user_total_points', { p_user_id: pred.user_id })
             }
           }
         }
-
-        // Score OFFLINE players for this match — idempotent recalc of their
-        // total league_points from all their predictions (not additive, so
-        // re-running never double-counts)
-        try {
-          await scoreOfflinePlayers(supabase, ourMatch.id)
-        } catch (e) {
-          console.error('Offline scoring failed:', e.message)
-        }
+      } catch (error) {
+        scoringSucceeded = false
+        errors.push(`Total points M${ourMatch.match_number}: ${error.message}`)
       }
+
+      try {
+        await scoreOfflinePlayers(supabase, ourMatch.id)
+      } catch (error) {
+        scoringSucceeded = false
+        errors.push(`Offline scoring M${ourMatch.match_number}: ${error.message}`)
+      }
+
+      if (scoringSucceeded) pointsCalculated++
     }
 
     // Sync top scorers
@@ -461,10 +498,11 @@ export const handler = async (event, context) => {
     if (updated > 0) {
       try {
         const siteUrl = process.env.URL || 'https://wc26predictor1.netlify.app'
-        await fetch(`${siteUrl}/.netlify/functions/sync-standings`, {
+        const standingsResponse = await fetch(`${siteUrl}/.netlify/functions/sync-standings`, {
           method: 'POST',
           headers: { 'x-admin-secret': process.env.ADMIN_FUNCTION_SECRET }
         })
+        if (!standingsResponse.ok) throw new Error(`HTTP ${standingsResponse.status}`)
       } catch(e) { errors.push(`Standings auto-sync failed: ${e.message}`) }
     }
 

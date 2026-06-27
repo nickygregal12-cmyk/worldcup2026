@@ -11,61 +11,58 @@ export default function ClaimAccount() {
   const [offlinePlayer, setOfflinePlayer] = useState(null)
   const [error, setError] = useState('')
 
-  useEffect(() => { validateToken() }, [token])
-  // Don't auto-claim — always require explicit button press
-  // useEffect removed to prevent accidental claims by wrong account
+  useEffect(() => {
+    let cancelled = false
 
-  const validateToken = async () => {
-    const { data, error } = await supabase
-      .from('offline_players')
-      .select('id, display_name, league_id, claim_token_expires, leagues:league_id(name)')
-      .eq('claim_token', token)
-      .maybeSingle()
+    const validateToken = async () => {
+      const { data, error: tokenError } = await supabase
+        .from('offline_players')
+        .select('id, display_name, league_id, claim_token_expires, leagues:league_id(name)')
+        .eq('claim_token', token)
+        .maybeSingle()
 
-    if (error || !data) { setStatus('invalid'); return }
-    if (new Date(data.claim_token_expires) < new Date()) { setStatus('expired'); return }
-    setOfflinePlayer(data)
-    setStatus('valid')
-  }
+      if (cancelled) return
+      if (tokenError || !data) { setStatus('invalid'); return }
+      if (new Date(data.claim_token_expires) < new Date()) { setStatus('expired'); return }
+      setOfflinePlayer(data)
+      setStatus('valid')
+    }
+
+    validateToken()
+    return () => { cancelled = true }
+  }, [token])
+  // Don't auto-claim — always require explicit button press.
 
   const claimPredictions = async () => {
     if (!user || !offlinePlayer) return
     setStatus('claiming')
-    try {
-      // Transfer offline predictions to real user
-      const { data: preds } = await supabase
-        .from('offline_predictions')
-        .select('match_id, home_score, away_score, is_confident')
-        .eq('offline_player_id', offlinePlayer.id)
+    setError('')
 
-      if (preds && preds.length > 0) {
-        const toInsert = preds.map(p => ({
-          user_id: user.id,
-          match_id: p.match_id,
-          home_score: p.home_score,
-          away_score: p.away_score,
-          is_confident: p.is_confident || false,
-          bracket_type: 'main',
-        }))
-        await supabase.from('predictions')
-          .upsert(toInsert, { onConflict: 'user_id,match_id,bracket_type' })
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError || !sessionData?.session?.access_token) {
+        throw new Error('Your session has expired. Sign in again before claiming these predictions.')
       }
 
-      // Add user to the league
-      await supabase.from('league_members')
-        .upsert({ league_id: offlinePlayer.league_id, user_id: user.id }, { onConflict: 'league_id,user_id' })
-
-      // Delete offline player (cleanup)
-      await supabase.from('offline_predictions').delete().eq('offline_player_id', offlinePlayer.id)
-      await supabase.from('offline_players').delete().eq('id', offlinePlayer.id)
+      const claimResponse = await fetch('/.netlify/functions/claim-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+        },
+        body: JSON.stringify({ token }),
+      })
+      const payload = await claimResponse.json().catch(() => ({}))
+      if (!claimResponse.ok) throw new Error(payload.error || 'The predictions could not be transferred.')
 
       setStatus('success')
       setTimeout(() => navigate('/predictions'), 3000)
-    } catch (e) {
-      setError(e.message)
+    } catch (claimFailure) {
+      setError(claimFailure?.message || 'The predictions could not be transferred.')
       setStatus('error')
     }
   }
+
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
