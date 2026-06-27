@@ -360,39 +360,87 @@ function GroupMatchCard({ match, mode, prediction, leagueCode, rivalId, weather 
   )
 }
 
-function GroupTable({ groupName, rows, predictedTopTwo }) {
-  const predictedPosition = new Map(predictedTopTwo.map((row, index) => [row.id, index + 1]))
+function ordinal(position) {
+  if (position === 1) return '1st'
+  if (position === 2) return '2nd'
+  if (position === 3) return '3rd'
+  return `${position}th`
+}
+
+function GroupTable({ groupName, rows, predictedRows }) {
+  const predictedPosition = new Map((predictedRows || []).map((row, index) => [row.id, index + 1]))
+  const isMatchdayThree = rows.length === 4 && rows.every(row => Number(row.played || 0) >= 3)
+  const exactCount = rows.reduce((count, row, index) => (
+    predictedPosition.get(row.id) === index + 1 ? count + 1 : count
+  ), 0)
+  const positionPoints = exactCount * 2
+  const perfectBonus = exactCount === 4 ? 5 : 0
+  const provisionalPoints = positionPoints + perfectBonus
+
   return (
     <div className="card fade-in" style={{ padding: '14px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
         <div>
           <div style={{ fontSize: '14px', fontWeight: 900 }}>Group {groupName}</div>
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Current table compared with your predicted finishing positions</div>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Live position compared with your full predicted order</div>
         </div>
-        <span style={{ fontSize: '9px', fontWeight: 900, color: '#d32f2f', background: 'rgba(211,47,47,0.08)', borderRadius: 'var(--radius-full)', padding: '4px 7px' }}>LIVE TABLE</span>
+        <span style={{ fontSize: '9px', fontWeight: 900, color: '#d32f2f', background: 'rgba(211,47,47,0.08)', borderRadius: 'var(--radius-full)', padding: '4px 7px', whiteSpace: 'nowrap' }}>LIVE GROUP OUTCOME</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 42px 30px 38px 32px', gap: '5px', color: 'var(--text-muted)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', padding: '6px 4px' }}>
-        <span>#</span><span>Team</span><span style={{ textAlign: 'center' }}>Your pick</span><span style={{ textAlign: 'right' }}>P</span><span style={{ textAlign: 'right' }}>GD</span><span style={{ textAlign: 'right' }}>Pts</span>
+
+      {isMatchdayThree && (
+        <div style={{ padding: '11px 12px', borderRadius: 'var(--radius-md)', background: provisionalPoints > 0 ? 'rgba(46,125,50,0.08)' : 'var(--bg-secondary)', border: provisionalPoints > 0 ? '1px solid rgba(46,125,50,0.24)' : '1px solid var(--border-light)', marginBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '10px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 900 }}>If the group finished now</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '18px', fontWeight: 900, color: provisionalPoints > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{provisionalPoints} pts</div>
+          </div>
+          <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
+            {exactCount}/4 teams are in the exact position you predicted · {positionPoints} position points{perfectBonus ? ` + ${perfectBonus} perfect-group bonus` : ' · no perfect-group bonus yet'}.
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '34px minmax(90px,1fr) minmax(105px,1.15fr) 42px 34px', gap: '6px', color: 'var(--text-muted)', fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', padding: '6px 4px' }}>
+        <span>Live</span><span>Team</span><span>Your prediction</span><span style={{ textAlign: 'center' }}>Now</span><span style={{ textAlign: 'right' }}>Pts</span>
       </div>
+
       {rows.map((row, index) => {
         const predicted = predictedPosition.get(row.id)
         const livePosition = index + 1
-        const movement = predicted ? predicted - livePosition : null
+        const exact = predicted === livePosition
+        const distance = predicted ? Math.abs(predicted - livePosition) : null
+        const movementText = !predicted
+          ? 'No saved position'
+          : exact
+            ? 'Exact position'
+            : livePosition < predicted
+              ? `${predicted - livePosition} place${predicted - livePosition === 1 ? '' : 's'} higher`
+              : `${livePosition - predicted} place${livePosition - predicted === 1 ? '' : 's'} lower`
+        const rowBg = exact ? 'rgba(46,125,50,0.075)' : distance === 1 ? 'rgba(245,158,11,0.07)' : 'transparent'
+        const rowBorder = exact ? 'rgba(46,125,50,0.18)' : distance === 1 ? 'rgba(245,158,11,0.18)' : 'var(--border-light)'
+
         return (
-          <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 42px 30px 38px 32px', gap: '5px', alignItems: 'center', padding: '8px 4px', borderTop: '1px solid var(--border-light)', background: predicted ? 'rgba(0,48,135,0.045)' : 'transparent', fontSize: '11px' }}>
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 900 }}>{livePosition}</span>
-            <span style={{ fontWeight: 800, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.team?.flag_emoji} {row.team?.short_code || row.team?.name}{livePosition < 3 ? <span style={{ color: 'var(--accent-green)', marginLeft: '4px' }}>Q</span> : null}</span>
-            <span style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 900, color: predicted ? 'var(--scottish-navy)' : 'var(--text-muted)' }}>
-              {predicted ? `${predicted}${movement > 0 ? ' ↑' : movement < 0 ? ' ↓' : ' ='}` : '—'}
+          <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '34px minmax(90px,1fr) minmax(105px,1.15fr) 42px 34px', gap: '6px', alignItems: 'center', padding: '9px 4px', borderTop: `1px solid ${rowBorder}`, background: rowBg, fontSize: '11px' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 900 }}>{ordinal(livePosition)}</span>
+            <span style={{ fontWeight: 800, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {row.team?.flag_emoji} {row.team?.short_code || row.team?.name}
+              {livePosition < 3 && <span style={{ color: 'var(--accent-green)', marginLeft: '4px', fontSize: '9px' }}>QUALIFIES</span>}
             </span>
-            <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{row.played}</span>
-            <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{row.gd > 0 ? `+${row.gd}` : row.gd}</span>
-            <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>{row.pts}</span>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: 'block', fontWeight: 900, color: exact ? 'var(--accent-green)' : predicted ? 'var(--scottish-navy)' : 'var(--text-muted)' }}>
+                {predicted ? `Predicted ${ordinal(predicted)}` : 'No saved prediction'}
+              </span>
+              <span style={{ display: 'block', fontSize: '9px', color: exact ? 'var(--accent-green)' : distance === 1 ? '#b36b00' : 'var(--text-muted)', marginTop: '1px' }}>{movementText}</span>
+            </span>
+            <span style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 800 }}>{row.pts}</span>
+            <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 900, color: isMatchdayThree && exact ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+              {isMatchdayThree ? (exact ? '+2' : '0') : '—'}
+            </span>
           </div>
         )
       })}
-      <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.45 }}>
-        “Your pick” shows the position you predicted. ↑ means the team is currently higher than your pick; ↓ means lower.
+
+      <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', marginTop: '9px', lineHeight: 1.45 }}>
+        Green means the position is exact. Amber means the team is one place away. Provisional points use the standard overall scoring: 2 points per exact position and a 5-point perfect-group bonus.
       </div>
     </div>
   )
@@ -648,7 +696,7 @@ export default function GroupMatchdayHub({ user, profile }) {
           key={groupName}
           groupName={groupName}
           rows={liveTables[groupName] || []}
-          predictedTopTwo={(predictedStandings[groupName] || []).slice(0, 2)}
+          predictedRows={predictedStandings[groupName] || []}
         />
       ))}
 
