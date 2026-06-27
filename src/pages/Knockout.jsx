@@ -273,6 +273,23 @@ export default function Knockout() {
     return out
   }, [realKoFixtures, realStandingsMap])
 
+  // Games played per team in the real group stage (3 = their group is finished)
+  const groupPlayedMap = useMemo(() => {
+    const m = {}
+    realGroupStandings.forEach(r => { if (r.team?.id) m[r.team.id] = r.played || 0 })
+    return m
+  }, [realGroupStandings])
+
+  // A team is OUT of the real tournament if it either lost a completed KO match,
+  // OR its group is finished and it did not make the real R32 (e.g. eliminated in
+  // the group stage). This is what drives the strike-out across the bracket.
+  const isTeamOut = useCallback((id) => {
+    if (!id) return false
+    if (eliminatedTeams.has(id)) return true
+    if ((groupPlayedMap[id] || 0) >= 3 && !confirmedR32Teams.has(id)) return true
+    return false
+  }, [eliminatedTeams, groupPlayedMap, confirmedR32Teams])
+
   // Resolve a slot against real current standings (no prediction check needed)
   const resolveRealSlot = useCallback((slot) => {
     if (!slot || !Object.keys(realStandingsMap).length) return null
@@ -882,7 +899,7 @@ export default function Knockout() {
 
     // Team-alive colour logic (post-groups)
     const pickedTeamId = pick?.winner_id
-    const teamEliminated = groupStageDone && pickedTeamId && eliminatedTeams.has(pickedTeamId)
+    const teamEliminated = pickedTeamId && isTeamOut(pickedTeamId)
     const teamStillAlive = groupStageDone && isPicked && !teamEliminated
     // Colour: gold=stale/final, red=eliminated, green=still alive, navy=picked/unknown, transparent=unpicked
     const accentColor = (isAffected || isStale) ? 'var(--accent-gold)'
@@ -968,7 +985,7 @@ export default function Knockout() {
                 const canPickThisTeam = canPick && bothTeamsKnown && !!team
                 // Confirmed in real R32 (works for both picked and non-picked team)
                 const isConfirmedInR32 = activeStage === 'r32' && team?.id && confirmedR32Teams.has(team.id)
-                const isEliminatedFromR32 = activeStage === 'r32' && team?.id && groupStageDone && eliminatedTeams.has(team.id)
+                const isEliminatedFromR32 = activeStage === 'r32' && team?.id && isTeamOut(team.id)
                 return (
                   <div key={team?.id || slot}>
                     {team ? (
@@ -1381,8 +1398,8 @@ export default function Knockout() {
                     const earnedPts = ([homeEarned, awayEarned].filter(Boolean).length) * (liveTrackerStats.stagePoints || 5)
                     const anyEarned = homeEarned || awayEarned
                     const bothEarned = homeEarned && awayEarned
-                    const homeOut = m.userHome?.id && eliminatedTeams.has(m.userHome.id)
-                    const awayOut = m.userAway?.id && eliminatedTeams.has(m.userAway.id)
+                    const homeOut = isTeamOut(m.userHome?.id)
+                    const awayOut = isTeamOut(m.userAway?.id)
                     const accentBar = bothEarned ? 'var(--accent-green)' : anyEarned ? 'var(--accent-gold)' : 'var(--border-light)'
                     const userPick = m.userPickId
                       ? (m.userHome?.id === m.userPickId ? m.userHome : m.userAway?.id === m.userPickId ? m.userAway : null)
