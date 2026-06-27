@@ -6,13 +6,14 @@ import { predictMatchOdds, predictGoals, predictAwards } from '../lib/luckyDip.j
 import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
 import ShareCard from '../components/ShareCard.jsx'
 import MemberPredictionsModal, { useMemberPredictions } from '../components/MemberPredictionsModal.jsx'
+import { DATES } from '../lib/tournamentDates.js'
 
 // ── Tournament phase dates ───────────────────────────────────────────────────
-const TOURNAMENT_START   = new Date('2026-06-11T19:00:00Z') // first kickoff
-const GROUP_STAGE_END    = new Date('2026-06-27T22:00:00Z') // last group game
-const KNOCKOUT_BANNER    = new Date('2026-06-20T00:00:00Z') // banner appears
-const KNOCKOUT_LIVE      = new Date('2026-06-27T22:00:00Z') // predictor opens 27 Jun 23:00 BST
-const TOURNAMENT_END     = new Date('2026-07-19T20:00:00Z') // final
+const TOURNAMENT_START   = DATES.TOURNAMENT_START // first kickoff
+const GROUP_STAGE_END    = DATES.GROUP_STAGE_END // last group game
+const KNOCKOUT_BANNER    = DATES.KNOCKOUT_BANNER // banner appears
+const KNOCKOUT_LIVE      = DATES.KO_PREDICTOR_OPEN // predictor opens 27 Jun 23:00 BST
+const TOURNAMENT_END     = DATES.TOURNAMENT_END // final
 const REQUIRED_KNOCKOUT_PICKS = ALL_STAGES.reduce((total, stage) => total + (stage.matches?.length || 0), 0)
 
 

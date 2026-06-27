@@ -6,15 +6,9 @@
  */
 
 import { supabase } from './supabase.js'
+import { DATES } from './tournamentDates.js'
 
-// Real tournament dates (UTC)
-export const DATES = {
-  TOURNAMENT_START:  new Date('2026-06-11T19:00:00Z'),
-  GROUP_STAGE_END:   new Date('2026-06-27T22:00:00Z'),
-  KNOCKOUT_BANNER:   new Date('2026-06-20T00:00:00Z'),
-  KO_PREDICTOR_OPEN: new Date('2026-06-27T22:00:00Z'),
-  TOURNAMENT_END:    new Date('2026-07-19T20:00:00Z'),
-}
+export { DATES } from './tournamentDates.js'
 
 // Cache settings in memory to avoid repeated DB calls
 let cachedSettings = null
@@ -74,8 +68,8 @@ export async function getGamePhase() {
   // Feature flags from settings
   const maintenanceMode     = settings.maintenance_mode === 'true'
   const registrationOpen    = settings.registration_open !== 'false'
-  const koPredictorEnabled  = settings.ko_predictor_enabled === 'true' || koLive
-  const koPredictionsOpen   = settings.ko_predictions_open === 'true' || koLive
+  const koPredictorEnabled  = settings.ko_predictor_enabled == null ? koLive : settings.ko_predictor_enabled === 'true'
+  const koPredictionsOpen   = settings.ko_predictions_open == null ? koLive : settings.ko_predictions_open === 'true'
   const koBannerVisible     = settings.ko_banner_visible !== 'false'
   const koAutofillEnabled   = settings.ko_autofill_enabled !== 'false'
 

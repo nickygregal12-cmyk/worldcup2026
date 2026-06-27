@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore, useAppStore } from '../store/index.js'
+import { DATES } from '../lib/tournamentDates.js'
 
-const KO_OPEN_DATE = new Date('2026-06-27T22:00:00Z')
 
 // ── SVG icons — one per route, sized for nav use ──────────────────────────
 const Icons = {
@@ -67,7 +67,7 @@ export default function BottomNav() {
   const koLive = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
     ? true
     : phaseOverride && phaseOverride !== 'ko_predictor' ? false
-    : new Date() >= KO_OPEN_DATE
+    : new Date() >= DATES.KO_PREDICTOR_OPEN
 
   // Post group stage: swap Groups tab for KO Predictor, keep Knockout
   // ── LOGIC UNCHANGED — only visual layer below is new ──

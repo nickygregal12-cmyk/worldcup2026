@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { DATES } from '../lib/tournamentDates.js'
 
 const SCORING = [
   {
@@ -253,7 +254,7 @@ export default function HowToPlay() {
           <div style={{ fontSize: '22px', marginBottom: '8px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</div>
           <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>Ready to predict?</div>
           <div style={{ fontSize: '13px', opacity: 0.8, marginBottom: '16px' }}>
-            {new Date() >= new Date('2026-06-11T19:00:00Z')
+            {new Date() >= DATES.TOURNAMENT_START
               ? 'Tournament is underway — predict upcoming matches!'
               : 'Tournament kicks off Thu 11 Jun · 20:00 BST'}
           </div>
