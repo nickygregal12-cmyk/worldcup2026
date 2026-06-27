@@ -5,6 +5,7 @@ const STATUS_META = {
   warning: { icon: '!', label: 'Needs attention', colour: '#b26a00', bg: 'rgba(245,158,11,0.10)', border: 'rgba(245,158,11,0.32)' },
   error: { icon: '×', label: 'Action required', colour: '#c62828', bg: 'rgba(198,40,40,0.08)', border: 'rgba(198,40,40,0.28)' },
   info: { icon: 'i', label: 'Information', colour: 'var(--scottish-navy)', bg: 'rgba(0,48,135,0.07)', border: 'rgba(0,48,135,0.20)' },
+  progress: { icon: '…', label: 'In progress', colour: '#1558b0', bg: 'rgba(21,88,176,0.08)', border: 'rgba(21,88,176,0.24)' },
 }
 
 const compactDate = value => {
@@ -162,6 +163,11 @@ export default function AdminDashboard({ admin }) {
     const missingVenue = all.filter(m => !m.venue_id && !m.venue?.id)
     const groupMissingTeams = groups.filter(m => !m.home_team_id || !m.away_team_id)
     const unresolvedKo = knockouts.filter(m => !m.home_team_id || !m.away_team_id)
+    const koResolutionDeadline = Date.now() + 12 * 60 * 60 * 1000
+    const unresolvedKoDue = unresolvedKo.filter(m => {
+      const kickoff = m.kickoff_time ? new Date(m.kickoff_time).getTime() : 0
+      return kickoff && kickoff <= koResolutionDeadline
+    })
     const completedMissingScore = all.filter(m => m.status === 'completed' && (m.home_score == null || m.away_score == null))
     const liveMissingMinute = all.filter(m => m.status === 'live' && m.live_minute == null)
     const apiMissingIds = all.filter(m => !m.external_match_id && !m.use_manual_override)
@@ -169,7 +175,7 @@ export default function AdminDashboard({ admin }) {
 
     return {
       all, groups, knockouts, missingCore, missingVenue, groupMissingTeams,
-      unresolvedKo, completedMissingScore, liveMissingMinute, apiMissingIds, staleLive,
+      unresolvedKo, unresolvedKoDue, completedMissingScore, liveMissingMinute, apiMissingIds, staleLive,
     }
   }, [matches, health])
 
@@ -213,11 +219,22 @@ export default function AdminDashboard({ admin }) {
       },
       {
         icon: '🏆', title: 'Knockout readiness', value: metrics.unresolvedKo.length,
-        status: metrics.knockouts.length !== 32 ? 'error' : metrics.unresolvedKo.length ? 'warning' : 'ok',
-        detail: metrics.unresolvedKo.length
-          ? `${metrics.unresolvedKo.length} knockout fixture(s) still use bracket placeholders. This is normal until qualifiers are confirmed.`
-          : 'Every knockout fixture currently has both real teams assigned.',
-        action: 'matches', actionLabel: 'Review knockout fixtures →',
+        status: metrics.knockouts.length !== 32
+          ? 'error'
+          : metrics.unresolvedKoDue.length
+            ? 'warning'
+            : metrics.unresolvedKo.length
+              ? 'progress'
+              : 'ok',
+        detail: metrics.knockouts.length !== 32
+          ? `${metrics.knockouts.length}/32 knockout fixtures are present.`
+          : metrics.unresolvedKoDue.length
+            ? `${metrics.unresolvedKoDue.length} unresolved knockout fixture(s) kick off within 12 hours and should be checked.`
+            : metrics.unresolvedKo.length
+              ? `${metrics.unresolvedKo.length} fixture(s) are awaiting qualifiers. This is expected tournament progress.`
+              : 'Every knockout fixture currently has both real teams assigned.',
+        action: metrics.unresolvedKo.length ? { area: 'matches', filter: 'unresolved-ko' } : null,
+        actionLabel: 'View knockout fixtures →',
       },
       {
         icon: '👥', title: 'Users and leagues', value: `${users?.length || health?.totalUsers || 0}`,
@@ -235,10 +252,10 @@ export default function AdminDashboard({ admin }) {
 
   const issues = useMemo(() => {
     const list = []
-    if (metrics.completedMissingScore.length) list.push({ status: 'error', title: `${metrics.completedMissingScore.length} completed match(es) have no complete score`, detail: 'A completed match must have both home and away scores before points can be trusted.', action: 'matches' })
-    if (metrics.liveMissingMinute.length) list.push({ status: 'warning', title: `${metrics.liveMissingMinute.length} live match(es) have no minute`, detail: 'The score can still update, but the live display will show LIVE rather than the match minute.', action: 'matches' })
-    if (metrics.missingVenue.length) list.push({ status: 'warning', title: `${metrics.missingVenue.length} fixture(s) have no venue`, detail: 'Venue and city are required for consistent fixture cards and kickoff weather.', action: 'matches' })
-    if (metrics.apiMissingIds.length) list.push({ status: 'warning', title: `${metrics.apiMissingIds.length} API-managed fixture(s) have no external match ID`, detail: 'Name/time matching may still work, but a stored provider ID is more reliable.', action: 'matches' })
+    if (metrics.completedMissingScore.length) list.push({ status: 'error', title: `${metrics.completedMissingScore.length} completed match(es) have no complete score`, detail: 'A completed match must have both home and away scores before points can be trusted.', action: { area: 'matches', filter: 'completed-missing-score' } })
+    if (metrics.liveMissingMinute.length) list.push({ status: 'warning', title: `${metrics.liveMissingMinute.length} live match(es) have no minute`, detail: 'The score can still update, but the live display will show LIVE rather than the match minute.', action: { area: 'matches', filter: 'live-missing-minute' } })
+    if (metrics.missingVenue.length) list.push({ status: 'warning', title: `${metrics.missingVenue.length} fixture(s) have no venue`, detail: 'Venue and city are required for consistent fixture cards and kickoff weather.', action: { area: 'matches', filter: 'missing-venue' } })
+    if (metrics.apiMissingIds.length) list.push({ status: 'warning', title: `${metrics.apiMissingIds.length} API-managed fixture(s) have no external match ID`, detail: 'Name/time matching may still work, but a stored provider ID is more reliable.', action: { area: 'matches', filter: 'missing-external-id' } })
     if (audit.unscoredPredictions) list.push({ status: 'error', title: `${audit.unscoredPredictions} prediction(s) need scoring`, detail: 'Run a safe full points recalculation after confirming completed match results.', action: 'points' })
     if (audit.queryErrors.length) list.push({ status: 'error', title: 'A health query failed', detail: audit.queryErrors.join(' · '), action: 'tournament' })
     if (!list.length) list.push({ status: 'ok', title: 'No urgent data issues detected', detail: 'Fixtures, live sync and scoring checks currently look healthy.' })
@@ -248,7 +265,12 @@ export default function AdminDashboard({ admin }) {
   const overallStatus = checks.some(c => c.status === 'error') ? 'error' : checks.some(c => c.status === 'warning') ? 'warning' : 'ok'
   const overallMeta = STATUS_META[overallStatus]
 
-  const openArea = key => {
+  const openArea = target => {
+    const key = typeof target === 'string' ? target : target?.area
+    const filter = typeof target === 'object' ? target?.filter : null
+    if (filter && typeof window !== 'undefined') {
+      window.sessionStorage.setItem('wc26_admin_match_health_filter', filter)
+    }
     if (key === 'matches') { setPrimarySection?.('matches'); setActiveTab?.('matches') }
     else if (key === 'users') { setPrimarySection?.('users'); setActiveTab?.('users') }
     else if (key === 'points') { setPrimarySection?.('users'); setActiveTab?.('points') }
