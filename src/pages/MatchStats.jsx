@@ -128,7 +128,7 @@ export default function MatchStats() {
       const { data: siblings } = await supabase
         .from('matches').select('id, match_number').eq('kickoff_time', m.kickoff_time).order('match_number')
       const ids = (siblings || []).map(s => s.id)
-      setSlotIds([matchId, ...ids.filter(i => i !== matchId)])
+      setSlotIds([m.id, ...ids.filter(i => i !== m.id)])
       setLoadingSlot(false)
     }
     if (matchId) loadSlot()
@@ -224,7 +224,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
 
       const { data: m } = await supabase
         .from('matches')
-        .select('id, match_number, stage, home_score, away_score, home_penalty_score, away_penalty_score, winner_team_id, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .select('id, match_number, stage, home_score, away_score, winner_team_id, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
         .eq('id', matchId).maybeSingle()
       setMatch(m)
 

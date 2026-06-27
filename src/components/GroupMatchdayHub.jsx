@@ -200,8 +200,6 @@ function MatchStatus({ match, mode }) {
 }
 
 function ScenarioGrid({ match, groupMatches, predictionMap, predictedTopTwo, mode }) {
-  if (mode !== 'fulltime') return null
-
   if (mode === 'fulltime') {
     const finalTable = actualLiveStandings(groupMatches)
     const actualTopTwo = finalTable.slice(0, 2).map(row => row.id)
@@ -261,7 +259,7 @@ function GroupMatchCard({ match, mode, prediction, groupMatches, predictionMap, 
   const points = predictionPoints(prediction, match)
   const statusText = predictionStatus(prediction, match)
   const good = points > 0
-  const matchCentre = `/match/${match.id}/stats`
+  const matchCentre = `/match/${match.id}/stats${leagueCode ? `?league=${encodeURIComponent(leagueCode)}` : ''}`
 
   return (
     <article className="card fade-in" style={{ overflow: 'hidden', border: mode === 'live' ? '2px solid #d32f2f' : '1px solid var(--border-light)' }}>
@@ -344,29 +342,39 @@ function GroupMatchCard({ match, mode, prediction, groupMatches, predictionMap, 
 }
 
 function GroupTable({ groupName, rows, predictedTopTwo }) {
-  const predictedIds = new Set(predictedTopTwo.map(row => row.id))
+  const predictedPosition = new Map(predictedTopTwo.map((row, index) => [row.id, index + 1]))
   return (
     <div className="card fade-in" style={{ padding: '14px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
         <div>
           <div style={{ fontSize: '14px', fontWeight: 900 }}>Group {groupName}</div>
-          <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Current table from completed and live scores</div>
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>Current table compared with your predicted finishing positions</div>
         </div>
         <span style={{ fontSize: '9px', fontWeight: 900, color: '#d32f2f', background: 'rgba(211,47,47,0.08)', borderRadius: 'var(--radius-full)', padding: '4px 7px' }}>LIVE TABLE</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 30px 38px 32px', gap: '5px', color: 'var(--text-muted)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', padding: '6px 4px' }}>
-        <span>#</span><span>Team</span><span style={{ textAlign: 'right' }}>P</span><span style={{ textAlign: 'right' }}>GD</span><span style={{ textAlign: 'right' }}>Pts</span>
+      <div style={{ display: 'grid', gridTemplateColumns: '24px 1fr 42px 30px 38px 32px', gap: '5px', color: 'var(--text-muted)', fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', padding: '6px 4px' }}>
+        <span>#</span><span>Team</span><span style={{ textAlign: 'center' }}>Your pick</span><span style={{ textAlign: 'right' }}>P</span><span style={{ textAlign: 'right' }}>GD</span><span style={{ textAlign: 'right' }}>Pts</span>
       </div>
-      {rows.map((row, index) => (
-        <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 30px 38px 32px', gap: '5px', alignItems: 'center', padding: '8px 4px', borderTop: '1px solid var(--border-light)', background: predictedIds.has(row.id) ? 'rgba(0,48,135,0.045)' : 'transparent', fontSize: '11px' }}>
-          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 900 }}>{index + 1}</span>
-          <span style={{ fontWeight: 800, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.team?.flag_emoji} {row.team?.short_code || row.team?.name}{index < 2 ? <span style={{ color: 'var(--accent-green)', marginLeft: '4px' }}>Q</span> : null}</span>
-          <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{row.played}</span>
-          <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{row.gd > 0 ? `+${row.gd}` : row.gd}</span>
-          <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>{row.pts}</span>
-        </div>
-      ))}
-      <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', marginTop: '8px' }}>Shaded teams are in your predicted top two.</div>
+      {rows.map((row, index) => {
+        const predicted = predictedPosition.get(row.id)
+        const livePosition = index + 1
+        const movement = predicted ? predicted - livePosition : null
+        return (
+          <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '24px 1fr 42px 30px 38px 32px', gap: '5px', alignItems: 'center', padding: '8px 4px', borderTop: '1px solid var(--border-light)', background: predicted ? 'rgba(0,48,135,0.045)' : 'transparent', fontSize: '11px' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 900 }}>{livePosition}</span>
+            <span style={{ fontWeight: 800, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.team?.flag_emoji} {row.team?.short_code || row.team?.name}{livePosition < 3 ? <span style={{ color: 'var(--accent-green)', marginLeft: '4px' }}>Q</span> : null}</span>
+            <span style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontWeight: 900, color: predicted ? 'var(--scottish-navy)' : 'var(--text-muted)' }}>
+              {predicted ? `${predicted}${movement > 0 ? ' ↑' : movement < 0 ? ' ↓' : ' ='}` : '—'}
+            </span>
+            <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{row.played}</span>
+            <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)' }}>{row.gd > 0 ? `+${row.gd}` : row.gd}</span>
+            <span style={{ textAlign: 'right', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>{row.pts}</span>
+          </div>
+        )
+      })}
+      <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', marginTop: '8px', lineHeight: 1.45 }}>
+        “Your pick” shows the position you predicted. ↑ means the team is currently higher than your pick; ↓ means lower.
+      </div>
     </div>
   )
 }
