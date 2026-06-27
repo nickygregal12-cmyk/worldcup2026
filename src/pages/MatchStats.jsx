@@ -1,13 +1,63 @@
 import { useEffect, useState } from 'react'
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
+import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
+
+const STAGE_LABELS = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-final', sf: 'Semi-final', '3rd': 'Third-place', final: 'Final' }
 
 export default function MatchStats() {
   const { matchId } = useParams()
   const [searchParams] = useSearchParams()
   const leagueCode = searchParams.get('league')
   const navigate = useNavigate()
+
+  const [slotIds, setSlotIds] = useState(null)
+  const [loadingSlot, setLoadingSlot] = useState(true)
+
+  useEffect(() => {
+    const loadSlot = async () => {
+      setLoadingSlot(true)
+      const { data: m } = await supabase
+        .from('matches').select('id, kickoff_time').eq('id', matchId).maybeSingle()
+      if (!m) { setSlotIds([]); setLoadingSlot(false); return }
+      // every match kicking off at the same instant — shown together
+      const { data: siblings } = await supabase
+        .from('matches').select('id, match_number').eq('kickoff_time', m.kickoff_time).order('match_number')
+      const ids = (siblings || []).map(s => s.id)
+      setSlotIds([matchId, ...ids.filter(i => i !== matchId)])
+      setLoadingSlot(false)
+    }
+    if (matchId) loadSlot()
+  }, [matchId])
+
+  if (loadingSlot) {
+    return <div className="container" style={{ padding: '40px 16px', textAlign: 'center' }}>
+      <div className="spinner" style={{ margin: '0 auto' }} />
+    </div>
+  }
+
+  return (
+    <div className="container" style={{ padding: '16px 16px 40px', maxWidth: '560px' }}>
+      <button onClick={() => navigate(-1)} style={{ marginBottom: '12px', color: 'var(--scottish-navy)', fontWeight: '700', fontSize: '14px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>← Back</button>
+
+      {slotIds && slotIds.length > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', marginBottom: '14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
+          ⏱️ <span>{slotIds.length} games kicking off together — both shown below.</span>
+        </div>
+      )}
+
+      {(slotIds || []).map((id, i) => (
+        <MatchCentre key={id} matchId={id} leagueCode={leagueCode} divider={i > 0} />
+      ))}
+
+      {slotIds && slotIds.length === 0 && (
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Match not found.</p>
+      )}
+    </div>
+  )
+}
+
+function MatchCentre({ matchId, leagueCode, divider }) {
   const { user } = useAuthStore()
 
   const [loading, setLoading] = useState(true)
@@ -18,268 +68,366 @@ export default function MatchStats() {
   const [myLine, setMyLine] = useState(null)
   const [notLocked, setNotLocked] = useState(false)
   const [scopeDenied, setScopeDenied] = useState(false)
+  const [koMine, setKoMine] = useState(null)
+  const [koRivals, setKoRivals] = useState([])
+  const [bracketImpact, setBracketImpact] = useState([])
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true)
-      setNotLocked(false)
-      setScopeDenied(false)
+      setLoading(true); setNotLocked(false); setScopeDenied(false)
 
-      // 1. The match
       const { data: m } = await supabase
         .from('matches')
-        .select('id, match_number, stage, home_score, away_score, status, kickoff_time, live_minute, injury_time, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
-        .eq('id', matchId)
-        .maybeSingle()
+        .select('id, match_number, stage, home_score, away_score, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .eq('id', matchId).maybeSingle()
       setMatch(m)
 
       const locked = m && (m.status === 'live' || m.status === 'completed' || new Date(m.kickoff_time) <= new Date())
-      if (!locked) {
-        setNotLocked(true)
-        setLoading(false)
-        return
-      }
+      if (!locked) { setNotLocked(true); setLoading(false); return }
 
-      // 2. Determine scope — league members or everyone
+      // scope
       let userIdFilter = null
       if (leagueCode) {
-        const { data: league } = await supabase
-          .from('leagues').select('id, name').eq('invite_code', leagueCode).maybeSingle()
+        const { data: league } = await supabase.from('leagues').select('id, name').eq('invite_code', leagueCode).maybeSingle()
         if (league) {
-          const { data: members } = await supabase
-            .from('league_members').select('user_id').eq('league_id', league.id)
+          const { data: members } = await supabase.from('league_members').select('user_id').eq('league_id', league.id)
           userIdFilter = (members || []).map(mm => mm.user_id)
-          if (!user?.id || !userIdFilter.includes(user.id)) {
-            setScopeDenied(true)
-            setLoading(false)
-            return
-          }
+          if (!user?.id || !userIdFilter.includes(user.id)) { setScopeDenied(true); setLoading(false); return }
           setScopeLabel(league.name)
         }
       }
 
-      // 3. All predictions for this match (optionally scoped to league members)
-      let q = supabase
-        .from('predictions')
+      // ── Knockout match: KO Predictor picks + bracket impact ──
+      if (m.stage !== 'group') {
+        let koQ = supabase.from('ko_predictions')
+          .select('user_id, home_score, away_score, winner_team_id, is_joker')
+          .eq('match_id', matchId)
+        if (userIdFilter) koQ = koQ.in('user_id', userIdFilter)
+        const { data: koPreds } = await koQ
+        const koIds = [...new Set((koPreds || []).map(p => p.user_id))]
+        const koNames = {}
+        if (koIds.length) {
+          const { data: kp } = await supabase.from('profiles').select('id, username, display_name, avatar_emoji').in('id', koIds)
+          ;(kp || []).forEach(pr => { koNames[pr.id] = pr })
+        }
+        const rivals = (koPreds || []).map(p => {
+          const prof = koNames[p.user_id] || {}
+          const side = p.winner_team_id === m.home_team_id ? 'home' : p.winner_team_id === m.away_team_id ? 'away' : null
+          return { userId: p.user_id, name: prof.display_name || prof.username || 'Player', avatar: prof.avatar_emoji, side, home: p.home_score, away: p.away_score, joker: !!p.is_joker }
+        })
+        setKoRivals(rivals)
+        setKoMine(rivals.find(r => r.userId === user?.id) || null)
+
+        const { data: kpicks } = await supabase.from('knockout_picks').select('match_number, winner_id').eq('user_id', user?.id)
+        const deepest = {}
+        ;(kpicks || []).forEach(k => { if (k.winner_id && (deepest[k.winner_id] == null || k.match_number > deepest[k.winner_id])) deepest[k.winner_id] = k.match_number })
+        const reachLabel = (mn) => mn == null ? null
+          : mn >= 104 ? 'win it all 🏆'
+          : mn >= 101 ? 'the Final'
+          : mn >= 97 ? 'the Semi-finals'
+          : mn >= 89 ? 'the Quarter-finals'
+          : 'the Round of 16'
+        setBracketImpact([
+          { team: m.home_team, side: 'home', reach: reachLabel(deepest[m.home_team_id]) },
+          { team: m.away_team, side: 'away', reach: reachLabel(deepest[m.away_team_id]) },
+        ])
+        setLoading(false)
+        return
+      }
+
+      // ── Group match: scoreline predictions ──
+      let q = supabase.from('predictions')
         .select('user_id, home_score, away_score, is_confident, points_awarded')
-        .eq('match_id', matchId)
-        .not('home_score', 'is', null)
+        .eq('match_id', matchId).not('home_score', 'is', null)
       if (userIdFilter) q = q.in('user_id', userIdFilter)
       const { data: preds } = await q
 
-      // 4. Reactions
-      const { data: reactions } = await supabase
-        .from('match_reactions').select('reaction').eq('match_id', matchId)
+      const { data: reactions } = await supabase.from('match_reactions').select('reaction').eq('match_id', matchId)
 
-      // 5. Ranked rivals for THIS match (live points + usernames)
       const ids = [...new Set((preds || []).map(p => p.user_id))]
       const nameMap = {}
       if (ids.length) {
-        const { data: profs } = await supabase
-          .from('profiles').select('id, username, display_name, avatar_emoji').in('id', ids)
+        const { data: profs } = await supabase.from('profiles').select('id, username, display_name, avatar_emoji').in('id', ids)
         ;(profs || []).forEach(pr => { nameMap[pr.id] = pr })
       }
       const rankedList = (preds || []).map(p => {
         const lp = livePts(p, m)
         const prof = nameMap[p.user_id] || {}
         const finalPts = (m?.status === 'completed' && p.points_awarded != null) ? p.points_awarded : lp.pts
-        return {
-          userId: p.user_id,
-          name: prof.display_name || prof.username || 'Player',
-          avatar: prof.avatar_emoji,
-          home: p.home_score, away: p.away_score,
-          joker: !!p.is_confident,
-          status: lp.status, exact: lp.exact, pts: finalPts,
-        }
+        return { userId: p.user_id, name: prof.display_name || prof.username || 'Player', avatar: prof.avatar_emoji, home: p.home_score, away: p.away_score, joker: !!p.is_confident, status: lp.status, exact: lp.exact, pts: finalPts }
       }).sort((a, b) => b.pts - a.pts || (b.exact ? 1 : 0) - (a.exact ? 1 : 0) || a.name.localeCompare(b.name))
       setRanked(rankedList)
       setMyLine(rankedList.find(r => r.userId === user?.id) || null)
-
       setStats(computeStats(preds || [], reactions || [], m))
       setLoading(false)
     }
     if (matchId) load()
   }, [matchId, leagueCode, user?.id])
 
-  if (loading) {
-    return <div className="container" style={{ padding: '40px 16px', textAlign: 'center' }}>
-      <div className="spinner" style={{ margin: '0 auto' }} />
-    </div>
-  }
+  const wrap = (children) => (
+    <div style={{ marginTop: divider ? '6px' : 0, paddingTop: divider ? '18px' : 0, borderTop: divider ? '2px solid var(--border-light)' : 'none' }}>{children}</div>
+  )
 
-  if (scopeDenied) {
-    return <div className="container" style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-      <button onClick={() => navigate(-1)} style={{ marginBottom: '16px', color: 'var(--scottish-navy)', fontWeight: '700', fontSize: '14px' }}>← Back</button>
-      <p>You need to be a member of this league to view its match predictions.</p>
+  if (loading) return wrap(<div style={{ textAlign: 'center', padding: '24px' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>)
+  if (scopeDenied) return wrap(<p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '16px' }}>You need to be a member of this league to view its predictions.</p>)
+  if (!match) return wrap(<p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '16px' }}>Match not found.</p>)
+  if (notLocked) return wrap(
+    <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+      <div style={{ fontSize: '30px', marginBottom: '6px' }}>🔒</div>
+      <p>{match.home_team?.short_code} v {match.away_team?.short_code} — predictions appear once it kicks off.</p>
     </div>
-  }
-
-  if (notLocked) {
-    return <div className="container" style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-      <button onClick={() => navigate(-1)} style={{ marginBottom: '16px', color: 'var(--scottish-navy)', fontWeight: '700', fontSize: '14px' }}>← Back</button>
-      <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔒</div>
-      <p>Other players’ predictions will appear once this match kicks off.</p>
-    </div>
-  }
-
-  if (!match || !stats || stats.total === 0) {
-    return <div className="container" style={{ padding: '40px 16px', textAlign: 'center', color: 'var(--text-muted)' }}>
-      <button onClick={() => navigate(-1)} style={{ marginBottom: '16px', color: 'var(--scottish-navy)', fontWeight: '700', fontSize: '14px' }}>← Back</button>
-      <p>No prediction stats available for this match yet.</p>
-    </div>
-  }
+  )
 
   const hasResult = match.home_score != null && match.away_score != null
-  const actualResult = hasResult
-    ? match.home_score > match.away_score ? 'home' : match.home_score === match.away_score ? 'draw' : 'away'
-    : null
+  const live = match.status === 'live'
+  const lead = hasResult ? (match.home_score > match.away_score ? 'home' : match.away_score > match.home_score ? 'away' : 'draw') : null
 
-  return (
-    <div className="container" style={{ padding: '16px 16px 40px', maxWidth: '560px' }}>
-      <button onClick={() => navigate(-1)} style={{ marginBottom: '12px', color: 'var(--scottish-navy)', fontWeight: '700', fontSize: '14px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>← Back</button>
+  // ── Knockout centre ──
+  if (match.stage !== 'group') {
+    const totalBackers = koRivals.length
+    const homeBackers = koRivals.filter(r => r.side === 'home').length
+    const awayBackers = koRivals.filter(r => r.side === 'away').length
+    const myWinner = koMine ? (koMine.side === 'home' ? match.home_team : koMine.side === 'away' ? match.away_team : null) : null
+    const myOnTrack = koMine && lead && lead === koMine.side
+    return wrap(<>
+      <KOHeader match={match} hasResult={hasResult} live={live} />
 
-      {/* Match header */}
-      <div className="card fade-up" style={{ marginBottom: '14px', textAlign: 'center' }}>
-        <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
-          M{match.match_number} · {hasResult ? 'Full time' : match.status === 'live' ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : ''}`.trim() : 'Predictions'}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
-          <div style={{ textAlign: 'center', width: '88px' }}>
-            <div style={{ fontSize: '34px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</div>
-            <div style={{ fontWeight: '800', fontSize: 'var(--t-small)', marginTop: '4px' }}>{match.home_team?.short_code}</div>
-          </div>
-          <div className="stat-num" style={{ fontSize: '32px', fontWeight: '500', minWidth: '80px' }}>
-            {hasResult ? `${match.home_score} – ${match.away_score}` : 'vs'}
-          </div>
-          <div style={{ textAlign: 'center', width: '88px' }}>
-            <div style={{ fontSize: '34px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</div>
-            <div style={{ fontWeight: '800', fontSize: 'var(--t-small)', marginTop: '4px' }}>{match.away_team?.short_code}</div>
-          </div>
-        </div>
-        <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '12px' }}>
-          📊 {stats.total} predictions · {scopeLabel}
-        </div>
+      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', padding: '8px 12px', marginBottom: '12px', background: 'rgba(230,81,0,0.08)', border: '1px solid rgba(230,81,0,0.2)', borderRadius: 'var(--radius-md)', fontSize: '11.5px', fontWeight: 700, color: '#e65100' }}>
+        🔥 <span>KO Predictor is a separate competition — doesn't affect your Tournament score.</span>
       </div>
 
-      {/* Your prediction */}
-      {myLine && (() => {
-        const live = match.status === 'live'
-        const statusLabel = {
-          exact: live ? 'On track · exact 🎯' : 'Exact score 🎯',
-          result: live ? 'Result on track' : 'Correct result',
-          miss: live ? 'Not landing yet' : 'Missed',
-          pending: 'Locked in',
-        }[myLine.status]
-        const good = myLine.pts > 0
-        return (
-          <div className="card fade-up" style={{ marginBottom: '14px', border: `2px solid ${good ? 'var(--accent-green)' : 'var(--border-light)'}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-              <span style={{ fontSize: 'var(--t-tiny)', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Your prediction</span>
-              {myLine.joker && <span style={{ fontSize: '12px' }}>🃏</span>}
-              <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 800, color: good ? 'var(--accent-green)' : 'var(--text-muted)' }}>{statusLabel}</span>
+      <div className="card fade-up" style={{ marginBottom: '14px', border: `2px solid ${myOnTrack ? 'var(--accent-green)' : 'var(--border-light)'}` }}>
+        <div style={{ fontSize: 'var(--t-tiny)', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>Your KO Predictor pick</div>
+        {koMine ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '26px' }}>{myWinner?.flag_emoji}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 800, fontSize: '15px' }}>{myWinner?.name} to advance {koMine.joker && '🃏'}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Your score: {koMine.home}–{koMine.away}</div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: '16px', fontWeight: 800 }}>You picked <span className="stat-num">{myLine.home}–{myLine.away}</span></div>
-              <div className="stat-num" style={{ fontSize: '26px', fontWeight: 800, color: good ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                {good ? '+' : ''}{myLine.pts}<span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700 }}>{live ? ' live' : ' pts'}</span>
-              </div>
-            </div>
-            {live && <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '5px' }}>Updates as the score changes{myLine.joker ? ' · joker doubles it' : ''}.</div>}
+            {hasResult && <span style={{ fontSize: '11px', fontWeight: 800, color: myOnTrack ? 'var(--accent-green)' : 'var(--text-muted)' }}>{lead === 'draw' ? 'Level' : myOnTrack ? (live ? 'On track' : '✓ Through') : (live ? 'Trailing' : '✗ Missed')}</span>}
           </div>
-        )
-      })()}
+        ) : (
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>You haven't predicted this one. <Link to="/ko-predictor" style={{ color: '#e65100', fontWeight: 700 }}>Make your KO pick →</Link></div>
+        )}
+      </div>
 
-      {/* This match — ranked rivals */}
-      {ranked.length > 0 && (
-        <StatCard title={`${scopeLabel} · this match`}>
+      {bracketImpact.some(b => b.reach) && (
+        <StatCard title="What this means for your bracket">
           <div>
-            {ranked.slice(0, 30).map((r, i) => {
+            {bracketImpact.map((b, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: i === 0 ? '1px solid var(--border-light)' : 'none' }}>
+                <span style={{ fontSize: '22px' }}>{b.team?.flag_emoji}</span>
+                <div style={{ flex: 1, fontSize: '13px' }}>
+                  <b>{b.team?.name}</b>
+                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>{b.reach ? `You predicted them to ${b.reach}` : 'Not one of your deep bracket picks'}</div>
+                </div>
+                {hasResult && !live && lead !== 'draw' && (
+                  <span style={{ fontSize: '11px', fontWeight: 800, color: lead === b.side ? 'var(--accent-green)' : '#c62828' }}>
+                    {lead === b.side ? 'Advances ✓' : 'Out ✗'}
+                  </span>
+                )}
+              </div>
+            ))}
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', paddingTop: '10px' }}>Your bracket scores teams by how far they actually go — this game decides which of these two carries on.</div>
+          </div>
+        </StatCard>
+      )}
+
+      {totalBackers > 0 && (
+        <StatCard title={`${scopeLabel} · who's backing who`}>
+          <div>
+            <div style={{ display: 'flex', height: '30px', borderRadius: '8px', overflow: 'hidden', fontWeight: 800, fontSize: '12px', color: '#fff', marginBottom: '12px' }}>
+              <div style={{ width: `${homeBackers / totalBackers * 100}%`, background: 'var(--scottish-navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: homeBackers ? '46px' : 0 }}>{match.home_team?.short_code} {homeBackers}</div>
+              <div style={{ width: `${awayBackers / totalBackers * 100}%`, background: '#7a4fd0', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: awayBackers ? '46px' : 0 }}>{match.away_team?.short_code} {awayBackers}</div>
+            </div>
+            {koRivals.slice(0, 30).map((r, i) => {
               const me = r.userId === user?.id
-              const last = i === Math.min(ranked.length, 30) - 1
+              const winTeam = r.side === 'home' ? match.home_team : r.side === 'away' ? match.away_team : null
               return (
-                <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: me ? '9px 8px' : '9px 0', borderBottom: last ? 'none' : '1px solid var(--border-light)', background: me ? 'var(--bg-secondary)' : 'transparent', borderRadius: me ? 'var(--radius-sm)' : 0 }}>
-                  <span className="stat-num" style={{ width: '20px', fontWeight: 800, color: 'var(--text-muted)', fontSize: '13px' }}>{i + 1}</span>
-                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--scottish-navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>{r.avatar || (r.name[0] || '?').toUpperCase()}</span>
+                <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: me ? '8px' : '8px 0', borderRadius: me ? 'var(--radius-sm)' : 0, background: me ? 'var(--bg-secondary)' : 'transparent', borderBottom: i < Math.min(koRivals.length, 30) - 1 ? '1px solid var(--border-light)' : 'none' }}>
+                  <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--scottish-navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '10px', flexShrink: 0 }}>{r.avatar || (r.name[0] || '?').toUpperCase()}</span>
                   <span style={{ flex: 1, fontWeight: 700, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
-                  <span className="stat-num" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{r.home}–{r.away}{r.joker ? ' 🃏' : ''}</span>
-                  <span className="stat-num" style={{ width: '42px', textAlign: 'right', fontWeight: 800, fontSize: '13px', color: r.pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{r.pts > 0 ? '+' : ''}{r.pts}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700 }}>{winTeam?.flag_emoji} {winTeam?.short_code}{r.joker ? ' 🃏' : ''}</span>
                 </div>
               )
             })}
-            {ranked.length > 30 && <div style={{ textAlign: 'center', fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', paddingTop: '8px' }}>+ {ranked.length - 30} more</div>}
           </div>
         </StatCard>
       )}
 
-      {/* Result split */}
-      <StatCard title="How people predicted">
-        <div style={{ display: 'flex', gap: '3px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: '8px', marginBottom: '9px' }}>
-          <div style={{ width: `${stats.homePct}%`, background: 'var(--scottish-navy)' }} />
-          <div style={{ width: `${stats.drawPct}%`, background: 'var(--text-muted)', opacity: 0.4 }} />
-          <div style={{ width: `${stats.awayPct}%`, background: '#c62828' }} />
+      {totalBackers === 0 && (
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', padding: '8px 0' }}>No KO Predictor picks in yet for this match.</p>
+      )}
+    </>)
+  }
+
+  // ── Group centre ──
+  if (!stats || stats.total === 0) {
+    return wrap(<>
+      <GroupHeader match={match} hasResult={hasResult} live={live} statsTotal={0} scopeLabel={scopeLabel} />
+      <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '12px' }}>No predictions in yet for this match.</p>
+    </>)
+  }
+
+  const actualResult = lead
+
+  return wrap(<>
+    <GroupHeader match={match} hasResult={hasResult} live={live} statsTotal={stats.total} scopeLabel={scopeLabel} />
+
+    {myLine && (() => {
+      const statusLabel = {
+        exact: live ? 'On track · exact 🎯' : 'Exact score 🎯',
+        result: live ? 'Result on track' : 'Correct result',
+        miss: live ? 'Not landing yet' : 'Missed',
+        pending: 'Locked in',
+      }[myLine.status]
+      const good = myLine.pts > 0
+      return (
+        <div className="card fade-up" style={{ marginBottom: '14px', border: `2px solid ${good ? 'var(--accent-green)' : 'var(--border-light)'}` }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+            <span style={{ fontSize: 'var(--t-tiny)', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Your prediction</span>
+            {myLine.joker && <span style={{ fontSize: '12px' }}>🃏</span>}
+            <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 800, color: good ? 'var(--accent-green)' : 'var(--text-muted)' }}>{statusLabel}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: '16px', fontWeight: 800 }}>You picked <span className="stat-num">{myLine.home}–{myLine.away}</span></div>
+            <div className="stat-num" style={{ fontSize: '26px', fontWeight: 800, color: good ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+              {good ? '+' : ''}{myLine.pts}<span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700 }}>{live ? ' live' : ' pts'}</span>
+            </div>
+          </div>
+          {live && <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '5px' }}>Updates as the score changes{myLine.joker ? ' · joker doubles it' : ''}.</div>}
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--t-small)', fontWeight: '700' }}>
-          <span style={{ color: actualResult === 'home' ? 'var(--scottish-navy)' : 'var(--text-secondary)' }}>
-            {match.home_team?.short_code} <span className="stat-num">{stats.homePct}%</span>{actualResult === 'home' ? ' ✓' : ''}
-          </span>
-          <span style={{ color: actualResult === 'draw' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-            Draw <span className="stat-num">{stats.drawPct}%</span>{actualResult === 'draw' ? ' ✓' : ''}
-          </span>
-          <span style={{ color: actualResult === 'away' ? '#c62828' : 'var(--text-secondary)' }}>
-            {match.away_team?.short_code} <span className="stat-num">{stats.awayPct}%</span>{actualResult === 'away' ? ' ✓' : ''}
+      )
+    })()}
+
+    {ranked.length > 0 && (
+      <StatCard title={`${scopeLabel} · this match`}>
+        <div>
+          {ranked.slice(0, 30).map((r, i) => {
+            const me = r.userId === user?.id
+            const last = i === Math.min(ranked.length, 30) - 1
+            return (
+              <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: me ? '9px 8px' : '9px 0', borderBottom: last ? 'none' : '1px solid var(--border-light)', background: me ? 'var(--bg-secondary)' : 'transparent', borderRadius: me ? 'var(--radius-sm)' : 0 }}>
+                <span className="stat-num" style={{ width: '20px', fontWeight: 800, color: 'var(--text-muted)', fontSize: '13px' }}>{i + 1}</span>
+                <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--scottish-navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>{r.avatar || (r.name[0] || '?').toUpperCase()}</span>
+                <span style={{ flex: 1, fontWeight: 700, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
+                <span className="stat-num" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{r.home}–{r.away}{r.joker ? ' 🃏' : ''}</span>
+                <span className="stat-num" style={{ width: '42px', textAlign: 'right', fontWeight: 800, fontSize: '13px', color: r.pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{r.pts > 0 ? '+' : ''}{r.pts}</span>
+              </div>
+            )
+          })}
+          {ranked.length > 30 && <div style={{ textAlign: 'center', fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', paddingTop: '8px' }}>+ {ranked.length - 30} more</div>}
+        </div>
+      </StatCard>
+    )}
+
+    <StatCard title="How people predicted">
+      <div style={{ display: 'flex', gap: '3px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: '8px', marginBottom: '9px' }}>
+        <div style={{ width: `${stats.homePct}%`, background: 'var(--scottish-navy)' }} />
+        <div style={{ width: `${stats.drawPct}%`, background: 'var(--text-muted)', opacity: 0.4 }} />
+        <div style={{ width: `${stats.awayPct}%`, background: '#c62828' }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--t-small)', fontWeight: '700' }}>
+        <span style={{ color: actualResult === 'home' ? 'var(--scottish-navy)' : 'var(--text-secondary)' }}>
+          {match.home_team?.short_code} <span className="stat-num">{stats.homePct}%</span>{actualResult === 'home' ? ' ✓' : ''}
+        </span>
+        <span style={{ color: actualResult === 'draw' ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+          Draw <span className="stat-num">{stats.drawPct}%</span>{actualResult === 'draw' ? ' ✓' : ''}
+        </span>
+        <span style={{ color: actualResult === 'away' ? '#c62828' : 'var(--text-secondary)' }}>
+          {match.away_team?.short_code} <span className="stat-num">{stats.awayPct}%</span>{actualResult === 'away' ? ' ✓' : ''}
+        </span>
+      </div>
+    </StatCard>
+
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+      <MiniStat label="Most popular score" value={stats.topScore} sub={`${stats.topScorePct}% picked it`} />
+      <MiniStat label="Jokers used 🃏" value={stats.jokers} sub={`${stats.jokerPct}% of players`} />
+      <MiniStat label="Avg predicted goals" value={stats.avgGoals} sub={hasResult ? `actual: ${match.home_score + match.away_score}` : 'total'} />
+      <MiniStat label="Boldest scoreline" value={stats.boldest} sub={`${stats.boldestGoals} goals`} />
+    </div>
+
+    {hasResult && (
+      <StatCard title="Got it spot on 🎯">
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+          <span className="stat-num" style={{ fontSize: '32px', fontWeight: '700', color: 'var(--accent-green)' }}>{stats.exactPct}%</span>
+          <span style={{ fontSize: 'var(--t-small)', color: 'var(--text-muted)' }}>
+            predicted {match.home_score}–{match.away_score} exactly ({stats.exactCount} {stats.exactCount === 1 ? 'person' : 'people'})
           </span>
         </div>
       </StatCard>
+    )}
 
-      {/* Key number grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
-        <MiniStat label="Most popular score" value={stats.topScore} sub={`${stats.topScorePct}% picked it`} />
-        <MiniStat label="Jokers used 🃏" value={stats.jokers} sub={`${stats.jokerPct}% of players`} />
-        <MiniStat label="Avg predicted goals" value={stats.avgGoals} sub={hasResult ? `actual: ${match.home_score + match.away_score}` : 'total'} />
-        <MiniStat label="Boldest scoreline" value={stats.boldest} sub={`${stats.boldestGoals} goals`} />
-      </div>
-
-      {/* Post-match: exact score % */}
-      {hasResult && (
-        <StatCard title="Got it spot on 🎯">
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span className="stat-num" style={{ fontSize: '32px', fontWeight: '700', color: 'var(--accent-green)' }}>{stats.exactPct}%</span>
-            <span style={{ fontSize: 'var(--t-small)', color: 'var(--text-muted)' }}>
-              predicted {match.home_score}–{match.away_score} exactly ({stats.exactCount} {stats.exactCount === 1 ? 'person' : 'people'})
-            </span>
-          </div>
-        </StatCard>
-      )}
-
-      {/* Upset meter */}
-      {hasResult && stats.actualResultPct != null && (
-        <StatCard title="Upset meter">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ height: '8px', borderRadius: 'var(--radius-full)', background: 'var(--bg-tertiary)', overflow: 'hidden' }}>
-                <div style={{ width: `${100 - stats.actualResultPct}%`, height: '100%', background: stats.actualResultPct <= 20 ? '#e65100' : stats.actualResultPct <= 45 ? 'var(--accent-gold)' : 'var(--accent-green)', transition: 'width 0.5s' }} />
-              </div>
+    {hasResult && stats.actualResultPct != null && (
+      <StatCard title="Upset meter">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ height: '8px', borderRadius: 'var(--radius-full)', background: 'var(--bg-tertiary)', overflow: 'hidden' }}>
+              <div style={{ width: `${100 - stats.actualResultPct}%`, height: '100%', background: stats.actualResultPct <= 20 ? '#e65100' : stats.actualResultPct <= 45 ? 'var(--accent-gold)' : 'var(--accent-green)', transition: 'width 0.5s' }} />
             </div>
-            <span style={{ fontSize: 'var(--t-small)', fontWeight: '800', color: stats.actualResultPct <= 20 ? '#e65100' : 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-              {stats.actualResultPct <= 5 ? '🚨 Massive upset' : stats.actualResultPct <= 20 ? '😲 Upset' : stats.actualResultPct <= 45 ? 'Mild surprise' : '✓ As expected'}
-            </span>
           </div>
-          <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '6px' }}>
-            Only <span className="stat-num" style={{ fontWeight: '700' }}>{stats.actualResultPct}%</span> predicted this result
-          </div>
-        </StatCard>
-      )}
+          <span style={{ fontSize: 'var(--t-small)', fontWeight: '800', color: stats.actualResultPct <= 20 ? '#e65100' : 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+            {stats.actualResultPct <= 5 ? '🚨 Massive upset' : stats.actualResultPct <= 20 ? '😲 Upset' : stats.actualResultPct <= 45 ? 'Mild surprise' : '✓ As expected'}
+          </span>
+        </div>
+        <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '6px' }}>
+          Only <span className="stat-num" style={{ fontWeight: '700' }}>{stats.actualResultPct}%</span> predicted this result
+        </div>
+      </StatCard>
+    )}
 
-      {/* Reactions */}
-      {(stats.reactions.fire + stats.reactions.laugh + stats.reactions.skull) > 0 && (
-        <StatCard title="Reactions">
-          <div style={{ display: 'flex', gap: '16px' }}>
-            <span style={{ fontSize: 'var(--t-body)' }}>🔥 <span className="stat-num" style={{ fontWeight: '700' }}>{stats.reactions.fire}</span></span>
-            <span style={{ fontSize: 'var(--t-body)' }}>😂 <span className="stat-num" style={{ fontWeight: '700' }}>{stats.reactions.laugh}</span></span>
-            <span style={{ fontSize: 'var(--t-body)' }}>💀 <span className="stat-num" style={{ fontWeight: '700' }}>{stats.reactions.skull}</span></span>
-          </div>
-        </StatCard>
-      )}
+    {(stats.reactions.fire + stats.reactions.laugh + stats.reactions.skull) > 0 && (
+      <StatCard title="Reactions">
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <span style={{ fontSize: 'var(--t-body)' }}>🔥 <span className="stat-num" style={{ fontWeight: '700' }}>{stats.reactions.fire}</span></span>
+          <span style={{ fontSize: 'var(--t-body)' }}>😂 <span className="stat-num" style={{ fontWeight: '700' }}>{stats.reactions.laugh}</span></span>
+          <span style={{ fontSize: 'var(--t-body)' }}>💀 <span className="stat-num" style={{ fontWeight: '700' }}>{stats.reactions.skull}</span></span>
+        </div>
+      </StatCard>
+    )}
+  </>)
+}
+
+function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel }) {
+  return (
+    <div className="card fade-up" style={{ marginBottom: '14px', textAlign: 'center' }}>
+      <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
+        M{match.match_number} · {hasResult ? 'Full time' : live ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : ''}`.trim() : 'Predictions'}
+      </div>
+      <ScoreRow match={match} hasResult={hasResult} />
+      <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '12px' }}>
+        📊 {statsTotal} predictions · {scopeLabel}
+      </div>
+    </div>
+  )
+}
+
+function KOHeader({ match, hasResult, live }) {
+  return (
+    <div className="card fade-up" style={{ marginBottom: '12px', textAlign: 'center' }}>
+      <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
+        {STAGE_LABELS[match.stage] || 'Knockout'} · M{match.match_number} · {hasResult ? 'Full time' : live ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}'` : ''}`.trim() : 'KO Predictor'}
+      </div>
+      <ScoreRow match={match} hasResult={hasResult} />
+    </div>
+  )
+}
+
+function ScoreRow({ match, hasResult }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
+      <div style={{ textAlign: 'center', width: '88px' }}>
+        <div style={{ fontSize: '34px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</div>
+        <div style={{ fontWeight: '800', fontSize: 'var(--t-small)', marginTop: '4px' }}>{match.home_team?.short_code}</div>
+      </div>
+      <div className="stat-num" style={{ fontSize: '32px', fontWeight: '500', minWidth: '80px' }}>
+        {hasResult ? `${match.home_score} – ${match.away_score}` : 'vs'}
+      </div>
+      <div style={{ textAlign: 'center', width: '88px' }}>
+        <div style={{ fontSize: '34px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</div>
+        <div style={{ fontWeight: '800', fontSize: 'var(--t-small)', marginTop: '4px' }}>{match.away_team?.short_code}</div>
+      </div>
     </div>
   )
 }
@@ -334,11 +482,9 @@ function computeStats(preds, reactions, match) {
     scoreCounts[key] = (scoreCounts[key] || 0) + 1
   })
 
-  // Most popular scoreline
   let topScore = '–', topCount = 0
   Object.entries(scoreCounts).forEach(([k, c]) => { if (c > topCount) { topCount = c; topScore = k } })
 
-  // Exact score (post-match)
   let exactCount = 0, actualResultCount = 0
   const hasResult = match?.home_score != null && match?.away_score != null
   if (hasResult) {
@@ -362,17 +508,11 @@ function computeStats(preds, reactions, match) {
   const awayPct = Math.round((away / total) * 100)
 
   return {
-    total,
-    homePct,
-    drawPct,
-    awayPct,
-    topScore,
-    topScorePct: Math.round((topCount / total) * 100),
-    jokers,
-    jokerPct: Math.round((jokers / total) * 100),
+    total, homePct, drawPct, awayPct,
+    topScore, topScorePct: Math.round((topCount / total) * 100),
+    jokers, jokerPct: Math.round((jokers / total) * 100),
     avgGoals: (goalSum / total).toFixed(1),
-    boldest,
-    boldestGoals,
+    boldest, boldestGoals,
     exactCount,
     exactPct: hasResult ? Math.round((exactCount / total) * 100) : null,
     actualResultPct: hasResult ? Math.round((actualResultCount / total) * 100) : null,
