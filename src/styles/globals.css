@@ -1176,3 +1176,39 @@ html {
     box-shadow: none !important;
   }
 }
+
+/* Phase 4: rules, FAQ and onboarding */
+.howto-jump {
+  position: sticky;
+  top: var(--app-header-height, 64px);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: color-mix(in srgb, var(--bg-primary) 94%, transparent);
+  border-bottom: 1px solid var(--border-light);
+  backdrop-filter: blur(12px);
+}
+.howto-jump label { font-size: 12px; font-weight: 800; white-space: nowrap; color: var(--text-secondary); }
+.howto-jump select { flex: 1; min-width: 0; padding: 9px 34px 9px 11px; border: 1px solid var(--border-medium); border-radius: var(--radius-md); background: var(--bg-primary); color: var(--text-primary); font: inherit; font-size: 13px; }
+.howto-anchor { scroll-margin-top: 130px; }
+.howto-content .card { padding: 14px; }
+.faq-tools { display: grid; gap: 10px; }
+.faq-category-row { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.faq-category-row::-webkit-scrollbar { display: none; }
+.faq-category { border: 1px solid var(--border-medium); background: var(--bg-secondary); color: var(--text-secondary); border-radius: 999px; padding: 7px 11px; font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; }
+.faq-category.active { background: var(--scottish-navy); color: white; border-color: var(--scottish-navy); }
+.faq-card { padding: 0 !important; overflow: hidden; }
+.faq-question { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 15px; border: 0; background: transparent; color: var(--text-primary); text-align: left; font: inherit; font-size: 14px; font-weight: 750; cursor: pointer; }
+.faq-question:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent-blue) 45%, transparent); outline-offset: -3px; }
+.faq-chevron { color: var(--text-muted); font-size: 18px; transition: transform .2s ease; }
+.faq-chevron.open { transform: rotate(180deg); }
+.faq-answer { padding: 12px 15px 15px; border-top: 1px solid var(--border-light); color: var(--text-secondary); font-size: 14px; line-height: 1.6; }
+.password-toggle { border: 0; background: transparent; color: var(--accent-blue); font-size: 12px; font-weight: 750; cursor: pointer; padding: 4px; }
+.password-toggle-inside { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); }
+.password-requirement { margin-top: 6px; font-size: 11px; color: var(--text-muted); }
+.password-requirement[data-met="true"] { color: var(--accent-green); font-weight: 700; }
+@media (min-width: 760px) {
+  .howto-jump { max-width: 720px; margin: 0 auto; border: 1px solid var(--border-light); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+}

@@ -22,6 +22,7 @@ export default function Register() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const claimToken = searchParams.get('claim')
@@ -89,8 +90,8 @@ export default function Register() {
       <div style={{ width: '100%', maxWidth: '400px' }} className="fade-in">
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <WorldCupLogo variant="hero" size={104} />
-          <h1 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.03em' }}>Join WC26 Predictor</h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '6px', fontSize: '15px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.03em', color: 'white' }}>Join WC26 Predictor</h1>
+          <p style={{ color: 'rgba(255,255,255,0.86)', marginTop: '6px', fontSize: '15px' }}>
             Predict all 104 matches, build your bracket and compete with friends.
           </p>
           <div style={{ display: 'grid', gap: '6px', marginTop: '14px', textAlign: 'left' }}>
@@ -110,6 +111,7 @@ export default function Register() {
         <div style={{ textAlign: 'center', fontSize: '10px', color: 'rgba(255,255,255,0.52)', margin: '-14px 0 18px' }}>Unofficial fan predictor · not affiliated with or endorsed by FIFA</div>
 
         {/* Step indicator */}
+        <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.9)', fontSize: '12px', fontWeight: '700', marginBottom: '8px' }}>Step {step} of 2 · {step === 1 ? 'Create your profile' : 'Add your email'}</div>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', justifyContent: 'center' }}>
           {[1, 2].map(s => (
             <div key={s} style={{
@@ -144,9 +146,13 @@ export default function Register() {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label className="label">Password</label>
-                  <input className="input" type="password" placeholder="At least 6 characters"
-                    value={password} onChange={e => setPassword(e.target.value)} required />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className="label" htmlFor="register-password">Password</label>
+                    <button type="button" className="password-toggle" onClick={() => setShowPassword(v => !v)} aria-pressed={showPassword}>{showPassword ? 'Hide' : 'Show'}</button>
+                  </div>
+                  <input id="register-password" className="input" type={showPassword ? 'text' : 'password'} placeholder="At least 6 characters"
+                    value={password} onChange={e => setPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
+                  <div className="password-requirement" data-met={password.length >= 6}>✓ At least 6 characters</div>
                 </div>
 
                 {error && (
@@ -202,9 +208,9 @@ export default function Register() {
           )}
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: 'var(--text-muted)' }}>
+        <p style={{ textAlign: 'center', marginTop: '20px', fontSize: '14px', color: 'rgba(255,255,255,0.82)' }}>
           Already have an account?{' '}
-          <Link to="/login" style={{ color: 'var(--text-primary)', fontWeight: '600' }}>Sign in</Link>
+          <Link to="/login" style={{ color: 'white', fontWeight: '700' }}>Sign in</Link>
         </p>
       </div>
     </div>

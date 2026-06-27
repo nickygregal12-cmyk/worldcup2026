@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { DATES } from '../lib/tournamentDates.js'
 import WorldCupLogo from '../components/WorldCupLogo.jsx'
@@ -19,7 +19,7 @@ const SCORING = [
   },
   {
     section: '🏆 Knockout Bracket',
-    desc: 'Pick which teams advance through each round before Matchday 1 ends. Points awarded for each team that actually makes it — regardless of which specific match they play.',
+    desc: 'Pick which teams advance through each round before the bracket deadline. Points awarded for each team that actually makes it — regardless of which specific match they play.',
     rows: [
       { label: 'Team reaches Round of 32 (32 teams)', pts: '5pts' },
       { label: 'Team reaches Round of 16 (16 teams)', pts: '8pts' },
@@ -67,7 +67,7 @@ const LOCKS = [
     icon: '🏆',
     title: 'Knockout bracket',
     time: 'Locks progressively as groups kick off',
-    detail: 'Your bracket is based on your group predictions — so as each group locks at first kickoff, those bracket slots lock too. The whole bracket is fully frozen by Wed 18 Jun before Matchday 2 starts.',
+    detail: 'Your bracket is based on your group predictions — so as each group locks at first kickoff, those bracket slots lock too. The bracket becomes fully frozen once every group slot has locked.',
     color: 'var(--scottish-navy)',
   },
   {
@@ -89,12 +89,12 @@ const LOCKS = [
 const FAQS = [
   {
     q: 'When do group predictions lock?',
-    a: 'Once the first match in a group kicks off, all remaining matches in that group lock immediately — even ones scheduled days later. This stops anyone using live results (like watching Mexico lose 2-0 then adjusting their other Group A picks). Your knockout bracket also locks separately on Wed 18 Jun before Matchday 2 starts.',
+    a: 'Once the first match in a group kicks off, all remaining matches in that group lock immediately — even ones scheduled days later. This stops anyone using live results (like watching Mexico lose 2-0 then adjusting their other Group A picks). Your Tournament Bracket locks progressively as each group begins.',
   },
 
   {
     q: 'How does the knockout bracket work?',
-    a: 'You pick which teams you think will advance through each round — Round of 32, Round of 16, Quarter-finals, Semi-finals, and the Final. Points are awarded for every team that actually reaches that round in real life, regardless of which match they play. The bracket is based on your predicted group standings and locks progressively as each group kicks off — fully frozen by Wed 18 Jun before Matchday 2 starts.',
+    a: 'You pick which teams you think will advance through each round — Round of 32, Round of 16, Quarter-finals, Semi-finals, and the Final. Points are awarded for every team that actually reaches that round in real life, regardless of which match they play. The bracket is based on your predicted group standings and locks progressively as each group kicks off — fully frozen once every group slot has locked.',
   },
   {
     q: 'How do jokers work?',
@@ -136,6 +136,29 @@ const FAQS = [
 
 export default function HowToPlay() {
   const [openFaq, setOpenFaq] = useState(null)
+  const [faqSearch, setFaqSearch] = useState('')
+  const [faqCategory, setFaqCategory] = useState('All')
+
+  const faqCategories = ['All', 'Predictions', 'Scoring', 'Knockouts', 'Leagues', 'Account']
+  const categoriseFaq = (question) => {
+    const q = question.toLowerCase()
+    if (q.includes('league')) return 'Leagues'
+    if (q.includes('knockout') || q.includes('ko predictor')) return 'Knockouts'
+    if (q.includes('account') || q.includes('miss a prediction')) return 'Account'
+    if (q.includes('score') || q.includes('points') || q.includes('joker') || q.includes('award')) return 'Scoring'
+    return 'Predictions'
+  }
+  const filteredFaqs = useMemo(() => FAQS.map((faq, originalIndex) => ({ ...faq, originalIndex, category: categoriseFaq(faq.q) })).filter(faq => {
+    const matchesCategory = faqCategory === 'All' || faq.category === faqCategory
+    const query = faqSearch.trim().toLowerCase()
+    const matchesSearch = !query || faq.q.toLowerCase().includes(query) || faq.a.toLowerCase().includes(query)
+    return matchesCategory && matchesSearch
+  }), [faqCategory, faqSearch])
+
+  const jumpTo = (value) => {
+    if (!value) return
+    document.getElementById(value)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
@@ -155,10 +178,21 @@ export default function HowToPlay() {
         </div>
       </div>
 
-      <div className="container" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className="howto-jump" aria-label="How to play sections">
+        <label htmlFor="howto-section">Jump to section</label>
+        <select id="howto-section" defaultValue="" onChange={e => jumpTo(e.target.value)}>
+          <option value="" disabled>Select a section…</option>
+          <option value="points-system">Points system</option>
+          <option value="lock-dates">Lock dates</option>
+          <option value="ko-predictor-rules">KO Match Predictor</option>
+          <option value="faq">FAQ</option>
+        </select>
+      </div>
+
+      <div className="container howto-content" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
         {/* Points System */}
-        <div style={{ fontWeight: '800', fontSize: '18px', marginTop: '4px' }}>📊 Points System</div>
+        <div id="points-system" className="howto-anchor" style={{ fontWeight: '800', fontSize: '18px', marginTop: '4px' }}>📊 Points System</div>
 
         {SCORING.map((section, i) => (
           <div key={i} className="card">
@@ -186,7 +220,7 @@ export default function HowToPlay() {
         ))}
 
         {/* Lock dates */}
-        <div style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>🔒 Lock Dates</div>
+        <div id="lock-dates" className="howto-anchor" style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>🔒 Lock Dates</div>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '-4px', marginBottom: '4px' }}>
           Different parts of the game lock at different times — here's everything you need to know.
         </div>
@@ -211,9 +245,9 @@ export default function HowToPlay() {
         ))}
 
         {/* KO Predictor — after locks since it's a future game */}
-        <div style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>🔥 KO Predictor — Opens ~28 Jun</div>
+        <div id="ko-predictor-rules" className="howto-anchor" style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>🔥 KO Match Predictor</div>
         <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '12px', marginTop: '4px', padding: '10px 14px', background: 'rgba(230,81,0,0.06)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(230,81,0,0.15)' }}>
-          A completely separate game from the Knockout Bracket. Opens once all 32 teams are confirmed from real results. Everyone starts at 0pts — even if your group stage didn't go well.
+          A separate game from the Tournament Bracket. It opens once all 32 knockout teams are confirmed from real results. Everyone starts at 0 points, regardless of their group-stage score.
         </div>
         <div className="card" style={{ marginBottom: '8px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
@@ -237,21 +271,30 @@ export default function HowToPlay() {
         </div>
 
         {/* FAQ */}
-        <div style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>❓ FAQ</div>
+        <div id="faq" className="howto-anchor" style={{ fontWeight: '800', fontSize: '18px', marginTop: '8px' }}>❓ FAQ</div>
 
-        {FAQS.map((faq, i) => (
-          <div key={i} className="card" style={{ cursor: 'pointer' }} onClick={() => setOpenFaq(openFaq === i ? null : i)}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-              <div style={{ fontWeight: '700', fontSize: '14px' }}>{faq.q}</div>
-              <div style={{ fontSize: '18px', color: 'var(--text-muted)', flexShrink: 0, transition: 'transform 0.2s', transform: openFaq === i ? 'rotate(180deg)' : 'none' }}>⌄</div>
-            </div>
-            {openFaq === i && (
-              <div style={{ marginTop: '10px', fontSize: '14px', color: 'var(--text-secondary)', lineHeight: '1.6', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
-                {faq.a}
-              </div>
+        <div className="card faq-tools">
+          <label className="label" htmlFor="faq-search">Search questions</label>
+          <input id="faq-search" className="input" type="search" placeholder="Search scoring, leagues, knockouts…" value={faqSearch} onChange={e => setFaqSearch(e.target.value)} />
+          <div className="faq-category-row" aria-label="FAQ categories">
+            {faqCategories.map(category => (
+              <button key={category} type="button" className={`faq-category ${faqCategory === category ? 'active' : ''}`} onClick={() => setFaqCategory(category)}>{category}</button>
+            ))}
+          </div>
+        </div>
+
+        {filteredFaqs.map((faq) => (
+          <div key={faq.originalIndex} className="card faq-card">
+            <button type="button" className="faq-question" aria-expanded={openFaq === faq.originalIndex} onClick={() => setOpenFaq(openFaq === faq.originalIndex ? null : faq.originalIndex)}>
+              <span>{faq.q}</span>
+              <span aria-hidden="true" className={openFaq === faq.originalIndex ? 'faq-chevron open' : 'faq-chevron'}>⌄</span>
+            </button>
+            {openFaq === faq.originalIndex && (
+              <div className="faq-answer">{faq.a}</div>
             )}
           </div>
         ))}
+        {filteredFaqs.length === 0 && <div className="card" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No questions match that search.</div>}
 
         {/* CTA */}
         <div className="card" style={{ background: 'var(--scottish-navy)', color: 'white', textAlign: 'center', padding: '24px' }}>

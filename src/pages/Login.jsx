@@ -22,6 +22,7 @@ export default function Login() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [showForgot, setShowForgot] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotSent, setForgotSent] = useState(false)
@@ -143,8 +144,8 @@ export default function Login() {
       <div style={{ width: '100%', maxWidth: '400px' }} className="fade-in">
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <WorldCupLogo variant="hero" size={104} />
-          <h1 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.03em' }}>Welcome back</h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '6px', fontSize: '15px' }}>Sign in to edit your predictions, check leagues and follow your points.</p>
+          <h1 style={{ fontSize: '28px', fontWeight: '800', letterSpacing: '-0.03em', color: 'white' }}>Welcome back</h1>
+          <p style={{ color: 'rgba(255,255,255,0.86)', marginTop: '6px', fontSize: '15px' }}>Sign in to edit your predictions, check leagues and follow your points.</p>
         </div>
 
         <div className="card" style={{ padding: '28px' }}>
@@ -172,8 +173,11 @@ export default function Login() {
                   Forgot password?
                 </button>
               </div>
-              <input className="input" type="password" placeholder="••••••••" value={password}
-                onChange={e => setPassword(e.target.value)} required />
+              <div style={{ position: 'relative' }}>
+                <input id="login-password" className="input" type={showPassword ? 'text' : 'password'} placeholder="••••••••" value={password}
+                  onChange={e => setPassword(e.target.value)} required autoComplete="current-password" style={{ paddingRight: '64px' }} />
+                <button type="button" className="password-toggle password-toggle-inside" onClick={() => setShowPassword(v => !v)} aria-pressed={showPassword}>{showPassword ? 'Hide' : 'Show'}</button>
+              </div>
             </div>
 
             <label style={{
@@ -213,9 +217,9 @@ export default function Login() {
 
         <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '10px', color: 'rgba(255,255,255,0.52)' }}>Unofficial fan predictor · not affiliated with or endorsed by FIFA</p>
 
-        <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '14px', color: 'var(--text-muted)' }}>
+        <p style={{ textAlign: 'center', marginTop: '12px', fontSize: '14px', color: 'rgba(255,255,255,0.82)' }}>
           Don't have an account?{' '}
-          <Link to="/register" style={{ color: 'var(--text-primary)', fontWeight: '600' }}>Register free</Link>
+          <Link to="/register" style={{ color: 'white', fontWeight: '700' }}>Register free</Link>
         </p>
       </div>
     </div>
