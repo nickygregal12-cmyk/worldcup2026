@@ -584,6 +584,7 @@ export default function Predictions() {
   const [activeDateId, setActiveDateId] = useState(null)
   const [activeTab, setActiveTab] = useState('picks') // picks | overview | standings
   const [teamSearch, setTeamSearch] = useState('')
+  const [searchExpanded, setSearchExpanded] = useState(false)
   const [standings, setStandings] = useState([])
   const [groupPositionBreakdown, setGroupPositionBreakdown] = useState([])
   const [matches, setMatches] = useState([])
@@ -1525,26 +1526,26 @@ export default function Predictions() {
     const favourite = getFavourite()
 
     // Card border & background based on state
-    const cardBorderColor = resultColour === 'gold' ? 'var(--accent-gold)'
+    const cardBorderColor = hasJoker ? 'var(--accent-gold)'
+      : resultColour === 'gold' ? 'var(--accent-gold)'
       : resultColour === 'green' ? 'var(--accent-green)'
       : resultColour === 'red'  ? 'var(--accent-red)'
-      : hasJoker      ? 'var(--accent-gold)'
       : hasPrediction ? 'var(--accent-green)'
       : 'var(--border-light)'
 
     const cardBorderWidth = resultColour || hasJoker || hasPrediction ? '2px' : '1.5px'
 
-    const cardBg = resultColour === 'gold' ? 'var(--accent-gold-light)'
+    const cardBg = hasJoker ? 'var(--accent-gold-light)'
+      : resultColour === 'gold' ? 'var(--accent-gold-light)'
       : resultColour === 'green' ? 'var(--accent-green-light)'
       : resultColour === 'red'   ? 'var(--accent-red-light)'
-      : hasJoker ? 'var(--accent-gold-light)'
       : 'var(--bg-card)'
 
     // Left accent strip colour
-    const accentColor = resultColour === 'gold' ? 'var(--accent-gold)'
+    const accentColor = hasJoker ? 'var(--accent-gold)'
+      : resultColour === 'gold' ? 'var(--accent-gold)'
       : resultColour === 'green' ? 'var(--accent-green)'
       : resultColour === 'red'   ? 'var(--accent-red)'
-      : hasJoker      ? 'var(--accent-gold)'
       : hasPrediction ? 'var(--accent-green)'
       : 'transparent'
 
@@ -1563,18 +1564,18 @@ export default function Predictions() {
         {/* Coloured top accent strip */}
         <div style={{ height: '4px', background: accentColor, flexShrink: 0 }} />
 
-        <div style={{ padding: '16px 18px 18px' }}>
+        <div style={{ padding: resultColour ? '12px 14px 14px' : '16px 18px 18px' }}>
 
           {/* Result badge */}
           {resultColour && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: '14px', padding: '10px 14px', borderRadius: 'var(--radius-md)',
+              marginBottom: resultColour ? '10px' : '14px', padding: resultColour ? '8px 11px' : '10px 14px', borderRadius: 'var(--radius-md)',
               background: resultColour === 'gold' ? 'rgba(184,134,11,0.12)' : resultColour === 'green' ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.08)',
               border: `1px solid ${resultColour === 'gold' ? 'rgba(184,134,11,0.35)' : resultColour === 'green' ? 'rgba(0,122,51,0.25)' : 'rgba(198,40,40,0.2)'}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <span style={{ fontSize: '22px' }}>
+                <span style={{ fontSize: resultColour ? '19px' : '22px' }}>
                   {resultColour === 'gold' ? '🎯' : resultColour === 'green' ? '✅' : '❌'}
                 </span>
                 <div>
@@ -1589,7 +1590,7 @@ export default function Predictions() {
                   </div>
                 </div>
               </div>
-              <div style={{ fontWeight: '900', fontSize: '24px', fontFamily: 'var(--font-mono)', lineHeight: 1,
+              <div style={{ fontWeight: '900', fontSize: resultColour ? '21px' : '24px', fontFamily: 'var(--font-mono)', lineHeight: 1,
                 color: resultColour === 'gold' ? 'var(--accent-gold)' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
                 {(() => {
                   // ALWAYS trust the DB points_awarded — it's the source of truth.
@@ -1617,7 +1618,7 @@ export default function Predictions() {
             </div>
           )}
           {/* Match meta row */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: resultColour ? '10px' : '16px' }}>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.4 }}>
               {match.match_number && <span>M{match.match_number} · </span>}
               {viewMode === 'date'
@@ -1638,11 +1639,11 @@ export default function Predictions() {
           </div>
 
           {/* Teams + score inputs */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '10px', marginBottom: matchOdds && !effectiveLocked && !resultColour ? '12px' : '0' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: resultColour ? '7px' : '10px', marginBottom: matchOdds && !effectiveLocked && !resultColour ? '12px' : '0' }}>
             {/* Home team */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '42px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</span>
-              <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', letterSpacing: '-0.01em', maxWidth: '85px', wordBreak: 'break-word', lineHeight: 1.2 }}>{match.home_team?.name}</span>
+              <span style={{ fontSize: resultColour ? '34px' : '42px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</span>
+              <span style={{ fontWeight: '800', fontSize: resultColour ? '13px' : '14px', textAlign: 'center', letterSpacing: '-0.01em', maxWidth: '85px', wordBreak: 'break-word', lineHeight: 1.2 }}>{match.home_team?.name}</span>
 
               {favourite === 'home' && matchOdds && !effectiveLocked && !resultColour && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700', letterSpacing: '0.02em' }}>⭐ FAV</span>}
             </div>
@@ -1651,11 +1652,11 @@ export default function Predictions() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {resultColour ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '58px', height: '58px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '900', fontFamily: 'var(--font-mono)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)' }}>
+                  <div style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '900', fontFamily: 'var(--font-mono)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)' }}>
                     {pred.home}
                   </div>
                   <span style={{ fontSize: '20px', color: 'var(--text-muted)', fontWeight: '300' }}>–</span>
-                  <div style={{ width: '58px', height: '58px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '900', fontFamily: 'var(--font-mono)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)' }}>
+                  <div style={{ width: '52px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '900', fontFamily: 'var(--font-mono)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '2px solid var(--border-light)' }}>
                     {pred.away}
                   </div>
                 </div>
@@ -1702,8 +1703,8 @@ export default function Predictions() {
 
             {/* Away team */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '42px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</span>
-              <span style={{ fontWeight: '800', fontSize: '14px', textAlign: 'center', letterSpacing: '-0.01em', maxWidth: '85px', wordBreak: 'break-word', lineHeight: 1.2 }}>{match.away_team?.name}</span>
+              <span style={{ fontSize: resultColour ? '34px' : '42px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</span>
+              <span style={{ fontWeight: '800', fontSize: resultColour ? '13px' : '14px', textAlign: 'center', letterSpacing: '-0.01em', maxWidth: '85px', wordBreak: 'break-word', lineHeight: 1.2 }}>{match.away_team?.name}</span>
 
               {favourite === 'away' && matchOdds && !effectiveLocked && !resultColour && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700', letterSpacing: '0.02em' }}>⭐ FAV</span>}
             </div>
@@ -1738,7 +1739,7 @@ export default function Predictions() {
               ? pred.home > pred.away ? 'home' : pred.home === pred.away ? 'draw' : 'away'
               : null
             return (
-              <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
+              <div style={{ marginTop: resultColour ? '9px' : '12px', paddingTop: resultColour ? '9px' : '12px', borderTop: '1px solid var(--border-light)' }}>
                 <div style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '7px' }}>
                   👥 {cp.total} predictions
                 </div>
@@ -1764,8 +1765,8 @@ export default function Predictions() {
 
           {/* Full match stats — always shown on locked matches */}
           {effectiveLocked && (
-            <Link to={`/match/${match.match_number || match.id}/stats`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '12px', padding: '10px', borderRadius: 'var(--radius-md)', background: 'rgba(0,48,135,0.06)', border: '1px solid rgba(0,48,135,0.12)', fontSize: '13px', fontWeight: '800', color: 'var(--scottish-navy)', textDecoration: 'none' }}>
-              📊 Full match stats →
+            <Link to={`/match/${match.match_number || match.id}/stats`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: resultColour ? '9px' : '12px', padding: resultColour ? '8px' : '10px', borderRadius: 'var(--radius-md)', background: 'rgba(0,48,135,0.06)', border: '1px solid rgba(0,48,135,0.12)', fontSize: '13px', fontWeight: '800', color: 'var(--scottish-navy)', textDecoration: 'none' }}>
+              📊 Match Hub →
             </Link>
           )}
 
@@ -2556,9 +2557,33 @@ export default function Predictions() {
                 </div>
               )
             })()}
-            {/* Row 1: By Date / By Group mode switcher */}
+            {/* Primary view switcher */}
             <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
               <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px', width: '100%', maxWidth: '420px' }}>
+                {[
+                  { key: 'picks', label: '⚽ My Picks' },
+                  { key: 'standings', label: '📊 Tables' },
+                ].map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => {
+                      setActiveTab(tab.key)
+                      setTeamSearch('')
+                      setSearchExpanded(false)
+                      if (tab.key === 'picks') scrollToMatch(getSmartMatch(viewMode, activeGroup))
+                    }}
+                    className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`}
+                    style={{ flex: 1, fontSize: '13px', padding: '7px 12px' }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Secondary date/group filter with optional search */}
+            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px', flex: 1, maxWidth: '360px' }}>
                 {[
                   { key: 'date', label: '📅 By Date' },
                   { key: 'group', label: '📂 By Group' },
@@ -2568,40 +2593,42 @@ export default function Predictions() {
                     onClick={() => {
                       if (mode.key === 'date') switchToDateView()
                       else switchToGroupView()
+                      setSearchExpanded(false)
                     }}
                     className={`pill-tab ${viewMode === mode.key ? 'active' : ''}`}
-                    style={{ flex: 1, fontSize: '13px', padding: '7px 12px' }}
+                    style={{ flex: 1, fontSize: '12px', padding: '7px 10px' }}
                   >
                     {mode.label}
                   </button>
                 ))}
               </div>
-            </div>
-
-            {/* Row 2: Overview / Tables switcher — identical in both modes */}
-            <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
-              <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px', width: '100%', maxWidth: '420px' }}>
-                {[
-                  { key: 'picks', label: '⚽ My Picks' },
-                  { key: 'standings', label: '📊 Live & Predicted Tables' },
-                ].map(tab => (
-                  <button
-                    key={tab.key}
-                    onClick={() => { setActiveTab(tab.key); setTeamSearch(''); if (tab.key === 'picks') scrollToMatch(getSmartMatch(viewMode, activeGroup)) }}
-                    className={`pill-tab ${activeTab === tab.key ? 'active' : ''}`}
-                    style={{ flex: 1, fontSize: '13px', padding: '7px 12px' }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+              {showTeamSearch && (
+                <button
+                  type="button"
+                  aria-label={searchExpanded ? 'Close team search' : 'Search teams'}
+                  aria-expanded={searchExpanded}
+                  onClick={() => {
+                    setSearchExpanded(v => !v)
+                    if (searchExpanded) setTeamSearch('')
+                  }}
+                  style={{
+                    width: '38px', height: '38px', flexShrink: 0,
+                    borderRadius: '50%', border: searchExpanded ? '1.5px solid var(--scottish-navy)' : '1px solid var(--border-medium)',
+                    background: searchExpanded ? 'var(--scottish-navy-light)' : 'var(--bg-tertiary)',
+                    color: 'var(--text-primary)', cursor: 'pointer', fontSize: '15px',
+                    display: 'grid', placeItems: 'center',
+                  }}
+                >
+                  {searchExpanded ? '✕' : '🔍'}
+                </button>
+              )}
             </div>
             {/* ? help link */}
             <Link to="/how-to-play" style={{ position: 'absolute', right: 0, top: '14px', width: '26px', height: '26px', borderRadius: '50%', background: 'var(--bg-tertiary)', border: '1px solid var(--border-medium)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textDecoration: 'none' }}>?</Link>
           </div>
 
           {/* Team search — only useful on fixture/prediction views */}
-          {showTeamSearch && <div style={{ padding: '6px 0' }}>
+          {showTeamSearch && searchExpanded && <div style={{ padding: '6px 0' }}>
             <div style={{ position: 'relative' }}>
               <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'var(--text-muted)' }}>🔍</span>
               <input
