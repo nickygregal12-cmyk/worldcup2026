@@ -883,93 +883,25 @@ export default function Home() {
             </div>
           )}
 
-          {/* Dynamic hero progress.
-              Before kickoff, retain the setup checklist. Once the KO Predictor is live,
-              the hero focuses only on currently confirmed KO fixtures. */}
-          {!loading && user && (
-            knockoutLive && koAvailableCount > 0 ? (
-              <Link to="/ko-predictor" style={{
-                display: 'block',
-                maxWidth: '420px',
-                margin: '22px auto 0',
-                padding: '14px 15px',
-                borderRadius: 'var(--radius-lg)',
-                background: 'rgba(255,255,255,0.10)',
-                border: '1px solid rgba(255,255,255,0.18)',
-                textDecoration: 'none',
-                textAlign: 'left',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                  <div>
-                    <div style={{
-                      color: 'var(--accent-gold)',
-                      fontSize: '10px',
-                      fontWeight: '900',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.10em',
-                    }}>
-                      🔥 KO Predictor
+          {/* Prediction progress bar — logged in only */}
+          {!loading && user && progressItems.length > 0 && (
+            <div style={{ marginTop: '24px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+              {progressItems.map(({ label, done, total, to }) => {
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0
+                const complete = done >= total
+                return (
+                  <Link key={label} to={to} style={{ textDecoration: 'none', flex: 1, maxWidth: '120px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: '600', color: complete ? '#4ade80' : 'rgba(255,255,255,0.5)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {complete ? '✓ ' : ''}{label}
                     </div>
-                    <div style={{ color: 'white', fontSize: '15px', fontWeight: '900', marginTop: '4px' }}>
-                      {koProgressDone} / {koAvailableCount} picks complete
+                    <div style={{ height: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: complete ? '#4ade80' : 'var(--accent-green)', borderRadius: '2px', transition: 'width 0.4s ease' }} />
                     </div>
-                  </div>
-                  <div style={{
-                    color: 'white',
-                    fontSize: '11px',
-                    fontWeight: '800',
-                    whiteSpace: 'nowrap',
-                    paddingTop: '2px',
-                  }}>
-                    {koProgressRemaining === 0
-                      ? 'View predictions →'
-                      : koProgressDone === 0
-                      ? 'Play now →'
-                      : 'Continue →'}
-                  </div>
-                </div>
-
-                <div style={{
-                  height: '5px',
-                  marginTop: '11px',
-                  background: 'rgba(255,255,255,0.18)',
-                  borderRadius: '999px',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{
-                    width: `${koAvailableCount ? Math.round((koProgressDone / koAvailableCount) * 100) : 0}%`,
-                    height: '100%',
-                    background: koProgressRemaining === 0 ? '#4ade80' : 'var(--accent-gold)',
-                    borderRadius: '999px',
-                    transition: 'width 0.35s ease',
-                  }} />
-                </div>
-
-                <div style={{ color: 'rgba(255,255,255,0.58)', fontSize: '10.5px', marginTop: '7px' }}>
-                  {koProgressRemaining === 0
-                    ? `All ${koAvailableCount} available knockout fixtures predicted`
-                    : `${koProgressRemaining} confirmed fixture${koProgressRemaining === 1 ? '' : 's'} still to pick`}
-                </div>
-              </Link>
-            ) : progressItems.length > 0 ? (
-              <div style={{ marginTop: '24px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                {progressItems.map(({ label, done, total, to }) => {
-                  const pct = total > 0 ? Math.round((done / total) * 100) : 0
-                  const complete = done >= total
-                  return (
-                    <Link key={label} to={to} style={{ textDecoration: 'none', flex: 1, maxWidth: '120px' }}>
-                      <div style={{ fontSize: '10px', fontWeight: '600', color: complete ? '#4ade80' : 'rgba(255,255,255,0.5)', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {complete ? '✓ ' : ''}{label}
-                      </div>
-                      <div style={{ height: '4px', background: 'rgba(255,255,255,0.15)', borderRadius: '2px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${pct}%`, background: complete ? '#4ade80' : 'var(--accent-green)', borderRadius: '2px', transition: 'width 0.4s ease' }} />
-                      </div>
-                      <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '3px' }}>{done}/{total}</div>
-                    </Link>
-                  )
-                })}
-              </div>
-            ) : null
+                    <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginTop: '3px' }}>{done}/{total}</div>
+                  </Link>
+                )
+              })}
+            </div>
           )}
         </div>
       </div>
@@ -1579,6 +1511,48 @@ export default function Home() {
             </div>
           )}
 
+          {/* ── KO Predictor progress — based only on matches with both teams confirmed ── */}
+          {showKnockoutBanner && knockoutLive && koAvailableCount > 0 && (
+            <Link to="/ko-predictor" style={{
+              background: 'linear-gradient(135deg, #e65100, #ff9800)',
+              borderRadius: 'var(--radius-lg)', padding: '14px 16px',
+              border: '1px solid rgba(255,152,0,0.5)', textDecoration: 'none',
+              display: 'block',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '9px' }}>
+                <div>
+                  <div style={{ fontSize: '11px', fontWeight: '900', color: 'rgba(255,255,255,0.78)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    🔥 KO Predictor
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: '900', color: 'white', marginTop: '3px' }}>
+                    {koProgressDone} / {koAvailableCount} picks complete
+                  </div>
+                </div>
+                <span style={{
+                  background: 'white', color: '#e65100', padding: '7px 11px',
+                  borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: '900',
+                  whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  {koProgressRemaining === 0 ? 'View picks →' : koProgressDone === 0 ? 'Play now →' : 'Continue →'}
+                </span>
+              </div>
+              <div style={{ height: '5px', background: 'rgba(255,255,255,0.24)', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${koAvailableCount ? Math.round((koProgressDone / koAvailableCount) * 100) : 0}%`,
+                  background: koProgressRemaining === 0 ? '#4ade80' : 'white',
+                  borderRadius: '999px',
+                  transition: 'width 0.35s ease',
+                }} />
+              </div>
+              <div style={{ fontSize: '10.5px', color: 'rgba(255,255,255,0.82)', marginTop: '7px' }}>
+                {koProgressRemaining === 0
+                  ? `All ${koAvailableCount} currently available matches completed`
+                  : `${koProgressRemaining} pick${koProgressRemaining === 1 ? '' : 's'} remaining from confirmed fixtures`}
+              </div>
+            </Link>
+          )}
+
           {/* ── First-time guidance ── */}
           {showFirstTimeGuide && (
             <div className="card fade-in" style={{ border: '1px solid var(--accent-blue)', background: 'linear-gradient(180deg, var(--bg-card), var(--accent-blue-light))' }}>
@@ -1615,13 +1589,12 @@ export default function Home() {
             </div>
           )}
 
-
-          {/* ── User Stats ── */}
+          {/* ── Your tournament summary ── */}
           {user && profile && (tournamentStarted || knockoutLive || (profile.total_points || 0) > 0) && (
             <div className="card fade-in">
               <div className="section-header">
-                <span className="section-title">👋 Your Stats</span>
-                <Link to="/profile" className="section-link">View profile →</Link>
+                <span className="section-title">🏅 Your Tournament</span>
+                <Link to="/points" className="section-link">Full breakdown →</Link>
               </div>
 
               {/* Tournament stats */}
@@ -1658,9 +1631,9 @@ export default function Home() {
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: knockoutLive ? '14px' : '0' }}>
                 {[
-                  { label: 'Points', value: profile.total_points || 0, icon: '🏅' },
-                  { label: 'Streak', value: profile.streak_current || 0, icon: '🔥' },
-                  { label: 'Exact Scores', value: profile.exact_scores || 0, icon: '🎯' },
+                  { label: leaderPosition ? `Rank #${leaderPosition}` : 'Rank', value: profile.total_points || 0, icon: '🏅' },
+                  { label: 'Current streak', value: profile.streak_current || 0, icon: '🔥' },
+                  { label: 'Exact scores', value: profile.exact_scores || 0, icon: '🎯' },
                 ].map(({ label, value, icon }) => (
                   <div key={label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center' }}>
                     <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
@@ -1855,42 +1828,6 @@ export default function Home() {
               <span className="section-title">🏆 Leaderboard</span>
               <Link to="/leaderboard" className="section-link">Full table →</Link>
             </div>
-
-            {user && profile && leaderPosition && topPredictors.length > 0 && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                padding: '10px 12px',
-                marginBottom: '10px',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--accent-blue-light)',
-                border: '1px solid rgba(21,88,176,0.16)',
-              }}>
-                <div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                    Your position
-                  </div>
-                  <div style={{ color: 'var(--accent-blue)', fontSize: '13px', fontWeight: '800', marginTop: '3px' }}>
-                    {leaderPosition === 1
-                      ? 'You are leading the tournament'
-                      : `${Math.max(0, (topPredictors[0]?.total_points || 0) - (profile.total_points || 0))} pts behind ${topPredictors[0]?.username || '1st place'}`}
-                  </div>
-                </div>
-                <div style={{
-                  minWidth: '48px',
-                  textAlign: 'center',
-                  color: 'var(--scottish-navy)',
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: '900',
-                  fontSize: '20px',
-                }}>
-                  #{leaderPosition}
-                </div>
-              </div>
-            )}
-
             {topPredictors.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-icon">🏅</div>
@@ -1899,20 +1836,7 @@ export default function Home() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {(() => {
-                  const preview = [...topPredictors]
-                  if (user && !preview.some(p => p.id === user.id) && profile) {
-                    preview.push({
-                      id: user.id,
-                      username: profile.display_name || profile.username || 'You',
-                      total_points: profile.total_points || 0,
-                      streak_current: profile.streak_current || 0,
-                    })
-                  }
-                  return preview
-                    .sort((a, b) => (b.total_points || 0) - (a.total_points || 0))
-                    .slice(0, 5)
-                    .map((p, i) => {
+                {topPredictors.map((p, i) => {
                   const isMe = user?.id === p.id
                   return (
                     <div key={p.id} className="leaderboard-row" 
@@ -1961,8 +1885,7 @@ export default function Home() {
                       </div>
                     </div>
                   )
-                    })
-                })()}
+                })}
               </div>
             )}
           </div>

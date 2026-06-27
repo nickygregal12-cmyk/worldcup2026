@@ -1248,7 +1248,7 @@ export default function Leagues() {
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(0,30,80,0.88) 0%, rgba(0,94,184,0.82) 100%), url(/leagues-bg.jpg) center/cover no-repeat', padding: '20px' }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(0,30,80,0.88) 0%, rgba(0,94,184,0.82) 100%), url(/leagues-bg.jpg) center/cover no-repeat', padding: '14px 16px' }}>
         <div className="container">
           <div style={{ marginBottom: '12px' }}>
             <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'white' }}>👥 Leagues</h1>
@@ -1262,14 +1262,14 @@ export default function Leagues() {
               color: activeGame === 'tournament' ? 'white' : 'rgba(255,255,255,0.8)',
               border: activeGame === 'tournament' ? '1px solid var(--scottish-navy)' : '1px solid rgba(255,255,255,0.3)',
               cursor: 'pointer',
-            }}>🌍 Tournament Leagues</button>
+            }}>👥 My Leagues</button>
             <button onClick={() => { setActiveGame('overall'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
               flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
               background: activeGame === 'overall' ? 'var(--scottish-navy)' : 'rgba(255,255,255,0.15)',
               color: activeGame === 'overall' ? 'white' : 'rgba(255,255,255,0.8)',
               border: activeGame === 'overall' ? '1px solid var(--scottish-navy)' : '1px solid rgba(255,255,255,0.3)',
               cursor: 'pointer',
-            }}>🏆 Overall Rankings</button>
+            }}>🏆 Overall</button>
             {koLive && (
               <button onClick={() => { setActiveGame('ko'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
                 flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
@@ -1359,7 +1359,7 @@ export default function Leagues() {
               { icon: '👥', title: 'Join or create a league', desc: 'Compete with friends and family.' },
               { icon: '⚽', title: 'Make your predictions', desc: 'Predict scores, tournament outcomes and awards.' },
               { icon: '👤', title: 'Check out your profile', desc: 'View your stats, predictions and league activity.' },
-              { icon: '🏆', title: 'Overall Rankings', desc: 'Unlock when the tournament begins.' },
+              { icon: '🏆', title: 'Overall', desc: 'Unlock when the tournament begins.' },
               { icon: '🎯', title: 'Earn More Points', desc: 'Learn how scoring, jokers and bonuses work.' },
             ].map(item => (
               <div key={item.title} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', padding: '8px 0', borderTop: '1px solid var(--border-light)' }}>
@@ -1477,7 +1477,7 @@ export default function Leagues() {
               Once the group stage finishes you can create or join KO Predictor leagues — completely separate from your Tournament leagues with a fresh start.
             </div>
             <button onClick={() => setActiveGame('tournament')} className="btn btn-secondary">
-              ← Back to Tournament Leagues
+              ← Back to My Leagues
             </button>
           </div>
         ) : activeGame === 'ko' && koLive ? (
@@ -1549,8 +1549,13 @@ export default function Leagues() {
               <button onClick={() => { setShowCreate(true); setShowJoin(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-primary btn-sm" style={{ padding: '7px 11px' }}>＋ New league</button>
               <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-secondary btn-sm" style={{ padding: '7px 11px' }}>Join</button>
               <div style={{ flex: 1 }} />
-              <button onClick={() => setReorderMode(v => !v)} className="btn btn-secondary btn-sm" style={{ padding: '7px 10px' }}>{reorderMode ? 'Done' : '↕ Reorder'}</button>
-              <button onClick={() => setAllLeaguesCollapsed(!allTournamentLeaguesCollapsed)} className="btn btn-secondary btn-sm" style={{ padding: '7px 10px' }}>{allTournamentLeaguesCollapsed ? 'Expand all' : 'Collapse all'}</button>
+              <details style={{ position: 'relative' }}>
+                <summary className="btn btn-secondary btn-sm" style={{ padding: '7px 10px', listStyle: 'none', cursor: 'pointer' }}>•••</summary>
+                <div style={{ position: 'absolute', right: 0, top: '38px', zIndex: 20, width: '150px', padding: '6px', borderRadius: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', boxShadow: '0 10px 28px rgba(0,0,0,0.18)', display: 'grid', gap: '4px' }}>
+                  <button onClick={() => setReorderMode(v => !v)} className="btn btn-secondary btn-sm" style={{ justifyContent: 'flex-start' }}>{reorderMode ? 'Done reordering' : '↕ Reorder leagues'}</button>
+                  <button onClick={() => setAllLeaguesCollapsed(!allTournamentLeaguesCollapsed)} className="btn btn-secondary btn-sm" style={{ justifyContent: 'flex-start' }}>{allTournamentLeaguesCollapsed ? 'Expand all' : 'Collapse all'}</button>
+                </div>
+              </details>
             </div>
             {reorderMode && (
               <div style={{ padding: '9px 11px', borderRadius: 'var(--radius-md)', background: 'rgba(21,88,176,0.07)', color: 'var(--text-muted)', fontSize: '11px', fontWeight: '700' }}>

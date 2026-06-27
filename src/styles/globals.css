@@ -1158,3 +1158,21 @@ html {
   color: #8e9aaa;
   opacity: 1;
 }
+
+
+/* Phase 3: member prediction view behaves like a full page on mobile */
+@media (max-width: 700px) {
+  .member-predictions-backdrop {
+    padding: 0 !important;
+    align-items: stretch !important;
+    background: var(--bg-secondary) !important;
+    backdrop-filter: none !important;
+  }
+  .member-predictions-panel {
+    max-width: none !important;
+    max-height: 100dvh !important;
+    height: 100dvh !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}

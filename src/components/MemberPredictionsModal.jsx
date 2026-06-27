@@ -921,10 +921,16 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
 
   return (
     <div
+      className="member-predictions-backdrop"
+      role="presentation"
       style={{ position: 'fixed', inset: 0, background: 'rgba(4,14,31,0.72)', backdropFilter: 'blur(3px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '12px 12px 0' }}
       onClick={() => setMemberModal(null)}
     >
       <div
+        className="member-predictions-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`${memberModal.username} predictions`}
         onClick={e => e.stopPropagation()}
         style={{
           position: 'relative', width: '100%', maxWidth: '640px', maxHeight: '92vh',
@@ -935,14 +941,14 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
         }}
       >
         {/* Player summary */}
-        <header style={{ flexShrink: 0, padding: '17px 18px 13px', color: 'white', background: 'linear-gradient(135deg, var(--scottish-navy), #0b356b)', position: 'relative' }}>
+        <header style={{ flexShrink: 0, padding: '13px 16px 11px', color: 'white', background: 'linear-gradient(135deg, var(--scottish-navy), #0b356b)', position: 'relative' }}>
           <div style={{ position: 'absolute', right: '12px', top: '10px', display: 'flex', gap: '6px' }}>
             {!isKoContext && <button type="button" onClick={() => setShowOptions(true)} aria-label="View options" style={{ width: '32px', height: '32px', display: 'grid', placeItems: 'center', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)', background: 'rgba(255,255,255,0.10)', color: 'white', fontSize: '15px', cursor: 'pointer' }}>⋯</button>}
             <button type="button" onClick={() => setMemberModal(null)} aria-label="Close" style={{ width: '32px', height: '32px', display: 'grid', placeItems: 'center', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)', background: 'rgba(255,255,255,0.10)', color: 'white', fontSize: '21px', cursor: 'pointer' }}>×</button>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '11px', paddingRight: '76px' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.22)', fontSize: '19px', fontWeight: '900' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.22)', fontSize: '19px', fontWeight: '900' }}>
               {(memberModal.username || '?')[0].toUpperCase()}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>

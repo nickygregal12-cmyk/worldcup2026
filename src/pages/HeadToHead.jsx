@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 
-const ME_C = 'var(--accent-gold)'
+const ME_C = 'var(--scottish-navy)'
 const THEM_C = '#7a4fd0'
 const mono = { fontFamily: 'var(--font-mono, ui-monospace, monospace)' }
 const sgn = n => (n > 0 ? 1 : n < 0 ? -1 : 0)
@@ -364,7 +364,7 @@ export default function HeadToHead() {
   const gap = headline.meTotal - headline.themTotal
   const gapLabel = gap > 0 ? `You lead by ${gap}` : gap < 0 ? `Behind by ${Math.abs(gap)}` : 'Dead level'
   const avatar = (p, c) => (
-    <div style={{ width: '54px', height: '54px', borderRadius: '50%', background: c, color: c === ME_C ? 'var(--scottish-navy)' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '20px', margin: '0 auto 7px' }}>
+    <div style={{ width: '54px', height: '54px', borderRadius: '50%', background: c, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '20px', margin: '0 auto 7px' }}>
       {p?.avatar_emoji || ((p?.display_name || p?.username || '?')[0].toUpperCase())}
     </div>
   )
@@ -379,16 +379,12 @@ export default function HeadToHead() {
           <div style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.85)' }}>Head to head</div>
         </div>
 
-        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '16px' }}>
-          {['overall', ...leagues.map(l => l.id)].map(s => {
-            const on = scope === s
-            const lbl = s === 'overall' ? 'Overall' : leagues.find(l => l.id === s)?.name
-            return (
-              <button key={s} onClick={() => setScope(s)} style={{ flex: '0 0 auto', border: 0, borderRadius: '20px', padding: '6px 14px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', background: on ? 'var(--accent-gold)' : 'rgba(255,255,255,0.12)', color: on ? 'var(--scottish-navy)' : '#fff' }}>
-                {lbl}
-              </button>
-            )
-          })}
+        <div style={{ marginBottom: '16px' }}>
+          <label htmlFor="h2h-scope" style={{ display: 'block', fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.7)', marginBottom: '5px' }}>Comparison scope</label>
+          <select id="h2h-scope" value={scope} onChange={e => setScope(e.target.value)} style={{ width: '100%', padding: '9px 11px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.28)', background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: '13px', fontWeight: 800 }}>
+            <option value="overall" style={{ color: '#111' }}>Overall</option>
+            {leagues.map(l => <option key={l.id} value={l.id} style={{ color: '#111' }}>{l.name}</option>)}
+          </select>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
@@ -446,7 +442,7 @@ export default function HeadToHead() {
       </Card>
 
       {totalMatchdays > 0 && (
-        <Card title="Matchday head-to-head">
+        <Card title="Matchday head-to-head" collapsible defaultOpen={false}>
           <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '10px' }}>
             {record.win > record.loss ? 'You win more matchdays' : record.win < record.loss ? `${themName} wins more matchdays` : 'Neck and neck'} · {record.win}–{record.draw}–{record.loss}
           </div>
@@ -472,7 +468,7 @@ export default function HeadToHead() {
       )}
 
       {bracketRows.some(r => r.meCount || r.themCount) && (
-        <Card title="Bracket comparison">
+        <Card title="Bracket comparison" collapsible defaultOpen={false}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '9px' }}>
             {bracketRows.map(row => (
               <div key={row.stage} style={{ border: '1px solid var(--border-light)', borderRadius: '12px', padding: '11px 12px', background: 'var(--bg-secondary)' }}>
@@ -498,7 +494,7 @@ export default function HeadToHead() {
       )}
 
       {koDifferences.length > 0 && (
-        <Card title="Knockout picks you disagree on">
+        <Card title="Knockout picks you disagree on" collapsible defaultOpen={false}>
           {koDifferences.map((d, index) => (
             <div key={d.matchNumber} style={{ padding: '10px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
               <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '7px' }}>M{d.matchNumber}{d.actual?.stage ? ` · ${String(d.actual.stage).toUpperCase()}` : ''}</div>
@@ -513,7 +509,7 @@ export default function HeadToHead() {
       )}
 
       {(awardRows.some(r => r.myPick !== 'Not set' || r.theirPick !== 'Not set') || goalComparison) && (
-        <Card title="Awards & tournament totals">
+        <Card title="Awards & tournament totals" collapsible defaultOpen={false}>
           {awardRows.map((row, index) => (
             <div key={row.type} style={{ display: 'grid', gridTemplateColumns: '1fr 92px 92px', gap: '8px', alignItems: 'center', padding: '11px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
               <div>
@@ -539,7 +535,7 @@ export default function HeadToHead() {
       )}
 
       {deciders.length > 0 && (
-        <Card title="Upcoming group-stage deciders">
+        <Card title="Upcoming group-stage deciders" collapsible defaultOpen={false}>
           {deciders.map((d, i) => (
             <div key={d.me.match_id} style={{ marginTop: i ? '12px' : 0, paddingTop: i ? '12px' : 0, borderTop: i ? '1px solid var(--border-light)' : 'none' }}>
               <div style={{ fontSize: '13px', fontWeight: 800, marginBottom: '6px' }}>
@@ -571,12 +567,20 @@ export default function HeadToHead() {
   )
 }
 
-function Card({ title, children }) {
+function Card({ title, children, collapsible = false, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '16px', margin: '12px 14px', padding: '15px' }}>
-      <div style={{ fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>{title}</div>
-      {children}
-    </div>
+    <section style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '16px', margin: '12px 14px', padding: '15px' }}>
+      {collapsible ? (
+        <button type="button" onClick={() => setOpen(v => !v)} aria-expanded={open} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: 0, border: 0, background: 'none', color: 'var(--text-primary)', cursor: 'pointer' }}>
+          <span style={{ fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>{title}</span>
+          <span aria-hidden="true" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }}>⌄</span>
+        </button>
+      ) : (
+        <div style={{ fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '12px' }}>{title}</div>
+      )}
+      {open && <div style={{ marginTop: collapsible ? '12px' : 0 }}>{children}</div>}
+    </section>
   )
 }
 
