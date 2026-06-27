@@ -15,6 +15,8 @@ export default function MatchStats() {
   const [stats, setStats] = useState(null)
   const [scopeLabel, setScopeLabel] = useState('Everyone')
   const [leagueName, setLeagueName] = useState(null)
+  const [ranked, setRanked] = useState([])
+  const [myLine, setMyLine] = useState(null)
 
   useEffect(() => {
     const load = async () => {
@@ -55,11 +57,35 @@ export default function MatchStats() {
       const { data: reactions } = await supabase
         .from('match_reactions').select('reaction').eq('match_id', matchId)
 
+      // 5. Ranked rivals for THIS match (live points + usernames)
+      const ids = [...new Set((preds || []).map(p => p.user_id))]
+      const nameMap = {}
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from('profiles').select('id, username, display_name, avatar_emoji').in('id', ids)
+        ;(profs || []).forEach(pr => { nameMap[pr.id] = pr })
+      }
+      const rankedList = (preds || []).map(p => {
+        const lp = livePts(p, m)
+        const prof = nameMap[p.user_id] || {}
+        const finalPts = (m?.status === 'completed' && p.points_awarded != null) ? p.points_awarded : lp.pts
+        return {
+          userId: p.user_id,
+          name: prof.display_name || prof.username || 'Player',
+          avatar: prof.avatar_emoji,
+          home: p.home_score, away: p.away_score,
+          joker: !!p.is_confident,
+          status: lp.status, exact: lp.exact, pts: finalPts,
+        }
+      }).sort((a, b) => b.pts - a.pts || (b.exact ? 1 : 0) - (a.exact ? 1 : 0) || a.name.localeCompare(b.name))
+      setRanked(rankedList)
+      setMyLine(rankedList.find(r => r.userId === user?.id) || null)
+
       setStats(computeStats(preds || [], reactions || [], m))
       setLoading(false)
     }
     if (matchId) load()
-  }, [matchId, leagueCode])
+  }, [matchId, leagueCode, user?.id])
 
   if (loading) {
     return <div className="container" style={{ padding: '40px 16px', textAlign: 'center' }}>
@@ -105,6 +131,56 @@ export default function MatchStats() {
           📊 {stats.total} predictions · {scopeLabel}
         </div>
       </div>
+
+      {/* Your prediction */}
+      {myLine && (() => {
+        const live = match.status === 'live'
+        const statusLabel = {
+          exact: live ? 'On track · exact 🎯' : 'Exact score 🎯',
+          result: live ? 'Result on track' : 'Correct result',
+          miss: live ? 'Not landing yet' : 'Missed',
+          pending: 'Locked in',
+        }[myLine.status]
+        const good = myLine.pts > 0
+        return (
+          <div className="card fade-up" style={{ marginBottom: '14px', border: `2px solid ${good ? 'var(--accent-green)' : 'var(--border-light)'}` }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <span style={{ fontSize: 'var(--t-tiny)', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Your prediction</span>
+              {myLine.joker && <span style={{ fontSize: '12px' }}>🃏</span>}
+              <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 800, color: good ? 'var(--accent-green)' : 'var(--text-muted)' }}>{statusLabel}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: '16px', fontWeight: 800 }}>You picked <span className="stat-num">{myLine.home}–{myLine.away}</span></div>
+              <div className="stat-num" style={{ fontSize: '26px', fontWeight: 800, color: good ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                {good ? '+' : ''}{myLine.pts}<span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700 }}>{live ? ' live' : ' pts'}</span>
+              </div>
+            </div>
+            {live && <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '5px' }}>Updates as the score changes{myLine.joker ? ' · joker doubles it' : ''}.</div>}
+          </div>
+        )
+      })()}
+
+      {/* This match — ranked rivals */}
+      {ranked.length > 0 && (
+        <StatCard title={`${scopeLabel} · this match`}>
+          <div>
+            {ranked.slice(0, 30).map((r, i) => {
+              const me = r.userId === user?.id
+              const last = i === Math.min(ranked.length, 30) - 1
+              return (
+                <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: me ? '9px 8px' : '9px 0', borderBottom: last ? 'none' : '1px solid var(--border-light)', background: me ? 'var(--bg-secondary)' : 'transparent', borderRadius: me ? 'var(--radius-sm)' : 0 }}>
+                  <span className="stat-num" style={{ width: '20px', fontWeight: 800, color: 'var(--text-muted)', fontSize: '13px' }}>{i + 1}</span>
+                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--scottish-navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>{r.avatar || (r.name[0] || '?').toUpperCase()}</span>
+                  <span style={{ flex: 1, fontWeight: 700, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
+                  <span className="stat-num" style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{r.home}–{r.away}{r.joker ? ' 🃏' : ''}</span>
+                  <span className="stat-num" style={{ width: '42px', textAlign: 'right', fontWeight: 800, fontSize: '13px', color: r.pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{r.pts > 0 ? '+' : ''}{r.pts}</span>
+                </div>
+              )
+            })}
+            {ranked.length > 30 && <div style={{ textAlign: 'center', fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', paddingTop: '8px' }}>+ {ranked.length - 30} more</div>}
+          </div>
+        </StatCard>
+      )}
 
       {/* Result split */}
       <StatCard title="How people predicted">
@@ -196,6 +272,17 @@ function MiniStat({ label, value, sub }) {
       {sub && <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '2px' }}>{sub}</div>}
     </div>
   )
+}
+
+function livePts(pred, match) {
+  const hasScore = match?.home_score != null && match?.away_score != null
+  if (!hasScore) return { pts: 0, status: 'pending', exact: false }
+  const exact = pred.home_score === match.home_score && pred.away_score === match.away_score
+  const sgn = n => (n > 0 ? 1 : n < 0 ? -1 : 0)
+  const hit = sgn(pred.home_score - pred.away_score) === sgn(match.home_score - match.away_score)
+  let base = exact ? 5 : hit ? 3 : 0
+  if (pred.is_confident) base *= 2
+  return { pts: base, status: exact ? 'exact' : hit ? 'result' : 'miss', exact }
 }
 
 function computeStats(preds, reactions, match) {

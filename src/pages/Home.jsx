@@ -966,7 +966,7 @@ export default function Home() {
                           fontSize: '12px', fontWeight: '700', color: 'var(--scottish-navy)',
                           textDecoration: 'none',
                         }}>
-                          📊 Full match stats →
+                          📊 Match Centre · your pick & rivals →
                         </Link>
                       </div>
                     )
