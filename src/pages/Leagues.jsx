@@ -1575,8 +1575,26 @@ export default function Leagues() {
                   boxShadow: 'var(--shadow-sm)',
                   border: reorderMode ? '2px dashed rgba(21,88,176,0.35)' : '1px solid var(--border-light)',
                 }}>
-                  {/* League header */}
-                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-light)' }}>
+                  {/* League header — the whole row toggles collapse outside reorder mode */}
+                  <div
+                    onClick={() => { if (!reorderMode) toggleLeagueCollapsed(league.id) }}
+                    onKeyDown={(event) => {
+                      if (!reorderMode && (event.key === 'Enter' || event.key === ' ')) {
+                        event.preventDefault()
+                        toggleLeagueCollapsed(league.id)
+                      }
+                    }}
+                    role={reorderMode ? undefined : 'button'}
+                    tabIndex={reorderMode ? undefined : 0}
+                    aria-expanded={reorderMode ? undefined : !isCollapsed}
+                    aria-label={reorderMode ? undefined : `${isCollapsed ? 'Expand' : 'Collapse'} ${league.name}`}
+                    style={{
+                      padding: '14px 16px',
+                      borderBottom: '1px solid var(--border-light)',
+                      cursor: reorderMode ? 'default' : 'pointer',
+                      userSelect: 'none',
+                    }}
+                  >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '18px' }}>{league.is_global ? '🌍' : isCreator ? '👑' : '👥'}</span>
@@ -1586,13 +1604,12 @@ export default function Leagues() {
                           </div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>{memberCount} {memberCount === 1 ? 'member' : 'members'}{!league.is_global && ` · ${isCreator ? 'Creator' : 'Member'}`}</span>
-                            {!league.is_global && (
-                              <span title={league.lock_type === 'pre_tournament' ? 'League scoring uses predictions frozen before kickoff' : 'Future unlocked predictions can still be edited'} style={{
+                            {!league.is_global && league.lock_type === 'pre_tournament' && (
+                              <span title="League scoring uses predictions frozen before kickoff" style={{
                                 fontSize: '10px', fontWeight: '800', padding: '1px 6px', borderRadius: 'var(--radius-full)',
-                                background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.14)' : 'rgba(21,88,176,0.10)',
-                                color: league.lock_type === 'pre_tournament' ? '#b45309' : 'var(--accent-blue)',
+                                background: 'rgba(245,158,11,0.14)', color: '#b45309',
                               }}>
-                                {league.lock_type === 'pre_tournament' ? '🔒 One-Shot' : '🔄 Standard'}
+                                🔒 One-Shot
                               </span>
                             )}
                             {league.custom_scoring && league.scoring_preset !== 'standard' && (
@@ -1615,22 +1632,28 @@ export default function Leagues() {
                         )}
                         {reorderMode ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                            <button disabled={leagueIndex === 0} onClick={() => moveLeague(league.id, -1)} aria-label={`Move ${league.name} up`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === 0 ? 'not-allowed' : 'pointer', opacity: leagueIndex === 0 ? 0.35 : 1 }}>↑</button>
-                            <button disabled={leagueIndex === orderedTournamentLeagues.length - 1} onClick={() => moveLeague(league.id, 1)} aria-label={`Move ${league.name} down`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === orderedTournamentLeagues.length - 1 ? 'not-allowed' : 'pointer', opacity: leagueIndex === orderedTournamentLeagues.length - 1 ? 0.35 : 1 }}>↓</button>
+                            <button disabled={leagueIndex === 0} onClick={(event) => { event.stopPropagation(); moveLeague(league.id, -1) }} aria-label={`Move ${league.name} up`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === 0 ? 'not-allowed' : 'pointer', opacity: leagueIndex === 0 ? 0.35 : 1 }}>↑</button>
+                            <button disabled={leagueIndex === orderedTournamentLeagues.length - 1} onClick={(event) => { event.stopPropagation(); moveLeague(league.id, 1) }} aria-label={`Move ${league.name} down`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === orderedTournamentLeagues.length - 1 ? 'not-allowed' : 'pointer', opacity: leagueIndex === orderedTournamentLeagues.length - 1 ? 0.35 : 1 }}>↓</button>
                           </div>
                         ) : (
-                          <button onClick={() => toggleLeagueCollapsed(league.id)} aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${league.name}`} style={{ width: '34px', height: '34px', borderRadius: '10px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', fontWeight: '900', cursor: 'pointer' }}>{isCollapsed ? '⌄' : '⌃'}</button>
+                          <span
+                            aria-hidden="true"
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                              width: '22px', height: '22px', color: 'var(--text-muted)', fontSize: '15px',
+                              transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s ease',
+                              flexShrink: 0,
+                            }}
+                          >⌄</span>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {!isCollapsed && <>
-                  {!league.is_global && (
-                    <div style={{ padding: '8px 16px', background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.08)' : 'rgba(21,88,176,0.05)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: league.lock_type === 'pre_tournament' ? '#92400e' : 'var(--accent-blue)', fontWeight: '800' }}>
-                      {league.lock_type === 'pre_tournament'
-                        ? `🔒 One-Shot League • ${league.snapshot_taken_at ? 'Snapshot taken' : 'Freezes at tournament start'}`
-                        : `🔄 Standard League${!tournamentLive ? ' • Points start 11 Jun' : ''}`}
+                  {!league.is_global && league.lock_type === 'pre_tournament' && (
+                    <div style={{ padding: '8px 16px', background: 'rgba(245,158,11,0.08)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: '#92400e', fontWeight: '800' }}>
+                      {`🔒 One-Shot League • ${league.snapshot_taken_at ? 'Snapshot taken' : 'Freezes at tournament start'}`}
                     </div>
                   )}
 
