@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
@@ -6,40 +6,126 @@ import { useAuthStore } from '../store/index.js'
 const STAGE_LABELS = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-final', sf: 'Semi-final', '3rd': 'Third-place', final: 'Final' }
 
 export default function MatchStats() {
-  const { matchId: matchRef } = useParams()
-  const [searchParams] = useSearchParams()
-  const leagueCode = searchParams.get('league')
-  const koLeagueCode = searchParams.get('koLeague')
+  const { matchId } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { user } = useAuthStore()
 
   const [slotIds, setSlotIds] = useState(null)
   const [loadingSlot, setLoadingSlot] = useState(true)
+  const [scopeOptions, setScopeOptions] = useState([])
+  const [loadingScopes, setLoadingScopes] = useState(false)
+
+  const selectedScope = useMemo(() => {
+    const league = searchParams.get('league')
+    const koLeague = searchParams.get('koLeague')
+    if (koLeague) return `ko:${koLeague}`
+    if (league) return `league:${league}`
+    return 'overall'
+  }, [searchParams])
+
+  const leagueCode = selectedScope.startsWith('league:') ? selectedScope.slice(7) : null
+  const koLeagueCode = selectedScope.startsWith('ko:') ? selectedScope.slice(3) : null
+
+
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadScopes = async () => {
+      if (!user?.id) {
+        setScopeOptions([])
+        return
+      }
+
+      setLoadingScopes(true)
+      try {
+        const [leagueMemberships, koMemberships] = await Promise.all([
+          supabase.from('league_members').select('league_id').eq('user_id', user.id),
+          supabase.from('ko_league_members').select('league_id').eq('user_id', user.id),
+        ])
+
+        const leagueIds = [...new Set((leagueMemberships.data || []).map(row => row.league_id).filter(Boolean))]
+        const koLeagueIds = [...new Set((koMemberships.data || []).map(row => row.league_id).filter(Boolean))]
+
+        const [leagueRows, koLeagueRows] = await Promise.all([
+          leagueIds.length
+            ? supabase.from('leagues').select('id, name, invite_code').in('id', leagueIds).order('name')
+            : Promise.resolve({ data: [] }),
+          koLeagueIds.length
+            ? supabase.from('ko_leagues').select('id, name, invite_code').in('id', koLeagueIds).order('name')
+            : Promise.resolve({ data: [] }),
+        ])
+
+        if (cancelled) return
+
+        const options = [
+          ...(leagueRows.data || []).filter(row => row.invite_code).map(row => ({
+            value: `league:${row.invite_code}`,
+            label: row.name,
+            type: 'Tournament league',
+          })),
+          ...(koLeagueRows.data || []).filter(row => row.invite_code).map(row => ({
+            value: `ko:${row.invite_code}`,
+            label: row.name,
+            type: 'KO Predictor league',
+          })),
+        ]
+        setScopeOptions(options)
+
+        const requestedIsValid = selectedScope === 'overall' || options.some(option => option.value === selectedScope)
+        if (!requestedIsValid) {
+          setSearchParams({}, { replace: true })
+          return
+        }
+
+        if (selectedScope === 'overall' && !searchParams.get('league') && !searchParams.get('koLeague')) {
+          try {
+            const remembered = window.localStorage.getItem('wc26_match_centre_scope')
+            if (remembered && remembered !== 'overall' && options.some(option => option.value === remembered)) {
+              const next = new URLSearchParams()
+              if (remembered.startsWith('league:')) next.set('league', remembered.slice(7))
+              if (remembered.startsWith('ko:')) next.set('koLeague', remembered.slice(3))
+              setSearchParams(next, { replace: true })
+            }
+          } catch (_) {}
+        }
+      } finally {
+        if (!cancelled) setLoadingScopes(false)
+      }
+    }
+
+    loadScopes()
+    return () => { cancelled = true }
+  }, [user?.id])
+
+  const changeScope = (value) => {
+    const next = new URLSearchParams(searchParams)
+    next.delete('league')
+    next.delete('koLeague')
+
+    if (value.startsWith('league:')) next.set('league', value.slice(7))
+    if (value.startsWith('ko:')) next.set('koLeague', value.slice(3))
+
+    setSearchParams(next, { replace: true })
+    try { window.localStorage.setItem('wc26_match_centre_scope', value) } catch (_) {}
+  }
 
   useEffect(() => {
     const loadSlot = async () => {
       setLoadingSlot(true)
-      // Match links now use the stable FIFA match number. Keep UUID support so
-      // older saved/shared links continue to work as well.
-      const isMatchNumber = /^\d+$/.test(String(matchRef || ''))
-      let matchQuery = supabase
-        .from('matches')
-        .select('id, match_number, kickoff_time')
-
-      matchQuery = isMatchNumber
-        ? matchQuery.eq('match_number', Number(matchRef))
-        : matchQuery.eq('id', matchRef)
-
-      const { data: m } = await matchQuery.maybeSingle()
+      const { data: m } = await supabase
+        .from('matches').select('id, kickoff_time').eq('id', matchId).maybeSingle()
       if (!m) { setSlotIds([]); setLoadingSlot(false); return }
       // every match kicking off at the same instant — shown together
       const { data: siblings } = await supabase
         .from('matches').select('id, match_number').eq('kickoff_time', m.kickoff_time).order('match_number')
       const ids = (siblings || []).map(s => s.id)
-      setSlotIds([m.id, ...ids.filter(i => i !== m.id)])
+      setSlotIds([matchId, ...ids.filter(i => i !== matchId)])
       setLoadingSlot(false)
     }
-    if (matchRef) loadSlot()
-  }, [matchRef])
+    if (matchId) loadSlot()
+  }, [matchId])
 
   if (loadingSlot) {
     return <div className="container" style={{ padding: '40px 16px', textAlign: 'center' }}>
@@ -54,6 +140,33 @@ export default function MatchStats() {
       {slotIds && slotIds.length > 1 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', marginBottom: '14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
           ⏱️ <span>{slotIds.length} games kicking off together — all shown below.</span>
+        </div>
+      )}
+
+
+      {user && (scopeOptions.length > 0 || loadingScopes) && (
+        <div className="card" style={{ padding: '12px 14px', marginBottom: '14px' }}>
+          <label htmlFor="match-centre-scope" style={{ display: 'block', fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 800, marginBottom: '6px' }}>
+            Viewing predictions from
+          </label>
+          <select
+            id="match-centre-scope"
+            className="input"
+            value={selectedScope}
+            onChange={event => changeScope(event.target.value)}
+            disabled={loadingScopes}
+            style={{ width: '100%', fontWeight: 800 }}
+          >
+            <option value="overall">Overall predictors</option>
+            {scopeOptions.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label} · {option.type}
+              </option>
+            ))}
+          </select>
+          <div style={{ marginTop: '6px', fontSize: '10px', color: 'var(--text-muted)' }}>
+            Change this at any time to compare the same live match across your leagues.
+          </div>
         </div>
       )}
 
@@ -102,58 +215,13 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
       setKoRivals([])
       setBracketImpact([])
 
-      // Load the match with its team details. Some production databases do not
-      // yet contain every optional live/penalty column, so fall back to the
-      // core match fields instead of treating a PostgREST select error as a
-      // missing match.
-      const richResult = await supabase
+      const { data: m } = await supabase
         .from('matches')
         .select('id, match_number, stage, home_score, away_score, home_penalty_score, away_penalty_score, winner_team_id, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
-        .eq('id', matchId)
-        .maybeSingle()
+        .eq('id', matchId).maybeSingle()
+      setMatch(m)
 
-      let m = richResult.data
-
-      if (!m && richResult.error) {
-        console.warn('MatchStats rich match query failed; using core fields.', richResult.error)
-
-        const { data: coreMatch, error: coreError } = await supabase
-          .from('matches')
-          .select('id, match_number, stage, home_score, away_score, winner_team_id, status, kickoff_time, home_team_id, away_team_id')
-          .eq('id', matchId)
-          .maybeSingle()
-
-        if (coreError) console.error('MatchStats core match query failed.', coreError)
-
-        if (coreMatch) {
-          const teamIds = [coreMatch.home_team_id, coreMatch.away_team_id].filter(Boolean)
-          const { data: teams, error: teamsError } = teamIds.length
-            ? await supabase.from('teams').select('id, name, flag_emoji, short_code').in('id', teamIds)
-            : { data: [], error: null }
-
-          if (teamsError) console.error('MatchStats team query failed.', teamsError)
-
-          const teamMap = Object.fromEntries((teams || []).map(team => [team.id, team]))
-          m = {
-            ...coreMatch,
-            home_penalty_score: null,
-            away_penalty_score: null,
-            live_minute: null,
-            injury_time: null,
-            home_team: teamMap[coreMatch.home_team_id] || null,
-            away_team: teamMap[coreMatch.away_team_id] || null,
-          }
-        }
-      }
-
-      setMatch(m || null)
-
-      if (!m) {
-        setLoading(false)
-        return
-      }
-
-      const locked = m.status === 'live' || m.status === 'completed' || new Date(m.kickoff_time) <= new Date()
+      const locked = m && (m.status === 'live' || m.status === 'completed' || new Date(m.kickoff_time) <= new Date())
       if (!locked) { setNotLocked(true); setLoading(false); return }
 
       // Scope tournament stats and KO Predictor stats separately.
