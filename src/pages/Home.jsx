@@ -134,7 +134,6 @@ export default function Home() {
   const [awardPickCount, setAwardPickCount] = useState(0)
   const [jokerAssignedCount, setJokerAssignedCount] = useState(0)
   const [leaderPosition, setLeaderPosition]   = useState(null)
-  const [tournamentStats, setTournamentStats] = useState({ played: 0, goals: 0, nextStage: 'Next round' })
   const [loading, setLoading]             = useState(true)
   const [luckyDipping, setLuckyDipping]   = useState(false)
   const [showShareCard, setShowShareCard] = useState(false)
@@ -173,6 +172,10 @@ export default function Home() {
     : phaseOverride && phaseOverride !== 'ko_predictor' ? false
     : koOpenByData || now >= KNOCKOUT_LIVE
   const tournamentOver = phaseOverride === 'post_tournament' ? true : now >= TOURNAMENT_END
+
+  // Live match data takes priority over date/phase overrides. The final group
+  // fixtures must keep the group Matchday Hub visible until they are finished.
+  const hasLiveGroupMatches = liveMatches.some(match => match.stage === 'group')
 
   useEffect(() => { loadData(); loadDailyQuestion(); loadRoundUp() }, [user])
 
@@ -367,7 +370,7 @@ export default function Home() {
       const windowStart = new Date() // now
       const windowEnd   = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000)
 
-      const [liveRes, liveFromKickoffRes, nextRes, upcomingRes, predictorRes, todayRes, completedStatsRes] = await Promise.all([
+      const [liveRes, liveFromKickoffRes, nextRes, upcomingRes, predictorRes, todayRes] = await Promise.all([
         supabase.from('matches')
           .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
           .eq('status', 'live').order('kickoff_time', { ascending: true }),
@@ -399,10 +402,6 @@ export default function Home() {
           .gte('kickoff_time', windowStart.toISOString())
           .lte('kickoff_time', windowEnd.toISOString())
           .order('kickoff_time', { ascending: true }),
-
-        supabase.from('matches')
-          .select('home_score, away_score, stage')
-          .eq('status', 'completed'),
       ])
 
       const allLive = [...(liveRes.data || []), ...(liveFromKickoffRes.data || [])]
@@ -445,25 +444,6 @@ export default function Home() {
       setUpcomingMatches(upcomingRes.data || [])
       setTopPredictors(predictorRes.data || [])
       setTodayMatches(todayRes.data || [])
-
-      const completedMatches = completedStatsRes.data || []
-      const goalsScored = completedMatches.reduce((sum, match) => (
-        sum + (Number(match.home_score) || 0) + (Number(match.away_score) || 0)
-      ), 0)
-      const nextStageLabels = {
-        group: 'Groups', r32: 'R32', r16: 'R16', qf: 'QF', sf: 'SF',
-        third_place: '3rd', final: 'Final',
-      }
-      const nextStageDate = nextRes.data?.kickoff_time
-        ? new Date(nextRes.data.kickoff_time).toLocaleDateString('en-GB', {
-            day: 'numeric', month: 'short', timeZone: 'Europe/London',
-          })
-        : ''
-      setTournamentStats({
-        played: completedMatches.length,
-        goals: goalsScored,
-        nextStage: `${nextStageLabels[nextRes.data?.stage] || 'Next'}${nextStageDate ? ` ${nextStageDate}` : ''}`,
-      })
 
       // Load user completion counts from source tables so Home doesn't rely on stale cached profile values.
       if (user) {
@@ -913,24 +893,66 @@ export default function Home() {
           {!loading && user && (
             knockoutLive && koAvailableCount > 0 ? (
               <Link to="/ko-predictor" style={{
-                display: 'block', maxWidth: '420px', margin: '20px auto 0',
-                textDecoration: 'none', textAlign: 'left',
+                display: 'block',
+                maxWidth: '420px',
+                margin: '22px auto 0',
+                padding: '14px 15px',
+                borderRadius: 'var(--radius-lg)',
+                background: 'rgba(255,255,255,0.10)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                textDecoration: 'none',
+                textAlign: 'left',
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
-                  <span style={{ color: 'rgba(255,255,255,0.72)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                    🔥 KO Predictor
-                  </span>
-                  <span style={{ color: 'white', fontSize: '12px', fontWeight: '900' }}>
-                    {koProgressDone}/{koAvailableCount} complete →
-                  </span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                  <div>
+                    <div style={{
+                      color: 'var(--accent-gold)',
+                      fontSize: '10px',
+                      fontWeight: '900',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.10em',
+                    }}>
+                      🔥 KO Predictor
+                    </div>
+                    <div style={{ color: 'white', fontSize: '15px', fontWeight: '900', marginTop: '4px' }}>
+                      {koProgressDone} / {koAvailableCount} picks complete
+                    </div>
+                  </div>
+                  <div style={{
+                    color: 'white',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    whiteSpace: 'nowrap',
+                    paddingTop: '2px',
+                  }}>
+                    {koProgressRemaining === 0
+                      ? 'View predictions →'
+                      : koProgressDone === 0
+                      ? 'Play now →'
+                      : 'Continue →'}
+                  </div>
                 </div>
-                <div style={{ height: '6px', background: 'rgba(255,255,255,0.18)', borderRadius: '999px', overflow: 'hidden' }}>
+
+                <div style={{
+                  height: '5px',
+                  marginTop: '11px',
+                  background: 'rgba(255,255,255,0.18)',
+                  borderRadius: '999px',
+                  overflow: 'hidden',
+                }}>
                   <div style={{
                     width: `${koAvailableCount ? Math.round((koProgressDone / koAvailableCount) * 100) : 0}%`,
                     height: '100%',
                     background: koProgressRemaining === 0 ? '#4ade80' : 'var(--accent-gold)',
-                    borderRadius: '999px', transition: 'width 0.35s ease',
+                    borderRadius: '999px',
+                    transition: 'width 0.35s ease',
                   }} />
+                </div>
+
+                <div style={{ color: 'rgba(255,255,255,0.58)', fontSize: '10.5px', marginTop: '7px' }}>
+                  {koProgressRemaining === 0
+                    ? `All ${koAvailableCount} available knockout fixtures predicted`
+                    : `${koProgressRemaining} confirmed fixture${koProgressRemaining === 1 ? '' : 's'} still to pick`}
                 </div>
               </Link>
             ) : progressItems.length > 0 ? (
@@ -961,10 +983,12 @@ export default function Home() {
         <div style={{ background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', padding: '14px 16px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', maxWidth: '500px', margin: '0 auto' }}>
             {[
-              { label: 'Played', value: tournamentStats.played },
-              { label: 'Today', value: todayMatches.length || 0 },
-              { label: 'Goals', value: tournamentStats.goals },
-              { label: 'Next', value: tournamentStats.nextStage },
+              { label: 'Teams', value: '48' },
+              { label: 'Matches', value: '104' },
+              tournamentStarted
+                ? { label: 'Today', value: `${todayMatches.length || 0} games` }
+                : { label: 'Kick off', value: '11 Jun' },
+              { label: 'Final', value: '19 Jul' },
             ].map(({ label, value }, i, arr) => (
               <div key={label} style={{
                 textAlign: 'center', flex: 1,
@@ -983,17 +1007,17 @@ export default function Home() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
 
           {/* ── Group matchday hub: countdown → live scores → full-time recap ── */}
-          {!loading && user && tournamentStarted && !groupStageDone && liveMatches.length > 0 && (
+          {!loading && user && tournamentStarted && hasLiveGroupMatches && (
             <GroupMatchdayHub user={user} profile={profile} />
           )}
 
-          {/* ── Knockout matchday hub: team-based bracket impact + separate KO picks ── */}
-          {!loading && user && groupStageDone && knockoutLive && (
+          {/* ── Knockout matchday hub: only after no group match is still live ── */}
+          {!loading && user && !hasLiveGroupMatches && groupStageDone && knockoutLive && (
             <KnockoutMatchdayHub user={user} profile={profile} />
           )}
 
           {/* ── Existing countdown card before kickoff; public live card for signed-out visitors ── */}
-          {!loading && tournamentStarted && !groupStageDone && (liveMatches.length > 0 || nextMatch) && (!user || liveMatches.length === 0) && (
+          {!loading && tournamentStarted && (hasLiveGroupMatches || !groupStageDone) && (liveMatches.length > 0 || nextMatch) && (!user || liveMatches.length === 0) && (
             <div className="card fade-in" style={{
               overflow: 'hidden',
               border: liveMatches.length > 0 ? '2px solid #e53935' : '1px solid rgba(0,48,135,0.16)',
@@ -1054,7 +1078,7 @@ export default function Home() {
                             </span>
                           </div>
                         )}
-                        <Link to={`/match/${match.match_number || match.id}/stats`} style={{
+                        <Link to={`/match/${match.id}/stats`} style={{
                           display: 'block', marginTop: '10px', padding: '8px',
                           background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)',
                           border: '1px solid var(--border-light)', textAlign: 'center',
@@ -1128,7 +1152,14 @@ export default function Home() {
           {/* Tournament Pulse sits directly below the next-match/live-match card.
               It stays compact while a matchday hub is active and fuller when Home is quiet. */}
           {!loading && (
-            <TournamentPulsePreview compact />
+            <TournamentPulsePreview
+              compact={Boolean(
+                user && (
+                  hasLiveGroupMatches ||
+                  (!hasLiveGroupMatches && groupStageDone && knockoutLive)
+                )
+              )}
+            />
           )}
 
           {/* ── League picks for live match ── */}
@@ -1233,6 +1264,71 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {/* ── Matchday round-up share card ── */}
+          {roundUpData && user && tournamentStarted && roundUpData.totalPts > 0 && (() => {
+            const { totalPts, correct, exact, jokerPaid, bestMatch, matches, preds } = roundUpData
+            const shareText = () => {
+              const lines = [
+                `⚽ WC26 Predictor — Last 24hrs Round-Up`,
+                ``,
+                `${profile?.display_name || profile?.username}`,
+                `+${totalPts}pts · ${correct}/${preds.length} correct${exact > 0 ? ` · ${exact} exact 🎯` : ''}`,
+                jokerPaid > 0 ? `🃏 Joker paid off!` : '',
+                bestMatch ? `⭐ Best pick: ${bestMatch.home_team?.flag_emoji}${bestMatch.home_team?.short_code} ${bestMatch.home_score}–${bestMatch.away_score} ${bestMatch.away_team?.short_code}${bestMatch.away_team?.flag_emoji}` : '',
+                ``,
+                `Current rank: #${leaderPosition || '?'}`,
+                ``,
+                `wc26predictor1.netlify.app`,
+              ].filter(Boolean).join(String.fromCharCode(10))
+              return lines
+            }
+
+            return (
+              <div ref={roundUpCardRef} className="card fade-in" style={{ overflow: 'hidden', background: 'var(--scottish-navy)', color: 'white' }}>
+                <div style={{ height: '4px', background: 'var(--accent-gold)', marginBottom: '14px', borderRadius: 'var(--radius-full)' }} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
+                  <span style={{ fontSize: '28px', flexShrink: 0 }}>⚽</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: '900', fontSize: '16px', marginBottom: '2px' }}>
+                      +{totalPts}pts in the last 24hrs
+                    </div>
+                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)' }}>
+                      {correct}/{preds.length} correct
+                      {exact > 0 ? ` · ${exact} exact score${exact > 1 ? 's' : ''} 🎯` : ''}
+                      {jokerPaid > 0 ? ` · 🃏 joker paid off!` : ''}
+                    </div>
+                    {bestMatch && (
+                      <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', marginTop: '4px' }}>
+                        ⭐ {bestMatch.home_team?.flag_emoji}{bestMatch.home_team?.short_code} {bestMatch.home_score}–{bestMatch.away_score} {bestMatch.away_team?.short_code}{bestMatch.away_team?.flag_emoji}
+                      </div>
+                    )}
+                  </div>
+                  {leaderPosition && (
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontWeight: '900', fontSize: '22px', color: 'var(--accent-gold)' }}>#{leaderPosition}</div>
+                      <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rank</div>
+                    </div>
+                  )}
+                </div>
+                {/* Branding footer */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '14px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>
+                    <span style={{ fontWeight: '800', fontSize: '12px', color: 'var(--accent-gold)' }}>WC26 Predictor</span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)' }}>wc26predictor1.netlify.app</span>
+                </div>
+
+                {/* Full points breakdown link */}
+                <div style={{ display: sharingRoundUp ? 'none' : 'block' }}>
+                  <Link to="/points" style={{ display: 'block', width: '100%', padding: '11px', background: 'var(--accent-gold)', color: 'white', border: 'none', borderRadius: 'var(--radius-full)', fontWeight: '800', fontSize: '14px', textAlign: 'center', textDecoration: 'none' }}>
+                    See every point you've earned →
+                  </Link>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* ── Imminent bracket lock warning ── */}
           {user && imminentBracketLock && (() => {
@@ -1524,50 +1620,81 @@ export default function Home() {
           )}
 
 
-          {/* ── Your Tournament ── */}
+          {/* ── User Stats ── */}
           {user && profile && (tournamentStarted || knockoutLive || (profile.total_points || 0) > 0) && (
             <div className="card fade-in">
               <div className="section-header">
-                <span className="section-title">⚽ Your Tournament</span>
-                <Link to="/points" className="section-link">Full breakdown →</Link>
+                <span className="section-title">👋 Your Stats</span>
+                <Link to="/profile" className="section-link">View profile →</Link>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 0.75fr', gap: '10px', marginBottom: '10px' }}>
-                <div style={{ background: 'var(--scottish-navy)', color: 'white', borderRadius: 'var(--radius-md)', padding: '14px 16px' }}>
-                  <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.6)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Total points</div>
-                  <div style={{ fontWeight: '900', fontSize: '30px', fontFamily: 'var(--font-mono)', lineHeight: 1.05, marginTop: '4px' }}>{profile.total_points || 0}</div>
-                  {roundUpData?.totalPts > 0 && (
-                    <div style={{ color: '#4ade80', fontSize: '11px', fontWeight: '800', marginTop: '6px' }}>
-                      +{roundUpData.totalPts} in the last 24hrs
+              {/* Tournament stats */}
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+                🌍 Tournament Predictor
+              </div>
+              {/* Live rank movement card — shows during live matches */}
+              {liveMatches.length > 0 && leaderPosition && profile.rank_at_kickoff && (() => {
+                const movement = profile.rank_at_kickoff - leaderPosition // positive = moved up
+                const moved = movement !== 0
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: moved ? (movement > 0 ? 'rgba(0,122,51,0.08)' : 'rgba(198,40,40,0.06)') : 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', marginBottom: '10px', border: `1px solid ${moved ? (movement > 0 ? 'rgba(0,122,51,0.2)' : 'rgba(198,40,40,0.15)') : 'var(--border-light)'}` }}>
+                    <div style={{ fontWeight: '900', fontSize: '28px', fontFamily: 'var(--font-mono)', color: moved ? (movement > 0 ? 'var(--accent-green)' : 'var(--accent-red)') : 'var(--text-primary)' }}>
+                      #{leaderPosition}
                     </div>
-                  )}
-                </div>
-                <div style={{ background: 'var(--accent-blue-light)', border: '1px solid rgba(21,88,176,0.16)', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center' }}>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Overall rank</div>
-                  <div style={{ color: 'var(--scottish-navy)', fontWeight: '900', fontSize: '30px', fontFamily: 'var(--font-mono)', lineHeight: 1.05, marginTop: '4px' }}>
-                    #{leaderPosition || '–'}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: '700', fontSize: '13px' }}>
+                        {moved
+                          ? movement > 0
+                            ? `▲ Up ${movement} place${movement > 1 ? 's' : ''} since kickoff`
+                            : `▼ Down ${Math.abs(movement)} place${Math.abs(movement) > 1 ? 's' : ''} since kickoff`
+                          : 'Holding position since kickoff'}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Was #{profile.rank_at_kickoff} · {profile.total_points || 0}pts
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '20px' }}>
+                      {moved ? (movement > 0 ? '📈' : '📉') : '➡️'}
+                    </div>
                   </div>
-                </div>
-              </div>
+                )
+              })()}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: knockoutLive ? '14px' : '0' }}>
                 {[
-                  { label: 'Exact', value: profile.exact_scores || 0, icon: '🎯' },
+                  { label: 'Points', value: profile.total_points || 0, icon: '🏅' },
                   { label: 'Streak', value: profile.streak_current || 0, icon: '🔥' },
-                  { label: 'Correct 24h', value: roundUpData ? `${roundUpData.correct}/${roundUpData.preds.length}` : '–', icon: '✅' },
+                  { label: 'Exact Scores', value: profile.exact_scores || 0, icon: '🎯' },
                 ].map(({ label, value, icon }) => (
-                  <div key={label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '11px 8px', textAlign: 'center', border: '1px solid var(--border-light)' }}>
-                    <div style={{ fontSize: '17px', marginBottom: '2px' }}>{icon}</div>
-                    <div style={{ fontWeight: '900', fontSize: '17px', fontFamily: 'var(--font-mono)' }}>{value}</div>
-                    <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: '2px' }}>{label}</div>
+                  <div key={label} style={{ background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center' }}>
+                    <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
+                    <div style={{ fontWeight: '800', fontSize: '20px', fontFamily: 'var(--font-mono)' }}>{value}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px' }}>{label}</div>
                   </div>
                 ))}
               </div>
 
-              {roundUpData?.jokerPaid > 0 && (
-                <div style={{ marginTop: '10px', padding: '8px 10px', borderRadius: 'var(--radius-sm)', background: 'rgba(201,151,0,0.10)', color: '#9a7100', fontSize: '11px', fontWeight: '800', textAlign: 'center' }}>
-                  🃏 {roundUpData.jokerPaid} joker{roundUpData.jokerPaid === 1 ? '' : 's'} paid off in the last 24hrs
-                </div>
+              {/* KO stats — only show once live */}
+              {knockoutLive && ((profile.ko_points || 0) > 0 || (profile.ko_streak_current || 0) > 0 || (profile.ko_exact_scores || 0) > 0) && (
+                <>
+                  <div style={{ height: '1px', background: 'var(--border-light)', margin: '4px 0 12px' }} />
+                  <div style={{ fontSize: '11px', fontWeight: '700', color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
+                    🔥 KO Predictor
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                    {[
+                      { label: 'KO Points', value: profile.ko_points || 0, icon: '🔥' },
+                      { label: 'KO Streak', value: profile.ko_streak_current || 0, icon: '⚡' },
+                      { label: 'Exact Scores', value: profile.ko_exact_scores || 0, icon: '🎯' },
+                    ].map(({ label, value, icon }) => (
+                      <div key={label} style={{ background: '#fff3e0', borderRadius: 'var(--radius-md)', padding: '14px', textAlign: 'center', border: '1px solid rgba(230,81,0,0.2)' }}>
+                        <div style={{ fontSize: '22px', marginBottom: '4px' }}>{icon}</div>
+                        <div style={{ fontWeight: '800', fontSize: '20px', fontFamily: 'var(--font-mono)', color: '#e65100' }}>{value}</div>
+                        <div style={{ fontSize: '10px', color: '#e65100', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '2px', opacity: 0.7 }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -1786,14 +1913,10 @@ export default function Home() {
                       streak_current: profile.streak_current || 0,
                     })
                   }
-                  const sorted = preview.sort((a, b) => (b.total_points || 0) - (a.total_points || 0))
-                  const topThree = sorted.slice(0, 3)
-                  const me = user ? sorted.find(p => p.id === user.id) : null
-                  const compactPreview = me && !topThree.some(p => p.id === me.id)
-                    ? [...topThree, me]
-                    : topThree
-                  return compactPreview.map((p) => {
-                  const i = sorted.findIndex(row => row.id === p.id)
+                  return preview
+                    .sort((a, b) => (b.total_points || 0) - (a.total_points || 0))
+                    .slice(0, 5)
+                    .map((p, i) => {
                   const isMe = user?.id === p.id
                   return (
                     <div key={p.id} className="leaderboard-row" 
