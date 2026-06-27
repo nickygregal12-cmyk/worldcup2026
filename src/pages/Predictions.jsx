@@ -1616,18 +1616,6 @@ export default function Predictions() {
               🃏 Joker applied — 2× points if correct!
             </div>
           )}
-          {/* Joker result indicator — after match played */}
-          {hasJoker && resultColour && resultColour !== 'red' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', padding: '7px 12px', background: 'rgba(184,134,11,0.12)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)', border: '1px solid rgba(184,134,11,0.3)' }}>
-              🃏 Joker paid off! Points doubled ×2
-            </div>
-          )}
-          {hasJoker && resultColour === 'red' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', padding: '7px 12px', background: 'rgba(198,40,40,0.06)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-red)', border: '1px solid rgba(198,40,40,0.2)' }}>
-              🃏 Joker wasted — wrong result, 0pts
-            </div>
-          )}
-
           {/* Match meta row */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.06em', lineHeight: 1.4 }}>
@@ -2594,8 +2582,8 @@ export default function Predictions() {
             <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
               <div className="pill-tabs" style={{ display: 'inline-flex', padding: '3px', width: '100%', maxWidth: '420px' }}>
                 {[
-                  { key: 'picks', label: '⚽ Picks' },
-                  { key: 'standings', label: '📊 Real vs Predicted' },
+                  { key: 'picks', label: '⚽ My Picks' },
+                  { key: 'standings', label: '📊 Live & Predicted Tables' },
                 ].map(tab => (
                   <button
                     key={tab.key}

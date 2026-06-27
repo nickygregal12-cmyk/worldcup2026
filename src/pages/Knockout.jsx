@@ -1276,20 +1276,20 @@ export default function Knockout() {
       {user && !mainBracketLocked && (
         <div style={{ margin: '12px 16px', padding: '12px 14px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
           <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Two separate knockout games
+            Two knockout prediction games
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
               <span style={{ fontSize: '16px', flexShrink: 0 }}>🏆</span>
               <div>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Knockout Bracket — this page</div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>Tournament Bracket — this page</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4 }}>Pick which teams advance each round based on your group predictions. Must complete before groups kick off.</div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
               <span style={{ fontSize: '16px', flexShrink: 0 }}>🔥</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>KO Predictor — opens ~28 Jun</div>
+                <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>KO Match Predictor</div>
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4 }}>Predict actual scores for all 32 knockout matches. Fresh start — even if your teams go out early, everyone begins at 0pts.</div>
               </div>
               <Link to="/ko-predictor" style={{ fontSize: '12px', fontWeight: '700', color: '#e65100', textDecoration: 'none', flexShrink: 0, marginTop: '2px' }}>Info →</Link>
@@ -1334,7 +1334,7 @@ export default function Knockout() {
             {activeStage === 'final' && <span style={{ color: 'var(--accent-gold)' }}> + 25pts for World Cup Winner</span>}
           </span>
           <span style={{ fontSize: '12px', fontWeight: '700', color: stagePicks === stageMatches.length ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-            {stagePicks === stageMatches.length ? '✓ Stage complete' : `${stagePicks}/${stageMatches.length} picked`}
+            {stagePicks === stageMatches.length ? '' : `${stagePicks}/${stageMatches.length} picked`}
           </span>
         </div>
       </div>
@@ -1352,7 +1352,7 @@ export default function Knockout() {
             fontSize: '12px', fontWeight: '600', color: 'var(--scottish-navy)',
           }}>
             <span>🔒</span>
-            <span style={{ flex: 1 }}>All picks locked · frozen from your saved bracket</span>
+            <span style={{ flex: 1 }}>Tournament Bracket locked · your saved picks are frozen</span>
             {groupStageDone && eliminatedTeams.size > 0 && (
               <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '500' }}>
                 colours = team status
@@ -1384,7 +1384,7 @@ export default function Knockout() {
                   </div>
                   <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>
                     {liveTrackerStats.total > 0
-                      ? <><span style={{ color: colour }}>{liveTrackerStats.correct}/{liveTrackerStats.total}</span>{' '}{liveTrackerStats.stageLabel} picks on track</>
+                      ? <><span style={{ color: colour }}>{liveTrackerStats.correct}/{liveTrackerStats.total}</span>{' '}{liveTrackerStats.stageLabel} predicted teams still on track</>
                       : <span style={{ color: 'var(--text-muted)' }}>Waiting for {liveTrackerStats.stageLabel} fixtures to be confirmed</span>
                     }
                   </div>

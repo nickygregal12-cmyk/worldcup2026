@@ -47,6 +47,7 @@ export default function KOPredictor() {
   const [jokersRemaining, setJokersRemaining] = useState(5)
   const [jokerConfirm, setJokerConfirm] = useState(null)
   const [scoreWarning, setScoreWarning] = useState(null)
+  const [firstGoalOpen, setFirstGoalOpen] = useState({})
   const [m73Ready, setM73Ready] = useState(false)
   const smartStageAppliedRef = useRef(false)
 
@@ -387,18 +388,6 @@ export default function KOPredictor() {
             🃏 Joker applied — 2× points if correct!
           </div>
         )}
-        {/* Joker result banners */}
-        {hasJoker && resultColour && resultColour !== 'red' && (
-          <div style={{ marginBottom: '10px', padding: '6px 10px', background: 'rgba(184,134,11,0.12)', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-gold)', border: '1px solid rgba(184,134,11,0.3)' }}>
-            🃏 Joker paid off! Points doubled ×2
-          </div>
-        )}
-        {hasJoker && resultColour === 'red' && (
-          <div style={{ marginBottom: '10px', padding: '6px 10px', background: 'rgba(198,40,40,0.06)', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '700', color: 'var(--accent-red)', border: '1px solid rgba(198,40,40,0.2)' }}>
-            🃏 Joker wasted — wrong result, 0pts
-          </div>
-        )}
-
         {/* Match header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -413,7 +402,10 @@ export default function KOPredictor() {
         </div>
 
         {/* Teams + score inputs */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+        <div style={{ textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          Score after 90 minutes
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '36px' }}>{match.home_team?.flag_emoji || '🏳️'}</span>
             <span style={{ fontWeight: '700', fontSize: '13px', textAlign: 'center' }}>{match.home_team?.name || '?'}</span>
@@ -445,28 +437,19 @@ export default function KOPredictor() {
           </div>
         </div>
 
-        {/* Odds */}
+        {/* Compact odds row */}
         {matchOdds && !locked && (
-          <div className="odds-row" style={{ marginBottom: '14px' }}>
-            <div className={`odds-item ${favourite === 'home' ? 'odds-favourite' : ''}`}>
-              <span className="odds-label">{match.home_team?.short_code}</span>
-              <span className="odds-value">{matchOdds.home}</span>
-            </div>
-            <div className={`odds-item ${favourite === 'draw' ? 'odds-favourite' : ''}`}>
-              <span className="odds-label">Draw</span>
-              <span className="odds-value">{matchOdds.draw}</span>
-            </div>
-            <div className={`odds-item ${favourite === 'away' ? 'odds-favourite' : ''}`}>
-              <span className="odds-label">{match.away_team?.short_code}</span>
-              <span className="odds-value">{matchOdds.away}</span>
-            </div>
-          </div>
-        )}
-
-        {/* Score label — clarify what the score means when ET/Pens selected */}
-        {hasPrediction && !locked && !isGuest && isDraw && (outcomeType === 'et' || outcomeType === 'penalties') && (
-          <div style={{ textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', marginBottom: '8px', marginTop: '-6px' }}>
-            ↑ Score after 90 mins
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '12px', fontSize: '11px', color: 'var(--text-muted)' }}>
+            <span style={{ fontWeight: '700' }}>Odds</span>
+            <span className={favourite === 'home' ? 'odds-favourite' : ''} style={{ padding: '3px 7px', borderRadius: '999px', background: 'var(--bg-tertiary)' }}>
+              {match.home_team?.short_code} <strong>{matchOdds.home}</strong>
+            </span>
+            <span className={favourite === 'draw' ? 'odds-favourite' : ''} style={{ padding: '3px 7px', borderRadius: '999px', background: 'var(--bg-tertiary)' }}>
+              Draw <strong>{matchOdds.draw}</strong>
+            </span>
+            <span className={favourite === 'away' ? 'odds-favourite' : ''} style={{ padding: '3px 7px', borderRadius: '999px', background: 'var(--bg-tertiary)' }}>
+              {match.away_team?.short_code} <strong>{matchOdds.away}</strong>
+            </span>
           </div>
         )}
 
@@ -544,27 +527,41 @@ export default function KOPredictor() {
           </div>
         )}
 
-        {/* First goal band */}
+        {/* Optional first-goal bonus — collapsed by default */}
         {hasPrediction && !locked && !isGuest && (
           <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              ⏱ First Goal? <span style={{ color: '#e65100' }}>+3pts</span> <span style={{ fontWeight: '400', textTransform: 'none' }}>(optional)</span>
-            </div>
-            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-              {FIRST_GOAL_BANDS.map(band => (
-                <button key={band.key}
-                  onClick={() => setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], first_goal_band: prev[match.id]?.first_goal_band === band.key ? null : band.key } }))}
-                  style={{
-                    padding: '4px 8px', fontSize: '11px', fontWeight: '600',
-                    borderRadius: '4px', cursor: 'pointer',
-                    background: pred.first_goal_band === band.key ? 'var(--scottish-navy)' : 'var(--bg-tertiary)',
-                    color: pred.first_goal_band === band.key ? 'white' : 'var(--text-muted)',
-                    border: pred.first_goal_band === band.key ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
-                  }}>
-                  {band.label}
-                </button>
-              ))}
-            </div>
+            <button
+              type="button"
+              onClick={() => setFirstGoalOpen(prev => ({ ...prev, [match.id]: !prev[match.id] }))}
+              aria-expanded={!!firstGoalOpen[match.id]}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '9px 11px', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                background: pred.first_goal_band ? 'rgba(230,81,0,0.08)' : 'var(--bg-tertiary)',
+                border: pred.first_goal_band ? '1px solid rgba(230,81,0,0.3)' : '1px solid var(--border-light)',
+                color: 'var(--text-secondary)', fontSize: '12px', fontWeight: '700'
+              }}
+            >
+              <span>⏱ First goal time <span style={{ color: '#e65100' }}>+3pts</span> <span style={{ fontWeight: '500', color: 'var(--text-muted)' }}>(optional)</span></span>
+              <span>{pred.first_goal_band ? FIRST_GOAL_BANDS.find(b => b.key === pred.first_goal_band)?.label : firstGoalOpen[match.id] ? '▲' : '›'}</span>
+            </button>
+            {firstGoalOpen[match.id] && (
+              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', paddingTop: '8px' }}>
+                {FIRST_GOAL_BANDS.map(band => (
+                  <button key={band.key}
+                    onClick={() => setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], first_goal_band: prev[match.id]?.first_goal_band === band.key ? null : band.key } }))}
+                    style={{
+                      padding: '6px 9px', fontSize: '11px', fontWeight: '600',
+                      borderRadius: '6px', cursor: 'pointer',
+                      background: pred.first_goal_band === band.key ? 'var(--scottish-navy)' : 'var(--bg-tertiary)',
+                      color: pred.first_goal_band === band.key ? 'white' : 'var(--text-muted)',
+                      border: pred.first_goal_band === band.key ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                    }}>
+                    {band.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -646,7 +643,7 @@ export default function KOPredictor() {
         <div style={{ background: 'linear-gradient(135deg, #e65100, #ff9800)', padding: '32px 20px', color: 'white', textAlign: 'center' }}>
           <div className="container">
             <WorldCupLogo variant="hero" size={104} />
-            <h1 style={{ fontSize: '26px', fontWeight: '900', marginBottom: '8px' }}>🔥 Knockout Predictor</h1>
+            <h1 style={{ fontSize: '26px', fontWeight: '900', marginBottom: '8px' }}>🔥 KO Match Predictor</h1>
             <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '15px', marginBottom: '4px' }}>Separate game · fresh start · everyone on 0pts</p>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Opens as soon as the Round of 32 teams are confirmed</p>
           </div>
@@ -654,7 +651,7 @@ export default function KOPredictor() {
         <div className="container" style={{ padding: '24px 16px' }}>
           <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>
             <div style={{ fontSize: '40px', marginBottom: '12px' }}>⏳</div>
-            <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>🔥 KO Predictor</div>
+            <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>🔥 KO Match Predictor</div>
             <div style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
               Not the same as the Knockout Bracket — this is a completely separate game. Predict actual scores for all 32 knockout matches. Opens once R32 teams are confirmed from real results. Everyone starts at 0pts — even if your group stage didn't go well.
             </div>
@@ -689,8 +686,8 @@ export default function KOPredictor() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 8px', gap: '10px' }}>
             <WorldCupLogo variant="compact" size={42} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flex: 1 }}>
-              <span style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>🔥 KO Predictor</span>
-              <span style={{ fontSize: '10.5px', fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>Separate game · doesn't affect your Tournament score</span>
+              <span style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>🔥 KO Match Predictor</span>
+              <span style={{ fontSize: '10.5px', fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>Fresh match predictions · separate from your Tournament Bracket</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', fontSize: '12px', fontWeight: '700', color: 'white' }}>
