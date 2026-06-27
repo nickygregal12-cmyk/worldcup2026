@@ -3,6 +3,9 @@ import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 
+const VENUE_FLAGS = { Mexico:'🇲🇽', 'Mexico City':'🇲🇽', Guadalajara:'🇲🇽', Monterrey:'🇲🇽', Canada:'🇨🇦', Toronto:'🇨🇦', Vancouver:'🇨🇦', USA:'🇺🇸', 'United States':'🇺🇸', 'New York':'🇺🇸', 'New Jersey':'🇺🇸', 'East Rutherford':'🇺🇸', 'New York/NJ':'🇺🇸', Boston:'🇺🇸', Dallas:'🇺🇸', Houston:'🇺🇸', Miami:'🇺🇸', Seattle:'🇺🇸', Philadelphia:'🇺🇸', Atlanta:'🇺🇸', 'Kansas City':'🇺🇸', 'Los Angeles':'🇺🇸', 'San Francisco':'🇺🇸' }
+const venueFlag = (venue) => VENUE_FLAGS[venue?.country] || VENUE_FLAGS[venue?.city] || '🏟️'
+
 const STAGE_LABELS = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-final', sf: 'Semi-final', '3rd': 'Third-place', final: 'Final' }
 
 export default function MatchStats() {
@@ -205,6 +208,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
   const [koMine, setKoMine] = useState(null)
   const [koRivals, setKoRivals] = useState([])
   const [bracketImpact, setBracketImpact] = useState([])
+  const [weather, setWeather] = useState(null)
 
   useEffect(() => {
     const load = async () => {
@@ -224,9 +228,14 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
 
       const { data: m } = await supabase
         .from('matches')
-        .select('id, match_number, stage, home_score, away_score, winner_team_id, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .select('id, match_number, stage, home_score, away_score, winner_team_id, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, venue:venue_id(id, name, stadium_name, city, country), home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
         .eq('id', matchId).maybeSingle()
       setMatch(m)
+      setWeather(null)
+      if (m?.venue?.city && m?.kickoff_time) {
+        const params = new URLSearchParams({ city: m.venue.city, kickoff: m.kickoff_time, stadium: m.venue.name || m.venue.stadium_name || '' })
+        fetch(`/.netlify/functions/weather?${params.toString()}`).then(r => r.ok ? r.json() : null).then(data => { if (data?.available) setWeather(data) }).catch(() => {})
+      }
 
       const locked = m && (m.status === 'live' || m.status === 'completed' || new Date(m.kickoff_time) <= new Date())
       if (!locked) { setNotLocked(true); setLoading(false); return }
@@ -389,7 +398,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
     const myWinner = koMine ? (koMine.side === 'home' ? match.home_team : koMine.side === 'away' ? match.away_team : null) : null
     const myOnTrack = koMine && lead && lead === koMine.side
     return wrap(<>
-      <KOHeader match={match} hasResult={hasResult} live={live} />
+      <KOHeader match={match} hasResult={hasResult} live={live} weather={weather} />
 
       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', padding: '8px 12px', marginBottom: '12px', background: 'rgba(230,81,0,0.08)', border: '1px solid rgba(230,81,0,0.2)', borderRadius: 'var(--radius-md)', fontSize: '11.5px', fontWeight: 700, color: '#e65100' }}>
         🔥 <span>{leagueCode && !koLeagueCode
@@ -466,7 +475,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
   // ── Group centre ──
   if (!stats || stats.total === 0) {
     return wrap(<>
-      <GroupHeader match={match} hasResult={hasResult} live={live} statsTotal={0} scopeLabel={scopeLabel} />
+      <GroupHeader match={match} hasResult={hasResult} live={live} statsTotal={0} scopeLabel={scopeLabel} weather={weather} />
       <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '12px' }}>No predictions in yet for this match.</p>
     </>)
   }
@@ -474,7 +483,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
   const actualResult = lead
 
   return wrap(<>
-    <GroupHeader match={match} hasResult={hasResult} live={live} statsTotal={stats.total} scopeLabel={scopeLabel} />
+    <GroupHeader match={match} hasResult={hasResult} live={live} statsTotal={stats.total} scopeLabel={scopeLabel} weather={weather} />
 
     {myLine && (() => {
       const statusLabel = {
@@ -590,7 +599,15 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
   </>)
 }
 
-function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel }) {
+function MatchVenue({ match, weather }) {
+  const venue = match.venue
+  if (!venue) return null
+  const name = venue.name || venue.stadium_name || 'Stadium'
+  const weatherText = weather?.available ? ` · ${weather.icon || '🌤️'} ${Math.round(Number(weather.temp_c))}°C${weather.condition ? ` · ${weather.condition}` : ''}` : ''
+  return <div style={{ fontSize:'11px', color:'var(--text-muted)', marginTop:'10px', fontWeight:600 }}>{venueFlag(venue)} {name}{venue.city ? ` · ${venue.city}` : ''}{weatherText}</div>
+}
+
+function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel, weather }) {
   return (
     <div className="card fade-up" style={{ marginBottom: '14px', textAlign: 'center' }}>
       <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
@@ -601,6 +618,7 @@ function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel }) {
             : 'Predictions'}
       </div>
       <ScoreRow match={match} hasResult={hasResult} />
+      <MatchVenue match={match} weather={weather} />
       <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '12px' }}>
         📊 {statsTotal} predictions · {scopeLabel}
       </div>
@@ -608,7 +626,7 @@ function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel }) {
   )
 }
 
-function KOHeader({ match, hasResult, live }) {
+function KOHeader({ match, hasResult, live, weather }) {
   return (
     <div className="card fade-up" style={{ marginBottom: '12px', textAlign: 'center' }}>
       <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
@@ -619,6 +637,7 @@ function KOHeader({ match, hasResult, live }) {
             : 'KO Predictor'}
       </div>
       <ScoreRow match={match} hasResult={hasResult} />
+      <MatchVenue match={match} weather={weather} />
     </div>
   )
 }

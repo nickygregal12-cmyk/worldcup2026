@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { ALL_STAGES } from '../../lib/bracketUtils.js'
+import { supabase } from '../../lib/supabase.js'
 
 const MATCH_DEFS = new Map(
   ALL_STAGES.flatMap(stage => (stage.matches || []).map(match => [match.match_number, match]))
@@ -37,12 +39,24 @@ function TeamOrSlot({ team, slot }) {
 }
 
 export default function MatchManager({ admin }) {
+  const [slotOverrides, setSlotOverrides] = useState({})
   const {
     matches, filteredMatches, matchSearch, setMatchSearch,
     matchStatusFilter, setMatchStatusFilter, stageFilter, setStageFilter,
     setFixtureEditorMatch, editingMatch, setEditingMatch, scores, setScores,
     saving, saveMatchResult, setMatchLive, resetMatchOverride, loadMatches, fmt,
   } = admin
+
+  useEffect(() => {
+    supabase.from('app_settings').select('key, value').like('key', 'ko_slot_override_%').then(({ data }) => {
+      const map = {}
+      ;(data || []).forEach(row => {
+        const number = Number(row.key.replace('ko_slot_override_', ''))
+        try { map[number] = JSON.parse(row.value) } catch {}
+      })
+      setSlotOverrides(map)
+    })
+  }, [matches])
 
   const stageOptions = [
     ['all', 'All stages'], ['group', 'Groups'], ['r32', 'R32'], ['r16', 'R16'],
@@ -108,7 +122,7 @@ export default function MatchManager({ admin }) {
             const isEditing = editingMatch === match.id
             const s = scores[match.id] || { home: match.home_score ?? '', away: match.away_score ?? '' }
             const venueName = match.venue?.name || match.venue?.stadium_name || match.venue?.city || 'Venue not set'
-            const matchDef = MATCH_DEFS.get(Number(match.match_number))
+            const matchDef = { ...(MATCH_DEFS.get(Number(match.match_number)) || {}), ...(slotOverrides[Number(match.match_number)] || {}) }
             return (
               <div key={match.id} className="card" style={{ padding: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'flex-start' }}>
