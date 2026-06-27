@@ -1,16 +1,60 @@
+import { ALL_STAGES } from '../../lib/bracketUtils.js'
+
+const MATCH_DEFS = new Map(
+  ALL_STAGES.flatMap(stage => (stage.matches || []).map(match => [match.match_number, match]))
+)
+
+const formatSlot = (slot) => {
+  if (!slot) return 'TBC'
+  if (/^[12][A-L]$/.test(slot)) {
+    const position = slot[0] === '1' ? 'Winner' : 'Runner-up'
+    return `${position} Group ${slot[1]}`
+  }
+  if (/^BT3_[A-L]+$/.test(slot)) {
+    return `Best 3rd (${slot.slice(4).split('').join('/')})`
+  }
+  if (/^W\d+$/.test(slot)) return `Winner M${slot.slice(1)}`
+  if (/^L\d+$/.test(slot)) return `Loser M${slot.slice(1)}`
+  return slot
+}
+
+function TeamOrSlot({ team, slot }) {
+  if (team) {
+    return (
+      <>
+        <div style={{ fontSize: '24px' }}>{team.flag_emoji || '🏳️'}</div>
+        <b style={{ fontSize: '13px' }}>{team.short_code || team.name}</b>
+      </>
+    )
+  }
+
+  return (
+    <>
+      <div style={{ fontSize: '20px', opacity: 0.65 }}>◌</div>
+      <b style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.25 }}>{formatSlot(slot)}</b>
+    </>
+  )
+}
+
 export default function MatchManager({ admin }) {
   const {
     matches, filteredMatches, matchSearch, setMatchSearch,
     matchStatusFilter, setMatchStatusFilter, stageFilter, setStageFilter,
     setFixtureEditorMatch, editingMatch, setEditingMatch, scores, setScores,
     saving, saveMatchResult, setMatchLive, resetMatchOverride, loadMatches, fmt,
-    setActionResult,
   } = admin
 
   const stageOptions = [
     ['all', 'All stages'], ['group', 'Groups'], ['r32', 'R32'], ['r16', 'R16'],
     ['qf', 'QF'], ['sf', 'SF'], ['3rd', '3rd'], ['final', 'Final'],
   ]
+
+  const selectStage = (value) => {
+    setStageFilter(value)
+    // A status such as “Live” should not make an entire round look missing.
+    // Switching rounds therefore returns to all fixtures for that round.
+    if (matchStatusFilter !== 'all') setMatchStatusFilter('all')
+  }
 
   return (
     <div>
@@ -28,7 +72,7 @@ export default function MatchManager({ admin }) {
         </div>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
           {stageOptions.map(([value, label]) => (
-            <button key={value} onClick={() => setStageFilter(value)} className="btn btn-sm" style={{
+            <button key={value} onClick={() => selectStage(value)} className="btn btn-sm" style={{
               background: stageFilter === value ? 'var(--scottish-navy)' : 'var(--bg-card)',
               color: stageFilter === value ? 'white' : 'var(--text-secondary)',
               border: '1px solid var(--border-light)',
@@ -47,13 +91,16 @@ export default function MatchManager({ admin }) {
           <div style={{ fontSize: '28px', marginBottom: '8px' }}>⚠️</div>
           <div style={{ fontWeight: 900, marginBottom: '5px' }}>Fixtures did not load</div>
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>
-            The fixture query is now isolated from venue fields, so a venue schema change cannot blank this screen.
+            The fixture query is isolated from venue fields, so a venue schema change cannot blank this screen.
           </div>
           <button className="btn btn-primary" onClick={loadMatches}>Retry loading fixtures</button>
         </div>
       ) : filteredMatches.length === 0 ? (
         <div className="card" style={{ textAlign: 'center', padding: '28px 18px', color: 'var(--text-muted)' }}>
-          No fixtures match the selected filters.
+          <div style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '5px' }}>No fixtures match these filters</div>
+          <button className="btn btn-secondary btn-sm" onClick={() => { setMatchStatusFilter('all'); setMatchSearch('') }} style={{ marginTop: '8px' }}>
+            Show every {stageFilter === 'all' ? '' : stageOptions.find(([value]) => value === stageFilter)?.[1] || ''} fixture
+          </button>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: '10px' }}>
@@ -61,6 +108,7 @@ export default function MatchManager({ admin }) {
             const isEditing = editingMatch === match.id
             const s = scores[match.id] || { home: match.home_score ?? '', away: match.away_score ?? '' }
             const venueName = match.venue?.name || match.venue?.stadium_name || match.venue?.city || 'Venue not set'
+            const matchDef = MATCH_DEFS.get(Number(match.match_number))
             return (
               <div key={match.id} className="card" style={{ padding: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'flex-start' }}>
@@ -74,12 +122,18 @@ export default function MatchManager({ admin }) {
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '10px', alignItems: 'center', padding: '14px 0 12px' }}>
-                  <div style={{ textAlign: 'center' }}><div style={{ fontSize: '24px' }}>{match.home_team?.flag_emoji || '🏳️'}</div><b style={{ fontSize: '13px' }}>{match.home_team?.short_code || 'TBC'}</b></div>
+                  <div style={{ textAlign: 'center' }}><TeamOrSlot team={match.home_team} slot={matchDef?.home_slot} /></div>
                   <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 900, fontSize: '20px' }}>
                     {['live','completed'].includes(match.status) ? `${match.home_score ?? 0}–${match.away_score ?? 0}` : 'vs'}
                   </div>
-                  <div style={{ textAlign: 'center' }}><div style={{ fontSize: '24px' }}>{match.away_team?.flag_emoji || '🏳️'}</div><b style={{ fontSize: '13px' }}>{match.away_team?.short_code || 'TBC'}</b></div>
+                  <div style={{ textAlign: 'center' }}><TeamOrSlot team={match.away_team} slot={matchDef?.away_slot} /></div>
                 </div>
+
+                {!match.home_team && !match.away_team && matchDef && (
+                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', margin: '-5px 0 10px' }}>
+                    Teams will replace these bracket slots automatically when confirmed.
+                  </div>
+                )}
 
                 {isEditing && (
                   <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '10px', background: 'var(--bg-secondary)', borderRadius: '10px', marginBottom: '10px' }}>
