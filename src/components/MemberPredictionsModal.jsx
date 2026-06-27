@@ -355,9 +355,20 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
     return { colour: 'var(--text-muted)', bg: 'var(--bg-secondary)', border: 'var(--border-light)' }
   }
 
+  const activeStageIndex = availableStages.findIndex(stage => stage.key === activeStage.key)
+  const previousStage = activeStageIndex > 0 ? availableStages[activeStageIndex - 1] : null
+  const nextStage = activeStageIndex < availableStages.length - 1 ? availableStages[activeStageIndex + 1] : null
+
   return (
     <div>
-      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '3px', marginBottom: '12px', scrollbarWidth: 'none' }}>
+      <div style={{
+        position: 'sticky', top: '-12px', zIndex: 8,
+        display: 'flex', gap: '6px', overflowX: 'auto',
+        margin: '-12px -12px 12px', padding: '10px 12px 9px',
+        background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)',
+        boxShadow: '0 4px 10px rgba(4,14,31,0.05)',
+        scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
+      }}>
         {availableStages.map(stage => (
           <button
             key={stage.key}
@@ -430,6 +441,46 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
           )
         })}
       </div>
+
+      <nav style={{
+        display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '8px',
+        marginTop: '14px', padding: '10px', borderRadius: '13px',
+        background: 'var(--bg-card)', border: '1px solid var(--border-light)',
+        boxShadow: '0 -2px 10px rgba(4,14,31,0.04)',
+      }}>
+        <button
+          type="button"
+          disabled={!previousStage}
+          onClick={() => previousStage && setActiveStageKey(previousStage.key)}
+          style={{
+            minHeight: '38px', padding: '8px 10px', borderRadius: '10px', cursor: previousStage ? 'pointer' : 'default',
+            border: '1px solid var(--border-light)', background: previousStage ? 'var(--bg-secondary)' : 'transparent',
+            color: previousStage ? 'var(--scottish-navy)' : 'var(--text-muted)', opacity: previousStage ? 1 : 0.45,
+            fontSize: '10px', fontWeight: '850', textAlign: 'left',
+          }}
+        >
+          {previousStage ? `← ${previousStage.label}` : '← Previous'}
+        </button>
+
+        <div style={{ textAlign: 'center', minWidth: '58px' }}>
+          <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: '750' }}>ROUND</div>
+          <div style={{ marginTop: '2px', fontSize: '11px', color: 'var(--text-primary)', fontWeight: '900' }}>{activeStage.label}</div>
+        </div>
+
+        <button
+          type="button"
+          disabled={!nextStage}
+          onClick={() => nextStage && setActiveStageKey(nextStage.key)}
+          style={{
+            minHeight: '38px', padding: '8px 10px', borderRadius: '10px', cursor: nextStage ? 'pointer' : 'default',
+            border: '1px solid var(--border-light)', background: nextStage ? 'var(--scottish-navy)' : 'transparent',
+            color: nextStage ? 'white' : 'var(--text-muted)', opacity: nextStage ? 1 : 0.45,
+            fontSize: '10px', fontWeight: '850', textAlign: 'right',
+          }}
+        >
+          {nextStage ? `${nextStage.label} →` : 'Next →'}
+        </button>
+      </nav>
     </div>
   )
 }
