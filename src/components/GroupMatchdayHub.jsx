@@ -302,14 +302,6 @@ function GroupMatchCard({ match, mode, prediction, groupMatches, predictionMap, 
         </div>
       </div>
 
-      <ScenarioGrid
-        match={match}
-        groupMatches={groupMatches}
-        predictionMap={predictionMap}
-        predictedTopTwo={predictedTopTwo}
-        mode={mode}
-      />
-
       <div style={{ display: 'grid', gridTemplateColumns: mode !== 'prematch' && rivalId ? '1fr 1fr' : '1fr', gap: '7px', padding: '0 14px 14px' }}>
         {mode === 'prematch' ? (
           <div
