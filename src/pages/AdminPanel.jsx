@@ -549,15 +549,40 @@ export default function AdminPanel() {
 
   const syncScoresNow = async () => {
     setSaving(prev => ({ ...prev, sync: true }))
+    setActionResult('Contacting football-data.org…')
     try {
       const data = await callAdminFunction('/.netlify/functions/sync-scores', { method: 'POST' })
-      setActionResult(`Sync complete — ${data.updated || 0} matches updated, ${data.pointsCalculated || 0} points calculated`)
-      await logAudit('MANUAL_SYNC', { updated: data.updated, pointsCalculated: data.pointsCalculated })
-      loadHealth()
+
+      if (data.disabled || data.skipped) {
+        setActionResult(`Sync not run — ${data.message || 'Live API is disabled in Settings.'}`)
+        return
+      }
+
+      const parts = [
+        `${data.updated || 0} matches updated`,
+        `${data.pointsCalculated || 0} points calculated`,
+      ]
+      if (data.fixturesPopulated) parts.push(`${data.fixturesPopulated} KO fixtures populated`)
+      if (data.standingsSynced) parts.push('standings synced')
+
+      const warnings = Array.isArray(data.errors) && data.errors.length
+        ? ` · Warnings: ${data.errors.slice(0, 3).join(' | ')}`
+        : ''
+
+      setActionResult(`✅ Sync complete — ${parts.join(', ')}${warnings}`)
+      await logAudit('MANUAL_SYNC', {
+        updated: data.updated,
+        pointsCalculated: data.pointsCalculated,
+        fixturesPopulated: data.fixturesPopulated,
+        standingsSynced: data.standingsSynced,
+        errors: data.errors || [],
+      })
+      await Promise.all([loadHealth(), loadMatches()])
     } catch (e) {
-      setActionResult(`Sync error: ${e.message}`)
+      setActionResult(`❌ Sync failed — ${e.message}`)
+    } finally {
+      setSaving(prev => ({ ...prev, sync: false }))
     }
-    setSaving(prev => ({ ...prev, sync: false }))
   }
 
   const prepopulateMatchIds = async () => {

@@ -121,6 +121,23 @@ const inferOrientation = (ourMatch, apiMatch) => {
   return { matches: false, reversed: false }
 }
 
+const getFootballDataKey = () =>
+  process.env.FOOTBALL_DATA_KEY ||
+  process.env.FOOTBALL_API_KEY ||
+  process.env.API_FOOTBALL_KEY ||
+  process.env.VITE_FOOTBALL_DATA_KEY ||
+  ''
+
+async function providerError(response) {
+  const body = await response.text().catch(() => '')
+  let detail = body
+  try {
+    const parsed = JSON.parse(body)
+    detail = parsed.message || parsed.error || body
+  } catch (_) {}
+  return `football-data.org returned ${response.status}${detail ? `: ${String(detail).slice(0, 240)}` : ''}`
+}
+
 export const handler = async (event) => {
   const auth = await requireAdmin(event)
   if (!auth.ok) return auth.response
@@ -136,16 +153,30 @@ export const handler = async (event) => {
     .single()
 
   if (settings?.value !== 'true') {
-    return { statusCode: 200, body: JSON.stringify({ message: 'Live API disabled' }) }
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        message: 'Live score API is disabled in Admin → Settings.',
+        disabled: true,
+        skipped: true,
+      }),
+    }
   }
 
   try {
+    const footballDataKey = getFootballDataKey()
+    if (!footballDataKey) {
+      throw new Error(
+        'No football-data.org key is configured. Add FOOTBALL_DATA_KEY to the Netlify Production environment and redeploy.'
+      )
+    }
+
     const response = await fetch(
       'https://api.football-data.org/v4/competitions/WC/matches?season=2026',
-      { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY, 'X-Api-Version': 'v4.1' } }
+      { headers: { 'X-Auth-Token': footballDataKey, 'X-Api-Version': 'v4.1' } }
     )
 
-    if (!response.ok) throw new Error(`API error: ${response.status}`)
+    if (!response.ok) throw new Error(await providerError(response))
 
     const data = await response.json()
     const matches = data.matches || []
@@ -499,11 +530,21 @@ export const handler = async (event) => {
     if (updated > 0) {
       try {
         const siteUrl = process.env.URL || 'https://wc26predictor1.netlify.app'
+        const authHeader = event.headers?.authorization || event.headers?.Authorization
+        const standingsHeaders = { 'Content-Type': 'application/json' }
+        if (authHeader) standingsHeaders.Authorization = authHeader
+        if (process.env.ADMIN_FUNCTION_SECRET) {
+          standingsHeaders['x-admin-secret'] = process.env.ADMIN_FUNCTION_SECRET
+        }
+
         const standingsResponse = await fetch(`${siteUrl}/.netlify/functions/sync-standings`, {
           method: 'POST',
-          headers: { 'x-admin-secret': process.env.ADMIN_FUNCTION_SECRET }
+          headers: standingsHeaders,
         })
-        if (!standingsResponse.ok) throw new Error(`HTTP ${standingsResponse.status}`)
+        if (!standingsResponse.ok) {
+          const detail = await standingsResponse.text().catch(() => '')
+          throw new Error(`HTTP ${standingsResponse.status}${detail ? `: ${detail.slice(0, 180)}` : ''}`)
+        }
         standingsSynced = true
       } catch(e) { errors.push(`Standings auto-sync failed: ${e.message}`) }
     }
@@ -518,7 +559,7 @@ export const handler = async (event) => {
       }
     }
 
-    return { statusCode: 200, body: JSON.stringify({ message: 'Sync complete', updated, pointsCalculated, fixturesPopulated, errors }) }
+    return { statusCode: 200, body: JSON.stringify({ message: 'Sync complete', updated, pointsCalculated, fixturesPopulated, standingsSynced, errors }) }
   } catch (error) {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
   }

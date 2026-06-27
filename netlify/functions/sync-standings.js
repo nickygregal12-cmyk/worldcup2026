@@ -23,6 +23,23 @@ const API_TO_DB = {
 
 const normalise = (name) => API_TO_DB[name] || name
 
+const getFootballDataKey = () =>
+  process.env.FOOTBALL_DATA_KEY ||
+  process.env.FOOTBALL_API_KEY ||
+  process.env.API_FOOTBALL_KEY ||
+  process.env.VITE_FOOTBALL_DATA_KEY ||
+  ''
+
+async function providerError(response) {
+  const body = await response.text().catch(() => '')
+  let detail = body
+  try {
+    const parsed = JSON.parse(body)
+    detail = parsed.message || parsed.error || body
+  } catch (_) {}
+  return `football-data.org returned ${response.status}${detail ? `: ${String(detail).slice(0, 240)}` : ''}`
+}
+
 export const handler = async (event, context) => {
   const auth = await requireAdmin(event)
   if (!auth.ok) return auth.response
@@ -32,12 +49,19 @@ export const handler = async (event, context) => {
   }
 
   try {
+    const footballDataKey = getFootballDataKey()
+    if (!footballDataKey) {
+      throw new Error(
+        'No football-data.org key is configured. Add FOOTBALL_DATA_KEY to the Netlify Production environment and redeploy.'
+      )
+    }
+
     const response = await fetch(
       'https://api.football-data.org/v4/competitions/WC/standings?season=2026',
-      { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY } }
+      { headers: { 'X-Auth-Token': footballDataKey, 'X-Api-Version': 'v4.1' } }
     )
 
-    if (!response.ok) throw new Error(`API error: ${response.status}`)
+    if (!response.ok) throw new Error(await providerError(response))
 
     const data = await response.json()
     const allStandings = data.standings || []
