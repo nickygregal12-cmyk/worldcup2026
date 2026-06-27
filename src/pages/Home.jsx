@@ -76,7 +76,7 @@ function useCountdown(targetDate) {
 }
 
 // ── Smart CTA logic ──────────────────────────────────────────────────────────
-function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, koLive) {
+function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, koLive, koCompleted = 0, koAvailable = 0) {
   if (!user) return { label: '🏆 Start predicting free', to: '/register', secondary: { label: 'How does it work?', to: '/how-to-play' } }
 
   const groupsDone    = predictionCount >= 72
@@ -94,7 +94,20 @@ function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupSta
   }
 
   if (koLive) {
-    return { label: '🔥 Play KO Predictor', to: '/ko-predictor' }
+    const available = Math.max(0, koAvailable)
+    const completed = Math.min(Math.max(0, koCompleted), available)
+    const remaining = Math.max(0, available - completed)
+
+    if (available === 0) {
+      return { label: '🔥 KO Predictor coming soon', to: '/ko-predictor' }
+    }
+    if (completed === 0) {
+      return { label: '🔥 Play KO Predictor', to: '/ko-predictor' }
+    }
+    if (remaining > 0) {
+      return { label: `🔥 Continue KO Predictor · ${remaining} left`, to: '/ko-predictor' }
+    }
+    return { label: '🔥 View KO Predictions', to: '/ko-predictor' }
   }
 
   if (!groupStageDone) {
@@ -116,6 +129,7 @@ export default function Home() {
   const [topPredictors, setTopPredictors] = useState([])
   const [predictionCount, setPredictionCount] = useState(0)
   const [knockoutPickCount, setKnockoutPickCount] = useState(0)
+  const [koAvailableCount, setKoAvailableCount] = useState(0)
   const [koOpenByData, setKoOpenByData] = useState(false) // true once first R32 match (M73) has both real teams
   const [awardPickCount, setAwardPickCount] = useState(0)
   const [jokerAssignedCount, setJokerAssignedCount] = useState(0)
@@ -434,6 +448,7 @@ export default function Home() {
           groupCountRes,
           jokerCountRes,
           knockoutCountRes,
+          koAvailableRes,
           awardCountRes,
           totalGoalsRes,
         ] = await Promise.all([
@@ -451,6 +466,11 @@ export default function Home() {
             .select('match_number', { count: 'exact', head: true })
             .eq('user_id', user.id)
             .not('winner_team_id', 'is', null),
+          supabase.from('matches')
+            .select('id', { count: 'exact', head: true })
+            .in('stage', ['r32', 'r16', 'qf', 'sf', 'final'])
+            .not('home_team_id', 'is', null)
+            .not('away_team_id', 'is', null),
           supabase.from('award_predictions')
             .select('award_type', { count: 'exact', head: true })
             .eq('user_id', user.id),
@@ -467,11 +487,13 @@ export default function Home() {
         const groupCount = groupCountRes.count || 0
         const jokerCount = jokerCountRes.count || 0
         const koCount = knockoutCountRes.count || 0
+        const availableKoCount = koAvailableRes.count || 0
         const awardsCount = (awardCountRes.count || 0) + (totalGoalsRes.count || 0)
 
         setPredictionCount(groupCount)
         setJokerAssignedCount(Math.min(8, jokerCount))
         setKnockoutPickCount(koCount)
+        setKoAvailableCount(availableKoCount)
         setAwardPickCount(awardsCount)
 
         // Repair cached profile counters used by other screens, but keep Home based on live counts above.
@@ -497,6 +519,7 @@ export default function Home() {
         setPredictionCount(0)
         setJokerAssignedCount(0)
         setKnockoutPickCount(0)
+        setKoAvailableCount(0)
         setAwardPickCount(0)
         setLeaderPosition(null)
       }
@@ -514,7 +537,7 @@ export default function Home() {
       ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...tz }) + ' BST'
   }
 
-  const cta = getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, knockoutLive)
+  const cta = getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, knockoutLive, knockoutPickCount, koAvailableCount)
 
   const groupsComplete = predictionCount >= 72
   const knockoutsComplete = knockoutPickCount >= REQUIRED_KNOCKOUT_PICKS
@@ -707,9 +730,17 @@ export default function Home() {
   // Bracket "done" uses the live count from knockout_picks. Note: the Knockout
   // page itself does full matchup-validity checking and will flag/reprompt any
   // stale picks there — Home links straight to it.
+  const koProgressDone = Math.min(knockoutPickCount, koAvailableCount)
+  const koProgressRemaining = Math.max(0, koAvailableCount - koProgressDone)
+  const koProgressLabel = koAvailableCount > 0 && koProgressRemaining === 0
+    ? 'KO Picks'
+    : 'KO Predictor'
+
   const progressItems = user ? [
     { label: 'Groups', done: Math.min(predictionCount, 72), total: 72, to: '/predictions' },
-    { label: 'Bracket', done: knockoutPickCount, total: REQUIRED_KNOCKOUT_PICKS, to: '/knockout' },
+    knockoutLive && koAvailableCount > 0
+      ? { label: koProgressLabel, done: koProgressDone, total: koAvailableCount, to: '/ko-predictor' }
+      : { label: 'Bracket', done: knockoutPickCount, total: REQUIRED_KNOCKOUT_PICKS, to: '/knockout' },
     { label: 'Awards', done: awardPickCount, total: 4, to: '/awards' },
   ] : []
 
@@ -856,7 +887,7 @@ export default function Home() {
           {!loading && user && progressItems.length > 0 && (
             <div style={{ marginTop: '24px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
               {progressItems.map(({ label, done, total, to }) => {
-                const pct = Math.round((done / total) * 100)
+                const pct = total > 0 ? Math.round((done / total) * 100) : 0
                 const complete = done >= total
                 return (
                   <Link key={label} to={to} style={{ textDecoration: 'none', flex: 1, maxWidth: '120px' }}>
@@ -911,19 +942,6 @@ export default function Home() {
           {/* ── Knockout matchday hub: team-based bracket impact + separate KO picks ── */}
           {!loading && user && groupStageDone && knockoutLive && (
             <KnockoutMatchdayHub user={user} profile={profile} />
-          )}
-
-          {/* Tournament Pulse stays discoverable in both Home states.
-              It is compact beneath an active matchday hub and fuller when Home is quiet. */}
-          {!loading && (
-            <TournamentPulsePreview
-              compact={Boolean(
-                user && (
-                  (tournamentStarted && !groupStageDone && liveMatches.length > 0) ||
-                  (groupStageDone && knockoutLive)
-                )
-              )}
-            />
           )}
 
           {/* ── Existing countdown card before kickoff; public live card for signed-out visitors ── */}
@@ -1057,6 +1075,19 @@ export default function Home() {
                 </>
               ) : null}
             </div>
+          )}
+
+          {/* Tournament Pulse sits directly below the next-match/live-match card.
+              It stays compact while a matchday hub is active and fuller when Home is quiet. */}
+          {!loading && (
+            <TournamentPulsePreview
+              compact={Boolean(
+                user && (
+                  (tournamentStarted && !groupStageDone && liveMatches.length > 0) ||
+                  (groupStageDone && knockoutLive)
+                )
+              )}
+            />
           )}
 
           {/* ── League picks for live match ── */}
@@ -1480,46 +1511,46 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Knockout Predictor Banner — clickable once KO Predictor is open ── */}
-          {showKnockoutBanner && (
-            knockoutLive ? (
-              <Link to="/ko-predictor" style={{
-                background: 'linear-gradient(135deg, #e65100, #ff9800)',
-                borderRadius: 'var(--radius-lg)', padding: '16px 20px',
-                border: '1px solid rgba(255,152,0,0.5)', textDecoration: 'none',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
-              }}>
+          {/* ── KO Predictor progress — based only on matches with both teams confirmed ── */}
+          {showKnockoutBanner && knockoutLive && koAvailableCount > 0 && (
+            <Link to="/ko-predictor" style={{
+              background: 'linear-gradient(135deg, #e65100, #ff9800)',
+              borderRadius: 'var(--radius-lg)', padding: '14px 16px',
+              border: '1px solid rgba(255,152,0,0.5)', textDecoration: 'none',
+              display: 'block',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '9px' }}>
                 <div>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', marginBottom: '2px' }}>
-                    🔥 KO Predictor is LIVE!
+                  <div style={{ fontSize: '11px', fontWeight: '900', color: 'rgba(255,255,255,0.78)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    🔥 KO Predictor
                   </div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.85)' }}>
-                    Your Second Chance — predict the real knockout matches as they're confirmed
+                  <div style={{ fontSize: '14px', fontWeight: '900', color: 'white', marginTop: '3px' }}>
+                    {koProgressDone} / {koAvailableCount} picks complete
                   </div>
                 </div>
                 <span style={{
-                  background: 'white', color: '#e65100', padding: '8px 14px',
-                  borderRadius: 'var(--radius-full)', fontSize: '12px', fontWeight: '800',
+                  background: 'white', color: '#e65100', padding: '7px 11px',
+                  borderRadius: 'var(--radius-full)', fontSize: '11px', fontWeight: '900',
                   whiteSpace: 'nowrap', flexShrink: 0,
-                }}>Play now →</span>
-              </Link>
-            ) : (
-              <div style={{
-                background: 'linear-gradient(135deg, #1a0800, #2a1400)',
-                borderRadius: 'var(--radius-lg)', padding: '16px 20px',
-                border: '1px solid rgba(230,81,0,0.3)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px',
-              }}>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: '800', color: '#ff9800', marginBottom: '2px' }}>
-                    🔥 KO Predictor — coming soon
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'rgba(255,152,0,0.6)' }}>
-                    Opens when the first Round of 32 teams are confirmed — fresh start, separate leaderboard
-                  </div>
-                </div>
+                }}>
+                  {koProgressRemaining === 0 ? 'View picks →' : koProgressDone === 0 ? 'Play now →' : 'Continue →'}
+                </span>
               </div>
-            )
+              <div style={{ height: '5px', background: 'rgba(255,255,255,0.24)', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${koAvailableCount ? Math.round((koProgressDone / koAvailableCount) * 100) : 0}%`,
+                  background: koProgressRemaining === 0 ? '#4ade80' : 'white',
+                  borderRadius: '999px',
+                  transition: 'width 0.35s ease',
+                }} />
+              </div>
+              <div style={{ fontSize: '10.5px', color: 'rgba(255,255,255,0.82)', marginTop: '7px' }}>
+                {koProgressRemaining === 0
+                  ? `All ${koAvailableCount} currently available matches completed`
+                  : `${koProgressRemaining} pick${koProgressRemaining === 1 ? '' : 's'} remaining from confirmed fixtures`}
+              </div>
+            </Link>
           )}
 
           {/* ── First-time guidance ── */}
@@ -1630,7 +1661,7 @@ export default function Home() {
               </div>
 
               {/* KO stats — only show once live */}
-              {knockoutLive && (
+              {knockoutLive && ((profile.ko_points || 0) > 0 || (profile.ko_streak_current || 0) > 0 || (profile.ko_exact_scores || 0) > 0) && (
                 <>
                   <div style={{ height: '1px', background: 'var(--border-light)', margin: '4px 0 12px' }} />
                   <div style={{ fontSize: '11px', fontWeight: '700', color: '#e65100', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>
