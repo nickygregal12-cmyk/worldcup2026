@@ -1,6 +1,6 @@
 import { supabase } from './supabase.js'
 
-const CACHE_KEY = 'wc26_tournament_pulse_v2'
+const CACHE_KEY = 'wc26_tournament_pulse_v3'
 const CACHE_MS = 5 * 60 * 1000
 
 async function fetchAllRows(table, select, configure) {
@@ -78,6 +78,11 @@ export async function loadTournamentPulse({ force = false } = {}) {
 
   const profileMap = Object.fromEntries(profiles.map(p => [p.id, p]))
   const matchMap = Object.fromEntries(matches.map(m => [m.id, m]))
+  const teamMap = {}
+  matches.forEach(m => {
+    if (m.home_team_id && m.home_team) teamMap[m.home_team_id] = m.home_team
+    if (m.away_team_id && m.away_team) teamMap[m.away_team_id] = m.away_team
+  })
   const now = Date.now()
 
   const totalUsers = profiles.length
@@ -140,6 +145,21 @@ export async function loadTournamentPulse({ force = false } = {}) {
     return Math.sign(p.home_score - p.away_score) === Math.sign(m.home_score - m.away_score)
   })
   const communityAccuracy = pct(correctResultRows.length, completedPredictionRows.length)
+
+  // Group-stage difficulty: compare the community's correct-result rate by group.
+  const groupAccuracyMap = {}
+  completedPredictionRows.forEach(p => {
+    const m = matchMap[p.match_id]
+    const groupName = m?.group?.name
+    if (!groupName) return
+    const row = (groupAccuracyMap[groupName] ||= { correct: 0, total: 0 })
+    row.total += 1
+    if (Math.sign(p.home_score - p.away_score) === Math.sign(m.home_score - m.away_score)) row.correct += 1
+  })
+  const groupAccuracy = Object.entries(groupAccuracyMap)
+    .map(([group, row]) => ({ group, accuracy: pct(row.correct, row.total), total: row.total }))
+    .filter(row => row.total > 0)
+    .sort((a, b) => b.accuracy - a.accuracy)
 
   const upsets = completedMatches
     .filter(m => matchPredMap[m.id]?.total >= 5)
@@ -240,6 +260,26 @@ export async function loadTournamentPulse({ force = false } = {}) {
     return top ? { name: safeName(profileMap[top.userId]), value: top.value } : null
   }
 
+  // Before knockout results arrive, champion trends are more useful than empty
+  // bracket records. A final-stage pick represents the predicted tournament winner.
+  const championCounts = {}
+  knockoutPicks.forEach(p => {
+    if (p.stage !== 'final' || !p.winner_team_id) return
+    championCounts[p.winner_team_id] = (championCounts[p.winner_team_id] || 0) + 1
+  })
+  const championPicks = Object.entries(championCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([teamId, count]) => ({
+      teamId,
+      count,
+      pct: pct(count, Object.values(championCounts).reduce((sum, value) => sum + value, 0)),
+      team: teamMap[teamId] || null,
+    }))
+
+  const completedR32Matches = completedMatches.filter(m => m.stage === 'r32').length
+  const bracketRaceVisible = completedR32Matches > 0
+
   const records = {
     topScore: makeLeader(profiles, 'total_points'),
     exact: leaderFromMap(exactByUser, profileMap) || makeLeader(profiles, 'exact_scores'),
@@ -269,6 +309,12 @@ export async function loadTournamentPulse({ force = false } = {}) {
     communityAccuracy,
     completedMatches: completedMatches.length,
     tournamentGoals: completedMatches.reduce((sum, m) => sum + (m.home_score || 0) + (m.away_score || 0), 0),
+    completedR32Matches,
+    bracketRaceVisible,
+    championPicks,
+    groupAccuracy,
+    easiestGroup: groupAccuracy[0] || null,
+    toughestGroup: groupAccuracy[groupAccuracy.length - 1] || null,
     topScores,
     consensus,
     upsets,

@@ -46,7 +46,7 @@ export default function GlobalStats() {
           <div style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.11em', color: 'rgba(255,255,255,0.62)', fontWeight: 800, marginTop: '15px' }}>Tournament Pulse</div>
           <h1 style={{ fontSize: '28px', lineHeight: 1.1, margin: '6px 0 5px', fontWeight: 900 }}>The story of the predictor so far</h1>
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.72)', lineHeight: 1.5, maxWidth: '600px', margin: 0 }}>
-            Community trends, predictor records, bracket leaders and the calls nobody saw coming.
+            Community trends, predictor records and the calls nobody saw coming.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginTop: '16px' }}>
             <HeroStat value={stats.activeUsers} label="Predictors" />
@@ -73,20 +73,44 @@ export default function GlobalStats() {
           </div>
         </Section>
 
-        <Section title="Bracket race" sub="Who has correctly carried the most teams into each real knockout round.">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
-            <Record icon="32" value={stats.records.r16Teams?.value ?? 0} label="R16 teams right" name={stats.records.r16Teams?.name} />
-            <Record icon="16" value={stats.records.qfTeams?.value ?? 0} label="QF teams right" name={stats.records.qfTeams?.name} />
-            <Record icon="8" value={stats.records.sfTeams?.value ?? 0} label="SF teams right" name={stats.records.sfTeams?.name} />
-            <Record icon="4" value={stats.records.finalTeams?.value ?? 0} label="Finalists right" name={stats.records.finalTeams?.name} />
-          </div>
-          <div style={{ marginTop: '8px' }}>
-            <Record icon="🏆" value={stats.records.bracketPoints?.value ?? 0} label="Most bracket points so far" name={stats.records.bracketPoints?.name} wide />
-          </div>
-          <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '9px' }}>
-            Records only count rounds whose real teams have been confirmed. Values will grow as the tournament progresses.
-          </div>
-        </Section>
+        {stats.bracketRaceVisible ? (
+          <Section title="Bracket race" sub="Who has correctly carried the most teams into each completed knockout round.">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
+              <Record icon="32" value={stats.records.r16Teams?.value ?? 0} label="R16 teams right" name={stats.records.r16Teams?.name} />
+              {stats.records.qfTeams?.value > 0 && <Record icon="16" value={stats.records.qfTeams.value} label="QF teams right" name={stats.records.qfTeams.name} />}
+              {stats.records.sfTeams?.value > 0 && <Record icon="8" value={stats.records.sfTeams.value} label="SF teams right" name={stats.records.sfTeams.name} />}
+              {stats.records.finalTeams?.value > 0 && <Record icon="4" value={stats.records.finalTeams.value} label="Finalists right" name={stats.records.finalTeams.name} />}
+            </div>
+            <div style={{ marginTop: '8px' }}>
+              <Record icon="🏆" value={stats.records.bracketPoints?.value ?? 0} label="Most bracket points so far" name={stats.records.bracketPoints?.name} wide />
+            </div>
+            <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '9px' }}>
+              New round records appear only after that knockout round has produced real results.
+            </div>
+          </Section>
+        ) : (
+          <Section title="Pre-knockout trends" sub="The community's tournament favourites while the bracket race is still waiting for results.">
+            {stats.championPicks?.length ? (
+              <>
+                <div style={{ fontSize: '10px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '7px' }}>Most-backed champions</div>
+                {stats.championPicks.map((row, index) => (
+                  <div key={row.teamId} style={{ display: 'grid', gridTemplateColumns: '24px 1fr auto', gap: '10px', alignItems: 'center', padding: '9px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}>
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 900 }}>{index + 1}</span>
+                    <div style={{ fontSize: '12px', fontWeight: 850 }}>{row.team?.flag_emoji || '🏳️'} {row.team?.name || row.team?.short_code || 'Team'}</div>
+                    <div style={{ textAlign: 'right' }}><b style={{ fontSize: '12px' }}>{row.count} picks</b><div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{row.pct}%</div></div>
+                  </div>
+                ))}
+              </>
+            ) : <Empty text="Champion trends appear once tournament brackets are submitted." />}
+
+            {(stats.easiestGroup || stats.toughestGroup) && (
+              <div style={{ borderTop: '1px solid var(--border-light)', marginTop: '8px', paddingTop: '10px', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '8px' }}>
+                {stats.easiestGroup && <MiniInsight icon="✅" label="Most predictable group" value={`Group ${stats.easiestGroup.group}`} detail={`${stats.easiestGroup.accuracy}% correct`} />}
+                {stats.toughestGroup && <MiniInsight icon="🤯" label="Toughest group" value={`Group ${stats.toughestGroup.group}`} detail={`${stats.toughestGroup.accuracy}% correct`} />}
+              </div>
+            )}
+          </Section>
+        )}
 
         <Section title="Golden Boot race" sub="Actual scorers compared with every saved pre-tournament pick.">
           {stats.scorers.length ? stats.scorers.slice(0, 8).map((scorer, index) => {
@@ -210,6 +234,15 @@ function Record({ icon, value, label, name, wide = false }) {
 
 function TrendRow({ index, title, detail }) {
   return <div style={{ display: 'grid', gridTemplateColumns: '25px 1fr', gap: '9px', padding: '10px 0', borderTop: index ? '1px solid var(--border-light)' : 'none' }}><div style={{ color: 'var(--text-muted)', fontWeight: 900 }}>{index + 1}</div><div><div style={{ fontSize: '12px', fontWeight: 800 }}>{title}</div><div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '3px' }}>{detail}</div></div></div>
+}
+
+function MiniInsight({ icon, label, value, detail }) {
+  return <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '11px' }}>
+    <div style={{ fontSize: '18px' }}>{icon}</div>
+    <div style={{ fontSize: '8.5px', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '5px' }}>{label}</div>
+    <div style={{ fontSize: '13px', fontWeight: 900, marginTop: '4px' }}>{value}</div>
+    <div style={{ fontSize: '9px', color: 'var(--accent-gold-dark, #a9871f)', fontWeight: 800, marginTop: '3px' }}>{detail}</div>
+  </div>
 }
 
 function Empty({ text }) {
