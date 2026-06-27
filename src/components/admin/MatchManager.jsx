@@ -92,10 +92,10 @@ export default function MatchManager({ admin }) {
                 )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
-                  <button className="btn btn-primary btn-sm" onClick={() => setFixtureEditorMatch(match)}>Edit full fixture</button>
+                  <button className="btn btn-primary btn-sm" onClick={() => setFixtureEditorMatch(match)}>Edit match</button>
                   <button className="btn btn-secondary btn-sm" onClick={() => { setEditingMatch(isEditing ? null : match.id); setScores(prev => ({ ...prev, [match.id]: { home: match.home_score ?? '', away: match.away_score ?? '' } })) }}>{isEditing ? 'Close score' : 'Enter result'}</button>
                   <button className="btn btn-secondary btn-sm" onClick={() => setMatchLive(match)}>{match.status === 'live' ? 'Update live' : 'Mark live'}</button>
-                  {match.use_manual_override ? <button className="btn btn-secondary btn-sm" onClick={() => resetMatchOverride(match)}>Allow API updates</button> : <button className="btn btn-secondary btn-sm" onClick={() => setActionResult('Open Edit full fixture and enable manual override to protect the match from API changes.')}>API-managed</button>}
+                  {match.use_manual_override ? <button className="btn btn-secondary btn-sm" onClick={() => resetMatchOverride(match)}>Return to API control</button> : <button className="btn btn-secondary btn-sm" onClick={() => setFixtureEditorMatch(match)}>Set manual control</button>}
                 </div>
               </div>
             )
