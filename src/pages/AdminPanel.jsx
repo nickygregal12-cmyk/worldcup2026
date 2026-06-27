@@ -596,19 +596,33 @@ export default function AdminPanel() {
   }
 
   const loadMatches = async () => {
-    const { data } = await supabase
-      .from('matches')
-      .select('*, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code), group:group_id(name), venue:venue_id(id,name,stadium_name,city,country)')
-      .order('kickoff_time', { ascending: true })
-    // Attach group name from separate fetch since FK join may not be registered
-    const { data: groups } = await supabase.from('groups').select('id, name')
-    const groupMap = {}
-    groups?.forEach(g => { groupMap[g.id] = g.name })
-    const enriched = (data || []).map(m => ({
+    // Keep the main fixture query deliberately conservative. A missing/renamed
+    // venue column must never make the entire Matches workspace appear empty.
+    const [{ data: matchRows, error: matchError }, { data: groups }, { data: venues }] = await Promise.all([
+      supabase.from('matches')
+        .select('*, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
+        .order('kickoff_time', { ascending: true }),
+      supabase.from('groups').select('*'),
+      supabase.from('venues').select('*'),
+    ])
+
+    if (matchError) {
+      console.error('Admin matches failed to load:', matchError)
+      setActionResult(`Matches failed to load: ${matchError.message}`)
+      setMatches([])
+      return
+    }
+
+    const groupMap = Object.fromEntries((groups || []).map(g => [g.id, g]))
+    const venueMap = Object.fromEntries((venues || []).map(v => [v.id, v]))
+    setAllGroups(groups || [])
+    setAllVenues(venues || [])
+
+    setMatches((matchRows || []).map(m => ({
       ...m,
-      group: { name: groupMap[m.group_id] || m.group?.name || null }
-    }))
-    setMatches(enriched)
+      group: groupMap[m.group_id] || null,
+      venue: venueMap[m.venue_id] || null,
+    })))
   }
 
   const loadUsers = async () => {
@@ -1973,7 +1987,7 @@ export default function AdminPanel() {
            u.email?.toLowerCase().includes(q)
   })
   const filteredMatches = matches.filter(m => {
-    if (m.stage !== stageFilter) return false
+    if (stageFilter !== 'all' && m.stage !== stageFilter) return false
     if (matchStatusFilter !== 'all' && m.status !== matchStatusFilter) return false
     if (!matchSearch.trim()) return true
     const q = matchSearch.toLowerCase()
