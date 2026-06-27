@@ -21,6 +21,25 @@ const formatDate = (time) => new Date(time).toLocaleDateString('en-GB', {
   timeZone: 'Europe/London',
 })
 
+const VENUE_FLAGS = {
+  'Mexico City': '🇲🇽', Guadalajara: '🇲🇽', Monterrey: '🇲🇽',
+  Toronto: '🇨🇦', Vancouver: '🇨🇦',
+  'New York': '🇺🇸', 'New York/NJ': '🇺🇸', 'New Jersey': '🇺🇸', 'East Rutherford': '🇺🇸',
+  'Los Angeles': '🇺🇸', Dallas: '🇺🇸', Houston: '🇺🇸', 'San Francisco': '🇺🇸',
+  Seattle: '🇺🇸', Boston: '🇺🇸', Miami: '🇺🇸', Atlanta: '🇺🇸',
+  Philadelphia: '🇺🇸', 'Kansas City': '🇺🇸',
+}
+
+const venueFlag = (city = '') => VENUE_FLAGS[city] || '🏟️'
+
+const formatWeather = weather => {
+  if (!weather?.available) return null
+  const temp = weather.temp_c
+  const condition = weather.condition || ''
+  const icon = weather.icon || '🌤️'
+  return `${icon} ${Math.round(Number(temp))}°C${condition ? ` · ${condition}` : ''}`
+}
+
 const effectiveStatus = (match, now = new Date()) => {
   if (match?.status === 'live' || match?.status === 'completed') return match.status
   const kickoff = match?.kickoff_time ? new Date(match.kickoff_time) : null
@@ -254,7 +273,7 @@ function ScenarioGrid({ match, groupMatches, predictionMap, predictedTopTwo, mod
   )
 }
 
-function GroupMatchCard({ match, mode, prediction, groupMatches, predictionMap, predictedTopTwo, leagueCode, rivalId }) {
+function GroupMatchCard({ match, mode, prediction, leagueCode, rivalId, weather }) {
   const hasScore = match.home_score != null && match.away_score != null
   const points = predictionPoints(prediction, match)
   const statusText = predictionStatus(prediction, match)
@@ -288,6 +307,14 @@ function GroupMatchCard({ match, mode, prediction, groupMatches, predictionMap, 
         <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>
           {formatDate(match.kickoff_time)} · {formatTime(match.kickoff_time)} BST
         </div>
+
+        {(match.venue?.name || match.venue?.city) && (
+          <div style={{ marginTop: '7px', display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '5px', color: 'var(--text-muted)', fontSize: '10px', fontWeight: 700 }}>
+            <span>{venueFlag(match.venue?.city)} {match.venue?.name || match.venue?.city}</span>
+            {match.venue?.name && match.venue?.city && <span>· {match.venue.city}</span>}
+            {formatWeather(weather) && <span>· {formatWeather(weather)}</span>}
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '10px 14px', borderTop: '1px solid var(--border-light)', background: 'var(--bg-secondary)' }}>
@@ -380,6 +407,7 @@ export default function GroupMatchdayHub({ user, profile }) {
   const [leagueMembers, setLeagueMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [matchWeather, setMatchWeather] = useState({})
 
   useEffect(() => {
     if (!user?.id) return undefined
@@ -390,7 +418,7 @@ export default function GroupMatchdayHub({ user, profile }) {
         setError('')
         const matchesRes = await supabase
           .from('matches')
-          .select('id, match_number, stage, status, kickoff_time, home_score, away_score, live_minute, injury_time, group_id, home_team_id, away_team_id, group:group_id(id,name), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
+          .select('id, match_number, stage, status, kickoff_time, home_score, away_score, live_minute, injury_time, group_id, venue_id, home_team_id, away_team_id, group:group_id(id,name), venue:venue_id(name,city), home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
           .eq('stage', 'group')
           .order('kickoff_time', { ascending: true })
         if (matchesRes.error) throw matchesRes.error
@@ -453,6 +481,24 @@ export default function GroupMatchdayHub({ user, profile }) {
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [user?.id])
+
+  useEffect(() => {
+    const relevant = chooseSlot(allMatches).matches || []
+    relevant.forEach(match => {
+      if (!match?.id || !match?.venue?.city || matchWeather[match.id]) return
+      const params = new URLSearchParams({
+        city: match.venue.city,
+        stadium: match.venue.name || '',
+        kickoff: match.kickoff_time,
+      })
+      fetch(`/.netlify/functions/weather?${params.toString()}`)
+        .then(response => response.ok ? response.json() : null)
+        .then(data => {
+          if (data?.available) setMatchWeather(current => ({ ...current, [match.id]: data }))
+        })
+        .catch(() => {})
+    })
+  }, [allMatches, matchWeather])
 
   const slot = useMemo(() => chooseSlot(allMatches), [allMatches])
   const predictionMap = useMemo(() => {
@@ -570,11 +616,9 @@ export default function GroupMatchdayHub({ user, profile }) {
             match={match}
             mode={slot.mode}
             prediction={predictionMap[match.id]}
-            groupMatches={groupMatchesByName[groupName] || []}
-            predictionMap={predictionMap}
-            predictedTopTwo={(predictedStandings[groupName] || []).slice(0, 2)}
             leagueCode={league?.invite_code}
             rivalId={closestRival?.user_id}
+            weather={matchWeather[match.id]}
           />
         )
       })}
