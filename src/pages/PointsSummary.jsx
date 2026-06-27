@@ -34,7 +34,7 @@ export default function PointsSummary() {
       supabase.from('profiles').select('id, username, display_name, avatar_emoji, total_points, group_position_points, bracket_points, exact_scores, streak_current').eq('id', uid).maybeSingle(),
       supabase.from('predictions').select('home_score, away_score, is_confident, points_awarded, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, home_team:home_team_id(short_code, flag_emoji), away_team:away_team_id(short_code, flag_emoji))').eq('user_id', uid),
       supabase.from('predicted_group_positions').select('group_name, predicted_position, points_awarded, team:team_id(short_code, flag_emoji)').eq('user_id', uid).order('group_name').order('predicted_position'),
-      supabase.from('matches').select('id, match_number, stage, status, home_score, away_score, home_team_id, away_team_id, group:group_id(name), home_team:home_team_id(short_code, flag_emoji), away_team:away_team_id(short_code, flag_emoji)').eq('stage', 'group'),
+      supabase.from('matches').select('id, match_number, stage, status, home_score, away_score, home_team_id, away_team_id, group:group_id(name), home_team:home_team_id(id, name, short_code, flag_emoji), away_team:away_team_id(id, name, short_code, flag_emoji)').eq('stage', 'group'),
       supabase.from('matches').select('home_team_id, away_team_id, group:group_id(name)').eq('stage', 'r32'),
       supabase.from('group_standings').select('team_id, position, played, group:group_id(name)').eq('played', 3).lte('position', 2),
     ])
@@ -98,16 +98,18 @@ export default function PointsSummary() {
     const seen = new Set()
     for (const [grp, arr] of Object.entries(standings)) {
       ;(arr || []).slice(0, 2).forEach((e, i) => {
-        if (e?.team?.id && !seen.has(e.team.id)) {
-          seen.add(e.team.id)
-          if (confirmed.has(e.team.id)) bl.push({ id: e.team.id, team: e.team, detail: `${i === 0 ? 'Won' : 'Runner-up'} Group ${grp} → R32`, kind: 'pos' })
+        const tid = e?.id
+        if (tid && !seen.has(tid)) {
+          seen.add(tid)
+          if (confirmed.has(tid)) bl.push({ id: tid, team: e.team || teamMeta[tid] || {}, detail: `${i === 0 ? 'Won' : 'Runner-up'} Group ${grp} → R32`, kind: 'pos' })
         }
       })
     }
     getBest3rdTeams(standings).slice(0, 8).forEach(t => {
-      if (t?.team?.id && !seen.has(t.team.id)) {
-        seen.add(t.team.id)
-        if (confirmed.has(t.team.id)) bl.push({ id: t.team.id, team: t.team, detail: `Best third (Group ${t.group}) → R32`, kind: '3rd' })
+      const tid = t?.id
+      if (tid && !seen.has(tid)) {
+        seen.add(tid)
+        if (confirmed.has(tid)) bl.push({ id: tid, team: t.team || teamMeta[tid] || {}, detail: `Best third (Group ${t.group}) → R32`, kind: '3rd' })
       }
     })
     setBracketLines(bl)

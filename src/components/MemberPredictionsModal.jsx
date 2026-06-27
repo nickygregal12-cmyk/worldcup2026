@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot, getBest3rdTeams } from '../lib/bracketUtils.js'
 
@@ -541,6 +542,7 @@ export function useMemberPredictions() {
 // ─── main modal component ────────────────────────────────────────────────────
 
 export default function MemberPredictionsModal({ memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, groupPositionBreakdown = [], currentUserId }) {
+  const navigate = useNavigate()
   const tournamentLive = new Date() >= TOURNAMENT_START
 
   if (!memberModal) return null
@@ -659,6 +661,13 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
                       </button>
                     ))}
                   </div>
+                )}
+
+                {totalPts > 0 && (
+                  <button onClick={() => { setMemberModal(null); navigate(`/points/${memberModal.userId}`) }}
+                    style={{ width: '100%', padding: '11px', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', fontWeight: '800', fontSize: '13px', cursor: 'pointer', marginTop: '2px' }}>
+                    📊 See full points breakdown →
+                  </button>
                 )}
 
                 <button onClick={() => setMemberModal(prev => ({ ...prev, tab: 'compare' }))} className="btn btn-primary btn-full" style={{ marginTop: '2px' }}>⚔️ Compare with me</button>
