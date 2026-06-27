@@ -182,17 +182,22 @@ export function calcPredictedStandings(matches, predictions, pureMode = false) {
     h2h[groupName][`${awayId}|${homeId}`] = aH2h
   }
 
-  // Sort each group: pts desc, gd desc, gf desc, then head-to-head between the
-  // two tied teams, then team id (stable) so every surface — and the scoring —
-  // agrees on positions even when a user's predictions leave teams level.
+  // Sort each group. In pureMode this must mirror the database scorer exactly:
+  // points, goal difference, goals scored, then team id.
   const standings = {}
   for (const [group, teams] of Object.entries(groups)) {
     const gh2h = h2h[group] || {}
-    standings[group] = Object.values(teams).sort((a, b) =>
-      b.pts - a.pts || b.gd - a.gd || b.gf - a.gf
-      || (gh2h[`${b.id}|${a.id}`] || 0) - (gh2h[`${a.id}|${b.id}`] || 0)
-      || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
-    )
+    standings[group] = Object.values(teams).sort((a, b) => {
+      const base = b.pts - a.pts || b.gd - a.gd || b.gf - a.gf
+      if (base) return base
+
+      if (!pureMode) {
+        const headToHead = (gh2h[`${b.id}|${a.id}`] || 0) - (gh2h[`${a.id}|${b.id}`] || 0)
+        if (headToHead) return headToHead
+      }
+
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+    })
   }
   return standings
 }
