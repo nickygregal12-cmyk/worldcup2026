@@ -55,19 +55,45 @@ const normaliseTeam = (name) => {
   return name
 }
 
-export const handler = async (event, context) => {
+const CACHE_TTL_MS = 5 * 60 * 1000
+let cache = { expiresAt: 0, body: null }
+
+const getAllowedOrigin = (event) => {
+  const requestOrigin = event.headers?.origin || event.headers?.Origin || ''
+  const configured = [process.env.URL, process.env.DEPLOY_PRIME_URL, process.env.SITE_URL]
+    .filter(Boolean)
+    .map(value => value.replace(/\/$/, ''))
+  if (!requestOrigin) return configured[0] || ''
+  return configured.includes(requestOrigin.replace(/\/$/, '')) ? requestOrigin : ''
+}
+
+export const handler = async (event) => {
+  const allowedOrigin = getAllowedOrigin(event)
   const headers = {
-    'Access-Control-Allow-Origin': '*',
+    ...(allowedOrigin ? { 'Access-Control-Allow-Origin': allowedOrigin, Vary: 'Origin' } : {}),
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
     'Content-Type': 'application/json',
+    'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600',
   }
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' }
   }
 
-  const apiKey = process.env.ODDS_API_KEY || process.env.VITE_ODDS_API_KEY
+  if (event.httpMethod !== 'GET') {
+    return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) }
+  }
+
+  if ((event.headers?.origin || event.headers?.Origin) && !allowedOrigin) {
+    return { statusCode: 403, headers, body: JSON.stringify({ error: 'Origin not allowed' }) }
+  }
+
+  if (cache.body && Date.now() < cache.expiresAt) {
+    return { statusCode: 200, headers: { ...headers, 'X-Cache': 'HIT' }, body: cache.body }
+  }
+
+  const apiKey = process.env.ODDS_API_KEY
   if (!apiKey) {
     return { statusCode: 500, headers, body: JSON.stringify({ error: 'Odds API key not configured' }) }
   }
@@ -129,8 +155,10 @@ export const handler = async (event, context) => {
       }
     }).filter(Boolean)
 
-    return { statusCode: 200, headers, body: JSON.stringify(transformed) }
+    const body = JSON.stringify(transformed)
+    cache = { body, expiresAt: Date.now() + CACHE_TTL_MS }
+    return { statusCode: 200, headers: { ...headers, 'X-Cache': 'MISS' }, body }
   } catch (error) {
-    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) }
+    return { statusCode: 500, headers, body: JSON.stringify({ error: 'Odds service temporarily unavailable' }) }
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore, useAppStore } from './store/index.js'
 import { supabase } from './lib/supabase.js'
 
@@ -48,6 +48,10 @@ export default function App() {
   const { initialize, isLoading, profile, user } = useAuthStore()
   const { darkMode, loadAppSettings } = useAppStore()
   const [showAdminMsg, setShowAdminMsg] = useState(true)
+  const location = useLocation()
+  const isAuthPage = ['/login', '/register', '/reset-password', '/auth/callback', '/claim'].some(
+    route => location.pathname === route || location.pathname.startsWith(`${route}/`)
+  )
 
   useEffect(() => { initialize() }, [])
   useEffect(() => { loadAppSettings() }, [])
@@ -98,7 +102,7 @@ export default function App() {
         </div>
       )}
       <NavBar />
-      <main className="main-content">
+      <main className={`main-content${isAuthPage ? ' auth-page' : ''}`}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />

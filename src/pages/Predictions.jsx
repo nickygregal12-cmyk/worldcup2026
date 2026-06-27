@@ -1675,10 +1675,11 @@ export default function Predictions() {
                 <>
                   <div className="score-pair">
                     {!effectiveLocked && (
-                      <button type="button" className="stepper-btn" onClick={() => bumpScore(match, 'home', 1)}>+</button>
+                      <button type="button" className="stepper-btn" aria-label={`Increase ${match.home_team?.name || 'home team'} predicted score`} onClick={() => bumpScore(match, 'home', 1)}>+</button>
                     )}
                     <input type="text" inputMode="numeric" pattern="[0-9]*" className={`score-input ${saved[match.id] ? 'just-saved' : ''}`}
                       ref={el => { if (el) inputRefs.current[`${match.id}-home`] = el }}
+                      aria-label={`${match.home_team?.name || 'Home team'} predicted score`}
                       value={pred.home ?? ''}
                       onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
                       onInput={e => handleScoreChange(match.id, 'home', e.target.value)}
@@ -1686,16 +1687,17 @@ export default function Predictions() {
                       disabled={effectiveLocked} placeholder="?"
                     />
                     {!effectiveLocked && (
-                      <button type="button" className="stepper-btn" onClick={() => bumpScore(match, 'home', -1)}>−</button>
+                      <button type="button" className="stepper-btn" aria-label={`Decrease ${match.home_team?.name || 'home team'} predicted score`} onClick={() => bumpScore(match, 'home', -1)}>−</button>
                     )}
                   </div>
                   <span style={{ fontSize: '20px', color: 'var(--text-muted)', fontWeight: '300', fontFamily: 'var(--font-mono)' }}>–</span>
                   <div className="score-pair">
                     {!effectiveLocked && (
-                      <button type="button" className="stepper-btn" onClick={() => bumpScore(match, 'away', 1)}>+</button>
+                      <button type="button" className="stepper-btn" aria-label={`Increase ${match.away_team?.name || 'away team'} predicted score`} onClick={() => bumpScore(match, 'away', 1)}>+</button>
                     )}
                     <input type="text" inputMode="numeric" pattern="[0-9]*" className={`score-input ${saved[match.id] ? 'just-saved' : ''}`}
                       ref={el => { if (el) inputRefs.current[`${match.id}-away`] = el }}
+                      aria-label={`${match.away_team?.name || 'Away team'} predicted score`}
                       value={pred.away ?? ''}
                       onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
                       onInput={e => handleScoreChange(match.id, 'away', e.target.value)}
@@ -1703,7 +1705,7 @@ export default function Predictions() {
                       disabled={effectiveLocked} placeholder="?"
                     />
                     {!effectiveLocked && (
-                      <button type="button" className="stepper-btn" onClick={() => bumpScore(match, 'away', -1)}>−</button>
+                      <button type="button" className="stepper-btn" aria-label={`Decrease ${match.away_team?.name || 'away team'} predicted score`} onClick={() => bumpScore(match, 'away', -1)}>−</button>
                     )}
                   </div>
                 </>

@@ -63,6 +63,11 @@ export default function BottomNav() {
   const location = useLocation()
   const { user } = useAuthStore()
   const { appSettings } = useAppStore()
+
+  const hiddenRoutes = ['/login', '/register', '/reset-password', '/auth/callback', '/claim']
+  if (hiddenRoutes.some(route => location.pathname === route || location.pathname.startsWith(`${route}/`))) {
+    return null
+  }
   const phaseOverride = appSettings?.game_phase_override || ''
   const koLive = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
     ? true
@@ -90,8 +95,8 @@ export default function BottomNav() {
       position: 'fixed',
       bottom: 0, left: 0, right: 0,
       background: 'transparent',
-      padding: '8px 12px',
-      paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 8px), 16px)',
+      padding: '6px 10px',
+      paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 6px), 10px)',
       zIndex: 100,
       pointerEvents: 'none', // let the pill handle clicks
     }}>
@@ -100,11 +105,12 @@ export default function BottomNav() {
         background: 'rgba(0,20,70,0.88)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        borderRadius: '28px',
+        borderRadius: '24px',
         display: 'flex',
         justifyContent: 'space-around',
         alignItems: 'center',
-        padding: '8px 4px',
+        minHeight: '68px',
+        padding: '5px 4px',
         boxShadow: '0 8px 32px rgba(0,20,80,0.4), inset 0 1px 0 rgba(255,255,255,0.08)',
         border: '1px solid rgba(255,255,255,0.1)',
         pointerEvents: 'all',
@@ -126,13 +132,15 @@ export default function BottomNav() {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '3px',
-                padding: '6px 10px',
-                borderRadius: '18px',
+                gap: '2px',
+                padding: '5px 8px',
+                borderRadius: '15px',
                 background: isActive
                   ? (highlight ? 'rgba(255,112,67,0.18)' : 'rgba(255,255,255,0.12)')
                   : 'transparent',
-                minWidth: '52px',
+                minWidth: '48px',
+                minHeight: '54px',
+                justifyContent: 'center',
                 transition: 'all 0.18s ease',
                 color: isActive ? activeColor : 'rgba(255,255,255,0.4)',
                 textDecoration: 'none',

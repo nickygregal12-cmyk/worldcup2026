@@ -304,7 +304,11 @@ export default function KOPredictor() {
 
   const stageMatches = matches.filter(m => m.stage === activeStage && isConfirmed(m)).sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
   const stagePending = matches.filter(m => m.stage === activeStage && !isConfirmed(m)).length
-  const confirmedTotal = matches.filter(isConfirmed).length
+  const confirmedMatches = matches.filter(isConfirmed)
+  const confirmedTotal = confirmedMatches.length
+  const confirmedPredCount = confirmedMatches.filter(
+    match => predictions[match.id]?.home !== undefined && predictions[match.id]?.home !== ''
+  ).length
   const getPredCount = (stage) => {
     const sm = matches.filter(m => m.stage === stage && isConfirmed(m))
     return sm.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
@@ -417,6 +421,7 @@ export default function KOPredictor() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <input type="number" className="score-input" min="0" max="99"
+              aria-label={`${match.home_team?.name || 'Home team'} predicted score after 90 minutes`}
               value={pred.home ?? ''} placeholder="?"
               onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
               onBlur={() => handleScoreBlur(match, 'home')}
@@ -425,6 +430,7 @@ export default function KOPredictor() {
             />
             <span className="score-divider">–</span>
             <input type="number" className="score-input" min="0" max="99"
+              aria-label={`${match.away_team?.name || 'Away team'} predicted score after 90 minutes`}
               value={pred.away ?? ''} placeholder="?"
               onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
               onBlur={() => handleScoreBlur(match, 'away')}
@@ -691,7 +697,7 @@ export default function KOPredictor() {
                 🃏 {jokersRemaining} left
               </div>
               <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>
-                {Object.keys(predictions).length} / {confirmedTotal}
+                {Math.min(confirmedPredCount, confirmedTotal)} / {confirmedTotal}
               </span>
             </div>
           </div>

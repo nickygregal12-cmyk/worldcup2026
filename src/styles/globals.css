@@ -1096,3 +1096,65 @@ button:disabled:active {
 .input:focus, .score-input:focus {
   box-shadow: 0 0 0 3px rgba(0, 48, 135, 0.12);
 }
+
+/* ============================================================
+   Phase 1 mobile shell, safe-area and contrast fixes
+   ============================================================ */
+html {
+  scroll-padding-top: calc(var(--nav-height) + 12px);
+}
+
+.main-content.auth-page {
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 767px) {
+  :root {
+    --bottom-nav-height: 84px;
+  }
+
+  .main-content:not(.auth-page) {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 28px);
+  }
+
+  .main-content > * {
+    scroll-margin-top: calc(var(--nav-height) + 12px);
+  }
+}
+
+/* Clear keyboard focus for all interactive controls. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid #67a4ff;
+  outline-offset: 2px;
+}
+
+/* Dark mode: raise secondary text and interactive accent contrast. */
+.dark {
+  --text-secondary: #c1cad6;
+  --text-muted: #98a5b5;
+  --border-light: #344050;
+  --border-medium: #4a586c;
+  --accent-blue: #7fb0ff;
+  --accent-green: #35c979;
+  --accent-red: #ff7474;
+  --accent-gold: #f2c94c;
+  --accent-orange: #ff8a4c;
+}
+
+.dark [style*="color: var(--scottish-navy)"],
+.dark [style*="color:var(--scottish-navy)"],
+.dark [style*="color: var(--scottish-blue)"],
+.dark [style*="color:var(--scottish-blue)"] {
+  color: #7fb0ff !important;
+}
+
+.dark [style*="color: var(--accent-blue)"],
+.dark [style*="color:var(--accent-blue)"] {
+  color: var(--accent-blue) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #8e9aaa;
+  opacity: 1;
+}
