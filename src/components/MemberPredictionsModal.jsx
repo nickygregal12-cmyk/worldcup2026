@@ -643,250 +643,343 @@ export function useMemberPredictions() {
 
 export default function MemberPredictionsModal({ memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, groupPositionBreakdown = [], currentUserId }) {
   const navigate = useNavigate()
+  const [showOptions, setShowOptions] = useState(false)
+  const [compactRows, setCompactRows] = useState(false)
+  const [onlyScoring, setOnlyScoring] = useState(false)
   const tournamentLive = new Date() >= DATES.TOURNAMENT_START
+
+  useEffect(() => {
+    setShowOptions(false)
+    setCompactRows(false)
+    setOnlyScoring(false)
+  }, [memberModal?.userId])
 
   if (!memberModal) return null
 
-  const tabs = memberModal.isOffline ? ['group', 'standings'] : ['overview', 'group', 'knockout', 'koPredictor', 'awards', 'standings']
-  const activeTab = memberModal.tab || 'overview'
+  const tabs = memberModal.isOffline
+    ? ['group', 'standings']
+    : ['overview', 'group', 'knockout', 'koPredictor', 'awards', 'standings']
+  const activeTab = memberModal.tab || (memberModal.isOffline ? 'group' : 'overview')
+  const mp = memberModal.memberProfile || {}
+  const totalPts = Number(mp.total_points || 0)
+  const groupPts = Number(mp.group_position_points || 0)
+  const bracketPts = Number(mp.bracket_points || 0)
+  const matchPts = Math.max(0, totalPts - groupPts - bracketPts)
+
+  const completedPredictions = memberPredictions
+    .filter(pred => pred.match?.status === 'completed')
+    .sort((a, b) => new Date(b.match?.kickoff_time || 0) - new Date(a.match?.kickoff_time || 0))
+  const correctPredictions = completedPredictions.filter(pred => ['exact', 'correct'].includes(getPredResult(pred)))
+  const exactScores = Number(mp.exact_scores ?? completedPredictions.filter(pred => getPredResult(pred) === 'exact').length)
+  const outcomeAccuracy = completedPredictions.length
+    ? Math.round((correctPredictions.length / completedPredictions.length) * 100)
+    : 0
+  let currentStreak = 0
+  for (const pred of completedPredictions) {
+    if (['exact', 'correct'].includes(getPredResult(pred))) currentStreak += 1
+    else break
+  }
+  const latestPredictions = completedPredictions.slice(0, 4)
+
+  const visibleGroupPredictions = memberPredictions.filter(pred => {
+    if (!onlyScoring) return true
+    return ['exact', 'correct'].includes(getPredResult(pred))
+  })
+  const predictionsByGroup = visibleGroupPredictions.reduce((acc, pred) => {
+    const groupName = pred.match?.group?.name || 'Other'
+    if (!acc[groupName]) acc[groupName] = []
+    acc[groupName].push(pred)
+    return acc
+  }, {})
 
   const tabLabel = (tab) => {
     switch (tab) {
-      case 'overview': return '👤 Overview'
-      case 'group': return '⚽ Groups'
-      case 'knockout': return '🏆 Bracket'
-      case 'koPredictor': return '🔥 KO Pred'
-      case 'awards': return '🥇 Awards'
-      case 'compare': return '⚔️ Compare'
-      case 'standings': return '📊 Standings'
+      case 'overview': return 'Overview'
+      case 'group': return 'Groups'
+      case 'knockout': return 'Bracket'
+      case 'koPredictor': return 'KO Pred'
+      case 'awards': return 'Awards'
+      case 'compare': return 'Compare'
+      case 'standings': return 'Tables'
       default: return tab
     }
   }
 
+  const sectionTitle = (title, note) => (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '12px', margin: '2px 2px 8px' }}>
+      <strong style={{ fontSize: '13px', color: 'var(--text-primary)' }}>{title}</strong>
+      {note && <span style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'right' }}>{note}</span>}
+    </div>
+  )
+
+  const resultBadge = (result) => {
+    if (result === 'exact') return { text: 'EXACT', colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.12)' }
+    if (result === 'correct') return { text: 'HIT', colour: 'var(--accent-blue)', bg: 'rgba(0,102,204,0.10)' }
+    if (result === 'wrong') return { text: 'MISS', colour: 'var(--text-muted)', bg: 'var(--bg-tertiary)' }
+    return { text: 'PENDING', colour: 'var(--text-muted)', bg: 'var(--bg-tertiary)' }
+  }
+
+  const renderPredictionRow = (pred, index = 0) => {
+    const match = pred.match
+    const result = getPredResult(pred)
+    const badge = resultBadge(result)
+    const kicked = match?.kickoff_time ? new Date(match.kickoff_time) <= new Date() : false
+    const isCompleted = match?.status === 'completed'
+    const actualText = isCompleted && match?.home_score != null && match?.away_score != null
+      ? `Actual ${match.home_score}–${match.away_score}`
+      : kicked ? 'Match in progress or awaiting result' : 'Prediction locked for this viewer'
+    const reaction = memberReactions[pred.match_id || match?.id]
+
+    return (
+      <div
+        key={pred.id || pred.match_id || match?.id || index}
+        style={{
+          display: 'flex', alignItems: 'center', gap: compactRows ? '7px' : '10px',
+          padding: compactRows ? '7px 10px' : '10px 12px',
+          borderTop: index > 0 ? '1px solid var(--border-light)' : 'none',
+          background: result === 'exact' || result === 'correct' ? 'rgba(0,122,51,0.035)' : 'var(--bg-card)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', minWidth: compactRows ? '78px' : '94px' }}>
+          <span style={{ fontSize: compactRows ? '16px' : '19px' }}>{match?.home_team?.flag_emoji}</span>
+          <span style={{ fontSize: compactRows ? '11px' : '12px', fontWeight: '800' }}>{match?.home_team?.short_code}</span>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>v</span>
+          <span style={{ fontSize: compactRows ? '11px' : '12px', fontWeight: '800' }}>{match?.away_team?.short_code}</span>
+          <span style={{ fontSize: compactRows ? '16px' : '19px' }}>{match?.away_team?.flag_emoji}</span>
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: compactRows ? '13px' : '15px', fontWeight: '900', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+              {pred.home_score}–{pred.away_score}
+            </span>
+            {pred.is_confident && <span title="Joker" style={{ fontSize: '13px' }}>🃏</span>}
+            {reaction && <span style={{ fontSize: '14px' }}>{reaction === 'fire' ? '🔥' : reaction === 'laugh' ? '😂' : '💀'}</span>}
+          </div>
+          {!compactRows && <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{actualText}</div>}
+        </div>
+
+        <span style={{ fontSize: '9px', fontWeight: '900', color: badge.colour, background: badge.bg, padding: '3px 6px', borderRadius: '999px', whiteSpace: 'nowrap' }}>{badge.text}</span>
+        <span style={{ minWidth: '30px', textAlign: 'right', fontSize: '12px', fontWeight: '900', fontFamily: 'var(--font-mono)', color: Number(pred.points_awarded || 0) > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+          {isCompleted ? `+${pred.points_awarded || 0}` : '—'}
+        </span>
+      </div>
+    )
+  }
+
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(4,14,31,0.72)', backdropFilter: 'blur(3px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '12px 12px 0' }}
       onClick={() => setMemberModal(null)}
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ background: 'var(--bg-card)', borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0', width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        style={{
+          position: 'relative', width: '100%', maxWidth: '640px', maxHeight: '92vh',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          background: 'var(--bg-secondary)', borderRadius: '20px 20px 0 0',
+          boxShadow: '0 -12px 45px rgba(0,0,0,0.28)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
       >
-        {/* Header */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontWeight: '800', fontSize: '16px' }}>{memberModal.isOffline ? '👤 ' : ''}{memberModal.username}'s Predictions</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {memberModal.lockedSnapshot
-                ? `Locked league snapshot${memberModal.leagueName ? ` · ${memberModal.leagueName}` : ''}`
-                : memberModal.isOffline ? 'Offline player · imported predictions'
-                : 'Group picks visible once group kicks off · Future picks shown'}
+        {/* Player summary */}
+        <header style={{ flexShrink: 0, padding: '17px 18px 13px', color: 'white', background: 'linear-gradient(135deg, var(--scottish-navy), #0b356b)', position: 'relative' }}>
+          <div style={{ position: 'absolute', right: '12px', top: '10px', display: 'flex', gap: '6px' }}>
+            <button type="button" onClick={() => setShowOptions(true)} aria-label="View options" style={{ width: '32px', height: '32px', display: 'grid', placeItems: 'center', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)', background: 'rgba(255,255,255,0.10)', color: 'white', fontSize: '15px', cursor: 'pointer' }}>⋯</button>
+            <button type="button" onClick={() => setMemberModal(null)} aria-label="Close" style={{ width: '32px', height: '32px', display: 'grid', placeItems: 'center', borderRadius: '50%', border: '1px solid rgba(255,255,255,0.24)', background: 'rgba(255,255,255,0.10)', color: 'white', fontSize: '21px', cursor: 'pointer' }}>×</button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '11px', paddingRight: '76px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.22)', fontSize: '19px', fontWeight: '900' }}>
+              {(memberModal.username || '?')[0].toUpperCase()}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ fontSize: '17px', fontWeight: '900', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{memberModal.username}</div>
+              <div style={{ fontSize: '11px', opacity: 0.76, marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {memberModal.lockedSnapshot
+                  ? `Locked snapshot${memberModal.leagueName ? ` · ${memberModal.leagueName}` : ''}`
+                  : memberModal.isOffline
+                    ? 'Offline player · imported predictions'
+                    : memberModal.leagueName || 'Overall Rankings'}
+              </div>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontSize: '25px', lineHeight: 1, fontWeight: '950', fontFamily: 'var(--font-mono)' }}>{totalPts}</div>
+              <div style={{ fontSize: '9px', opacity: 0.72, marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>total points</div>
             </div>
           </div>
-          <button onClick={() => setMemberModal(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
-        </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '7px', marginTop: '13px' }}>
+            {[
+              { label: 'Matches', value: matchPts },
+              { label: 'Groups', value: groupPts },
+              { label: 'Bracket', value: bracketPts },
+            ].map(item => (
+              <div key={item.label} style={{ textAlign: 'center', padding: '7px 5px', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.13)', borderRadius: '10px' }}>
+                <div style={{ fontSize: '16px', fontWeight: '900', fontFamily: 'var(--font-mono)' }}>{item.value}</div>
+                <div style={{ fontSize: '9px', opacity: 0.72, marginTop: '1px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</div>
+              </div>
+            ))}
+          </div>
+        </header>
 
         {memberModal.lockedSnapshot && (
-          <div style={{ padding: '10px 16px', background: 'rgba(245,158,11,0.10)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: '#92400e', fontWeight: '700' }}>
-            🔒 Showing frozen league predictions used for scoring.
+          <div style={{ padding: '9px 14px', background: 'rgba(245,158,11,0.12)', borderBottom: '1px solid var(--border-light)', fontSize: '11px', color: '#92400e', fontWeight: '750', flexShrink: 0 }}>
+            🔒 Showing the frozen league predictions used for scoring.
+          </div>
+        )}
+
+        {!memberModal.isOffline && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px 12px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', flexShrink: 0 }}>
+            <button type="button" onClick={() => { setMemberModal(null); navigate(`/points/${memberModal.userId}`) }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '9px 11px', borderRadius: '10px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '11px', fontWeight: '800', cursor: 'pointer' }}>
+              <span>Full points breakdown</span><span style={{ color: 'var(--text-muted)' }}>→</span>
+            </button>
+            <button type="button" onClick={() => { setMemberModal(null); navigate(`/h2h/${memberModal.userId}`) }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '9px 11px', borderRadius: '10px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '11px', fontWeight: '800', cursor: 'pointer' }}>
+              <span>Compare head-to-head</span><span style={{ color: 'var(--text-muted)' }}>→</span>
+            </button>
           </div>
         )}
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-light)', overflowX: 'auto', WebkitOverflowScrolling: 'touch', flexShrink: 0 }}>
+        <nav style={{ display: 'flex', overflowX: 'auto', WebkitOverflowScrolling: 'touch', background: 'var(--bg-card)', borderBottom: '1px solid var(--border-light)', flexShrink: 0, scrollbarWidth: 'none' }}>
           {tabs.map(tab => (
             <button
               key={tab}
               type="button"
-              onClick={e => { e.stopPropagation(); setMemberModal(prev => ({ ...prev, tab })) }}
+              onClick={() => setMemberModal(prev => ({ ...prev, tab }))}
               style={{
-                flex: '0 0 auto', padding: '12px 14px', fontSize: '12px',
-                fontWeight: activeTab === tab ? '700' : '500',
-                color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-muted)',
-                borderBottom: activeTab === tab ? '2px solid var(--scottish-navy)' : '2px solid transparent',
-                borderTop: 'none', borderLeft: 'none', borderRight: 'none',
-                background: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-                touchAction: 'manipulation', userSelect: 'none',
+                flex: '1 0 auto', minWidth: '76px', padding: '11px 12px 10px',
+                fontSize: '11px', fontWeight: activeTab === tab ? '850' : '650',
+                color: activeTab === tab ? 'var(--scottish-navy)' : 'var(--text-muted)',
+                background: 'none', border: 'none',
+                borderBottom: activeTab === tab ? '3px solid var(--scottish-navy)' : '3px solid transparent',
+                cursor: 'pointer', whiteSpace: 'nowrap',
               }}
             >
               {tabLabel(tab)}
             </button>
           ))}
-        </div>
+        </nav>
 
         {/* Content */}
-        <div style={{ overflowY: 'auto', padding: '16px', flex: 1 }}>
+        <div style={{ overflowY: 'auto', padding: '12px', flex: 1, background: 'var(--bg-secondary)' }}>
           {loadingPreds ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-          ) : activeTab === 'overview' ? ((() => {
-            const mp = memberModal.memberProfile || {}
-            const matchPts = (mp.total_points || 0) - (mp.group_position_points || 0) - (mp.bracket_points || 0)
-            const groupPts = mp.group_position_points || 0
-            const bracketPts = mp.bracket_points || 0
-            const totalPts = mp.total_points || 0
-            // Award points = remaining (total minus match, group, bracket)
-            const awardPts = Math.max(0, totalPts - matchPts - groupPts - bracketPts)
-            const sections = [
-              { icon: '⚽', label: 'Match predictions', pts: matchPts, sub: `${mp.exact_scores || 0} exact scores`, tab: 'group', colour: 'var(--scottish-navy)' },
-              { icon: '📊', label: 'Group position bonus', pts: groupPts, sub: '+2pts per position · +5pts perfect', tab: 'standings', colour: 'var(--accent-green)', hide: groupPts === 0 },
-              { icon: '🏆', label: 'Bracket progression', pts: bracketPts, sub: 'Teams predicted to reach each round', tab: 'knockout', colour: 'var(--scottish-navy)' },
-              { icon: '🥇', label: 'Awards', pts: awardPts, sub: 'Golden boot, POTY etc', tab: 'awards', hide: awardPts === 0 },
-            ].filter(s => !s.hide || totalPts === 0)
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {/* Player card */}
-                <div style={{ textAlign: 'center', padding: '14px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: 'var(--scottish-navy)', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '900', marginBottom: '6px' }}>
-                    {(memberModal.username || '?')[0].toUpperCase()}
-                  </div>
-                  <div style={{ fontSize: '17px', fontWeight: '900' }}>{memberModal.username}</div>
-                  {totalPts > 0 && <div style={{ fontSize: '22px', fontWeight: '900', fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)', marginTop: '4px' }}>{totalPts}pts</div>}
-                </div>
-
-                {/* Points breakdown — clickable sections */}
-                {totalPts > 0 && (
-                  <div style={{ border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-                    {sections.map((s, i) => (
-                      <button key={s.tab + i} type="button"
-                        onClick={() => setMemberModal(prev => ({ ...prev, tab: s.tab }))}
-                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: 'var(--bg-card)', border: 'none', borderTop: i > 0 ? '1px solid var(--border-light)' : 'none', cursor: 'pointer', textAlign: 'left' }}>
-                        <span style={{ fontSize: '20px', flexShrink: 0 }}>{s.icon}</span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--text-primary)' }}>{s.label}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>{s.sub}</div>
-                        </div>
-                        <div style={{ fontWeight: '900', fontSize: '18px', fontFamily: 'var(--font-mono)', color: s.pts > 0 ? s.colour : 'var(--text-muted)', letterSpacing: '-0.02em', flexShrink: 0 }}>
-                          +{s.pts}
-                        </div>
-                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', flexShrink: 0 }}>›</span>
-                      </button>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '42px' }}><div className="spinner" /></div>
+          ) : activeTab === 'overview' ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '13px' }}>
+              <section>
+                {sectionTitle('At a glance', 'Detailed scoring stays on the Points page')}
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px', overflow: 'hidden' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                    {[
+                      { value: exactScores, label: 'Exact scores' },
+                      { value: `${outcomeAccuracy}%`, label: 'Correct outcome' },
+                      { value: currentStreak ? `${currentStreak}🔥` : '0', label: 'Current streak' },
+                    ].map((item, i) => (
+                      <div key={item.label} style={{ textAlign: 'center', padding: '14px 6px', borderLeft: i > 0 ? '1px solid var(--border-light)' : 'none' }}>
+                        <div style={{ fontSize: '20px', fontWeight: '950', fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)' }}>{item.value}</div>
+                        <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '3px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{item.label}</div>
+                      </div>
                     ))}
                   </div>
-                )}
-
-                {totalPts > 0 && (
-                  <button onClick={() => { setMemberModal(null); navigate(`/points/${memberModal.userId}`) }}
-                    style={{ width: '100%', padding: '11px', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', fontWeight: '800', fontSize: '13px', cursor: 'pointer', marginTop: '2px' }}>
-                    📊 See full points breakdown →
-                  </button>
-                )}
-
-                <button onClick={() => { setMemberModal(null); navigate(`/h2h/${memberModal.userId}`) }} className="btn btn-primary btn-full" style={{ marginTop: '2px' }}>⚔️ Head to Head</button>
-              </div>
-            )
-          })()
-          ) : activeTab === 'group' ? (
-            memberPredictions.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-                <div style={{ fontSize: '32px', marginBottom: '8px' }}>{memberModal.isOffline ? '👤' : '🔒'}</div>
-                <div style={{ fontWeight: '700', marginBottom: '4px' }}>{memberModal.isOffline ? 'No predictions entered yet' : 'Picks are private'}</div>
-                <div style={{ fontSize: '13px' }}>
-                  {tournamentLive ? 'This user has chosen to keep their predictions private' : 'Picks become visible once matches kick off'}
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {memberPredictions.map(pred => {
-                  const result = getPredResult(pred)
-                  const match = pred.match
-                  const kicked = new Date(match?.kickoff_time) <= new Date()
-                  return (
-                    <div key={pred.id || pred.match?.id} style={{
-                      display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 12px', borderRadius: 'var(--radius-md)',
-                      background: result === 'exact' ? 'var(--accent-green-light)' : result === 'correct' ? 'var(--accent-blue-light)' : result === 'wrong' ? 'var(--accent-red-light)' : 'var(--bg-secondary)',
-                      border: `1px solid ${result === 'exact' ? 'rgba(0,122,51,0.2)' : result === 'correct' ? 'rgba(21,88,176,0.2)' : result === 'wrong' ? 'rgba(198,40,40,0.2)' : 'var(--border-light)'}`,
-                    }}>
-                      <span style={{ fontSize: '18px' }}>{match?.home_team?.flag_emoji}</span>
-                      <span style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>{match?.home_team?.short_code} vs {match?.away_team?.short_code} {pred.is_confident ? '🃏' : ''}</span>
-                      <span style={{ fontSize: '18px' }}>{match?.away_team?.flag_emoji}</span>
-                      <div style={{ fontFamily: 'var(--font-mono)', fontWeight: '800', fontSize: '14px', minWidth: '48px', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                        {pred.home_score} – {pred.away_score}
-                      </div>
-                      {match?.status === 'completed' && (
-                        <div style={{ fontSize: '11px', minWidth: '32px', textAlign: 'right' }}>
-                          {result === 'exact' ? '🎯' : result === 'correct' ? '✓' : '✗'}
-                          <div style={{ fontWeight: '700', color: result === 'exact' ? 'var(--accent-green)' : result === 'correct' ? 'var(--accent-blue)' : 'var(--accent-red)' }}>
-                            {pred.points_awarded || 0}pts
-                          </div>
-                        </div>
-                      )}
-                      {!kicked && <span style={{ fontSize: '10px', color: 'var(--accent-blue)', fontWeight: '700' }}>🔮</span>}
-                      {match?.status === 'completed' && memberReactions[pred.match_id || match?.id] && (
-                        <span style={{ fontSize: '16px' }}>
-                          {memberReactions[pred.match_id || match?.id] === 'fire' ? '🔥' : memberReactions[pred.match_id || match?.id] === 'laugh' ? '😂' : '💀'}
-                        </span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          ) : null}
-          {/* Group position bonus breakdown — per group */}
-          {activeTab === 'group' && groupPositionBreakdown.length > 0 && (() => {
-            // Group by group_name
-            const byGroup = {}
-            groupPositionBreakdown.forEach(row => {
-              if (!byGroup[row.group_name]) byGroup[row.group_name] = []
-              byGroup[row.group_name].push(row)
-            })
-            // Calculate total including perfect bonuses
-            const total = Object.values(byGroup).reduce((sum, rows) => {
-              const pp = rows.reduce((s, r) => s + (r.points_awarded || 0), 0)
-              const isPerfect = rows.filter(r => r.points_awarded > 0).length === 4
-              return sum + pp + (isPerfect ? 5 : 0)
-            }, 0)
-            return (
-              <div style={{ marginTop: '12px', border: '1px solid rgba(0,122,51,0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-                {/* Header */}
-                <div style={{ padding: '10px 14px', background: 'rgba(0,122,51,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent-green)' }}>📊 Group position bonus</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>+2pts per correct position · +5pts perfect group</div>
+                  <div style={{ padding: '9px 12px', borderTop: '1px solid var(--border-light)', background: 'var(--bg-secondary)', fontSize: '10px', lineHeight: 1.45, color: 'var(--text-muted)' }}>
+                    This view focuses on the player’s actual picks. Use Points for the full ledger and Head to Head for direct comparisons.
                   </div>
-                  <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)', letterSpacing: '-0.02em' }}>+{total}</div>
                 </div>
-                {/* Per-group breakdown */}
-                {Object.entries(byGroup).map(([groupName, rows]) => {
-                  const positionPts = rows.reduce((sum, r) => sum + (r.points_awarded || 0), 0)
-                  const correct = rows.filter(r => r.points_awarded > 0).length
-                  const isPerfect = correct === 4
-                  const groupPts = positionPts + (isPerfect ? 5 : 0)
-                  return (
-                    <div key={groupName} style={{ padding: '8px 14px', borderTop: '1px solid var(--border-light)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                        <span style={{ fontWeight: '700', fontSize: '12px' }}>Group {groupName}</span>
-                        <span style={{ fontSize: '11px', fontWeight: '700', color: groupPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                          {isPerfect ? '🎯 Perfect! ' : ''}{groupPts > 0 ? `+${groupPts}pts` : '0pts'}
-                        </span>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                        {rows.map((row, i) => (
-                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px' }}>
-                            <span style={{ color: 'var(--text-muted)', minWidth: '16px', fontWeight: '700' }}>#{row.predicted_position}</span>
-                            <span style={{ fontSize: '14px' }}>{row.team?.flag_emoji}</span>
-                            <span style={{ flex: 1, color: row.points_awarded > 0 ? 'var(--text-primary)' : 'var(--text-muted)' }}>{row.team?.short_code}</span>
-                            <span style={{ fontWeight: '700', color: row.points_awarded > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-                              {row.points_awarded > 0 ? `✓ +${row.points_awarded}pts` : '✗'}
-                            </span>
-                          </div>
-                        ))}
-                        {isPerfect && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', marginTop: '2px' }}>
-                            <span style={{ minWidth: '16px' }}>🎯</span>
-                            <span style={{ flex: 1, fontWeight: '700', color: 'var(--accent-gold)' }}>Perfect group bonus</span>
-                            <span style={{ fontWeight: '800', color: 'var(--accent-gold)' }}>+5pts</span>
-                          </div>
-                        )}
-                      </div>
+              </section>
+
+              <section>
+                {sectionTitle('Latest scored predictions', latestPredictions.length ? `Most recent ${latestPredictions.length}` : '')}
+                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px', overflow: 'hidden' }}>
+                  {latestPredictions.length > 0 ? latestPredictions.map(renderPredictionRow) : (
+                    <div style={{ textAlign: 'center', padding: '30px 18px', color: 'var(--text-muted)' }}>
+                      <div style={{ fontSize: '26px', marginBottom: '6px' }}>⚽</div>
+                      <div style={{ fontSize: '12px', fontWeight: '800' }}>No completed predictions yet</div>
                     </div>
-                  )
-                })}
-              </div>
-            )
-          })()}
-          {activeTab === 'knockout' ? (
+                  )}
+                </div>
+              </section>
+            </div>
+          ) : activeTab === 'group' ? (
+            <div>
+              {sectionTitle('Match predictions', onlyScoring ? 'Only scoring picks shown' : 'Grouped by tournament group')}
+              {memberPredictions.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '34px 18px', color: 'var(--text-muted)', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px' }}>
+                  <div style={{ fontSize: '30px', marginBottom: '7px' }}>{memberModal.isOffline ? '👤' : '🔒'}</div>
+                  <div style={{ fontWeight: '800', marginBottom: '4px' }}>{memberModal.isOffline ? 'No predictions entered yet' : 'Picks are private'}</div>
+                  <div style={{ fontSize: '11px' }}>{tournamentLive ? 'This user has chosen to keep their predictions private' : 'Picks become visible once matches kick off'}</div>
+                </div>
+              ) : Object.keys(predictionsByGroup).length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px 18px', color: 'var(--text-muted)', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: '800' }}>No scoring picks match this filter</div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {Object.entries(predictionsByGroup).sort(([a], [b]) => a.localeCompare(b)).map(([groupName, predictions]) => {
+                    const groupTotal = predictions.reduce((sum, pred) => sum + Number(pred.points_awarded || 0), 0)
+                    return (
+                      <section key={groupName} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '14px', overflow: 'hidden' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-light)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ width: '25px', height: '25px', display: 'grid', placeItems: 'center', borderRadius: '8px', background: 'var(--scottish-navy)', color: 'white', fontSize: '11px', fontWeight: '900' }}>{groupName}</span>
+                            <div>
+                              <div style={{ fontSize: '12px', fontWeight: '850' }}>Group {groupName}</div>
+                              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>{predictions.length} visible predictions</div>
+                            </div>
+                          </div>
+                          <span style={{ fontSize: '12px', fontWeight: '900', fontFamily: 'var(--font-mono)', color: groupTotal > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{groupTotal}</span>
+                        </div>
+                        {predictions.map(renderPredictionRow)}
+                      </section>
+                    )
+                  })}
+                </div>
+              )}
+
+              {groupPositionBreakdown.length > 0 && (() => {
+                const byGroup = {}
+                groupPositionBreakdown.forEach(row => {
+                  if (!byGroup[row.group_name]) byGroup[row.group_name] = []
+                  byGroup[row.group_name].push(row)
+                })
+                const total = Object.values(byGroup).reduce((sum, rows) => {
+                  const positionPoints = rows.reduce((s, row) => s + Number(row.points_awarded || 0), 0)
+                  const perfect = rows.filter(row => Number(row.points_awarded || 0) > 0).length === 4
+                  return sum + positionPoints + (perfect ? 5 : 0)
+                }, 0)
+                return (
+                  <section style={{ marginTop: '12px', background: 'var(--bg-card)', border: '1px solid rgba(0,122,51,0.22)', borderRadius: '14px', overflow: 'hidden' }}>
+                    <div style={{ padding: '10px 12px', background: 'rgba(0,122,51,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: '850', fontSize: '12px', color: 'var(--accent-green)' }}>Group position bonus</div>
+                        <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>+2 per correct position · +5 perfect group</div>
+                      </div>
+                      <div style={{ fontWeight: '950', fontSize: '18px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)' }}>+{total}</div>
+                    </div>
+                    {Object.entries(byGroup).map(([groupName, rows]) => {
+                      const correct = rows.filter(row => Number(row.points_awarded || 0) > 0).length
+                      const perfect = correct === 4
+                      const points = rows.reduce((sum, row) => sum + Number(row.points_awarded || 0), 0) + (perfect ? 5 : 0)
+                      return (
+                        <div key={groupName} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderTop: '1px solid var(--border-light)' }}>
+                          <strong style={{ minWidth: '54px', fontSize: '10px' }}>Group {groupName}</strong>
+                          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', flex: 1 }}>
+                            {rows.map((row, index) => (
+                              <span key={index} style={{ padding: '2px 5px', borderRadius: '999px', background: Number(row.points_awarded || 0) > 0 ? 'rgba(0,122,51,0.10)' : 'rgba(198,40,40,0.07)', color: Number(row.points_awarded || 0) > 0 ? 'var(--accent-green)' : 'var(--accent-red)', fontSize: '9px', fontWeight: '850' }}>
+                                {row.team?.flag_emoji} {Number(row.points_awarded || 0) > 0 ? `+${row.points_awarded}` : '✕'}
+                              </span>
+                            ))}
+                            {perfect && <span style={{ padding: '2px 5px', borderRadius: '999px', background: 'rgba(184,134,11,0.10)', color: 'var(--accent-gold)', fontSize: '9px', fontWeight: '850' }}>🎯 +5</span>}
+                          </div>
+                          <strong style={{ fontSize: '10px', color: points > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{points}</strong>
+                        </div>
+                      )
+                    })}
+                  </section>
+                )
+              })()}
+            </div>
+          ) : activeTab === 'knockout' ? (
             <KnockoutPicksView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
           ) : activeTab === 'koPredictor' ? (
             <KOPredictorScoresView userId={memberModal.userId} />
@@ -895,54 +988,43 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
           ) : activeTab === 'compare' ? (
             <CompareWithMeView myUserId={currentUserId} targetUserId={memberModal.userId} targetName={memberModal.username} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} targetShowFuture={memberModal.targetShowFuture} />
           ) : activeTab === 'standings' ? (
-            <>
+            <div>
+              {sectionTitle('Predicted group tables', 'Based on this player’s score predictions')}
               <MemberStandingsView predictions={memberPredictions} />
-              {groupPositionBreakdown.length > 0 && (() => {
-                const byGroup = {}
-                groupPositionBreakdown.forEach(row => {
-                  if (!byGroup[row.group_name]) byGroup[row.group_name] = []
-                  byGroup[row.group_name].push(row)
-                })
-                const total = Object.values(byGroup).reduce((sum, rows) => {
-                  const pp = rows.reduce((s, r) => s + (r.points_awarded || 0), 0)
-                  const isPerfect = rows.filter(r => r.points_awarded > 0).length === 4
-                  return sum + pp + (isPerfect ? 5 : 0)
-                }, 0)
-                return (
-                  <div style={{ marginTop: '16px', border: '1px solid rgba(0,122,51,0.2)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
-                    <div style={{ padding: '10px 14px', background: 'rgba(0,122,51,0.07)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontWeight: '700', fontSize: '13px', color: 'var(--accent-green)' }}>📊 Group position bonus</div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>+2pts per correct position · +5pts perfect group</div>
-                      </div>
-                      <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: 'var(--accent-green)', letterSpacing: '-0.02em' }}>+{total}</div>
-                    </div>
-                    {Object.entries(byGroup).map(([groupName, rows]) => {
-                      const correct = rows.filter(r => r.points_awarded > 0).length
-                      const isPerfect = correct === 4
-                      const groupPts = rows.reduce((s, r) => s + (r.points_awarded || 0), 0) + (isPerfect ? 5 : 0)
-                      return (
-                        <div key={groupName} style={{ padding: '8px 14px', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontWeight: '700', fontSize: '12px', minWidth: '60px' }}>Group {groupName}</span>
-                          <div style={{ flex: 1, display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                            {rows.map((r, i) => (
-                              <span key={i} style={{ fontSize: '10px', padding: '2px 5px', borderRadius: '20px', background: r.points_awarded > 0 ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.07)', color: r.points_awarded > 0 ? 'var(--accent-green)' : '#c62828', fontWeight: '700' }}>
-                                {r.team?.flag_emoji} {r.points_awarded > 0 ? `+${r.points_awarded}` : '✗'}
-                              </span>
-                            ))}
-                            {isPerfect && <span style={{ fontSize: '10px', padding: '2px 5px', borderRadius: '20px', background: 'rgba(184,134,11,0.1)', color: 'var(--accent-gold)', fontWeight: '700' }}>🎯+5</span>}
-                          </div>
-                          <span style={{ fontSize: '11px', fontWeight: '700', color: groupPts > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>+{groupPts}pts</span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-              })()}
-            </>
+            </div>
           ) : null}
         </div>
+
+        {showOptions && (
+          <div
+            onClick={() => setShowOptions(false)}
+            style={{ position: 'absolute', inset: 0, zIndex: 20, display: 'flex', alignItems: 'flex-end', background: 'rgba(4,14,31,0.50)' }}
+          >
+            <div onClick={event => event.stopPropagation()} style={{ width: '100%', padding: '16px 16px calc(16px + env(safe-area-inset-bottom, 0px))', background: 'var(--bg-card)', borderRadius: '18px 18px 0 0', boxShadow: '0 -12px 35px rgba(0,0,0,0.18)' }}>
+              <div style={{ fontSize: '16px', fontWeight: '900' }}>View options</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '3px', marginBottom: '12px' }}>Display preferences only. They do not change any predictions.</div>
+
+              {[
+                { label: 'Compact rows', note: 'Fit more predictions on screen', value: compactRows, onChange: setCompactRows },
+                { label: 'Only show scoring picks', note: 'Hide misses and pending group predictions', value: onlyScoring, onChange: setOnlyScoring },
+              ].map(option => (
+                <button key={option.label} type="button" onClick={() => option.onChange(!option.value)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '12px', padding: '11px 0', border: 'none', borderTop: '1px solid var(--border-light)', background: 'none', color: 'var(--text-primary)', textAlign: 'left', cursor: 'pointer' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '12px', fontWeight: '850' }}>{option.label}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>{option.note}</div>
+                  </div>
+                  <span style={{ width: '40px', height: '23px', padding: '3px', borderRadius: '999px', display: 'flex', justifyContent: option.value ? 'flex-end' : 'flex-start', background: option.value ? 'var(--accent-green)' : 'var(--bg-tertiary)', transition: '0.15s ease' }}>
+                    <span style={{ width: '17px', height: '17px', borderRadius: '50%', background: 'white', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
+                  </span>
+                </button>
+              ))}
+
+              <button type="button" onClick={() => setShowOptions(false)} className="btn btn-primary btn-full" style={{ marginTop: '8px' }}>Done</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
 }
+
