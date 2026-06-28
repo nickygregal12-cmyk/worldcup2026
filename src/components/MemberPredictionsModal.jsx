@@ -557,7 +557,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
 }
 
 
-function KOPredictorScoresView({ userId }) {
+function KOPredictorScoresView({ userId, currentUserId }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -579,11 +579,17 @@ function KOPredictorScoresView({ userId }) {
       }
 
       const now = new Date()
-      const lockedMatches = (matchData || []).filter(match =>
-        match.status === 'live' || match.status === 'completed' || new Date(match.kickoff_time) <= now
-      )
-      const lockedIds = lockedMatches.map(match => match.id)
-      if (lockedIds.length === 0) {
+      const isOwnProfile = !!currentUserId && userId === currentUserId
+      const visibleMatches = isOwnProfile
+        ? (matchData || []).filter(match => match.home_team?.id && match.away_team?.id)
+        : (matchData || []).filter(match =>
+            match.status === 'live' ||
+            match.status === 'completed' ||
+            new Date(match.kickoff_time) <= now
+          )
+
+      const visibleIds = visibleMatches.map(match => match.id)
+      if (visibleIds.length === 0) {
         if (!cancelled) { setRows([]); setLoading(false) }
         return
       }
@@ -592,7 +598,7 @@ function KOPredictorScoresView({ userId }) {
         .from('ko_predictions')
         .select('match_id, home_score, away_score, outcome_type, winner_team_id, first_goal_band, is_joker, points_awarded, points_breakdown')
         .eq('user_id', userId)
-        .in('match_id', lockedIds)
+        .in('match_id', visibleIds)
 
       if (predError) {
         if (!cancelled) { setError(predError.message); setLoading(false) }
@@ -601,13 +607,13 @@ function KOPredictorScoresView({ userId }) {
 
       const predictionsByMatch = Object.fromEntries((predData || []).map(pred => [pred.match_id, pred]))
       if (!cancelled) {
-        setRows(lockedMatches.map(match => ({ match, prediction: predictionsByMatch[match.id] || null })))
+        setRows(visibleMatches.map(match => ({ match, prediction: predictionsByMatch[match.id] || null })))
         setLoading(false)
       }
     }
     load()
     return () => { cancelled = true }
-  }, [userId])
+  }, [userId, currentUserId])
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
   if (error) return <div style={{ textAlign: 'center', padding: '28px', color: 'var(--accent-red)' }}>Could not load KO Predictor picks: {error}</div>
@@ -619,7 +625,11 @@ function KOPredictorScoresView({ userId }) {
 
   return (
     <div>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px' }}>Only matches that have kicked off are shown.</div>
+      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+        {userId === currentUserId
+          ? 'Testing view: your own saved KO Predictor picks are visible before kickoff. Other players remain hidden until each match locks.'
+          : 'Only matches that have kicked off are shown.'}
+      </div>
       {rows.map(({ match, prediction }, index) => {
         const showStage = index === 0 || rows[index - 1]?.match?.stage !== match.stage
         const winner = prediction?.winner_team_id === match.home_team?.id
@@ -1209,7 +1219,7 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
           ) : activeTab === 'knockout' ? (
             <KnockoutPicksView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
           ) : activeTab === 'koPredictor' ? (
-            <KOPredictorScoresView userId={memberModal.userId} />
+            <KOPredictorScoresView userId={memberModal.userId} currentUserId={currentUserId} />
           ) : activeTab === 'awards' ? (
             <AwardPredsView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
           ) : activeTab === 'compare' ? (
