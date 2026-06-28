@@ -1662,7 +1662,26 @@ export default function Leagues() {
                               const isMe = member.user_id === user?.id
                               const points = profile.ko_points || 0
                               return (
-                                <div key={member.user_id} className="leaderboard-row" style={{ position: 'relative', background: isMe ? 'rgba(230,81,0,0.07)' : 'var(--bg-card)', border: isMe ? '1px solid rgba(230,81,0,0.55)' : '1px solid var(--border-light)' }}>
+                                <div
+                                  key={member.user_id}
+                                  className="leaderboard-row"
+                                  role="button"
+                                  tabIndex={0}
+                                  aria-label={`View ${profile.display_name || profile.username || 'member'}'s KO Predictor picks`}
+                                  onClick={() => openProfile(profile, user?.id, 'ko')}
+                                  onKeyDown={(event) => {
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                      event.preventDefault()
+                                      openProfile(profile, user?.id, 'ko')
+                                    }
+                                  }}
+                                  style={{
+                                    position: 'relative',
+                                    background: isMe ? 'rgba(230,81,0,0.07)' : 'var(--bg-card)',
+                                    border: isMe ? '1px solid rgba(230,81,0,0.55)' : '1px solid var(--border-light)',
+                                    cursor: 'pointer',
+                                  }}
+                                >
                                   <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: isMe ? '#e65100' : index < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
                                   <span style={{ fontSize: index < 3 ? '20px' : '13px', fontWeight: '900', minWidth: '36px', textAlign: 'center', color: index < 3 ? 'inherit' : 'var(--text-muted)', fontFamily: index >= 3 ? 'var(--font-mono)' : 'inherit' }}>{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}</span>
                                   <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isMe ? '#e65100' : avatarColor(profile.display_name || profile.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: isMe ? 'white' : avatarColor(profile.display_name || profile.username).fg, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.12)' }}>{profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}</div>
@@ -1670,7 +1689,10 @@ export default function Leagues() {
                                     <div style={{ fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'}</span>{isMe && <span style={{ fontSize: '9px', background: '#e65100', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '800' }}>YOU</span>}</div>
                                     <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>{index === 0 ? `Leader · 🎯 ${profile.ko_exact_scores || 0}` : `${Math.max((members[0]?.profile?.ko_points || 0) - points, 0)} behind leader · 🎯 ${profile.ko_exact_scores || 0}`}</div>
                                   </div>
-                                  <div style={{ textAlign: 'right', minWidth: '52px' }}><div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: isMe ? '#e65100' : 'var(--text-primary)', lineHeight: 1 }}>{points}</div><div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>PTS</div></div>
+                                  <div style={{ textAlign: 'right', minWidth: '58px' }}>
+                                    <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: isMe ? '#e65100' : 'var(--text-primary)', lineHeight: 1 }}>{points}</div>
+                                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>PTS · VIEW ›</div>
+                                  </div>
                                 </div>
                               )
                             })}
