@@ -385,34 +385,59 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         setKoMine(rivals.find(r => r.userId === user?.id) || null)
 
         if (tournamentLeagueUserIds?.length) {
-          const stageMatchNumbers = (ALL_STAGES.find(stage => stage.key === m.stage)?.matches || [])
-            .map(matchDef => matchDef.match_number)
+          const stageConfig = ALL_STAGES.find(stage => stage.key === m.stage)
+          const stageMatchDefs = stageConfig?.matches || []
+          const allKnockoutMatchNumbers = ALL_STAGES.flatMap(stage => stage.matches.map(matchDef => matchDef.match_number))
 
-          const [{ data: bracketRows }, { data: leagueProfiles }] = await Promise.all([
+          // Rebuild every member's original bracket using the same source data and
+          // slot-resolution approach as the Knockout tab and View Predictions.
+          // Do not trust knockout_picks.home_team_id / away_team_id here because
+          // those stored helper fields can be stale after a bracket remap.
+          const [
+            { data: allBracketRows },
+            { data: allGroupPredictions },
+            { data: originalGroupMatches },
+            { data: leagueProfiles },
+          ] = await Promise.all([
             supabase
               .from('knockout_picks')
-              .select(`
-                user_id,
-                match_number,
-                home_team_id,
-                away_team_id,
-                winner_team_id,
-                home_team:home_team_id(id,name,short_code,flag_emoji),
-                away_team:away_team_id(id,name,short_code,flag_emoji),
-                winner_team:winner_team_id(id,name,short_code,flag_emoji)
-              `)
-              .in('match_number', stageMatchNumbers.length ? stageMatchNumbers : [m.match_number])
+              .select('user_id, match_number, winner_team_id')
+              .in('match_number', allKnockoutMatchNumbers)
               .in('user_id', tournamentLeagueUserIds),
+            supabase
+              .from('predictions')
+              .select('user_id, match_id, home_score, away_score')
+              .in('user_id', tournamentLeagueUserIds),
+            supabase
+              .from('matches')
+              .select('id, match_number, stage, kickoff_time, home_team_id, away_team_id, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code), group:group_id(name)')
+              .eq('stage', 'group')
+              .order('kickoff_time', { ascending: true }),
             supabase
               .from('profiles')
               .select('id, username, display_name, avatar_emoji')
               .in('id', tournamentLeagueUserIds),
           ])
 
+          const teamById = {}
+          ;(originalGroupMatches || []).forEach(groupMatch => {
+            if (groupMatch.home_team?.id) teamById[groupMatch.home_team.id] = groupMatch.home_team
+            if (groupMatch.away_team?.id) teamById[groupMatch.away_team.id] = groupMatch.away_team
+          })
+
           const bracketRowsByUser = {}
-          ;(bracketRows || []).forEach(row => {
-            if (!bracketRowsByUser[row.user_id]) bracketRowsByUser[row.user_id] = []
-            bracketRowsByUser[row.user_id].push(row)
+          ;(allBracketRows || []).forEach(row => {
+            if (!bracketRowsByUser[row.user_id]) bracketRowsByUser[row.user_id] = {}
+            bracketRowsByUser[row.user_id][Number(row.match_number)] = row
+          })
+
+          const groupPredictionsByUser = {}
+          ;(allGroupPredictions || []).forEach(row => {
+            if (!groupPredictionsByUser[row.user_id]) groupPredictionsByUser[row.user_id] = {}
+            groupPredictionsByUser[row.user_id][row.match_id] = {
+              home: row.home_score,
+              away: row.away_score,
+            }
           })
 
           const profileByUser = {}
@@ -421,25 +446,51 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           setTournamentBracketRivals(
             tournamentLeagueUserIds.map(memberId => {
               const profile = profileByUser[memberId] || {}
-              const userStageRows = bracketRowsByUser[memberId] || []
-              const exactPick = userStageRows.find(row => Number(row.match_number) === Number(m.match_number)) || null
+              const predictionMap = groupPredictionsByUser[memberId] || {}
+              const pickMap = bracketRowsByUser[memberId] || {}
+              const standings = calcPredictedStandings(originalGroupMatches || [], predictionMap, true)
 
-              const exactWinner = exactPick?.winner_team || null
+              const getTeam = teamId => teamId ? (teamById[teamId] || {
+                id: teamId,
+                name: 'Unknown team',
+                short_code: 'TBC',
+                flag_emoji: '🏳️',
+              }) : null
+
+              const resolveOriginalSlot = slot => {
+                if (!slot) return null
+                if (slot.startsWith('W')) {
+                  const previousMatchNumber = Number(slot.slice(1))
+                  return getTeam(pickMap[previousMatchNumber]?.winner_team_id)
+                }
+                if (slot.startsWith('L')) return null
+                return resolveSlot(slot, standings, originalGroupMatches || [], predictionMap)
+              }
+
+              const currentMatchDef = stageMatchDefs.find(
+                matchDef => Number(matchDef.match_number) === Number(m.match_number)
+              )
+
+              const originalHome = currentMatchDef ? resolveOriginalSlot(currentMatchDef.home_slot) : null
+              const originalAway = currentMatchDef ? resolveOriginalSlot(currentMatchDef.away_slot) : null
+              const exactPick = pickMap[Number(m.match_number)] || null
+              const exactWinner = getTeam(exactPick?.winner_team_id)
+
               const exactSide = exactPick?.winner_team_id === m.home_team_id
                 ? 'home'
                 : exactPick?.winner_team_id === m.away_team_id
                   ? 'away'
                   : null
 
-              const backedHomeElsewhere = userStageRows.find(row =>
-                row.winner_team_id === m.home_team_id &&
-                Number(row.match_number) !== Number(m.match_number)
-              ) || null
+              const backedHomeElsewhere = stageMatchDefs.some(matchDef =>
+                Number(matchDef.match_number) !== Number(m.match_number) &&
+                pickMap[Number(matchDef.match_number)]?.winner_team_id === m.home_team_id
+              )
 
-              const backedAwayElsewhere = userStageRows.find(row =>
-                row.winner_team_id === m.away_team_id &&
-                Number(row.match_number) !== Number(m.match_number)
-              ) || null
+              const backedAwayElsewhere = stageMatchDefs.some(matchDef =>
+                Number(matchDef.match_number) !== Number(m.match_number) &&
+                pickMap[Number(matchDef.match_number)]?.winner_team_id === m.away_team_id
+              )
 
               const currentFixtureBackings = [
                 exactSide === 'home' ? { team: m.home_team, route: 'exact' } : null,
@@ -452,7 +503,11 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                 userId: memberId,
                 name: profile.display_name || profile.username || 'Player',
                 avatar: profile.avatar_emoji,
-                exactPick,
+                exactPick: exactPick ? {
+                  ...exactPick,
+                  home_team: originalHome,
+                  away_team: originalAway,
+                } : null,
                 exactWinner,
                 exactSide,
                 hasPick: Boolean(exactPick?.winner_team_id),
@@ -746,7 +801,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                       fontSize: '14px',
                       color: r.projectedPoints > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
                     }}>
-                      {r.projectedPoints > 0 ? `+${r.projectedPoints}` : '0'} pts
+                      {r.projectedPoints > 0 ? `+${r.projectedPoints} pts` : '—'}
                     </span>
                   </div>
 
@@ -779,8 +834,8 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                           color: r.projectedPoints > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
                         }}>
                           {r.projectedPoints > 0
-                            ? `Live projection: +3 result points +${roundPoints} bracket points`
-                            : `Points on the line: +3 result points +${roundPoints} bracket points if their backed team goes ahead`}
+                            ? `Live projection: +${r.projectedPoints} pts`
+                            : `Potential: +${3 + roundPoints} pts if ${r.currentFixtureBackings[0]?.team?.name || 'their backed team'} advance`}
                         </div>
                       )}
                     </>
