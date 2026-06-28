@@ -7,88 +7,126 @@ import { useAuthStore, useAppStore } from '../store/index.js'
 import MemberPredictionsModal, { useMemberPredictions, getPredResult } from '../components/MemberPredictionsModal.jsx'
 import { DATES } from '../lib/tournamentDates.js'
 
+function LiveMatchCard({ match, members, supabase, mode, leagueCode }) {
+  // mode: 'upcoming' | 'live' | 'result'
+  const [expanded, setExpanded] = useState(false)
+  const [preds, setPreds] = useState({})
+  const [countdown, setCountdown] = useState('')
 
-function MatchCentreBar({ matches, mode, leagueCode }) {
-  if (!matches?.length) return null
+  useEffect(() => {
+    if (!members?.length || !match?.id) return
+    const memberIds = members.filter(m => !m.is_offline).map(m => m.user_id)
+    if (!memberIds.length) return
+    supabase.from('predictions')
+      .select('user_id, home_score, away_score, is_confident, points_awarded')
+      .eq('match_id', match.id)
+      .in('user_id', memberIds)
+      .then(({ data }) => {
+        if (!data) return
+        const byUser = {}
+        data.forEach(p => { byUser[p.user_id] = p })
+        setPreds(byUser)
+      })
+  }, [match?.id, members])
 
-  const firstMatch = matches[0]
-  const matchPath = `/match/${firstMatch.match_number || firstMatch.id}/stats${leagueCode ? `?league=${encodeURIComponent(leagueCode)}` : ''}`
+  // Countdown timer for upcoming matches
+  useEffect(() => {
+    if (mode !== 'upcoming') return
+    const tick = () => {
+      const diff = new Date(match.kickoff_time) - new Date()
+      if (diff <= 0) { setCountdown('Kicking off now!'); return }
+      const h = Math.floor(diff / 3600000)
+      const m = Math.floor((diff % 3600000) / 60000)
+      const s = Math.floor((diff % 60000) / 1000)
+      setCountdown(h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`)
+    }
+    tick()
+    const i = setInterval(tick, 1000)
+    return () => clearInterval(i)
+  }, [mode, match?.kickoff_time])
 
-  const statusLabel = mode === 'live'
-    ? 'LIVE'
-    : mode === 'upcoming'
-      ? 'NEXT'
-      : 'FULL TIME'
+  const liveScore = match.home_score != null ? `${match.home_score}–${match.away_score}` : null
+  const hw = match.home_score > match.away_score
+  const aw = match.home_score < match.away_score
+  const dr = match.home_score === match.away_score
+  const hasScore = match.home_score != null
 
-  const statusColour = mode === 'live'
-    ? '#e53935'
-    : mode === 'result'
-      ? 'var(--accent-green)'
-      : 'var(--scottish-navy)'
+  const onTrackCount = mode === 'live' ? members.filter(m => {
+    const p = preds[m.user_id]
+    if (!p || !hasScore) return false
+    return (hw && p.home_score > p.away_score) || (aw && p.home_score < p.away_score) || (dr && p.home_score === p.away_score)
+  }).length : 0
 
-  const matchText = matches.map(match => {
-    const home = match.home_team?.short_code || match.home_team?.name || 'TBC'
-    const away = match.away_team?.short_code || match.away_team?.name || 'TBC'
-    const score = match.home_score != null && match.away_score != null
-      ? `${match.home_score}–${match.away_score}`
-      : 'v'
-    return `${match.home_team?.flag_emoji || ''} ${home} ${score} ${away} ${match.away_team?.flag_emoji || ''}`.trim()
-  }).join('  ·  ')
+  const totalPts = mode === 'result' ? members.reduce((sum, m) => sum + (preds[m.user_id]?.points_awarded || 0), 0) : 0
 
-  const minute = mode === 'live' && matches.length === 1
-    ? (firstMatch.live_minute != null
-      ? `${firstMatch.live_minute}${firstMatch.injury_time ? `+${firstMatch.injury_time}` : ''}'`
-      : '')
-    : ''
+  const bgColour = mode === 'result' ? 'rgba(0,122,51,0.04)' : mode === 'live' ? 'rgba(229,57,53,0.04)' : 'rgba(21,88,176,0.04)'
+  const borderColour = mode === 'result' ? 'var(--accent-green)' : mode === 'live' ? '#e53935' : 'var(--scottish-navy)'
 
   return (
-    <Link
-      to={matchPath}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        padding: '10px 16px',
-        borderBottom: '1px solid var(--border-light)',
-        background: mode === 'live' ? 'rgba(229,57,53,0.045)' : 'var(--bg-secondary)',
-        color: 'var(--text-primary)',
-        textDecoration: 'none',
-      }}
-    >
-      <span style={{
-        background: statusColour,
-        color: 'white',
-        fontSize: '9px',
-        fontWeight: '900',
-        padding: '3px 7px',
-        borderRadius: '999px',
-        flexShrink: 0,
-      }}>
-        {mode === 'live' ? '🔴 ' : mode === 'upcoming' ? '⏱ ' : '✓ '}
-        {statusLabel}{minute ? ` ${minute}` : ''}
-      </span>
+    <div style={{ borderBottom: '1px solid var(--border-light)' }}>
+      <button onClick={() => setExpanded(e => !e)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: bgColour, border: 'none', cursor: 'pointer', textAlign: 'left' }}>
 
-      <span style={{
-        flex: 1,
-        minWidth: 0,
-        fontSize: '11.5px',
-        fontWeight: '800',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-      }}>
-        {matchText}
-      </span>
+        {/* Status badge */}
+        {mode === 'live' && <span style={{ background: '#e53935', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>🔴 {match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : 'LIVE'}</span>}
+        {mode === 'upcoming' && <span style={{ background: 'var(--scottish-navy)', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>⏱ {countdown}</span>}
+        {mode === 'result' && <span style={{ background: 'var(--accent-green)', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>✓ FT</span>}
 
-      <span style={{
-        color: 'var(--scottish-navy)',
-        fontSize: '10.5px',
-        fontWeight: '900',
-        whiteSpace: 'nowrap',
-      }}>
-        Match Centre →
-      </span>
-    </Link>
+        {/* Match */}
+        <span style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>
+          {match.home_team?.flag_emoji} {match.home_team?.short_code}
+          {mode !== 'upcoming'
+            ? <span style={{ fontFamily: 'monospace', margin: '0 4px', fontWeight: '900', color: mode === 'live' ? '#e53935' : 'var(--text-primary)' }}>{liveScore || '–'}</span>
+            : <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>vs</span>}
+          {match.away_team?.short_code} {match.away_team?.flag_emoji}
+        </span>
+
+        {/* Summary */}
+        {mode === 'live' && hasScore && <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', flexShrink: 0 }}>{onTrackCount}/{members.length} on track</span>}
+        {mode === 'result' && <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', flexShrink: 0 }}>{totalPts}pts earned</span>}
+        {mode === 'upcoming' && <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0 }}>Your picks</span>}
+
+        <span style={{ fontSize: '10px', color: 'var(--text-muted)', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▼</span>
+      </button>
+
+      {expanded && (
+        <div style={{ padding: '4px 8px 8px' }}>
+          {members.map(member => {
+            const pred = preds[member.user_id]
+            if (!pred) return (
+              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 8px', opacity: 0.35 }}>
+                <span style={{ fontSize: '12px', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No pick</span>
+              </div>
+            )
+            const onTrack = hasScore && ((hw && pred.home_score > pred.away_score) || (aw && pred.home_score < pred.away_score) || (dr && pred.home_score === pred.away_score))
+            const exact = hasScore && match.home_score === pred.home_score && match.away_score === pred.away_score
+            const pts = pred.points_awarded
+            return (
+              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 8px', borderRadius: '6px',
+                background: mode === 'result'
+                  ? (pts > 0 ? 'rgba(0,122,51,0.06)' : 'transparent')
+                  : (exact ? 'rgba(0,122,51,0.08)' : onTrack ? 'rgba(0,122,51,0.04)' : hasScore ? 'rgba(229,57,53,0.04)' : 'transparent')
+              }}>
+                <span style={{ fontSize: '12px', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
+                {pred.is_confident && <span title="Joker" style={{ fontSize: '11px' }}>🃏</span>}
+                <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: '800',
+                  color: mode === 'result'
+                    ? (pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)')
+                    : (exact ? 'var(--accent-green)' : onTrack ? 'var(--accent-green)' : hasScore ? '#e53935' : 'var(--text-primary)')
+                }}>
+                  {pred.home_score}–{pred.away_score}
+                </span>
+                {mode === 'result' && <span style={{ fontSize: '11px', fontWeight: '800', color: pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)', width: '32px', textAlign: 'right' }}>{pts != null ? `+${pts}` : '–'}</span>}
+                {mode === 'live' && <span style={{ fontSize: '12px', width: '16px', textAlign: 'center' }}>{!hasScore ? '' : exact ? '🎯' : onTrack ? '✓' : '✗'}</span>}
+              </div>
+            )
+          })}
+          <Link to={leagueCode ? `/match/${match.match_number || match.id}/stats?league=${leagueCode}` : `/match/${match.match_number || match.id}/stats`} style={{ display: 'block', textAlign: 'center', marginTop: '8px', padding: '6px', fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)' }}>
+            📊 Full match stats →
+          </Link>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -602,7 +640,7 @@ export default function Leagues() {
       const oneHourAhead = new Date(now.getTime() + 60 * 60 * 1000).toISOString()
 
       const { data } = await supabase.from('matches')
-        .select('id, match_number, home_score, away_score, status, kickoff_time, live_minute, injury_time, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .select('id, home_score, away_score, status, kickoff_time, live_minute, injury_time, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
         .or([
           `status.eq.live`,
           `and(status.eq.scheduled,kickoff_time.lte.${nowIso},kickoff_time.gte.${twoHoursAgo})`,
@@ -1256,7 +1294,7 @@ export default function Leagues() {
                 {activeGame === 'ko' ? '🔥 Create a KO Predictor League' : '🌍 Create a League'}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                {activeGame === 'ko' ? 'Separate from Tournament leagues — KO points only' : 'Group + knockout + awards predictions'}
+                {activeGame === 'ko' ? 'Private league · KO Predictor points only · friends join with your invite code' : 'Group + knockout + awards predictions'}
               </div>
               <input className="input" placeholder="League name e.g. Office WC26" value={newLeagueName}
                 onChange={e => setNewLeagueName(e.target.value)} style={{ marginBottom: activeGame === 'ko' ? '12px' : '10px' }} />
@@ -1448,11 +1486,14 @@ export default function Leagues() {
             <div className="empty-state">
               <div className="empty-state-icon">🔥</div>
               <div className="empty-state-title">No KO Predictor leagues yet</div>
-              <div className="empty-state-desc">Create or join a KO Predictor league — completely separate from your Tournament leagues</div>
-              <button onClick={() => { setShowCreate(true); setShowJoin(false) }}
-                className="btn btn-primary" style={{ marginTop: '16px', background: '#e65100' }}>
-                + Create KO League
-              </button>
+              <div className="empty-state-desc">Private mini-leagues for the separate KO Predictor game. Only KO Predictor points count, and friends join using an invite code.</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', maxWidth: '360px', margin: '18px auto 0' }}>
+                <button onClick={() => { setShowCreate(true); setShowJoin(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  className="btn btn-primary" style={{ background: '#e65100' }}>+ Create</button>
+                <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
+                  className="btn btn-secondary">Join with code</button>
+              </div>
+              <Link to="/leaderboard?game=ko" style={{ display: 'inline-block', marginTop: '18px', color: '#e65100', fontWeight: '800', fontSize: '13px' }}>View full KO Predictor leaderboard →</Link>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1469,7 +1510,7 @@ export default function Leagues() {
                         </div>
                         <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
                           Code: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '0.1em' }}>{league?.invite_code}</span>
-                          · {memberCount} member{memberCount !== 1 ? 's' : ''}
+                          · {memberCount} member{memberCount !== 1 ? 's' : ''} · Private
                         </div>
                       </div>
                       <div style={{ fontSize: '13px', fontWeight: '700', color: '#e65100' }}>KO Predictor</div>
@@ -1481,6 +1522,7 @@ export default function Leagues() {
                         const text = `Join my WC26 KO Predictor league "${league?.name}"! Code: ${league?.invite_code} at https://wc26predictor1.netlify.app`
                         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
                       }} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none' }}>WhatsApp</button>
+                      <Link to="/leaderboard?game=ko" className="btn btn-secondary btn-sm">Full leaderboard</Link>
                       {isCreator ? (
                         <button onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league_id, leagueName: league?.name })}
                           className="btn btn-sm" style={{ background: 'none', border: '1px solid #e53935', color: '#e53935' }}>Delete</button>
@@ -1627,16 +1669,16 @@ export default function Leagues() {
                     <Link to="/how-to-play" style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textDecoration: 'none', flexShrink: 0, marginLeft: '8px' }}>Rules →</Link>
                   </div>
 
-                  {/* One compact Match Centre link for the current match slot.
-                      The league code is carried into Match Centre so this league
-                      is selected by default. */}
-                  {liveMatches.length > 0 ? (
-                    <MatchCentreBar matches={liveMatches} mode="live" leagueCode={league.code} />
-                  ) : upcomingMatch ? (
-                    <MatchCentreBar matches={[upcomingMatch]} mode="upcoming" leagueCode={league.code} />
-                  ) : recentResult ? (
-                    <MatchCentreBar matches={[recentResult]} mode="result" leagueCode={league.code} />
-                  ) : null}
+                  {/* Match strip — upcoming / live / result */}
+                  {recentResult && liveMatches.length === 0 && !upcomingMatch && (
+                    <LiveMatchCard key={recentResult.id} match={recentResult} members={sortedMembers(league.id)} supabase={supabase} mode="result" leagueCode={league.code} />
+                  )}
+                  {liveMatches.map(m => (
+                    <LiveMatchCard key={m.id} match={m} members={sortedMembers(league.id)} supabase={supabase} mode="live" leagueCode={league.code} />
+                  ))}
+                  {upcomingMatch && !liveMatches.length && (
+                    <LiveMatchCard key={upcomingMatch.id} match={upcomingMatch} members={sortedMembers(league.id)} supabase={supabase} mode="upcoming" leagueCode={league.code} />
+                  )}
 
                   {/* League table — always visible */}
                   <div>

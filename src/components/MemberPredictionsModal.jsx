@@ -305,7 +305,7 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
           return { points: 0, status: 'missed', label: 'Eliminated', actualMatch }
         }
         if (groupPosition === 3 && (r32FieldResolved || stageIsSettled('r32'))) {
-          return { points: 0, status: 'missed', label: 'Did not qualify', actualMatch }
+          return { points: 0, status: 'missed', label: 'Eliminated', actualMatch }
         }
       } else {
         const previous = previousStageKey[stage.key]
@@ -315,13 +315,13 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
 
         // As soon as this team loses its real previous-round match, its later-round
         // card can be marked eliminated without waiting for every tie in the round.
-        if (previousMatch?.status === 'completed' && previousMatch.winner_team_id && previousMatch.winner_team_id !== team.id) {
+        if (previousMatch?.winner_team_id && previousMatch.winner_team_id !== team.id) {
           return { points: 0, status: 'missed', label: 'Eliminated', actualMatch: previousMatch }
         }
       }
 
       if (stageIsSettled(stage.key)) {
-        return { points: 0, status: 'missed', label: stage.key === 'r32' ? 'Did not qualify' : 'Did not reach round', actualMatch }
+        return { points: 0, status: 'missed', label: 'Eliminated', actualMatch }
       }
       return { points: 0, status: 'pending', label: '—', actualMatch }
     }

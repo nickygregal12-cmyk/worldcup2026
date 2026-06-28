@@ -148,25 +148,7 @@ export const handler = async (event) => {
     if (!response.ok) throw new Error(`API error: ${response.status}`)
 
     const data = await response.json()
-    let matches = data.matches || []
-
-    // Competition match lists can be folded by football-data.org. Fetch the
-    // individual resource for live games so minute and injuryTime are present.
-    const liveStatuses = new Set(['IN_PLAY', 'PAUSED'])
-    matches = await Promise.all(matches.map(async match => {
-      if (!liveStatuses.has(match.status) || !match.id) return match
-      try {
-        const detailResponse = await fetch(
-          `https://api.football-data.org/v4/matches/${match.id}`,
-          { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY, 'X-Api-Version': 'v4.1' } }
-        )
-        if (!detailResponse.ok) return match
-        const detail = await detailResponse.json()
-        return { ...match, ...detail }
-      } catch (_) {
-        return match
-      }
-    }))
+    const matches = data.matches || []
     let updated = 0
     let pointsCalculated = 0
     let fixturesPopulated = 0
@@ -302,7 +284,7 @@ export const handler = async (event) => {
 
       let { data: ourMatch, error: lookupError } = await supabase
         .from('matches')
-        .select('id, match_number, external_match_id, status, home_score, away_score, live_minute, injury_time, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name)')
+        .select('id, match_number, external_match_id, status, home_score, away_score, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name)')
         .eq('external_match_id', match.id.toString())
         .maybeSingle()
 
@@ -318,7 +300,7 @@ export const handler = async (event) => {
         if (!matchDate) continue
         const { data: candidates, error: candidateError } = await supabase
           .from('matches')
-          .select('id, match_number, external_match_id, status, home_score, away_score, live_minute, injury_time, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
+          .select('id, match_number, external_match_id, status, home_score, away_score, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
           .gte('kickoff_time', `${matchDate}T00:00:00Z`)
           .lte('kickoff_time', `${matchDate}T23:59:59Z`)
 
@@ -397,14 +379,11 @@ export const handler = async (event) => {
         }
       }
 
-      const nextLiveMinute = newStatus === 'live' ? (match.minute ?? null) : null
-      const nextInjuryTime = newStatus === 'live' ? (match.injuryTime ?? null) : null
       const scoreChanged = ourMatch.home_score !== effectiveHomeScore || ourMatch.away_score !== effectiveAwayScore
       const statusChanged = ourMatch.status !== newStatus
-      const minuteChanged = ourMatch.live_minute !== nextLiveMinute || ourMatch.injury_time !== nextInjuryTime
       const koResultChanged = isKnockout && newStatus === 'completed' &&
         (ourMatch.winner_team_id !== winnerTeamId || ourMatch.outcome_type !== outcomeType)
-      const needsUpdate = scoreChanged || statusChanged || minuteChanged || koResultChanged || ourMatch.external_match_id !== match.id.toString()
+      const needsUpdate = scoreChanged || statusChanged || koResultChanged || ourMatch.external_match_id !== match.id.toString()
       if (!needsUpdate) continue
 
       if (newStatus === 'live' && ourMatch.status === 'scheduled') {
@@ -417,8 +396,8 @@ export const handler = async (event) => {
         status: newStatus,
         external_match_id: match.id.toString(),
         api_synced_at: new Date().toISOString(),
-        live_minute: nextLiveMinute,
-        injury_time: nextInjuryTime,
+        live_minute: newStatus === 'live' ? (match.minute ?? null) : null,
+        injury_time: newStatus === 'live' ? (match.injuryTime ?? null) : null,
       }
       if (isKnockout && newStatus === 'completed') {
         updateFields.winner_team_id = winnerTeamId

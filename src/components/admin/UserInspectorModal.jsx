@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase.js'
+import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../../lib/bracketUtils.js'
 
 const STAGES = [['group','Group predictions'],['bracket','Original bracket'],['ko','KO Predictor'],['awards','Awards & totals']]
 
@@ -19,7 +20,7 @@ export default function UserInspectorModal({ userId, users, onClose, onChanged, 
   const load = async () => {
     setLoading(true)
     const [matchRes, groupRes, bracketRes, koRes, awardRes, totalRes, playerRes] = await Promise.all([
-      supabase.from('matches').select('id,match_number,stage,status,kickoff_time,home_score,away_score,home_team:home_team_id(id,name,short_code,flag_emoji),away_team:away_team_id(id,name,short_code,flag_emoji)').order('match_number'),
+      supabase.from('matches').select('id,match_number,stage,status,kickoff_time,home_score,away_score,home_team_id,away_team_id,group:group_id(name),home_team:home_team_id(id,name,short_code,flag_emoji),away_team:away_team_id(id,name,short_code,flag_emoji)').order('match_number'),
       supabase.from('predictions').select('*').eq('user_id',userId),
       supabase.from('knockout_picks').select('*,team:team_id(id,name,short_code,flag_emoji),home_team:home_team_id(id,name,short_code,flag_emoji),away_team:away_team_id(id,name,short_code,flag_emoji)').eq('user_id',userId).order('match_number'),
       supabase.from('ko_predictions').select('*').eq('user_id',userId),
@@ -34,6 +35,65 @@ export default function UserInspectorModal({ userId, users, onClose, onChanged, 
 
   const groupMatches = useMemo(() => matches.filter(m=>m.stage==='group'),[matches])
   const koMatches = useMemo(() => matches.filter(m=>m.stage!=='group'),[matches])
+  const groupPredictionMap = useMemo(() => {
+    const map = {}
+    groupPreds.forEach(p => {
+      if (p.home_score !== null && p.home_score !== undefined && p.away_score !== null && p.away_score !== undefined) {
+        map[p.match_id] = { home: p.home_score, away: p.away_score }
+      }
+    })
+    return map
+  }, [groupPreds])
+  const predictedStandings = useMemo(
+    () => calcPredictedStandings(groupMatches, groupPredictionMap, true),
+    [groupMatches, groupPredictionMap]
+  )
+  const bracketRows = useMemo(() => {
+    const picksByNumber = Object.fromEntries(bracketPicks.map(p => [Number(p.match_number), p]))
+    const teamsById = {}
+    matches.forEach(m => {
+      if (m.home_team?.id) teamsById[m.home_team.id] = m.home_team
+      if (m.away_team?.id) teamsById[m.away_team.id] = m.away_team
+    })
+    bracketPicks.forEach(p => {
+      if (p.team?.id) teamsById[p.team.id] = p.team
+      if (p.home_team?.id) teamsById[p.home_team.id] = p.home_team
+      if (p.away_team?.id) teamsById[p.away_team.id] = p.away_team
+    })
+
+    const winnerForSlot = slot => {
+      if (!slot) return null
+      if (slot.startsWith('W')) {
+        const prior = picksByNumber[Number(slot.slice(1))]
+        return prior?.winner_team_id ? teamsById[prior.winner_team_id] || prior.team || null : null
+      }
+      if (slot.startsWith('L')) return null
+      return resolveSlot(slot, predictedStandings, groupMatches, groupPredictionMap)
+    }
+
+    return ALL_STAGES.flatMap(stage => stage.matches.map(def => {
+      const pick = picksByNumber[def.match_number] || null
+      const home = winnerForSlot(def.home_slot)
+      const away = winnerForSlot(def.away_slot)
+      const storedHome = pick?.home_team_id || pick?.home_team?.id || null
+      const storedAway = pick?.away_team_id || pick?.away_team?.id || null
+      const resolvedIds = [home?.id, away?.id].filter(Boolean)
+      const storedMismatch = Boolean(
+        pick && home && away && (
+          (storedHome && storedHome !== home.id) ||
+          (storedAway && storedAway !== away.id)
+        )
+      )
+      const invalidWinner = Boolean(pick?.winner_team_id && home && away && !resolvedIds.includes(pick.winner_team_id))
+      const unresolvedSavedPick = Boolean(pick?.winner_team_id && (!home || !away))
+      return {
+        def, stage: stage.key, pick, home, away,
+        storedMismatch, invalidWinner, unresolvedSavedPick,
+        issue: storedMismatch || invalidWinner || unresolvedSavedPick,
+      }
+    }))
+  }, [bracketPicks, matches, predictedStandings, groupMatches, groupPredictionMap])
+  const bracketIssueCount = useMemo(() => bracketRows.filter(r => r.issue).length, [bracketRows])
   const byMatch = (rows,id) => rows.find(p=>p.match_id===id)
   const setBusy = (key,val) => setSaving(p=>({...p,[key]:val}))
   const notify = async message => supabase.from('profiles').update({ admin_message:message, admin_message_read:false }).eq('id',userId)
@@ -64,7 +124,13 @@ export default function UserInspectorModal({ userId, users, onClose, onChanged, 
         {loading ? <div style={{padding:'40px',display:'grid',placeItems:'center'}}><div className="spinner"/></div> : <>
           {tab==='group' && <div style={{display:'grid',gap:'8px'}}>{groupMatches.map(m=><PredictionRow key={m.id} match={m} pred={byMatch(groupPreds,m.id)} kind="group" saving={saving[`g-${m.id}`]} onSave={v=>saveGroup(m,v)} />)}</div>}
           {tab==='ko' && <div><div style={{padding:'10px 12px',background:'var(--accent-blue-light)',borderRadius:'10px',fontSize:'12px',marginBottom:'10px'}}>This is the live KO Predictor data, including score, winner, first-goal band and Joker. Original bracket picks are kept separately.</div><div style={{display:'grid',gap:'8px'}}>{koMatches.map(m=><PredictionRow key={m.id} match={m} pred={byMatch(koPreds,m.id)} kind="ko" saving={saving[`ko-${m.id}`]} onSave={v=>saveKo(m,v)} onDelete={()=>deleteKo(m)} />)}</div></div>}
-          {tab==='bracket' && <div style={{display:'grid',gap:'8px'}}>{bracketPicks.length?bracketPicks.map(p=><BracketRow key={p.id} pick={p} userId={userId} reload={load} logAudit={logAudit} setActionResult={setActionResult}/>):<Empty text="No original knockout bracket picks saved."/>}</div>}
+          {tab==='bracket' && <div>
+            <div style={{padding:'11px 12px',borderRadius:'11px',background:bracketIssueCount?'rgba(230,81,0,.09)':'rgba(46,125,50,.08)',border:`1px solid ${bracketIssueCount?'rgba(230,81,0,.28)':'rgba(46,125,50,.22)'}`,fontSize:'12px',lineHeight:1.45,marginBottom:'10px'}}>
+              <b>{bracketIssueCount ? `${bracketIssueCount} possible bracket display issue${bracketIssueCount===1?'':'s'}` : 'Admin view matches the reconstructed user bracket'}</b>
+              <div style={{color:'var(--text-muted)',marginTop:'3px'}}>Teams below are reconstructed from this user’s group predictions and saved winner chain. Stored snapshot teams are shown only as a warning and are never rewritten automatically.</div>
+            </div>
+            <div style={{display:'grid',gap:'8px'}}>{bracketRows.length?bracketRows.map(row=><BracketRow key={row.def.match_number} row={row} userId={userId} reload={load} logAudit={logAudit} setActionResult={setActionResult}/>):<Empty text="No original knockout bracket structure available."/>}</div>
+          </div>}
           {tab==='awards' && <AwardsEditor userId={userId} awards={awards} totals={totals} players={players} reload={load} logAudit={logAudit} setActionResult={setActionResult}/>} 
         </>}
       </div>
@@ -84,46 +150,63 @@ function PredictionRow({match,pred,kind,saving,onSave,onDelete}){
   </div>
 }
 
-function BracketRow({pick,userId,reload,logAudit,setActionResult}){
-  const teams=[pick.home_team,pick.away_team].filter(Boolean)
-  const originalTeam=pick.winner_team_id||pick.team_id||''
-  const [team,setTeam]=useState(originalTeam)
-  const [saving,setSaving]=useState(false)
+function BracketRow({row,userId,reload,logAudit,setActionResult}){
+  const { def, stage, pick, home, away, storedMismatch, invalidWinner, unresolvedSavedPick } = row
+  const originalTeam = pick?.winner_team_id || pick?.team_id || ''
+  const [team,setTeam] = useState(originalTeam)
+  const [saving,setSaving] = useState(false)
+  const safelyResolved = Boolean(home?.id && away?.id)
+  const validWinner = !originalTeam || [home?.id, away?.id].includes(originalTeam)
 
-  useEffect(()=>setTeam(originalTeam),[originalTeam,pick.id])
+  useEffect(()=>setTeam(originalTeam),[originalTeam,pick?.id])
 
   const save=async()=>{
-    if(!team) return setActionResult(`Choose a winner for M${pick.match_number}.`)
+    if(!safelyResolved) return setActionResult(`M${def.match_number} cannot be edited until both teams resolve from the user-facing bracket.`)
+    if(!team || ![home.id,away.id].includes(team)) return setActionResult(`Choose one of the reconstructed teams for M${def.match_number}.`)
+    const chosen = team===home.id ? home : away
+    if(!window.confirm(`Change this user's M${def.match_number} winner to ${chosen.name}? Only winner_team_id and team_id will change.`)) return
     setSaving(true)
-    const {error}=await supabase.from('knockout_picks')
-      .update({team_id:team,winner_team_id:team})
-      .eq('user_id',userId)
-      .eq('match_number',pick.match_number)
+    const payload={team_id:team,winner_team_id:team}
+    let query
+    if(pick?.id){
+      query=supabase.from('knockout_picks').update(payload).eq('id',pick.id)
+    }else{
+      query=supabase.from('knockout_picks').insert({user_id:userId,match_number:def.match_number,stage,...payload})
+    }
+    const {error}=await query
     if(error){ setActionResult(error.message); setSaving(false); return }
-    await logAudit('ADMIN_EDIT_BRACKET_PICK',{user_id:userId,match_number:pick.match_number,team_id:team})
-    setActionResult(`Bracket winner for M${pick.match_number} updated.`)
+    await logAudit('ADMIN_EDIT_BRACKET_PICK_SAFE',{user_id:userId,match_number:def.match_number,winner_team_id:team,display_matchup:[home.id,away.id]})
+    setActionResult(`Bracket winner for M${def.match_number} updated. Matchup snapshots were left untouched.`)
     await reload()
     setSaving(false)
   }
 
-  return <div style={{padding:'13px',border:'1px solid var(--border-light)',borderRadius:'14px',background:'var(--bg-card)'}}>
+  const issue = storedMismatch || invalidWinner || unresolvedSavedPick
+  return <div style={{padding:'13px',border:`1px solid ${issue?'rgba(230,81,0,.4)':'var(--border-light)'}`,borderRadius:'14px',background:'var(--bg-card)'}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'10px',marginBottom:'10px'}}>
-      <b>M{pick.match_number} · {pick.stage?.toUpperCase()}</b>
-      <span style={{fontSize:'10px',fontWeight:800,color:'var(--text-muted)',textTransform:'uppercase',letterSpacing:'.05em'}}>Click the winner</span>
+      <div><b>M{def.match_number} · {stage.toUpperCase()}</b><div style={{fontSize:'10px',color:'var(--text-muted)',marginTop:'2px'}}>{def.home_slot} v {def.away_slot}</div></div>
+      <span style={{fontSize:'10px',fontWeight:800,color:issue?'#e65100':'var(--text-muted)',textTransform:'uppercase',letterSpacing:'.05em'}}>{issue?'Review matchup':'User-facing matchup'}</span>
     </div>
 
-    {teams.length===2 ? <div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr',gap:'8px',alignItems:'stretch'}}>
-      <BracketTeamButton team={teams[0]} selected={team===teams[0].id} onClick={()=>setTeam(teams[0].id)} />
+    {safelyResolved ? <div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr',gap:'8px',alignItems:'stretch'}}>
+      <BracketTeamButton team={home} selected={team===home.id} onClick={()=>setTeam(home.id)} />
       <div style={{display:'grid',placeItems:'center',fontWeight:900,color:'var(--text-muted)',fontSize:'12px'}}>vs</div>
-      <BracketTeamButton team={teams[1]} selected={team===teams[1].id} onClick={()=>setTeam(teams[1].id)} />
+      <BracketTeamButton team={away} selected={team===away.id} onClick={()=>setTeam(away.id)} />
     </div> : <div style={{padding:'12px',borderRadius:'10px',background:'var(--bg-secondary)',color:'var(--text-muted)',fontSize:'12px'}}>
-      This saved bracket matchup does not currently have both teams available.
+      This matchup cannot yet be reconstructed safely from the user’s group predictions and previous winners. Saving is disabled.
+    </div>}
+
+    {issue && <div style={{marginTop:'9px',padding:'8px 10px',borderRadius:'9px',background:'rgba(230,81,0,.08)',fontSize:'11px',color:'#b54708',lineHeight:1.4}}>
+      {storedMismatch && <div>Stored home/away snapshot differs from the reconstructed user-facing matchup.</div>}
+      {invalidWinner && <div>The saved winner is not one of the two reconstructed teams.</div>}
+      {unresolvedSavedPick && <div>A winner is saved, but the matchup cannot currently be reconstructed.</div>}
+      <b>No data has been changed.</b>
     </div>}
 
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:'8px',marginTop:'10px'}}>
-      <button type="button" className="btn btn-secondary btn-sm" onClick={()=>setTeam('')} disabled={!team||saving}>Clear</button>
-      <button className="btn btn-primary btn-sm" onClick={save} disabled={!team||team===originalTeam||saving}>
-        {saving?'Saving…':team===originalTeam?'Saved winner':'Save winner'}
+      <span style={{fontSize:'10px',color:validWinner?'var(--text-muted)':'#e65100'}}>{validWinner?'Only a deliberate winner save writes to the database.':'Current saved winner needs review.'}</span>
+      <button className="btn btn-primary btn-sm" onClick={save} disabled={!safelyResolved||!team||team===originalTeam||saving}>
+        {saving?'Saving…':team===originalTeam?'Saved winner':'Confirm winner change'}
       </button>
     </div>
   </div>
