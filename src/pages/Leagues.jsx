@@ -1340,9 +1340,7 @@ export default function Leagues() {
 
   const allTournamentLeaguesCollapsed = orderedTournamentLeagues.length > 0 && orderedTournamentLeagues.every(m => (collapsedLeagueIds || []).includes(m.league_id))
 
-  // Guest view
-  if (!user) {
-    const displayedOverallRows = [...overallRows]
+  const displayedOverallRows = [...overallRows]
     .filter(profile => overallGame === 'tournament' || koOverallEntrants.has(profile.id))
     .sort((a, b) => {
       const pointKey = overallGame === 'ko' ? 'ko_points' : 'total_points'
@@ -1357,7 +1355,9 @@ export default function Leagues() {
   const overallAccent = overallGame === 'ko' ? '#e65100' : 'var(--scottish-navy)'
   const overallAccentLight = overallGame === 'ko' ? 'rgba(230,81,0,0.08)' : 'var(--scottish-navy-light)'
 
-  return (
+  // Guest view
+  if (!user) {
+    return (
       <div data-live-prediction-count={livePredictionCount} style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
         <div style={{
           background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat',
