@@ -602,6 +602,9 @@ export default function Leagues() {
   const [openLeagueMenu, setOpenLeagueMenu] = useState(null)
   const [myLeagues, setMyLeagues] = useState([])
   const [myKoLeagues, setMyKoLeagues] = useState([])
+  const [koLeagueMembers, setKoLeagueMembers] = useState({})
+  const [loadingKoMembers, setLoadingKoMembers] = useState({})
+  const [expandedKoLeague, setExpandedKoLeague] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
@@ -793,6 +796,20 @@ export default function Leagues() {
     })
   }
 
+  const loadKoLeagueMembers = async (leagueId) => {
+    setLoadingKoMembers(prev => ({ ...prev, [leagueId]: true }))
+    const { data, error } = await supabase
+      .from('ko_league_members')
+      .select('league_id, user_id, joined_at, profile:user_id(id, username, display_name, avatar_emoji, ko_points, ko_streak_current, ko_exact_scores)')
+      .eq('league_id', leagueId)
+      .order('joined_at', { ascending: true })
+
+    if (error) console.error('KO league members error:', error)
+    setKoLeagueMembers(prev => ({ ...prev, [leagueId]: data || [] }))
+    setLoadingKoMembers(prev => ({ ...prev, [leagueId]: false }))
+    return data || []
+  }
+
   const loadMyKoLeagues = async () => {
     const { data: memberships } = await supabase
       .from('ko_league_members')
@@ -805,7 +822,9 @@ export default function Leagues() {
       .from('ko_league_members').select('league_id').in('league_id', leagueIds)
     const countMap = {}
     counts?.forEach(c => { countMap[c.league_id] = (countMap[c.league_id] || 0) + 1 })
-    setMyKoLeagues(memberships.map(m => ({ ...m, memberCount: countMap[m.league_id] || 1 })))
+    const leagues = memberships.map(m => ({ ...m, memberCount: countMap[m.league_id] || 1 }))
+    setMyKoLeagues(leagues)
+    leagues.forEach(m => { if (m.league_id) loadKoLeagueMembers(m.league_id) })
   }
 
   const createKoLeague = async () => {
@@ -1188,6 +1207,12 @@ export default function Leagues() {
     return 'wrong'
   }
 
+  const sortedKoMembers = (leagueId) => [...(koLeagueMembers[leagueId] || [])].sort((a, b) => {
+    const pointsDiff = (b.profile?.ko_points || 0) - (a.profile?.ko_points || 0)
+    if (pointsDiff !== 0) return pointsDiff
+    return (b.profile?.ko_exact_scores || 0) - (a.profile?.ko_exact_scores || 0)
+  })
+
   const orderedTournamentLeagues = useMemo(() => {
     const list = myLeagues.filter(({ league }) => league && !league.is_global)
     const positions = new Map(leagueOrder.map((id, index) => [id, index]))
@@ -1497,40 +1522,80 @@ export default function Leagues() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
+                <button onClick={() => { setShowCreate(true); setShowJoin(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-sm" style={{ padding: '7px 11px', background: '#e65100', color: 'white', border: 'none' }}>＋ New league</button>
+                <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-secondary btn-sm" style={{ padding: '7px 11px' }}>Join</button>
+                <div style={{ flex: 1 }} />
+                <button onClick={() => setExpandedKoLeague(expandedKoLeague ? null : myKoLeagues[0]?.league_id)} className="btn btn-secondary btn-sm" style={{ padding: '7px 10px' }}>{expandedKoLeague ? 'Collapse all' : 'Expand first'}</button>
+              </div>
+
               {myKoLeagues.map(({ league_id, league, memberCount }) => {
                 const isCreator = league?.created_by === user?.id
+                const isExpanded = expandedKoLeague === league_id
+                const members = sortedKoMembers(league_id)
+                const myRank = members.findIndex(m => m.user_id === user?.id) + 1
                 return (
-                  <div key={league_id} className="card" style={{ border: '1px solid rgba(230,81,0,0.3)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '14px' }}>🔥</span>
-                          <span style={{ fontWeight: '700', fontSize: '15px' }}>{league?.name}</span>
-                          {isCreator && <span style={{ fontSize: '10px', background: '#e65100', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>CREATOR</span>}
+                  <div key={league_id} className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid rgba(230,81,0,0.25)' }}>
+                    <button type="button" onClick={() => setExpandedKoLeague(isExpanded ? null : league_id)} style={{ width: '100%', border: 'none', background: 'var(--bg-card)', padding: '16px 18px', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+                          <span style={{ fontSize: '18px' }}>🔥</span>
+                          <span style={{ fontWeight: '900', fontSize: '16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{league?.name}</span>
+                          {isCreator && <span style={{ fontSize: '9px', background: '#e65100', color: 'white', padding: '2px 6px', borderRadius: '5px', fontWeight: '800', flexShrink: 0 }}>CREATOR</span>}
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                          Code: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '0.1em' }}>{league?.invite_code}</span>
-                          · {memberCount} member{memberCount !== 1 ? 's' : ''} · Private
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '5px' }}>{memberCount} member{memberCount !== 1 ? 's' : ''} · Private KO league</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>Your rank</div>
+                          <div style={{ fontSize: '22px', fontWeight: '900', color: '#e65100', fontFamily: 'var(--font-mono)' }}>{myRank ? `#${myRank}` : '—'}</div>
+                        </div>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '15px', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌃</span>
+                      </div>
+                    </button>
+
+                    <div style={{ padding: '9px 18px', borderTop: '1px solid var(--border-light)', borderBottom: isExpanded ? '1px solid var(--border-light)' : 'none', background: 'var(--bg-secondary)', display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700' }}>
+                      <span>KO Predictor points only · Bonuses and jokers included</span>
+                      <Link to="/how-to-play" onClick={e => e.stopPropagation()} style={{ color: '#e65100', whiteSpace: 'nowrap', fontWeight: '800' }}>Rules →</Link>
+                    </div>
+
+                    {isExpanded && (
+                      <div>
+                        {loadingKoMembers[league_id] ? (
+                          <div style={{ display: 'flex', justifyContent: 'center', padding: '30px' }}><div className="spinner" /></div>
+                        ) : members.length === 0 ? (
+                          <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>No members yet</div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '2px 6px 6px' }}>
+                            {members.map((member, index) => {
+                              const profile = member.profile || {}
+                              const isMe = member.user_id === user?.id
+                              const points = profile.ko_points || 0
+                              return (
+                                <div key={member.user_id} className="leaderboard-row" style={{ position: 'relative', background: isMe ? 'rgba(230,81,0,0.07)' : 'var(--bg-card)', border: isMe ? '1px solid rgba(230,81,0,0.55)' : '1px solid var(--border-light)' }}>
+                                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: isMe ? '#e65100' : index < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
+                                  <span style={{ fontSize: index < 3 ? '20px' : '13px', fontWeight: '900', minWidth: '36px', textAlign: 'center', color: index < 3 ? 'inherit' : 'var(--text-muted)', fontFamily: index >= 3 ? 'var(--font-mono)' : 'inherit' }}>{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}</span>
+                                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isMe ? '#e65100' : avatarColor(profile.display_name || profile.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: isMe ? 'white' : avatarColor(profile.display_name || profile.username).fg, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.12)' }}>{profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}</div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'}</span>{isMe && <span style={{ fontSize: '9px', background: '#e65100', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '800' }}>YOU</span>}</div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>{index === 0 ? `Leader · 🎯 ${profile.ko_exact_scores || 0}` : `${Math.max((members[0]?.profile?.ko_points || 0) - points, 0)} behind leader · 🎯 ${profile.ko_exact_scores || 0}`}</div>
+                                  </div>
+                                  <div style={{ textAlign: 'right', minWidth: '52px' }}><div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: isMe ? '#e65100' : 'var(--text-primary)', lineHeight: 1 }}>{points}</div><div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>PTS</div></div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+
+                        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-light)', background: 'var(--bg-secondary)', display: 'flex', gap: '7px', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <div style={{ marginRight: 'auto', fontSize: '12px', color: 'var(--text-muted)' }}>Invite code: <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '0.08em' }}>{league?.invite_code}</strong></div>
+                          <button onClick={() => navigator.clipboard?.writeText(league?.invite_code).then(() => setSuccess(`Copied: ${league?.invite_code}`))} className="btn btn-secondary btn-sm">📋 Copy</button>
+                          <button onClick={() => { const text = `Join my WC26 KO Predictor league "${league?.name}"! Code: ${league?.invite_code} at https://wc26predictor1.netlify.app`; window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank') }} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none' }}>WhatsApp</button>
+                          <Link to="/leaderboard?game=ko" className="btn btn-secondary btn-sm">Full leaderboard</Link>
+                          {isCreator ? <button onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league_id, leagueName: league?.name })} className="btn btn-sm" style={{ background: 'none', border: '1px solid #e53935', color: '#e53935' }}>Delete</button> : <button onClick={() => setConfirmAction({ type: 'leaveKoLeague', leagueId: league_id, leagueName: league?.name })} className="btn btn-secondary btn-sm">Leave</button>}
                         </div>
                       </div>
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#e65100' }}>KO Predictor</div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      <button onClick={() => navigator.clipboard?.writeText(league?.invite_code).then(() => setSuccess(`Copied: ${league?.invite_code}`))}
-                        className="btn btn-secondary btn-sm">📋 Copy Code</button>
-                      <button onClick={() => {
-                        const text = `Join my WC26 KO Predictor league "${league?.name}"! Code: ${league?.invite_code} at https://wc26predictor1.netlify.app`
-                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
-                      }} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none' }}>WhatsApp</button>
-                      <Link to="/leaderboard?game=ko" className="btn btn-secondary btn-sm">Full leaderboard</Link>
-                      {isCreator ? (
-                        <button onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league_id, leagueName: league?.name })}
-                          className="btn btn-sm" style={{ background: 'none', border: '1px solid #e53935', color: '#e53935' }}>Delete</button>
-                      ) : (
-                        <button onClick={() => setConfirmAction({ type: 'leaveKoLeague', leagueId: league_id, leagueName: league?.name })}
-                          className="btn btn-secondary btn-sm">Leave</button>
-                      )}
-                    </div>
+                    )}
                   </div>
                 )
               })}
