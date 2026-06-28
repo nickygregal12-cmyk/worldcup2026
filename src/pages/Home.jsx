@@ -179,6 +179,7 @@ export default function Home() {
   // Live match data takes priority over date/phase overrides. The final group
   // fixtures must keep the group Matchday Hub visible until they are finished.
   const hasLiveGroupMatches = liveMatches.some(match => match.stage === 'group')
+  const hasLiveKnockoutMatches = liveMatches.some(match => match.stage !== 'group')
   // Hub phase follows the real fixture data, not the KO predictor opening date or
   // an admin phase override. This keeps the group hub active through the final
   // group fixtures and only hands Home to the knockout hub once all 72 are complete.
@@ -1010,8 +1011,57 @@ export default function Home() {
           )}
 
           {/* ── Knockout matchday hub: only after no group match is still live ── */}
-          {!loading && user && groupFixturesActuallyComplete && knockoutLive && (
+          {!loading && user && groupFixturesActuallyComplete && knockoutLive && hasLiveKnockoutMatches && (
             <KnockoutMatchdayHub user={user} profile={profile} />
+          )}
+
+          {/* ── Knockout countdown: keep the matchday hub hidden until kickoff ── */}
+          {!loading && user && groupFixturesActuallyComplete && knockoutLive && !hasLiveKnockoutMatches && nextMatch && !mainCountdown.started && (
+            <div className="card fade-in" style={{ overflow: 'hidden', border: '1px solid rgba(0,48,135,0.16)', padding: '20px 18px' }}>
+              <div style={{ height: '5px', background: 'var(--scottish-navy)', marginBottom: '18px', borderRadius: 'var(--radius-full)' }} />
+              <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+                <div style={{ fontSize: '12px', fontWeight: '900', color: 'var(--scottish-navy)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '12px' }}>
+                  ⏱ Knockout matchday begins in
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '7px' }}>
+                  {[
+                    { label: 'Days', value: mainCountdown.days ?? 0 },
+                    { label: 'Hours', value: mainCountdown.hours ?? 0 },
+                    { label: 'Mins', value: mainCountdown.minutes ?? 0 },
+                    { label: 'Secs', value: mainCountdown.seconds ?? 0 },
+                  ].map(item => (
+                    <div key={item.label} style={{ textAlign: 'center', padding: '11px 4px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                      <div style={{ fontWeight: '900', fontSize: 'clamp(25px, 7vw, 38px)', lineHeight: 1, fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)', letterSpacing: '-0.04em' }}>
+                        {String(item.value).padStart(2, '0')}
+                      </div>
+                      <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '6px' }}>{item.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '13px' }}>
+                  <div style={{ fontWeight: '900', fontSize: '15px' }}>🏆 Next knockout match</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '700', textAlign: 'right' }}>{formatKickoff(nextMatch.kickoff_time)}</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                    <span style={{ fontSize: '38px', lineHeight: 1 }}>{nextMatch.home_team?.flag_emoji}</span>
+                    <span style={{ fontWeight: '900', fontSize: '14px', textAlign: 'center', lineHeight: 1.2 }}>{nextMatch.home_team?.name}</span>
+                  </div>
+                  <div style={{ color: 'var(--text-muted)', fontWeight: '900', fontSize: '13px' }}>vs</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px', minWidth: 0 }}>
+                    <span style={{ fontSize: '38px', lineHeight: 1 }}>{nextMatch.away_team?.flag_emoji}</span>
+                    <span style={{ fontWeight: '900', fontSize: '14px', textAlign: 'center', lineHeight: 1.2 }}>{nextMatch.away_team?.name}</span>
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9px', marginTop: '16px' }}>
+                  <Link to={`/match/${nextMatch.id}/stats`} className="btn btn-secondary" style={{ textDecoration: 'none', textAlign: 'center', justifyContent: 'center', fontSize: '12px' }}>Match centre</Link>
+                  <Link to="/ko-predictor" className="btn btn-primary" style={{ textDecoration: 'none', textAlign: 'center', justifyContent: 'center', fontSize: '12px' }}>KO Predictor</Link>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* ── Existing countdown card before kickoff; public live card for signed-out visitors ── */}
