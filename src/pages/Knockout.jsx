@@ -716,11 +716,16 @@ export default function Knockout() {
 
       const homeDepth = predictedDepthByTeam.get(fixture.home_team.id) ?? -1
       const awayDepth = predictedDepthByTeam.get(fixture.away_team.id) ?? -1
-      const homeInBracket = homeDepth >= activeStageIndex
-      const awayInBracket = awayDepth >= activeStageIndex
-      const bestDepth = Math.max(homeDepth, awayDepth)
-      const preferredId = homeDepth > awayDepth ? fixture.home_team.id
-        : awayDepth > homeDepth ? fixture.away_team.id
+      // A result only helps the remaining bracket if the team was predicted
+      // to progress BEYOND the current round. Merely appearing in this round
+      // means the user predicted them to exit here, so their win should not be
+      // presented as helpful.
+      const homeHasFutureValue = homeDepth > activeStageIndex
+      const awayHasFutureValue = awayDepth > activeStageIndex
+      const homeFutureDepth = homeHasFutureValue ? homeDepth : -1
+      const awayFutureDepth = awayHasFutureValue ? awayDepth : -1
+      const preferredId = homeFutureDepth > awayFutureDepth ? fixture.home_team.id
+        : awayFutureDepth > homeFutureDepth ? fixture.away_team.id
         : null
 
       const completed = ['completed', 'finished'].includes(String(fixture.status || '').toLowerCase())
@@ -754,12 +759,12 @@ export default function Knockout() {
           detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for M${fixture.match_number}, so that exact path is lost. ` +
             `${preferredTeam.name} is better for your remaining bracket because you predicted them to reach the ${reachLabels[preferredDepth] || 'later rounds'}, ` +
             `while ${otherTeam.name} was only predicted to reach the ${reachLabels[Math.max(otherDepth, 0)] || 'earlier rounds'}.`
-        } else if (homeInBracket || awayInBracket) {
+        } else if (homeHasFutureValue && awayHasFutureValue && homeDepth === awayDepth) {
           tone = 'partial'
           label = 'Either result preserves the same value'
-          const equalDepth = Math.max(homeDepth, awayDepth, activeStageIndex)
+          const equalDepth = homeDepth
           detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for M${fixture.match_number}, so that exact path is lost. ` +
-            `Both official teams were predicted to reach the ${reachLabels[equalDepth] || 'same round'}, so neither result is better for the remaining bracket.`
+            `Both official teams were predicted to progress as far as the ${reachLabels[equalDepth] || 'same later round'}, so either winner preserves the same remaining bracket value.`
         } else {
           tone = 'out'
           label = 'No result helps your bracket'
@@ -785,10 +790,10 @@ export default function Knockout() {
           const loserId = winnerId === fixture.home_team.id ? fixture.away_team.id : fixture.home_team.id
           const loserDepth = predictedDepthByTeam.get(loserId) ?? -1
           const winnerTeam = winnerId === fixture.home_team.id ? fixture.home_team : winnerId === fixture.away_team.id ? fixture.away_team : null
-          tone = winnerDepth >= activeStageIndex ? 'partial' : 'out'
-          label = winnerDepth > loserDepth ? 'Best available result' : winnerDepth >= activeStageIndex ? 'Some bracket value remains' : 'Exact path already lost'
+          tone = winnerDepth > activeStageIndex ? 'partial' : 'out'
+          label = winnerDepth > activeStageIndex && winnerDepth > loserDepth ? 'Best available result' : winnerDepth > activeStageIndex ? 'Some bracket value remains' : 'No bracket value remains'
           detail = `${savedWinner?.name || 'Your selected team'} did not reach this official fixture.`
-          if (winnerTeam && winnerDepth >= activeStageIndex) {
+          if (winnerTeam && winnerDepth > activeStageIndex) {
             detail += ` ${winnerTeam.name} advanced and preserves the path you had predicted as far as the ${reachLabels[winnerDepth] || 'later rounds'}.`
           } else {
             detail += ' The result does not preserve another predicted path.'
@@ -799,8 +804,8 @@ export default function Knockout() {
       return {
         fixture, savedWinnerId, savedWinner,
         homeNeeded: homeMatchesPick, awayNeeded: awayMatchesPick,
-        homeInRoundPath: homeInBracket, awayInRoundPath: awayInBracket,
-        homeDepth, awayDepth, preferredId,
+        homeInRoundPath: homeHasFutureValue, awayInRoundPath: awayHasFutureValue,
+        homeDepth, awayDepth, preferredId, activeStageIndex,
         neededId, tone, label, detail, completed,
         reachLabels,
       }
@@ -1630,7 +1635,7 @@ export default function Knockout() {
 
               {showRealBracket && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, homeNeeded, awayNeeded, homeInRoundPath, awayInRoundPath, homeDepth, awayDepth, preferredId, neededId, tone, label, detail, completed, reachLabels }) => {
+                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, homeNeeded, awayNeeded, homeInRoundPath, awayInRoundPath, homeDepth, awayDepth, preferredId, neededId, tone, label, detail, completed, reachLabels, activeStageIndex }) => {
                     const toneMap = {
                       safe: { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.05)', border: 'rgba(0,122,51,0.25)' },
                       need: { colour: 'var(--scottish-navy)', bg: 'rgba(0,48,135,0.04)', border: 'rgba(0,48,135,0.22)' },
@@ -1682,8 +1687,10 @@ export default function Knockout() {
                                       : preferred
                                         ? `Best for your bracket · predicted to reach ${reachLabels[Math.max(depth, 0)]}`
                                         : usefulElsewhere
-                                          ? `Predicted to reach ${reachLabels[Math.max(depth, 0)]}`
-                                          : 'Not in your remaining bracket path'}
+                                          ? `Predicted to progress to ${reachLabels[Math.max(depth, 0)]}`
+                                          : depth === activeStageIndex
+                                            ? `Predicted to exit in ${reachLabels[activeStageIndex]}`
+                                            : 'Not in your remaining bracket path'}
                                 </div>
                               </div>
                             )
