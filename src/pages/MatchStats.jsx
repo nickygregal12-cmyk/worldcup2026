@@ -292,6 +292,8 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         let koUserIds = null
         let tournamentLeagueUserIds = null
         let tournamentLeagueName = null
+        let tournamentLeagueId = null
+        let tournamentLeagueUsesSnapshot = false
 
         if (koLeagueCode) {
           const { data: koLeague } = await supabase.from('ko_leagues').select('id, name').eq('invite_code', koLeagueCode).maybeSingle()
@@ -312,7 +314,11 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           setKoScopeLabel(koLeague.name)
           setShowKoRivals(true)
         } else if (leagueCode) {
-          const { data: league } = await supabase.from('leagues').select('id, name').eq('invite_code', leagueCode).maybeSingle()
+          const { data: league } = await supabase
+            .from('leagues')
+            .select('id, name, lock_type, snapshot_taken_at')
+            .eq('invite_code', leagueCode)
+            .maybeSingle()
           if (!league) {
             setScopeDenied(true)
             setScopeMessage('Tournament league not found.')
@@ -330,6 +336,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           }
 
           tournamentLeagueName = league.name
+          tournamentLeagueId = league.id
+          tournamentLeagueUsesSnapshot =
+            league.lock_type === 'pre_tournament' && Boolean(league.snapshot_taken_at)
 
           // Tournament mini-leagues and KO Predictor are separate competitions.
           // Keep the viewer's own KO pick visible, and show the league's original
@@ -393,29 +402,45 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           // slot-resolution approach as the Knockout tab and View Predictions.
           // Do not trust knockout_picks.home_team_id / away_team_id here because
           // those stored helper fields can be stale after a bracket remap.
+          const bracketTable = tournamentLeagueUsesSnapshot
+            ? 'league_knockout_picks'
+            : 'knockout_picks'
+          const predictionTable = tournamentLeagueUsesSnapshot
+            ? 'league_predictions'
+            : 'predictions'
+
+          let bracketQuery = supabase
+            .from(bracketTable)
+            .select(`
+              user_id,
+              match_number,
+              home_team_id,
+              away_team_id,
+              winner_team_id,
+              saved_home_team:home_team_id(id,name,short_code,flag_emoji),
+              saved_away_team:away_team_id(id,name,short_code,flag_emoji)
+            `)
+            .in('match_number', allKnockoutMatchNumbers)
+            .in('user_id', tournamentLeagueUserIds)
+
+          let groupPredictionQuery = supabase
+            .from(predictionTable)
+            .select('user_id, match_id, home_score, away_score')
+            .in('user_id', tournamentLeagueUserIds)
+
+          if (tournamentLeagueUsesSnapshot && tournamentLeagueId) {
+            bracketQuery = bracketQuery.eq('league_id', tournamentLeagueId)
+            groupPredictionQuery = groupPredictionQuery.eq('league_id', tournamentLeagueId)
+          }
+
           const [
             { data: allBracketRows },
             { data: allGroupPredictions },
             { data: originalGroupMatches },
             { data: leagueProfiles },
           ] = await Promise.all([
-            supabase
-              .from('knockout_picks')
-              .select(`
-                user_id,
-                match_number,
-                home_team_id,
-                away_team_id,
-                winner_team_id,
-                saved_home_team:home_team_id(id,name,short_code,flag_emoji),
-                saved_away_team:away_team_id(id,name,short_code,flag_emoji)
-              `)
-              .in('match_number', allKnockoutMatchNumbers)
-              .in('user_id', tournamentLeagueUserIds),
-            supabase
-              .from('predictions')
-              .select('user_id, match_id, home_score, away_score')
-              .in('user_id', tournamentLeagueUserIds),
+            bracketQuery,
+            groupPredictionQuery,
             supabase
               .from('matches')
               .select('id, match_number, stage, kickoff_time, home_team_id, away_team_id, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code), group:group_id(name)')
@@ -481,11 +506,10 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
 
               const exactPick = pickMap[Number(m.match_number)] || null
 
-              // Resolve from the user's bracket chain first. Some older users do
-              // not have enough readable group-stage rows for client-side slot
-              // resolution, so fall back to the teams saved with that exact pick.
-              // This prevents TBC/TBC while still preferring the corrected live
-              // bracket reconstruction whenever it is available.
+              // Resolve from the user's bracket chain first. For frozen leagues,
+              // both the group predictions and knockout picks above come from the
+              // league snapshot tables — the same source used by View Predictions.
+              // Only fall back to teams saved on that same exact snapshot row.
               const rebuiltHome = currentMatchDef ? resolveOriginalSlot(currentMatchDef.home_slot) : null
               const rebuiltAway = currentMatchDef ? resolveOriginalSlot(currentMatchDef.away_slot) : null
               const originalHome = rebuiltHome || exactPick?.saved_home_team || getTeam(exactPick?.home_team_id)
