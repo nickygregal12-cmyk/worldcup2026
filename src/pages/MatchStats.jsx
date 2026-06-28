@@ -357,30 +357,52 @@ export default function MatchStats() {
       </div>
 
       {user && (scopeOptions.length > 0 || loadingScopes) && (
-        <div className="card" style={{ padding: '12px 14px', marginBottom: '14px' }}>
-          <label htmlFor="match-centre-scope" style={{ display: 'block', fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 800, marginBottom: '6px' }}>
-            Viewing predictions from
+        <div className="card" style={{
+          padding: '8px 10px',
+          marginBottom: '10px',
+          display: 'grid',
+          gridTemplateColumns: 'auto minmax(0, 1fr)',
+          alignItems: 'center',
+          gap: '10px',
+        }}>
+          <label
+            htmlFor="match-centre-scope"
+            style={{
+              fontSize: '9px',
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontWeight: 850,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Viewing
           </label>
+
           <select
             id="match-centre-scope"
             className="input"
             value={selectedScope}
             onChange={event => changeScope(event.target.value)}
             disabled={loadingScopes}
-            style={{ width: '100%', fontWeight: 800 }}
+            style={{
+              width: '100%',
+              minHeight: '34px',
+              paddingTop: '5px',
+              paddingBottom: '5px',
+              fontSize: '12px',
+              fontWeight: 800,
+            }}
           >
             <option value="overall">
               {matchCentreView === 'ko' ? 'Overall KO Predictor' : 'My tournament bracket'}
             </option>
             {scopeOptions.map(option => (
               <option key={option.value} value={option.value}>
-                {option.label} · {option.type}
+                {option.label}
               </option>
             ))}
           </select>
-          <div style={{ marginTop: '6px', fontSize: '10px', color: 'var(--text-muted)' }}>
-            Change this at any time to compare the same live match across your leagues.
-          </div>
         </div>
       )}
 
@@ -1186,20 +1208,41 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
             </div>
           </div>
 
-          <div style={{ marginBottom: '9px' }}>
-            <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-              Sort by
+          <div style={{
+            marginBottom: '7px',
+            display: 'grid',
+            gridTemplateColumns: 'auto minmax(0, 1fr)',
+            alignItems: 'center',
+            gap: '10px',
+          }}>
+            <div style={{
+              fontSize: '9px',
+              fontWeight: 850,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              whiteSpace: 'nowrap',
+            }}>
+              Sort
             </div>
+
             <select
               className="input"
               value={tournamentBracketSort}
               onChange={event => setTournamentBracketSort(event.target.value)}
-              style={{ width: '100%', minHeight: '38px', fontWeight: 800, fontSize: '13px' }}
+              style={{
+                width: '100%',
+                minHeight: '32px',
+                paddingTop: '4px',
+                paddingBottom: '4px',
+                fontWeight: 800,
+                fontSize: '12px',
+              }}
             >
-              <option value="potential">Points currently on the line</option>
-              <option value="league">League table points</option>
-              <option value="home">{match.home_team?.name || match.home_team?.short_code || 'Home team'} to advance</option>
-              <option value="away">{match.away_team?.name || match.away_team?.short_code || 'Away team'} to advance</option>
+              <option value="potential">Points on the line</option>
+              <option value="league">League table</option>
+              <option value="home">{match.home_team?.short_code || match.home_team?.name || 'Home'} to advance</option>
+              <option value="away">{match.away_team?.short_code || match.away_team?.name || 'Away'} to advance</option>
             </select>
           </div>
 
