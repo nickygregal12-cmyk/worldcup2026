@@ -1217,6 +1217,53 @@ export default function Leagues() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
+  const getKoLeagueInviteLink = (code) => {
+    const inviteCode = String(code || '').trim().toUpperCase()
+    return `${window.location.origin}/leagues?game=ko&join=${encodeURIComponent(inviteCode)}`
+  }
+
+  const writeToClipboard = async (value) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value)
+      return
+    }
+
+    const textarea = document.createElement('textarea')
+    textarea.value = value
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'fixed'
+    textarea.style.left = '-9999px'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    textarea.setSelectionRange(0, textarea.value.length)
+    const copied = document.execCommand('copy')
+    document.body.removeChild(textarea)
+
+    if (!copied) throw new Error('Clipboard copy failed')
+  }
+
+  const copyKoLeagueLink = async (leagueName, code) => {
+    try {
+      await writeToClipboard(getKoLeagueInviteLink(code))
+      setError('')
+      setSuccess(`Copied KO league invite link for "${leagueName}"!`)
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (copyError) {
+      console.error('KO league link copy failed:', copyError)
+      setError('Could not copy the invite link. Please copy the invite code instead.')
+    }
+  }
+
+  const shareKoLeagueWhatsApp = (leagueName, code) => {
+    const link = getKoLeagueInviteLink(code)
+    const text = `Join my WC26 KO Predictor league "${leagueName}"! 🔥🏆\n\nTap this link to open the KO league and join:\n${link}`
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`
+
+    // Using direct navigation avoids popup blocking on iPhone and installed PWAs.
+    window.location.href = whatsappUrl
+  }
+
   // For a normal (standard-scoring, always-editable) league the authoritative
   // total is the member's live profiles.total_points — which always includes
   // bracket/KO points. We only fall back to the stored league_points for leagues
@@ -1632,8 +1679,8 @@ export default function Leagues() {
 
                         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-light)', background: 'var(--bg-secondary)', display: 'flex', gap: '7px', flexWrap: 'wrap', alignItems: 'center' }}>
                           <div style={{ marginRight: 'auto', fontSize: '12px', color: 'var(--text-muted)' }}>Invite code: <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '0.08em' }}>{league?.invite_code}</strong></div>
-                          <button onClick={() => copyKoLeagueLink(league?.name, league?.invite_code)} className="btn btn-secondary btn-sm">🔗 Copy invite link</button>
-                          <button onClick={() => shareKoLeagueWhatsApp(league?.name, league?.invite_code)} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none' }}>WhatsApp</button>
+                          <button type="button" onClick={() => copyKoLeagueLink(league?.name, league?.invite_code)} className="btn btn-secondary btn-sm">🔗 Copy invite link</button>
+                          <button type="button" onClick={() => shareKoLeagueWhatsApp(league?.name, league?.invite_code)} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none', cursor: 'pointer' }}>WhatsApp</button>
                           <Link to="/leaderboard?game=ko" className="btn btn-secondary btn-sm">Full leaderboard</Link>
                           {isCreator ? <button onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league_id, leagueName: league?.name })} className="btn btn-sm" style={{ background: 'none', border: '1px solid #e53935', color: '#e53935' }}>Delete</button> : <button onClick={() => setConfirmAction({ type: 'leaveKoLeague', leagueId: league_id, leagueName: league?.name })} className="btn btn-secondary btn-sm">Leave</button>}
                         </div>
