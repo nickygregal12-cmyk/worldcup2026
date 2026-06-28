@@ -732,7 +732,7 @@ export default function Knockout() {
     const collisions = []
     previousConfig.matches.forEach(previousMatch => {
       const candidates = [...candidateIdsForMatch(previousMatch.match_number)]
-        .filter(id => predictedTeams.has(id))
+        .filter(id => predictedTeams.has(id) && !isTeamOut(id))
         .map(id => predictedTeams.get(id))
       if (candidates.length < 2) return
 
@@ -759,7 +759,7 @@ export default function Knockout() {
       seen.add(key)
       return true
     })
-  }, [activeStage, realKoFixtures, getMatchTeams])
+  }, [activeStage, realKoFixtures, getMatchTeams, isTeamOut])
 
   // Candidate teams that can still arrive in any real bracket match. For rounds
   // that do not yet have confirmed fixtures, this follows the official feeder
@@ -1650,7 +1650,23 @@ export default function Knockout() {
           const pctHealth = summaryTotal > 0 ? Math.round((summaryCorrect / summaryTotal) * 100) : 0
           const lost = Math.max(0, summaryTotal - summaryCorrect)
           const colour = pctHealth >= 75 ? 'var(--accent-green)' : pctHealth >= 50 ? 'var(--accent-gold)' : '#c62828'
-          const maxRemaining = summaryCorrect * summaryStagePoints
+
+          // Teams can still be alive individually but be guaranteed to eliminate
+          // one another before this round. Count each feeder match once and remove
+          // the unavoidable extra qualifiers from the true maximum available.
+          const collisionTeamsByMatch = new Map()
+          routeCollisions.forEach(collision => {
+            if (!collisionTeamsByMatch.has(collision.matchNumber)) {
+              collisionTeamsByMatch.set(collision.matchNumber, new Set())
+            }
+            const ids = collisionTeamsByMatch.get(collision.matchNumber)
+            if (collision.teamA?.id && !isTeamOut(collision.teamA.id)) ids.add(collision.teamA.id)
+            if (collision.teamB?.id && !isTeamOut(collision.teamB.id)) ids.add(collision.teamB.id)
+          })
+          const guaranteedLosses = [...collisionTeamsByMatch.values()]
+            .reduce((sum, ids) => sum + Math.max(0, ids.size - 1), 0)
+          const maxScoringTeams = Math.max(0, summaryCorrect - guaranteedLosses)
+          const maxRemaining = maxScoringTeams * summaryStagePoints
           return (
             <div style={{ marginTop: '10px' }}>
               <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
@@ -1678,6 +1694,11 @@ export default function Knockout() {
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
                     <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(0,122,51,0.08)', color: 'var(--accent-green)', fontSize: '11px', fontWeight: '800' }}>{summaryCorrect} alive</span>
                     <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: lost ? 'rgba(198,40,40,0.08)' : 'var(--bg-secondary)', color: lost ? '#c62828' : 'var(--text-muted)', fontSize: '11px', fontWeight: '800' }}>{lost} out</span>
+                    {guaranteedLosses > 0 && (
+                      <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(184,134,11,0.08)', color: 'var(--accent-gold)', fontSize: '11px', fontWeight: '800' }}>
+                        {guaranteedLosses} guaranteed loss{guaranteedLosses === 1 ? '' : 'es'}
+                      </span>
+                    )}
                     <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(0,48,135,0.06)', color: 'var(--scottish-navy)', fontSize: '11px', fontWeight: '800' }}>Up to {maxRemaining} pts remain</span>
                   </div>
                 </div>
