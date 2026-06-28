@@ -93,7 +93,9 @@ export default function MatchStats() {
 
         const requestedIsValid = selectedScope === 'overall' || options.some(option => option.value === selectedScope)
         if (!requestedIsValid) {
-          setSearchParams({}, { replace: true })
+          const next = new URLSearchParams()
+          next.set('view', matchCentreView)
+          setSearchParams(next, { replace: true })
           return
         }
 
@@ -102,8 +104,15 @@ export default function MatchStats() {
             const remembered = window.localStorage.getItem(`wc26_match_centre_scope_${matchCentreView}`)
             if (remembered && remembered !== 'overall' && options.some(option => option.value === remembered)) {
               const next = new URLSearchParams()
-              if (remembered.startsWith('league:')) next.set('league', remembered.slice(7))
-              if (remembered.startsWith('ko:')) next.set('koLeague', remembered.slice(3))
+              next.set('view', matchCentreView)
+
+              if (matchCentreView === 'bracket' && remembered.startsWith('league:')) {
+                next.set('league', remembered.slice(7))
+              }
+              if (matchCentreView === 'ko' && remembered.startsWith('ko:')) {
+                next.set('koLeague', remembered.slice(3))
+              }
+
               setSearchParams(next, { replace: true })
             }
           } catch (_) {}
@@ -135,8 +144,10 @@ export default function MatchStats() {
   }
 
   const changeMatchCentreView = (view) => {
-    const next = new URLSearchParams()
+    const next = new URLSearchParams(searchParams)
     next.set('view', view)
+    next.delete('league')
+    next.delete('koLeague')
     setSearchParams(next, { replace: true })
   }
 
