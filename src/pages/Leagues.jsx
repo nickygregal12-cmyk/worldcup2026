@@ -624,6 +624,8 @@ export default function Leagues() {
   const [openLeagueMenu, setOpenLeagueMenu] = useState(null)
   const [myLeagues, setMyLeagues] = useState([])
   const [myKoLeagues, setMyKoLeagues] = useState([])
+  const [koLeagueMembers, setKoLeagueMembers] = useState({})
+  const [loadingKoMembers, setLoadingKoMembers] = useState({})
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
@@ -815,19 +817,64 @@ export default function Leagues() {
     })
   }
 
+  const loadKoLeagueMembers = async (leagueId) => {
+    setLoadingKoMembers(prev => ({ ...prev, [leagueId]: true }))
+
+    const { data, error } = await supabase
+      .from('ko_league_members')
+      .select(`
+        league_id,
+        user_id,
+        joined_at,
+        profile:user_id(
+          id,
+          username,
+          display_name,
+          avatar_emoji,
+          ko_points,
+          ko_streak_current,
+          ko_exact_scores
+        )
+      `)
+      .eq('league_id', leagueId)
+      .order('joined_at', { ascending: true })
+
+    if (error) console.error('KO league members error:', error)
+
+    const rows = data || []
+    setKoLeagueMembers(prev => ({ ...prev, [leagueId]: rows }))
+    setLoadingKoMembers(prev => ({ ...prev, [leagueId]: false }))
+    return rows
+  }
+
   const loadMyKoLeagues = async () => {
     const { data: memberships } = await supabase
       .from('ko_league_members')
       .select('league_id, league:league_id(id, name, invite_code, created_by)')
       .eq('user_id', user.id)
       .order('joined_at', { ascending: false })
+
     if (!memberships) return
+
     const leagueIds = memberships.map(m => m.league_id)
-    const { data: counts } = await supabase
-      .from('ko_league_members').select('league_id').in('league_id', leagueIds)
+    const { data: counts } = leagueIds.length
+      ? await supabase.from('ko_league_members').select('league_id').in('league_id', leagueIds)
+      : { data: [] }
+
     const countMap = {}
-    counts?.forEach(c => { countMap[c.league_id] = (countMap[c.league_id] || 0) + 1 })
-    setMyKoLeagues(memberships.map(m => ({ ...m, memberCount: countMap[m.league_id] || 1 })))
+    counts?.forEach(c => {
+      countMap[c.league_id] = (countMap[c.league_id] || 0) + 1
+    })
+
+    const leagues = memberships.map(m => ({
+      ...m,
+      memberCount: countMap[m.league_id] || 1,
+    }))
+
+    setMyKoLeagues(leagues)
+    leagues.forEach(m => {
+      if (m.league_id) loadKoLeagueMembers(m.league_id)
+    })
   }
 
   const createKoLeague = async () => {
@@ -1518,35 +1565,245 @@ export default function Leagues() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {myKoLeagues.map(({ league_id, league, memberCount }) => {
                 const isCreator = league?.created_by === user?.id
+                const members = [...(koLeagueMembers[league_id] || [])].sort((a, b) =>
+                  Number(b.profile?.ko_points || 0) - Number(a.profile?.ko_points || 0) ||
+                  Number(b.profile?.ko_exact_scores || 0) - Number(a.profile?.ko_exact_scores || 0)
+                )
+                const myRank = members.findIndex(member => member.user_id === user?.id) + 1
+                const leaderPoints = Number(members[0]?.profile?.ko_points || 0)
+
                 return (
-                  <div key={league_id} className="card" style={{ border: '1px solid rgba(230,81,0,0.3)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ fontSize: '14px' }}>🔥</span>
-                          <span style={{ fontWeight: '700', fontSize: '15px' }}>{league?.name}</span>
-                          {isCreator && <span style={{ fontSize: '10px', background: '#e65100', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>CREATOR</span>}
+                  <div
+                    key={league_id}
+                    style={{
+                      background: 'var(--bg-card)',
+                      borderRadius: 'var(--radius-lg)',
+                      overflow: 'hidden',
+                      boxShadow: 'var(--shadow-sm)',
+                      border: '1px solid rgba(230,81,0,0.28)',
+                    }}
+                  >
+                    <div style={{
+                      padding: '14px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      borderBottom: '1px solid var(--border-light)',
+                    }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '18px' }}>🔥</span>
+                          <span style={{
+                            fontWeight: '850',
+                            fontSize: '16px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {league?.name}
+                          </span>
+                          {isCreator && (
+                            <span style={{
+                              fontSize: '9px',
+                              background: '#e65100',
+                              color: '#fff',
+                              padding: '2px 6px',
+                              borderRadius: '999px',
+                              fontWeight: '850',
+                            }}>
+                              CREATOR
+                            </span>
+                          )}
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                          Code: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '0.1em' }}>{league?.invite_code}</span>
-                          · {memberCount} member{memberCount !== 1 ? 's' : ''}
+                        <div style={{ marginTop: '3px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                          {memberCount} member{memberCount !== 1 ? 's' : ''} · Private KO league
                         </div>
                       </div>
-                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#e65100' }}>KO Predictor</div>
+
+                      {myRank > 0 && (
+                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>Your rank</div>
+                          <div style={{ fontSize: '20px', color: '#e65100', fontWeight: '950' }}>#{myRank}</div>
+                        </div>
+                      )}
                     </div>
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      <button onClick={() => navigator.clipboard?.writeText(league?.invite_code).then(() => setSuccess(`Copied: ${league?.invite_code}`))}
-                        className="btn btn-secondary btn-sm">📋 Copy Code</button>
-                      <button onClick={() => {
-                        const text = `Join my WC26 KO Predictor league "${league?.name}"! Code: ${league?.invite_code} at https://wc26predictor1.netlify.app`
-                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
-                      }} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none' }}>WhatsApp</button>
+
+                    <div style={{
+                      padding: '7px 16px',
+                      background: 'rgba(230,81,0,0.055)',
+                      borderBottom: '1px solid var(--border-light)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '10px',
+                    }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '750' }}>
+                        KO Predictor points only · Bonuses and jokers included
+                      </span>
+                      <Link
+                        to="/how-to-play"
+                        style={{ fontSize: '11px', color: '#e65100', fontWeight: '850', textDecoration: 'none', flexShrink: 0 }}
+                      >
+                        Rules →
+                      </Link>
+                    </div>
+
+                    {loadingKoMembers[league_id] ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: '24px' }}>
+                        <div className="spinner" />
+                      </div>
+                    ) : members.length === 0 ? (
+                      <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                        No members found.
+                      </div>
+                    ) : (
+                      <div>
+                        {members.map((member, index) => {
+                          const profile = member.profile || {}
+                          const points = Number(profile.ko_points || 0)
+                          const gap = index > 0 ? leaderPoints - points : 0
+                          const isMe = member.user_id === user?.id
+                          const rank = members.filter(other =>
+                            Number(other.profile?.ko_points || 0) > points
+                          ).length + 1
+
+                          return (
+                            <Link
+                              key={member.user_id}
+                              to={`/leaderboard?game=ko`}
+                              style={{
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                minHeight: '66px',
+                                padding: '10px 16px',
+                                background: isMe ? 'rgba(230,81,0,0.065)' : 'var(--bg-card)',
+                                borderBottom: '1px solid var(--border-light)',
+                                color: 'var(--text-primary)',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              <span style={{
+                                width: '32px',
+                                textAlign: 'center',
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: rank <= 3 ? '18px' : '12px',
+                                fontWeight: '900',
+                                color: rank > 3 ? 'var(--text-muted)' : 'inherit',
+                                flexShrink: 0,
+                              }}>
+                                {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
+                              </span>
+
+                              <div style={{
+                                width: '38px',
+                                height: '38px',
+                                borderRadius: '50%',
+                                background: isMe ? '#e65100' : avatarColor(profile.display_name || profile.username).bg,
+                                color: isMe ? '#fff' : avatarColor(profile.display_name || profile.username).fg,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontWeight: '850',
+                                flexShrink: 0,
+                              }}>
+                                {profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}
+                              </div>
+
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                  <span style={{
+                                    fontSize: '14px',
+                                    fontWeight: '800',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                  }}>
+                                    {profile.display_name || profile.username || 'Unknown'}
+                                  </span>
+                                  {isMe && (
+                                    <span style={{
+                                      fontSize: '8px',
+                                      padding: '2px 5px',
+                                      borderRadius: '999px',
+                                      background: '#e65100',
+                                      color: '#fff',
+                                      fontWeight: '850',
+                                    }}>
+                                      YOU
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ marginTop: '2px', fontSize: '10px', color: 'var(--text-muted)' }}>
+                                  {rank === 1 ? 'Leader' : `${gap} behind leader`}
+                                  {' · '}🎯 {Number(profile.ko_exact_scores || 0)}
+                                  {Number(profile.ko_streak_current || 0) > 0 && ` · 🔥 ${profile.ko_streak_current}`}
+                                </div>
+                              </div>
+
+                              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '19px', fontWeight: '950', color: isMe ? '#e65100' : 'var(--text-primary)' }}>
+                                  {points}
+                                </div>
+                                <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: '700' }}>PTS · VIEW ›</div>
+                              </div>
+                            </Link>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    <div style={{
+                      padding: '10px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '7px',
+                      flexWrap: 'wrap',
+                      background: 'var(--bg-secondary)',
+                    }}>
+                      <span style={{ marginRight: 'auto', fontSize: '11px', color: 'var(--text-muted)' }}>
+                        Invite code: <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '0.08em' }}>{league?.invite_code}</strong>
+                      </span>
+
+                      <button
+                        onClick={() => navigator.clipboard?.writeText(league?.invite_code).then(() => setSuccess(`Copied: ${league?.invite_code}`))}
+                        className="btn btn-secondary btn-sm"
+                      >
+                        🔗 Copy invite
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          const shareText = `Join my WC26 KO Predictor league "${league?.name}"! Code: ${league?.invite_code} at https://wc26predictor1.netlify.app`
+                          window.open(`https://wa.me/?text=${encodeURIComponent(shareText)}`, '_blank')
+                        }}
+                        className="btn btn-sm"
+                        style={{ background: '#25d366', color: '#fff', border: 'none' }}
+                      >
+                        WhatsApp
+                      </button>
+
+                      <Link to="/leaderboard?game=ko" className="btn btn-secondary btn-sm">
+                        Full leaderboard
+                      </Link>
+
                       {isCreator ? (
-                        <button onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league_id, leagueName: league?.name })}
-                          className="btn btn-sm" style={{ background: 'none', border: '1px solid #e53935', color: '#e53935' }}>Delete</button>
+                        <button
+                          onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league_id, leagueName: league?.name })}
+                          className="btn btn-sm"
+                          style={{ background: 'none', border: '1px solid #e53935', color: '#e53935' }}
+                        >
+                          Delete
+                        </button>
                       ) : (
-                        <button onClick={() => setConfirmAction({ type: 'leaveKoLeague', leagueId: league_id, leagueName: league?.name })}
-                          className="btn btn-secondary btn-sm">Leave</button>
+                        <button
+                          onClick={() => setConfirmAction({ type: 'leaveKoLeague', leagueId: league_id, leagueName: league?.name })}
+                          className="btn btn-secondary btn-sm"
+                        >
+                          Leave
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1572,7 +1829,6 @@ export default function Leagues() {
               <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-secondary btn-sm" style={{ padding: '7px 11px' }}>Join</button>
               <div style={{ flex: 1 }} />
               <button onClick={() => setReorderMode(v => !v)} className="btn btn-secondary btn-sm" style={{ padding: '7px 10px' }}>{reorderMode ? 'Done' : '↕ Reorder'}</button>
-              <button onClick={() => setAllLeaguesCollapsed(!allTournamentLeaguesCollapsed)} className="btn btn-secondary btn-sm" style={{ padding: '7px 10px' }}>{allTournamentLeaguesCollapsed ? 'Expand all' : 'Collapse all'}</button>
             </div>
             {reorderMode && (
               <div style={{ padding: '9px 11px', borderRadius: 'var(--radius-md)', background: 'rgba(21,88,176,0.07)', color: 'var(--text-muted)', fontSize: '11px', fontWeight: '700' }}>
@@ -1587,7 +1843,7 @@ export default function Leagues() {
               const myRank = members.findIndex(m => m.user_id === user?.id) + 1
               const showAll = expandedLeague === `${league.id}-all`
               const visibleMembers = league.is_global && !showAll ? members.slice(0, 5) : members
-              const isCollapsed = (collapsedLeagueIds || []).includes(league.id)
+              const isCollapsed = false
 
               return (
                 <div key={league.id} style={{
@@ -1640,19 +1896,22 @@ export default function Leagues() {
                             <button disabled={leagueIndex === 0} onClick={() => moveLeague(league.id, -1)} aria-label={`Move ${league.name} up`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === 0 ? 'not-allowed' : 'pointer', opacity: leagueIndex === 0 ? 0.35 : 1 }}>↑</button>
                             <button disabled={leagueIndex === orderedTournamentLeagues.length - 1} onClick={() => moveLeague(league.id, 1)} aria-label={`Move ${league.name} down`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === orderedTournamentLeagues.length - 1 ? 'not-allowed' : 'pointer', opacity: leagueIndex === orderedTournamentLeagues.length - 1 ? 0.35 : 1 }}>↓</button>
                           </div>
-                        ) : (
-                          <button onClick={() => toggleLeagueCollapsed(league.id)} aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${league.name}`} style={{ width: '34px', height: '34px', borderRadius: '10px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', fontWeight: '900', cursor: 'pointer' }}>{isCollapsed ? '⌄' : '⌃'}</button>
-                        )}
+                        ) : null}
                       </div>
                     </div>
                   </div>
 
                   {!isCollapsed && <>
-                  {!league.is_global && (
-                    <div style={{ padding: '8px 16px', background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.08)' : 'rgba(21,88,176,0.05)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: league.lock_type === 'pre_tournament' ? '#92400e' : 'var(--accent-blue)', fontWeight: '800' }}>
-                      {league.lock_type === 'pre_tournament'
-                        ? `🔒 One-Shot League • ${league.snapshot_taken_at ? 'Snapshot taken' : 'Freezes at tournament start'}`
-                        : `🔄 Standard League${!tournamentLive ? ' • Points start 11 Jun' : ''}`}
+                  {!league.is_global && league.lock_type === 'pre_tournament' && (
+                    <div style={{
+                      padding: '8px 16px',
+                      background: 'rgba(245,158,11,0.08)',
+                      borderBottom: '1px solid var(--border-light)',
+                      fontSize: '12px',
+                      color: '#92400e',
+                      fontWeight: '800',
+                    }}>
+                      🔒 One-Shot League · {league.snapshot_taken_at ? 'Snapshot taken' : 'Freezes at tournament start'}
                     </div>
                   )}
 
