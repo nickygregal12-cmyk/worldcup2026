@@ -102,7 +102,15 @@ export default function Knockout() {
       .sort((a, b) => a.time - b.time)
   }, [groupMatches])
 
-  useEffect(() => { loadData() }, [user])
+  useEffect(() => {
+    loadData()
+
+    // Real knockout fixtures and statuses can be populated or updated after the
+    // page has opened. Refresh while the page remains mounted so a live fixture
+    // such as M73 cannot disappear until the user manually reloads.
+    const interval = window.setInterval(loadData, 60000)
+    return () => window.clearInterval(interval)
+  }, [user?.id])
 
   // Recalculate affected matches when standings change
   useEffect(() => {
@@ -180,9 +188,8 @@ export default function Knockout() {
           .neq('stage', 'group')
           .eq('status', 'completed'),
         supabase.from('matches')
-          .select('id, match_number, stage, status, kickoff_time, home_team_id, away_team_id, winner_team_id, home_score, away_score, home_team:home_team_id(id, name, flag_emoji, short_code), away_team:away_team_id(id, name, flag_emoji, short_code)')
+          .select('id, match_number, stage, status, kickoff_time, home_team_id, away_team_id, winner_team_id, home_score, away_score, live_minute, injury_time, home_team:home_team_id(id, name, flag_emoji, short_code), away_team:away_team_id(id, name, flag_emoji, short_code)')
           .neq('stage', 'group')
-          .not('home_team_id', 'is', null)
           .order('kickoff_time', { ascending: true }),
         supabase.from('group_standings')
           .select('*, group:group_id(id, name), team:team_id(id, name, flag_emoji, short_code, fifa_ranking)')

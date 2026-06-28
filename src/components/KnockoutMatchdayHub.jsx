@@ -202,7 +202,17 @@ function KnockoutMatchCard({ match, bracketPick, teamsById, advancementSets, koP
 
   return (
     <div className="card fade-in" style={{ overflow: 'hidden', border: match.status === 'live' ? '2px solid #d32f2f' : '1px solid var(--border-light)' }}>
-      <div style={{ padding: '14px 14px 12px' }}>
+      <Link
+        to={`/match/${match.id}/stats`}
+        aria-label={`View Match Centre for ${match.home_team?.name || 'home team'} versus ${match.away_team?.name || 'away team'}`}
+        style={{
+          display: 'block',
+          padding: '14px 14px 12px',
+          color: 'inherit',
+          textDecoration: 'none',
+          background: match.status === 'live' ? 'rgba(211,47,47,0.025)' : 'transparent',
+        }}
+      >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '11px' }}>
           <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 800 }}>
             {STAGE_LABELS[match.stage] || match.stage} · M{match.match_number}
@@ -226,10 +236,25 @@ function KnockoutMatchCard({ match, bracketPick, teamsById, advancementSets, koP
           </div>
         </div>
 
-        <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', marginTop: '8px' }}>
-          {fmtDate(match.kickoff_time)} · <Link to={`/match/${match.id}/stats`} style={{ color: 'var(--scottish-navy)', fontWeight: 800 }}>Match centre →</Link>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '10px',
+          marginTop: '10px',
+          padding: '9px 11px',
+          borderRadius: 'var(--radius-sm)',
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-light)',
+        }}>
+          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700 }}>
+            {fmtDate(match.kickoff_time)}
+          </span>
+          <span style={{ color: 'var(--scottish-navy)', fontSize: '11px', fontWeight: 900 }}>
+            View Match Centre →
+          </span>
         </div>
-      </div>
+      </Link>
 
       <div style={{ borderTop: '1px solid var(--border-light)', padding: '13px 14px' }}>
         <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '9px' }}>

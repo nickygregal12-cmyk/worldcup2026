@@ -849,7 +849,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           const hasCurrentTeamBacking = r.currentFixtureBackings.length > 0
           const backingCurrentLeader = currentLeadSide &&
             r.currentFixtureBackings.some(backing =>
-              backing.team?.id === (currentLeadSide === 'home' ? match.home_team_id : match.away_team_id)
+              backing.teamId === (currentLeadSide === 'home' ? match.home_team_id : match.away_team_id)
             )
 
           const projectedPoints = backingCurrentLeader ? 3 + roundPoints : 0
@@ -868,6 +868,11 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
 
         const routeRank = route => route === 'exact' ? 2 : route === 'different' ? 1 : 0
         const projectedRows = [...enrichedRows].sort((a, b) => {
+          // Always keep the signed-in user's own bracket impact at the top.
+          const aIsMe = a.userId === user?.id
+          const bIsMe = b.userId === user?.id
+          if (aIsMe !== bIsMe) return aIsMe ? -1 : 1
+
           if (tournamentBracketSort === 'league') {
             return Number(b.leaguePoints || 0) - Number(a.leaguePoints || 0) ||
               a.name.localeCompare(b.name)
