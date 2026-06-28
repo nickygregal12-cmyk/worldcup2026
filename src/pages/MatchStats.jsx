@@ -209,6 +209,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
   const [showKoRivals, setShowKoRivals] = useState(true)
   const [koMine, setKoMine] = useState(null)
   const [koRivals, setKoRivals] = useState([])
+  const [tournamentBracketRivals, setTournamentBracketRivals] = useState([])
   const [bracketHealth, setBracketHealth] = useState(null)
   const [weather, setWeather] = useState(null)
 
@@ -226,6 +227,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
       setMyLine(null)
       setKoMine(null)
       setKoRivals([])
+      setTournamentBracketRivals([])
       setBracketHealth(null)
 
       // Load the fixture independently from venue metadata. A missing or renamed
@@ -283,6 +285,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
       // ── Knockout match: KO Predictor picks + bracket impact ──
       if (m.stage !== 'group') {
         let koUserIds = null
+        let tournamentLeagueUserIds = null
+        let tournamentLeagueName = null
+
         if (koLeagueCode) {
           const { data: koLeague } = await supabase.from('ko_leagues').select('id, name').eq('invite_code', koLeagueCode).maybeSingle()
           if (!koLeague) {
@@ -302,8 +307,28 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           setKoScopeLabel(koLeague.name)
           setShowKoRivals(true)
         } else if (leagueCode) {
+          const { data: league } = await supabase.from('leagues').select('id, name').eq('invite_code', leagueCode).maybeSingle()
+          if (!league) {
+            setScopeDenied(true)
+            setScopeMessage('Tournament league not found.')
+            setLoading(false)
+            return
+          }
+
+          const { data: members } = await supabase.from('league_members').select('user_id').eq('league_id', league.id)
+          tournamentLeagueUserIds = (members || []).map(mm => mm.user_id)
+          if (!user?.id || !tournamentLeagueUserIds.includes(user.id)) {
+            setScopeDenied(true)
+            setScopeMessage('You need to be a member of this Tournament league to view its bracket picks.')
+            setLoading(false)
+            return
+          }
+
+          tournamentLeagueName = league.name
+
           // Tournament mini-leagues and KO Predictor are separate competitions.
-          // Keep the viewer's own KO pick visible, but do not present unrelated KO standings.
+          // Keep the viewer's own KO pick visible, and show the league's original
+          // tournament bracket picks in their own section below.
           koUserIds = user?.id ? [user.id] : []
           setKoScopeLabel('KO Predictor')
           setShowKoRivals(false)
@@ -324,11 +349,78 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         }
         const rivals = koPreds.map(p => {
           const prof = koNames[p.user_id] || {}
-          const side = p.winner_team_id === m.home_team_id ? 'home' : p.winner_team_id === m.away_team_id ? 'away' : null
-          return { userId: p.user_id, name: prof.display_name || prof.username || 'Player', avatar: prof.avatar_emoji, side, home: p.home_score, away: p.away_score, joker: !!p.is_joker, firstGoalBand: p.first_goal_band, outcomeType: p.outcome_type }
+
+          // winner_team_id is required for ET/penalties, but older 90-minute
+          // predictions may only have a score. Infer the advancing side from the
+          // saved score so live Match Centre never shows a blank pick.
+          let side = p.winner_team_id === m.home_team_id
+            ? 'home'
+            : p.winner_team_id === m.away_team_id
+              ? 'away'
+              : null
+
+          if (!side && p.home_score != null && p.away_score != null) {
+            if (Number(p.home_score) > Number(p.away_score)) side = 'home'
+            if (Number(p.away_score) > Number(p.home_score)) side = 'away'
+          }
+
+          return {
+            userId: p.user_id,
+            name: prof.display_name || prof.username || 'Player',
+            avatar: prof.avatar_emoji,
+            side,
+            home: p.home_score,
+            away: p.away_score,
+            joker: !!p.is_joker,
+            firstGoalBand: p.first_goal_band,
+            outcomeType: p.outcome_type,
+          }
         })
         setKoRivals(rivals)
         setKoMine(rivals.find(r => r.userId === user?.id) || null)
+
+        if (tournamentLeagueUserIds?.length) {
+          const [{ data: bracketRows }, { data: leagueProfiles }] = await Promise.all([
+            supabase
+              .from('knockout_picks')
+              .select('user_id, match_number, winner_team_id, winner_team:winner_team_id(id,name,short_code,flag_emoji)')
+              .eq('match_number', m.match_number)
+              .in('user_id', tournamentLeagueUserIds),
+            supabase
+              .from('profiles')
+              .select('id, username, display_name, avatar_emoji')
+              .in('id', tournamentLeagueUserIds),
+          ])
+
+          const bracketByUser = {}
+          ;(bracketRows || []).forEach(row => { bracketByUser[row.user_id] = row })
+          const profileByUser = {}
+          ;(leagueProfiles || []).forEach(profile => { profileByUser[profile.id] = profile })
+
+          setTournamentBracketRivals(
+            tournamentLeagueUserIds.map(memberId => {
+              const profile = profileByUser[memberId] || {}
+              const pick = bracketByUser[memberId] || null
+              const winner = pick?.winner_team || null
+              const side = pick?.winner_team_id === m.home_team_id
+                ? 'home'
+                : pick?.winner_team_id === m.away_team_id
+                  ? 'away'
+                  : null
+
+              return {
+                userId: memberId,
+                name: profile.display_name || profile.username || 'Player',
+                avatar: profile.avatar_emoji,
+                winner,
+                side,
+                hasPick: Boolean(pick?.winner_team_id),
+              }
+            })
+          )
+
+          setScopeLabel(tournamentLeagueName || 'Tournament league')
+        }
 
         if (user?.id) {
           const [{ data: groupMatches }, { data: groupPreds }, { data: kpicks }] = await Promise.all([
@@ -462,7 +554,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '26px' }}>{myWinner?.flag_emoji}</span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 800, fontSize: '15px' }}>{myWinner?.name} to advance {koMine.joker && '🃏'}</div>
+              <div style={{ fontWeight: 800, fontSize: '15px' }}>
+                {myWinner?.name || (koMine.side ? 'Selected team' : 'Winner not recorded')} to advance {koMine.joker && '🃏'}
+              </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Your score: {koMine.home}–{koMine.away}{koMine.firstGoalBand ? ` · First goal ${koMine.firstGoalBand}` : ''}</div>
             </div>
             {hasResult && <span style={{ fontSize: '11px', fontWeight: 800, color: myOnTrack ? 'var(--accent-green)' : 'var(--text-muted)' }}>{live && lead === 'draw' ? 'Level' : myOnTrack ? (live ? 'On track' : '✓ Through') : (live ? 'Trailing' : '✗ Missed')}</span>}
@@ -509,7 +603,13 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                 <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: me ? '8px' : '8px 0', borderRadius: me ? 'var(--radius-sm)' : 0, background: me ? 'var(--bg-secondary)' : 'transparent', borderBottom: i < Math.min(koRivals.length, 30) - 1 ? '1px solid var(--border-light)' : 'none' }}>
                   <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--scottish-navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '10px', flexShrink: 0 }}>{r.avatar || (r.name[0] || '?').toUpperCase()}</span>
                   <span style={{ flex: 1, fontWeight: 700, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
-                  <span style={{ fontSize: '12px', fontWeight: 700 }}>{winTeam?.flag_emoji} {winTeam?.short_code}{r.joker ? ' 🃏' : ''}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 700, textAlign: 'right' }}>
+                    <span>{winTeam?.flag_emoji || '🏳️'} {winTeam?.short_code || 'Pick'}</span>
+                    {r.home != null && r.away != null && (
+                      <span style={{ color: 'var(--text-muted)', marginLeft: '6px', fontFamily: 'var(--font-mono)' }}>{r.home}–{r.away}</span>
+                    )}
+                    {r.joker ? ' 🃏' : ''}
+                  </span>
                 </div>
               )
             })}
@@ -519,6 +619,52 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
 
       {showKoRivals && totalBackers === 0 && (
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', padding: '8px 0' }}>No KO Predictor picks in yet for this match.</p>
+      )}
+
+      {leagueCode && tournamentBracketRivals.length > 0 && (
+        <StatCard title={`${scopeLabel} · original tournament bracket picks`}>
+          <div>
+            {tournamentBracketRivals.map((r, i) => {
+              const me = r.userId === user?.id
+              const currentFixtureTeam = r.side === 'home'
+                ? match.home_team
+                : r.side === 'away'
+                  ? match.away_team
+                  : null
+
+              return (
+                <div
+                  key={r.userId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: me ? '9px 8px' : '9px 0',
+                    background: me ? 'var(--bg-secondary)' : 'transparent',
+                    borderRadius: me ? 'var(--radius-sm)' : 0,
+                    borderBottom: i < tournamentBracketRivals.length - 1 ? '1px solid var(--border-light)' : 'none',
+                  }}
+                >
+                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--scottish-navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>
+                    {r.avatar || (r.name[0] || '?').toUpperCase()}
+                  </span>
+                  <span style={{ flex: 1, fontWeight: 700, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
+
+                  {r.hasPick ? (
+                    <span style={{ fontSize: '12px', fontWeight: 800, textAlign: 'right' }}>
+                      {r.winner?.flag_emoji || '🏳️'} {r.winner?.short_code || r.winner?.name || 'Saved pick'}
+                      <span style={{ display: 'block', color: 'var(--text-muted)', fontWeight: 600, fontSize: '10px', marginTop: '2px' }}>
+                        {currentFixtureTeam ? 'In this real fixture' : 'Original bracket path'}
+                      </span>
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No bracket pick</span>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </StatCard>
       )}
     </>)
   }
