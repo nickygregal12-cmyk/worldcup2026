@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { avatarColor } from '../lib/avatarColor.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
@@ -17,8 +18,10 @@ function AnimatedPoints({ value }) {
 
 export default function Leaderboard() {
   const { user, isAdmin } = useAuthStore()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { appSettings, loadAppSettings } = useAppStore()
-  const [activeGame, setActiveGame] = useState('tournament')
+  const requestedGame = searchParams.get('game') === 'ko' ? 'ko' : 'tournament'
+  const [activeGame, setActiveGame] = useState(requestedGame)
   const [players, setPlayers] = useState([])
   const [koPlayers, setKoPlayers] = useState([])
   const [prevRanks, setPrevRanks] = useState([])
@@ -34,6 +37,19 @@ export default function Leaderboard() {
     loadAll()
     loadAppSettings()
   }, [loadAppSettings])
+
+  useEffect(() => {
+    setActiveGame(requestedGame)
+    setPage(0)
+    setSearch('')
+  }, [requestedGame])
+
+  const switchGame = (game) => {
+    setActiveGame(game)
+    setPage(0)
+    setSearch('')
+    setSearchParams({ game })
+  }
 
   const loadAll = async () => {
     setLoading(true)
@@ -145,7 +161,7 @@ export default function Leaderboard() {
 
           {/* Game tabs */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-            <button onClick={() => { setActiveGame('tournament'); setPage(0); setSearch('') }} style={{
+            <button onClick={() => switchGame('tournament')} style={{
               flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', fontSize: '13px', fontWeight: '700',
               background: isTournament ? 'white' : 'rgba(255,255,255,0.1)',
               color: isTournament ? 'var(--scottish-navy)' : 'rgba(255,255,255,0.7)',
@@ -153,7 +169,7 @@ export default function Leaderboard() {
             }}>
               🌍 Tournament
             </button>
-            <button onClick={() => { setActiveGame('ko'); setPage(0); setSearch('') }} style={{
+            <button onClick={() => switchGame('ko')} style={{
               flex: 1, padding: '10px', borderRadius: 'var(--radius-md)', fontSize: '13px', fontWeight: '700',
               background: !isTournament ? 'white' : 'rgba(255,255,255,0.1)',
               color: !isTournament ? '#e65100' : 'rgba(255,255,255,0.7)',
