@@ -25,6 +25,7 @@ export default function MatchStats() {
 
   const [slotIds, setSlotIds] = useState(null)
   const [loadingSlot, setLoadingSlot] = useState(true)
+  const [adjacentFixtures, setAdjacentFixtures] = useState({ previous: null, next: null })
   const [scopeOptions, setScopeOptions] = useState([])
   const [loadingScopes, setLoadingScopes] = useState(false)
 
@@ -157,7 +158,7 @@ export default function MatchStats() {
       // Links around the app may contain either the database UUID or the public
       // match number. Resolve both so older and newer links remain valid.
       const numericMatchNumber = /^\d+$/.test(String(matchId || '')) ? Number(matchId) : null
-      let matchQuery = supabase.from('matches').select('id, kickoff_time, status')
+      let matchQuery = supabase.from('matches').select('id, match_number, stage, kickoff_time, status')
       matchQuery = numericMatchNumber !== null
         ? matchQuery.eq('match_number', numericMatchNumber)
         : matchQuery.eq('id', matchId)
@@ -179,15 +180,49 @@ export default function MatchStats() {
         setSearchParams(next, { replace: true })
       }
 
-      // every match kicking off at the same instant — shown together
-      const { data: siblings } = await supabase
-        .from('matches').select('id, match_number').eq('kickoff_time', m.kickoff_time).order('match_number')
+      // Every match kicking off at the same instant is shown together. Also
+      // load the previous and next knockout fixtures for quick navigation.
+      const [{ data: siblings }, { data: knockoutFixtures }] = await Promise.all([
+        supabase
+          .from('matches')
+          .select('id, match_number')
+          .eq('kickoff_time', m.kickoff_time)
+          .order('match_number'),
+        supabase
+          .from('matches')
+          .select(`
+            id,
+            match_number,
+            kickoff_time,
+            status,
+            home_team:home_team_id(name,short_code,flag_emoji),
+            away_team:away_team_id(name,short_code,flag_emoji)
+          `)
+          .neq('stage', 'group')
+          .order('match_number', { ascending: true }),
+      ])
+
+      const fixtures = knockoutFixtures || []
+      const currentIndex = fixtures.findIndex(fixture => fixture.id === m.id)
+      setAdjacentFixtures({
+        previous: currentIndex > 0 ? fixtures[currentIndex - 1] : null,
+        next: currentIndex >= 0 && currentIndex < fixtures.length - 1
+          ? fixtures[currentIndex + 1]
+          : null,
+      })
+
       const ids = (siblings || []).map(s => s.id)
       setSlotIds([m.id, ...ids.filter(i => i !== m.id)])
       setLoadingSlot(false)
     }
     if (matchId) loadSlot()
   }, [matchId, searchParams, setSearchParams])
+
+  const fixtureLink = fixture => {
+    if (!fixture) return '#'
+    const next = new URLSearchParams(searchParams)
+    return `/match/${fixture.id}/stats${next.toString() ? `?${next.toString()}` : ''}`
+  }
 
   if (loadingSlot) {
     return <div className="container" style={{ padding: '40px 16px', textAlign: 'center' }}>
@@ -198,6 +233,71 @@ export default function MatchStats() {
   return (
     <div className="container" style={{ padding: '16px 16px 40px', maxWidth: '560px' }}>
       <button onClick={() => navigate(-1)} style={{ marginBottom: '12px', color: 'var(--scottish-navy)', fontWeight: '700', fontSize: '14px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>← Back</button>
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gap: '8px',
+        marginBottom: '12px',
+      }}>
+        {adjacentFixtures.previous ? (
+          <Link
+            to={fixtureLink(adjacentFixtures.previous)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              minWidth: 0,
+              padding: '10px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-light)',
+              color: 'var(--text-primary)',
+              textDecoration: 'none',
+            }}
+          >
+            <span style={{ color: 'var(--scottish-navy)', fontWeight: 950 }}>←</span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Previous fixture
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {adjacentFixtures.previous.home_team?.short_code || 'TBC'} v {adjacentFixtures.previous.away_team?.short_code || 'TBC'}
+              </div>
+            </div>
+          </Link>
+        ) : <div />}
+
+        {adjacentFixtures.next ? (
+          <Link
+            to={fixtureLink(adjacentFixtures.next)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: '8px',
+              minWidth: 0,
+              padding: '10px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-light)',
+              color: 'var(--text-primary)',
+              textDecoration: 'none',
+              textAlign: 'right',
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Next fixture
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {adjacentFixtures.next.home_team?.short_code || 'TBC'} v {adjacentFixtures.next.away_team?.short_code || 'TBC'}
+              </div>
+            </div>
+            <span style={{ color: 'var(--scottish-navy)', fontWeight: 950 }}>→</span>
+          </Link>
+        ) : <div />}
+      </div>
 
       {slotIds && slotIds.length > 1 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 12px', marginBottom: '14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)' }}>
