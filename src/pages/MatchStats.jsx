@@ -1133,7 +1133,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
     const myWinner = koMine ? (koMine.side === 'home' ? match.home_team : koMine.side === 'away' ? match.away_team : null) : null
     const myOnTrack = koMine && lead && lead === koMine.side
     return wrap(<>
-      <KOHeader match={match} hasResult={hasResult} live={live} weather={weather} />
+      <KOHeader match={match} hasResult={hasResult} live={live} weather={weather} viewMode={viewMode} />
 
       {viewMode === 'ko' && (
       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', padding: '8px 12px', marginBottom: '12px', background: 'rgba(230,81,0,0.08)', border: '1px solid rgba(230,81,0,0.2)', borderRadius: 'var(--radius-md)', fontSize: '11.5px', fontWeight: 700, color: '#e65100' }}>
@@ -1315,11 +1315,11 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
               {[
                 {
                   label: `${match.home_team?.name || match.home_team?.short_code || 'Home team'} win`,
-                  value: `${homeOnlyCount} player${homeOnlyCount === 1 ? '' : 's'} +${availablePoints}`,
+                  value: `${homeOnlyCount} player${homeOnlyCount === 1 ? '' : 's'} · +${availablePoints} pts`,
                 },
                 {
                   label: `${match.away_team?.name || match.away_team?.short_code || 'Away team'} win`,
-                  value: `${awayOnlyCount} player${awayOnlyCount === 1 ? '' : 's'} +${availablePoints}`,
+                  value: `${awayOnlyCount} player${awayOnlyCount === 1 ? '' : 's'} · +${availablePoints} pts`,
                 },
                 {
                   label: 'Points whichever team advances',
@@ -1756,7 +1756,7 @@ function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel, weather }
   )
 }
 
-function KOHeader({ match, hasResult, live, weather }) {
+function KOHeader({ match, hasResult, live, weather, viewMode }) {
   return (
     <div className="card fade-up" style={{ marginBottom: '12px', textAlign: 'center' }}>
       <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
@@ -1764,7 +1764,9 @@ function KOHeader({ match, hasResult, live, weather }) {
           ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : ''}`.trim()
           : match.status === 'completed'
             ? 'Full time'
-            : 'KO Predictor'}
+            : viewMode === 'bracket'
+              ? 'Tournament bracket'
+              : 'KO Predictor'}
       </div>
       <ScoreRow match={match} hasResult={hasResult} />
       <MatchVenue match={match} weather={weather} />
