@@ -319,7 +319,14 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
       }
 
       const locked = m && (m.status === 'live' || m.status === 'completed' || new Date(m.kickoff_time) <= new Date())
-      if (!locked) { setNotLocked(true); setLoading(false); return }
+
+      // KO Predictor picks stay hidden until kickoff, but the Tournament bracket
+      // is already frozen and safe to inspect before the real match begins.
+      if (!locked && viewMode === 'ko') {
+        setNotLocked(true)
+        setLoading(false)
+        return
+      }
 
       // Scope tournament stats and KO Predictor stats separately.
       let userIdFilter = null
@@ -771,7 +778,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
       setLoading(false)
     }
     if (matchId) load()
-  }, [matchId, leagueCode, koLeagueCode, user?.id])
+  }, [matchId, leagueCode, koLeagueCode, user?.id, viewMode])
 
   const wrap = (children) => (
     <div style={{ marginTop: divider ? '6px' : 0, paddingTop: divider ? '18px' : 0, borderTop: divider ? '2px solid var(--border-light)' : 'none' }}>{children}</div>
@@ -780,10 +787,13 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
   if (loading) return wrap(<div style={{ textAlign: 'center', padding: '24px' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>)
   if (scopeDenied) return wrap(<p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '16px' }}>{scopeMessage || 'You do not have access to this view.'}</p>)
   if (!match) return wrap(<p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '16px' }}>Match not found.</p>)
-  if (notLocked) return wrap(
+  if (notLocked && viewMode === 'ko') return wrap(
     <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
       <div style={{ fontSize: '30px', marginBottom: '6px' }}>🔒</div>
-      <p>{match.home_team?.short_code} v {match.away_team?.short_code} — predictions appear once it kicks off.</p>
+      <p>{match.home_team?.short_code} v {match.away_team?.short_code} — KO Predictor picks appear once it kicks off.</p>
+      <p style={{ marginTop: '8px', fontSize: '12px' }}>
+        Switch to <strong>Tournament bracket</strong> above to view the locked bracket impact now.
+      </p>
     </div>
   )
 
