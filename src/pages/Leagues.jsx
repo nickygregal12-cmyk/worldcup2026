@@ -596,9 +596,11 @@ function MyPredictionsProgress({ userId }) {
 
 export default function Leagues() {
   const { user, isAdmin } = useAuthStore()
-  const [searchParams] = useSearchParams()
-  const [activeGame, setActiveGame] = useState('tournament')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [activeGame, setActiveGame] = useState(() => searchParams.get('tab') === 'overall' ? 'overall' : 'tournament')
+  const [overallGame, setOverallGame] = useState(() => searchParams.get('game') === 'ko' ? 'ko' : 'tournament')
   const [overallRows, setOverallRows] = useState([])
+  const [koOverallEntrants, setKoOverallEntrants] = useState(new Set())
   const [loadingOverall, setLoadingOverall] = useState(false)
   const [openLeagueMenu, setOpenLeagueMenu] = useState(null)
   const [myLeagues, setMyLeagues] = useState([])
@@ -700,8 +702,19 @@ export default function Leagues() {
 
   // Invite links open the correct competition and pre-fill the code.
   useEffect(() => {
+    const tab = searchParams.get('tab')
     const game = searchParams.get('game')
     const code = searchParams.get('join')?.trim().toUpperCase()
+
+    if (tab === 'overall') {
+      setActiveGame('overall')
+      setOverallGame(game === 'ko' ? 'ko' : 'tournament')
+      setShowCreate(false)
+      setShowJoin(false)
+      setError('')
+      return
+    }
+
     if (game !== 'ko' || !code) return
     setActiveGame('ko')
     setJoinCode(code)
@@ -760,17 +773,28 @@ export default function Leagues() {
 
   const loadOverallRankings = async () => {
     setLoadingOverall(true)
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, username, display_name, total_points, streak_current, exact_scores, avatar_emoji, show_future_predictions')
-      .order('total_points', { ascending: false })
-      .order('exact_scores', { ascending: false })
-      .limit(100)
-    setOverallRows(data || [])
+
+    const [{ data: profilesData }, { data: koEntries }] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select('id, username, display_name, total_points, streak_current, exact_scores, avatar_emoji, show_future_predictions, ko_points, ko_streak_current, ko_exact_scores, is_banned')
+        .limit(200),
+      supabase
+        .from('ko_predictions')
+        .select('user_id'),
+    ])
+
+    setOverallRows((profilesData || []).filter(profile => !profile.is_banned))
+    setKoOverallEntrants(new Set((koEntries || []).map(row => row.user_id).filter(Boolean)))
     setLoadingOverall(false)
   }
 
-  const openOverallProfile = (profile) => openProfile(profile, user?.id)
+  const switchOverallGame = (game) => {
+    setOverallGame(game)
+    setSearchParams({ tab: 'overall', game })
+  }
+
+  const openOverallProfile = (profile) => openProfile(profile, user?.id, overallGame === 'ko' ? 'ko' : 'tournament')
 
   const loadMyLeagues = async () => {
     const { data: memberships } = await supabase
@@ -1318,7 +1342,22 @@ export default function Leagues() {
 
   // Guest view
   if (!user) {
-    return (
+    const displayedOverallRows = [...overallRows]
+    .filter(profile => overallGame === 'tournament' || koOverallEntrants.has(profile.id))
+    .sort((a, b) => {
+      const pointKey = overallGame === 'ko' ? 'ko_points' : 'total_points'
+      const exactKey = overallGame === 'ko' ? 'ko_exact_scores' : 'exact_scores'
+      return Number(b[pointKey] || 0) - Number(a[pointKey] || 0)
+        || Number(b[exactKey] || 0) - Number(a[exactKey] || 0)
+        || String(a.display_name || a.username || '').localeCompare(String(b.display_name || b.username || ''))
+    })
+
+  const currentOverallProfile = displayedOverallRows.find(profile => profile.id === user?.id)
+  const currentOverallRank = displayedOverallRows.findIndex(profile => profile.id === user?.id) + 1
+  const overallAccent = overallGame === 'ko' ? '#e65100' : 'var(--scottish-navy)'
+  const overallAccentLight = overallGame === 'ko' ? 'rgba(230,81,0,0.08)' : 'var(--scottish-navy-light)'
+
+  return (
       <div data-live-prediction-count={livePredictionCount} style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
         <div style={{
           background: 'linear-gradient(135deg, rgba(0,20,60,0.88) 0%, rgba(0,50,120,0.85) 100%), url(/hero-bg.jpg) center/cover no-repeat',
@@ -1378,7 +1417,7 @@ export default function Leagues() {
               border: activeGame === 'tournament' ? '1px solid var(--scottish-navy)' : '1px solid rgba(255,255,255,0.3)',
               cursor: 'pointer',
             }}>🌍 Tournament Leagues</button>
-            <button onClick={() => { setActiveGame('overall'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
+            <button onClick={() => { setActiveGame('overall'); setOverallGame(searchParams.get('game') === 'ko' ? 'ko' : 'tournament'); setSearchParams({ tab: 'overall', game: searchParams.get('game') === 'ko' ? 'ko' : 'tournament' }); setShowCreate(false); setShowJoin(false); setError('') }} style={{
               flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
               background: activeGame === 'overall' ? 'var(--scottish-navy)' : 'rgba(255,255,255,0.15)',
               color: activeGame === 'overall' ? 'white' : 'rgba(255,255,255,0.8)',
@@ -1523,60 +1562,139 @@ export default function Leagues() {
               </div>
             ) : (
               <>
+                <div className="card" style={{ padding: '14px', marginBottom: '12px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '4px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                    <button
+                      type="button"
+                      onClick={() => switchOverallGame('tournament')}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 'calc(var(--radius-md) - 3px)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '850',
+                        background: overallGame === 'tournament' ? 'var(--bg-card)' : 'transparent',
+                        color: overallGame === 'tournament' ? 'var(--scottish-navy)' : 'var(--text-muted)',
+                        boxShadow: overallGame === 'tournament' ? 'var(--shadow-sm)' : 'none',
+                      }}
+                    >
+                      🌍 Tournament
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => switchOverallGame('ko')}
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: 'calc(var(--radius-md) - 3px)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '12px',
+                        fontWeight: '850',
+                        background: overallGame === 'ko' ? 'var(--bg-card)' : 'transparent',
+                        color: overallGame === 'ko' ? '#e65100' : 'var(--text-muted)',
+                        boxShadow: overallGame === 'ko' ? 'var(--shadow-sm)' : 'none',
+                      }}
+                    >
+                      🔥 KO Predictor
+                    </button>
+                  </div>
+                </div>
+
                 <div className="card" style={{ padding: '18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                     <div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}>Your overall rank</div>
-                      <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--scottish-navy)' }}>
-                        #{Math.max((overallRows.findIndex(p => p.id === user.id) + 1), 1)}
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}>
+                        {overallGame === 'ko' ? 'Your KO Predictor rank' : 'Your overall rank'}
+                      </div>
+                      <div style={{ fontSize: '28px', fontWeight: '900', color: overallAccent }}>
+                        {currentOverallRank > 0 ? `#${currentOverallRank}` : '—'}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}>Points</div>
-                      <div style={{ fontSize: '28px', fontWeight: '900' }}>{overallRows.find(p => p.id === user.id)?.total_points || 0}</div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}>
+                        {overallGame === 'ko' ? 'KO points' : 'Points'}
+                      </div>
+                      <div style={{ fontSize: '28px', fontWeight: '900' }}>
+                        {overallGame === 'ko'
+                          ? Number(currentOverallProfile?.ko_points || 0)
+                          : Number(currentOverallProfile?.total_points || 0)}
+                      </div>
                     </div>
                   </div>
+                  {overallGame === 'ko' && !koOverallEntrants.has(user.id) && (
+                    <div style={{ marginTop: '10px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                      Save a KO Predictor pick to enter this leaderboard.
+                    </div>
+                  )}
                 </div>
+
                 <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-light)', fontWeight: '900' }}>🏆 Overall Rankings</div>
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                    <strong>{overallGame === 'ko' ? '🔥 KO Predictor Rankings' : '🏆 Tournament Rankings'}</strong>
+                    <Link
+                      to={`/leaderboard?game=${overallGame === 'ko' ? 'ko' : 'tournament'}`}
+                      style={{ fontSize: '11px', fontWeight: '800', color: overallAccent, textDecoration: 'none', whiteSpace: 'nowrap' }}
+                    >
+                      Full leaderboard →
+                    </Link>
+                  </div>
+
                   {loadingOverall ? (
                     <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-                  ) : overallRows.length === 0 ? (
-                    <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>No rankings yet</div>
+                  ) : displayedOverallRows.length === 0 ? (
+                    <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      {overallGame === 'ko' ? 'No KO Predictor players yet' : 'No rankings yet'}
+                    </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '6px' }}>
-                      {overallRows.map((profile, i) => {
-                    const isMe = profile.id === user.id
-                    return (
-                      <div key={profile.id} onClick={() => openOverallProfile(profile)} role="button" tabIndex={0}
-                        className="leaderboard-row"
-                        style={{
-                          background: isMe ? 'var(--scottish-navy-light)' : 'var(--bg-card)',
-                          border: isMe ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
-                          cursor: 'pointer',
-                        }}>
-                        {/* accent bar */}
-                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: isMe ? 'var(--scottish-navy)' : i < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
-                        <span style={{ fontSize: i < 3 ? '20px' : '13px', fontWeight: '900', minWidth: '36px', textAlign: 'center', flexShrink: 0, color: i < 3 ? 'inherit' : 'var(--text-muted)', fontFamily: i >= 3 ? 'var(--font-mono)' : 'inherit' }}>
-                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
-                        </span>
-                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : avatarColor(profile.display_name || profile.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: isMe ? 'white' : avatarColor(profile.display_name || profile.username).fg, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.12)' }}>
-                          {profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'}</span>
-                            {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
+                      {displayedOverallRows.map((profile, i) => {
+                        const isMe = profile.id === user.id
+                        const points = overallGame === 'ko' ? Number(profile.ko_points || 0) : Number(profile.total_points || 0)
+                        const exact = overallGame === 'ko' ? Number(profile.ko_exact_scores || 0) : Number(profile.exact_scores || 0)
+
+                        return (
+                          <div
+                            key={profile.id}
+                            onClick={() => openOverallProfile(profile)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
+                                openOverallProfile(profile)
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                            className="leaderboard-row"
+                            style={{
+                              background: isMe ? overallAccentLight : 'var(--bg-card)',
+                              border: isMe ? `1px solid ${overallAccent}` : '1px solid var(--border-light)',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: isMe ? overallAccent : i < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
+                            <span style={{ fontSize: i < 3 ? '20px' : '13px', fontWeight: '900', minWidth: '36px', textAlign: 'center', flexShrink: 0, color: i < 3 ? 'inherit' : 'var(--text-muted)', fontFamily: i >= 3 ? 'var(--font-mono)' : 'inherit' }}>
+                              {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                            </span>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isMe ? overallAccent : avatarColor(profile.display_name || profile.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: isMe ? 'white' : avatarColor(profile.display_name || profile.username).fg, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.12)' }}>
+                              {profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'}</span>
+                                {isMe && <span style={{ fontSize: '9px', background: overallAccent, color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                                {exact > 0 ? `🎯 ${exact} exact` : overallGame === 'ko' ? 'KO Predictor player' : 'Tournament player'}
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '54px' }}>
+                              <span style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em', lineHeight: 1, color: isMe ? overallAccent : 'var(--text-primary)' }}>{points}</span>
+                              <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{overallGame === 'ko' ? 'KO pts' : 'pts'}</span>
+                            </div>
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>{profile.exact_scores > 0 ? `🎯 ${profile.exact_scores} exact` : 'Overall player'}</div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '44px' }}>
-                          <span style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em', lineHeight: 1, color: isMe ? 'var(--scottish-navy)' : 'var(--text-primary)' }}>{profile.total_points || 0}</span>
-                          <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>pts</span>
-                        </div>
-                      </div>
-                    )
-                  })}
+                        )
+                      })}
                     </div>
                   )}
                 </div>

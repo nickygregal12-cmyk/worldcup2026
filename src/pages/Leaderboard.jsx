@@ -24,6 +24,7 @@ export default function Leaderboard() {
   const [activeGame, setActiveGame] = useState(requestedGame)
   const [players, setPlayers] = useState([])
   const [koPlayers, setKoPlayers] = useState([])
+  const [koEntrantIds, setKoEntrantIds] = useState(new Set())
   const [prevRanks, setPrevRanks] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -53,7 +54,7 @@ export default function Leaderboard() {
 
   const loadAll = async () => {
     setLoading(true)
-    const [tRes, koRes, prevRes] = await Promise.all([
+    const [tRes, koRes, prevRes, koEntriesRes] = await Promise.all([
       supabase.from('profiles')
         .select('id, username, display_name, avatar_emoji, total_points, streak_current, perfect_rounds, streak_best, prediction_accuracy, total_predictions, is_banned')
         .order('total_points', { ascending: false })
@@ -67,9 +68,12 @@ export default function Leaderboard() {
       supabase.from('leaderboard_snapshots')
         .select('user_id, rank')
         .eq('snapshot_type', 'previous'),
+      supabase.from('ko_predictions')
+        .select('user_id'),
     ])
     setPlayers(tRes.data || [])
     setKoPlayers(koRes.data || [])
+    setKoEntrantIds(new Set((koEntriesRes.data || []).map(row => row.user_id).filter(Boolean)))
     setPrevRanks(prevRes.data || [])
     setLoading(false)
   }
@@ -115,6 +119,9 @@ export default function Leaderboard() {
     // Always hide banned users.
     if (p.is_banned) return false
 
+    // KO Predictor leaderboard only includes users who actually entered it.
+    if (!isTournament && !koEntrantIds.has(p.id)) return false
+
     // After the group stage, only hide genuinely empty/abandoned accounts.
     // A player who has earned points must remain visible even if their
     // total_predictions counter is null, zero or temporarily stale.
@@ -133,11 +140,11 @@ export default function Leaderboard() {
   })
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const userRank = currentPlayers.findIndex(p => p.id === user?.id) + 1
+  const userRank = filtered.findIndex(p => p.id === user?.id) + 1
   const userVisible = paginated.some(p => p.id === user?.id)
   const userPoints = isTournament
-    ? currentPlayers[userRank - 1]?.total_points || 0
-    : currentPlayers[userRank - 1]?.ko_points || 0
+    ? filtered[userRank - 1]?.total_points || 0
+    : filtered[userRank - 1]?.ko_points || 0
 
   const accentColour = isTournament ? 'var(--scottish-navy)' : '#e65100'
   const accentLight = isTournament ? 'var(--scottish-navy-light)' : '#fff3e0'
@@ -159,7 +166,7 @@ export default function Leaderboard() {
           <div style={{ fontSize: '12px', fontWeight: '700', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)', marginBottom: '6px' }}>FIFA World Cup 2026</div>
           <h1 style={{ fontSize: '26px', fontWeight: '900', letterSpacing: '-0.03em', marginBottom: '4px' }}>🏆 Leaderboard</h1>
           <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '16px' }}>
-            {currentPlayers.length} player{currentPlayers.length !== 1 ? 's' : ''} competing
+            {filtered.length} player{filtered.length !== 1 ? 's' : ''} competing
           </div>
 
           {/* Your position pill */}
