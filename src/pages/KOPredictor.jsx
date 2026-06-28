@@ -713,43 +713,184 @@ export default function KOPredictor() {
   return (
     <div style={{ background: 'var(--bg-secondary)', minHeight: '100vh' }}>
 
+      <style>{`
+        .ko-hero {
+          background: linear-gradient(135deg, #e65100, #ff9800);
+          position: sticky;
+          top: var(--nav-height);
+          z-index: 50;
+          color: white;
+        }
+        .ko-hero-main {
+          display: grid;
+          grid-template-columns: auto minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 0 10px;
+        }
+        .ko-hero-copy {
+          min-width: 0;
+        }
+        .ko-hero-title {
+          display: block;
+          font-size: 18px;
+          line-height: 1.15;
+          font-weight: 900;
+        }
+        .ko-hero-subtitle {
+          display: block;
+          margin-top: 2px;
+          font-size: 10.5px;
+          line-height: 1.3;
+          font-weight: 650;
+          color: rgba(255,255,255,0.84);
+        }
+        .ko-hero-stats {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          justify-content: flex-end;
+        }
+        .ko-hero-stat {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          min-height: 30px;
+          padding: 5px 10px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.16);
+          border: 1px solid rgba(255,255,255,0.28);
+          color: white;
+          font-size: 11px;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+        .ko-stage-strip {
+          display: flex;
+          overflow-x: auto;
+          border-top: 1px solid rgba(255,255,255,0.2);
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+        }
+        .ko-stage-strip::-webkit-scrollbar {
+          display: none;
+        }
+        .ko-stage-tab {
+          min-width: 68px;
+          padding: 9px 13px 8px;
+          border: 0;
+          border-bottom: 2px solid transparent;
+          background: none;
+          color: rgba(255,255,255,0.62);
+          cursor: pointer;
+          white-space: nowrap;
+          flex-shrink: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1px;
+          font-size: 11px;
+          font-weight: 650;
+        }
+        .ko-stage-tab.active {
+          color: white;
+          border-bottom-color: white;
+          font-weight: 850;
+        }
+        .ko-stage-count {
+          font-size: 9px;
+          font-weight: 750;
+          color: rgba(255,255,255,0.52);
+        }
+        .ko-stage-tab.active .ko-stage-count,
+        .ko-stage-count.complete {
+          color: rgba(255,255,255,0.95);
+        }
+        @media (max-width: 640px) {
+          .ko-hero-main {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 8px;
+            padding: 10px 0 8px;
+          }
+          .ko-hero-logo {
+            display: none;
+          }
+          .ko-hero-copy {
+            text-align: left;
+          }
+          .ko-hero-title {
+            font-size: 17px;
+          }
+          .ko-hero-subtitle {
+            font-size: 10px;
+            max-width: 100%;
+          }
+          .ko-hero-stats {
+            justify-content: space-between;
+            gap: 8px;
+          }
+          .ko-hero-stat {
+            flex: 1;
+            justify-content: center;
+            min-height: 29px;
+            padding: 5px 8px;
+            font-size: 10.5px;
+          }
+          .ko-stage-strip {
+            margin: 0 -16px;
+            padding: 0 10px;
+          }
+          .ko-stage-tab {
+            min-width: 62px;
+            padding: 8px 10px 7px;
+            font-size: 10.5px;
+          }
+        }
+      `}</style>
+
       {/* Header */}
-      <div style={{ background: 'linear-gradient(135deg, #e65100, #ff9800)', position: 'sticky', top: 'var(--nav-height)', zIndex: 50 }}>
+      <div className="ko-hero">
         <div className="container">
-          {/* Row 1: Title + joker counter */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0 8px', gap: '10px' }}>
-            <WorldCupLogo variant="compact" size={42} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', flex: 1 }}>
-              <span style={{ fontSize: '18px', fontWeight: '800', color: 'white' }}>🔥 KO Predictor</span>
-              <span style={{ fontSize: '10.5px', fontWeight: '600', color: 'rgba(255,255,255,0.85)' }}>Separate game · doesn't affect your Tournament score</span>
+          <div className="ko-hero-main">
+            <div className="ko-hero-logo">
+              <WorldCupLogo variant="compact" size={42} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', fontSize: '12px', fontWeight: '700', color: 'white' }}>
-                🃏 {jokersRemaining} tournament joker{jokersRemaining !== 1 ? 's' : ''} left
+
+            <div className="ko-hero-copy">
+              <span className="ko-hero-title">🔥 KO Predictor</span>
+              <span className="ko-hero-subtitle">Separate game · Tournament score unaffected</span>
+            </div>
+
+            <div className="ko-hero-stats">
+              <div className="ko-hero-stat">
+                <span>✓</span>
+                <span>{Object.keys(predictions).length}/{confirmedTotal} complete</span>
               </div>
-              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>
-                {Object.keys(predictions).length} / {confirmedTotal}
-              </span>
+              <div className="ko-hero-stat">
+                <span>🃏</span>
+                <span>{jokersRemaining} joker{jokersRemaining !== 1 ? 's' : ''} left</span>
+              </div>
             </div>
           </div>
 
-          {/* Row 2: Stage tabs */}
-          <div style={{ display: 'flex', overflowX: 'auto', borderTop: '1px solid rgba(255,255,255,0.2)', scrollbarWidth: 'none' }}>
+          <div className="ko-stage-strip">
             {STAGES.map(stage => {
               const done = getPredCount(stage.key)
               const total = matches.filter(m => m.stage === stage.key && isConfirmed(m)).length
               const complete = done === total && total > 0
               const isActive = activeStage === stage.key
               return (
-                <button key={stage.key} onClick={() => { setActiveStage(stage.key); scrollToKOMatch(getSmartKOMatch(stage.key)) }} style={{
-                  padding: '10px 14px', fontSize: '12px', fontWeight: isActive ? '700' : '500',
-                  color: isActive ? 'white' : 'rgba(255,255,255,0.6)',
-                  borderBottom: isActive ? '2px solid white' : '2px solid transparent',
-                  background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0,
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
-                }}>
-                  {stage.label}
-                  <span style={{ fontSize: '10px', color: complete ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.5)', fontWeight: '600' }}>
+                <button
+                  key={stage.key}
+                  type="button"
+                  className={`ko-stage-tab ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveStage(stage.key)
+                    scrollToKOMatch(getSmartKOMatch(stage.key))
+                  }}
+                >
+                  <span>{stage.label}</span>
+                  <span className={`ko-stage-count ${complete ? 'complete' : ''}`}>
                     {complete ? '✓' : `${done}/${total}`}
                   </span>
                 </button>
