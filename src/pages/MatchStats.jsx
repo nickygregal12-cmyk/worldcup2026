@@ -895,7 +895,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
 
         return (
         <StatCard title={`${scopeLabel} · original tournament bracket picks`}>
-          <div style={{ marginBottom: '12px' }}>
+          <div style={{ marginBottom: '9px' }}>
             <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
               Sort by
             </div>
@@ -903,7 +903,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
               className="input"
               value={tournamentBracketSort}
               onChange={event => setTournamentBracketSort(event.target.value)}
-              style={{ width: '100%', minHeight: '40px', fontWeight: 800 }}
+              style={{ width: '100%', minHeight: '38px', fontWeight: 800, fontSize: '13px' }}
             >
               <option value="potential">Points currently on the line</option>
               <option value="league">League table points</option>
@@ -912,7 +912,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
             </select>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
             {projectedRows.map(r => {
               const me = r.userId === user?.id
               const originalHome = r.exactPick?.home_team
@@ -935,98 +935,179 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                 }
               }
 
+              const selectedRoute = tournamentBracketSort === 'home'
+                ? r.homeRoute
+                : tournamentBracketSort === 'away'
+                  ? r.awayRoute
+                  : null
+
               return (
                 <div
                   key={r.userId}
                   style={{
-                    padding: '12px',
+                    padding: '9px 10px',
                     background: me ? 'var(--scottish-navy-light)' : 'var(--bg-secondary)',
                     border: me ? '1px solid rgba(0,48,135,0.28)' : '1px solid var(--border-light)',
                     borderRadius: 'var(--radius-md)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px' }}>
-                    <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--scottish-navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '50%',
+                      background: 'var(--scottish-navy)',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: '10px',
+                      flexShrink: 0,
+                    }}>
                       {r.avatar || (r.name[0] || '?').toUpperCase()}
                     </span>
-                    <span style={{ flex: 1, fontWeight: 800, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{
-                        minWidth: '48px',
+
+                    <span style={{
+                      flex: 1,
+                      minWidth: 0,
+                      fontWeight: 850,
+                      fontSize: '13px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {me ? 'You' : r.name}
+                    </span>
+
+                    <span style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 800,
+                      fontSize: '10px',
+                      color: 'var(--text-muted)',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {r.leaguePoints} pts
+                    </span>
+
+                    {r.projectedPoints > 0 && (
+                      <span style={{
+                        padding: '3px 6px',
+                        borderRadius: '999px',
+                        background: 'var(--accent-green-light)',
+                        color: 'var(--accent-green)',
                         fontFamily: 'var(--font-mono)',
                         fontWeight: 900,
-                        fontSize: '14px',
-                        color: r.projectedPoints > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
+                        fontSize: '10px',
+                        whiteSpace: 'nowrap',
                       }}>
-                        {r.projectedPoints > 0 ? `+${r.projectedPoints} pts` : '—'}
-                      </div>
-                      <div style={{ marginTop: '2px', fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700 }}>
-                        {r.leaguePoints} league pts
-                      </div>
-                    </div>
+                        +{r.projectedPoints}
+                      </span>
+                    )}
                   </div>
 
                   {r.hasPick ? (
                     <>
-                      <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-                        Original M{match.match_number}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', fontSize: '12px', fontWeight: 800 }}>
-                        <span>{originalHome?.flag_emoji || '🏳️'} {originalHome?.short_code || originalHome?.name || 'TBC'}</span>
-                        <span style={{ color: 'var(--text-muted)' }}>vs</span>
-                        <span>{originalAway?.flag_emoji || '🏳️'} {originalAway?.short_code || originalAway?.name || 'TBC'}</span>
-                      </div>
-                      <div style={{ marginTop: '6px', fontSize: '12px', fontWeight: 900, color: 'var(--scottish-navy)' }}>
-                        {originalWinner?.flag_emoji || '🏳️'} {originalWinner?.name || originalWinner?.short_code || 'No winner saved'}{originalWinner ? ' to advance' : ''}
-                      </div>
-                      <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
-                        {routeSummary}
-                      </div>
-
-                      {(tournamentBracketSort === 'home' ? r.homeRoute : tournamentBracketSort === 'away' ? r.awayRoute : null) && (
-                        <div style={{
-                          display: 'inline-flex',
-                          marginTop: '7px',
-                          padding: '3px 7px',
-                          borderRadius: '999px',
-                          background: (tournamentBracketSort === 'home' ? r.homeRoute : r.awayRoute) === 'exact'
-                            ? 'var(--accent-green-light)'
-                            : 'var(--accent-blue-light)',
-                          color: (tournamentBracketSort === 'home' ? r.homeRoute : r.awayRoute) === 'exact'
-                            ? 'var(--accent-green)'
-                            : 'var(--scottish-navy)',
-                          fontSize: '9px',
-                          fontWeight: 900,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.04em',
-                        }}>
-                          {(tournamentBracketSort === 'home' ? r.homeRoute : r.awayRoute) === 'exact'
-                            ? 'Correct fixture route'
-                            : 'Different bracket route'}
-                        </div>
-                      )}
-
-                      {r.hasCurrentTeamBacking && (
-                        <div style={{
-                          marginTop: '8px',
-                          padding: '7px 9px',
-                          borderRadius: 'var(--radius-sm)',
-                          background: r.projectedPoints > 0 ? 'var(--accent-green-light)' : 'var(--bg-card)',
-                          border: `1px solid ${r.projectedPoints > 0 ? 'rgba(0,122,51,0.2)' : 'var(--border-light)'}`,
-                          fontSize: '10.5px',
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        flexWrap: 'wrap',
+                        marginTop: '8px',
+                        fontSize: '11px',
+                      }}>
+                        <span style={{
+                          color: 'var(--text-muted)',
                           fontWeight: 800,
-                          color: r.projectedPoints > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
                         }}>
-                          {r.projectedPoints > 0
-                            ? `Live projection: +${r.projectedPoints} pts`
-                            : `Potential: +${3 + roundPoints} pts if ${r.currentFixtureBackings[0]?.team?.name || 'their backed team'} advance`}
-                        </div>
-                      )}
+                          M{match.match_number}
+                        </span>
+
+                        <span style={{ fontWeight: 800 }}>
+                          {originalHome?.flag_emoji || '🏳️'} {originalHome?.short_code || originalHome?.name || 'TBC'}
+                        </span>
+                        <span style={{ color: 'var(--text-muted)' }}>vs</span>
+                        <span style={{ fontWeight: 800 }}>
+                          {originalAway?.flag_emoji || '🏳️'} {originalAway?.short_code || originalAway?.name || 'TBC'}
+                        </span>
+
+                        <span style={{ color: 'var(--border-dark)' }}>•</span>
+
+                        <span style={{ fontWeight: 900, color: 'var(--scottish-navy)' }}>
+                          {originalWinner?.flag_emoji || '🏳️'} {originalWinner?.short_code || originalWinner?.name || 'No winner'} to advance
+                        </span>
+                      </div>
+
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        flexWrap: 'wrap',
+                        marginTop: '7px',
+                      }}>
+                        {selectedRoute && (
+                          <span style={{
+                            padding: '3px 7px',
+                            borderRadius: '999px',
+                            background: selectedRoute === 'exact'
+                              ? 'var(--accent-green-light)'
+                              : 'var(--accent-blue-light)',
+                            color: selectedRoute === 'exact'
+                              ? 'var(--accent-green)'
+                              : 'var(--scottish-navy)',
+                            fontSize: '9px',
+                            fontWeight: 900,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {selectedRoute === 'exact' ? 'Correct route' : 'Different route'}
+                          </span>
+                        )}
+
+                        {r.hasCurrentTeamBacking && (
+                          <span style={{
+                            padding: '3px 7px',
+                            borderRadius: '999px',
+                            background: r.projectedPoints > 0
+                              ? 'var(--accent-green-light)'
+                              : 'var(--bg-card)',
+                            border: `1px solid ${r.projectedPoints > 0
+                              ? 'rgba(0,122,51,0.2)'
+                              : 'var(--border-light)'}`,
+                            color: r.projectedPoints > 0
+                              ? 'var(--accent-green)'
+                              : 'var(--text-muted)',
+                            fontSize: '9.5px',
+                            fontWeight: 850,
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {r.projectedPoints > 0
+                              ? `Live +${r.projectedPoints} pts`
+                              : `Potential +${3 + roundPoints} pts`}
+                          </span>
+                        )}
+
+                        <span style={{
+                          flex: '1 1 180px',
+                          minWidth: 0,
+                          color: 'var(--text-muted)',
+                          fontSize: '10px',
+                          lineHeight: 1.3,
+                        }}>
+                          {routeSummary}
+                        </span>
+                      </div>
                     </>
                   ) : (
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No original bracket pick saved for M{match.match_number}.</div>
+                    <div style={{ marginTop: '7px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                      No original bracket pick saved for M{match.match_number}.
+                    </div>
                   )}
                 </div>
+              )
               )
             })}
           </div>
