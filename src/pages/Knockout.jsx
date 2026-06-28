@@ -11,6 +11,7 @@ import {
 import { predictKnockoutMatch } from '../lib/luckyDip.js'
 import { DATES } from '../lib/tournamentDates.js'
 import WorldCupLogo from '../components/WorldCupLogo.jsx'
+import { buildPredictedDepthByTeam, buildFixtureBracketHealth } from '../lib/bracketHealth.js'
 
 
 const VENUE_FLAGS = {
@@ -658,159 +659,28 @@ export default function Knockout() {
     return { home: winnerTeam, away: pureAway }
   }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, mainBracketLockTime, teamById])
 
-  // Official-fixture view for the active round. Health is based on how far each
-  // team was predicted to travel in the user's full bracket, not merely whether
-  // the team appears somewhere in the next round. This means a team predicted
-  // to reach the quarter-finals is more valuable than one predicted to exit in
-  // the Round of 16.
+  // Official-fixture health uses the same shared calculation as Match Centre.
   const liveFixtureHealth = useMemo(() => {
     const stageConfig = ALL_STAGES.find(s => s.key === activeStage)
     if (!stageConfig) return []
-
-    const stageOrder = ['r32', 'r16', 'qf', 'sf', 'final']
-    const reachLabels = ['Round of 32', 'Round of 16', 'quarter-finals', 'semi-finals', 'final', 'champion']
-    const activeStageIndex = Math.max(0, stageOrder.indexOf(activeStage))
-
-    // Maximum round each team was predicted to reach. A team appearing in an
-    // R32 matchup starts at R32; winning an R32 pick means reaching R16, etc.
-    const predictedDepthByTeam = new Map()
-    ALL_STAGES.forEach((stage, stageIndex) => {
-      stage.matches.forEach(matchDef => {
-        const { home, away } = getMatchTeams(matchDef)
-        ;[home, away].forEach(team => {
-          if (!team?.id) return
-          const existing = predictedDepthByTeam.get(team.id) ?? -1
-          predictedDepthByTeam.set(team.id, Math.max(existing, stageIndex))
-        })
-        const winnerId = knockoutPicks[matchDef.match_number]?.winner_id
-        if (winnerId) {
-          const existing = predictedDepthByTeam.get(winnerId) ?? -1
-          predictedDepthByTeam.set(winnerId, Math.max(existing, stageIndex + 1))
-        }
-      })
+    const predictedDepthByTeam = buildPredictedDepthByTeam({
+      allStages: ALL_STAGES, knockoutPicks, getMatchTeams,
     })
-
-    const fixtures = realKoFixtures.filter(m => m.stage === activeStage && m.home_team?.id && m.away_team?.id)
     const now = Date.now()
     const statusRank = m => {
       const status = String(m.status || '').toLowerCase()
       if (status === 'live' || status === 'in_progress') return 0
       if (status === 'completed' || status === 'finished') return 3
-      const ko = new Date(m.kickoff_time).getTime()
-      return ko <= now ? 1 : 2
+      return new Date(m.kickoff_time).getTime() <= now ? 1 : 2
     }
-
-    return fixtures.map(fixture => {
-      const savedWinnerId = knockoutPicks[fixture.match_number]?.winner_id || null
-      const savedWinner = savedWinnerId ? getTeamById(savedWinnerId) : null
-      const matchDef = stageConfig.matches.find(m => m.match_number === fixture.match_number) || null
-      const originalMatchup = matchDef ? getMatchTeams(matchDef) : { home: null, away: null }
-      const originalHome = originalMatchup.home
-      const originalAway = originalMatchup.away
-      const homeMatchesPick = savedWinnerId === fixture.home_team.id
-      const awayMatchesPick = savedWinnerId === fixture.away_team.id
-      const pickIsInFixture = homeMatchesPick || awayMatchesPick
-
-      const homeDepth = predictedDepthByTeam.get(fixture.home_team.id) ?? -1
-      const awayDepth = predictedDepthByTeam.get(fixture.away_team.id) ?? -1
-      // A result only helps the remaining bracket if the team was predicted
-      // to progress BEYOND the current round. Merely appearing in this round
-      // means the user predicted them to exit here, so their win should not be
-      // presented as helpful.
-      const homeHasFutureValue = homeDepth > activeStageIndex
-      const awayHasFutureValue = awayDepth > activeStageIndex
-      const homeFutureDepth = homeHasFutureValue ? homeDepth : -1
-      const awayFutureDepth = awayHasFutureValue ? awayDepth : -1
-      const preferredId = homeFutureDepth > awayFutureDepth ? fixture.home_team.id
-        : awayFutureDepth > homeFutureDepth ? fixture.away_team.id
-        : null
-
-      const completed = ['completed', 'finished'].includes(String(fixture.status || '').toLowerCase())
-      const winnerId = fixture.winner_team_id || (
-        completed && fixture.home_score != null && fixture.away_score != null
-          ? fixture.home_score > fixture.away_score ? fixture.home_team.id
-            : fixture.away_score > fixture.home_score ? fixture.away_team.id
-            : null
-          : null
-      )
-
-      let tone = 'neutral'
-      let label = 'No saved winner'
-      let detail = 'You did not save a winner for this match.'
-      let neededId = null
-
-      if (savedWinnerId && pickIsInFixture) {
-        neededId = savedWinnerId
-        tone = 'need'
-        label = `Need ${savedWinner?.name || (homeMatchesPick ? fixture.home_team.name : fixture.away_team.name)}`
-        detail = `${savedWinner?.name || (homeMatchesPick ? fixture.home_team.name : fixture.away_team.name)} must advance for your saved winner in this exact fixture to survive.`
-      } else if (savedWinnerId && !pickIsInFixture) {
-        if (preferredId) {
-          const preferredTeam = preferredId === fixture.home_team.id ? fixture.home_team : fixture.away_team
-          const otherTeam = preferredId === fixture.home_team.id ? fixture.away_team : fixture.home_team
-          const preferredDepth = preferredId === fixture.home_team.id ? homeDepth : awayDepth
-          const otherDepth = preferredId === fixture.home_team.id ? awayDepth : homeDepth
-          neededId = preferredId
-          tone = 'partial'
-          label = `Prefer ${preferredTeam.name}`
-          detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for M${fixture.match_number}, so that exact path is lost. ` +
-            `${preferredTeam.name} is better for your remaining bracket because you predicted them to reach the ${reachLabels[preferredDepth] || 'later rounds'}, ` +
-            `while ${otherTeam.name} was only predicted to reach the ${reachLabels[Math.max(otherDepth, 0)] || 'earlier rounds'}.`
-        } else if (homeHasFutureValue && awayHasFutureValue && homeDepth === awayDepth) {
-          tone = 'partial'
-          label = 'Either result preserves the same value'
-          const equalDepth = homeDepth
-          detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for M${fixture.match_number}, so that exact path is lost. ` +
-            `Both official teams were predicted to progress as far as the ${reachLabels[equalDepth] || 'same later round'}, so either winner preserves the same remaining bracket value.`
-        } else {
-          tone = 'out'
-          label = 'No result helps your bracket'
-          detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for M${fixture.match_number}, but did not reach this official fixture. Neither official team remains in your predicted path.`
-        }
-      }
-
-      if (completed) {
-        if (!savedWinnerId) {
-          tone = 'neutral'
-          label = 'No saved winner'
-          detail = 'This finished result did not have a saved winner to compare.'
-        } else if (pickIsInFixture && winnerId === savedWinnerId) {
-          tone = 'safe'
-          label = 'Your pick advanced'
-          detail = `${savedWinner?.name || 'Your selected team'} advanced and this exact part of your bracket remains alive.`
-        } else if (pickIsInFixture && winnerId) {
-          tone = 'out'
-          label = 'Your pick was eliminated'
-          detail = `${savedWinner?.name || 'Your selected team'} did not advance.`
-        } else if (!pickIsInFixture) {
-          const winnerDepth = winnerId ? (predictedDepthByTeam.get(winnerId) ?? -1) : -1
-          const loserId = winnerId === fixture.home_team.id ? fixture.away_team.id : fixture.home_team.id
-          const loserDepth = predictedDepthByTeam.get(loserId) ?? -1
-          const winnerTeam = winnerId === fixture.home_team.id ? fixture.home_team : winnerId === fixture.away_team.id ? fixture.away_team : null
-          tone = winnerDepth > activeStageIndex ? 'partial' : 'out'
-          label = winnerDepth > activeStageIndex && winnerDepth > loserDepth ? 'Best available result' : winnerDepth > activeStageIndex ? 'Some bracket value remains' : 'No bracket value remains'
-          detail = `${savedWinner?.name || 'Your selected team'} did not reach this official fixture.`
-          if (winnerTeam && winnerDepth > activeStageIndex) {
-            detail += ` ${winnerTeam.name} advanced and preserves the path you had predicted as far as the ${reachLabels[winnerDepth] || 'later rounds'}.`
-          } else {
-            detail += ' The result does not preserve another predicted path.'
-          }
-        }
-      }
-
-      return {
-        fixture, matchDef, savedWinnerId, savedWinner, originalHome, originalAway,
-        homeNeeded: homeMatchesPick, awayNeeded: awayMatchesPick,
-        homeInRoundPath: homeHasFutureValue, awayInRoundPath: awayHasFutureValue,
-        homeDepth, awayDepth, preferredId, activeStageIndex,
-        neededId, tone, label, detail, completed,
-        reachLabels,
-      }
-    }).sort((a, b) => {
-      const sr = statusRank(a.fixture) - statusRank(b.fixture)
-      if (sr !== 0) return sr
-      return new Date(a.fixture.kickoff_time) - new Date(b.fixture.kickoff_time)
-    })
+    return realKoFixtures
+      .filter(m => m.stage === activeStage && m.home_team?.id && m.away_team?.id)
+      .map(fixture => buildFixtureBracketHealth({
+        fixture, stageKey: activeStage, stageConfig, knockoutPicks,
+        predictedDepthByTeam, getTeamById, getMatchTeams,
+      }))
+      .filter(Boolean)
+      .sort((a, b) => statusRank(a.fixture) - statusRank(b.fixture) || new Date(a.fixture.kickoff_time) - new Date(b.fixture.kickoff_time))
   }, [activeStage, realKoFixtures, knockoutPicks, getTeamById, getMatchTeams])
 
   // Detect when two teams the user predicted to reach the active round are now

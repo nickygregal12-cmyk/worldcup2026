@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
+import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
+import { buildPredictedDepthByTeam, buildFixtureBracketHealth } from '../lib/bracketHealth.js'
 
 const VENUE_FLAGS = { Mexico:'🇲🇽', 'Mexico City':'🇲🇽', Guadalajara:'🇲🇽', Monterrey:'🇲🇽', Canada:'🇨🇦', Toronto:'🇨🇦', Vancouver:'🇨🇦', USA:'🇺🇸', 'United States':'🇺🇸', 'New York':'🇺🇸', 'New Jersey':'🇺🇸', 'East Rutherford':'🇺🇸', 'New York/NJ':'🇺🇸', Boston:'🇺🇸', Dallas:'🇺🇸', Houston:'🇺🇸', Miami:'🇺🇸', Seattle:'🇺🇸', Philadelphia:'🇺🇸', Atlanta:'🇺🇸', 'Kansas City':'🇺🇸', 'Los Angeles':'🇺🇸', 'San Francisco':'🇺🇸' }
 const venueFlag = (venue) => VENUE_FLAGS[venue?.country] || VENUE_FLAGS[venue?.city] || '🏟️'
@@ -207,7 +209,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
   const [showKoRivals, setShowKoRivals] = useState(true)
   const [koMine, setKoMine] = useState(null)
   const [koRivals, setKoRivals] = useState([])
-  const [bracketImpact, setBracketImpact] = useState([])
+  const [bracketHealth, setBracketHealth] = useState(null)
   const [weather, setWeather] = useState(null)
 
   useEffect(() => {
@@ -224,7 +226,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
       setMyLine(null)
       setKoMine(null)
       setKoRivals([])
-      setBracketImpact([])
+      setBracketHealth(null)
 
       // Load the fixture independently from venue metadata. A missing or renamed
       // venue column must never make the entire Match Centre query return null.
@@ -308,7 +310,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         }
 
         let koQ = supabase.from('ko_predictions')
-          .select('user_id, home_score, away_score, winner_team_id, is_joker')
+          .select('user_id, home_score, away_score, winner_team_id, is_joker, first_goal_band, outcome_type')
           .eq('match_id', matchId)
         if (koUserIds?.length) koQ = koQ.in('user_id', koUserIds)
         const koPreds = koUserIds && koUserIds.length === 0
@@ -323,30 +325,61 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         const rivals = koPreds.map(p => {
           const prof = koNames[p.user_id] || {}
           const side = p.winner_team_id === m.home_team_id ? 'home' : p.winner_team_id === m.away_team_id ? 'away' : null
-          return { userId: p.user_id, name: prof.display_name || prof.username || 'Player', avatar: prof.avatar_emoji, side, home: p.home_score, away: p.away_score, joker: !!p.is_joker }
+          return { userId: p.user_id, name: prof.display_name || prof.username || 'Player', avatar: prof.avatar_emoji, side, home: p.home_score, away: p.away_score, joker: !!p.is_joker, firstGoalBand: p.first_goal_band, outcomeType: p.outcome_type }
         })
         setKoRivals(rivals)
         setKoMine(rivals.find(r => r.userId === user?.id) || null)
 
-        const { data: kpicks } = user?.id
-          ? await supabase.from('knockout_picks').select('match_number, winner_team_id').eq('user_id', user.id)
-          : { data: [] }
-        const deepest = {}
-        ;(kpicks || []).forEach(k => {
-          if (k.winner_team_id && (deepest[k.winner_team_id] == null || k.match_number > deepest[k.winner_team_id])) {
-            deepest[k.winner_team_id] = k.match_number
+        if (user?.id) {
+          const [{ data: groupMatches }, { data: groupPreds }, { data: kpicks }] = await Promise.all([
+            supabase.from('matches')
+              .select('id, match_number, stage, kickoff_time, status, home_team_id, away_team_id, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code), group:group_id(name)')
+              .eq('stage', 'group')
+              .order('kickoff_time', { ascending: true }),
+            supabase.from('predictions').select('match_id, home_score, away_score').eq('user_id', user.id),
+            supabase.from('knockout_picks').select('match_number, winner_team_id, home_team_id, away_team_id').eq('user_id', user.id),
+          ])
+
+          const predictionMap = {}
+          ;(groupPreds || []).forEach(p => { predictionMap[p.match_id] = { home: p.home_score, away: p.away_score } })
+          const standings = calcPredictedStandings(groupMatches || [], predictionMap, true)
+          const pickMap = {}
+          ;(kpicks || []).forEach(p => {
+            pickMap[p.match_number] = { winner_id: p.winner_team_id, home_id: p.home_team_id, away_id: p.away_team_id }
+          })
+          const teamById = {}
+          ;(groupMatches || []).forEach(gm => {
+            if (gm.home_team?.id) teamById[gm.home_team.id] = gm.home_team
+            if (gm.away_team?.id) teamById[gm.away_team.id] = gm.away_team
+          })
+          const getTeamById = id => id ? (teamById[id] || { id, name: 'Unknown team', flag_emoji: '🏳️', short_code: 'TBC' }) : null
+          const resolveWinner = slot => {
+            const num = Number(String(slot || '').replace('W', ''))
+            return getTeamById(pickMap[num]?.winner_id)
           }
-        })
-        const reachLabel = (mn) => mn == null ? null
-          : mn >= 104 ? 'win it all 🏆'
-          : mn >= 101 ? 'the Final'
-          : mn >= 97 ? 'the Semi-finals'
-          : mn >= 89 ? 'the Quarter-finals'
-          : 'the Round of 16'
-        setBracketImpact([
-          { team: m.home_team, side: 'home', reach: reachLabel(deepest[m.home_team_id]) },
-          { team: m.away_team, side: 'away', reach: reachLabel(deepest[m.away_team_id]) },
-        ])
+          const getMatchTeams = matchDef => {
+            const resolve = slot => slot?.startsWith('W')
+              ? resolveWinner(slot)
+              : slot?.startsWith('L')
+                ? null
+                : resolveSlot(slot, standings, groupMatches || [], predictionMap)
+            const pureHome = resolve(matchDef.home_slot)
+            const pureAway = resolve(matchDef.away_slot)
+            const saved = pickMap[matchDef.match_number]
+            if (!saved?.winner_id || saved.winner_id === pureHome?.id || saved.winner_id === pureAway?.id) return { home: pureHome, away: pureAway }
+            const winner = getTeamById(saved.winner_id)
+            return saved.away_id === saved.winner_id && saved.home_id !== saved.winner_id
+              ? { home: pureHome, away: winner }
+              : { home: winner, away: pureAway }
+          }
+          const stageConfig = ALL_STAGES.find(stage => stage.key === m.stage)
+          const predictedDepthByTeam = buildPredictedDepthByTeam({ allStages: ALL_STAGES, knockoutPicks: pickMap, getMatchTeams })
+          const health = buildFixtureBracketHealth({
+            fixture: m, stageKey: m.stage, stageConfig, knockoutPicks: pickMap,
+            predictedDepthByTeam, getTeamById, getMatchTeams,
+          })
+          setBracketHealth(health)
+        }
         setLoading(false)
         return
       }
@@ -430,7 +463,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
             <span style={{ fontSize: '26px' }}>{myWinner?.flag_emoji}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 800, fontSize: '15px' }}>{myWinner?.name} to advance {koMine.joker && '🃏'}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Your score: {koMine.home}–{koMine.away}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Your score: {koMine.home}–{koMine.away}{koMine.firstGoalBand ? ` · First goal ${koMine.firstGoalBand}` : ''}</div>
             </div>
             {hasResult && <span style={{ fontSize: '11px', fontWeight: 800, color: myOnTrack ? 'var(--accent-green)' : 'var(--text-muted)' }}>{live && lead === 'draw' ? 'Level' : myOnTrack ? (live ? 'On track' : '✓ Through') : (live ? 'Trailing' : '✗ Missed')}</span>}
           </div>
@@ -439,24 +472,25 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         )}
       </div>
 
-      {bracketImpact.some(b => b.reach) && (
-        <StatCard title="What this means for your bracket">
+      {bracketHealth && (
+        <StatCard title="Bracket health">
           <div>
-            {bracketImpact.map((b, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '9px 0', borderBottom: i === 0 ? '1px solid var(--border-light)' : 'none' }}>
-                <span style={{ fontSize: '22px' }}>{b.team?.flag_emoji}</span>
-                <div style={{ flex: 1, fontSize: '13px' }}>
-                  <b>{b.team?.name}</b>
-                  <div style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>{b.reach ? `You predicted them to ${b.reach}` : 'Not one of your deep bracket picks'}</div>
-                </div>
-                {completed && winnerSide && (
-                  <span style={{ fontSize: '11px', fontWeight: 800, color: lead === b.side ? 'var(--accent-green)' : '#c62828' }}>
-                    {lead === b.side ? 'Advances ✓' : 'Out ✗'}
-                  </span>
-                )}
+            <div style={{ padding: '11px 12px', borderRadius: 'var(--radius-md)', marginBottom: '12px', background: bracketHealth.tone === 'out' ? 'rgba(198,40,40,0.07)' : bracketHealth.tone === 'need' || bracketHealth.tone === 'safe' ? 'var(--accent-green-light)' : 'rgba(184,134,11,0.09)', border: `1px solid ${bracketHealth.tone === 'out' ? 'rgba(198,40,40,0.2)' : bracketHealth.tone === 'need' || bracketHealth.tone === 'safe' ? 'rgba(0,122,51,0.2)' : 'rgba(184,134,11,0.22)'}` }}>
+              <div style={{ fontSize: '13px', fontWeight: 900, color: bracketHealth.tone === 'out' ? '#c62828' : bracketHealth.tone === 'need' || bracketHealth.tone === 'safe' ? 'var(--accent-green)' : 'var(--accent-gold)', marginBottom: '4px' }}>{bracketHealth.label}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{bracketHealth.detail}</div>
+            </div>
+
+            <div style={{ padding: '11px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontSize: '10.5px', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>Your original pick</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', fontSize: '13px', fontWeight: 800, flexWrap: 'wrap' }}>
+                <span>{bracketHealth.originalHome?.flag_emoji || '🏳️'} {bracketHealth.originalHome?.name || 'Unknown'}</span>
+                <span style={{ color: 'var(--text-muted)', fontWeight: 700 }}>vs</span>
+                <span>{bracketHealth.originalAway?.flag_emoji || '🏳️'} {bracketHealth.originalAway?.name || 'Unknown'}</span>
               </div>
-            ))}
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', paddingTop: '10px' }}>Your bracket scores teams by how far they actually go — this game decides which of these two carries on.</div>
+              <div style={{ marginTop: '7px', fontSize: '12px', fontWeight: 800, color: 'var(--scottish-navy)' }}>
+                {bracketHealth.savedWinner?.flag_emoji || '🏳️'} {bracketHealth.savedWinner?.name || 'No winner saved'}{bracketHealth.savedWinner ? ' to advance' : ''}
+              </div>
+            </div>
           </div>
         </StatCard>
       )}
