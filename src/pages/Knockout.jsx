@@ -103,12 +103,6 @@ export default function Knockout() {
 
   useEffect(() => { loadData() }, [user])
 
-  // Once official knockout fixtures exist, lead with the live bracket-health view.
-  // Users can still switch back to their original frozen picks at any time.
-  useEffect(() => {
-    if (groupStageDone && realKoFixtures.length > 0) setShowRealBracket(true)
-  }, [groupStageDone, realKoFixtures.length])
-
   // Recalculate affected matches when standings change
   useEffect(() => {
     if (!standings || Object.keys(standings).length === 0) return
@@ -818,6 +812,84 @@ export default function Knockout() {
       return new Date(a.fixture.kickoff_time) - new Date(b.fixture.kickoff_time)
     })
   }, [activeStage, realKoFixtures, knockoutPicks, getTeamById, getMatchTeams])
+
+  // Detect when two teams the user predicted to reach the active round are now
+  // on the same official route one round earlier. Example: if Spain and Portugal
+  // were both predicted to reach the quarter-finals but the official bracket can
+  // make them meet in the Round of 16, both quarter-final picks cannot survive.
+  const routeCollisions = useMemo(() => {
+    const stageOrder = ['r32', 'r16', 'qf', 'sf', 'final']
+    const stageIndex = stageOrder.indexOf(activeStage)
+    if (stageIndex <= 0) return []
+
+    const activeConfig = ALL_STAGES.find(s => s.key === activeStage)
+    const previousStageKey = stageOrder[stageIndex - 1]
+    const previousConfig = ALL_STAGES.find(s => s.key === previousStageKey)
+    if (!activeConfig || !previousConfig) return []
+
+    const defsByNumber = new Map(ALL_STAGES.flatMap(s => s.matches).map(m => [m.match_number, m]))
+    const realByNumber = new Map(realKoFixtures.map(m => [m.match_number, m]))
+    const memo = new Map()
+
+    const candidateIdsForMatch = (matchNumber) => {
+      if (memo.has(matchNumber)) return memo.get(matchNumber)
+      const real = realByNumber.get(matchNumber)
+      if (real?.home_team?.id && real?.away_team?.id) {
+        const ids = new Set([real.home_team.id, real.away_team.id])
+        memo.set(matchNumber, ids)
+        return ids
+      }
+      const def = defsByNumber.get(matchNumber)
+      const ids = new Set()
+      if (def) {
+        ;[def.home_slot, def.away_slot].forEach(slot => {
+          const winnerMatch = slot?.match(/^W(\d+)$/)
+          if (winnerMatch) {
+            candidateIdsForMatch(Number(winnerMatch[1])).forEach(id => ids.add(id))
+          }
+        })
+      }
+      memo.set(matchNumber, ids)
+      return ids
+    }
+
+    const predictedTeams = new Map()
+    activeConfig.matches.forEach(matchDef => {
+      const { home, away } = getMatchTeams(matchDef)
+      ;[home, away].forEach(team => { if (team?.id) predictedTeams.set(team.id, team) })
+    })
+
+    const collisions = []
+    previousConfig.matches.forEach(previousMatch => {
+      const candidates = [...candidateIdsForMatch(previousMatch.match_number)]
+        .filter(id => predictedTeams.has(id))
+        .map(id => predictedTeams.get(id))
+      if (candidates.length < 2) return
+
+      // In a single knockout match only one team can advance, so every pair of
+      // user's active-round picks inside this match is mutually exclusive.
+      for (let i = 0; i < candidates.length; i++) {
+        for (let j = i + 1; j < candidates.length; j++) {
+          collisions.push({
+            matchNumber: previousMatch.match_number,
+            earlierRound: previousConfig.label,
+            targetRound: activeConfig.label,
+            pointsLost: activeConfig.points,
+            teamA: candidates[i],
+            teamB: candidates[j],
+          })
+        }
+      }
+    })
+
+    const seen = new Set()
+    return collisions.filter(c => {
+      const key = [c.matchNumber, c.teamA.id, c.teamB.id].sort().join(':')
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }, [activeStage, realKoFixtures, getMatchTeams])
 
   const predictedRoundHealth = useMemo(() => {
     const stageConfig = ALL_STAGES.find(s => s.key === activeStage)
@@ -1630,6 +1702,33 @@ export default function Knockout() {
 
               {groupStageDone && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+                  {routeCollisions.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {routeCollisions.map(collision => (
+                        <div key={`${collision.matchNumber}-${collision.teamA.id}-${collision.teamB.id}`} style={{
+                          background: 'rgba(184,134,11,0.08)',
+                          border: '1.5px solid rgba(184,134,11,0.35)',
+                          borderRadius: 'var(--radius-lg)',
+                          padding: '13px 15px',
+                          boxShadow: 'var(--shadow-card)',
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: '900', color: '#9a6700', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Route conflict · M{collision.matchNumber}</div>
+                            <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-full)', background: 'rgba(184,134,11,0.1)', border: '1px solid rgba(184,134,11,0.35)', color: '#9a6700', fontSize: '10px', fontWeight: '900', whiteSpace: 'nowrap' }}>AT LEAST {collision.pointsLost} PTS LOST</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '13px', fontWeight: '900', color: 'var(--text-primary)' }}>
+                            <span>{collision.teamA.flag_emoji} {collision.teamA.name}</span>
+                            <span style={{ color: 'var(--text-muted)', fontWeight: '700' }}>and</span>
+                            <span>{collision.teamB.flag_emoji} {collision.teamB.name}</span>
+                          </div>
+                          <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                            You predicted both teams to reach the {collision.targetRound.toLowerCase()}, but they can now meet in the {collision.earlierRound.toLowerCase()}. Only one can advance, so one of those {collision.targetRound.toLowerCase()} picks is guaranteed to be lost.
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, originalHome, originalAway, savedWinner, homeNeeded, awayNeeded, homeInRoundPath, awayInRoundPath, homeDepth, awayDepth, preferredId, neededId, tone, label, detail, completed, reachLabels, activeStageIndex }) => {
                     const toneMap = {
                       safe: { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.05)', border: 'rgba(0,122,51,0.25)' },
