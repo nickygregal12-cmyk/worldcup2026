@@ -21,30 +21,146 @@ export default function NavBar() {
 
   return (
     <>
+      <style>{`
+        .desktop-main-nav {
+          padding-left: 24px;
+          padding-right: 24px;
+          gap: 8px;
+          overflow: hidden;
+        }
+
+        .desktop-main-nav__logo {
+          margin-right: 16px;
+        }
+
+        .desktop-main-nav__links {
+          display: flex;
+          gap: 2px;
+          flex: 1;
+          min-width: 0;
+          align-items: center;
+          overflow: hidden;
+        }
+
+        .desktop-main-nav__link {
+          padding: 6px 14px;
+          font-size: 14px;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .desktop-main-nav__right {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+
+        .desktop-main-nav__profile-name,
+        .desktop-main-nav__mode-label,
+        .desktop-main-nav__signout-label {
+          display: inline;
+        }
+
+        @media (max-width: 1420px) {
+          .desktop-main-nav {
+            padding-left: 16px;
+            padding-right: 16px;
+            gap: 5px;
+          }
+
+          .desktop-main-nav__logo {
+            margin-right: 8px;
+          }
+
+          .desktop-main-nav__link {
+            padding: 6px 10px;
+            font-size: 13px;
+          }
+
+          .desktop-main-nav__right {
+            gap: 6px;
+          }
+        }
+
+        @media (max-width: 1260px) {
+          .desktop-main-nav {
+            padding-left: 12px;
+            padding-right: 12px;
+          }
+
+          .desktop-main-nav__link {
+            padding: 6px 8px;
+            font-size: 12.5px;
+          }
+
+          .desktop-main-nav__profile-name,
+          .desktop-main-nav__mode-label {
+            display: none;
+          }
+
+          .desktop-main-nav__profile {
+            padding-left: 7px !important;
+            padding-right: 7px !important;
+          }
+
+          .desktop-main-nav__mode {
+            min-width: 36px !important;
+            width: 36px;
+            padding: 0 !important;
+          }
+        }
+
+        @media (max-width: 1120px) {
+          .desktop-main-nav__logo-word {
+            display: none;
+          }
+
+          .desktop-main-nav__logo {
+            margin-right: 4px;
+          }
+
+          .desktop-main-nav__link {
+            padding-left: 7px;
+            padding-right: 7px;
+            font-size: 12px;
+          }
+
+          .desktop-main-nav__signout-label {
+            display: none;
+          }
+
+          .desktop-main-nav__signout {
+            width: 34px;
+            min-width: 34px;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+          }
+        }
+      `}</style>
+
       {/* Desktop nav only */}
-      <nav className="hide-mobile" style={{
+      <nav className="hide-mobile desktop-main-nav" style={{
         position: 'fixed', top: 0, left: 0, right: 0,
         height: 'var(--nav-height)',
         background: 'var(--bg-card)',
         borderBottom: '1px solid var(--border-light)',
         zIndex: 100, display: 'flex', alignItems: 'center',
-        padding: '0 24px', gap: '8px',
         boxShadow: 'var(--shadow-sm)',
       }}>
         {/* Logo */}
-        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', flexShrink: 0, marginRight: '16px' }}>
+        <Link to="/" className="desktop-main-nav__logo" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none', flexShrink: 0 }}>
           <span style={{ fontSize: '20px' }}>🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>
           <span style={{ fontWeight: '800', fontSize: '16px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-            WC26 <span style={{ color: 'var(--scottish-navy)' }}>Predictor</span>
+            WC26 <span className="desktop-main-nav__logo-word" style={{ color: 'var(--scottish-navy)' }}>Predictor</span>
           </span>
         </Link>
 
         {/* Nav links */}
-        <div style={{ display: 'flex', gap: '2px', flex: 1 }}>
+        <div className="desktop-main-nav__links">
           {navLinks.map(({ to, label }) => (
-            <Link key={to} to={to} style={{
-              padding: '6px 14px', borderRadius: 'var(--radius-md)',
-              fontSize: '14px',
+            <Link key={to} to={to} className="desktop-main-nav__link" style={{
+              borderRadius: 'var(--radius-md)',
               fontWeight: isActive(to) ? '600' : '400',
               color: isActive(to) ? 'var(--text-primary)' : 'var(--text-muted)',
               background: isActive(to) ? 'var(--bg-tertiary)' : 'transparent',
@@ -54,18 +170,19 @@ export default function NavBar() {
             </Link>
           ))}
           {(isAdmin || isLeagueAdmin) && (
-            <Link to="/admin" style={{
-              padding: '6px 14px', borderRadius: 'var(--radius-md)',
-              fontSize: '14px', fontWeight: '400',
+            <Link to="/admin" className="desktop-main-nav__link" style={{
+              borderRadius: 'var(--radius-md)',
+              fontWeight: '400',
               color: 'var(--accent-orange)', textDecoration: 'none',
             }}>Admin</Link>
           )}
         </div>
 
         {/* Right side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div className="desktop-main-nav__right">
           {/* Dark mode toggle */}
           <button
+            className="desktop-main-nav__mode"
             onClick={toggleDarkMode}
             title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -77,12 +194,12 @@ export default function NavBar() {
             }}
           >
             <span>{darkMode ? '☀️' : '🌙'}</span>
-            <span>{darkMode ? 'Light' : 'Dark'}</span>
+            <span className="desktop-main-nav__mode-label">{darkMode ? 'Light' : 'Dark'}</span>
           </button>
 
           {user ? (
             <>
-              <Link to="/profile" style={{
+              <Link to="/profile" className="desktop-main-nav__profile" style={{
                 display: 'flex', alignItems: 'center', gap: '8px',
                 padding: '6px 12px', borderRadius: 'var(--radius-md)',
                 background: 'var(--bg-tertiary)', textDecoration: 'none',
@@ -96,9 +213,17 @@ export default function NavBar() {
                 }}>
                   {(profile?.username || 'U')[0].toUpperCase()}
                 </div>
-                <span>{profile?.username || 'Profile'}</span>
+                <span className="desktop-main-nav__profile-name">{profile?.username || 'Profile'}</span>
               </Link>
-              <button onClick={logout} className="btn btn-secondary btn-sm">Sign out</button>
+              <button
+                onClick={logout}
+                className="btn btn-secondary btn-sm desktop-main-nav__signout"
+                title="Sign out"
+                aria-label="Sign out"
+              >
+                <span aria-hidden="true">↪</span>
+                <span className="desktop-main-nav__signout-label"> Sign out</span>
+              </button>
             </>
           ) : (
             <>
