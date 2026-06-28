@@ -951,9 +951,11 @@ export default function Home() {
             <div style={{
               margin: '22px auto 0',
               display: 'grid',
-              gridTemplateColumns: `repeat(${progressItems.length}, minmax(0, 1fr))`,
+              // Four columns on wider screens, automatically becoming a clean
+              // two-by-two layout on phones so labels are never truncated.
+              gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
               gap: '12px',
-              maxWidth: progressItems.length > 3 ? '640px' : '500px',
+              maxWidth: '640px',
             }}>
               {progressItems.map(({ label, done, total, to }) => {
                 const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0
@@ -967,8 +969,6 @@ export default function Home() {
                         color: complete ? '#4ade80' : 'rgba(255,255,255,0.72)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                       }}>
                         {complete ? '✓ ' : ''}{label}
