@@ -587,6 +587,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
   const [tournamentBracketSort, setTournamentBracketSort] = useState('potential')
   const [bracketHealth, setBracketHealth] = useState(null)
   const [weather, setWeather] = useState(null)
+  const [possibleOpponents, setPossibleOpponents] = useState({ home: [], away: [] })
 
   useEffect(() => {
     const load = async () => {
@@ -604,6 +605,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
       setKoRivals([])
       setTournamentBracketRivals([])
       setBracketHealth(null)
+      setPossibleOpponents({ home: [], away: [] })
 
       // Load the fixture independently from venue metadata. A missing or renamed
       // venue column must never make the entire Match Centre query return null.
@@ -627,6 +629,46 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
       }
 
       setMatch(m)
+
+      if (m) {
+        const stageConfig = ALL_STAGES.find(stage => stage.key === m.stage)
+        const matchDef = stageConfig?.matches?.find(
+          definition => Number(definition.match_number) === Number(m.match_number)
+        )
+
+        const feederNumber = slot => {
+          const match = typeof slot === 'string' ? slot.match(/^W(\d+)$/) : null
+          return match ? Number(match[1]) : null
+        }
+
+        const homeFeeder = !m.home_team_id ? feederNumber(matchDef?.home_slot) : null
+        const awayFeeder = !m.away_team_id ? feederNumber(matchDef?.away_slot) : null
+        const feederNumbers = [...new Set([homeFeeder, awayFeeder].filter(Boolean))]
+
+        if (feederNumbers.length > 0) {
+          const { data: feederMatches } = await supabase
+            .from('matches')
+            .select(`
+              match_number,
+              home_team:home_team_id(id,name,short_code,flag_emoji),
+              away_team:away_team_id(id,name,short_code,flag_emoji)
+            `)
+            .in('match_number', feederNumbers)
+
+          const candidatesFor = matchNumber => {
+            const feeder = (feederMatches || []).find(
+              row => Number(row.match_number) === Number(matchNumber)
+            )
+            return [feeder?.home_team, feeder?.away_team].filter(Boolean)
+          }
+
+          setPossibleOpponents({
+            home: homeFeeder ? candidatesFor(homeFeeder) : [],
+            away: awayFeeder ? candidatesFor(awayFeeder) : [],
+          })
+        }
+      }
+
       setWeather(null)
       if (m?.venue?.city && m?.kickoff_time) {
         const params = new URLSearchParams({ city: m.venue.city, kickoff: m.kickoff_time, stadium: m.venue.name || m.venue.stadium_name || '' })
@@ -1133,7 +1175,14 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
     const myWinner = koMine ? (koMine.side === 'home' ? match.home_team : koMine.side === 'away' ? match.away_team : null) : null
     const myOnTrack = koMine && lead && lead === koMine.side
     return wrap(<>
-      <KOHeader match={match} hasResult={hasResult} live={live} weather={weather} viewMode={viewMode} />
+      <KOHeader
+        match={match}
+        hasResult={hasResult}
+        live={live}
+        weather={weather}
+        viewMode={viewMode}
+        possibleOpponents={possibleOpponents}
+      />
 
       {viewMode === 'ko' && (
       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', padding: '8px 12px', marginBottom: '12px', background: 'rgba(230,81,0,0.08)', border: '1px solid rgba(230,81,0,0.2)', borderRadius: 'var(--radius-md)', fontSize: '11.5px', fontWeight: 700, color: '#e65100' }}>
@@ -1747,7 +1796,7 @@ function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel, weather }
             ? 'Full time'
             : 'Predictions'}
       </div>
-      <ScoreRow match={match} hasResult={hasResult} />
+      <ScoreRow match={match} hasResult={hasResult} possibleOpponents={possibleOpponents} />
       <MatchVenue match={match} weather={weather} />
       <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '12px' }}>
         📊 {statsTotal} predictions · {scopeLabel}
@@ -1756,7 +1805,7 @@ function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel, weather }
   )
 }
 
-function KOHeader({ match, hasResult, live, weather, viewMode }) {
+function KOHeader({ match, hasResult, live, weather, viewMode, possibleOpponents }) {
   return (
     <div className="card fade-up" style={{ marginBottom: '12px', textAlign: 'center' }}>
       <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
@@ -1774,22 +1823,89 @@ function KOHeader({ match, hasResult, live, weather, viewMode }) {
   )
 }
 
-function ScoreRow({ match, hasResult }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px' }}>
+function ScoreRow({ match, hasResult, possibleOpponents }) {
+  const TeamSide = ({ team, candidates = [] }) => {
+    if (team) {
+      return (
+        <div style={{ textAlign: 'center', width: '88px' }}>
+          <div style={{ fontSize: '34px', lineHeight: 1 }}>{team.flag_emoji}</div>
+          <div style={{ fontWeight: '800', fontSize: 'var(--t-small)', marginTop: '4px' }}>
+            {team.short_code}
+          </div>
+        </div>
+      )
+    }
+
+    if (candidates.length === 2) {
+      return (
+        <div style={{ textAlign: 'center', width: '118px' }}>
+          <div style={{
+            fontSize: '9px',
+            color: 'var(--text-muted)',
+            fontWeight: 850,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            marginBottom: '6px',
+          }}>
+            Possible opponent
+          </div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '5px',
+            flexWrap: 'wrap',
+          }}>
+            {candidates.map((candidate, index) => (
+              <React.Fragment key={candidate.id || candidate.short_code || index}>
+                {index > 0 && (
+                  <span style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 800 }}>
+                    or
+                  </span>
+                )}
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '4px 6px',
+                  borderRadius: '999px',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-light)',
+                  fontSize: '10px',
+                  fontWeight: 850,
+                  whiteSpace: 'nowrap',
+                }}>
+                  <span>{candidate.flag_emoji}</span>
+                  <span>{candidate.short_code || candidate.name}</span>
+                </span>
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    return (
       <div style={{ textAlign: 'center', width: '88px' }}>
-        <div style={{ fontSize: '34px', lineHeight: 1 }}>{match.home_team?.flag_emoji}</div>
-        <div style={{ fontWeight: '800', fontSize: 'var(--t-small)', marginTop: '4px' }}>{match.home_team?.short_code}</div>
+        <div style={{ fontSize: '28px', lineHeight: 1 }}>🏳️</div>
+        <div style={{ fontWeight: '800', fontSize: 'var(--t-small)', marginTop: '4px', color: 'var(--text-muted)' }}>
+          TBC
+        </div>
       </div>
-      <div style={{ minWidth: '92px', textAlign: 'center' }}>
+    )
+  }
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+      <TeamSide team={match.home_team} candidates={possibleOpponents?.home || []} />
+
+      <div style={{ minWidth: '72px', textAlign: 'center' }}>
         <div className="stat-num" style={{ fontSize: '32px', fontWeight: '500' }}>
           {hasResult ? `${match.home_score} – ${match.away_score}` : 'vs'}
         </div>
       </div>
-      <div style={{ textAlign: 'center', width: '88px' }}>
-        <div style={{ fontSize: '34px', lineHeight: 1 }}>{match.away_team?.flag_emoji}</div>
-        <div style={{ fontWeight: '800', fontSize: 'var(--t-small)', marginTop: '4px' }}>{match.away_team?.short_code}</div>
-      </div>
+
+      <TeamSide team={match.away_team} candidates={possibleOpponents?.away || []} />
     </div>
   )
 }
