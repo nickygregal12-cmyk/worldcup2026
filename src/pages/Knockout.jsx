@@ -68,7 +68,6 @@ export default function Knockout() {
   const [realKoResults, setRealKoResults] = useState([]) // completed real KO matches
   const [bracketPtsBreakdown, setBracketPtsBreakdown] = useState(null) // per-stage pts breakdown
   const [realKoFixtures, setRealKoFixtures] = useState([]) // all KO fixtures with confirmed teams
-  const [showRealBracket, setShowRealBracket] = useState(false)
   const [realGroupStandings, setRealGroupStandings] = useState([]) // live real group standings
 
   const isPreTournament = new Date() < DATES.TOURNAMENT_START
@@ -710,6 +709,10 @@ export default function Knockout() {
     return fixtures.map(fixture => {
       const savedWinnerId = knockoutPicks[fixture.match_number]?.winner_id || null
       const savedWinner = savedWinnerId ? getTeamById(savedWinnerId) : null
+      const matchDef = stageConfig.matches.find(m => m.match_number === fixture.match_number) || null
+      const originalMatchup = matchDef ? getMatchTeams(matchDef) : { home: null, away: null }
+      const originalHome = originalMatchup.home
+      const originalAway = originalMatchup.away
       const homeMatchesPick = savedWinnerId === fixture.home_team.id
       const awayMatchesPick = savedWinnerId === fixture.away_team.id
       const pickIsInFixture = homeMatchesPick || awayMatchesPick
@@ -802,7 +805,7 @@ export default function Knockout() {
       }
 
       return {
-        fixture, savedWinnerId, savedWinner,
+        fixture, matchDef, savedWinnerId, savedWinner, originalHome, originalAway,
         homeNeeded: homeMatchesPick, awayNeeded: awayMatchesPick,
         homeInRoundPath: homeHasFutureValue, awayInRoundPath: awayHasFutureValue,
         homeDepth, awayDepth, preferredId, activeStageIndex,
@@ -1586,7 +1589,7 @@ export default function Knockout() {
           </div>
         )}
 
-        {/* Live bracket health — official fixtures first, original picks still available */}
+        {/* Unified bracket health — each card also shows the frozen original pick */}
         {liveTrackerStats && liveTrackerStats.total > 0 && (() => {
           const pctHealth = Math.round((liveTrackerStats.correct / liveTrackerStats.total) * 100)
           const lost = Math.max(0, liveTrackerStats.total - liveTrackerStats.correct)
@@ -1623,19 +1626,11 @@ export default function Knockout() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--border-light)' }}>
-                  <button onClick={() => setShowRealBracket(true)} style={{ padding: '11px 10px', border: 'none', borderRight: '1px solid var(--border-light)', background: showRealBracket ? 'var(--scottish-navy)' : 'var(--bg-card)', color: showRealBracket ? 'white' : 'var(--text-primary)', fontWeight: '800', fontSize: '12px', cursor: 'pointer' }}>
-                    Live bracket health
-                  </button>
-                  <button onClick={() => setShowRealBracket(false)} style={{ padding: '11px 10px', border: 'none', background: !showRealBracket ? 'var(--scottish-navy)' : 'var(--bg-card)', color: !showRealBracket ? 'white' : 'var(--text-primary)', fontWeight: '800', fontSize: '12px', cursor: 'pointer' }}>
-                    Original picks
-                  </button>
-                </div>
               </div>
 
-              {showRealBracket && (
+              {groupStageDone && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, homeNeeded, awayNeeded, homeInRoundPath, awayInRoundPath, homeDepth, awayDepth, preferredId, neededId, tone, label, detail, completed, reachLabels, activeStageIndex }) => {
+                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, originalHome, originalAway, savedWinner, homeNeeded, awayNeeded, homeInRoundPath, awayInRoundPath, homeDepth, awayDepth, preferredId, neededId, tone, label, detail, completed, reachLabels, activeStageIndex }) => {
                     const toneMap = {
                       safe: { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.05)', border: 'rgba(0,122,51,0.25)' },
                       need: { colour: 'var(--scottish-navy)', bg: 'rgba(0,48,135,0.04)', border: 'rgba(0,48,135,0.22)' },
@@ -1701,6 +1696,20 @@ export default function Knockout() {
                           <div style={{ fontSize: '13px', fontWeight: '900', color: t.colour }}>{label}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '3px' }}>{detail}</div>
                         </div>
+
+                        <div style={{ marginTop: '11px', padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)', border: '1px solid var(--border-light)' }}>
+                          <div style={{ fontSize: '10px', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '7px' }}>
+                            Your original pick
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', fontSize: '12px', fontWeight: '800', color: 'var(--text-primary)' }}>
+                            <span>{originalHome?.flag_emoji || '🏳️'} {originalHome?.name || 'Unknown team'}</span>
+                            <span style={{ color: 'var(--text-muted)', fontWeight: '700' }}>vs</span>
+                            <span>{originalAway?.flag_emoji || '🏳️'} {originalAway?.name || 'Unknown team'}</span>
+                          </div>
+                          <div style={{ marginTop: '6px', fontSize: '12px', fontWeight: '900', color: savedWinner ? 'var(--scottish-navy)' : 'var(--text-muted)' }}>
+                            {savedWinner ? `${savedWinner.flag_emoji || ''} ${savedWinner.name} to advance` : 'No winner saved'}
+                          </div>
+                        </div>
                       </div>
                     )
                   } ) : predictedRoundHealth.length > 0 ? predictedRoundHealth.map(({ matchDef, home, away, winner, homeOut, awayOut, tone, label, detail }) => {
@@ -1714,7 +1723,7 @@ export default function Knockout() {
                     return (
                       <div key={matchDef.match_number} style={{ background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', padding: '14px 16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '11px' }}>
-                          <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Predicted M{matchDef.match_number} · {currentStage?.label}</div>
+                          <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Your original pick · M{matchDef.match_number} · {currentStage?.label}</div>
                           <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-full)', background: t.bg, border: `1px solid ${t.border}`, color: t.colour, fontSize: '10px', fontWeight: '900', whiteSpace: 'nowrap' }}>{label.toUpperCase()}</span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '10px' }}>
@@ -1745,8 +1754,8 @@ export default function Knockout() {
           )
         })()}
 
-        {/* Prediction cards — hidden when showing real bracket */}
-        {!showRealBracket && <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: mainBracketLocked ? '12px' : '0' }}>
+        {/* Before the live knockout stage, keep the original bracket editable. */}
+        {!groupStageDone && <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: mainBracketLocked ? '12px' : '0' }}>
           {stageMatches.map(renderMatch)}
         </div>}
       </div>
