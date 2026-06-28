@@ -256,26 +256,52 @@ export const handler = async (event) => {
       }
     }
 
-    const now = new Date()
     for (const match of matches) {
-      const kickoffPassed = match.utcDate && new Date(match.utcDate) <= now
-      const treatAsLive = match.status === 'SCHEDULED' && kickoffPassed
-      if (!['FINISHED', 'IN_PLAY', 'PAUSED'].includes(match.status) && !treatAsLive) continue
+      const providerLiveStatuses = new Set(['IN_PLAY', 'PAUSED', 'EXTRA_TIME', 'PENALTY_SHOOTOUT'])
+      const providerFinishedStatuses = new Set(['FINISHED', 'AWARDED'])
+
+      if (!providerLiveStatuses.has(match.status) && !providerFinishedStatuses.has(match.status)) continue
+
+      // The competition-wide endpoint can lag behind on the minute. While a
+      // fixture is live, refresh the individual fixture before writing to the DB.
+      if (providerLiveStatuses.has(match.status)) {
+        try {
+          const detailResponse = await fetch(
+            `https://api.football-data.org/v4/matches/${encodeURIComponent(match.id)}`,
+            {
+              headers: {
+                'X-Auth-Token': process.env.FOOTBALL_DATA_KEY,
+                'X-Api-Version': 'v4',
+              },
+            }
+          )
+          if (detailResponse.ok) {
+            const detail = await detailResponse.json()
+            Object.assign(match, detail)
+          } else {
+            errors.push(`Live detail M${match.id}: HTTP ${detailResponse.status}`)
+          }
+        } catch (detailError) {
+          errors.push(`Live detail M${match.id}: ${detailError.message}`)
+        }
+      }
 
       const apiHomeScore = firstDefined(
         match.score?.fullTime?.home,
-        match.score?.halfTime?.home,
-        match.score?.currentScore?.home
+        match.score?.currentScore?.home,
+        match.score?.halfTime?.home
       )
       const apiAwayScore = firstDefined(
         match.score?.fullTime?.away,
-        match.score?.halfTime?.away,
-        match.score?.currentScore?.away
+        match.score?.currentScore?.away,
+        match.score?.halfTime?.away
       )
       const hasApiScore = apiHomeScore !== undefined && apiAwayScore !== undefined
-      const newStatus = match.status === 'FINISHED'
+      const newStatus = providerFinishedStatuses.has(match.status)
         ? 'completed'
-        : (match.status === 'IN_PLAY' || match.status === 'PAUSED' || treatAsLive) ? 'live' : 'scheduled'
+        : providerLiveStatuses.has(match.status)
+          ? 'live'
+          : 'scheduled'
 
       if (newStatus === 'completed' && !hasApiScore) {
         errors.push(`M${match.id}: provider marked FINISHED without a complete score`)

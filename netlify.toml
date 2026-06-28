@@ -37,3 +37,8 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
 
 # Push notifications triggered via Supabase pg_cron instead of Netlify scheduler
+
+# Automatic live-score refresh. This server-side function calls the protected
+# sync endpoint using ADMIN_FUNCTION_SECRET, so no browser/admin session is needed.
+[functions."scheduled-score-sync"]
+  schedule = "* * * * *"
