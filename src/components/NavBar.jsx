@@ -10,6 +10,7 @@ export default function NavBar() {
     { to: '/', label: 'Home' },
     { to: '/predictions', label: 'Groups' },
     { to: '/knockout', label: 'Knockout' },
+    { to: '/ko-predictor', label: 'KO Predictor' },
     { to: '/stats', label: 'Pulse' },
     { to: '/awards', label: 'Awards' },
     { to: '/leaderboard', label: 'Leaderboard' },
