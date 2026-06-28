@@ -1108,7 +1108,6 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                   )}
                 </div>
               )
-              )
             })}
           </div>
         </StatCard>
