@@ -665,31 +665,37 @@ export default function Knockout() {
     return { home: winnerTeam, away: pureAway }
   }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, mainBracketLockTime, teamById])
 
-  // Official-fixture view for the active round. The exact saved winner for the
-  // real match is the primary signal, but we also show when one of the official
-  // teams appears elsewhere in the user's picks for the next round. This avoids
-  // incorrectly labelling a team as completely outside the user's bracket.
+  // Official-fixture view for the active round. Health is based on how far each
+  // team was predicted to travel in the user's full bracket, not merely whether
+  // the team appears somewhere in the next round. This means a team predicted
+  // to reach the quarter-finals is more valuable than one predicted to exit in
+  // the Round of 16.
   const liveFixtureHealth = useMemo(() => {
     const stageConfig = ALL_STAGES.find(s => s.key === activeStage)
     if (!stageConfig) return []
 
-    const nextRoundLabels = {
-      r32: 'Round of 16',
-      r16: 'quarter-final',
-      qf: 'semi-final',
-      sf: 'final',
-      final: 'champion',
-    }
-    const nextRoundLabel = nextRoundLabels[activeStage] || 'next-round'
+    const stageOrder = ['r32', 'r16', 'qf', 'sf', 'final']
+    const reachLabels = ['Round of 32', 'Round of 16', 'quarter-finals', 'semi-finals', 'final', 'champion']
+    const activeStageIndex = Math.max(0, stageOrder.indexOf(activeStage))
 
-    // All teams the user selected to advance from this stage, regardless of the
-    // exact bracket slot. This lets the UI distinguish "wrong path" from "not in
-    // the user's bracket at all".
-    const selectedAcrossRound = new Set(
-      stageConfig.matches
-        .map(match => knockoutPicks[match.match_number]?.winner_id)
-        .filter(Boolean)
-    )
+    // Maximum round each team was predicted to reach. A team appearing in an
+    // R32 matchup starts at R32; winning an R32 pick means reaching R16, etc.
+    const predictedDepthByTeam = new Map()
+    ALL_STAGES.forEach((stage, stageIndex) => {
+      stage.matches.forEach(matchDef => {
+        const { home, away } = getMatchTeams(matchDef)
+        ;[home, away].forEach(team => {
+          if (!team?.id) return
+          const existing = predictedDepthByTeam.get(team.id) ?? -1
+          predictedDepthByTeam.set(team.id, Math.max(existing, stageIndex))
+        })
+        const winnerId = knockoutPicks[matchDef.match_number]?.winner_id
+        if (winnerId) {
+          const existing = predictedDepthByTeam.get(winnerId) ?? -1
+          predictedDepthByTeam.set(winnerId, Math.max(existing, stageIndex + 1))
+        }
+      })
+    })
 
     const fixtures = realKoFixtures.filter(m => m.stage === activeStage && m.home_team?.id && m.away_team?.id)
     const now = Date.now()
@@ -707,12 +713,16 @@ export default function Knockout() {
       const homeMatchesPick = savedWinnerId === fixture.home_team.id
       const awayMatchesPick = savedWinnerId === fixture.away_team.id
       const pickIsInFixture = homeMatchesPick || awayMatchesPick
-      const homeInRoundPath = selectedAcrossRound.has(fixture.home_team.id)
-      const awayInRoundPath = selectedAcrossRound.has(fixture.away_team.id)
-      const usefulElsewhereIds = [
-        homeInRoundPath ? fixture.home_team.id : null,
-        awayInRoundPath ? fixture.away_team.id : null,
-      ].filter(Boolean)
+
+      const homeDepth = predictedDepthByTeam.get(fixture.home_team.id) ?? -1
+      const awayDepth = predictedDepthByTeam.get(fixture.away_team.id) ?? -1
+      const homeInBracket = homeDepth >= activeStageIndex
+      const awayInBracket = awayDepth >= activeStageIndex
+      const bestDepth = Math.max(homeDepth, awayDepth)
+      const preferredId = homeDepth > awayDepth ? fixture.home_team.id
+        : awayDepth > homeDepth ? fixture.away_team.id
+        : null
+
       const completed = ['completed', 'finished'].includes(String(fixture.status || '').toLowerCase())
       const winnerId = fixture.winner_team_id || (
         completed && fixture.home_score != null && fixture.away_score != null
@@ -731,21 +741,29 @@ export default function Knockout() {
         neededId = savedWinnerId
         tone = 'need'
         label = `Need ${savedWinner?.name || (homeMatchesPick ? fixture.home_team.name : fixture.away_team.name)}`
-        detail = `${savedWinner?.name || (homeMatchesPick ? fixture.home_team.name : fixture.away_team.name)} must advance for your saved bracket pick in this slot to survive.`
+        detail = `${savedWinner?.name || (homeMatchesPick ? fixture.home_team.name : fixture.away_team.name)} must advance for your saved winner in this exact fixture to survive.`
       } else if (savedWinnerId && !pickIsInFixture) {
-        tone = usefulElsewhereIds.length ? 'partial' : 'out'
-        label = usefulElsewhereIds.length ? 'Exact path lost' : 'No result helps your bracket'
-        const usefulNames = [
-          homeInRoundPath ? fixture.home_team.name : null,
-          awayInRoundPath ? fixture.away_team.name : null,
-        ].filter(Boolean)
-        detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for M${fixture.match_number}, but did not reach this official fixture.`
-        if (usefulNames.length === 1) {
-          detail += ` A ${usefulNames[0]} win still keeps one of your other ${nextRoundLabel} picks alive.`
-        } else if (usefulNames.length > 1) {
-          detail += ` Either official team is still included elsewhere in your ${nextRoundLabel} picks, but this exact matchup path cannot be recovered.`
+        if (preferredId) {
+          const preferredTeam = preferredId === fixture.home_team.id ? fixture.home_team : fixture.away_team
+          const otherTeam = preferredId === fixture.home_team.id ? fixture.away_team : fixture.home_team
+          const preferredDepth = preferredId === fixture.home_team.id ? homeDepth : awayDepth
+          const otherDepth = preferredId === fixture.home_team.id ? awayDepth : homeDepth
+          neededId = preferredId
+          tone = 'partial'
+          label = `Prefer ${preferredTeam.name}`
+          detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for M${fixture.match_number}, so that exact path is lost. ` +
+            `${preferredTeam.name} is better for your remaining bracket because you predicted them to reach the ${reachLabels[preferredDepth] || 'later rounds'}, ` +
+            `while ${otherTeam.name} was only predicted to reach the ${reachLabels[Math.max(otherDepth, 0)] || 'earlier rounds'}.`
+        } else if (homeInBracket || awayInBracket) {
+          tone = 'partial'
+          label = 'Either result preserves the same value'
+          const equalDepth = Math.max(homeDepth, awayDepth, activeStageIndex)
+          detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for M${fixture.match_number}, so that exact path is lost. ` +
+            `Both official teams were predicted to reach the ${reachLabels[equalDepth] || 'same round'}, so neither result is better for the remaining bracket.`
         } else {
-          detail += ` Neither official team is included elsewhere in your ${nextRoundLabel} picks.`
+          tone = 'out'
+          label = 'No result helps your bracket'
+          detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for M${fixture.match_number}, but did not reach this official fixture. Neither official team remains in your predicted path.`
         }
       }
 
@@ -763,15 +781,17 @@ export default function Knockout() {
           label = 'Your pick was eliminated'
           detail = `${savedWinner?.name || 'Your selected team'} did not advance.`
         } else if (!pickIsInFixture) {
-          const winnerUsefulElsewhere = winnerId && selectedAcrossRound.has(winnerId)
-          tone = winnerUsefulElsewhere ? 'partial' : 'out'
-          label = winnerUsefulElsewhere ? 'Useful result elsewhere' : 'Exact path already lost'
+          const winnerDepth = winnerId ? (predictedDepthByTeam.get(winnerId) ?? -1) : -1
+          const loserId = winnerId === fixture.home_team.id ? fixture.away_team.id : fixture.home_team.id
+          const loserDepth = predictedDepthByTeam.get(loserId) ?? -1
           const winnerTeam = winnerId === fixture.home_team.id ? fixture.home_team : winnerId === fixture.away_team.id ? fixture.away_team : null
+          tone = winnerDepth >= activeStageIndex ? 'partial' : 'out'
+          label = winnerDepth > loserDepth ? 'Best available result' : winnerDepth >= activeStageIndex ? 'Some bracket value remains' : 'Exact path already lost'
           detail = `${savedWinner?.name || 'Your selected team'} did not reach this official fixture.`
-          if (winnerUsefulElsewhere && winnerTeam) {
-            detail += ` ${winnerTeam.name} advanced and still supports one of your other ${nextRoundLabel} picks.`
+          if (winnerTeam && winnerDepth >= activeStageIndex) {
+            detail += ` ${winnerTeam.name} advanced and preserves the path you had predicted as far as the ${reachLabels[winnerDepth] || 'later rounds'}.`
           } else {
-            detail += ` The result does not restore this bracket slot.`
+            detail += ' The result does not preserve another predicted path.'
           }
         }
       }
@@ -779,16 +799,17 @@ export default function Knockout() {
       return {
         fixture, savedWinnerId, savedWinner,
         homeNeeded: homeMatchesPick, awayNeeded: awayMatchesPick,
-        homeInRoundPath, awayInRoundPath,
+        homeInRoundPath: homeInBracket, awayInRoundPath: awayInBracket,
+        homeDepth, awayDepth, preferredId,
         neededId, tone, label, detail, completed,
-        nextRoundLabel,
+        reachLabels,
       }
     }).sort((a, b) => {
       const sr = statusRank(a.fixture) - statusRank(b.fixture)
       if (sr !== 0) return sr
       return new Date(a.fixture.kickoff_time) - new Date(b.fixture.kickoff_time)
     })
-  }, [activeStage, realKoFixtures, knockoutPicks, getTeamById])
+  }, [activeStage, realKoFixtures, knockoutPicks, getTeamById, getMatchTeams])
 
   const predictedRoundHealth = useMemo(() => {
     const stageConfig = ALL_STAGES.find(s => s.key === activeStage)
@@ -1609,7 +1630,7 @@ export default function Knockout() {
 
               {showRealBracket && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, homeNeeded, awayNeeded, homeInRoundPath, awayInRoundPath, neededId, tone, label, detail, completed, nextRoundLabel }) => {
+                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, homeNeeded, awayNeeded, homeInRoundPath, awayInRoundPath, homeDepth, awayDepth, preferredId, neededId, tone, label, detail, completed, reachLabels }) => {
                     const toneMap = {
                       safe: { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.05)', border: 'rgba(0,122,51,0.25)' },
                       need: { colour: 'var(--scottish-navy)', bg: 'rgba(0,48,135,0.04)', border: 'rgba(0,48,135,0.22)' },
@@ -1633,18 +1654,22 @@ export default function Knockout() {
                             const needed = team.id === neededId || (idx === 0 ? homeNeeded : awayNeeded)
                             const inRoundPath = idx === 0 ? homeInRoundPath : awayInRoundPath
                             const usefulElsewhere = !needed && inRoundPath
+                            const preferred = preferredId === team.id
+                            const depth = idx === 0 ? homeDepth : awayDepth
                             const winner = completed && fixture.winner_team_id === team.id
-                            const teamBorder = needed
-                              ? `2px solid ${tone === 'out' ? '#c62828' : 'var(--accent-green)'}`
+                            const teamBorder = needed || preferred
+                              ? `2px solid ${tone === 'out' ? '#c62828' : preferred ? '#9a6700' : 'var(--accent-green)'}`
                               : usefulElsewhere
                                 ? '1.5px solid rgba(184,134,11,0.45)'
                                 : '1px solid var(--border-light)'
                             const teamBg = needed
                               ? 'var(--bg-card)'
-                              : usefulElsewhere
-                                ? 'rgba(184,134,11,0.05)'
-                                : 'rgba(255,255,255,0.45)'
-                            const teamColour = needed ? t.colour : usefulElsewhere ? '#9a6700' : 'var(--text-primary)'
+                              : preferred
+                                ? 'rgba(184,134,11,0.09)'
+                                : usefulElsewhere
+                                  ? 'rgba(184,134,11,0.05)'
+                                  : 'rgba(255,255,255,0.45)'
+                            const teamColour = needed ? t.colour : (preferred || usefulElsewhere) ? '#9a6700' : 'var(--text-primary)'
                             return (
                               <div key={team.id} style={{ textAlign: idx === 0 ? 'left' : 'right', padding: '10px', borderRadius: 'var(--radius-md)', border: teamBorder, background: teamBg, opacity: tone === 'out' && needed ? 0.65 : 1 }}>
                                 <div style={{ fontSize: '26px' }}>{team.flag_emoji}</div>
@@ -1654,9 +1679,11 @@ export default function Knockout() {
                                     ? 'Advanced ✓'
                                     : needed
                                       ? 'Your saved winner for this fixture'
-                                      : usefulElsewhere
-                                        ? `In your ${nextRoundLabel} picks elsewhere`
-                                        : `Not in your ${nextRoundLabel} picks`}
+                                      : preferred
+                                        ? `Best for your bracket · predicted to reach ${reachLabels[Math.max(depth, 0)]}`
+                                        : usefulElsewhere
+                                          ? `Predicted to reach ${reachLabels[Math.max(depth, 0)]}`
+                                          : 'Not in your remaining bracket path'}
                                 </div>
                               </div>
                             )
