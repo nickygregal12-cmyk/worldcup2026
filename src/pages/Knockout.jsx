@@ -1781,7 +1781,7 @@ export default function Knockout() {
                     return (
                       <Link
                         key={fixture.id || fixture.match_number}
-                        to={`/match/${fixture.id}/stats`}
+                        to={`/match/${fixture.id}/stats?view=bracket`}
                         aria-label={`View Match Centre for ${fixture.home_team?.name || 'home team'} versus ${fixture.away_team?.name || 'away team'}`}
                         style={{
                           display: 'block',

@@ -21,6 +21,8 @@ export default function MatchStats() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
 
+  const matchCentreView = searchParams.get('view') === 'bracket' ? 'bracket' : 'ko'
+
   const [slotIds, setSlotIds] = useState(null)
   const [loadingSlot, setLoadingSlot] = useState(true)
   const [scopeOptions, setScopeOptions] = useState([])
@@ -29,13 +31,20 @@ export default function MatchStats() {
   const selectedScope = useMemo(() => {
     const league = searchParams.get('league')
     const koLeague = searchParams.get('koLeague')
-    if (koLeague) return `ko:${koLeague}`
-    if (league) return `league:${league}`
-    return 'overall'
-  }, [searchParams])
 
-  const leagueCode = selectedScope.startsWith('league:') ? selectedScope.slice(7) : null
-  const koLeagueCode = selectedScope.startsWith('ko:') ? selectedScope.slice(3) : null
+    if (matchCentreView === 'ko') {
+      return koLeague ? `ko:${koLeague}` : 'overall'
+    }
+
+    return league ? `league:${league}` : 'overall'
+  }, [searchParams, matchCentreView])
+
+  const leagueCode = matchCentreView === 'bracket' && selectedScope.startsWith('league:')
+    ? selectedScope.slice(7)
+    : null
+  const koLeagueCode = matchCentreView === 'ko' && selectedScope.startsWith('ko:')
+    ? selectedScope.slice(3)
+    : null
 
 
 
@@ -69,18 +78,17 @@ export default function MatchStats() {
 
         if (cancelled) return
 
-        const options = [
-          ...(leagueRows.data || []).filter(row => row.invite_code).map(row => ({
-            value: `league:${row.invite_code}`,
-            label: row.name,
-            type: 'Tournament league',
-          })),
-          ...(koLeagueRows.data || []).filter(row => row.invite_code).map(row => ({
-            value: `ko:${row.invite_code}`,
-            label: row.name,
-            type: 'KO Predictor league',
-          })),
-        ]
+        const options = matchCentreView === 'ko'
+          ? (koLeagueRows.data || []).filter(row => row.invite_code).map(row => ({
+              value: `ko:${row.invite_code}`,
+              label: row.name,
+              type: 'KO Predictor league',
+            }))
+          : (leagueRows.data || []).filter(row => row.invite_code).map(row => ({
+              value: `league:${row.invite_code}`,
+              label: row.name,
+              type: 'Tournament league',
+            }))
         setScopeOptions(options)
 
         const requestedIsValid = selectedScope === 'overall' || options.some(option => option.value === selectedScope)
@@ -91,7 +99,7 @@ export default function MatchStats() {
 
         if (selectedScope === 'overall' && !searchParams.get('league') && !searchParams.get('koLeague')) {
           try {
-            const remembered = window.localStorage.getItem('wc26_match_centre_scope')
+            const remembered = window.localStorage.getItem(`wc26_match_centre_scope_${matchCentreView}`)
             if (remembered && remembered !== 'overall' && options.some(option => option.value === remembered)) {
               const next = new URLSearchParams()
               if (remembered.startsWith('league:')) next.set('league', remembered.slice(7))
@@ -107,18 +115,29 @@ export default function MatchStats() {
 
     loadScopes()
     return () => { cancelled = true }
-  }, [user?.id])
+  }, [user?.id, matchCentreView])
 
   const changeScope = (value) => {
     const next = new URLSearchParams(searchParams)
+    next.set('view', matchCentreView)
     next.delete('league')
     next.delete('koLeague')
 
-    if (value.startsWith('league:')) next.set('league', value.slice(7))
-    if (value.startsWith('ko:')) next.set('koLeague', value.slice(3))
+    if (matchCentreView === 'bracket' && value.startsWith('league:')) {
+      next.set('league', value.slice(7))
+    }
+    if (matchCentreView === 'ko' && value.startsWith('ko:')) {
+      next.set('koLeague', value.slice(3))
+    }
 
     setSearchParams(next, { replace: true })
-    try { window.localStorage.setItem('wc26_match_centre_scope', value) } catch (_) {}
+    try { window.localStorage.setItem(`wc26_match_centre_scope_${matchCentreView}`, value) } catch (_) {}
+  }
+
+  const changeMatchCentreView = (view) => {
+    const next = new URLSearchParams()
+    next.set('view', view)
+    setSearchParams(next, { replace: true })
   }
 
   useEffect(() => {
@@ -161,6 +180,39 @@ export default function MatchStats() {
       )}
 
 
+      <div className="card" style={{ padding: '6px', marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+        <button
+          type="button"
+          onClick={() => changeMatchCentreView('ko')}
+          style={{
+            padding: '10px 8px',
+            borderRadius: 'var(--radius-sm)',
+            border: matchCentreView === 'ko' ? '1px solid #e65100' : '1px solid transparent',
+            background: matchCentreView === 'ko' ? 'rgba(230,81,0,0.10)' : 'transparent',
+            color: matchCentreView === 'ko' ? '#e65100' : 'var(--text-muted)',
+            fontWeight: 900,
+            fontSize: '12px',
+          }}
+        >
+          🔥 KO Predictor
+        </button>
+        <button
+          type="button"
+          onClick={() => changeMatchCentreView('bracket')}
+          style={{
+            padding: '10px 8px',
+            borderRadius: 'var(--radius-sm)',
+            border: matchCentreView === 'bracket' ? '1px solid var(--scottish-navy)' : '1px solid transparent',
+            background: matchCentreView === 'bracket' ? 'rgba(0,48,135,0.08)' : 'transparent',
+            color: matchCentreView === 'bracket' ? 'var(--scottish-navy)' : 'var(--text-muted)',
+            fontWeight: 900,
+            fontSize: '12px',
+          }}
+        >
+          🏆 Tournament bracket
+        </button>
+      </div>
+
       {user && (scopeOptions.length > 0 || loadingScopes) && (
         <div className="card" style={{ padding: '12px 14px', marginBottom: '14px' }}>
           <label htmlFor="match-centre-scope" style={{ display: 'block', fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 800, marginBottom: '6px' }}>
@@ -174,7 +226,9 @@ export default function MatchStats() {
             disabled={loadingScopes}
             style={{ width: '100%', fontWeight: 800 }}
           >
-            <option value="overall">Overall predictors</option>
+            <option value="overall">
+              {matchCentreView === 'ko' ? 'Overall KO Predictor' : 'My tournament bracket'}
+            </option>
             {scopeOptions.map(option => (
               <option key={option.value} value={option.value}>
                 {option.label} · {option.type}
@@ -188,7 +242,7 @@ export default function MatchStats() {
       )}
 
       {(slotIds || []).map((id, i) => (
-        <MatchCentre key={id} matchId={id} leagueCode={leagueCode} koLeagueCode={koLeagueCode} divider={i > 0} />
+        <MatchCentre key={id} matchId={id} leagueCode={leagueCode} koLeagueCode={koLeagueCode} viewMode={matchCentreView} divider={i > 0} />
       ))}
 
       {slotIds && slotIds.length === 0 && (
@@ -198,7 +252,7 @@ export default function MatchStats() {
   )
 }
 
-function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
+function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
   const { user } = useAuthStore()
 
   const [loading, setLoading] = useState(true)
@@ -756,12 +810,15 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
     return wrap(<>
       <KOHeader match={match} hasResult={hasResult} live={live} weather={weather} />
 
+      {viewMode === 'ko' && (
       <div style={{ display: 'flex', gap: '6px', alignItems: 'center', padding: '8px 12px', marginBottom: '12px', background: 'rgba(230,81,0,0.08)', border: '1px solid rgba(230,81,0,0.2)', borderRadius: 'var(--radius-md)', fontSize: '11.5px', fontWeight: 700, color: '#e65100' }}>
         🔥 <span>{leagueCode && !koLeagueCode
           ? 'KO Predictor is separate from this Tournament mini-league. Open the KO Predictor leaderboard to compare other players.'
           : 'KO Predictor is a separate competition — it does not affect your Tournament score.'}</span>
       </div>
+      )}
 
+      {viewMode === 'ko' && (
       <div className="card fade-up" style={{ marginBottom: '14px', border: `2px solid ${myOnTrack ? 'var(--accent-green)' : 'var(--border-light)'}` }}>
         <div style={{ fontSize: 'var(--t-tiny)', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>Your KO Predictor pick</div>
         {koMine ? (
@@ -779,8 +836,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>You haven't predicted this one. <Link to="/ko-predictor" style={{ color: '#e65100', fontWeight: 700 }}>Make your KO pick →</Link></div>
         )}
       </div>
+      )}
 
-      {bracketHealth && (
+      {viewMode === 'bracket' && bracketHealth && (
         <StatCard title="Bracket health">
           <div>
             <div style={{ padding: '11px 12px', borderRadius: 'var(--radius-md)', marginBottom: '12px', background: bracketHealth.tone === 'out' ? 'rgba(198,40,40,0.07)' : bracketHealth.tone === 'need' || bracketHealth.tone === 'safe' ? 'var(--accent-green-light)' : 'rgba(184,134,11,0.09)', border: `1px solid ${bracketHealth.tone === 'out' ? 'rgba(198,40,40,0.2)' : bracketHealth.tone === 'need' || bracketHealth.tone === 'safe' ? 'rgba(0,122,51,0.2)' : 'rgba(184,134,11,0.22)'}` }}>
@@ -803,7 +861,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         </StatCard>
       )}
 
-      {showKoRivals && totalBackers > 0 && (
+      {viewMode === 'ko' && showKoRivals && totalBackers > 0 && (
         <StatCard title={`${koScopeLabel} · who's backing who`}>
           <div>
             <div style={{ display: 'flex', height: '30px', borderRadius: '8px', overflow: 'hidden', fontWeight: 800, fontSize: '12px', color: '#fff', marginBottom: '12px' }}>
@@ -831,11 +889,11 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         </StatCard>
       )}
 
-      {showKoRivals && totalBackers === 0 && (
+      {viewMode === 'ko' && showKoRivals && totalBackers === 0 && (
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', padding: '8px 0' }}>No KO Predictor picks in yet for this match.</p>
       )}
 
-      {leagueCode && tournamentBracketRivals.length > 0 && (() => {
+      {viewMode === 'bracket' && leagueCode && tournamentBracketRivals.length > 0 && (() => {
         const currentLeadSide = hasResult
           ? match.home_score > match.away_score
             ? 'home'

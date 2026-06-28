@@ -406,7 +406,12 @@ export default function KOPredictor() {
     const resultColour = getResultColour()
     const completedBreakdown = match.status === 'completed'
       ? normalisePointsBreakdown(pred.points_breakdown)
-          .filter(item => !['total', 'points_total', 'total_points'].includes(String(item.key).toLowerCase()))
+          .filter(item => {
+            const key = String(item.key).toLowerCase()
+            if (['total', 'points_total', 'total_points'].includes(key)) return false
+            if (key.includes('joker') && !hasJoker) return false
+            return true
+          })
       : []
     const totalAwarded = Number(pred.points_awarded || 0)
     const actualWinner = match.winner_team_id === match.home_team_id
@@ -851,7 +856,7 @@ export default function KOPredictor() {
             )}
 
             <Link
-              to={`/match/${match.id}/stats`}
+              to={`/match/${match.id}/stats?view=ko`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
