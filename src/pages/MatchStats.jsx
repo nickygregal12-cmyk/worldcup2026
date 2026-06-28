@@ -380,11 +380,23 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         setKoMine(rivals.find(r => r.userId === user?.id) || null)
 
         if (tournamentLeagueUserIds?.length) {
+          const stageMatchNumbers = (ALL_STAGES.find(stage => stage.key === m.stage)?.matches || [])
+            .map(matchDef => matchDef.match_number)
+
           const [{ data: bracketRows }, { data: leagueProfiles }] = await Promise.all([
             supabase
               .from('knockout_picks')
-              .select('user_id, match_number, winner_team_id, winner_team:winner_team_id(id,name,short_code,flag_emoji)')
-              .eq('match_number', m.match_number)
+              .select(`
+                user_id,
+                match_number,
+                home_team_id,
+                away_team_id,
+                winner_team_id,
+                home_team:home_team_id(id,name,short_code,flag_emoji),
+                away_team:away_team_id(id,name,short_code,flag_emoji),
+                winner_team:winner_team_id(id,name,short_code,flag_emoji)
+              `)
+              .in('match_number', stageMatchNumbers.length ? stageMatchNumbers : [m.match_number])
               .in('user_id', tournamentLeagueUserIds),
             supabase
               .from('profiles')
@@ -392,29 +404,54 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
               .in('id', tournamentLeagueUserIds),
           ])
 
-          const bracketByUser = {}
-          ;(bracketRows || []).forEach(row => { bracketByUser[row.user_id] = row })
+          const bracketRowsByUser = {}
+          ;(bracketRows || []).forEach(row => {
+            if (!bracketRowsByUser[row.user_id]) bracketRowsByUser[row.user_id] = []
+            bracketRowsByUser[row.user_id].push(row)
+          })
+
           const profileByUser = {}
           ;(leagueProfiles || []).forEach(profile => { profileByUser[profile.id] = profile })
 
           setTournamentBracketRivals(
             tournamentLeagueUserIds.map(memberId => {
               const profile = profileByUser[memberId] || {}
-              const pick = bracketByUser[memberId] || null
-              const winner = pick?.winner_team || null
-              const side = pick?.winner_team_id === m.home_team_id
+              const userStageRows = bracketRowsByUser[memberId] || []
+              const exactPick = userStageRows.find(row => Number(row.match_number) === Number(m.match_number)) || null
+
+              const exactWinner = exactPick?.winner_team || null
+              const exactSide = exactPick?.winner_team_id === m.home_team_id
                 ? 'home'
-                : pick?.winner_team_id === m.away_team_id
+                : exactPick?.winner_team_id === m.away_team_id
                   ? 'away'
                   : null
+
+              const backedHomeElsewhere = userStageRows.find(row =>
+                row.winner_team_id === m.home_team_id &&
+                Number(row.match_number) !== Number(m.match_number)
+              ) || null
+
+              const backedAwayElsewhere = userStageRows.find(row =>
+                row.winner_team_id === m.away_team_id &&
+                Number(row.match_number) !== Number(m.match_number)
+              ) || null
+
+              const currentFixtureBackings = [
+                exactSide === 'home' ? { team: m.home_team, route: 'exact' } : null,
+                exactSide === 'away' ? { team: m.away_team, route: 'exact' } : null,
+                backedHomeElsewhere ? { team: m.home_team, route: 'different' } : null,
+                backedAwayElsewhere ? { team: m.away_team, route: 'different' } : null,
+              ].filter(Boolean)
 
               return {
                 userId: memberId,
                 name: profile.display_name || profile.username || 'Player',
                 avatar: profile.avatar_emoji,
-                winner,
-                side,
-                hasPick: Boolean(pick?.winner_team_id),
+                exactPick,
+                exactWinner,
+                exactSide,
+                hasPick: Boolean(exactPick?.winner_team_id),
+                currentFixtureBackings,
               }
             })
           )
@@ -623,42 +660,65 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
 
       {leagueCode && tournamentBracketRivals.length > 0 && (
         <StatCard title={`${scopeLabel} · original tournament bracket picks`}>
-          <div>
-            {tournamentBracketRivals.map((r, i) => {
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {tournamentBracketRivals.map(r => {
               const me = r.userId === user?.id
-              const currentFixtureTeam = r.side === 'home'
-                ? match.home_team
-                : r.side === 'away'
-                  ? match.away_team
-                  : null
+              const originalHome = r.exactPick?.home_team
+              const originalAway = r.exactPick?.away_team
+              const originalWinner = r.exactWinner
+
+              let routeSummary = 'Neither real team was backed to advance from this round.'
+              if (r.currentFixtureBackings.length === 1) {
+                const backing = r.currentFixtureBackings[0]
+                routeSummary = backing.route === 'exact'
+                  ? `${backing.team?.name || 'This team'} was their saved winner for this exact fixture.`
+                  : `${backing.team?.name || 'This team'} was backed to advance from a different route.`
+              } else if (r.currentFixtureBackings.length > 1) {
+                const exactBacking = r.currentFixtureBackings.find(backing => backing.route === 'exact')
+                const differentBacking = r.currentFixtureBackings.find(backing => backing.route === 'different')
+                if (exactBacking && differentBacking) {
+                  routeSummary = `${exactBacking.team?.name || 'One team'} was the exact saved winner, while ${differentBacking.team?.name || 'the other team'} was also backed from a different route.`
+                } else {
+                  routeSummary = 'Both real teams were backed to advance somewhere in this round.'
+                }
+              }
 
               return (
                 <div
                   key={r.userId}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    padding: me ? '9px 8px' : '9px 0',
-                    background: me ? 'var(--bg-secondary)' : 'transparent',
-                    borderRadius: me ? 'var(--radius-sm)' : 0,
-                    borderBottom: i < tournamentBracketRivals.length - 1 ? '1px solid var(--border-light)' : 'none',
+                    padding: '12px',
+                    background: me ? 'var(--scottish-navy-light)' : 'var(--bg-secondary)',
+                    border: me ? '1px solid rgba(0,48,135,0.28)' : '1px solid var(--border-light)',
+                    borderRadius: 'var(--radius-md)',
                   }}
                 >
-                  <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'var(--scottish-navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>
-                    {r.avatar || (r.name[0] || '?').toUpperCase()}
-                  </span>
-                  <span style={{ flex: 1, fontWeight: 700, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px' }}>
+                    <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--scottish-navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '11px', flexShrink: 0 }}>
+                      {r.avatar || (r.name[0] || '?').toUpperCase()}
+                    </span>
+                    <span style={{ flex: 1, fontWeight: 800, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
+                  </div>
 
                   {r.hasPick ? (
-                    <span style={{ fontSize: '12px', fontWeight: 800, textAlign: 'right' }}>
-                      {r.winner?.flag_emoji || '🏳️'} {r.winner?.short_code || r.winner?.name || 'Saved pick'}
-                      <span style={{ display: 'block', color: 'var(--text-muted)', fontWeight: 600, fontSize: '10px', marginTop: '2px' }}>
-                        {currentFixtureTeam ? 'In this real fixture' : 'Original bracket path'}
-                      </span>
-                    </span>
+                    <>
+                      <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+                        Original M{match.match_number}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap', fontSize: '12px', fontWeight: 800 }}>
+                        <span>{originalHome?.flag_emoji || '🏳️'} {originalHome?.short_code || originalHome?.name || 'TBC'}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>vs</span>
+                        <span>{originalAway?.flag_emoji || '🏳️'} {originalAway?.short_code || originalAway?.name || 'TBC'}</span>
+                      </div>
+                      <div style={{ marginTop: '6px', fontSize: '12px', fontWeight: 900, color: 'var(--scottish-navy)' }}>
+                        {originalWinner?.flag_emoji || '🏳️'} {originalWinner?.name || originalWinner?.short_code || 'No winner saved'}{originalWinner ? ' to advance' : ''}
+                      </div>
+                      <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
+                        {routeSummary}
+                      </div>
+                    </>
                   ) : (
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No bracket pick</span>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No original bracket pick saved for M{match.match_number}.</div>
                   )}
                 </div>
               )
