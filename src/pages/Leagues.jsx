@@ -600,7 +600,6 @@ export default function Leagues() {
   const [activeGame, setActiveGame] = useState(() => searchParams.get('tab') === 'overall' ? 'overall' : 'tournament')
   const [overallGame, setOverallGame] = useState(() => searchParams.get('game') === 'ko' ? 'ko' : 'tournament')
   const [overallRows, setOverallRows] = useState([])
-  const [koOverallEntrants, setKoOverallEntrants] = useState(new Set())
   const [loadingOverall, setLoadingOverall] = useState(false)
   const [openLeagueMenu, setOpenLeagueMenu] = useState(null)
   const [myLeagues, setMyLeagues] = useState([])
@@ -774,18 +773,21 @@ export default function Leagues() {
   const loadOverallRankings = async () => {
     setLoadingOverall(true)
 
-    const [{ data: profilesData }, { data: koEntries }] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select('id, username, display_name, total_points, streak_current, exact_scores, avatar_emoji, show_future_predictions, ko_points, ko_streak_current, ko_exact_scores, is_banned')
-        .limit(200),
-      supabase
-        .from('ko_predictions')
-        .select('user_id'),
-    ])
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, username, display_name, total_points, streak_current, exact_scores, avatar_emoji, show_future_predictions, ko_points, ko_streak_current, ko_exact_scores, is_banned')
+      .limit(200)
 
-    setOverallRows((profilesData || []).filter(profile => !profile.is_banned))
-    setKoOverallEntrants(new Set((koEntries || []).map(row => row.user_id).filter(Boolean)))
+    if (profilesError) {
+      console.error('Could not load overall rankings:', profilesError)
+      setOverallRows([])
+    } else {
+      // Use the same public profile totals as the full leaderboard. Querying
+      // ko_predictions here is RLS-sensitive and only returns the signed-in
+      // user's rows, which made the KO leaderboard show one person.
+      setOverallRows((profilesData || []).filter(profile => !profile.is_banned))
+    }
+
     setLoadingOverall(false)
   }
 
@@ -1341,7 +1343,6 @@ export default function Leagues() {
   const allTournamentLeaguesCollapsed = orderedTournamentLeagues.length > 0 && orderedTournamentLeagues.every(m => (collapsedLeagueIds || []).includes(m.league_id))
 
   const displayedOverallRows = [...overallRows]
-    .filter(profile => overallGame === 'tournament' || koOverallEntrants.has(profile.id))
     .sort((a, b) => {
       const pointKey = overallGame === 'ko' ? 'ko_points' : 'total_points'
       const exactKey = overallGame === 'ko' ? 'ko_exact_scores' : 'exact_scores'
@@ -1622,11 +1623,6 @@ export default function Leagues() {
                       </div>
                     </div>
                   </div>
-                  {overallGame === 'ko' && !koOverallEntrants.has(user.id) && (
-                    <div style={{ marginTop: '10px', fontSize: '11px', color: 'var(--text-muted)' }}>
-                      Save a KO Predictor pick to enter this leaderboard.
-                    </div>
-                  )}
                 </div>
 
                 <div className="card" style={{ padding: 0, overflow: 'hidden' }}>

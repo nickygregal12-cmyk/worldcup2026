@@ -1135,6 +1135,18 @@ export default function Knockout() {
 
 
   const getStageHealth = (stage) => {
+    // Keep the active tab and the bracket-health summary on one source of truth.
+    // liveTrackerStats is the same real-vs-predicted calculation used by the
+    // summary card below, so the two figures cannot disagree.
+    if (stage?.key === activeStage && liveTrackerStats?.total > 0) {
+      return {
+        alive: liveTrackerStats.correct,
+        total: liveTrackerStats.total,
+      }
+    }
+
+    // Fallback for inactive tabs. When a tab is selected, liveTrackerStats is
+    // recalculated for that round and replaces this provisional figure.
     let alive = 0
     let total = 0
     ;(stage.matches || []).forEach(def => {
