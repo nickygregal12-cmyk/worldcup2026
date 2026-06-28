@@ -412,42 +412,55 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
             ? 'league_predictions'
             : 'predictions'
 
-          let bracketQuery = supabase
-            .from(bracketTable)
-            .select(`
-              user_id,
-              match_number,
-              home_team_id,
-              away_team_id,
-              winner_team_id,
-              saved_home_team:home_team_id(id,name,short_code,flag_emoji),
-              saved_away_team:away_team_id(id,name,short_code,flag_emoji)
-            `)
-            .in('match_number', allKnockoutMatchNumbers)
-            .in('user_id', tournamentLeagueUserIds)
+          // Fetch each member separately. A 30-person league has 2,160 group
+          // prediction rows, which exceeds Supabase's default 1,000-row response
+          // limit when queried in one bulk request. That truncation was why some
+          // members resolved correctly while others showed the wrong fixture/TBC.
+          const memberBracketQueries = tournamentLeagueUserIds.map(memberId => {
+            let query = supabase
+              .from(bracketTable)
+              .select(`
+                user_id,
+                match_number,
+                home_team_id,
+                away_team_id,
+                winner_team_id,
+                saved_home_team:home_team_id(id,name,short_code,flag_emoji),
+                saved_away_team:away_team_id(id,name,short_code,flag_emoji)
+              `)
+              .eq('user_id', memberId)
+              .in('match_number', allKnockoutMatchNumbers)
 
-          let groupPredictionQuery = supabase
-            .from(predictionTable)
-            .select('user_id, match_id, home_score, away_score')
-            .in('user_id', tournamentLeagueUserIds)
+            if (tournamentLeagueUsesSnapshot && tournamentLeagueId) {
+              query = query.eq('league_id', tournamentLeagueId)
+            }
+            return query
+          })
 
-          if (tournamentLeagueUsesSnapshot && tournamentLeagueId) {
-            bracketQuery = bracketQuery.eq('league_id', tournamentLeagueId)
-            groupPredictionQuery = groupPredictionQuery.eq('league_id', tournamentLeagueId)
-          }
+          const memberPredictionQueries = tournamentLeagueUserIds.map(memberId => {
+            let query = supabase
+              .from(predictionTable)
+              .select('user_id, match_id, home_score, away_score')
+              .eq('user_id', memberId)
+
+            if (tournamentLeagueUsesSnapshot && tournamentLeagueId) {
+              query = query.eq('league_id', tournamentLeagueId)
+            }
+            return query
+          })
 
           const [
-            { data: allBracketRows },
-            { data: allGroupPredictions },
+            bracketResponses,
+            predictionResponses,
             { data: originalGroupMatches },
             { data: allTeams },
             { data: leagueProfiles },
           ] = await Promise.all([
-            bracketQuery,
-            groupPredictionQuery,
+            Promise.all(memberBracketQueries),
+            Promise.all(memberPredictionQueries),
             supabase
               .from('matches')
-              .select('id, match_number, stage, kickoff_time, home_team_id, away_team_id, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code), group:group_id(name)')
+              .select('id, match_number, stage, status, kickoff_time, home_score, away_score, outcome_type, home_team_id, away_team_id, winner_team_id, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code), group:group_id(name)')
               .eq('stage', 'group')
               .order('kickoff_time', { ascending: true }),
             supabase
@@ -458,6 +471,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
               .select('id, username, display_name, avatar_emoji')
               .in('id', tournamentLeagueUserIds),
           ])
+
+          const allBracketRows = bracketResponses.flatMap(response => response.data || [])
+          const allGroupPredictions = predictionResponses.flatMap(response => response.data || [])
 
           const teamById = {}
           ;(originalGroupMatches || []).forEach(groupMatch => {
