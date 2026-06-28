@@ -665,12 +665,31 @@ export default function Knockout() {
     return { home: winnerTeam, away: pureAway }
   }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, mainBracketLockTime, teamById])
 
-  // Official-fixture view for the active round. Match each real fixture to the
-  // user's saved winner for that exact match number. A team appearing elsewhere
-  // in the round is not enough — the saved winner must belong to this fixture.
+  // Official-fixture view for the active round. The exact saved winner for the
+  // real match is the primary signal, but we also show when one of the official
+  // teams appears elsewhere in the user's picks for the next round. This avoids
+  // incorrectly labelling a team as completely outside the user's bracket.
   const liveFixtureHealth = useMemo(() => {
     const stageConfig = ALL_STAGES.find(s => s.key === activeStage)
     if (!stageConfig) return []
+
+    const nextRoundLabels = {
+      r32: 'Round of 16',
+      r16: 'quarter-final',
+      qf: 'semi-final',
+      sf: 'final',
+      final: 'champion',
+    }
+    const nextRoundLabel = nextRoundLabels[activeStage] || 'next-round'
+
+    // All teams the user selected to advance from this stage, regardless of the
+    // exact bracket slot. This lets the UI distinguish "wrong path" from "not in
+    // the user's bracket at all".
+    const selectedAcrossRound = new Set(
+      stageConfig.matches
+        .map(match => knockoutPicks[match.match_number]?.winner_id)
+        .filter(Boolean)
+    )
 
     const fixtures = realKoFixtures.filter(m => m.stage === activeStage && m.home_team?.id && m.away_team?.id)
     const now = Date.now()
@@ -688,6 +707,12 @@ export default function Knockout() {
       const homeMatchesPick = savedWinnerId === fixture.home_team.id
       const awayMatchesPick = savedWinnerId === fixture.away_team.id
       const pickIsInFixture = homeMatchesPick || awayMatchesPick
+      const homeInRoundPath = selectedAcrossRound.has(fixture.home_team.id)
+      const awayInRoundPath = selectedAcrossRound.has(fixture.away_team.id)
+      const usefulElsewhereIds = [
+        homeInRoundPath ? fixture.home_team.id : null,
+        awayInRoundPath ? fixture.away_team.id : null,
+      ].filter(Boolean)
       const completed = ['completed', 'finished'].includes(String(fixture.status || '').toLowerCase())
       const winnerId = fixture.winner_team_id || (
         completed && fixture.home_score != null && fixture.away_score != null
@@ -706,11 +731,22 @@ export default function Knockout() {
         neededId = savedWinnerId
         tone = 'need'
         label = `Need ${savedWinner?.name || (homeMatchesPick ? fixture.home_team.name : fixture.away_team.name)}`
-        detail = `${savedWinner?.name || (homeMatchesPick ? fixture.home_team.name : fixture.away_team.name)} must advance for your saved bracket pick to survive.`
+        detail = `${savedWinner?.name || (homeMatchesPick ? fixture.home_team.name : fixture.away_team.name)} must advance for your saved bracket pick in this slot to survive.`
       } else if (savedWinnerId && !pickIsInFixture) {
-        tone = 'out'
-        label = 'No result helps'
-        detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for this match, but is not in the official fixture.`
+        tone = usefulElsewhereIds.length ? 'partial' : 'out'
+        label = usefulElsewhereIds.length ? 'Exact path lost' : 'No result helps your bracket'
+        const usefulNames = [
+          homeInRoundPath ? fixture.home_team.name : null,
+          awayInRoundPath ? fixture.away_team.name : null,
+        ].filter(Boolean)
+        detail = `${savedWinner?.name || 'Your selected team'} was your saved winner for M${fixture.match_number}, but did not reach this official fixture.`
+        if (usefulNames.length === 1) {
+          detail += ` A ${usefulNames[0]} win still keeps one of your other ${nextRoundLabel} picks alive.`
+        } else if (usefulNames.length > 1) {
+          detail += ` Either official team is still included elsewhere in your ${nextRoundLabel} picks, but this exact matchup path cannot be recovered.`
+        } else {
+          detail += ` Neither official team is included elsewhere in your ${nextRoundLabel} picks.`
+        }
       }
 
       if (completed) {
@@ -718,31 +754,42 @@ export default function Knockout() {
           tone = 'neutral'
           label = 'No saved winner'
           detail = 'This finished result did not have a saved winner to compare.'
-        } else if (!pickIsInFixture) {
-          tone = 'out'
-          label = 'Pick already lost'
-          detail = `${savedWinner?.name || 'Your selected team'} did not reach this official fixture.`
-        } else if (winnerId === savedWinnerId) {
+        } else if (pickIsInFixture && winnerId === savedWinnerId) {
           tone = 'safe'
           label = 'Your pick advanced'
-          detail = `${savedWinner?.name || 'Your selected team'} advanced and this part of your bracket remains alive.`
-        } else if (winnerId) {
+          detail = `${savedWinner?.name || 'Your selected team'} advanced and this exact part of your bracket remains alive.`
+        } else if (pickIsInFixture && winnerId) {
           tone = 'out'
           label = 'Your pick was eliminated'
           detail = `${savedWinner?.name || 'Your selected team'} did not advance.`
+        } else if (!pickIsInFixture) {
+          const winnerUsefulElsewhere = winnerId && selectedAcrossRound.has(winnerId)
+          tone = winnerUsefulElsewhere ? 'partial' : 'out'
+          label = winnerUsefulElsewhere ? 'Useful result elsewhere' : 'Exact path already lost'
+          const winnerTeam = winnerId === fixture.home_team.id ? fixture.home_team : winnerId === fixture.away_team.id ? fixture.away_team : null
+          detail = `${savedWinner?.name || 'Your selected team'} did not reach this official fixture.`
+          if (winnerUsefulElsewhere && winnerTeam) {
+            detail += ` ${winnerTeam.name} advanced and still supports one of your other ${nextRoundLabel} picks.`
+          } else {
+            detail += ` The result does not restore this bracket slot.`
+          }
         }
       }
 
       return {
         fixture, savedWinnerId, savedWinner,
         homeNeeded: homeMatchesPick, awayNeeded: awayMatchesPick,
+        homeInRoundPath, awayInRoundPath,
         neededId, tone, label, detail, completed,
+        nextRoundLabel,
       }
-    }).sort((a, b) => statusRank(a.fixture) - statusRank(b.fixture) || new Date(a.fixture.kickoff_time) - new Date(b.fixture.kickoff_time))
+    }).sort((a, b) => {
+      const sr = statusRank(a.fixture) - statusRank(b.fixture)
+      if (sr !== 0) return sr
+      return new Date(a.fixture.kickoff_time) - new Date(b.fixture.kickoff_time)
+    })
   }, [activeStage, realKoFixtures, knockoutPicks, getTeamById])
 
-  // Later rounds may not yet have official teams populated. Show the health of
-  // every saved predicted matchup so all stage tabs remain useful meanwhile.
   const predictedRoundHealth = useMemo(() => {
     const stageConfig = ALL_STAGES.find(s => s.key === activeStage)
     if (!stageConfig) return []
@@ -1562,10 +1609,11 @@ export default function Knockout() {
 
               {showRealBracket && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, homeNeeded, awayNeeded, neededId, tone, label, detail, completed }) => {
+                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, homeNeeded, awayNeeded, homeInRoundPath, awayInRoundPath, neededId, tone, label, detail, completed, nextRoundLabel }) => {
                     const toneMap = {
                       safe: { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.05)', border: 'rgba(0,122,51,0.25)' },
                       need: { colour: 'var(--scottish-navy)', bg: 'rgba(0,48,135,0.04)', border: 'rgba(0,48,135,0.22)' },
+                      partial: { colour: '#9a6700', bg: 'rgba(184,134,11,0.06)', border: 'rgba(184,134,11,0.28)' },
                       out: { colour: '#c62828', bg: 'rgba(198,40,40,0.04)', border: 'rgba(198,40,40,0.22)' },
                       neutral: { colour: 'var(--text-muted)', bg: 'var(--bg-card)', border: 'var(--border-light)' },
                     }
@@ -1583,13 +1631,32 @@ export default function Knockout() {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '10px' }}>
                           {[fixture.home_team, fixture.away_team].map((team, idx) => {
                             const needed = team.id === neededId || (idx === 0 ? homeNeeded : awayNeeded)
+                            const inRoundPath = idx === 0 ? homeInRoundPath : awayInRoundPath
+                            const usefulElsewhere = !needed && inRoundPath
                             const winner = completed && fixture.winner_team_id === team.id
+                            const teamBorder = needed
+                              ? `2px solid ${tone === 'out' ? '#c62828' : 'var(--accent-green)'}`
+                              : usefulElsewhere
+                                ? '1.5px solid rgba(184,134,11,0.45)'
+                                : '1px solid var(--border-light)'
+                            const teamBg = needed
+                              ? 'var(--bg-card)'
+                              : usefulElsewhere
+                                ? 'rgba(184,134,11,0.05)'
+                                : 'rgba(255,255,255,0.45)'
+                            const teamColour = needed ? t.colour : usefulElsewhere ? '#9a6700' : 'var(--text-primary)'
                             return (
-                              <div key={team.id} style={{ textAlign: idx === 0 ? 'left' : 'right', padding: '10px', borderRadius: 'var(--radius-md)', border: needed ? `2px solid ${tone === 'out' ? '#c62828' : 'var(--accent-green)'}` : '1px solid var(--border-light)', background: needed ? 'var(--bg-card)' : 'rgba(255,255,255,0.45)', opacity: tone === 'out' && needed ? 0.65 : 1 }}>
+                              <div key={team.id} style={{ textAlign: idx === 0 ? 'left' : 'right', padding: '10px', borderRadius: 'var(--radius-md)', border: teamBorder, background: teamBg, opacity: tone === 'out' && needed ? 0.65 : 1 }}>
                                 <div style={{ fontSize: '26px' }}>{team.flag_emoji}</div>
-                                <div style={{ fontSize: '13px', fontWeight: '900', color: needed ? t.colour : 'var(--text-primary)', marginTop: '4px' }}>{team.name}</div>
-                                <div style={{ fontSize: '10px', color: needed ? t.colour : 'var(--text-muted)', fontWeight: '800', marginTop: '2px' }}>
-                                  {winner ? 'Advanced ✓' : needed ? 'In your path' : 'Not in your path'}
+                                <div style={{ fontSize: '13px', fontWeight: '900', color: teamColour, marginTop: '4px' }}>{team.name}</div>
+                                <div style={{ fontSize: '10px', color: needed ? t.colour : usefulElsewhere ? '#9a6700' : 'var(--text-muted)', fontWeight: '800', marginTop: '2px' }}>
+                                  {winner
+                                    ? 'Advanced ✓'
+                                    : needed
+                                      ? 'Your saved winner for this fixture'
+                                      : usefulElsewhere
+                                        ? `In your ${nextRoundLabel} picks elsewhere`
+                                        : `Not in your ${nextRoundLabel} picks`}
                                 </div>
                               </div>
                             )
