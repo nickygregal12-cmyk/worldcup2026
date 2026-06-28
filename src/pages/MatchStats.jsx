@@ -295,6 +295,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         let tournamentLeagueName = null
         let tournamentLeagueId = null
         let tournamentLeagueUsesSnapshot = false
+        let tournamentLeagueUsesStoredPoints = false
         let tournamentLeaguePointsByUser = {}
 
         if (koLeagueCode) {
@@ -318,7 +319,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         } else if (leagueCode) {
           const { data: league } = await supabase
             .from('leagues')
-            .select('id, name, lock_type, snapshot_taken_at')
+            .select('id, name, lock_type, snapshot_taken_at, scoring_preset, custom_scoring')
             .eq('invite_code', leagueCode)
             .maybeSingle()
           if (!league) {
@@ -337,7 +338,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           tournamentLeaguePointsByUser = Object.fromEntries(
             (members || []).map(member => [
               member.user_id,
-              Number(member.league_points ?? member.profile?.total_points ?? 0),
+              tournamentLeagueUsesStoredPoints
+                ? Number(member.league_points || 0)
+                : Number(member.profile?.total_points || 0),
             ])
           )
           if (!user?.id || !tournamentLeagueUserIds.includes(user.id)) {
@@ -351,6 +354,14 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           tournamentLeagueId = league.id
           tournamentLeagueUsesSnapshot =
             league.lock_type === 'pre_tournament' && Boolean(league.snapshot_taken_at)
+
+          const leagueHasCustomScoring =
+            Boolean(league.scoring_preset) && league.scoring_preset !== 'standard'
+
+          // Match Leagues.jsx exactly: standard rolling leagues use the live
+          // profiles.total_points total; custom or frozen leagues use league_points.
+          tournamentLeagueUsesStoredPoints =
+            leagueHasCustomScoring || tournamentLeagueUsesSnapshot
 
           // Tournament mini-leagues and KO Predictor are separate competitions.
           // Keep the viewer's own KO pick visible, and show the league's original
@@ -590,10 +601,18 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
               )
 
               const currentFixtureBackings = [
-                exactSide === 'home' ? { team: m.home_team, route: 'exact' } : null,
-                exactSide === 'away' ? { team: m.away_team, route: 'exact' } : null,
-                backedHomeElsewhere ? { team: m.home_team, route: 'different' } : null,
-                backedAwayElsewhere ? { team: m.away_team, route: 'different' } : null,
+                exactSide === 'home'
+                  ? { team: m.home_team, teamId: m.home_team_id, route: 'exact' }
+                  : null,
+                exactSide === 'away'
+                  ? { team: m.away_team, teamId: m.away_team_id, route: 'exact' }
+                  : null,
+                backedHomeElsewhere
+                  ? { team: m.home_team, teamId: m.home_team_id, route: 'different' }
+                  : null,
+                backedAwayElsewhere
+                  ? { team: m.away_team, teamId: m.away_team_id, route: 'different' }
+                  : null,
               ].filter(Boolean)
 
               return {
@@ -834,8 +853,8 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
             )
 
           const projectedPoints = backingCurrentLeader ? 3 + roundPoints : 0
-          const homeRoute = r.currentFixtureBackings.find(backing => backing.team?.id === match.home_team_id)?.route || null
-          const awayRoute = r.currentFixtureBackings.find(backing => backing.team?.id === match.away_team_id)?.route || null
+          const homeRoute = r.currentFixtureBackings.find(backing => backing.teamId === match.home_team_id)?.route || null
+          const awayRoute = r.currentFixtureBackings.find(backing => backing.teamId === match.away_team_id)?.route || null
 
           return {
             ...r,
