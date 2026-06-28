@@ -318,13 +318,30 @@ export default function KOPredictor() {
     !/Winner|Runner/.test(m.home_team?.name || '') &&
     !/Winner|Runner/.test(m.away_team?.name || '')
 
-  const stageMatches = matches.filter(m => m.stage === activeStage && isConfirmed(m)).sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
-  const stagePending = matches.filter(m => m.stage === activeStage && !isConfirmed(m)).length
-  const confirmedTotal = matches.filter(isConfirmed).length
-  const getPredCount = (stage) => {
-    const sm = matches.filter(m => m.stage === stage && isConfirmed(m))
-    return sm.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
+  const isPredictionComplete = (match, prediction = {}) => {
+    const home = Number(prediction.home)
+    const away = Number(prediction.away)
+    const hasScores = prediction.home !== '' && prediction.home !== undefined && prediction.home !== null &&
+      prediction.away !== '' && prediction.away !== undefined && prediction.away !== null &&
+      Number.isFinite(home) && Number.isFinite(away)
+    if (!hasScores) return false
+
+    // A level 90-minute score must also identify how the tie is settled and who advances.
+    if (home === away) {
+      return ['et', 'penalties'].includes(prediction.outcome_type) && !!prediction.winner_team_id
+    }
+    return true
   }
+
+  const confirmedMatches = matches.filter(isConfirmed)
+  const stageMatches = confirmedMatches.filter(m => m.stage === activeStage).sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
+  const stagePending = matches.filter(m => m.stage === activeStage && !isConfirmed(m)).length
+  const confirmedTotal = confirmedMatches.length
+  const completedPredictionCount = confirmedMatches.filter(m => isPredictionComplete(m, predictions[m.id])).length
+  const missingBonusCount = confirmedMatches.filter(m => isPredictionComplete(m, predictions[m.id]) && !predictions[m.id]?.first_goal_band).length
+  const getPredCount = (stage) => confirmedMatches
+    .filter(m => m.stage === stage && isPredictionComplete(m, predictions[m.id]))
+    .length
 
   const renderMatch = (match) => {
     const pred = predictions[match.id] || {}
@@ -712,9 +729,16 @@ export default function KOPredictor() {
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', fontSize: '12px', fontWeight: '700', color: 'white' }}>
                 🃏 {jokersRemaining} left
               </div>
-              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>
-                {Object.keys(predictions).length} / {confirmedTotal}
-              </span>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.9)', fontWeight: '700' }}>
+                  {completedPredictionCount} / {confirmedTotal} complete
+                </div>
+                {missingBonusCount > 0 && (
+                  <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.72)', marginTop: '1px' }}>
+                    {missingBonusCount} bonus pick{missingBonusCount === 1 ? '' : 's'} missing
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
