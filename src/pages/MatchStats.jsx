@@ -631,10 +631,14 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
       setMatch(m)
 
       if (m) {
-        const stageConfig = ALL_STAGES.find(stage => stage.key === m.stage)
-        const matchDef = stageConfig?.matches?.find(
-          definition => Number(definition.match_number) === Number(m.match_number)
-        )
+        // Database stage values can differ from the bracket utility keys
+        // (for example "round_of_16" versus "r16"). Match by the unique match
+        // number instead, so M90 always resolves to W73 v W75.
+        const matchDef = ALL_STAGES
+          .flatMap(stage => stage.matches || [])
+          .find(definition =>
+            Number(definition.match_number) === Number(m.match_number)
+          )
 
         const feederNumber = slot => {
           const match = typeof slot === 'string' ? slot.match(/^W(\d+)$/) : null
