@@ -128,6 +128,8 @@ export default function Home() {
   const { memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, openProfile, groupPositionBreakdown } = useMemberPredictions()
   const [upcomingMatches, setUpcomingMatches] = useState([])
   const [topPredictors, setTopPredictors] = useState([])
+  const [koTopPredictors, setKoTopPredictors] = useState([])
+  const [leaderboardGame, setLeaderboardGame] = useState('tournament')
   const [predictionCount, setPredictionCount] = useState(0)
   const [knockoutPickCount, setKnockoutPickCount] = useState(0)
   const [koPredictionCount, setKoPredictionCount] = useState(0)
@@ -137,6 +139,7 @@ export default function Home() {
   const [awardPickCount, setAwardPickCount] = useState(0)
   const [jokerAssignedCount, setJokerAssignedCount] = useState(0)
   const [leaderPosition, setLeaderPosition]   = useState(null)
+  const [koLeaderPosition, setKoLeaderPosition] = useState(null)
   const [loading, setLoading]             = useState(true)
   const [luckyDipping, setLuckyDipping]   = useState(false)
   const [showShareCard, setShowShareCard] = useState(false)
@@ -378,7 +381,7 @@ export default function Home() {
       const windowStart = new Date() // now
       const windowEnd   = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000)
 
-      const [liveRes, liveFromKickoffRes, nextRes, upcomingRes, predictorRes, todayRes, remainingGroupsRes] = await Promise.all([
+      const [liveRes, liveFromKickoffRes, nextRes, upcomingRes, predictorRes, koPredictorRes, todayRes, remainingGroupsRes] = await Promise.all([
         supabase.from('matches')
           .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
           .eq('status', 'live').order('kickoff_time', { ascending: true }),
@@ -402,8 +405,17 @@ export default function Home() {
           .order('kickoff_time', { ascending: true }).range(1, 5),
 
         supabase.from('profiles')
-          .select('id, username, total_points, streak_current')
+          .select('id, username, display_name, total_points, streak_current, ko_points, ko_streak_current, ko_exact_scores, is_banned')
+          .eq('is_banned', false)
           .order('total_points', { ascending: false }).limit(5),
+
+        supabase.from('profiles')
+          .select('id, username, display_name, total_points, streak_current, ko_points, ko_streak_current, ko_exact_scores, is_banned')
+          .eq('is_banned', false)
+          .gt('ko_points', 0)
+          .order('ko_points', { ascending: false })
+          .order('ko_exact_scores', { ascending: false })
+          .limit(5),
 
         supabase.from('matches')
           .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
@@ -458,6 +470,7 @@ export default function Home() {
       setNextMatch(nextRes.data || null)
       setUpcomingMatches(upcomingRes.data || [])
       setTopPredictors(predictorRes.data || [])
+      setKoTopPredictors(koPredictorRes.data || [])
       setTodayMatches(todayRes.data || [])
       setRemainingGroupMatches(remainingGroupsRes.count ?? null)
 
@@ -548,14 +561,25 @@ export default function Home() {
           .eq('id', user.id)
 
         const pointsForRank = freshProfile?.total_points ?? profile?.total_points ?? 0
-        if (pointsForRank > 0) {
-          const { count: ahead } = await supabase.from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .gt('total_points', pointsForRank)
-          setLeaderPosition((ahead || 0) + 1)
-        } else {
-          setLeaderPosition(null)
-        }
+        const koPointsForRank = freshProfile?.ko_points ?? profile?.ko_points ?? 0
+
+        const [tournamentRankRes, koRankRes] = await Promise.all([
+          pointsForRank > 0
+            ? supabase.from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('is_banned', false)
+                .gt('total_points', pointsForRank)
+            : Promise.resolve({ count: null }),
+          koPointsForRank > 0
+            ? supabase.from('profiles')
+                .select('*', { count: 'exact', head: true })
+                .eq('is_banned', false)
+                .gt('ko_points', koPointsForRank)
+            : Promise.resolve({ count: null }),
+        ])
+
+        setLeaderPosition(pointsForRank > 0 ? (tournamentRankRes.count || 0) + 1 : null)
+        setKoLeaderPosition(koPointsForRank > 0 ? (koRankRes.count || 0) + 1 : null)
       } else {
         setPredictionCount(0)
         setJokerAssignedCount(0)
@@ -565,6 +589,7 @@ export default function Home() {
         setKoBonusMissingCount(0)
         setAwardPickCount(0)
         setLeaderPosition(null)
+        setKoLeaderPosition(null)
       }
     } catch (error) {
       console.error('Home dashboard failed to load:', error)
@@ -1900,125 +1925,253 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── Top Predictors — only show during tournament ── */}
-          {tournamentStarted && (
-          <div className="card fade-in">
-            <div className="section-header">
-              <span className="section-title">🏆 Leaderboard</span>
-              <Link to="/leaderboard" className="section-link">Full table →</Link>
-            </div>
+          {/* ── Home leaderboard — KO toggle only appears once KO Predictor is live ── */}
+          {tournamentStarted && (() => {
+            const koViewAvailable = knockoutLive
+            const activeGame = koViewAvailable ? leaderboardGame : 'tournament'
+            const isKoView = activeGame === 'ko'
+            const activeRows = isKoView ? koTopPredictors : topPredictors
+            const activeRank = isKoView ? koLeaderPosition : leaderPosition
+            const activePoints = isKoView ? (profile?.ko_points || 0) : (profile?.total_points || 0)
+            const pointKey = isKoView ? 'ko_points' : 'total_points'
+            const streakKey = isKoView ? 'ko_streak_current' : 'streak_current'
+            const accent = isKoView ? '#e65100' : 'var(--scottish-navy)'
+            const accentLight = isKoView ? 'rgba(230,81,0,0.08)' : 'var(--accent-blue-light)'
+            const fullTableLink = `/leaderboard?game=${isKoView ? 'ko' : 'tournament'}`
 
-            {user && profile && leaderPosition && topPredictors.length > 0 && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '12px',
-                padding: '10px 12px',
-                marginBottom: '10px',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--accent-blue-light)',
-                border: '1px solid rgba(21,88,176,0.16)',
-              }}>
-                <div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                    Your position
-                  </div>
-                  <div style={{ color: 'var(--accent-blue)', fontSize: '13px', fontWeight: '800', marginTop: '3px' }}>
-                    {leaderPosition === 1
-                      ? 'You are leading the tournament'
-                      : `${Math.max(0, (topPredictors[0]?.total_points || 0) - (profile.total_points || 0))} pts behind ${topPredictors[0]?.username || '1st place'}`}
-                  </div>
-                </div>
-                <div style={{
-                  minWidth: '48px',
-                  textAlign: 'center',
-                  color: 'var(--scottish-navy)',
-                  fontFamily: 'var(--font-mono)',
-                  fontWeight: '900',
-                  fontSize: '20px',
-                }}>
-                  #{leaderPosition}
-                </div>
-              </div>
-            )}
+            const preview = [...activeRows]
+            if (user && profile && !preview.some(p => p.id === user.id) && activePoints > 0) {
+              preview.push({
+                id: user.id,
+                username: profile.display_name || profile.username || 'You',
+                display_name: profile.display_name,
+                total_points: profile.total_points || 0,
+                streak_current: profile.streak_current || 0,
+                ko_points: profile.ko_points || 0,
+                ko_streak_current: profile.ko_streak_current || 0,
+                ko_exact_scores: profile.ko_exact_scores || 0,
+              })
+            }
 
-            {topPredictors.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-icon">🏅</div>
-                <div className="empty-state-title">No scores yet</div>
-                <div className="empty-state-desc">Leaderboard updates after first matches</div>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {(() => {
-                  const preview = [...topPredictors]
-                  if (user && !preview.some(p => p.id === user.id) && profile) {
-                    preview.push({
-                      id: user.id,
-                      username: profile.display_name || profile.username || 'You',
-                      total_points: profile.total_points || 0,
-                      streak_current: profile.streak_current || 0,
-                    })
-                  }
-                  return preview
-                    .sort((a, b) => (b.total_points || 0) - (a.total_points || 0))
-                    .slice(0, 5)
-                    .map((p, i) => {
-                  const isMe = user?.id === p.id
-                  return (
-                    <div key={p.id} className="leaderboard-row" 
-                      onClick={() => openProfile(p, user?.id)}
-                      role="button" tabIndex={0}
-                      style={{
-                      background: isMe ? 'var(--scottish-navy-light)' : 'var(--bg-card)',
-                      border: isMe ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
-                      cursor: 'pointer',
-                    }}>
-                      {/* accent bar */}
-                      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px',
-                        background: isMe ? 'var(--scottish-navy)' : i < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
-                      {/* Rank */}
-                      <div style={{ fontWeight: '800', fontSize: i < 3 ? '20px' : '13px', minWidth: '36px',
-                        textAlign: 'center', flexShrink: 0, fontFamily: i >= 3 ? 'var(--font-mono)' : 'inherit',
-                        color: i >= 3 ? 'var(--text-muted)' : 'inherit' }}>
-                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+            const sortedPreview = preview
+              .sort((a, b) =>
+                Number(b[pointKey] || 0) - Number(a[pointKey] || 0) ||
+                (isKoView
+                  ? Number(b.ko_exact_scores || 0) - Number(a.ko_exact_scores || 0)
+                  : 0) ||
+                String(a.display_name || a.username || '').localeCompare(String(b.display_name || b.username || ''))
+              )
+              .slice(0, 5)
+
+            const leader = sortedPreview[0] || activeRows[0]
+            const pointsBehind = Math.max(0, Number(leader?.[pointKey] || 0) - Number(activePoints || 0))
+
+            return (
+              <div className="card fade-in">
+                <div className="section-header" style={{ marginBottom: koViewAvailable ? '10px' : undefined }}>
+                  <span className="section-title">🏆 Leaderboard</span>
+                  <Link to={fullTableLink} className="section-link">Full table →</Link>
+                </div>
+
+                {koViewAvailable && (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '4px',
+                    padding: '4px',
+                    marginBottom: '12px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--bg-secondary)',
+                    border: '1px solid var(--border-light)',
+                  }}>
+                    {[
+                      { key: 'tournament', label: '🌍 Tournament' },
+                      { key: 'ko', label: '🔥 KO Predictor' },
+                    ].map(option => {
+                      const active = activeGame === option.key
+                      return (
+                        <button
+                          key={option.key}
+                          type="button"
+                          onClick={() => setLeaderboardGame(option.key)}
+                          style={{
+                            minHeight: '38px',
+                            border: active ? `1px solid ${option.key === 'ko' ? 'rgba(230,81,0,0.35)' : 'rgba(0,48,135,0.25)'}` : '1px solid transparent',
+                            borderRadius: 'calc(var(--radius-md) - 3px)',
+                            background: active ? 'var(--bg-card)' : 'transparent',
+                            color: active ? (option.key === 'ko' ? '#e65100' : 'var(--scottish-navy)') : 'var(--text-muted)',
+                            boxShadow: active ? 'var(--shadow-sm)' : 'none',
+                            fontSize: '12px',
+                            fontWeight: active ? '900' : '700',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {user && profile && activeRank && activeRows.length > 0 && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    padding: '10px 12px',
+                    marginBottom: '10px',
+                    borderRadius: 'var(--radius-md)',
+                    background: accentLight,
+                    border: `1px solid ${isKoView ? 'rgba(230,81,0,0.18)' : 'rgba(21,88,176,0.16)'}`,
+                  }}>
+                    <div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                        {isKoView ? 'Your KO position' : 'Your position'}
                       </div>
-                      {/* Avatar */}
-                      <div style={{ width: '38px', height: '38px', borderRadius: '50%',
-                        background: isMe ? 'var(--scottish-navy)' : 'var(--bg-tertiary)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '15px', fontWeight: '700', flexShrink: 0,
-                        color: isMe ? 'white' : 'var(--text-primary)',
-                        boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }}>
-                        {p.username?.[0]?.toUpperCase()}
-                      </div>
-                      {/* Name */}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.username}</span>
-                          {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
-                        </div>
-                        {p.streak_current > 2 && (
-                          <div style={{ fontSize: '11px', color: 'var(--accent-orange)', marginTop: '2px' }}>🔥 {p.streak_current}</div>
-                        )}
-                      </div>
-                      {/* Points */}
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '44px' }}>
-                        <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)',
-                          letterSpacing: '-0.02em', lineHeight: 1,
-                          color: isMe ? 'var(--scottish-navy)' : 'var(--text-primary)' }}>{p.total_points}</div>
-                        <div style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)',
-                          textTransform: 'uppercase', letterSpacing: '0.04em' }}>pts</div>
+                      <div style={{ color: accent, fontSize: '13px', fontWeight: '800', marginTop: '3px' }}>
+                        {activeRank === 1
+                          ? `You are leading the ${isKoView ? 'KO Predictor' : 'tournament'}`
+                          : `${pointsBehind} pts behind ${leader?.display_name || leader?.username || '1st place'}`}
                       </div>
                     </div>
-                  )
-                    })
-                })()}
+                    <div style={{
+                      minWidth: '48px',
+                      textAlign: 'center',
+                      color: accent,
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: '900',
+                      fontSize: '20px',
+                    }}>
+                      #{activeRank}
+                    </div>
+                  </div>
+                )}
+
+                {activeRows.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-state-icon">{isKoView ? '🔥' : '🏅'}</div>
+                    <div className="empty-state-title">{isKoView ? 'No KO scores yet' : 'No scores yet'}</div>
+                    <div className="empty-state-desc">
+                      {isKoView
+                        ? 'The KO Predictor leaderboard updates after the first knockout result.'
+                        : 'Leaderboard updates after first matches'}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {sortedPreview.map((p, i) => {
+                      const isMe = user?.id === p.id
+                      const displayName = p.display_name || p.username || 'Player'
+                      const streak = Number(p[streakKey] || 0)
+                      return (
+                        <div
+                          key={p.id}
+                          className="leaderboard-row"
+                          onClick={() => openProfile(p, user?.id, isKoView ? 'ko' : 'tournament')}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              openProfile(p, user?.id, isKoView ? 'ko' : 'tournament')
+                            }
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          style={{
+                            background: isMe ? (isKoView ? 'rgba(230,81,0,0.07)' : 'var(--scottish-navy-light)') : 'var(--bg-card)',
+                            border: isMe ? `1px solid ${accent}` : '1px solid var(--border-light)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: 0,
+                            bottom: 0,
+                            width: '3px',
+                            background: isMe ? accent : i < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent',
+                          }} />
+                          <div style={{
+                            fontWeight: '800',
+                            fontSize: i < 3 ? '20px' : '13px',
+                            minWidth: '36px',
+                            textAlign: 'center',
+                            flexShrink: 0,
+                            fontFamily: i >= 3 ? 'var(--font-mono)' : 'inherit',
+                            color: i >= 3 ? 'var(--text-muted)' : 'inherit',
+                          }}>
+                            {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                          </div>
+                          <div style={{
+                            width: '38px',
+                            height: '38px',
+                            borderRadius: '50%',
+                            background: isMe ? accent : 'var(--bg-tertiary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '15px',
+                            fontWeight: '700',
+                            flexShrink: 0,
+                            color: isMe ? 'white' : 'var(--text-primary)',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                          }}>
+                            {displayName[0]?.toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</span>
+                              {isMe && (
+                                <span style={{
+                                  fontSize: '9px',
+                                  background: accent,
+                                  color: 'white',
+                                  padding: '2px 6px',
+                                  borderRadius: '20px',
+                                  fontWeight: '700',
+                                  flexShrink: 0,
+                                }}>
+                                  YOU
+                                </span>
+                              )}
+                            </div>
+                            {isKoView && Number(p.ko_exact_scores || 0) > 0 ? (
+                              <div style={{ fontSize: '11px', color: '#e65100', marginTop: '2px' }}>
+                                🎯 {p.ko_exact_scores} exact
+                              </div>
+                            ) : streak > 2 ? (
+                              <div style={{ fontSize: '11px', color: 'var(--accent-orange)', marginTop: '2px' }}>🔥 {streak}</div>
+                            ) : null}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '44px' }}>
+                            <div style={{
+                              fontWeight: '900',
+                              fontSize: '20px',
+                              fontFamily: 'var(--font-mono)',
+                              letterSpacing: '-0.02em',
+                              lineHeight: 1,
+                              color: isMe ? accent : 'var(--text-primary)',
+                            }}>
+                              {Number(p[pointKey] || 0)}
+                            </div>
+                            <div style={{
+                              fontSize: '10px',
+                              fontWeight: '600',
+                              color: 'var(--text-muted)',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em',
+                            }}>
+                              pts
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          )}
+            )
+          })()}
 
           {/* ── How it works (guest only) ── */}
           {!user && (
