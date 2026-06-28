@@ -406,6 +406,7 @@ export default function KOPredictor() {
     const resultColour = getResultColour()
     const completedBreakdown = match.status === 'completed'
       ? normalisePointsBreakdown(pred.points_breakdown)
+          .filter(item => !['total', 'points_total', 'total_points'].includes(String(item.key).toLowerCase()))
       : []
     const totalAwarded = Number(pred.points_awarded || 0)
     const actualWinner = match.winner_team_id === match.home_team_id
@@ -456,9 +457,6 @@ export default function KOPredictor() {
               {hasJoker && resultColour !== 'red' && <span style={{ marginLeft: '4px', color: 'var(--accent-gold)' }}>🃏 ×2</span>}
               {hasJoker && resultColour === 'red' && <span style={{ marginLeft: '4px' }}>🃏 wasted</span>}
             </span>
-            <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>
-              {totalAwarded > 0 ? `+${totalAwarded}` : '0'} pts
-            </span>
           </div>
         )}
 
@@ -489,7 +487,6 @@ export default function KOPredictor() {
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
             {locked && <span className="badge badge-red">🔒</span>}
             {!locked && hasPrediction && !hasJoker && <span className="badge" style={{ background: '#fff3e0', color: '#e65100' }}>✓</span>}
-            {match.status === 'completed' && <span className="badge badge-gray">{match.home_score}–{match.away_score}</span>}
           </div>
         </div>
 
@@ -782,7 +779,7 @@ export default function KOPredictor() {
                   </span>
                 )}
                 {pred.first_goal_band && (
-                  <span style={{ marginLeft: '6px' }}>· First goal {pred.first_goal_band}</span>
+                  <span style={{ marginLeft: '6px' }}>· Your first goal {pred.first_goal_band}</span>
                 )}
                 {hasJoker && <span style={{ marginLeft: '6px', color: '#ff9800' }}>🃏</span>}
               </span>
@@ -790,6 +787,30 @@ export default function KOPredictor() {
                 {totalAwarded > 0 ? `+${totalAwarded}` : '0'} pts
               </span>
             </div>
+
+            {match.first_goal_band && (
+              <div style={{
+                marginTop: '8px',
+                padding: '7px 9px',
+                borderRadius: 'var(--radius-sm)',
+                background: pred.first_goal_band === match.first_goal_band
+                  ? 'var(--accent-green-light)'
+                  : 'var(--bg-secondary)',
+                border: '1px solid var(--border-light)',
+                fontSize: '10.5px',
+                fontWeight: 800,
+                color: pred.first_goal_band === match.first_goal_band
+                  ? 'var(--accent-green)'
+                  : 'var(--text-secondary)',
+              }}>
+                Actual first goal: {match.first_goal_band}
+                {pred.first_goal_band && (
+                  <span style={{ marginLeft: '6px' }}>
+                    {pred.first_goal_band === match.first_goal_band ? '✓ Correct band' : `· Your pick ${pred.first_goal_band}`}
+                  </span>
+                )}
+              </div>
+            )}
 
             {completedBreakdown.length > 0 && (
               <div style={{
@@ -816,7 +837,13 @@ export default function KOPredictor() {
                       fontWeight: 900,
                       color: Number(item.points || 0) > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
                     }}>
-                      {item.points == null ? '—' : Number(item.points) > 0 ? `+${item.points}` : '0'}
+                      {item.points == null
+                        ? '—'
+                        : String(item.key).toLowerCase().includes('joker')
+                          ? `×${item.points}`
+                          : Number(item.points) > 0
+                            ? `+${item.points}`
+                            : '0'}
                     </span>
                   </div>
                 ))}
