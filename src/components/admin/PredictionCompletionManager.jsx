@@ -72,7 +72,7 @@ export default function PredictionCompletionManager({ admin }) {
     setLoading(true)
     try {
       const [profiles, matches, groupPredictions, bracketPicks, koPredictions] = await Promise.all([
-        fetchAll('profiles', 'id,username,display_name,email,is_banned,created_at'),
+        fetchAll('profiles', 'id,username,display_name,is_banned,created_at'),
         fetchAll('matches', 'id,match_number,stage,home_team_id,away_team_id'),
         fetchAll('predictions', 'user_id,match_id,home_score,away_score'),
         fetchAll('knockout_picks', 'user_id,match_number,winner_team_id'),
@@ -170,7 +170,7 @@ export default function PredictionCompletionManager({ admin }) {
     const term = search.trim().toLowerCase()
     return rows.filter(row => {
       if (!includeBanned && row.is_banned) return false
-      if (term && ![row.display_name, row.username, row.email].some(value => String(value || '').toLowerCase().includes(term))) return false
+      if (term && ![row.display_name, row.username].some(value => String(value || '').toLowerCase().includes(term))) return false
       if (status !== 'all' && relevantStatus(row) !== status) return false
       return true
     })
@@ -215,7 +215,7 @@ export default function PredictionCompletionManager({ admin }) {
 
       <div className="card" style={{ padding: '14px', marginBottom: '14px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(220px,1fr) repeat(2,minmax(150px,auto))', gap: '8px' }}>
-          <input className="input" placeholder="Search name, username or email…" value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="input" placeholder="Search name or username…" value={search} onChange={e => setSearch(e.target.value)} />
           <select className="input" value={area} onChange={e => setArea(e.target.value)}>
             <option value="all">All competitions</option>
             <option value="groups">Group matches</option>
@@ -242,7 +242,7 @@ export default function PredictionCompletionManager({ admin }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: '10px', alignItems: 'start' }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: '14px', fontWeight: 900, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.display_name || row.username} <span style={{ fontWeight: 500, color: 'var(--text-muted)' }}>@{row.username}</span></div>
-                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '2px' }}>{row.email || 'No email shown'}{row.is_banned ? ' · Banned' : ''}</div>
+                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '2px' }}>Joined {row.created_at ? new Date(row.created_at).toLocaleDateString('en-GB') : '—'}{row.is_banned ? ' · Banned' : ''}</div>
               </div>
               <button className="btn btn-primary btn-sm" onClick={() => openUser(row)}>Inspect</button>
             </div>
