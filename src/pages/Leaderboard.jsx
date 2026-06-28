@@ -55,7 +55,7 @@ export default function Leaderboard() {
     setLoading(true)
     const [tRes, koRes, prevRes] = await Promise.all([
       supabase.from('profiles')
-        .select('id, username, avatar_emoji, total_points, streak_current, perfect_rounds, streak_best, prediction_accuracy, total_predictions, is_banned')
+        .select('id, username, display_name, avatar_emoji, total_points, streak_current, perfect_rounds, streak_best, prediction_accuracy, total_predictions, is_banned')
         .order('total_points', { ascending: false })
         .order('username', { ascending: true })
         .limit(200),
@@ -106,14 +106,29 @@ export default function Leaderboard() {
   const isTournament = activeGame === 'tournament'
   const currentPlayers = isTournament ? players : koPlayers
   const filtered = currentPlayers.filter(p => {
-    const matchesSearch = p.username?.toLowerCase().includes(search.toLowerCase())
-    const pts = isTournament ? p.total_points : p.ko_points
-    // Always hide banned users
+    const term = search.trim().toLowerCase()
+    const matchesSearch = !term
+      || p.username?.toLowerCase().includes(term)
+      || p.display_name?.toLowerCase().includes(term)
+    const pts = isTournament ? (p.total_points || 0) : (p.ko_points || 0)
+
+    // Always hide banned users.
     if (p.is_banned) return false
-    // After group stage: hide anyone with fewer than 10 predictions (except current user)
-    if (groupStageOver && isTournament && p.id !== user?.id && (p.total_predictions || 0) < MIN_PREDICTIONS) return false
-    // Pre-tournament: only show players with points or the current user
+
+    // After the group stage, only hide genuinely empty/abandoned accounts.
+    // A player who has earned points must remain visible even if their
+    // total_predictions counter is null, zero or temporarily stale.
+    if (
+      groupStageOver
+      && isTournament
+      && p.id !== user?.id
+      && pts === 0
+      && (p.total_predictions || 0) < MIN_PREDICTIONS
+    ) return false
+
+    // Pre-tournament: only show players with points or the current user.
     if (preTournament && isTournament && pts === 0 && p.id !== user?.id) return false
+
     return matchesSearch
   })
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
