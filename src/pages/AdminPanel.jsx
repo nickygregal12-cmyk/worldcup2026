@@ -14,6 +14,7 @@ import AwardsManager from '../components/admin/AwardsManager.jsx'
 import KoPredictorManager from '../components/admin/KoPredictorManager.jsx'
 import KoFixtureManager from '../components/admin/KoFixtureManager.jsx'
 import UserManager from '../components/admin/UserManager.jsx'
+import PredictionCompletionManager from '../components/admin/PredictionCompletionManager.jsx'
 import LeagueManager from '../components/admin/LeagueManager.jsx'
 import OfflinePlayerManager from '../components/admin/OfflinePlayerManager.jsx'
 import PointsManager from '../components/admin/PointsManager.jsx'
@@ -42,6 +43,7 @@ const SECTION_TABS = {
   ],
   users: [
     { key: 'users', label: 'User inspector', superOnly: true },
+    { key: 'completion', label: 'Prediction completion', superOnly: true },
     { key: 'points', label: 'Points control', superOnly: false },
   ],
   competitions: [
@@ -1987,6 +1989,9 @@ export default function AdminPanel() {
 
         {/* ── USERS ── */}
         {activeTab === 'users' && <UserManager admin={adminContext} />}
+
+        {/* ── PREDICTION COMPLETION ── */}
+        {activeTab === 'completion' && <PredictionCompletionManager admin={adminContext} />}
 
         {/* ── LEAGUES ── */}
         {activeTab === 'leagues' && <LeagueManager admin={adminContext} />}
