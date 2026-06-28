@@ -858,14 +858,44 @@ export default function Leagues() {
   const joinKoLeague = async () => {
     if (!joinCode.trim()) { setError('Enter an invite code'); return }
     setError('')
-    const { data: league } = await supabase.from('ko_leagues').select('*').eq('invite_code', joinCode.toUpperCase().trim()).single()
-    if (!league) { setError('KO League not found — check the code'); return }
-    const { error: err } = await supabase.from('ko_league_members').insert({ league_id: league.id, user_id: user.id })
+
+    // Deep invite links can open the page before Supabase has refreshed the
+    // browser session. Refresh it explicitly so the RLS policy sees auth.uid().
+    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
+    const sessionUser = refreshed?.session?.user
+
+    if (refreshError || !sessionUser?.id) {
+      setError('Your sign-in session is still loading. Please try Join again.')
+      return
+    }
+
+    const code = joinCode.toUpperCase().trim()
+    const { data: league, error: leagueError } = await supabase
+      .from('ko_leagues')
+      .select('*')
+      .eq('invite_code', code)
+      .single()
+
+    if (leagueError || !league) {
+      setError('KO League not found — check the code')
+      return
+    }
+
+    const { error: err } = await supabase
+      .from('ko_league_members')
+      .insert({ league_id: league.id, user_id: sessionUser.id })
+
     if (err?.code === '23505') { setError('You are already in this league'); return }
-    if (err) { setError(err.message); return }
+    if (err) {
+      console.error('KO league join error:', err)
+      setError(err.message)
+      return
+    }
+
     setSuccess(`Joined KO league "${league.name}"!`)
-    setJoinCode(''); setShowJoin(false)
-    loadMyKoLeagues()
+    setJoinCode('')
+    setShowJoin(false)
+    await loadMyKoLeagues()
   }
 
   const leaveKoLeague = async (leagueId, leagueName) => {
@@ -1184,57 +1214,7 @@ export default function Leagues() {
   const shareWhatsApp = (leagueName, code) => {
     const link = `${window.location.origin}/league/${code}`
     const text = `Join my WC26 Predictor league "${leagueName}"! 🏆⚽\n${link}`
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
-  }
-
-  // KO leagues use the Leagues page itself as the direct join destination.
-  // Opening this URL selects the KO competition, pre-fills the invite code and
-  // opens the join panel automatically.
-  const getKoLeagueInviteLink = (code) => {
-    const inviteCode = String(code || '').trim().toUpperCase()
-    return `${window.location.origin}/leagues?game=ko&join=${encodeURIComponent(inviteCode)}`
-  }
-
-  const writeToClipboard = async (value) => {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(value)
-      return
-    }
-
-    // Fallback for older iOS browsers and non-secure local environments.
-    const textarea = document.createElement('textarea')
-    textarea.value = value
-    textarea.setAttribute('readonly', '')
-    textarea.style.position = 'fixed'
-    textarea.style.opacity = '0'
-    document.body.appendChild(textarea)
-    textarea.select()
-    const copied = document.execCommand('copy')
-    document.body.removeChild(textarea)
-    if (!copied) throw new Error('Clipboard copy failed')
-  }
-
-  const copyKoLeagueLink = async (leagueName, code) => {
-    try {
-      const link = getKoLeagueInviteLink(code)
-      await writeToClipboard(link)
-      setSuccess(`Copied KO league invite link for "${leagueName}"!`)
-      setError('')
-    } catch (copyError) {
-      console.error('KO league invite copy failed:', copyError)
-      setError('Could not copy the invite link. Please copy the league code instead.')
-    }
-    setTimeout(() => setSuccess(''), 3000)
-  }
-
-  const shareKoLeagueWhatsApp = (leagueName, code) => {
-    const link = getKoLeagueInviteLink(code)
-    const text = `Join my WC26 KO Predictor league "${leagueName}"! 🔥🏆\n\nTap this link to open the correct competition and join directly:\n${link}`
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`
-
-    // Direct navigation is more reliable on iPhone/PWA than a popup, which can
-    // be blocked after React event handling.
-    window.location.assign(whatsappUrl)
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
   // For a normal (standard-scoring, always-editable) league the authoritative
