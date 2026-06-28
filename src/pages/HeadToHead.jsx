@@ -419,6 +419,49 @@ export default function HeadToHead() {
     })).filter(row => row.me?.total || row.them?.total)
   }, [koPicksData, koMatchesData, meId, themId])
 
+  const bracketPotentialSummary = useMemo(() => {
+    if (!bracketHealthComparison.length) return null
+
+    const matchesFor = stageKey => koMatchesData.filter(match => match.stage === stageKey)
+    const stageSettled = {
+      // Round-of-32 points are fixed once the complete R32 field is known.
+      r32: (() => {
+        const matches = matchesFor('r32')
+        return matches.length === 16 && matches.every(match => match.home_team_id && match.away_team_id)
+      })(),
+      // Later-round points become fixed when every match in the preceding round is complete.
+      r16: (() => {
+        const matches = matchesFor('r32')
+        return matches.length === 16 && matches.every(match => match.status === 'completed' && match.winner_team_id)
+      })(),
+      qf: (() => {
+        const matches = matchesFor('r16')
+        return matches.length === 8 && matches.every(match => match.status === 'completed' && match.winner_team_id)
+      })(),
+      sf: (() => {
+        const matches = matchesFor('qf')
+        return matches.length === 4 && matches.every(match => match.status === 'completed' && match.winner_team_id)
+      })(),
+      final: (() => {
+        const matches = matchesFor('sf')
+        return matches.length === 2 && matches.every(match => match.status === 'completed' && match.winner_team_id)
+      })(),
+    }
+
+    const futureRows = bracketHealthComparison.filter(row => !stageSettled[row.stage])
+    const meAvailable = futureRows.reduce((sum, row) => sum + Number(row.me?.maxPoints || 0), 0)
+    const themAvailable = futureRows.reduce((sum, row) => sum + Number(row.them?.maxPoints || 0), 0)
+
+    return {
+      meAvailable,
+      themAvailable,
+      meMaximum: Number(me?.total_points || 0) + meAvailable,
+      themMaximum: Number(them?.total_points || 0) + themAvailable,
+      advantage: meAvailable - themAvailable,
+      remainingRounds: futureRows.length,
+    }
+  }, [bracketHealthComparison, koMatchesData, me, them])
+
   if (loading) {
     return <div style={{ minHeight: '70vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><div className="spinner" /></div>
   }
@@ -479,6 +522,43 @@ export default function HeadToHead() {
             {gapLabel}{scope !== 'overall' ? ` · ${headline.label}` : ''}
           </span>
         </div>
+
+        {bracketPotentialSummary && bracketPotentialSummary.remainingRounds > 0 && (
+          <div style={{ marginTop: '14px', padding: '12px', borderRadius: '14px', background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.20)' }}>
+            <div style={{ marginBottom: '9px', textAlign: 'center', fontSize: '10px', fontWeight: 900, letterSpacing: '0.09em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.72)' }}>
+              Bracket points still available
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 34px 1fr', gap: '8px', alignItems: 'stretch' }}>
+              <div style={{ padding: '10px 8px', borderRadius: '11px', background: 'rgba(255,255,255,0.08)', textAlign: 'center' }}>
+                <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.06em', color: 'rgba(255,255,255,0.68)' }}>YOU</div>
+                <div style={{ ...mono, marginTop: '3px', fontSize: '22px', fontWeight: 950, color: 'var(--accent-gold)' }}>+{bracketPotentialSummary.meAvailable}</div>
+                <div style={{ marginTop: '2px', fontSize: '10px', color: 'rgba(255,255,255,0.72)' }}>
+                  Max total {bracketPotentialSummary.meMaximum}
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 900, color: 'rgba(255,255,255,0.48)' }}>VS</div>
+
+              <div style={{ padding: '10px 8px', borderRadius: '11px', background: 'rgba(255,255,255,0.08)', textAlign: 'center' }}>
+                <div style={{ fontSize: '9px', fontWeight: 900, letterSpacing: '0.06em', color: 'rgba(255,255,255,0.68)' }}>{themName.toUpperCase()}</div>
+                <div style={{ ...mono, marginTop: '3px', fontSize: '22px', fontWeight: 950, color: '#d6c2ff' }}>+{bracketPotentialSummary.themAvailable}</div>
+                <div style={{ marginTop: '2px', fontSize: '10px', color: 'rgba(255,255,255,0.72)' }}>
+                  Max total {bracketPotentialSummary.themMaximum}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: '9px', textAlign: 'center' }}>
+              <span style={{ display: 'inline-block', padding: '5px 10px', borderRadius: '999px', background: bracketPotentialSummary.advantage > 0 ? 'rgba(0,122,51,0.24)' : bracketPotentialSummary.advantage < 0 ? 'rgba(122,79,208,0.28)' : 'rgba(255,255,255,0.12)', color: bracketPotentialSummary.advantage > 0 ? '#8ee4ae' : bracketPotentialSummary.advantage < 0 ? '#d6c2ff' : 'rgba(255,255,255,0.82)', fontSize: '10px', fontWeight: 900 }}>
+                {bracketPotentialSummary.advantage > 0
+                  ? `You have +${bracketPotentialSummary.advantage} more bracket pts available`
+                  : bracketPotentialSummary.advantage < 0
+                    ? `${themName} has +${Math.abs(bracketPotentialSummary.advantage)} more bracket pts available`
+                    : `Level bracket potential · ${bracketPotentialSummary.meAvailable} pts each`}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <Card title="Where the points come from">
