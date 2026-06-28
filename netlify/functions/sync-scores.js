@@ -310,7 +310,7 @@ export const handler = async (event) => {
 
       let { data: ourMatch, error: lookupError } = await supabase
         .from('matches')
-        .select('id, match_number, external_match_id, status, home_score, away_score, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name)')
+        .select('id, match_number, external_match_id, status, home_score, away_score, live_minute, injury_time, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name)')
         .eq('external_match_id', match.id.toString())
         .maybeSingle()
 
@@ -326,7 +326,7 @@ export const handler = async (event) => {
         if (!matchDate) continue
         const { data: candidates, error: candidateError } = await supabase
           .from('matches')
-          .select('id, match_number, external_match_id, status, home_score, away_score, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
+          .select('id, match_number, external_match_id, status, home_score, away_score, live_minute, injury_time, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
           .gte('kickoff_time', `${matchDate}T00:00:00Z`)
           .lte('kickoff_time', `${matchDate}T23:59:59Z`)
 
@@ -405,11 +405,16 @@ export const handler = async (event) => {
         }
       }
 
+      const nextLiveMinute = newStatus === 'live' ? (match.minute ?? null) : null
+      const nextInjuryTime = newStatus === 'live' ? (match.injuryTime ?? null) : null
+
       const scoreChanged = ourMatch.home_score !== effectiveHomeScore || ourMatch.away_score !== effectiveAwayScore
       const statusChanged = ourMatch.status !== newStatus
+      const minuteChanged = ourMatch.live_minute !== nextLiveMinute || ourMatch.injury_time !== nextInjuryTime
       const koResultChanged = isKnockout && newStatus === 'completed' &&
         (ourMatch.winner_team_id !== winnerTeamId || ourMatch.outcome_type !== outcomeType)
-      const needsUpdate = scoreChanged || statusChanged || koResultChanged || ourMatch.external_match_id !== match.id.toString()
+      const needsUpdate = scoreChanged || statusChanged || minuteChanged || koResultChanged ||
+        ourMatch.external_match_id !== match.id.toString()
       if (!needsUpdate) continue
 
       if (newStatus === 'live' && ourMatch.status === 'scheduled') {
@@ -422,8 +427,8 @@ export const handler = async (event) => {
         status: newStatus,
         external_match_id: match.id.toString(),
         api_synced_at: new Date().toISOString(),
-        live_minute: newStatus === 'live' ? (match.minute ?? null) : null,
-        injury_time: newStatus === 'live' ? (match.injuryTime ?? null) : null,
+        live_minute: nextLiveMinute,
+        injury_time: nextInjuryTime,
       }
       if (isKnockout && newStatus === 'completed') {
         updateFields.winner_team_id = winnerTeamId
