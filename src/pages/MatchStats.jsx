@@ -437,6 +437,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
             { data: allBracketRows },
             { data: allGroupPredictions },
             { data: originalGroupMatches },
+            { data: allTeams },
             { data: leagueProfiles },
           ] = await Promise.all([
             bracketQuery,
@@ -447,6 +448,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
               .eq('stage', 'group')
               .order('kickoff_time', { ascending: true }),
             supabase
+              .from('teams')
+              .select('id, name, flag_emoji, short_code'),
+            supabase
               .from('profiles')
               .select('id, username, display_name, avatar_emoji')
               .in('id', tournamentLeagueUserIds),
@@ -456,6 +460,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           ;(originalGroupMatches || []).forEach(groupMatch => {
             if (groupMatch.home_team?.id) teamById[groupMatch.home_team.id] = groupMatch.home_team
             if (groupMatch.away_team?.id) teamById[groupMatch.away_team.id] = groupMatch.away_team
+          })
+          ;(allTeams || []).forEach(team => {
+            if (team.id) teamById[team.id] = team
           })
 
           const bracketRowsByUser = {}
@@ -505,16 +512,35 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
               )
 
               const exactPick = pickMap[Number(m.match_number)] || null
-
-              // Resolve from the user's bracket chain first. For frozen leagues,
-              // both the group predictions and knockout picks above come from the
-              // league snapshot tables — the same source used by View Predictions.
-              // Only fall back to teams saved on that same exact snapshot row.
-              const rebuiltHome = currentMatchDef ? resolveOriginalSlot(currentMatchDef.home_slot) : null
-              const rebuiltAway = currentMatchDef ? resolveOriginalSlot(currentMatchDef.away_slot) : null
-              const originalHome = rebuiltHome || exactPick?.saved_home_team || getTeam(exactPick?.home_team_id)
-              const originalAway = rebuiltAway || exactPick?.saved_away_team || getTeam(exactPick?.away_team_id)
+              const pureHome = currentMatchDef ? resolveOriginalSlot(currentMatchDef.home_slot) : null
+              const pureAway = currentMatchDef ? resolveOriginalSlot(currentMatchDef.away_slot) : null
               const exactWinner = getTeam(exactPick?.winner_team_id)
+
+              // This is intentionally the same resolvedFor logic used by
+              // MemberPredictionsModal. When a historic bracket remap means the
+              // selected winner is no longer one of the freshly resolved slots,
+              // preserve that winner on the side it originally occupied.
+              let originalHome = pureHome
+              let originalAway = pureAway
+
+              if (
+                exactPick?.winner_team_id &&
+                exactPick.winner_team_id !== pureHome?.id &&
+                exactPick.winner_team_id !== pureAway?.id
+              ) {
+                if (
+                  exactPick.away_team_id === exactPick.winner_team_id &&
+                  exactPick.home_team_id !== exactPick.winner_team_id
+                ) {
+                  originalAway = exactWinner
+                } else {
+                  originalHome = exactWinner
+                }
+              }
+
+              // Final safety fallback for legacy rows that cannot resolve a slot.
+              originalHome = originalHome || exactPick?.saved_home_team || getTeam(exactPick?.home_team_id)
+              originalAway = originalAway || exactPick?.saved_away_team || getTeam(exactPick?.away_team_id)
 
               const exactSide = exactPick?.winner_team_id === m.home_team_id
                 ? 'home'
