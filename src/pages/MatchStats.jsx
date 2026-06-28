@@ -10,6 +10,11 @@ const venueFlag = (venue) => VENUE_FLAGS[venue?.country] || VENUE_FLAGS[venue?.c
 
 const STAGE_LABELS = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-final', sf: 'Semi-final', '3rd': 'Third-place', final: 'Final' }
 
+// Tournament scoring shown in the league rules:
+// 3 points for the live match result currently landing, plus the saved
+// knockout-bracket progression value for the round.
+const BRACKET_STAGE_POINTS = { r32: 5, r16: 10, qf: 15, sf: 20, '3rd': 20, final: 20 }
+
 export default function MatchStats() {
   const { matchId } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -658,10 +663,45 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', padding: '8px 0' }}>No KO Predictor picks in yet for this match.</p>
       )}
 
-      {leagueCode && tournamentBracketRivals.length > 0 && (
+      {leagueCode && tournamentBracketRivals.length > 0 && (() => {
+        const currentLeadSide = hasResult
+          ? match.home_score > match.away_score
+            ? 'home'
+            : match.away_score > match.home_score
+              ? 'away'
+              : null
+          : null
+
+        const roundPoints = BRACKET_STAGE_POINTS[match.stage] || 0
+        const projectedRows = tournamentBracketRivals
+          .map(r => {
+            const hasCurrentTeamBacking = r.currentFixtureBackings.length > 0
+            const backingCurrentLeader = currentLeadSide &&
+              r.currentFixtureBackings.some(backing =>
+                backing.team?.id === (currentLeadSide === 'home' ? match.home_team_id : match.away_team_id)
+              )
+
+            const projectedPoints = backingCurrentLeader
+              ? 3 + roundPoints
+              : 0
+
+            return {
+              ...r,
+              hasCurrentTeamBacking,
+              backingCurrentLeader: Boolean(backingCurrentLeader),
+              projectedPoints,
+            }
+          })
+          .sort((a, b) =>
+            b.projectedPoints - a.projectedPoints ||
+            Number(b.hasCurrentTeamBacking) - Number(a.hasCurrentTeamBacking) ||
+            a.name.localeCompare(b.name)
+          )
+
+        return (
         <StatCard title={`${scopeLabel} · original tournament bracket picks`}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {tournamentBracketRivals.map(r => {
+            {projectedRows.map(r => {
               const me = r.userId === user?.id
               const originalHome = r.exactPick?.home_team
               const originalAway = r.exactPick?.away_team
@@ -698,6 +738,16 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                       {r.avatar || (r.name[0] || '?').toUpperCase()}
                     </span>
                     <span style={{ flex: 1, fontWeight: 800, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
+                    <span style={{
+                      minWidth: '48px',
+                      textAlign: 'right',
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 900,
+                      fontSize: '14px',
+                      color: r.projectedPoints > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
+                    }}>
+                      {r.projectedPoints > 0 ? `+${r.projectedPoints}` : '0'} pts
+                    </span>
                   </div>
 
                   {r.hasPick ? (
@@ -716,6 +766,23 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                       <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
                         {routeSummary}
                       </div>
+
+                      {r.hasCurrentTeamBacking && (
+                        <div style={{
+                          marginTop: '8px',
+                          padding: '7px 9px',
+                          borderRadius: 'var(--radius-sm)',
+                          background: r.projectedPoints > 0 ? 'var(--accent-green-light)' : 'var(--bg-card)',
+                          border: `1px solid ${r.projectedPoints > 0 ? 'rgba(0,122,51,0.2)' : 'var(--border-light)'}`,
+                          fontSize: '10.5px',
+                          fontWeight: 800,
+                          color: r.projectedPoints > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
+                        }}>
+                          {r.projectedPoints > 0
+                            ? `Live projection: +3 result points +${roundPoints} bracket points`
+                            : `Points on the line: +3 result points +${roundPoints} bracket points if their backed team goes ahead`}
+                        </div>
+                      )}
                     </>
                   ) : (
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>No original bracket pick saved for M{match.match_number}.</div>
@@ -725,7 +792,8 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
             })}
           </div>
         </StatCard>
-      )}
+        )
+      })()}
     </>)
   }
 
