@@ -183,3 +183,116 @@ export function buildFixtureBracketHealth({
     reachLabels: BRACKET_REACH_LABELS,
   }
 }
+
+export function buildBracketHealthByStage({
+  allStages,
+  knockoutPicks,
+  getMatchTeams,
+  matches = [],
+  isTeamOut,
+}) {
+  const stageOrder = BRACKET_STAGE_ORDER
+  const defsByNumber = new Map((allStages || []).flatMap(stage => stage.matches || []).map(match => [match.match_number, match]))
+  const realByNumber = new Map((matches || []).filter(match => match?.match_number).map(match => [match.match_number, match]))
+  const candidateMemo = new Map()
+
+  const completedWinnerFor = match => {
+    if (!match) return null
+    if (match.winner_team_id) return match.winner_team_id
+    const completed = ['completed', 'finished'].includes(String(match.status || '').toLowerCase())
+    if (!completed || match.home_score == null || match.away_score == null) return null
+    if (match.home_score > match.away_score) return match.home_team_id || match.home_team?.id || null
+    if (match.away_score > match.home_score) return match.away_team_id || match.away_team?.id || null
+    return null
+  }
+
+  const candidateIdsForMatch = matchNumber => {
+    if (candidateMemo.has(matchNumber)) return candidateMemo.get(matchNumber)
+    const ids = new Set()
+    const real = realByNumber.get(matchNumber)
+    const completedWinner = completedWinnerFor(real)
+
+    if (completedWinner) {
+      ids.add(completedWinner)
+      candidateMemo.set(matchNumber, ids)
+      return ids
+    }
+
+    const realHomeId = real?.home_team_id || real?.home_team?.id
+    const realAwayId = real?.away_team_id || real?.away_team?.id
+    if (realHomeId) ids.add(realHomeId)
+    if (realAwayId) ids.add(realAwayId)
+    if (ids.size) {
+      candidateMemo.set(matchNumber, ids)
+      return ids
+    }
+
+    const def = defsByNumber.get(matchNumber)
+    ;[def?.home_slot, def?.away_slot].forEach(slot => {
+      const feeder = String(slot || '').match(/^[WL](\d+)$/)
+      if (!feeder) return
+      candidateIdsForMatch(Number(feeder[1])).forEach(id => ids.add(id))
+    })
+
+    candidateMemo.set(matchNumber, ids)
+    return ids
+  }
+
+  const rows = (allStages || []).map((stage, stageIndex) => {
+    const predictedTeams = new Map()
+    ;(stage.matches || []).forEach(matchDef => {
+      const matchup = getMatchTeams(matchDef) || {}
+      ;[matchup.home, matchup.away].forEach(team => {
+        if (team?.id) predictedTeams.set(team.id, team)
+      })
+    })
+
+    const teamIds = [...predictedTeams.keys()]
+    const outIds = teamIds.filter(id => isTeamOut?.(id))
+    const aliveIds = teamIds.filter(id => !isTeamOut?.(id))
+
+    let guaranteedLosses = 0
+    const conflicts = []
+    if (stageIndex > 0) {
+      const previousStage = allStages[stageIndex - 1]
+      ;(previousStage?.matches || []).forEach(previousMatch => {
+        const candidates = [...candidateIdsForMatch(previousMatch.match_number)]
+          .filter(id => aliveIds.includes(id))
+        if (candidates.length > 1) {
+          const losses = candidates.length - 1
+          guaranteedLosses += losses
+          conflicts.push({
+            matchNumber: previousMatch.match_number,
+            teamIds: candidates,
+            losses,
+            pointsLost: losses * Number(stage.points || 0),
+          })
+        }
+      })
+    }
+
+    guaranteedLosses = Math.min(guaranteedLosses, aliveIds.length)
+    const scoringPaths = Math.max(0, aliveIds.length - guaranteedLosses)
+    const maxPoints = scoringPaths * Number(stage.points || 0)
+    const healthPct = teamIds.length ? Math.round((aliveIds.length / teamIds.length) * 100) : 0
+
+    return {
+      stage: stage.key,
+      label: stage.label,
+      pointsPerTeam: Number(stage.points || 0),
+      total: teamIds.length,
+      alive: aliveIds.length,
+      out: outIds.length,
+      guaranteedLosses,
+      scoringPaths,
+      maxPoints,
+      healthPct,
+      teamIds,
+      aliveIds,
+      outIds,
+      conflicts,
+    }
+  })
+
+  return Object.fromEntries(rows.map(row => [row.stage, row]))
+}
