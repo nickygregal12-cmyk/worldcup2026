@@ -308,15 +308,29 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
           return { points: 0, status: 'missed', label: 'Eliminated', actualMatch }
         }
       } else {
-        const previous = previousStageKey[stage.key]
-        const previousMatch = previous
-          ? matches.find(match => match.stage === previous && (match.home_team_id === team.id || match.away_team_id === team.id))
-          : null
+        const stageOrder = ['r32', 'r16', 'qf', 'sf', 'final']
+        const currentIndex = stageOrder.indexOf(stage.key)
+        const earlierStages = currentIndex > 0 ? stageOrder.slice(0, currentIndex).reverse() : []
 
-        // As soon as this team loses its real previous-round match, its later-round
-        // card can be marked eliminated without waiting for every tie in the round.
-        if (previousMatch?.winner_team_id && previousMatch.winner_team_id !== team.id) {
-          return { points: 0, status: 'missed', label: 'Eliminated', actualMatch: previousMatch }
+        // A team can appear in a user's later-round prediction even when it never
+        // reached the immediately previous real round. Search every earlier real
+        // knockout round for the match where the team was eliminated.
+        const eliminationMatch = earlierStages
+          .map(stageKey => actualMatchForTeam(team.id, stageKey))
+          .find(match => match?.winner_team_id && match.winner_team_id !== team.id)
+
+        if (eliminationMatch) {
+          return { points: 0, status: 'missed', label: 'Eliminated', actualMatch: eliminationMatch }
+        }
+
+        // Once all 16 Round-of-32 matchups are populated, any team absent from that
+        // field was eliminated in the groups. Mark its R16 and later cards immediately.
+        const r32Matches = matches.filter(match => match.stage === 'r32')
+        const r32FieldResolved = r32Matches.length === 16 && r32Matches.every(match => match.home_team_id && match.away_team_id)
+        const reachedR32 = actualParticipantsByStage.r32?.has(team.id) || false
+
+        if (r32FieldResolved && !reachedR32) {
+          return { points: 0, status: 'missed', label: 'Eliminated', actualMatch: null }
         }
       }
 
