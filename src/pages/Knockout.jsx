@@ -675,10 +675,15 @@ export default function Knockout() {
     }
     return realKoFixtures
       .filter(m => m.stage === activeStage && m.home_team?.id && m.away_team?.id)
-      .map(fixture => buildFixtureBracketHealth({
-        fixture, stageKey: activeStage, stageConfig, knockoutPicks,
-        predictedDepthByTeam, getTeamById, getMatchTeams,
-      }))
+      .map(fixture => {
+        const stageIndex = ALL_STAGES.findIndex(stage => stage.key === activeStage)
+        const nextStage = stageIndex >= 0 ? ALL_STAGES[stageIndex + 1] : null
+        const advancePoints = nextStage?.points || stageConfig.points || 0
+        return buildFixtureBracketHealth({
+          fixture, stageKey: activeStage, stageConfig, knockoutPicks,
+          predictedDepthByTeam, getTeamById, getMatchTeams, advancePoints,
+        })
+      })
       .filter(Boolean)
       .sort((a, b) => statusRank(a.fixture) - statusRank(b.fixture) || new Date(a.fixture.kickoff_time) - new Date(b.fixture.kickoff_time))
   }, [activeStage, realKoFixtures, knockoutPicks, getTeamById, getMatchTeams])
@@ -1734,7 +1739,7 @@ export default function Knockout() {
                     </div>
                   )}
 
-                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, originalHome, originalAway, savedWinner, homeNeeded, awayNeeded, homeInRoundPath, awayInRoundPath, homeDepth, awayDepth, preferredId, neededId, tone, label, detail, completed, reachLabels, activeStageIndex }) => {
+                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, originalHome, originalAway, savedWinner, homeNeeded, awayNeeded, homeInRoundPath, awayInRoundPath, homeDepth, awayDepth, preferredId, neededId, tone, label, detail, completed, completedOutcome, pointsEffect, winnerId, reachLabels, activeStageIndex }) => {
                     const toneMap = {
                       safe: { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.05)', border: 'rgba(0,122,51,0.25)' },
                       need: { colour: 'var(--scottish-navy)', bg: 'rgba(0,48,135,0.04)', border: 'rgba(0,48,135,0.22)' },
@@ -1742,15 +1747,18 @@ export default function Knockout() {
                       out: { colour: '#c62828', bg: 'rgba(198,40,40,0.04)', border: 'rgba(198,40,40,0.22)' },
                       neutral: { colour: 'var(--text-muted)', bg: 'var(--bg-card)', border: 'var(--border-light)' },
                     }
-                    const t = toneMap[tone]
+                    const completedNoImpact = completed && completedOutcome === 'no-impact'
+                    const t = completedNoImpact ? toneMap.neutral : toneMap[tone]
                     return (
                       <div key={fixture.id || fixture.match_number} style={{ background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', padding: '14px 16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '11px' }}>
                           <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                            M{fixture.match_number} · {fmt(fixture.kickoff_time)}
+                            {completed
+                              ? `Full time · M${fixture.match_number} · ${fixture.home_score ?? '–'}–${fixture.away_score ?? '–'}`
+                              : `M${fixture.match_number} · ${fmt(fixture.kickoff_time)}`}
                           </div>
                           <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-full)', background: t.bg, border: `1px solid ${t.border}`, color: t.colour, fontSize: '10px', fontWeight: '900', whiteSpace: 'nowrap' }}>
-                            {completed ? 'FINAL' : label.toUpperCase()}
+                            {label.toUpperCase()}
                           </span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '10px' }}>
@@ -1760,7 +1768,8 @@ export default function Knockout() {
                             const usefulElsewhere = !needed && inRoundPath
                             const preferred = preferredId === team.id
                             const depth = idx === 0 ? homeDepth : awayDepth
-                            const winner = completed && fixture.winner_team_id === team.id
+                            const winner = completed && winnerId === team.id
+                            const loser = completed && winnerId && winnerId !== team.id
                             const teamBorder = needed || preferred
                               ? `2px solid ${tone === 'out' ? '#c62828' : preferred ? '#9a6700' : 'var(--accent-green)'}`
                               : usefulElsewhere
@@ -1781,15 +1790,17 @@ export default function Knockout() {
                                 <div style={{ fontSize: '10px', color: needed ? t.colour : usefulElsewhere ? '#9a6700' : 'var(--text-muted)', fontWeight: '800', marginTop: '2px' }}>
                                   {winner
                                     ? 'Advanced ✓'
-                                    : needed
-                                      ? 'Your saved winner for this fixture'
-                                      : preferred
-                                        ? `Best for your bracket · predicted to reach ${reachLabels[Math.max(depth, 0)]}`
-                                        : usefulElsewhere
-                                          ? `Predicted to progress to ${reachLabels[Math.max(depth, 0)]}`
-                                          : depth === activeStageIndex
-                                            ? `Predicted to exit in ${reachLabels[activeStageIndex]}`
-                                            : 'Not in your remaining bracket path'}
+                                    : loser
+                                      ? 'Eliminated'
+                                      : needed
+                                        ? 'Your saved winner for this fixture'
+                                        : preferred
+                                          ? `Best for your bracket · predicted to reach ${reachLabels[Math.max(depth, 0)]}`
+                                          : usefulElsewhere
+                                            ? `Predicted to progress to ${reachLabels[Math.max(depth, 0)]}`
+                                            : depth === activeStageIndex
+                                              ? `Predicted to exit in ${reachLabels[activeStageIndex]}`
+                                              : 'Not in your remaining bracket path'}
                                 </div>
                               </div>
                             )
@@ -1799,6 +1810,11 @@ export default function Knockout() {
                         <div style={{ marginTop: '11px', paddingTop: '10px', borderTop: '1px solid var(--border-light)' }}>
                           <div style={{ fontSize: '13px', fontWeight: '900', color: t.colour }}>{label}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '3px' }}>{detail}</div>
+                          {completed && pointsEffect !== null && (
+                            <div style={{ marginTop: '7px', fontSize: '11px', fontWeight: '900', color: pointsEffect > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+                              {pointsEffect > 0 ? `+${pointsEffect} bracket points preserved from this result` : 'No additional bracket points preserved from this result'}
+                            </div>
+                          )}
                         </div>
 
                         <div style={{ marginTop: '11px', padding: '10px 12px', borderRadius: 'var(--radius-md)', background: 'var(--bg-card)', border: '1px solid var(--border-light)' }}>
