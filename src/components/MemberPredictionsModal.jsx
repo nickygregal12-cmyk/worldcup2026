@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
 import { DATES } from '../lib/tournamentDates.js'
+import { buildBracketHealthByStage } from '../lib/bracketHealth.js'
 
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -350,6 +351,36 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
     return { points: stage.points, status: 'reached', label: 'In round', actualMatch }
   }
 
+  const healthByStage = React.useMemo(() => {
+    const r32Matches = matches.filter(match => match.stage === 'r32')
+    const r32FieldResolved = r32Matches.length === 16 && r32Matches.every(match => match.home_team_id && match.away_team_id)
+    const r32Participants = actualParticipantsByStage.r32 || new Set()
+    const completedLosers = new Set()
+    matches.forEach(match => {
+      if (match.status !== 'completed' || !match.winner_team_id) return
+      if (match.home_team_id && match.home_team_id !== match.winner_team_id) completedLosers.add(match.home_team_id)
+      if (match.away_team_id && match.away_team_id !== match.winner_team_id) completedLosers.add(match.away_team_id)
+    })
+
+    const isOut = teamId => {
+      if (!teamId) return false
+      if (completedLosers.has(teamId)) return true
+      if (r32FieldResolved && !r32Participants.has(teamId)) return true
+      const groupPosition = actualGroupPositions[teamId]
+      if (groupPosition >= 4) return true
+      if (groupPosition === 3 && r32FieldResolved && !r32Participants.has(teamId)) return true
+      return false
+    }
+
+    return buildBracketHealthByStage({
+      allStages: ALL_STAGES,
+      knockoutPicks: picks,
+      getMatchTeams: resolvedFor,
+      matches,
+      isTeamOut: isOut,
+    })
+  }, [matches, picks, actualParticipantsByStage, actualGroupPositions, standings, teamsById])
+
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
   if (!availableStages.length) return <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}><div style={{ fontSize: '32px', marginBottom: '8px' }}>🏆</div><div style={{ fontWeight: '700' }}>No knockout picks yet</div></div>
 
@@ -400,6 +431,32 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
           </button>
         ))}
       </div>
+
+      {healthByStage[activeStage.key] && (() => {
+        const health = healthByStage[activeStage.key]
+        return (
+          <section style={{ marginBottom: '11px', padding: '13px', background: 'var(--bg-card)', border: '1px solid rgba(0,122,51,0.18)', borderRadius: '13px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ fontSize: '9px', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{activeStage.label} bracket health</div>
+                <div style={{ marginTop: '4px', fontSize: '16px', fontWeight: '950', color: 'var(--text-primary)' }}><span style={{ color: 'var(--accent-green)' }}>{health.alive}/{health.total}</span> predicted teams still alive</div>
+                <div style={{ marginTop: '3px', fontSize: '10px', color: 'var(--text-muted)' }}>{health.out} out{health.guaranteedLosses ? ` · ${health.guaranteedLosses} guaranteed route-conflict loss${health.guaranteedLosses === 1 ? '' : 'es'}` : ''}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '22px', lineHeight: 1, fontWeight: '950', color: 'var(--accent-green)' }}>{health.healthPct}%</div>
+                <div style={{ marginTop: '3px', fontSize: '8px', color: 'var(--text-muted)', fontWeight: '850', textTransform: 'uppercase' }}>Health</div>
+              </div>
+            </div>
+            <div style={{ height: '5px', marginTop: '11px', background: 'var(--bg-tertiary)', borderRadius: '999px', overflow: 'hidden' }}><div style={{ height: '100%', width: `${health.healthPct}%`, background: 'var(--accent-green)', borderRadius: '999px' }} /></div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>
+              <span style={{ padding: '5px 8px', borderRadius: '999px', background: 'rgba(0,122,51,0.08)', color: 'var(--accent-green)', fontSize: '9px', fontWeight: '900' }}>{health.alive} alive</span>
+              <span style={{ padding: '5px 8px', borderRadius: '999px', background: 'rgba(198,40,40,0.07)', color: 'var(--accent-red)', fontSize: '9px', fontWeight: '900' }}>{health.out} out</span>
+              {health.guaranteedLosses > 0 && <span style={{ padding: '5px 8px', borderRadius: '999px', background: 'rgba(184,134,11,0.10)', color: 'var(--accent-gold)', fontSize: '9px', fontWeight: '900' }}>{health.guaranteedLosses} guaranteed loss</span>}
+              <span style={{ padding: '5px 8px', borderRadius: '999px', background: 'rgba(11,63,145,0.07)', color: 'var(--scottish-navy)', fontSize: '9px', fontWeight: '900' }}>Up to {health.maxPoints} pts remain</span>
+            </div>
+          </section>
+        )
+      })()}
 
       <section style={{ marginBottom: '11px', padding: '11px 13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '13px' }}>
         <div>

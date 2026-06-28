@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
+import { ALL_STAGES } from '../lib/bracketUtils.js'
+import { buildBracketHealthByStage } from '../lib/bracketHealth.js'
 
 const ME_C = 'var(--scottish-navy)'
 const THEM_C = '#7a4fd0'
@@ -45,6 +47,8 @@ export default function HeadToHead() {
   const [awardRows, setAwardRows] = useState([])
   const [goalComparison, setGoalComparison] = useState(null)
   const [koDifferences, setKoDifferences] = useState([])
+  const [koPicksData, setKoPicksData] = useState([])
+  const [koMatchesData, setKoMatchesData] = useState([])
 
   const load = useCallback(async () => {
     if (!meId || !themId) return
@@ -71,7 +75,7 @@ export default function HeadToHead() {
         .in('user_id', [meId, themId]),
       supabase.from('league_members').select('league_id').eq('user_id', meId),
       supabase.from('knockout_picks')
-        .select('user_id, match_number, stage, winner_team_id, team:winner_team_id(id, name, short_code, flag_emoji)')
+        .select('user_id, match_number, stage, winner_team_id, home_team_id, away_team_id, team:winner_team_id(id, name, short_code, flag_emoji)')
         .in('user_id', [meId, themId]),
       supabase.from('matches')
         .select('id, match_number, stage, status, kickoff_time, home_team_id, away_team_id, winner_team_id, home_team:home_team_id(id,name,short_code,flag_emoji), away_team:away_team_id(id,name,short_code,flag_emoji)')
@@ -175,6 +179,9 @@ export default function HeadToHead() {
 
     dec.sort((a, b) => (b.resultDiffers - a.resultDiffers) || (new Date(a.match.kickoff_time) - new Date(b.match.kickoff_time)))
     setDeciders(dec.slice(0, 4))
+
+    setKoPicksData(koPicks || [])
+    setKoMatchesData(koMatches || [])
 
     const completedKo = (koMatches || []).filter(m => m.status === 'completed' && m.winner_team_id)
     const eliminated = new Set()
@@ -348,6 +355,70 @@ export default function HeadToHead() {
     ]
   }, [me, them])
 
+  const bracketHealthComparison = useMemo(() => {
+    if (!koPicksData.length || !koMatchesData.length) return []
+
+    const teamsById = {}
+    koMatchesData.forEach(match => {
+      if (match.home_team?.id) teamsById[match.home_team.id] = match.home_team
+      if (match.away_team?.id) teamsById[match.away_team.id] = match.away_team
+    })
+    koPicksData.forEach(pick => {
+      if (pick.team?.id) teamsById[pick.team.id] = pick.team
+    })
+
+    const r32Matches = koMatchesData.filter(match => match.stage === 'r32')
+    const r32FieldResolved = r32Matches.length === 16 && r32Matches.every(match => match.home_team_id && match.away_team_id)
+    const r32Participants = new Set(r32Matches.flatMap(match => [match.home_team_id, match.away_team_id]).filter(Boolean))
+    const completedLosers = new Set()
+    koMatchesData.forEach(match => {
+      if (match.status !== 'completed' || !match.winner_team_id) return
+      if (match.home_team_id && match.home_team_id !== match.winner_team_id) completedLosers.add(match.home_team_id)
+      if (match.away_team_id && match.away_team_id !== match.winner_team_id) completedLosers.add(match.away_team_id)
+    })
+    const isOut = teamId => completedLosers.has(teamId) || (r32FieldResolved && !r32Participants.has(teamId))
+
+    const healthFor = userId => {
+      const userRows = koPicksData.filter(pick => pick.user_id === userId)
+      const pickMap = Object.fromEntries(userRows.map(pick => [pick.match_number, {
+        winner_id: pick.winner_team_id,
+        home_id: pick.home_team_id,
+        away_id: pick.away_team_id,
+      }]))
+
+      const getMatchTeams = matchDef => {
+        const pick = pickMap[matchDef.match_number]
+        const feederTeam = slot => {
+          const feeder = String(slot || '').match(/^W(\d+)$/)
+          if (!feeder) return null
+          const winnerId = pickMap[Number(feeder[1])]?.winner_id
+          return winnerId ? (teamsById[winnerId] || { id: winnerId }) : null
+        }
+        return {
+          home: (pick?.home_id && (teamsById[pick.home_id] || { id: pick.home_id })) || feederTeam(matchDef.home_slot),
+          away: (pick?.away_id && (teamsById[pick.away_id] || { id: pick.away_id })) || feederTeam(matchDef.away_slot),
+        }
+      }
+
+      return buildBracketHealthByStage({
+        allStages: ALL_STAGES,
+        knockoutPicks: pickMap,
+        getMatchTeams,
+        matches: koMatchesData,
+        isTeamOut: isOut,
+      })
+    }
+
+    const mine = healthFor(meId)
+    const theirs = healthFor(themId)
+    return ALL_STAGES.map(stage => ({
+      stage: stage.key,
+      label: stage.label,
+      me: mine[stage.key],
+      them: theirs[stage.key],
+    })).filter(row => row.me?.total || row.them?.total)
+  }, [koPicksData, koMatchesData, meId, themId])
+
   if (loading) {
     return <div style={{ minHeight: '70vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><div className="spinner" /></div>
   }
@@ -467,28 +538,40 @@ export default function HeadToHead() {
         </Card>
       )}
 
-      {bracketRows.some(r => r.meCount || r.themCount) && (
-        <Card title="Bracket comparison" collapsible defaultOpen={false}>
+      {bracketHealthComparison.length > 0 && (
+        <Card title="Bracket health comparison" collapsible defaultOpen={false}>
+          <div style={{ marginBottom: '10px', padding: '9px 10px', borderRadius: '10px', background: 'var(--bg-secondary)', fontSize: '10.5px', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+            Maximum points remaining deducts eliminated teams and unavoidable route conflicts.
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '9px' }}>
-            {bracketRows.map(row => (
-              <div key={row.stage} style={{ border: '1px solid var(--border-light)', borderRadius: '12px', padding: '11px 12px', background: 'var(--bg-secondary)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'center' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 800 }}>{row.label}</div>
-                  <div style={{ display: 'flex', gap: '10px', ...mono, fontWeight: 900 }}>
-                    <span style={{ color: 'var(--scottish-navy)' }}>{row.meAlive}/{row.meCount}</span>
-                    <span style={{ color: 'var(--text-muted)' }}>vs</span>
-                    <span style={{ color: THEM_C }}>{row.themAlive}/{row.themCount}</span>
+            {bracketHealthComparison.map(row => {
+              const meHealth = row.me || { alive: 0, total: 0, out: 0, guaranteedLosses: 0, maxPoints: 0, healthPct: 0 }
+              const themHealth = row.them || { alive: 0, total: 0, out: 0, guaranteedLosses: 0, maxPoints: 0, healthPct: 0 }
+              const advantage = meHealth.maxPoints - themHealth.maxPoints
+              return (
+                <div key={row.stage} style={{ border: '1px solid var(--border-light)', borderRadius: '12px', padding: '11px 12px', background: 'var(--bg-secondary)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', marginBottom: '9px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 900 }}>{row.label}</div>
+                    <span style={{ fontSize: '10px', fontWeight: 900, color: advantage > 0 ? 'var(--accent-green)' : advantage < 0 ? THEM_C : 'var(--text-muted)' }}>
+                      {advantage > 0 ? `You +${advantage} possible pts` : advantage < 0 ? `${themName} +${Math.abs(advantage)} possible pts` : 'Level potential'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    {[
+                      { label: 'YOU', health: meHealth, colour: ME_C },
+                      { label: themName.toUpperCase(), health: themHealth, colour: THEM_C },
+                    ].map(side => (
+                      <div key={side.label} style={{ padding: '10px', borderRadius: '10px', background: 'var(--bg-card)', border: `1px solid ${side.colour}22` }}>
+                        <div style={{ fontSize: '9px', fontWeight: 900, color: side.colour, letterSpacing: '0.06em' }}>{side.label}</div>
+                        <div style={{ marginTop: '4px', fontSize: '18px', fontWeight: 950, color: side.colour }}>{side.health.maxPoints} pts</div>
+                        <div style={{ marginTop: '3px', fontSize: '10px', color: 'var(--text-muted)' }}>{side.health.alive}/{side.health.total} alive · {side.health.healthPct}% health</div>
+                        <div style={{ marginTop: '2px', fontSize: '9.5px', color: 'var(--text-muted)' }}>{side.health.out} out{side.health.guaranteedLosses ? ` · ${side.health.guaranteedLosses} guaranteed loss${side.health.guaranteedLosses === 1 ? '' : 'es'}` : ''}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '4px' }}>Still alive / selected</div>
-                {(row.myOnly.length > 0 || row.theirOnly.length > 0) && (
-                  <div style={{ marginTop: '8px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <TeamMiniList label="Your unique picks" picks={row.myOnly} colour="var(--scottish-navy)" />
-                    <TeamMiniList label={`${themName}'s unique picks`} picks={row.theirOnly} colour={THEM_C} />
-                  </div>
-                )}
-              </div>
-            ))}
+              )
+            })}
           </div>
         </Card>
       )}
