@@ -676,9 +676,19 @@ export default function Knockout() {
     const now = Date.now()
     const statusRank = m => {
       const status = String(m.status || '').toLowerCase()
+      const kickoffMs = new Date(m.kickoff_time).getTime()
+      const recentlyFinished = now - kickoffMs <= 12 * 60 * 60 * 1000
+
       if (status === 'live' || status === 'in_progress') return 0
-      if (status === 'completed' || status === 'finished') return 3
-      return new Date(m.kickoff_time).getTime() <= now ? 1 : 2
+
+      // Keep a match visible near the top after full time. Previously every
+      // completed fixture was pushed below all 15 upcoming R32 games, which made
+      // M73 appear to have disappeared as soon as it finished.
+      if ((status === 'completed' || status === 'finished') && recentlyFinished) return 1
+
+      if (kickoffMs <= now && status !== 'completed' && status !== 'finished') return 2
+      if (status !== 'completed' && status !== 'finished') return 3
+      return 4
     }
     return realKoFixtures
       .filter(m => m.stage === activeStage && m.home_team?.id && m.away_team?.id)
@@ -1769,7 +1779,22 @@ export default function Knockout() {
                     const completedNoImpact = completed && completedOutcome === 'no-impact'
                     const t = completedNoImpact ? toneMap.neutral : toneMap[tone]
                     return (
-                      <div key={fixture.id || fixture.match_number} style={{ background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', padding: '14px 16px' }}>
+                      <Link
+                        key={fixture.id || fixture.match_number}
+                        to={`/match/${fixture.id}/stats`}
+                        aria-label={`View Match Centre for ${fixture.home_team?.name || 'home team'} versus ${fixture.away_team?.name || 'away team'}`}
+                        style={{
+                          display: 'block',
+                          color: 'inherit',
+                          textDecoration: 'none',
+                          background: t.bg,
+                          border: `1.5px solid ${t.border}`,
+                          borderRadius: 'var(--radius-lg)',
+                          boxShadow: 'var(--shadow-card)',
+                          padding: '14px 16px',
+                          cursor: 'pointer',
+                        }}
+                      >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '11px' }}>
                           <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                             {completed
@@ -1849,7 +1874,24 @@ export default function Knockout() {
                             {savedWinner ? `${savedWinner.flag_emoji || ''} ${savedWinner.name} to advance` : 'No winner saved'}
                           </div>
                         </div>
-                      </div>
+
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '10px',
+                          marginTop: '11px',
+                          paddingTop: '10px',
+                          borderTop: '1px solid var(--border-light)',
+                        }}>
+                          <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700 }}>
+                            View the full points impact
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--scottish-navy)', fontWeight: 900 }}>
+                            View Match Centre →
+                          </span>
+                        </div>
+                      </Link>
                     )
                   } ) : predictedRoundHealth.length > 0 ? predictedRoundHealth.map(({ matchDef, home, away, winner, homeOut, awayOut, homeCanReach, awayCanReach, tone, label, detail }) => {
                     const toneMap = {
