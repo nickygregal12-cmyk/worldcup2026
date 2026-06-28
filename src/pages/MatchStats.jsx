@@ -1033,8 +1033,8 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                   value: `${awayOnlyCount} player${awayOnlyCount === 1 ? '' : 's'} +${availablePoints}`,
                 },
                 {
-                  label: 'Either team wins',
-                  value: `${eitherCount} player${eitherCount === 1 ? '' : 's'} score`,
+                  label: 'Points whichever team advances',
+                  value: `${eitherCount} player${eitherCount === 1 ? '' : 's'} · +${availablePoints} pts either way`,
                 },
                 {
                   label: 'No points available',
