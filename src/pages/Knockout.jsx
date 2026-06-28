@@ -891,50 +891,153 @@ export default function Knockout() {
     })
   }, [activeStage, realKoFixtures, getMatchTeams])
 
+  // Candidate teams that can still arrive in any real bracket match. For rounds
+  // that do not yet have confirmed fixtures, this follows the official feeder
+  // matches backwards and carries forward every still-possible team.
+  const realRouteCandidates = useMemo(() => {
+    const defsByNumber = new Map(ALL_STAGES.flatMap(s => s.matches).map(m => [m.match_number, m]))
+    const realByNumber = new Map(realKoFixtures.map(m => [m.match_number, m]))
+    const resultByNumber = new Map(realKoResults.map(m => [m.match_number, m]))
+    const memo = new Map()
+
+    const collect = (matchNumber) => {
+      if (memo.has(matchNumber)) return memo.get(matchNumber)
+      const ids = new Set()
+      const real = realByNumber.get(matchNumber)
+      const result = resultByNumber.get(matchNumber)
+
+      const completedWinner = result?.winner_team_id || real?.winner_team_id || null
+      if (completedWinner) {
+        ids.add(completedWinner)
+        memo.set(matchNumber, ids)
+        return ids
+      }
+
+      if (real?.home_team?.id) ids.add(real.home_team.id)
+      if (real?.away_team?.id) ids.add(real.away_team.id)
+      if (ids.size) {
+        memo.set(matchNumber, ids)
+        return ids
+      }
+
+      const def = defsByNumber.get(matchNumber)
+      if (def) {
+        ;[def.home_slot, def.away_slot].forEach(slot => {
+          const feeder = slot?.match(/^[WL](\d+)$/)
+          if (feeder) {
+            collect(Number(feeder[1])).forEach(id => ids.add(id))
+            return
+          }
+          const realTeam = resolveRealSlot(slot)
+          if (realTeam?.id) ids.add(realTeam.id)
+        })
+      }
+
+      memo.set(matchNumber, ids)
+      return ids
+    }
+
+    ALL_STAGES.flatMap(s => s.matches).forEach(m => collect(m.match_number))
+    return memo
+  }, [realKoFixtures, realKoResults, resolveRealSlot])
+
+  // Always reconstruct the user's frozen predicted matchup, even when the newer
+  // pure bracket resolver cannot currently rebuild one side. Stored snapshot IDs
+  // are used only as a display fallback here; the saved winner remains untouched.
+  const getOriginalPredictedMatchup = useCallback((matchDef) => {
+    const resolved = getMatchTeams(matchDef)
+    const pick = knockoutPicks[matchDef.match_number]
+
+    const feederTeam = (slot) => {
+      const feeder = slot?.match(/^W(\d+)$/)
+      if (!feeder) return null
+      const feederPick = knockoutPicks[Number(feeder[1])]
+      return feederPick?.winner_id ? getTeamById(feederPick.winner_id) : null
+    }
+
+    const home = resolved.home
+      || (pick?.home_id ? getTeamById(pick.home_id) : null)
+      || feederTeam(matchDef.home_slot)
+    const away = resolved.away
+      || (pick?.away_id ? getTeamById(pick.away_id) : null)
+      || feederTeam(matchDef.away_slot)
+
+    return { home, away }
+  }, [getMatchTeams, knockoutPicks, getTeamById])
+
   const predictedRoundHealth = useMemo(() => {
     const stageConfig = ALL_STAGES.find(s => s.key === activeStage)
     if (!stageConfig) return []
 
+    const stageOrder = ['r32', 'r16', 'qf', 'sf', 'final']
+    const activeIndex = stageOrder.indexOf(activeStage)
+
     return stageConfig.matches.map(matchDef => {
-      const { home, away } = getMatchTeams(matchDef)
+      const { home, away } = getOriginalPredictedMatchup(matchDef)
       const pick = knockoutPicks[matchDef.match_number]
       const winner = pick?.winner_id ? getTeamById(pick.winner_id) : null
       const homeOut = !!home?.id && isTeamOut(home.id)
       const awayOut = !!away?.id && isTeamOut(away.id)
       const winnerOut = !!winner?.id && isTeamOut(winner.id)
-      const matchupPossible = !!home?.id && !!away?.id && !homeOut && !awayOut
+      const candidates = realRouteCandidates.get(matchDef.match_number) || new Set()
+      const homeCanReach = !!home?.id && !homeOut && candidates.has(home.id)
+      const awayCanReach = !!away?.id && !awayOut && candidates.has(away.id)
+      const winnerCanReach = !!winner?.id && !winnerOut && candidates.has(winner.id)
+      const exactMatchupPossible = !!home?.id && !!away?.id && homeCanReach && awayCanReach
 
       let tone = 'neutral'
-      let label = 'Waiting for earlier rounds'
-      let detail = 'The official teams for this matchup are not confirmed yet.'
+      let label = 'Route still forming'
+      let detail = 'The official fixture is not confirmed yet, but this card tracks whether your predicted teams can still arrive here.'
 
-      if (winner?.id && winnerOut) {
+      if (!home?.id && !away?.id) {
+        label = 'Prediction unavailable'
+        detail = 'No saved predicted teams could be reconstructed for this fixture.'
+      } else if (winner?.id && winnerOut) {
         tone = 'out'
         label = 'Saved winner eliminated'
-        detail = `${winner.name} can no longer reach this round.`
-      } else if (winner?.id && matchupPossible) {
+        detail = `${winner.name} can no longer reach the ${stageConfig.label.toLowerCase()}.`
+      } else if (exactMatchupPossible) {
         tone = 'safe'
         label = 'Exact matchup still possible'
-        detail = `${winner.name} is your saved winner and both predicted teams remain alive.`
-      } else if (winner?.id && !winnerOut) {
+        detail = `${home.name} and ${away.name} can both still arrive in this fixture. ${winner?.name ? `${winner.name} remains your saved winner.` : ''}`.trim()
+      } else if (winnerCanReach) {
         tone = 'need'
-        label = `${winner.name} still alive`
-        detail = homeOut || awayOut
-          ? 'The exact predicted matchup cannot happen, but your saved winner can still reach this round.'
-          : 'Your saved winner can still reach this round.'
+        label = `${winner.name} still on track`
+        const missing = [home, away].find(team => team?.id && team.id !== winner.id && !(team.id === home?.id ? homeCanReach : awayCanReach))
+        detail = missing
+          ? `${winner.name} can still reach this fixture, but ${missing.name} can no longer arrive through the official route. The exact matchup is lost, while your saved winner remains alive.`
+          : `${winner.name} can still reach this fixture through the official route.`
+      } else if (!winner?.id && (homeCanReach || awayCanReach)) {
+        tone = 'need'
+        label = 'Part of the matchup still possible'
+        const aliveTeam = homeCanReach ? home : away
+        detail = `${aliveTeam.name} can still reach this fixture, but the exact predicted matchup cannot currently happen.`
+      } else if (!homeOut && !awayOut && home?.id && away?.id) {
+        tone = 'partial'
+        label = 'Both alive, routes have changed'
+        detail = `${home.name} and ${away.name} are still in the tournament, but the official bracket no longer allows this exact fixture. Check the route-conflict notice for where their paths now cross.`
+      } else if ((homeCanReach || awayCanReach) && !winnerCanReach) {
+        tone = 'need'
+        label = 'Exact matchup no longer possible'
+        const survivor = homeCanReach ? home : away
+        detail = `${survivor.name} can still reach this fixture, but your original saved winner or opponent cannot.`
       } else if (homeOut && awayOut) {
         tone = 'out'
         label = 'Predicted matchup eliminated'
-        detail = 'Neither predicted team can reach this round.'
-      } else if (homeOut || awayOut) {
-        tone = 'need'
-        label = 'Exact matchup no longer possible'
-        detail = 'One predicted team is out, but the other can still reach this round.'
+        detail = 'Neither predicted team can reach this fixture.'
+      } else {
+        tone = 'out'
+        label = 'Predicted route lost'
+        detail = 'The official bracket route no longer allows either side of this predicted fixture to arrive here.'
       }
 
-      return { matchDef, home, away, winner, homeOut, awayOut, winnerOut, tone, label, detail }
+      return {
+        matchDef, home, away, winner, homeOut, awayOut, winnerOut,
+        homeCanReach, awayCanReach, winnerCanReach, exactMatchupPossible,
+        activeIndex, tone, label, detail,
+      }
     })
-  }, [activeStage, knockoutPicks, getMatchTeams, getTeamById, isTeamOut])
+  }, [activeStage, knockoutPicks, getOriginalPredictedMatchup, getTeamById, isTeamOut, realRouteCandidates])
 
   const getBracketLockReason = useCallback((matchDef) => {
     if (new Date() >= mainBracketLockTime) return 'Bracket fully locked. Saved teams and winners are frozen.'
@@ -1811,10 +1914,11 @@ export default function Knockout() {
                         </div>
                       </div>
                     )
-                  } ) : predictedRoundHealth.length > 0 ? predictedRoundHealth.map(({ matchDef, home, away, winner, homeOut, awayOut, tone, label, detail }) => {
+                  } ) : predictedRoundHealth.length > 0 ? predictedRoundHealth.map(({ matchDef, home, away, winner, homeOut, awayOut, homeCanReach, awayCanReach, tone, label, detail }) => {
                     const toneMap = {
                       safe: { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.05)', border: 'rgba(0,122,51,0.25)' },
                       need: { colour: 'var(--scottish-navy)', bg: 'rgba(0,48,135,0.04)', border: 'rgba(0,48,135,0.22)' },
+                      partial: { colour: '#9a6700', bg: 'rgba(184,134,11,0.06)', border: 'rgba(184,134,11,0.28)' },
                       out: { colour: '#c62828', bg: 'rgba(198,40,40,0.04)', border: 'rgba(198,40,40,0.22)' },
                       neutral: { colour: 'var(--text-muted)', bg: 'var(--bg-card)', border: 'var(--border-light)' },
                     }
@@ -1826,13 +1930,13 @@ export default function Knockout() {
                           <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-full)', background: t.bg, border: `1px solid ${t.border}`, color: t.colour, fontSize: '10px', fontWeight: '900', whiteSpace: 'nowrap' }}>{label.toUpperCase()}</span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '10px' }}>
-                          {[{ team: home, out: homeOut }, { team: away, out: awayOut }].map(({ team, out }, idx) => {
+                          {[{ team: home, out: homeOut, canReach: homeCanReach }, { team: away, out: awayOut, canReach: awayCanReach }].map(({ team, out, canReach }, idx) => {
                             const isWinner = !!team?.id && team.id === winner?.id
                             return (
                               <div key={team?.id || idx} style={{ textAlign: idx === 0 ? 'left' : 'right', padding: '10px', borderRadius: 'var(--radius-md)', border: isWinner ? `2px solid ${out ? '#c62828' : 'var(--scottish-navy)'}` : '1px solid var(--border-light)', background: 'var(--bg-card)', opacity: out ? 0.6 : 1 }}>
                                 <div style={{ fontSize: '26px' }}>{team?.flag_emoji || '🏳️'}</div>
                                 <div style={{ fontSize: '13px', fontWeight: '900', color: out ? '#c62828' : isWinner ? 'var(--scottish-navy)' : 'var(--text-primary)', marginTop: '4px', textDecoration: out ? 'line-through' : 'none' }}>{team?.name || 'To be confirmed'}</div>
-                                <div style={{ fontSize: '10px', color: out ? '#c62828' : isWinner ? 'var(--scottish-navy)' : 'var(--text-muted)', fontWeight: '800', marginTop: '2px' }}>{out ? 'Eliminated' : isWinner ? 'Your saved winner' : team ? 'Still alive' : 'Waiting'}</div>
+                                <div style={{ fontSize: '10px', color: out ? '#c62828' : canReach ? 'var(--accent-green)' : isWinner ? 'var(--scottish-navy)' : 'var(--text-muted)', fontWeight: '800', marginTop: '2px' }}>{out ? 'Eliminated' : canReach ? 'Can still reach this fixture' : isWinner ? 'Your saved winner · off this route' : team ? 'Alive, but off this route' : 'Waiting'}</div>
                               </div>
                             )
                           })}
