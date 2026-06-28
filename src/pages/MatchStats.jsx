@@ -401,7 +401,15 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           ] = await Promise.all([
             supabase
               .from('knockout_picks')
-              .select('user_id, match_number, winner_team_id')
+              .select(`
+                user_id,
+                match_number,
+                home_team_id,
+                away_team_id,
+                winner_team_id,
+                saved_home_team:home_team_id(id,name,short_code,flag_emoji),
+                saved_away_team:away_team_id(id,name,short_code,flag_emoji)
+              `)
               .in('match_number', allKnockoutMatchNumbers)
               .in('user_id', tournamentLeagueUserIds),
             supabase
@@ -471,9 +479,17 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                 matchDef => Number(matchDef.match_number) === Number(m.match_number)
               )
 
-              const originalHome = currentMatchDef ? resolveOriginalSlot(currentMatchDef.home_slot) : null
-              const originalAway = currentMatchDef ? resolveOriginalSlot(currentMatchDef.away_slot) : null
               const exactPick = pickMap[Number(m.match_number)] || null
+
+              // Resolve from the user's bracket chain first. Some older users do
+              // not have enough readable group-stage rows for client-side slot
+              // resolution, so fall back to the teams saved with that exact pick.
+              // This prevents TBC/TBC while still preferring the corrected live
+              // bracket reconstruction whenever it is available.
+              const rebuiltHome = currentMatchDef ? resolveOriginalSlot(currentMatchDef.home_slot) : null
+              const rebuiltAway = currentMatchDef ? resolveOriginalSlot(currentMatchDef.away_slot) : null
+              const originalHome = rebuiltHome || exactPick?.saved_home_team || getTeam(exactPick?.home_team_id)
+              const originalAway = rebuiltAway || exactPick?.saved_away_team || getTeam(exactPick?.away_team_id)
               const exactWinner = getTeam(exactPick?.winner_team_id)
 
               const exactSide = exactPick?.winner_team_id === m.home_team_id
