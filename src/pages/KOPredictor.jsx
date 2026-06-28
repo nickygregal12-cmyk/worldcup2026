@@ -165,18 +165,6 @@ export default function KOPredictor() {
     })
   }
 
-  const adjustScore = (matchId, side, delta) => {
-    setPredictions(prev => {
-      const current = prev[matchId]?.[side]
-      const numeric = current === '' || current === undefined || current === null ? 0 : Number(current)
-      const next = Math.max(0, Math.min(99, (Number.isFinite(numeric) ? numeric : 0) + delta))
-      return {
-        ...prev,
-        [matchId]: { ...(prev[matchId] || {}), [side]: next, _error: null },
-      }
-    })
-  }
-
   const handleScoreBlur = (match, side) => {
     const pred = predictions[match.id] || {}
     const val = pred[side]
@@ -215,10 +203,6 @@ export default function KOPredictor() {
     if ((outcomeType === 'et' || outcomeType === 'penalties') && !pred.winner_team_id) {
       setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: 'Please select a winner' } }))
       return
-    }
-    if (!pred.first_goal_band) {
-      const saveWithoutBonus = window.confirm('You have not selected a first-goal time, so you cannot earn the +3 bonus points. Save this prediction anyway?')
-      if (!saveWithoutBonus) return
     }
 
     setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: null } }))
@@ -318,30 +302,13 @@ export default function KOPredictor() {
     !/Winner|Runner/.test(m.home_team?.name || '') &&
     !/Winner|Runner/.test(m.away_team?.name || '')
 
-  const isPredictionComplete = (match, prediction = {}) => {
-    const home = Number(prediction.home)
-    const away = Number(prediction.away)
-    const hasScores = prediction.home !== '' && prediction.home !== undefined && prediction.home !== null &&
-      prediction.away !== '' && prediction.away !== undefined && prediction.away !== null &&
-      Number.isFinite(home) && Number.isFinite(away)
-    if (!hasScores) return false
-
-    // A level 90-minute score must also identify how the tie is settled and who advances.
-    if (home === away) {
-      return ['et', 'penalties'].includes(prediction.outcome_type) && !!prediction.winner_team_id
-    }
-    return true
-  }
-
-  const confirmedMatches = matches.filter(isConfirmed)
-  const stageMatches = confirmedMatches.filter(m => m.stage === activeStage).sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
+  const stageMatches = matches.filter(m => m.stage === activeStage && isConfirmed(m)).sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
   const stagePending = matches.filter(m => m.stage === activeStage && !isConfirmed(m)).length
-  const confirmedTotal = confirmedMatches.length
-  const completedPredictionCount = confirmedMatches.filter(m => isPredictionComplete(m, predictions[m.id])).length
-  const missingBonusCount = confirmedMatches.filter(m => isPredictionComplete(m, predictions[m.id]) && !predictions[m.id]?.first_goal_band).length
-  const getPredCount = (stage) => confirmedMatches
-    .filter(m => m.stage === stage && isPredictionComplete(m, predictions[m.id]))
-    .length
+  const confirmedTotal = matches.filter(isConfirmed).length
+  const getPredCount = (stage) => {
+    const sm = matches.filter(m => m.stage === stage && isConfirmed(m))
+    return sm.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
+  }
 
   const renderMatch = (match) => {
     const pred = predictions[match.id] || {}
@@ -449,26 +416,23 @@ export default function KOPredictor() {
             {favourite === 'home' && matchOdds && !locked && !resultColour && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {['home', 'away'].map((side, index) => (
-              <div key={side} style={{ display: 'contents' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <button type="button" aria-label={`Increase ${side} score`}
-                    onClick={() => adjustScore(match.id, side, 1)} disabled={locked || isGuest}
-                    style={{ width: '44px', height: '32px', borderRadius: '9px', border: '1px solid var(--border-light)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: '17px', fontWeight: 900, cursor: locked || isGuest ? 'not-allowed' : 'pointer' }}>▲</button>
-                  <input type="number" inputMode="numeric" className="score-input" min="0" max="99"
-                    value={pred[side] ?? ''} placeholder="?"
-                    onChange={e => handleScoreChange(match.id, side, e.target.value)}
-                    onBlur={() => handleScoreBlur(match, side)} disabled={locked || isGuest}
-                    style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }} />
-                  <button type="button" aria-label={`Decrease ${side} score`}
-                    onClick={() => adjustScore(match.id, side, -1)}
-                    disabled={locked || isGuest || Number(pred[side] ?? 0) <= 0}
-                    style={{ width: '44px', height: '32px', borderRadius: '9px', border: '1px solid var(--border-light)', background: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: '17px', fontWeight: 900, cursor: locked || isGuest ? 'not-allowed' : 'pointer', opacity: Number(pred[side] ?? 0) <= 0 ? 0.45 : 1 }}>▼</button>
-                </div>
-                {index === 0 && <span className="score-divider">–</span>}
-              </div>
-            ))}
-          </div>          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+            <input type="number" className="score-input" min="0" max="99"
+              value={pred.home ?? ''} placeholder="?"
+              onChange={e => handleScoreChange(match.id, 'home', e.target.value)}
+              onBlur={() => handleScoreBlur(match, 'home')}
+              disabled={locked || isGuest}
+              style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
+            />
+            <span className="score-divider">–</span>
+            <input type="number" className="score-input" min="0" max="99"
+              value={pred.away ?? ''} placeholder="?"
+              onChange={e => handleScoreChange(match.id, 'away', e.target.value)}
+              onBlur={() => handleScoreBlur(match, 'away')}
+              disabled={locked || isGuest}
+              style={{ cursor: isGuest ? 'not-allowed' : 'text', opacity: isGuest ? 0.5 : 1 }}
+            />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '36px' }}>{match.away_team?.flag_emoji || '🏳️'}</span>
             <span style={{ fontWeight: '700', fontSize: '13px', textAlign: 'center' }}>{match.away_team?.name || '?'}</span>
             {favourite === 'away' && matchOdds && !locked && !resultColour && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
@@ -577,11 +541,8 @@ export default function KOPredictor() {
         {/* First goal band */}
         {hasPrediction && !locked && !isGuest && (
           <div style={{ marginBottom: '12px' }}>
-            <div style={{ fontSize: '11px', fontWeight: '800', color: pred.first_goal_band ? 'var(--text-muted)' : '#e65100', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              ⏱ First goal time · <span style={{ color: '#e65100' }}>+3 bonus points</span>
-            </div>
-            <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginBottom: '7px', lineHeight: 1.4 }}>
-              When will the first goal be scored? Pick a time band to keep every scoring opportunity available.
+            <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              ⏱ First Goal? <span style={{ color: '#e65100' }}>+3pts</span> <span style={{ fontWeight: '400', textTransform: 'none' }}>(optional)</span>
             </div>
             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
               {FIRST_GOAL_BANDS.map(band => (
@@ -727,18 +688,11 @@ export default function KOPredictor() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: 'var(--radius-full)', background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.3)', fontSize: '12px', fontWeight: '700', color: 'white' }}>
-                🃏 {jokersRemaining} left
+                🃏 {jokersRemaining} tournament joker{jokersRemaining !== 1 ? 's' : ''} left
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.9)', fontWeight: '700' }}>
-                  {completedPredictionCount} / {confirmedTotal} complete
-                </div>
-                {missingBonusCount > 0 && (
-                  <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.72)', marginTop: '1px' }}>
-                    {missingBonusCount} bonus pick{missingBonusCount === 1 ? '' : 's'} missing
-                  </div>
-                )}
-              </div>
+              <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>
+                {Object.keys(predictions).length} / {confirmedTotal}
+              </span>
             </div>
           </div>
 
@@ -833,15 +787,15 @@ export default function KOPredictor() {
           <div className="card" style={{ maxWidth: '340px', width: '100%' }}>
             <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '8px' }}>🃏 Use a KO Joker?</div>
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
-              Doubles all points for this match if correct.
+              Doubles all points earned from this match.
             </div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              You have <strong>{jokersRemaining}</strong> KO joker{jokersRemaining !== 1 ? 's' : ''} remaining. You can remove it before kickoff, but not after.
+              You have <strong>{jokersRemaining}</strong> joker{jokersRemaining !== 1 ? 's' : ''} remaining for the <strong>entire knockout tournament</strong>. They do not reset each round. You can remove this joker before kickoff, but not after.
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
               <button onClick={() => { handleJoker(jokerConfirm.matchId, false); setJokerConfirm(null) }}
                 className="btn btn-primary" style={{ flex: 1, background: '#e65100' }}>
-                Yes, use joker
+                Use 1 of my {jokersRemaining} joker{jokersRemaining !== 1 ? 's' : ''}
               </button>
               <button onClick={() => setJokerConfirm(null)} className="btn btn-secondary" style={{ flex: 1 }}>
                 Cancel

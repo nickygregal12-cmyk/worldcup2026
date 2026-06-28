@@ -8,6 +8,7 @@ export default function PublicLeague() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const [league, setLeague] = useState(null)
+  const [leagueType, setLeagueType] = useState('tournament')
   const [members, setMembers] = useState([])
   const [offlinePlayers, setOfflinePlayers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -26,50 +27,87 @@ export default function PublicLeague() {
 
   const loadLeague = async () => {
     setLoading(true)
-    const { data: leagueData } = await supabase
+    setError(null)
+    const cleanCode = code?.toUpperCase().trim()
+
+    const { data: tournamentLeague } = await supabase
       .from('leagues')
       .select('id, name, invite_code, created_at, scoring_preset, custom_scoring, creator:created_by(username, display_name)')
-      .eq('invite_code', code?.toUpperCase().trim())
-      .single()
+      .eq('invite_code', cleanCode)
+      .maybeSingle()
 
-    if (!leagueData) { setError('League not found'); setLoading(false); return }
-    setLeague(leagueData)
+    if (tournamentLeague) {
+      setLeagueType('tournament')
+      setLeague(tournamentLeague)
 
-    // Load real members
-    const { data: memberData } = await supabase
-      .from('league_members')
-      .select('user_id, league_points, profile:user_id(id, username, display_name, total_points, avatar_emoji, streak_current)')
-      .eq('league_id', leagueData.id)
+      const [{ data: memberData }, { data: offlineData }] = await Promise.all([
+        supabase
+          .from('league_members')
+          .select('user_id, league_points, profile:user_id(id, username, display_name, total_points, avatar_emoji, streak_current)')
+          .eq('league_id', tournamentLeague.id),
+        supabase
+          .from('offline_players')
+          .select('id, display_name, league_points')
+          .eq('league_id', tournamentLeague.id),
+      ])
 
-    // Load offline players
-    const { data: offlineData } = await supabase
-      .from('offline_players')
-      .select('id, display_name, league_points')
-      .eq('league_id', leagueData.id)
+      setMembers(memberData || [])
+      setOfflinePlayers(offlineData || [])
+      setLoading(false)
+      return
+    }
 
-    setMembers(memberData || [])
-    setOfflinePlayers(offlineData || [])
+    const { data: koLeague } = await supabase
+      .from('ko_leagues')
+      .select('id, name, invite_code, created_at, creator:created_by(username, display_name)')
+      .eq('invite_code', cleanCode)
+      .maybeSingle()
+
+    if (!koLeague) {
+      setError('League not found')
+      setLoading(false)
+      return
+    }
+
+    setLeagueType('ko')
+    setLeague(koLeague)
+    setOfflinePlayers([])
+
+    const { data: koMemberData } = await supabase
+      .from('ko_league_members')
+      .select('user_id, profile:user_id(id, username, display_name, ko_points, ko_exact_scores, avatar_emoji)')
+      .eq('league_id', koLeague.id)
+
+    setMembers(koMemberData || [])
     setLoading(false)
   }
 
   const checkMembership = async () => {
     if (!user || !league) return
-    const { data } = await supabase.from('league_members')
-      .select('user_id').eq('league_id', league.id).eq('user_id', user.id).single()
-    if (data) setAlreadyMember(true)
+    const table = leagueType === 'ko' ? 'ko_league_members' : 'league_members'
+    const { data } = await supabase.from(table)
+      .select('user_id').eq('league_id', league.id).eq('user_id', user.id).maybeSingle()
+    setAlreadyMember(!!data)
   }
 
   const joinLeague = async () => {
     if (!user) {
-      navigate(`/register?join=${code}`)
+      navigate(`/register?join=${code}${leagueType === 'ko' ? '&game=ko' : ''}`)
       return
     }
     setJoining(true)
-    await supabase.from('league_members').insert({ league_id: league.id, user_id: user.id })
+    setError(null)
+    const table = leagueType === 'ko' ? 'ko_league_members' : 'league_members'
+    const { error: joinError } = await supabase.from(table).insert({ league_id: league.id, user_id: user.id })
+    if (joinError && joinError.code !== '23505') {
+      setError(joinError.message || 'Could not join this league')
+      setJoining(false)
+      return
+    }
     setJoined(true)
     setAlreadyMember(true)
     setJoining(false)
-    setTimeout(() => navigate('/leagues'), 1500)
+    setTimeout(() => navigate(`/leagues${leagueType === 'ko' ? '?game=ko' : ''}`), 1500)
   }
 
   // Combine and sort all members by points
@@ -78,18 +116,22 @@ export default function PublicLeague() {
       id: m.user_id,
       name: m.profile?.display_name || m.profile?.username || 'Unknown',
       avatar: m.profile?.avatar_emoji || '👤',
-      points: m.league_points > 0 ? m.league_points : (m.profile?.total_points || 0),
-      streak: m.profile?.streak_current || 0,
+      points: leagueType === 'ko'
+        ? (m.profile?.ko_points || 0)
+        : (m.league_points > 0 ? m.league_points : (m.profile?.total_points || 0)),
+      streak: leagueType === 'ko' ? 0 : (m.profile?.streak_current || 0),
+      exactScores: leagueType === 'ko' ? (m.profile?.ko_exact_scores || 0) : 0,
       isOffline: false,
     })),
-    ...(offlinePlayers || []).map(op => ({
+    ...(leagueType === 'tournament' ? (offlinePlayers || []).map(op => ({
       id: op.id,
       name: op.display_name,
       avatar: '👤',
       points: op.league_points || 0,
       streak: 0,
+      exactScores: 0,
       isOffline: true,
-    }))
+    })) : [])
   ].sort((a, b) => b.points - a.points)
 
   const getRankIcon = (rank) => {
@@ -99,7 +141,7 @@ export default function PublicLeague() {
     return `#${rank}`
   }
 
-  const isCustomScoring = league?.scoring_preset && league.scoring_preset !== 'standard'
+  const isCustomScoring = leagueType === 'tournament' && league?.scoring_preset && league.scoring_preset !== 'standard'
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -121,11 +163,11 @@ export default function PublicLeague() {
 
       {/* Hero */}
       <div style={{
-        background: 'linear-gradient(135deg, rgba(0,20,60,0.92) 0%, rgba(0,50,135,0.88) 60%, rgba(0,20,60,0.92) 100%), url(/hero-bg.jpg) center/cover no-repeat',
+        background: leagueType === 'ko' ? 'linear-gradient(135deg, rgba(130,45,0,0.94), rgba(230,81,0,0.9)), url(/hero-bg.jpg) center/cover no-repeat' : 'linear-gradient(135deg, rgba(0,20,60,0.92) 0%, rgba(0,50,135,0.88) 60%, rgba(0,20,60,0.92) 100%), url(/hero-bg.jpg) center/cover no-repeat',
         padding: '40px 20px 32px', color: 'white', textAlign: 'center',
       }}>
         <div style={{ fontSize: '13px', fontWeight: '700', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', marginBottom: '10px' }}>
-          WC26 Predictor · Mini League
+          {leagueType === 'ko' ? 'WC26 Predictor · KO Predictor League' : 'WC26 Predictor · Tournament Mini League'}
         </div>
         <h1 style={{ fontSize: 'clamp(26px, 6vw, 40px)', fontWeight: '900', letterSpacing: '-0.03em', marginBottom: '8px', lineHeight: 1.1 }}>
           {league.name}
@@ -147,17 +189,17 @@ export default function PublicLeague() {
               ✅ Joined! Taking you there...
             </div>
           ) : alreadyMember ? (
-            <Link to="/leagues" className="btn btn-primary" style={{ display: 'inline-block' }}>
+            <Link to={leagueType === 'ko' ? '/leagues?game=ko' : '/leagues'} className="btn btn-primary" style={{ display: 'inline-block' }}>
               View your leagues →
             </Link>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
               <button onClick={joinLeague} disabled={joining} className="btn btn-primary" style={{ fontSize: '16px', padding: '14px 32px', fontWeight: '800' }}>
-                {joining ? '⏳ Joining...' : user ? '🏆 Join this league' : '🏆 Join free — sign up to compete'}
+                {joining ? '⏳ Joining...' : user ? (leagueType === 'ko' ? '🔥 Join this KO league' : '🏆 Join this league') : (leagueType === 'ko' ? '🔥 Join free — sign up to compete' : '🏆 Join free — sign up to compete')}
               </button>
               {!user && (
                 <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>
-                  Already have an account? <Link to={`/login?join=${code}`} style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'underline' }}>Sign in</Link>
+                  Already have an account? <Link to={`/login?join=${code}${leagueType === 'ko' ? '&game=ko' : ''}`} style={{ color: 'rgba(255,255,255,0.8)', textDecoration: 'underline' }}>Sign in</Link>
                 </div>
               )}
             </div>
@@ -212,6 +254,9 @@ export default function PublicLeague() {
                   {!member.isOffline && member.streak > 1 && (
                     <div style={{ fontSize: '11px', color: 'var(--accent-orange)', fontWeight: '600' }}>🔥 {member.streak} streak</div>
                   )}
+                  {leagueType === 'ko' && (
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600' }}>🎯 {member.exactScores} exact scores</div>
+                  )}
                 </div>
                 <div style={{ fontWeight: '900', fontSize: '16px', fontFamily: 'var(--font-mono)', color: member.points > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>
                   {member.points}
@@ -226,10 +271,10 @@ export default function PublicLeague() {
           <div className="card" style={{ textAlign: 'center', padding: '20px', background: 'var(--scottish-navy)', color: 'white' }}>
             <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '6px' }}>Think you can beat them? 🏴󠁧󠁢󠁳󠁣󠁴󠁥󠁢</div>
             <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginBottom: '14px' }}>
-              Predict all 104 World Cup matches and compete for glory. Your picks lock automatically at kickoff — no one can change them.
+              {leagueType === 'ko' ? 'Predict the knockout matches and compete on KO Predictor points only. Your picks lock at kickoff.' : 'Predict all 104 World Cup matches and compete for glory. Your picks lock automatically at kickoff — no one can change them.'}
             </div>
             <button onClick={joinLeague} disabled={joining} className="btn btn-primary" style={{ fontWeight: '800', width: '100%', padding: '12px' }}>
-              {joining ? '⏳ Joining...' : user ? '🏆 Join this league' : '🏆 Sign up free & join'}
+              {joining ? '⏳ Joining...' : user ? (leagueType === 'ko' ? '🔥 Join this KO league' : '🏆 Join this league') : (leagueType === 'ko' ? '🔥 Sign up free & join' : '🏆 Sign up free & join')}
             </button>
           </div>
         )}

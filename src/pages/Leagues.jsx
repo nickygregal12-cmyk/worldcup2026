@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
 import { supabase } from '../lib/supabase.js'
 import { avatarColor } from '../lib/avatarColor.js'
@@ -596,6 +596,7 @@ function MyPredictionsProgress({ userId }) {
 
 export default function Leagues() {
   const { user, isAdmin } = useAuthStore()
+  const [searchParams] = useSearchParams()
   const [activeGame, setActiveGame] = useState('tournament')
   const [overallRows, setOverallRows] = useState([])
   const [loadingOverall, setLoadingOverall] = useState(false)
@@ -696,6 +697,18 @@ export default function Leagues() {
     window.localStorage.setItem('wc26_seen_welcome', 'true')
     setShowWelcome(false)
   }
+
+  // Invite links open the correct competition and pre-fill the code.
+  useEffect(() => {
+    const game = searchParams.get('game')
+    const code = searchParams.get('join')?.trim().toUpperCase()
+    if (game !== 'ko' || !code) return
+    setActiveGame('ko')
+    setJoinCode(code)
+    setShowJoin(true)
+    setShowCreate(false)
+    setError('')
+  }, [searchParams])
 
   const { appSettings } = useAppStore()
   const phaseOverride = appSettings?.game_phase_override || ''
@@ -1589,8 +1602,8 @@ export default function Leagues() {
 
                         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-light)', background: 'var(--bg-secondary)', display: 'flex', gap: '7px', flexWrap: 'wrap', alignItems: 'center' }}>
                           <div style={{ marginRight: 'auto', fontSize: '12px', color: 'var(--text-muted)' }}>Invite code: <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '0.08em' }}>{league?.invite_code}</strong></div>
-                          <button onClick={() => navigator.clipboard?.writeText(league?.invite_code).then(() => setSuccess(`Copied: ${league?.invite_code}`))} className="btn btn-secondary btn-sm">📋 Copy</button>
-                          <button onClick={() => { const text = `Join my WC26 KO Predictor league "${league?.name}"! Code: ${league?.invite_code} at https://wc26predictor1.netlify.app`; window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank') }} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none' }}>WhatsApp</button>
+                          <button onClick={() => copyKoLeagueLink(league?.name, league?.invite_code)} className="btn btn-secondary btn-sm">🔗 Copy invite link</button>
+                          <button onClick={() => shareKoLeagueWhatsApp(league?.name, league?.invite_code)} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none' }}>WhatsApp</button>
                           <Link to="/leaderboard?game=ko" className="btn btn-secondary btn-sm">Full leaderboard</Link>
                           {isCreator ? <button onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league_id, leagueName: league?.name })} className="btn btn-sm" style={{ background: 'none', border: '1px solid #e53935', color: '#e53935' }}>Delete</button> : <button onClick={() => setConfirmAction({ type: 'leaveKoLeague', leagueId: league_id, leagueName: league?.name })} className="btn btn-secondary btn-sm">Leave</button>}
                         </div>
