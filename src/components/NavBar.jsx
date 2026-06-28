@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore, useAppStore } from '../store/index.js'
 
@@ -5,6 +6,7 @@ export default function NavBar() {
   const { user, profile, isAdmin, isLeagueAdmin, logout } = useAuthStore()
   const { darkMode, toggleDarkMode } = useAppStore()
   const location = useLocation()
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
 
   const navLinks = [
     { to: '/', label: 'Home' },
@@ -216,7 +218,7 @@ export default function NavBar() {
                 <span className="desktop-main-nav__profile-name">{profile?.username || 'Profile'}</span>
               </Link>
               <button
-                onClick={logout}
+                onClick={() => setShowSignOutConfirm(true)}
                 className="btn btn-secondary btn-sm desktop-main-nav__signout"
                 title="Sign out"
                 aria-label="Sign out"
@@ -283,6 +285,118 @@ export default function NavBar() {
           )}
         </div>
       </nav>
+
+      {showSignOutConfirm && (
+        <div
+          onClick={() => setShowSignOutConfirm(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: 'rgba(8,18,38,0.58)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px',
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="signout-confirm-title"
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '430px',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border-light)',
+              borderRadius: '24px',
+              boxShadow: '0 24px 70px rgba(8,18,38,0.28)',
+              padding: '24px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
+              <div
+                style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '14px',
+                  background: 'rgba(198,40,40,0.10)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '22px',
+                  flexShrink: 0,
+                }}
+              >
+                ↪
+              </div>
+
+              <div style={{ flex: 1 }}>
+                <h2
+                  id="signout-confirm-title"
+                  style={{
+                    margin: 0,
+                    fontSize: '21px',
+                    lineHeight: 1.2,
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  Sign out?
+                </h2>
+                <p
+                  style={{
+                    margin: '8px 0 0',
+                    color: 'var(--text-muted)',
+                    fontSize: '14px',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  You’ll need to sign back in to view and update your predictions.
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '10px',
+                marginTop: '22px',
+              }}
+            >
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowSignOutConfirm(false)}
+                style={{ minHeight: '46px', fontWeight: '800' }}
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSignOutConfirm(false)
+                  logout()
+                }}
+                style={{
+                  minHeight: '46px',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--accent-red, #c62828)',
+                  color: 'white',
+                  fontWeight: '900',
+                  cursor: 'pointer',
+                }}
+              >
+                Yes, sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
