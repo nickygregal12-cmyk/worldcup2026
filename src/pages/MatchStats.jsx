@@ -215,6 +215,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
   const [koMine, setKoMine] = useState(null)
   const [koRivals, setKoRivals] = useState([])
   const [tournamentBracketRivals, setTournamentBracketRivals] = useState([])
+  const [tournamentBracketSort, setTournamentBracketSort] = useState('potential')
   const [bracketHealth, setBracketHealth] = useState(null)
   const [weather, setWeather] = useState(null)
 
@@ -294,6 +295,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
         let tournamentLeagueName = null
         let tournamentLeagueId = null
         let tournamentLeagueUsesSnapshot = false
+        let tournamentLeaguePointsByUser = {}
 
         if (koLeagueCode) {
           const { data: koLeague } = await supabase.from('ko_leagues').select('id, name').eq('invite_code', koLeagueCode).maybeSingle()
@@ -326,8 +328,18 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
             return
           }
 
-          const { data: members } = await supabase.from('league_members').select('user_id').eq('league_id', league.id)
+          const { data: members } = await supabase
+            .from('league_members')
+            .select('user_id, league_points, profile:user_id(total_points)')
+            .eq('league_id', league.id)
+
           tournamentLeagueUserIds = (members || []).map(mm => mm.user_id)
+          tournamentLeaguePointsByUser = Object.fromEntries(
+            (members || []).map(member => [
+              member.user_id,
+              Number(member.league_points ?? member.profile?.total_points ?? 0),
+            ])
+          )
           if (!user?.id || !tournamentLeagueUserIds.includes(user.id)) {
             setScopeDenied(true)
             setScopeMessage('You need to be a member of this Tournament league to view its bracket picks.')
@@ -588,6 +600,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                 userId: memberId,
                 name: profile.display_name || profile.username || 'Player',
                 avatar: profile.avatar_emoji,
+                leaguePoints: tournamentLeaguePointsByUser[memberId] || 0,
                 exactPick: exactPick ? {
                   ...exactPick,
                   home_team: originalHome,
@@ -813,33 +826,73 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           : null
 
         const roundPoints = BRACKET_STAGE_POINTS[match.stage] || 0
-        const projectedRows = tournamentBracketRivals
-          .map(r => {
-            const hasCurrentTeamBacking = r.currentFixtureBackings.length > 0
-            const backingCurrentLeader = currentLeadSide &&
-              r.currentFixtureBackings.some(backing =>
-                backing.team?.id === (currentLeadSide === 'home' ? match.home_team_id : match.away_team_id)
-              )
+        const enrichedRows = tournamentBracketRivals.map(r => {
+          const hasCurrentTeamBacking = r.currentFixtureBackings.length > 0
+          const backingCurrentLeader = currentLeadSide &&
+            r.currentFixtureBackings.some(backing =>
+              backing.team?.id === (currentLeadSide === 'home' ? match.home_team_id : match.away_team_id)
+            )
 
-            const projectedPoints = backingCurrentLeader
-              ? 3 + roundPoints
-              : 0
+          const projectedPoints = backingCurrentLeader ? 3 + roundPoints : 0
+          const homeRoute = r.currentFixtureBackings.find(backing => backing.team?.id === match.home_team_id)?.route || null
+          const awayRoute = r.currentFixtureBackings.find(backing => backing.team?.id === match.away_team_id)?.route || null
 
-            return {
-              ...r,
-              hasCurrentTeamBacking,
-              backingCurrentLeader: Boolean(backingCurrentLeader),
-              projectedPoints,
-            }
-          })
-          .sort((a, b) =>
-            b.projectedPoints - a.projectedPoints ||
+          return {
+            ...r,
+            hasCurrentTeamBacking,
+            backingCurrentLeader: Boolean(backingCurrentLeader),
+            projectedPoints,
+            homeRoute,
+            awayRoute,
+          }
+        })
+
+        const routeRank = route => route === 'exact' ? 2 : route === 'different' ? 1 : 0
+        const projectedRows = [...enrichedRows].sort((a, b) => {
+          if (tournamentBracketSort === 'league') {
+            return Number(b.leaguePoints || 0) - Number(a.leaguePoints || 0) ||
+              a.name.localeCompare(b.name)
+          }
+
+          if (tournamentBracketSort === 'home') {
+            return routeRank(b.homeRoute) - routeRank(a.homeRoute) ||
+              Number(b.leaguePoints || 0) - Number(a.leaguePoints || 0) ||
+              a.name.localeCompare(b.name)
+          }
+
+          if (tournamentBracketSort === 'away') {
+            return routeRank(b.awayRoute) - routeRank(a.awayRoute) ||
+              Number(b.leaguePoints || 0) - Number(a.leaguePoints || 0) ||
+              a.name.localeCompare(b.name)
+          }
+
+          return b.projectedPoints - a.projectedPoints ||
             Number(b.hasCurrentTeamBacking) - Number(a.hasCurrentTeamBacking) ||
+            Math.max(routeRank(b.homeRoute), routeRank(b.awayRoute)) -
+              Math.max(routeRank(a.homeRoute), routeRank(a.awayRoute)) ||
+            Number(b.leaguePoints || 0) - Number(a.leaguePoints || 0) ||
             a.name.localeCompare(b.name)
-          )
+        })
 
         return (
         <StatCard title={`${scopeLabel} · original tournament bracket picks`}>
+          <div style={{ marginBottom: '12px' }}>
+            <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+              Sort by
+            </div>
+            <select
+              className="input"
+              value={tournamentBracketSort}
+              onChange={event => setTournamentBracketSort(event.target.value)}
+              style={{ width: '100%', minHeight: '40px', fontWeight: 800 }}
+            >
+              <option value="potential">Points currently on the line</option>
+              <option value="league">League table points</option>
+              <option value="home">{match.home_team?.name || match.home_team?.short_code || 'Home team'} to advance</option>
+              <option value="away">{match.away_team?.name || match.away_team?.short_code || 'Away team'} to advance</option>
+            </select>
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {projectedRows.map(r => {
               const me = r.userId === user?.id
@@ -878,16 +931,20 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                       {r.avatar || (r.name[0] || '?').toUpperCase()}
                     </span>
                     <span style={{ flex: 1, fontWeight: 800, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
-                    <span style={{
-                      minWidth: '48px',
-                      textAlign: 'right',
-                      fontFamily: 'var(--font-mono)',
-                      fontWeight: 900,
-                      fontSize: '14px',
-                      color: r.projectedPoints > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
-                    }}>
-                      {r.projectedPoints > 0 ? `+${r.projectedPoints} pts` : '—'}
-                    </span>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{
+                        minWidth: '48px',
+                        fontFamily: 'var(--font-mono)',
+                        fontWeight: 900,
+                        fontSize: '14px',
+                        color: r.projectedPoints > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
+                      }}>
+                        {r.projectedPoints > 0 ? `+${r.projectedPoints} pts` : '—'}
+                      </div>
+                      <div style={{ marginTop: '2px', fontSize: '9px', color: 'var(--text-muted)', fontWeight: 700 }}>
+                        {r.leaguePoints} league pts
+                      </div>
+                    </div>
                   </div>
 
                   {r.hasPick ? (
@@ -906,6 +963,29 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                       <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.45 }}>
                         {routeSummary}
                       </div>
+
+                      {(tournamentBracketSort === 'home' ? r.homeRoute : tournamentBracketSort === 'away' ? r.awayRoute : null) && (
+                        <div style={{
+                          display: 'inline-flex',
+                          marginTop: '7px',
+                          padding: '3px 7px',
+                          borderRadius: '999px',
+                          background: (tournamentBracketSort === 'home' ? r.homeRoute : r.awayRoute) === 'exact'
+                            ? 'var(--accent-green-light)'
+                            : 'var(--accent-blue-light)',
+                          color: (tournamentBracketSort === 'home' ? r.homeRoute : r.awayRoute) === 'exact'
+                            ? 'var(--accent-green)'
+                            : 'var(--scottish-navy)',
+                          fontSize: '9px',
+                          fontWeight: 900,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                        }}>
+                          {(tournamentBracketSort === 'home' ? r.homeRoute : r.awayRoute) === 'exact'
+                            ? 'Correct fixture route'
+                            : 'Different bracket route'}
+                        </div>
+                      )}
 
                       {r.hasCurrentTeamBacking && (
                         <div style={{
