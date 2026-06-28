@@ -405,10 +405,12 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
           const bracketTable = tournamentLeagueUsesSnapshot
             ? 'league_knockout_picks'
             : 'knockout_picks'
-          // Group-stage predictions are locked once the tournament starts.
-          // Use the live predictions table for bracket slot resolution even in
-          // frozen leagues, because some league snapshot rows are incomplete.
-          const predictionTable = 'predictions'
+          // Use the exact same prediction source as MemberPredictionsModal.
+          // Frozen pre-tournament leagues resolve their bracket from the frozen
+          // league_predictions snapshot; rolling leagues use live predictions.
+          const predictionTable = tournamentLeagueUsesSnapshot
+            ? 'league_predictions'
+            : 'predictions'
 
           let bracketQuery = supabase
             .from(bracketTable)
@@ -431,6 +433,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
 
           if (tournamentLeagueUsesSnapshot && tournamentLeagueId) {
             bracketQuery = bracketQuery.eq('league_id', tournamentLeagueId)
+            groupPredictionQuery = groupPredictionQuery.eq('league_id', tournamentLeagueId)
           }
 
           const [
@@ -538,13 +541,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, divider }) {
                 }
               }
 
-              // Only fall back to the saved pair when neither side can be rebuilt.
-              // Never mix one rebuilt team with one stale saved team, which caused
-              // hybrid fixtures such as Canada v Qatar.
-              if (!originalHome && !originalAway) {
-                originalHome = exactPick?.saved_home_team || getTeam(exactPick?.home_team_id)
-                originalAway = exactPick?.saved_away_team || getTeam(exactPick?.away_team_id)
-              }
+              // Match MemberPredictionsModal exactly. Do not add a separate
+              // saved-pair fallback here; that can create a fixture which the
+              // user's Bracket tab never displays.
 
               const exactSide = exactPick?.winner_team_id === m.home_team_id
                 ? 'home'
