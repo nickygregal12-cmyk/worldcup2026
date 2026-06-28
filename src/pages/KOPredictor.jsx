@@ -34,6 +34,61 @@ const VENUE_FLAGS = {
   'Mexico City': '🇲🇽', 'Guadalajara': '🇲🇽', 'Monterrey': '🇲🇽',
 }
 
+
+const POINT_LABELS = {
+  correct_winner: 'Correct winner',
+  winner: 'Correct winner',
+  result: 'Correct winner',
+  exact_score: 'Exact score',
+  exact: 'Exact score',
+  first_goal_band: 'First-goal band',
+  first_goal: 'First-goal band',
+  extra_time: 'Extra-time bonus',
+  et_bonus: 'Extra-time bonus',
+  penalties: 'Penalties bonus',
+  penalties_bonus: 'Penalties bonus',
+  pen_bonus: 'Penalties bonus',
+  joker: 'Joker multiplier',
+  joker_bonus: 'Joker bonus',
+}
+
+function normalisePointsBreakdown(breakdown) {
+  if (!breakdown) return []
+
+  let value = breakdown
+  if (typeof value === 'string') {
+    try { value = JSON.parse(value) } catch { return [] }
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item, index) => {
+      if (typeof item === 'number') {
+        return { key: `item-${index}`, label: `Bonus ${index + 1}`, points: item }
+      }
+      if (typeof item === 'string') {
+        return { key: `item-${index}`, label: item, points: null }
+      }
+      const key = item?.key || item?.type || item?.name || `item-${index}`
+      const points = item?.points ?? item?.value ?? item?.amount ?? null
+      return {
+        key,
+        label: item?.label || POINT_LABELS[key] || String(key).replaceAll('_', ' '),
+        points: Number.isFinite(Number(points)) ? Number(points) : null,
+      }
+    })
+  }
+
+  if (typeof value === 'object') {
+    return Object.entries(value).map(([key, points]) => ({
+      key,
+      label: POINT_LABELS[key] || key.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+      points: Number.isFinite(Number(points)) ? Number(points) : null,
+    }))
+  }
+
+  return []
+}
+
 export default function KOPredictor() {
   const { user, profile } = useAuthStore()
   const { appSettings } = useAppStore()
@@ -349,6 +404,15 @@ export default function KOPredictor() {
       return 'red'
     }
     const resultColour = getResultColour()
+    const completedBreakdown = match.status === 'completed'
+      ? normalisePointsBreakdown(pred.points_breakdown)
+      : []
+    const totalAwarded = Number(pred.points_awarded || 0)
+    const actualWinner = match.winner_team_id === match.home_team_id
+      ? match.home_team
+      : match.winner_team_id === match.away_team_id
+        ? match.away_team
+        : null
 
     const cardBorder = resultColour === 'gold' ? '2px solid var(--accent-gold)'
       : resultColour === 'green' ? '2px solid var(--accent-green)'
@@ -375,14 +439,25 @@ export default function KOPredictor() {
 
         {/* Result badge */}
         {resultColour && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px', padding: '5px 10px', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '700',
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginBottom: '10px',
+            padding: '7px 10px',
+            borderRadius: 'var(--radius-sm)',
+            fontSize: '12px',
+            fontWeight: '700',
             background: resultColour === 'gold' ? 'rgba(255,215,0,0.2)' : resultColour === 'green' ? 'rgba(0,122,51,0.1)' : 'rgba(198,40,40,0.1)',
-            color: resultColour === 'gold' ? '#b8860b' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
-            {resultColour === 'gold' ? '🎯 Exact score!' : resultColour === 'green' ? '✅ Correct result' : '❌ Wrong result'}
-            {hasJoker && resultColour !== 'red' && <span style={{ marginLeft: '4px', color: 'var(--accent-gold)' }}>🃏 ×2</span>}
-            {hasJoker && resultColour === 'red' && <span style={{ marginLeft: '4px' }}>🃏 wasted</span>}
-            <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)' }}>
-              {pred.points_awarded !== undefined ? (pred.points_awarded === 0 ? '0' : `+${pred.points_awarded}`) : ''}pts
+            color: resultColour === 'gold' ? '#b8860b' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)',
+          }}>
+            <span>
+              {resultColour === 'gold' ? '🎯 Exact score!' : resultColour === 'green' ? '✅ Correct result' : '❌ Wrong result'}
+              {hasJoker && resultColour !== 'red' && <span style={{ marginLeft: '4px', color: 'var(--accent-gold)' }}>🃏 ×2</span>}
+              {hasJoker && resultColour === 'red' && <span style={{ marginLeft: '4px' }}>🃏 wasted</span>}
+            </span>
+            <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', fontWeight: 900 }}>
+              {totalAwarded > 0 ? `+${totalAwarded}` : '0'} pts
             </span>
           </div>
         )}
@@ -653,17 +728,122 @@ export default function KOPredictor() {
           </div>
         )}
 
-        {/* Completed — your pick vs result */}
+        {/* Completed — full result and points breakdown */}
         {locked && match.status === 'completed' && hasPrediction && (
-          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
-            <span style={{ color: 'var(--text-muted)' }}>
-              Your pick: <strong>{pred.home}–{pred.away}</strong>
-              {outcomeType !== '90mins' && <span style={{ marginLeft: '4px', color: '#e65100', fontSize: '11px' }}>({outcomeType === 'et' ? 'AET' : 'PENS'})</span>}
-              {hasJoker && <span style={{ marginLeft: '6px', color: '#ff9800' }}>🃏</span>}
-            </span>
-            <span style={{ fontWeight: '700', color: '#e65100' }}>
-              {pred.points_awarded > 0 ? `+${pred.points_awarded}pts` : '0pts'}
-            </span>
+          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr auto 1fr',
+              gap: '10px',
+              alignItems: 'center',
+              padding: '12px',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-light)',
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '22px' }}>{match.home_team?.flag_emoji}</div>
+                <div style={{ marginTop: '3px', fontSize: '11px', fontWeight: 800 }}>{match.home_team?.short_code}</div>
+              </div>
+
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  Full time
+                </div>
+                <div style={{ marginTop: '2px', fontFamily: 'var(--font-mono)', fontSize: '24px', fontWeight: 950 }}>
+                  {match.home_score}–{match.away_score}
+                </div>
+                {actualWinner && (
+                  <div style={{ marginTop: '2px', fontSize: '9.5px', color: 'var(--accent-green)', fontWeight: 800 }}>
+                    {actualWinner.short_code || actualWinner.name} advanced
+                  </div>
+                )}
+              </div>
+
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '22px' }}>{match.away_team?.flag_emoji}</div>
+                <div style={{ marginTop: '3px', fontSize: '11px', fontWeight: 800 }}>{match.away_team?.short_code}</div>
+              </div>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '10px',
+              marginTop: '9px',
+              fontSize: '12px',
+            }}>
+              <span style={{ color: 'var(--text-muted)' }}>
+                Your pick: <strong style={{ color: 'var(--text-primary)' }}>{pred.home}–{pred.away}</strong>
+                {outcomeType !== '90mins' && (
+                  <span style={{ marginLeft: '4px', color: '#e65100', fontSize: '10px', fontWeight: 800 }}>
+                    {outcomeType === 'et' ? 'AET' : 'PENS'}
+                  </span>
+                )}
+                {pred.first_goal_band && (
+                  <span style={{ marginLeft: '6px' }}>· First goal {pred.first_goal_band}</span>
+                )}
+                {hasJoker && <span style={{ marginLeft: '6px', color: '#ff9800' }}>🃏</span>}
+              </span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 950, color: totalAwarded > 0 ? 'var(--accent-green)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                {totalAwarded > 0 ? `+${totalAwarded}` : '0'} pts
+              </span>
+            </div>
+
+            {completedBreakdown.length > 0 && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                gap: '6px',
+                marginTop: '10px',
+              }}>
+                {completedBreakdown.map(item => (
+                  <div key={item.key} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '7px 9px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: Number(item.points || 0) > 0 ? 'var(--accent-green-light)' : 'var(--bg-secondary)',
+                    border: '1px solid var(--border-light)',
+                    fontSize: '10px',
+                  }}>
+                    <span style={{ color: 'var(--text-secondary)', fontWeight: 750 }}>{item.label}</span>
+                    <span style={{
+                      fontFamily: 'var(--font-mono)',
+                      fontWeight: 900,
+                      color: Number(item.points || 0) > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
+                    }}>
+                      {item.points == null ? '—' : Number(item.points) > 0 ? `+${item.points}` : '0'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Link
+              to={`/match/${match.id}/stats`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+                marginTop: '11px',
+                padding: '10px 12px',
+                borderRadius: 'var(--radius-md)',
+                background: 'rgba(0,48,135,0.06)',
+                border: '1px solid rgba(0,48,135,0.14)',
+                color: 'var(--scottish-navy)',
+                textDecoration: 'none',
+                fontSize: '11px',
+                fontWeight: 850,
+              }}
+            >
+              <span>See predictions, splits and full points impact</span>
+              <span>View Match Centre →</span>
+            </Link>
           </div>
         )}
       </div>
