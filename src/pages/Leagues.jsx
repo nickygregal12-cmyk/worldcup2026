@@ -1184,7 +1184,57 @@ export default function Leagues() {
   const shareWhatsApp = (leagueName, code) => {
     const link = `${window.location.origin}/league/${code}`
     const text = `Join my WC26 Predictor league "${leagueName}"! 🏆⚽\n${link}`
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer')
+  }
+
+  // KO leagues use the Leagues page itself as the direct join destination.
+  // Opening this URL selects the KO competition, pre-fills the invite code and
+  // opens the join panel automatically.
+  const getKoLeagueInviteLink = (code) => {
+    const inviteCode = String(code || '').trim().toUpperCase()
+    return `${window.location.origin}/leagues?game=ko&join=${encodeURIComponent(inviteCode)}`
+  }
+
+  const writeToClipboard = async (value) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value)
+      return
+    }
+
+    // Fallback for older iOS browsers and non-secure local environments.
+    const textarea = document.createElement('textarea')
+    textarea.value = value
+    textarea.setAttribute('readonly', '')
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    document.body.appendChild(textarea)
+    textarea.select()
+    const copied = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    if (!copied) throw new Error('Clipboard copy failed')
+  }
+
+  const copyKoLeagueLink = async (leagueName, code) => {
+    try {
+      const link = getKoLeagueInviteLink(code)
+      await writeToClipboard(link)
+      setSuccess(`Copied KO league invite link for "${leagueName}"!`)
+      setError('')
+    } catch (copyError) {
+      console.error('KO league invite copy failed:', copyError)
+      setError('Could not copy the invite link. Please copy the league code instead.')
+    }
+    setTimeout(() => setSuccess(''), 3000)
+  }
+
+  const shareKoLeagueWhatsApp = (leagueName, code) => {
+    const link = getKoLeagueInviteLink(code)
+    const text = `Join my WC26 KO Predictor league "${leagueName}"! 🔥🏆\n\nTap this link to open the correct competition and join directly:\n${link}`
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`
+
+    // Direct navigation is more reliable on iPhone/PWA than a popup, which can
+    // be blocked after React event handling.
+    window.location.assign(whatsappUrl)
   }
 
   // For a normal (standard-scoring, always-editable) league the authoritative
