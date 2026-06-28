@@ -1765,11 +1765,22 @@ export default function Knockout() {
         )}
 
         {/* Unified bracket health — each card also shows the frozen original pick */}
-        {liveTrackerStats && liveTrackerStats.total > 0 && (() => {
-          const pctHealth = Math.round((liveTrackerStats.correct / liveTrackerStats.total) * 100)
-          const lost = Math.max(0, liveTrackerStats.total - liveTrackerStats.correct)
+        {(liveTrackerStats?.total > 0 || liveFixtureHealth.length > 0 || predictedRoundHealth.length > 0 || routeCollisions.length > 0) && (() => {
+          // Later rounds often have no official fixture teams yet. In that case,
+          // build the round summary from the user's reconstructed predicted fixtures
+          // instead of hiding the whole health section behind liveTrackerStats.
+          const fallbackTotal = predictedRoundHealth.reduce((sum, item) =>
+            sum + (item.home?.id ? 1 : 0) + (item.away?.id ? 1 : 0), 0)
+          const fallbackCorrect = predictedRoundHealth.reduce((sum, item) =>
+            sum + (item.home?.id && !item.homeOut ? 1 : 0) + (item.away?.id && !item.awayOut ? 1 : 0), 0)
+          const summaryTotal = liveTrackerStats?.total > 0 ? liveTrackerStats.total : fallbackTotal
+          const summaryCorrect = liveTrackerStats?.total > 0 ? liveTrackerStats.correct : fallbackCorrect
+          const summaryStageLabel = liveTrackerStats?.stageLabel || currentStage?.label || activeStage
+          const summaryStagePoints = liveTrackerStats?.stagePoints || currentStage?.points || 0
+          const pctHealth = summaryTotal > 0 ? Math.round((summaryCorrect / summaryTotal) * 100) : 0
+          const lost = Math.max(0, summaryTotal - summaryCorrect)
           const colour = pctHealth >= 75 ? 'var(--accent-green)' : pctHealth >= 50 ? 'var(--accent-gold)' : '#c62828'
-          const maxRemaining = liveTrackerStats.correct * (liveTrackerStats.stagePoints || 0)
+          const maxRemaining = summaryCorrect * summaryStagePoints
           return (
             <div style={{ marginTop: '10px' }}>
               <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
@@ -1777,10 +1788,10 @@ export default function Knockout() {
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px' }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-                        {liveTrackerStats.stageLabel} bracket health
+                        {summaryStageLabel} bracket health
                       </div>
                       <div style={{ fontSize: '18px', lineHeight: 1.25, fontWeight: '900', color: 'var(--text-primary)', marginTop: '5px' }}>
-                        <span style={{ color: colour }}>{liveTrackerStats.correct}/{liveTrackerStats.total}</span> predicted teams still alive
+                        <span style={{ color: colour }}>{summaryCorrect}/{summaryTotal}</span> predicted teams still alive
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '5px', lineHeight: 1.45 }}>
                         {lost === 0 ? 'Your full path can still happen.' : `${lost} predicted team${lost === 1 ? '' : 's'} can no longer reach this round.`}
@@ -1795,7 +1806,7 @@ export default function Knockout() {
                     <div style={{ width: `${pctHealth}%`, height: '100%', background: colour, borderRadius: '10px' }} />
                   </div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
-                    <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(0,122,51,0.08)', color: 'var(--accent-green)', fontSize: '11px', fontWeight: '800' }}>{liveTrackerStats.correct} alive</span>
+                    <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(0,122,51,0.08)', color: 'var(--accent-green)', fontSize: '11px', fontWeight: '800' }}>{summaryCorrect} alive</span>
                     <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: lost ? 'rgba(198,40,40,0.08)' : 'var(--bg-secondary)', color: lost ? '#c62828' : 'var(--text-muted)', fontSize: '11px', fontWeight: '800' }}>{lost} out</span>
                     <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(0,48,135,0.06)', color: 'var(--scottish-navy)', fontSize: '11px', fontWeight: '800' }}>Up to {maxRemaining} pts remain</span>
                   </div>
