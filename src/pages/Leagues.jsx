@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ALL_STAGES, calcPredictedStandings, resolveSlot } from '../lib/bracketUtils.js'
 import { supabase } from '../lib/supabase.js'
 import { avatarColor } from '../lib/avatarColor.js'
@@ -7,126 +7,148 @@ import { useAuthStore, useAppStore } from '../store/index.js'
 import MemberPredictionsModal, { useMemberPredictions, getPredResult } from '../components/MemberPredictionsModal.jsx'
 import { DATES } from '../lib/tournamentDates.js'
 
-function LiveMatchCard({ match, members, supabase, mode, leagueCode }) {
-  // mode: 'upcoming' | 'live' | 'result'
-  const [expanded, setExpanded] = useState(false)
-  const [preds, setPreds] = useState({})
+function LiveMatchCard({ match, mode, leagueCode }) {
+  // Keep the league card deliberately compact. The full member-by-member
+  // breakdown now lives in Match Centre, where knockout route context and KO
+  // Predictor picks can be shown correctly.
   const [countdown, setCountdown] = useState('')
 
   useEffect(() => {
-    if (!members?.length || !match?.id) return
-    const memberIds = members.filter(m => !m.is_offline).map(m => m.user_id)
-    if (!memberIds.length) return
-    supabase.from('predictions')
-      .select('user_id, home_score, away_score, is_confident, points_awarded')
-      .eq('match_id', match.id)
-      .in('user_id', memberIds)
-      .then(({ data }) => {
-        if (!data) return
-        const byUser = {}
-        data.forEach(p => { byUser[p.user_id] = p })
-        setPreds(byUser)
-      })
-  }, [match?.id, members])
-
-  // Countdown timer for upcoming matches
-  useEffect(() => {
     if (mode !== 'upcoming') return
+
     const tick = () => {
       const diff = new Date(match.kickoff_time) - new Date()
-      if (diff <= 0) { setCountdown('Kicking off now!'); return }
-      const h = Math.floor(diff / 3600000)
-      const m = Math.floor((diff % 3600000) / 60000)
-      const s = Math.floor((diff % 60000) / 1000)
-      setCountdown(h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`)
+      if (diff <= 0) {
+        setCountdown('Kicking off now')
+        return
+      }
+
+      const hours = Math.floor(diff / 3600000)
+      const minutes = Math.floor((diff % 3600000) / 60000)
+      const seconds = Math.floor((diff % 60000) / 1000)
+      setCountdown(hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${seconds}s`)
     }
+
     tick()
-    const i = setInterval(tick, 1000)
-    return () => clearInterval(i)
+    const timer = setInterval(tick, 1000)
+    return () => clearInterval(timer)
   }, [mode, match?.kickoff_time])
 
-  const liveScore = match.home_score != null ? `${match.home_score}–${match.away_score}` : null
-  const hw = match.home_score > match.away_score
-  const aw = match.home_score < match.away_score
-  const dr = match.home_score === match.away_score
-  const hasScore = match.home_score != null
+  const matchUrl = leagueCode
+    ? `/match/${match.id}/stats?league=${leagueCode}`
+    : `/match/${match.id}/stats`
 
-  const onTrackCount = mode === 'live' ? members.filter(m => {
-    const p = preds[m.user_id]
-    if (!p || !hasScore) return false
-    return (hw && p.home_score > p.away_score) || (aw && p.home_score < p.away_score) || (dr && p.home_score === p.away_score)
-  }).length : 0
+  const score = match.home_score != null && match.away_score != null
+    ? `${match.home_score}–${match.away_score}`
+    : 'vs'
 
-  const totalPts = mode === 'result' ? members.reduce((sum, m) => sum + (preds[m.user_id]?.points_awarded || 0), 0) : 0
+  const status = mode === 'live'
+    ? (match.live_minute != null
+        ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'`
+        : 'LIVE')
+    : mode === 'result'
+      ? 'FT'
+      : countdown
 
-  const bgColour = mode === 'result' ? 'rgba(0,122,51,0.04)' : mode === 'live' ? 'rgba(229,57,53,0.04)' : 'rgba(21,88,176,0.04)'
-  const borderColour = mode === 'result' ? 'var(--accent-green)' : mode === 'live' ? '#e53935' : 'var(--scottish-navy)'
+  const statusStyles = mode === 'live'
+    ? { background: '#e53935', color: '#fff' }
+    : mode === 'result'
+      ? { background: 'var(--accent-green)', color: '#fff' }
+      : { background: 'var(--scottish-navy)', color: '#fff' }
+
+  const stripBackground = mode === 'live'
+    ? 'rgba(229,57,53,0.045)'
+    : mode === 'result'
+      ? 'rgba(0,122,51,0.045)'
+      : 'rgba(21,88,176,0.045)'
 
   return (
-    <div style={{ borderBottom: '1px solid var(--border-light)' }}>
-      <button onClick={() => setExpanded(e => !e)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: bgColour, border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+    <Link
+      to={matchUrl}
+      aria-label={`Open Match Centre for ${match.home_team?.name || match.home_team?.short_code} versus ${match.away_team?.name || match.away_team?.short_code}`}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        minHeight: '54px',
+        padding: '9px 16px',
+        background: stripBackground,
+        borderBottom: '1px solid var(--border-light)',
+        color: 'var(--text-primary)',
+        textDecoration: 'none',
+      }}
+    >
+      <span style={{
+        ...statusStyles,
+        minWidth: mode === 'upcoming' ? '74px' : '46px',
+        padding: '4px 8px',
+        borderRadius: '999px',
+        fontSize: '10px',
+        fontWeight: '900',
+        textAlign: 'center',
+        whiteSpace: 'nowrap',
+        flexShrink: 0,
+      }}>
+        {mode === 'live' ? '🔴 ' : mode === 'result' ? '✓ ' : '⏱ '}{status}
+      </span>
 
-        {/* Status badge */}
-        {mode === 'live' && <span style={{ background: '#e53935', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>🔴 {match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : 'LIVE'}</span>}
-        {mode === 'upcoming' && <span style={{ background: 'var(--scottish-navy)', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>⏱ {countdown}</span>}
-        {mode === 'result' && <span style={{ background: 'var(--accent-green)', color: 'white', fontSize: '10px', fontWeight: '800', padding: '2px 7px', borderRadius: '99px', flexShrink: 0 }}>✓ FT</span>}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+        alignItems: 'center',
+        gap: '8px',
+        flex: 1,
+        minWidth: 0,
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          gap: '5px',
+          minWidth: 0,
+          fontSize: '12px',
+          fontWeight: '800',
+        }}>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {match.home_team?.short_code || match.home_team?.name}
+          </span>
+          <span aria-hidden="true">{match.home_team?.flag_emoji}</span>
+        </div>
 
-        {/* Match */}
-        <span style={{ fontSize: '12px', fontWeight: '700', flex: 1 }}>
-          {match.home_team?.flag_emoji} {match.home_team?.short_code}
-          {mode !== 'upcoming'
-            ? <span style={{ fontFamily: 'monospace', margin: '0 4px', fontWeight: '900', color: mode === 'live' ? '#e53935' : 'var(--text-primary)' }}>{liveScore || '–'}</span>
-            : <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>vs</span>}
-          {match.away_team?.short_code} {match.away_team?.flag_emoji}
+        <span style={{
+          minWidth: '40px',
+          textAlign: 'center',
+          fontFamily: 'var(--font-mono)',
+          fontSize: '14px',
+          fontWeight: '900',
+          color: mode === 'live' ? '#d32f2f' : 'var(--text-primary)',
+        }}>
+          {score}
         </span>
 
-        {/* Summary */}
-        {mode === 'live' && hasScore && <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', flexShrink: 0 }}>{onTrackCount}/{members.length} on track</span>}
-        {mode === 'result' && <span style={{ fontSize: '11px', color: 'var(--accent-green)', fontWeight: '700', flexShrink: 0 }}>{totalPts}pts earned</span>}
-        {mode === 'upcoming' && <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0 }}>Your picks</span>}
-
-        <span style={{ fontSize: '10px', color: 'var(--text-muted)', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▼</span>
-      </button>
-
-      {expanded && (
-        <div style={{ padding: '4px 8px 8px' }}>
-          {members.map(member => {
-            const pred = preds[member.user_id]
-            if (!pred) return (
-              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 8px', opacity: 0.35 }}>
-                <span style={{ fontSize: '12px', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>No pick</span>
-              </div>
-            )
-            const onTrack = hasScore && ((hw && pred.home_score > pred.away_score) || (aw && pred.home_score < pred.away_score) || (dr && pred.home_score === pred.away_score))
-            const exact = hasScore && match.home_score === pred.home_score && match.away_score === pred.away_score
-            const pts = pred.points_awarded
-            return (
-              <div key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '3px 8px', borderRadius: '6px',
-                background: mode === 'result'
-                  ? (pts > 0 ? 'rgba(0,122,51,0.06)' : 'transparent')
-                  : (exact ? 'rgba(0,122,51,0.08)' : onTrack ? 'rgba(0,122,51,0.04)' : hasScore ? 'rgba(229,57,53,0.04)' : 'transparent')
-              }}>
-                <span style={{ fontSize: '12px', flex: 1 }}>{member.profile?.display_name || member.profile?.username}</span>
-                {pred.is_confident && <span title="Joker" style={{ fontSize: '11px' }}>🃏</span>}
-                <span style={{ fontSize: '12px', fontFamily: 'monospace', fontWeight: '800',
-                  color: mode === 'result'
-                    ? (pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)')
-                    : (exact ? 'var(--accent-green)' : onTrack ? 'var(--accent-green)' : hasScore ? '#e53935' : 'var(--text-primary)')
-                }}>
-                  {pred.home_score}–{pred.away_score}
-                </span>
-                {mode === 'result' && <span style={{ fontSize: '11px', fontWeight: '800', color: pts > 0 ? 'var(--accent-green)' : 'var(--text-muted)', width: '32px', textAlign: 'right' }}>{pts != null ? `+${pts}` : '–'}</span>}
-                {mode === 'live' && <span style={{ fontSize: '12px', width: '16px', textAlign: 'center' }}>{!hasScore ? '' : exact ? '🎯' : onTrack ? '✓' : '✗'}</span>}
-              </div>
-            )
-          })}
-          <Link to={leagueCode ? `/match/${match.match_number || match.id}/stats?league=${leagueCode}` : `/match/${match.match_number || match.id}/stats`} style={{ display: 'block', textAlign: 'center', marginTop: '8px', padding: '6px', fontSize: '11px', fontWeight: '700', color: 'var(--scottish-navy)' }}>
-            📊 Full match stats →
-          </Link>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          minWidth: 0,
+          fontSize: '12px',
+          fontWeight: '800',
+        }}>
+          <span aria-hidden="true">{match.away_team?.flag_emoji}</span>
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {match.away_team?.short_code || match.away_team?.name}
+          </span>
         </div>
-      )}
-    </div>
+      </div>
+
+      <span style={{
+        color: 'var(--scottish-navy)',
+        fontSize: '18px',
+        fontWeight: '900',
+        lineHeight: 1,
+        flexShrink: 0,
+      }} aria-hidden="true">→</span>
+    </Link>
   )
 }
 
@@ -596,17 +618,12 @@ function MyPredictionsProgress({ userId }) {
 
 export default function Leagues() {
   const { user, isAdmin } = useAuthStore()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [activeGame, setActiveGame] = useState(() => searchParams.get('tab') === 'overall' ? 'overall' : 'tournament')
-  const [overallGame, setOverallGame] = useState(() => searchParams.get('game') === 'ko' ? 'ko' : 'tournament')
+  const [activeGame, setActiveGame] = useState('tournament')
   const [overallRows, setOverallRows] = useState([])
   const [loadingOverall, setLoadingOverall] = useState(false)
   const [openLeagueMenu, setOpenLeagueMenu] = useState(null)
   const [myLeagues, setMyLeagues] = useState([])
   const [myKoLeagues, setMyKoLeagues] = useState([])
-  const [koLeagueMembers, setKoLeagueMembers] = useState({})
-  const [loadingKoMembers, setLoadingKoMembers] = useState({})
-  const [expandedKoLeague, setExpandedKoLeague] = useState(null)
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
@@ -699,29 +716,6 @@ export default function Leagues() {
     setShowWelcome(false)
   }
 
-  // Invite links open the correct competition and pre-fill the code.
-  useEffect(() => {
-    const tab = searchParams.get('tab')
-    const game = searchParams.get('game')
-    const code = searchParams.get('join')?.trim().toUpperCase()
-
-    if (tab === 'overall') {
-      setActiveGame('overall')
-      setOverallGame(game === 'ko' ? 'ko' : 'tournament')
-      setShowCreate(false)
-      setShowJoin(false)
-      setError('')
-      return
-    }
-
-    if (game !== 'ko' || !code) return
-    setActiveGame('ko')
-    setJoinCode(code)
-    setShowJoin(true)
-    setShowCreate(false)
-    setError('')
-  }, [searchParams])
-
   const { appSettings } = useAppStore()
   const phaseOverride = appSettings?.game_phase_override || ''
   const tournamentLive = new Date() >= TOURNAMENT_START
@@ -772,31 +766,17 @@ export default function Leagues() {
 
   const loadOverallRankings = async () => {
     setLoadingOverall(true)
-
-    const { data: profilesData, error: profilesError } = await supabase
+    const { data } = await supabase
       .from('profiles')
-      .select('id, username, display_name, total_points, streak_current, exact_scores, avatar_emoji, show_future_predictions, ko_points, ko_streak_current, ko_exact_scores, is_banned')
-      .limit(200)
-
-    if (profilesError) {
-      console.error('Could not load overall rankings:', profilesError)
-      setOverallRows([])
-    } else {
-      // Use the same public profile totals as the full leaderboard. Querying
-      // ko_predictions here is RLS-sensitive and only returns the signed-in
-      // user's rows, which made the KO leaderboard show one person.
-      setOverallRows((profilesData || []).filter(profile => !profile.is_banned))
-    }
-
+      .select('id, username, display_name, total_points, streak_current, exact_scores, avatar_emoji, show_future_predictions')
+      .order('total_points', { ascending: false })
+      .order('exact_scores', { ascending: false })
+      .limit(100)
+    setOverallRows(data || [])
     setLoadingOverall(false)
   }
 
-  const switchOverallGame = (game) => {
-    setOverallGame(game)
-    setSearchParams({ tab: 'overall', game })
-  }
-
-  const openOverallProfile = (profile) => openProfile(profile, user?.id, overallGame === 'ko' ? 'ko' : 'tournament')
+  const openOverallProfile = (profile) => openProfile(profile, user?.id)
 
   const loadMyLeagues = async () => {
     const { data: memberships } = await supabase
@@ -835,20 +815,6 @@ export default function Leagues() {
     })
   }
 
-  const loadKoLeagueMembers = async (leagueId) => {
-    setLoadingKoMembers(prev => ({ ...prev, [leagueId]: true }))
-    const { data, error } = await supabase
-      .from('ko_league_members')
-      .select('league_id, user_id, joined_at, profile:user_id(id, username, display_name, avatar_emoji, ko_points, ko_streak_current, ko_exact_scores)')
-      .eq('league_id', leagueId)
-      .order('joined_at', { ascending: true })
-
-    if (error) console.error('KO league members error:', error)
-    setKoLeagueMembers(prev => ({ ...prev, [leagueId]: data || [] }))
-    setLoadingKoMembers(prev => ({ ...prev, [leagueId]: false }))
-    return data || []
-  }
-
   const loadMyKoLeagues = async () => {
     const { data: memberships } = await supabase
       .from('ko_league_members')
@@ -861,9 +827,7 @@ export default function Leagues() {
       .from('ko_league_members').select('league_id').in('league_id', leagueIds)
     const countMap = {}
     counts?.forEach(c => { countMap[c.league_id] = (countMap[c.league_id] || 0) + 1 })
-    const leagues = memberships.map(m => ({ ...m, memberCount: countMap[m.league_id] || 1 }))
-    setMyKoLeagues(leagues)
-    leagues.forEach(m => { if (m.league_id) loadKoLeagueMembers(m.league_id) })
+    setMyKoLeagues(memberships.map(m => ({ ...m, memberCount: countMap[m.league_id] || 1 })))
   }
 
   const createKoLeague = async () => {
@@ -884,44 +848,14 @@ export default function Leagues() {
   const joinKoLeague = async () => {
     if (!joinCode.trim()) { setError('Enter an invite code'); return }
     setError('')
-
-    // Deep invite links can open the page before Supabase has refreshed the
-    // browser session. Refresh it explicitly so the RLS policy sees auth.uid().
-    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession()
-    const sessionUser = refreshed?.session?.user
-
-    if (refreshError || !sessionUser?.id) {
-      setError('Your sign-in session is still loading. Please try Join again.')
-      return
-    }
-
-    const code = joinCode.toUpperCase().trim()
-    const { data: league, error: leagueError } = await supabase
-      .from('ko_leagues')
-      .select('*')
-      .eq('invite_code', code)
-      .single()
-
-    if (leagueError || !league) {
-      setError('KO League not found — check the code')
-      return
-    }
-
-    const { error: err } = await supabase
-      .from('ko_league_members')
-      .insert({ league_id: league.id, user_id: sessionUser.id })
-
+    const { data: league } = await supabase.from('ko_leagues').select('*').eq('invite_code', joinCode.toUpperCase().trim()).single()
+    if (!league) { setError('KO League not found — check the code'); return }
+    const { error: err } = await supabase.from('ko_league_members').insert({ league_id: league.id, user_id: user.id })
     if (err?.code === '23505') { setError('You are already in this league'); return }
-    if (err) {
-      console.error('KO league join error:', err)
-      setError(err.message)
-      return
-    }
-
+    if (err) { setError(err.message); return }
     setSuccess(`Joined KO league "${league.name}"!`)
-    setJoinCode('')
-    setShowJoin(false)
-    await loadMyKoLeagues()
+    setJoinCode(''); setShowJoin(false)
+    loadMyKoLeagues()
   }
 
   const leaveKoLeague = async (leagueId, leagueName) => {
@@ -1243,53 +1177,6 @@ export default function Leagues() {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
   }
 
-  const getKoLeagueInviteLink = (code) => {
-    const inviteCode = String(code || '').trim().toUpperCase()
-    return `${window.location.origin}/leagues?game=ko&join=${encodeURIComponent(inviteCode)}`
-  }
-
-  const writeToClipboard = async (value) => {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(value)
-      return
-    }
-
-    const textarea = document.createElement('textarea')
-    textarea.value = value
-    textarea.setAttribute('readonly', '')
-    textarea.style.position = 'fixed'
-    textarea.style.left = '-9999px'
-    textarea.style.opacity = '0'
-    document.body.appendChild(textarea)
-    textarea.select()
-    textarea.setSelectionRange(0, textarea.value.length)
-    const copied = document.execCommand('copy')
-    document.body.removeChild(textarea)
-
-    if (!copied) throw new Error('Clipboard copy failed')
-  }
-
-  const copyKoLeagueLink = async (leagueName, code) => {
-    try {
-      await writeToClipboard(getKoLeagueInviteLink(code))
-      setError('')
-      setSuccess(`Copied KO league invite link for "${leagueName}"!`)
-      setTimeout(() => setSuccess(''), 3000)
-    } catch (copyError) {
-      console.error('KO league link copy failed:', copyError)
-      setError('Could not copy the invite link. Please copy the invite code instead.')
-    }
-  }
-
-  const shareKoLeagueWhatsApp = (leagueName, code) => {
-    const link = getKoLeagueInviteLink(code)
-    const text = `Join my WC26 KO Predictor league "${leagueName}"! 🔥🏆\n\nTap this link to open the KO league and join:\n${link}`
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`
-
-    // Using direct navigation avoids popup blocking on iPhone and installed PWAs.
-    window.location.href = whatsappUrl
-  }
-
   // For a normal (standard-scoring, always-editable) league the authoritative
   // total is the member's live profiles.total_points — which always includes
   // bracket/KO points. We only fall back to the stored league_points for leagues
@@ -1323,12 +1210,6 @@ export default function Leagues() {
     return 'wrong'
   }
 
-  const sortedKoMembers = (leagueId) => [...(koLeagueMembers[leagueId] || [])].sort((a, b) => {
-    const pointsDiff = (b.profile?.ko_points || 0) - (a.profile?.ko_points || 0)
-    if (pointsDiff !== 0) return pointsDiff
-    return (b.profile?.ko_exact_scores || 0) - (a.profile?.ko_exact_scores || 0)
-  })
-
   const orderedTournamentLeagues = useMemo(() => {
     const list = myLeagues.filter(({ league }) => league && !league.is_global)
     const positions = new Map(leagueOrder.map((id, index) => [id, index]))
@@ -1341,20 +1222,6 @@ export default function Leagues() {
   }, [myLeagues, leagueOrder])
 
   const allTournamentLeaguesCollapsed = orderedTournamentLeagues.length > 0 && orderedTournamentLeagues.every(m => (collapsedLeagueIds || []).includes(m.league_id))
-
-  const displayedOverallRows = [...overallRows]
-    .sort((a, b) => {
-      const pointKey = overallGame === 'ko' ? 'ko_points' : 'total_points'
-      const exactKey = overallGame === 'ko' ? 'ko_exact_scores' : 'exact_scores'
-      return Number(b[pointKey] || 0) - Number(a[pointKey] || 0)
-        || Number(b[exactKey] || 0) - Number(a[exactKey] || 0)
-        || String(a.display_name || a.username || '').localeCompare(String(b.display_name || b.username || ''))
-    })
-
-  const currentOverallProfile = displayedOverallRows.find(profile => profile.id === user?.id)
-  const currentOverallRank = displayedOverallRows.findIndex(profile => profile.id === user?.id) + 1
-  const overallAccent = overallGame === 'ko' ? '#e65100' : 'var(--scottish-navy)'
-  const overallAccentLight = overallGame === 'ko' ? 'rgba(230,81,0,0.08)' : 'var(--scottish-navy-light)'
 
   // Guest view
   if (!user) {
@@ -1418,7 +1285,7 @@ export default function Leagues() {
               border: activeGame === 'tournament' ? '1px solid var(--scottish-navy)' : '1px solid rgba(255,255,255,0.3)',
               cursor: 'pointer',
             }}>🌍 Tournament Leagues</button>
-            <button onClick={() => { setActiveGame('overall'); setOverallGame(searchParams.get('game') === 'ko' ? 'ko' : 'tournament'); setSearchParams({ tab: 'overall', game: searchParams.get('game') === 'ko' ? 'ko' : 'tournament' }); setShowCreate(false); setShowJoin(false); setError('') }} style={{
+            <button onClick={() => { setActiveGame('overall'); setShowCreate(false); setShowJoin(false); setError('') }} style={{
               flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', fontSize: '12px', fontWeight: '700',
               background: activeGame === 'overall' ? 'var(--scottish-navy)' : 'rgba(255,255,255,0.15)',
               color: activeGame === 'overall' ? 'white' : 'rgba(255,255,255,0.8)',
@@ -1449,7 +1316,7 @@ export default function Leagues() {
                 {activeGame === 'ko' ? '🔥 Create a KO Predictor League' : '🌍 Create a League'}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                {activeGame === 'ko' ? 'Private league · KO Predictor points only · friends join with your invite code' : 'Group + knockout + awards predictions'}
+                {activeGame === 'ko' ? 'Separate from Tournament leagues — KO points only' : 'Group + knockout + awards predictions'}
               </div>
               <input className="input" placeholder="League name e.g. Office WC26" value={newLeagueName}
                 onChange={e => setNewLeagueName(e.target.value)} style={{ marginBottom: activeGame === 'ko' ? '12px' : '10px' }} />
@@ -1563,134 +1430,60 @@ export default function Leagues() {
               </div>
             ) : (
               <>
-                <div className="card" style={{ padding: '14px', marginBottom: '12px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '4px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-                    <button
-                      type="button"
-                      onClick={() => switchOverallGame('tournament')}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: 'calc(var(--radius-md) - 3px)',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: '850',
-                        background: overallGame === 'tournament' ? 'var(--bg-card)' : 'transparent',
-                        color: overallGame === 'tournament' ? 'var(--scottish-navy)' : 'var(--text-muted)',
-                        boxShadow: overallGame === 'tournament' ? 'var(--shadow-sm)' : 'none',
-                      }}
-                    >
-                      🌍 Tournament
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => switchOverallGame('ko')}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: 'calc(var(--radius-md) - 3px)',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: '850',
-                        background: overallGame === 'ko' ? 'var(--bg-card)' : 'transparent',
-                        color: overallGame === 'ko' ? '#e65100' : 'var(--text-muted)',
-                        boxShadow: overallGame === 'ko' ? 'var(--shadow-sm)' : 'none',
-                      }}
-                    >
-                      🔥 KO Predictor
-                    </button>
-                  </div>
-                </div>
-
                 <div className="card" style={{ padding: '18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
                     <div>
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}>
-                        {overallGame === 'ko' ? 'Your KO Predictor rank' : 'Your overall rank'}
-                      </div>
-                      <div style={{ fontSize: '28px', fontWeight: '900', color: overallAccent }}>
-                        {currentOverallRank > 0 ? `#${currentOverallRank}` : '—'}
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}>Your overall rank</div>
+                      <div style={{ fontSize: '28px', fontWeight: '900', color: 'var(--scottish-navy)' }}>
+                        #{Math.max((overallRows.findIndex(p => p.id === user.id) + 1), 1)}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}>
-                        {overallGame === 'ko' ? 'KO points' : 'Points'}
-                      </div>
-                      <div style={{ fontSize: '28px', fontWeight: '900' }}>
-                        {overallGame === 'ko'
-                          ? Number(currentOverallProfile?.ko_points || 0)
-                          : Number(currentOverallProfile?.total_points || 0)}
-                      </div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: '700' }}>Points</div>
+                      <div style={{ fontSize: '28px', fontWeight: '900' }}>{overallRows.find(p => p.id === user.id)?.total_points || 0}</div>
                     </div>
                   </div>
                 </div>
-
                 <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                    <strong>{overallGame === 'ko' ? '🔥 KO Predictor Rankings' : '🏆 Tournament Rankings'}</strong>
-                    <Link
-                      to={`/leaderboard?game=${overallGame === 'ko' ? 'ko' : 'tournament'}`}
-                      style={{ fontSize: '11px', fontWeight: '800', color: overallAccent, textDecoration: 'none', whiteSpace: 'nowrap' }}
-                    >
-                      Full leaderboard →
-                    </Link>
-                  </div>
-
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-light)', fontWeight: '900' }}>🏆 Overall Rankings</div>
                   {loadingOverall ? (
                     <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-                  ) : displayedOverallRows.length === 0 ? (
-                    <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                      {overallGame === 'ko' ? 'No KO Predictor players yet' : 'No rankings yet'}
-                    </div>
+                  ) : overallRows.length === 0 ? (
+                    <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>No rankings yet</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '6px' }}>
-                      {displayedOverallRows.map((profile, i) => {
-                        const isMe = profile.id === user.id
-                        const points = overallGame === 'ko' ? Number(profile.ko_points || 0) : Number(profile.total_points || 0)
-                        const exact = overallGame === 'ko' ? Number(profile.ko_exact_scores || 0) : Number(profile.exact_scores || 0)
-
-                        return (
-                          <div
-                            key={profile.id}
-                            onClick={() => openOverallProfile(profile)}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault()
-                                openOverallProfile(profile)
-                              }
-                            }}
-                            role="button"
-                            tabIndex={0}
-                            className="leaderboard-row"
-                            style={{
-                              background: isMe ? overallAccentLight : 'var(--bg-card)',
-                              border: isMe ? `1px solid ${overallAccent}` : '1px solid var(--border-light)',
-                              cursor: 'pointer',
-                            }}
-                          >
-                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: isMe ? overallAccent : i < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
-                            <span style={{ fontSize: i < 3 ? '20px' : '13px', fontWeight: '900', minWidth: '36px', textAlign: 'center', flexShrink: 0, color: i < 3 ? 'inherit' : 'var(--text-muted)', fontFamily: i >= 3 ? 'var(--font-mono)' : 'inherit' }}>
-                              {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
-                            </span>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isMe ? overallAccent : avatarColor(profile.display_name || profile.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: isMe ? 'white' : avatarColor(profile.display_name || profile.username).fg, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.12)' }}>
-                              {profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'}</span>
-                                {isMe && <span style={{ fontSize: '9px', background: overallAccent, color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
-                              </div>
-                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
-                                {exact > 0 ? `🎯 ${exact} exact` : overallGame === 'ko' ? 'KO Predictor player' : 'Tournament player'}
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '54px' }}>
-                              <span style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em', lineHeight: 1, color: isMe ? overallAccent : 'var(--text-primary)' }}>{points}</span>
-                              <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{overallGame === 'ko' ? 'KO pts' : 'pts'}</span>
-                            </div>
+                      {overallRows.map((profile, i) => {
+                    const isMe = profile.id === user.id
+                    return (
+                      <div key={profile.id} onClick={() => openOverallProfile(profile)} role="button" tabIndex={0}
+                        className="leaderboard-row"
+                        style={{
+                          background: isMe ? 'var(--scottish-navy-light)' : 'var(--bg-card)',
+                          border: isMe ? '1px solid var(--scottish-navy)' : '1px solid var(--border-light)',
+                          cursor: 'pointer',
+                        }}>
+                        {/* accent bar */}
+                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: isMe ? 'var(--scottish-navy)' : i < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
+                        <span style={{ fontSize: i < 3 ? '20px' : '13px', fontWeight: '900', minWidth: '36px', textAlign: 'center', flexShrink: 0, color: i < 3 ? 'inherit' : 'var(--text-muted)', fontFamily: i >= 3 ? 'var(--font-mono)' : 'inherit' }}>
+                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                        </span>
+                        <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isMe ? 'var(--scottish-navy)' : avatarColor(profile.display_name || profile.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', fontWeight: '800', color: isMe ? 'white' : avatarColor(profile.display_name || profile.username).fg, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.12)' }}>
+                          {profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'}</span>
+                            {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
                           </div>
-                        )
-                      })}
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>{profile.exact_scores > 0 ? `🎯 ${profile.exact_scores} exact` : 'Overall player'}</div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '44px' }}>
+                          <span style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em', lineHeight: 1, color: isMe ? 'var(--scottish-navy)' : 'var(--text-primary)' }}>{profile.total_points || 0}</span>
+                          <span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>pts</span>
+                        </div>
+                      </div>
+                    )
+                  })}
                     </div>
                   )}
                 </div>
@@ -1715,113 +1508,47 @@ export default function Leagues() {
             <div className="empty-state">
               <div className="empty-state-icon">🔥</div>
               <div className="empty-state-title">No KO Predictor leagues yet</div>
-              <div className="empty-state-desc">Private mini-leagues for the separate KO Predictor game. Only KO Predictor points count, and friends join using an invite code.</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', maxWidth: '360px', margin: '18px auto 0' }}>
-                <button onClick={() => { setShowCreate(true); setShowJoin(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                  className="btn btn-primary" style={{ background: '#e65100' }}>+ Create</button>
-                <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }}
-                  className="btn btn-secondary">Join with code</button>
-              </div>
-              <Link to="/leaderboard?game=ko" style={{ display: 'inline-block', marginTop: '18px', color: '#e65100', fontWeight: '800', fontSize: '13px' }}>View full KO Predictor leaderboard →</Link>
+              <div className="empty-state-desc">Create or join a KO Predictor league — completely separate from your Tournament leagues</div>
+              <button onClick={() => { setShowCreate(true); setShowJoin(false) }}
+                className="btn btn-primary" style={{ marginTop: '16px', background: '#e65100' }}>
+                + Create KO League
+              </button>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' }}>
-                <button onClick={() => { setShowCreate(true); setShowJoin(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-sm" style={{ padding: '7px 11px', background: '#e65100', color: 'white', border: 'none' }}>＋ New league</button>
-                <button onClick={() => { setShowJoin(true); setShowCreate(false); setError(''); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="btn btn-secondary btn-sm" style={{ padding: '7px 11px' }}>Join</button>
-                <div style={{ flex: 1 }} />
-                <button onClick={() => setExpandedKoLeague(expandedKoLeague ? null : myKoLeagues[0]?.league_id)} className="btn btn-secondary btn-sm" style={{ padding: '7px 10px' }}>{expandedKoLeague ? 'Collapse all' : 'Expand first'}</button>
-              </div>
-
               {myKoLeagues.map(({ league_id, league, memberCount }) => {
                 const isCreator = league?.created_by === user?.id
-                const isExpanded = expandedKoLeague === league_id
-                const members = sortedKoMembers(league_id)
-                const myRank = members.findIndex(m => m.user_id === user?.id) + 1
                 return (
-                  <div key={league_id} className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid rgba(230,81,0,0.25)' }}>
-                    <button type="button" onClick={() => setExpandedKoLeague(isExpanded ? null : league_id)} style={{ width: '100%', border: 'none', background: 'var(--bg-card)', padding: '16px 18px', cursor: 'pointer', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
-                          <span style={{ fontSize: '18px' }}>🔥</span>
-                          <span style={{ fontWeight: '900', fontSize: '16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{league?.name}</span>
-                          {isCreator && <span style={{ fontSize: '9px', background: '#e65100', color: 'white', padding: '2px 6px', borderRadius: '5px', fontWeight: '800', flexShrink: 0 }}>CREATOR</span>}
-                        </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '5px' }}>{memberCount} member{memberCount !== 1 ? 's' : ''} · Private KO league</div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
-                        <div style={{ textAlign: 'right' }}>
-                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>Your rank</div>
-                          <div style={{ fontSize: '22px', fontWeight: '900', color: '#e65100', fontFamily: 'var(--font-mono)' }}>{myRank ? `#${myRank}` : '—'}</div>
-                        </div>
-                        <span style={{ color: 'var(--text-muted)', fontSize: '15px', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌃</span>
-                      </div>
-                    </button>
-
-                    <div style={{ padding: '9px 18px', borderTop: '1px solid var(--border-light)', borderBottom: isExpanded ? '1px solid var(--border-light)' : 'none', background: 'var(--bg-secondary)', display: 'flex', justifyContent: 'space-between', gap: '10px', fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700' }}>
-                      <span>KO Predictor points only · Bonuses and jokers included</span>
-                      <Link to="/how-to-play" onClick={e => e.stopPropagation()} style={{ color: '#e65100', whiteSpace: 'nowrap', fontWeight: '800' }}>Rules →</Link>
-                    </div>
-
-                    {isExpanded && (
+                  <div key={league_id} className="card" style={{ border: '1px solid rgba(230,81,0,0.3)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                       <div>
-                        {loadingKoMembers[league_id] ? (
-                          <div style={{ display: 'flex', justifyContent: 'center', padding: '30px' }}><div className="spinner" /></div>
-                        ) : members.length === 0 ? (
-                          <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>No members yet</div>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', padding: '2px 6px 6px' }}>
-                            {members.map((member, index) => {
-                              const profile = member.profile || {}
-                              const isMe = member.user_id === user?.id
-                              const points = profile.ko_points || 0
-                              return (
-                                <div
-                                  key={member.user_id}
-                                  className="leaderboard-row"
-                                  role="button"
-                                  tabIndex={0}
-                                  aria-label={`View ${profile.display_name || profile.username || 'member'}'s KO Predictor picks`}
-                                  onClick={() => openProfile(profile, user?.id, 'ko')}
-                                  onKeyDown={(event) => {
-                                    if (event.key === 'Enter' || event.key === ' ') {
-                                      event.preventDefault()
-                                      openProfile(profile, user?.id, 'ko')
-                                    }
-                                  }}
-                                  style={{
-                                    position: 'relative',
-                                    background: isMe ? 'rgba(230,81,0,0.07)' : 'var(--bg-card)',
-                                    border: isMe ? '1px solid rgba(230,81,0,0.55)' : '1px solid var(--border-light)',
-                                    cursor: 'pointer',
-                                  }}
-                                >
-                                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: isMe ? '#e65100' : index < 3 ? 'linear-gradient(180deg, #f6c026, #b8860b)' : 'transparent' }} />
-                                  <span style={{ fontSize: index < 3 ? '20px' : '13px', fontWeight: '900', minWidth: '36px', textAlign: 'center', color: index < 3 ? 'inherit' : 'var(--text-muted)', fontFamily: index >= 3 ? 'var(--font-mono)' : 'inherit' }}>{index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : index + 1}</span>
-                                  <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: isMe ? '#e65100' : avatarColor(profile.display_name || profile.username).bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: isMe ? 'white' : avatarColor(profile.display_name || profile.username).fg, flexShrink: 0, boxShadow: '0 2px 6px rgba(0,0,0,0.12)' }}>{profile.avatar_emoji || (profile.display_name || profile.username || '?')[0].toUpperCase()}</div>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'}</span>{isMe && <span style={{ fontSize: '9px', background: '#e65100', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '800' }}>YOU</span>}</div>
-                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>{index === 0 ? `Leader · 🎯 ${profile.ko_exact_scores || 0}` : `${Math.max((members[0]?.profile?.ko_points || 0) - points, 0)} behind leader · 🎯 ${profile.ko_exact_scores || 0}`}</div>
-                                  </div>
-                                  <div style={{ textAlign: 'right', minWidth: '58px' }}>
-                                    <div style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', color: isMe ? '#e65100' : 'var(--text-primary)', lineHeight: 1 }}>{points}</div>
-                                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>PTS · VIEW ›</div>
-                                  </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
-
-                        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border-light)', background: 'var(--bg-secondary)', display: 'flex', gap: '7px', flexWrap: 'wrap', alignItems: 'center' }}>
-                          <div style={{ marginRight: 'auto', fontSize: '12px', color: 'var(--text-muted)' }}>Invite code: <strong style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', letterSpacing: '0.08em' }}>{league?.invite_code}</strong></div>
-                          <button type="button" onClick={() => copyKoLeagueLink(league?.name, league?.invite_code)} className="btn btn-secondary btn-sm">🔗 Copy invite link</button>
-                          <button type="button" onClick={() => shareKoLeagueWhatsApp(league?.name, league?.invite_code)} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none', cursor: 'pointer' }}>WhatsApp</button>
-                          <Link to="/leaderboard?game=ko" className="btn btn-secondary btn-sm">Full leaderboard</Link>
-                          {isCreator ? <button onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league_id, leagueName: league?.name })} className="btn btn-sm" style={{ background: 'none', border: '1px solid #e53935', color: '#e53935' }}>Delete</button> : <button onClick={() => setConfirmAction({ type: 'leaveKoLeague', leagueId: league_id, leagueName: league?.name })} className="btn btn-secondary btn-sm">Leave</button>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '14px' }}>🔥</span>
+                          <span style={{ fontWeight: '700', fontSize: '15px' }}>{league?.name}</span>
+                          {isCreator && <span style={{ fontSize: '10px', background: '#e65100', color: 'white', padding: '1px 6px', borderRadius: '4px', fontWeight: '700' }}>CREATOR</span>}
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                          Code: <span style={{ fontFamily: 'var(--font-mono)', fontWeight: '700', color: 'var(--text-primary)', letterSpacing: '0.1em' }}>{league?.invite_code}</span>
+                          · {memberCount} member{memberCount !== 1 ? 's' : ''}
                         </div>
                       </div>
-                    )}
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#e65100' }}>KO Predictor</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                      <button onClick={() => navigator.clipboard?.writeText(league?.invite_code).then(() => setSuccess(`Copied: ${league?.invite_code}`))}
+                        className="btn btn-secondary btn-sm">📋 Copy Code</button>
+                      <button onClick={() => {
+                        const text = `Join my WC26 KO Predictor league "${league?.name}"! Code: ${league?.invite_code} at https://wc26predictor1.netlify.app`
+                        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+                      }} className="btn btn-sm" style={{ background: '#25d366', color: 'white', border: 'none' }}>WhatsApp</button>
+                      {isCreator ? (
+                        <button onClick={() => setConfirmAction({ type: 'deleteKoLeague', leagueId: league_id, leagueName: league?.name })}
+                          className="btn btn-sm" style={{ background: 'none', border: '1px solid #e53935', color: '#e53935' }}>Delete</button>
+                      ) : (
+                        <button onClick={() => setConfirmAction({ type: 'leaveKoLeague', leagueId: league_id, leagueName: league?.name })}
+                          className="btn btn-secondary btn-sm">Leave</button>
+                      )}
+                    </div>
                   </div>
                 )
               })}
@@ -1870,26 +1597,8 @@ export default function Leagues() {
                   boxShadow: 'var(--shadow-sm)',
                   border: reorderMode ? '2px dashed rgba(21,88,176,0.35)' : '1px solid var(--border-light)',
                 }}>
-                  {/* League header — the whole row toggles collapse outside reorder mode */}
-                  <div
-                    onClick={() => { if (!reorderMode) toggleLeagueCollapsed(league.id) }}
-                    onKeyDown={(event) => {
-                      if (!reorderMode && (event.key === 'Enter' || event.key === ' ')) {
-                        event.preventDefault()
-                        toggleLeagueCollapsed(league.id)
-                      }
-                    }}
-                    role={reorderMode ? undefined : 'button'}
-                    tabIndex={reorderMode ? undefined : 0}
-                    aria-expanded={reorderMode ? undefined : !isCollapsed}
-                    aria-label={reorderMode ? undefined : `${isCollapsed ? 'Expand' : 'Collapse'} ${league.name}`}
-                    style={{
-                      padding: '14px 16px',
-                      borderBottom: '1px solid var(--border-light)',
-                      cursor: reorderMode ? 'default' : 'pointer',
-                      userSelect: 'none',
-                    }}
-                  >
+                  {/* League header */}
+                  <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-light)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span style={{ fontSize: '18px' }}>{league.is_global ? '🌍' : isCreator ? '👑' : '👥'}</span>
@@ -1899,12 +1608,13 @@ export default function Leagues() {
                           </div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                             <span>{memberCount} {memberCount === 1 ? 'member' : 'members'}{!league.is_global && ` · ${isCreator ? 'Creator' : 'Member'}`}</span>
-                            {!league.is_global && league.lock_type === 'pre_tournament' && (
-                              <span title="League scoring uses predictions frozen before kickoff" style={{
+                            {!league.is_global && (
+                              <span title={league.lock_type === 'pre_tournament' ? 'League scoring uses predictions frozen before kickoff' : 'Future unlocked predictions can still be edited'} style={{
                                 fontSize: '10px', fontWeight: '800', padding: '1px 6px', borderRadius: 'var(--radius-full)',
-                                background: 'rgba(245,158,11,0.14)', color: '#b45309',
+                                background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.14)' : 'rgba(21,88,176,0.10)',
+                                color: league.lock_type === 'pre_tournament' ? '#b45309' : 'var(--accent-blue)',
                               }}>
-                                🔒 One-Shot
+                                {league.lock_type === 'pre_tournament' ? '🔒 One-Shot' : '🔄 Standard'}
                               </span>
                             )}
                             {league.custom_scoring && league.scoring_preset !== 'standard' && (
@@ -1927,28 +1637,22 @@ export default function Leagues() {
                         )}
                         {reorderMode ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                            <button disabled={leagueIndex === 0} onClick={(event) => { event.stopPropagation(); moveLeague(league.id, -1) }} aria-label={`Move ${league.name} up`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === 0 ? 'not-allowed' : 'pointer', opacity: leagueIndex === 0 ? 0.35 : 1 }}>↑</button>
-                            <button disabled={leagueIndex === orderedTournamentLeagues.length - 1} onClick={(event) => { event.stopPropagation(); moveLeague(league.id, 1) }} aria-label={`Move ${league.name} down`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === orderedTournamentLeagues.length - 1 ? 'not-allowed' : 'pointer', opacity: leagueIndex === orderedTournamentLeagues.length - 1 ? 0.35 : 1 }}>↓</button>
+                            <button disabled={leagueIndex === 0} onClick={() => moveLeague(league.id, -1)} aria-label={`Move ${league.name} up`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === 0 ? 'not-allowed' : 'pointer', opacity: leagueIndex === 0 ? 0.35 : 1 }}>↑</button>
+                            <button disabled={leagueIndex === orderedTournamentLeagues.length - 1} onClick={() => moveLeague(league.id, 1)} aria-label={`Move ${league.name} down`} style={{ width: '30px', height: '25px', borderRadius: '7px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', cursor: leagueIndex === orderedTournamentLeagues.length - 1 ? 'not-allowed' : 'pointer', opacity: leagueIndex === orderedTournamentLeagues.length - 1 ? 0.35 : 1 }}>↓</button>
                           </div>
                         ) : (
-                          <span
-                            aria-hidden="true"
-                            style={{
-                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                              width: '22px', height: '22px', color: 'var(--text-muted)', fontSize: '15px',
-                              transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: 'transform 0.2s ease',
-                              flexShrink: 0,
-                            }}
-                          >⌄</span>
+                          <button onClick={() => toggleLeagueCollapsed(league.id)} aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${league.name}`} style={{ width: '34px', height: '34px', borderRadius: '10px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--scottish-navy)', fontWeight: '900', cursor: 'pointer' }}>{isCollapsed ? '⌄' : '⌃'}</button>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {!isCollapsed && <>
-                  {!league.is_global && league.lock_type === 'pre_tournament' && (
-                    <div style={{ padding: '8px 16px', background: 'rgba(245,158,11,0.08)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: '#92400e', fontWeight: '800' }}>
-                      {`🔒 One-Shot League • ${league.snapshot_taken_at ? 'Snapshot taken' : 'Freezes at tournament start'}`}
+                  {!league.is_global && (
+                    <div style={{ padding: '8px 16px', background: league.lock_type === 'pre_tournament' ? 'rgba(245,158,11,0.08)' : 'rgba(21,88,176,0.05)', borderBottom: '1px solid var(--border-light)', fontSize: '12px', color: league.lock_type === 'pre_tournament' ? '#92400e' : 'var(--accent-blue)', fontWeight: '800' }}>
+                      {league.lock_type === 'pre_tournament'
+                        ? `🔒 One-Shot League • ${league.snapshot_taken_at ? 'Snapshot taken' : 'Freezes at tournament start'}`
+                        : `🔄 Standard League${!tournamentLive ? ' • Points start 11 Jun' : ''}`}
                     </div>
                   )}
 
@@ -1962,13 +1666,13 @@ export default function Leagues() {
 
                   {/* Match strip — upcoming / live / result */}
                   {recentResult && liveMatches.length === 0 && !upcomingMatch && (
-                    <LiveMatchCard key={recentResult.id} match={recentResult} members={sortedMembers(league.id)} supabase={supabase} mode="result" leagueCode={league.code} />
+                    <LiveMatchCard key={recentResult.id} match={recentResult} members={sortedMembers(league.id)} supabase={supabase} mode="result" leagueCode={league.invite_code || league.code} />
                   )}
                   {liveMatches.map(m => (
-                    <LiveMatchCard key={m.id} match={m} members={sortedMembers(league.id)} supabase={supabase} mode="live" leagueCode={league.code} />
+                    <LiveMatchCard key={m.id} match={m} members={sortedMembers(league.id)} supabase={supabase} mode="live" leagueCode={league.invite_code || league.code} />
                   ))}
                   {upcomingMatch && !liveMatches.length && (
-                    <LiveMatchCard key={upcomingMatch.id} match={upcomingMatch} members={sortedMembers(league.id)} supabase={supabase} mode="upcoming" leagueCode={league.code} />
+                    <LiveMatchCard key={upcomingMatch.id} match={upcomingMatch} members={sortedMembers(league.id)} supabase={supabase} mode="upcoming" leagueCode={league.invite_code || league.code} />
                   )}
 
                   {/* League table — always visible */}
