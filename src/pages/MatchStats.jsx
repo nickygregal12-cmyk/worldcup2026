@@ -40,7 +40,12 @@ function MatchCentreDropdown({ value, options, onChange, disabled = false, ariaL
   }, [open])
 
   return (
-    <div ref={rootRef} style={{ position: 'relative', minWidth: 0, zIndex: open ? 40 : 1 }}>
+    <div ref={rootRef} style={{
+      position: 'relative',
+      minWidth: 0,
+      zIndex: open ? 1000 : 1,
+      isolation: open ? 'isolate' : 'auto',
+    }}>
       <button
         type="button"
         aria-label={ariaLabel}
@@ -107,6 +112,7 @@ function MatchCentreDropdown({ value, options, onChange, disabled = false, ariaL
             border: '1px solid var(--border-light)',
             background: 'var(--bg-card)',
             boxShadow: '0 14px 34px rgba(15,23,42,0.18)',
+            zIndex: 1001,
           }}
         >
           {options.map(option => {
@@ -505,6 +511,9 @@ export default function MatchStats() {
 
       {user && (scopeOptions.length > 0 || loadingScopes) && (
         <div className="card" style={{
+          position: 'relative',
+          zIndex: 50,
+          overflow: 'visible',
           padding: '8px 10px',
           marginBottom: '10px',
           display: 'grid',
@@ -1350,6 +1359,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
           </div>
 
           <div style={{
+            position: 'relative',
+            zIndex: 30,
+            overflow: 'visible',
             marginBottom: '7px',
             display: 'grid',
             gridTemplateColumns: 'auto minmax(0, 1fr)',
