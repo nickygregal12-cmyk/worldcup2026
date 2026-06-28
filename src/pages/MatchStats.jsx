@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
@@ -14,6 +14,153 @@ const STAGE_LABELS = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-fina
 // 3 points for the live match result currently landing, plus the saved
 // knockout-bracket progression value for the round.
 const BRACKET_STAGE_POINTS = { r32: 5, r16: 10, qf: 15, sf: 20, '3rd': 20, final: 20 }
+
+function MatchCentreDropdown({ value, options, onChange, disabled = false, ariaLabel }) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef(null)
+  const selected = options.find(option => option.value === value) || options[0]
+
+  useEffect(() => {
+    if (!open) return
+
+    const close = event => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false)
+    }
+
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('pointerdown', close)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', close)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [open])
+
+  return (
+    <div ref={rootRef} style={{ position: 'relative', minWidth: 0, zIndex: open ? 40 : 1 }}>
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => !disabled && setOpen(current => !current)}
+        style={{
+          width: '100%',
+          minHeight: '36px',
+          padding: '7px 10px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '10px',
+          borderRadius: 'var(--radius-sm)',
+          border: open
+            ? '1.5px solid var(--scottish-navy)'
+            : '1px solid var(--border-dark)',
+          background: 'var(--bg-card)',
+          color: 'var(--text-primary)',
+          boxShadow: open ? '0 0 0 3px rgba(0,48,135,0.10)' : 'none',
+          fontSize: '12px',
+          fontWeight: 850,
+          textAlign: 'left',
+          cursor: disabled ? 'default' : 'pointer',
+          opacity: disabled ? 0.65 : 1,
+        }}
+      >
+        <span style={{
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}>
+          {selected?.label || 'Select'}
+        </span>
+        <span
+          aria-hidden="true"
+          style={{
+            color: 'var(--scottish-navy)',
+            fontSize: '12px',
+            transform: open ? 'rotate(180deg)' : 'none',
+            transition: 'transform 0.15s ease',
+            flexShrink: 0,
+          }}
+        >
+          ▾
+        </span>
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            right: 0,
+            maxHeight: '280px',
+            overflowY: 'auto',
+            padding: '5px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid var(--border-light)',
+            background: 'var(--bg-card)',
+            boxShadow: '0 14px 34px rgba(15,23,42,0.18)',
+          }}
+        >
+          {options.map(option => {
+            const active = option.value === value
+            return (
+              <button
+                key={option.value}
+                type="button"
+                role="option"
+                aria-selected={active}
+                onClick={() => {
+                  onChange(option.value)
+                  setOpen(false)
+                }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '9px',
+                  padding: '9px 10px',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  background: active ? 'rgba(0,48,135,0.08)' : 'transparent',
+                  color: active ? 'var(--scottish-navy)' : 'var(--text-primary)',
+                  fontSize: '12px',
+                  fontWeight: active ? 900 : 750,
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
+              >
+                <span style={{
+                  width: '16px',
+                  color: 'var(--scottish-navy)',
+                  fontWeight: 950,
+                  flexShrink: 0,
+                }}>
+                  {active ? '✓' : ''}
+                </span>
+                <span style={{
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {option.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function MatchStats() {
   const { matchId } = useParams()
@@ -379,30 +526,24 @@ export default function MatchStats() {
             Viewing
           </label>
 
-          <select
-            id="match-centre-scope"
-            className="input"
+          <MatchCentreDropdown
             value={selectedScope}
-            onChange={event => changeScope(event.target.value)}
+            onChange={changeScope}
             disabled={loadingScopes}
-            style={{
-              width: '100%',
-              minHeight: '34px',
-              paddingTop: '5px',
-              paddingBottom: '5px',
-              fontSize: '12px',
-              fontWeight: 800,
-            }}
-          >
-            <option value="overall">
-              {matchCentreView === 'ko' ? 'Overall KO Predictor' : 'My tournament bracket'}
-            </option>
-            {scopeOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            ariaLabel="Viewing predictions from"
+            options={[
+              {
+                value: 'overall',
+                label: matchCentreView === 'ko'
+                  ? 'Overall KO Predictor'
+                  : 'My tournament bracket',
+              },
+              ...scopeOptions.map(option => ({
+                value: option.value,
+                label: option.label,
+              })),
+            ]}
+          />
         </div>
       )}
 
@@ -1226,24 +1367,23 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
               Sort
             </div>
 
-            <select
-              className="input"
+            <MatchCentreDropdown
               value={tournamentBracketSort}
-              onChange={event => setTournamentBracketSort(event.target.value)}
-              style={{
-                width: '100%',
-                minHeight: '32px',
-                paddingTop: '4px',
-                paddingBottom: '4px',
-                fontWeight: 800,
-                fontSize: '12px',
-              }}
-            >
-              <option value="potential">Points on the line</option>
-              <option value="league">League table</option>
-              <option value="home">{match.home_team?.short_code || match.home_team?.name || 'Home'} to advance</option>
-              <option value="away">{match.away_team?.short_code || match.away_team?.name || 'Away'} to advance</option>
-            </select>
+              onChange={setTournamentBracketSort}
+              ariaLabel="Sort bracket picks"
+              options={[
+                { value: 'potential', label: 'Points on the line' },
+                { value: 'league', label: 'League table' },
+                {
+                  value: 'home',
+                  label: `${match.home_team?.short_code || match.home_team?.name || 'Home'} to advance`,
+                },
+                {
+                  value: 'away',
+                  label: `${match.away_team?.short_code || match.away_team?.name || 'Away'} to advance`,
+                },
+              ]}
+            />
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
