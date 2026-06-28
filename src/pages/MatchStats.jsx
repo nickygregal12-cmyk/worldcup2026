@@ -199,6 +199,7 @@ export default function MatchStats() {
             away_team:away_team_id(name,short_code,flag_emoji)
           `)
           .neq('stage', 'group')
+          .order('kickoff_time', { ascending: true })
           .order('match_number', { ascending: true }),
       ])
 
@@ -264,6 +265,14 @@ export default function MatchStats() {
               <div style={{ fontSize: '11px', fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {adjacentFixtures.previous.home_team?.short_code || 'TBC'} v {adjacentFixtures.previous.away_team?.short_code || 'TBC'}
               </div>
+              <div style={{ marginTop: '2px', fontSize: '9px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                {new Date(adjacentFixtures.previous.kickoff_time).toLocaleString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </div>
             </div>
           </Link>
         ) : <div />}
@@ -292,6 +301,14 @@ export default function MatchStats() {
               </div>
               <div style={{ fontSize: '11px', fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {adjacentFixtures.next.home_team?.short_code || 'TBC'} v {adjacentFixtures.next.away_team?.short_code || 'TBC'}
+              </div>
+              <div style={{ marginTop: '2px', fontSize: '9px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                {new Date(adjacentFixtures.next.kickoff_time).toLocaleString('en-GB', {
+                  day: 'numeric',
+                  month: 'short',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
               </div>
             </div>
             <span style={{ color: 'var(--scottish-navy)', fontWeight: 950 }}>→</span>
