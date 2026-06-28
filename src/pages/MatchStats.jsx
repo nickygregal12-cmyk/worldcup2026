@@ -157,13 +157,28 @@ export default function MatchStats() {
       // Links around the app may contain either the database UUID or the public
       // match number. Resolve both so older and newer links remain valid.
       const numericMatchNumber = /^\d+$/.test(String(matchId || '')) ? Number(matchId) : null
-      let matchQuery = supabase.from('matches').select('id, kickoff_time')
+      let matchQuery = supabase.from('matches').select('id, kickoff_time, status')
       matchQuery = numericMatchNumber !== null
         ? matchQuery.eq('match_number', numericMatchNumber)
         : matchQuery.eq('id', matchId)
       const { data: m, error: matchError } = await matchQuery.maybeSingle()
       if (matchError) console.error('Match Centre lookup failed:', matchError)
       if (!m) { setSlotIds([]); setLoadingSlot(false); return }
+
+      // When a link does not explicitly choose a mode (for example the Home
+      // match card), default upcoming fixtures to Tournament bracket because KO
+      // picks are still locked. Live and completed fixtures default to KO mode.
+      if (!searchParams.get('view')) {
+        const hasKickedOff =
+          m.status === 'live' ||
+          m.status === 'completed' ||
+          new Date(m.kickoff_time) <= new Date()
+
+        const next = new URLSearchParams(searchParams)
+        next.set('view', hasKickedOff ? 'ko' : 'bracket')
+        setSearchParams(next, { replace: true })
+      }
+
       // every match kicking off at the same instant — shown together
       const { data: siblings } = await supabase
         .from('matches').select('id, match_number').eq('kickoff_time', m.kickoff_time).order('match_number')
@@ -172,7 +187,7 @@ export default function MatchStats() {
       setLoadingSlot(false)
     }
     if (matchId) loadSlot()
-  }, [matchId])
+  }, [matchId, searchParams, setSearchParams])
 
   if (loadingSlot) {
     return <div className="container" style={{ padding: '40px 16px', textAlign: 'center' }}>
@@ -945,6 +960,12 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
           }
         })
 
+        const homeOnlyCount = enrichedRows.filter(row => row.homeRoute && !row.awayRoute).length
+        const awayOnlyCount = enrichedRows.filter(row => row.awayRoute && !row.homeRoute).length
+        const eitherCount = enrichedRows.filter(row => row.homeRoute && row.awayRoute).length
+        const neitherCount = enrichedRows.filter(row => !row.homeRoute && !row.awayRoute).length
+        const availablePoints = 3 + roundPoints
+
         const routeRank = route => route === 'exact' ? 2 : route === 'different' ? 1 : 0
         const projectedRows = [...enrichedRows].sort((a, b) => {
           // Always keep the signed-in user's own bracket impact at the top.
@@ -979,6 +1000,75 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
 
         return (
         <StatCard title={`${scopeLabel} · original tournament bracket picks`}>
+          <div style={{
+            marginBottom: '11px',
+            padding: '10px',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(0,48,135,0.055)',
+            border: '1px solid rgba(0,48,135,0.12)',
+          }}>
+            <div style={{
+              fontSize: '10px',
+              fontWeight: 900,
+              color: 'var(--scottish-navy)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              marginBottom: '7px',
+            }}>
+              League points impact
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gap: '6px',
+            }}>
+              {[
+                {
+                  label: `${match.home_team?.name || match.home_team?.short_code || 'Home team'} win`,
+                  value: `${homeOnlyCount} player${homeOnlyCount === 1 ? '' : 's'} +${availablePoints}`,
+                },
+                {
+                  label: `${match.away_team?.name || match.away_team?.short_code || 'Away team'} win`,
+                  value: `${awayOnlyCount} player${awayOnlyCount === 1 ? '' : 's'} +${availablePoints}`,
+                },
+                {
+                  label: 'Either team wins',
+                  value: `${eitherCount} player${eitherCount === 1 ? '' : 's'} score`,
+                },
+                {
+                  label: 'No points available',
+                  value: `${neitherCount} player${neitherCount === 1 ? '' : 's'}`,
+                },
+              ].map(item => (
+                <div key={item.label} style={{
+                  padding: '8px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-light)',
+                }}>
+                  <div style={{
+                    fontSize: '9px',
+                    color: 'var(--text-muted)',
+                    fontWeight: 800,
+                    lineHeight: 1.25,
+                  }}>
+                    {item.label}
+                  </div>
+                  <div style={{
+                    marginTop: '3px',
+                    fontSize: '11px',
+                    color: 'var(--text-primary)',
+                    fontWeight: 900,
+                    lineHeight: 1.2,
+                  }}>
+                    {item.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div style={{ marginBottom: '9px' }}>
             <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
               Sort by
