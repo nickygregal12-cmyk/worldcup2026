@@ -104,6 +104,12 @@ export default function Knockout() {
 
   useEffect(() => { loadData() }, [user])
 
+  // Once official knockout fixtures exist, lead with the live bracket-health view.
+  // Users can still switch back to their original frozen picks at any time.
+  useEffect(() => {
+    if (groupStageDone && realKoFixtures.length > 0) setShowRealBracket(true)
+  }, [groupStageDone, realKoFixtures.length])
+
   // Recalculate affected matches when standings change
   useEffect(() => {
     if (!standings || Object.keys(standings).length === 0) return
@@ -476,6 +482,8 @@ export default function Knockout() {
     return { correct, total, groupsComplete, matchComparisons, confirmedCount, stageLabel: stageLabels[activeStage] || activeStage, teamsInStage, stagePoints: stageConfig.points }
   }, [activeStage, realStandingsMap, realKoFixtures, realKoResults, knockoutPicks, resolveTeam, resolveRealSlot])
 
+
+
   // Bracket points earned — computed from real results vs user picks
   const bracketPtsEarned = useMemo(() => {
     if (!knockoutPicks || !user) return null
@@ -656,6 +664,81 @@ export default function Knockout() {
     }
     return { home: winnerTeam, away: pureAway }
   }, [resolveTeam, resolveKnockoutWinner, knockoutPicks, mainBracketLockTime, teamById])
+
+  // Official-fixture view for the active round. This answers the useful live question:
+  // "Which team do I need to advance for my saved bracket to stay healthy?"
+  const liveFixtureHealth = useMemo(() => {
+    const stageConfig = ALL_STAGES.find(s => s.key === activeStage)
+    if (!stageConfig) return []
+
+    const predictedTeams = new Set()
+    stageConfig.matches.forEach(def => {
+      const { home, away } = getMatchTeams(def)
+      if (home?.id) predictedTeams.add(home.id)
+      if (away?.id) predictedTeams.add(away.id)
+    })
+
+    const fixtures = realKoFixtures.filter(m => m.stage === activeStage && m.home_team?.id && m.away_team?.id)
+    const now = Date.now()
+    const statusRank = m => {
+      const status = String(m.status || '').toLowerCase()
+      if (status === 'live' || status === 'in_progress') return 0
+      if (status === 'completed' || status === 'finished') return 3
+      const ko = new Date(m.kickoff_time).getTime()
+      return ko <= now ? 1 : 2
+    }
+
+    return fixtures.map(fixture => {
+      const homeNeeded = predictedTeams.has(fixture.home_team.id)
+      const awayNeeded = predictedTeams.has(fixture.away_team.id)
+      const completed = ['completed', 'finished'].includes(String(fixture.status || '').toLowerCase())
+      const winnerId = fixture.winner_team_id || (
+        completed && fixture.home_score != null && fixture.away_score != null
+          ? fixture.home_score > fixture.away_score ? fixture.home_team.id
+            : fixture.away_score > fixture.home_score ? fixture.away_team.id
+            : null
+          : null
+      )
+
+      let tone = 'neutral'
+      let label = 'No bracket impact'
+      let detail = 'Neither team appears in your saved path for this round.'
+      let neededId = null
+
+      if (homeNeeded && awayNeeded) {
+        tone = 'safe'
+        label = 'Either result works'
+        detail = 'Both teams are in your saved path, so one predicted team will advance.'
+      } else if (homeNeeded || awayNeeded) {
+        neededId = homeNeeded ? fixture.home_team.id : fixture.away_team.id
+        const neededTeam = homeNeeded ? fixture.home_team : fixture.away_team
+        tone = 'need'
+        label = `Need ${neededTeam.name}`
+        detail = `${neededTeam.name} must advance to keep this part of your bracket alive.`
+      }
+
+      if (completed && winnerId) {
+        if (homeNeeded || awayNeeded) {
+          if (predictedTeams.has(winnerId)) {
+            tone = 'safe'
+            label = 'Path survived'
+            detail = 'A team from your saved path advanced.'
+          } else {
+            tone = 'out'
+            label = 'Bracket damaged'
+            detail = 'The team you needed was eliminated.'
+          }
+        } else {
+          tone = 'neutral'
+          label = 'No impact'
+          detail = 'This result did not affect a team in your saved path.'
+        }
+      }
+
+      return { fixture, homeNeeded, awayNeeded, neededId, tone, label, detail, completed }
+    }).sort((a, b) => statusRank(a.fixture) - statusRank(b.fixture) || new Date(a.fixture.kickoff_time) - new Date(b.fixture.kickoff_time))
+  }, [activeStage, realKoFixtures, getMatchTeams])
+
 
   const getBracketLockReason = useCallback((matchDef) => {
     if (new Date() >= mainBracketLockTime) return 'Bracket fully locked. Saved teams and winners are frozen.'
@@ -875,6 +958,21 @@ export default function Knockout() {
   const totalPicks = validPicks
   const totalMatches = ALL_STAGES.reduce((acc, s) => acc + s.matches.length, 0)
   const pct = Math.round((totalPicks / totalMatches) * 100)
+
+
+  const getStageHealth = (stage) => {
+    let alive = 0
+    let total = 0
+    ;(stage.matches || []).forEach(def => {
+      const { home, away } = getMatchTeams(def)
+      ;[home, away].forEach(team => {
+        if (!team?.id) return
+        total++
+        if (!isTeamOut(team.id)) alive++
+      })
+    })
+    return { alive, total }
+  }
 
   // Pre-full-lock gap analysis: empty picks split into still-fillable vs
   // already frozen empty (their feeding group kicked off). Drives the
@@ -1317,9 +1415,15 @@ export default function Knockout() {
                 flexShrink: 0,
               }}>
                 {stage.label}
-                <span style={{ fontSize: '10px', fontWeight: '700', color: complete ? 'var(--accent-green)' : isActive ? 'var(--scottish-navy)' : 'var(--text-muted)', opacity: complete ? 1 : 0.7 }}>
-                  {complete ? '✓ Done' : `${picks}/${stage.matches.length}`}
-                </span>
+                {(() => {
+                  const health = getStageHealth(stage)
+                  const showHealth = groupStageDone && health.total > 0
+                  return (
+                    <span style={{ fontSize: '10px', fontWeight: '700', color: showHealth ? (health.alive === health.total ? 'var(--accent-green)' : health.alive === 0 ? '#c62828' : 'var(--accent-gold)') : complete ? 'var(--accent-green)' : isActive ? 'var(--scottish-navy)' : 'var(--text-muted)', opacity: 1 }}>
+                      {showHealth ? `${health.alive}/${health.total} alive` : complete ? '✓ Done' : `${picks}/${stage.matches.length}`}
+                    </span>
+                  )
+                })()}
               </button>
             )
           })}
@@ -1361,111 +1465,102 @@ export default function Knockout() {
           </div>
         )}
 
-        {/* "As it stands" live tracker */}
+        {/* Live bracket health — official fixtures first, original picks still available */}
         {liveTrackerStats && liveTrackerStats.total > 0 && (() => {
-          const pct = Math.round((liveTrackerStats.correct / liveTrackerStats.total) * 100)
-          const colour = pct >= 75 ? 'var(--accent-green)' : pct >= 50 ? 'var(--scottish-navy)' : '#c62828'
+          const pctHealth = Math.round((liveTrackerStats.correct / liveTrackerStats.total) * 100)
+          const lost = Math.max(0, liveTrackerStats.total - liveTrackerStats.correct)
+          const colour = pctHealth >= 75 ? 'var(--accent-green)' : pctHealth >= 50 ? 'var(--accent-gold)' : '#c62828'
+          const maxRemaining = liveTrackerStats.correct * (liveTrackerStats.stagePoints || 0)
           return (
-            <div style={{ margin: '8px 16px 0' }}>
-              {/* Summary row */}
-              <div style={{
-                padding: '10px 14px',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-light)',
-                borderRadius: showRealBracket ? 'var(--radius-md) var(--radius-md) 0 0' : 'var(--radius-md)',
-                display: 'flex', alignItems: 'center', gap: '12px',
-                cursor: 'pointer',
-              }} onClick={() => setShowRealBracket(v => !v)}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '3px' }}>
-                    {liveTrackerStats.stageLabel} tracker
-                    {activeStage === 'r32' && ` · ${liveTrackerStats.groupsComplete}/12 groups done`}
-                    {liveTrackerStats.confirmedCount > 0 && ` · ${liveTrackerStats.confirmedCount} fixtures confirmed`}
+            <div style={{ marginTop: '10px' }}>
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
+                <div style={{ padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '14px' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
+                        {liveTrackerStats.stageLabel} bracket health
+                      </div>
+                      <div style={{ fontSize: '18px', lineHeight: 1.25, fontWeight: '900', color: 'var(--text-primary)', marginTop: '5px' }}>
+                        <span style={{ color: colour }}>{liveTrackerStats.correct}/{liveTrackerStats.total}</span> predicted teams still alive
+                      </div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '5px', lineHeight: 1.45 }}>
+                        {lost === 0 ? 'Your full path can still happen.' : `${lost} predicted team${lost === 1 ? '' : 's'} can no longer reach this round.`}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: '20px', fontWeight: '900', color: colour }}>{pctHealth}%</div>
+                      <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '700' }}>healthy</div>
+                    </div>
                   </div>
-                  <div style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)' }}>
-                    {liveTrackerStats.total > 0
-                      ? <><span style={{ color: colour }}>{liveTrackerStats.correct}/{liveTrackerStats.total}</span>{' '}{liveTrackerStats.stageLabel} predicted teams still on track</>
-                      : <span style={{ color: 'var(--text-muted)' }}>Waiting for {liveTrackerStats.stageLabel} fixtures to be confirmed</span>
-                    }
+                  <div style={{ height: '6px', background: 'var(--border-light)', borderRadius: '10px', overflow: 'hidden', marginTop: '12px' }}>
+                    <div style={{ width: `${pctHealth}%`, height: '100%', background: colour, borderRadius: '10px' }} />
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}>
+                    <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(0,122,51,0.08)', color: 'var(--accent-green)', fontSize: '11px', fontWeight: '800' }}>{liveTrackerStats.correct} alive</span>
+                    <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: lost ? 'rgba(198,40,40,0.08)' : 'var(--bg-secondary)', color: lost ? '#c62828' : 'var(--text-muted)', fontSize: '11px', fontWeight: '800' }}>{lost} out</span>
+                    <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(0,48,135,0.06)', color: 'var(--scottish-navy)', fontSize: '11px', fontWeight: '800' }}>Up to {maxRemaining} pts remain</span>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '56px' }}>
-                    <div style={{ height: '5px', background: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: '3px', width: `${pct}%`, background: colour, transition: 'width 0.5s ease' }} />
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'right', marginTop: '2px' }}>{pct}%</div>
-                  </div>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{showRealBracket ? '▲' : '▼'}</span>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', borderTop: '1px solid var(--border-light)' }}>
+                  <button onClick={() => setShowRealBracket(true)} style={{ padding: '11px 10px', border: 'none', borderRight: '1px solid var(--border-light)', background: showRealBracket ? 'var(--scottish-navy)' : 'var(--bg-card)', color: showRealBracket ? 'white' : 'var(--text-primary)', fontWeight: '800', fontSize: '12px', cursor: 'pointer' }}>
+                    Live bracket health
+                  </button>
+                  <button onClick={() => setShowRealBracket(false)} style={{ padding: '11px 10px', border: 'none', background: !showRealBracket ? 'var(--scottish-navy)' : 'var(--bg-card)', color: !showRealBracket ? 'white' : 'var(--text-primary)', fontWeight: '800', fontSize: '12px', cursor: 'pointer' }}>
+                    Original picks
+                  </button>
                 </div>
               </div>
 
-
-              {/* Expandable per-match breakdown */}
               {showRealBracket && (
-                <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderTop: 'none', borderRadius: '0 0 var(--radius-md) var(--radius-md)', overflow: 'hidden' }}>
-                  <div style={{ display: 'flex', gap: '14px', padding: '8px 14px', borderBottom: '1px solid var(--border-light)', fontSize: '10px', fontWeight: '700' }}>
-                    <span style={{ color: 'var(--accent-green)' }}>● Through</span>
-                    <span style={{ color: 'var(--text-muted)' }}>● Still to play</span>
-                    <span style={{ color: '#c62828' }}>● Out</span>
-                  </div>
-                  {liveTrackerStats.matchComparisons.filter(m => m.hasPick).map(m => {
-                    // Points earned for this match's predicted teams
-                    const homeEarned = m.userHome?.id && liveTrackerStats.teamsInStage?.has(m.userHome.id)
-                    const awayEarned = m.userAway?.id && liveTrackerStats.teamsInStage?.has(m.userAway.id)
-                    const earnedPts = ([homeEarned, awayEarned].filter(Boolean).length) * (liveTrackerStats.stagePoints || 5)
-                    const anyEarned = homeEarned || awayEarned
-                    const bothEarned = homeEarned && awayEarned
-                    const homeOut = isTeamOut(m.userHome?.id)
-                    const awayOut = isTeamOut(m.userAway?.id)
-                    const accentBar = bothEarned ? 'var(--accent-green)' : anyEarned ? 'var(--accent-gold)' : 'var(--border-light)'
-                    const userPick = m.userPickId
-                      ? (m.userHome?.id === m.userPickId ? m.userHome : m.userAway?.id === m.userPickId ? m.userAway : null)
-                      : null
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+                  {liveFixtureHealth.length > 0 ? liveFixtureHealth.map(({ fixture, homeNeeded, awayNeeded, neededId, tone, label, detail, completed }) => {
+                    const toneMap = {
+                      safe: { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.05)', border: 'rgba(0,122,51,0.25)' },
+                      need: { colour: 'var(--scottish-navy)', bg: 'rgba(0,48,135,0.04)', border: 'rgba(0,48,135,0.22)' },
+                      out: { colour: '#c62828', bg: 'rgba(198,40,40,0.04)', border: 'rgba(198,40,40,0.22)' },
+                      neutral: { colour: 'var(--text-muted)', bg: 'var(--bg-card)', border: 'var(--border-light)' },
+                    }
+                    const t = toneMap[tone]
                     return (
-                      <div key={m.matchDef.match_number} style={{
-                        display: 'flex', alignItems: 'center', gap: '10px',
-                        padding: '10px 14px',
-                        borderBottom: '1px solid var(--border-light)',
-                        borderLeft: `3px solid ${accentBar}`,
-                        background: bothEarned ? 'rgba(0,122,51,0.03)' : anyEarned ? 'rgba(184,134,11,0.02)' : 'transparent',
-                      }}>
-                        <span style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-muted)', minWidth: '28px' }}>M{m.matchDef.match_number}</span>
-                        {/* Home team */}
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '18px', opacity: homeEarned ? 1 : homeOut ? 0.35 : 0.45 }}>{m.userHome?.flag_emoji}</span>
-                          <span style={{ fontSize: '13px', fontWeight: m.userPickId === m.userHome?.id ? '800' : '500',
-                            color: homeEarned ? 'var(--accent-green)' : homeOut ? '#c62828' : 'var(--text-muted)',
-                            textDecoration: homeOut && !homeEarned ? 'line-through' : 'none' }}>
-                            {m.userHome?.short_code}
+                      <div key={fixture.id || fixture.match_number} style={{ background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', padding: '14px 16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '11px' }}>
+                          <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            M{fixture.match_number} · {fmt(fixture.kickoff_time)}
+                          </div>
+                          <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-full)', background: t.bg, border: `1px solid ${t.border}`, color: t.colour, fontSize: '10px', fontWeight: '900', whiteSpace: 'nowrap' }}>
+                            {completed ? 'FINAL' : label.toUpperCase()}
                           </span>
-                          {homeOut && !homeEarned && <span style={{ fontSize: '9px', fontWeight: '800', color: '#c62828' }}>✗</span>}
-                        </span>
-                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>v</span>
-                        {/* Away team */}
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1 }}>
-                          <span style={{ fontSize: '18px', opacity: awayEarned ? 1 : awayOut ? 0.35 : 0.45 }}>{m.userAway?.flag_emoji}</span>
-                          <span style={{ fontSize: '13px', fontWeight: m.userPickId === m.userAway?.id ? '800' : '500',
-                            color: awayEarned ? 'var(--accent-green)' : awayOut ? '#c62828' : 'var(--text-muted)',
-                            textDecoration: awayOut && !awayEarned ? 'line-through' : 'none' }}>
-                            {m.userAway?.short_code}
-                          </span>
-                          {awayOut && !awayEarned && <span style={{ fontSize: '9px', fontWeight: '800', color: '#c62828' }}>✗</span>}
-                        </span>
-                        {/* Points badge */}
-                        {earnedPts > 0 && (
-                          <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--accent-green)',
-                            background: 'rgba(0,122,51,0.1)', padding: '2px 8px', borderRadius: '20px', whiteSpace: 'nowrap' }}>
-                            +{earnedPts}pts
-                          </span>
-                        )}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '10px' }}>
+                          {[fixture.home_team, fixture.away_team].map((team, idx) => {
+                            const needed = team.id === neededId || (idx === 0 ? homeNeeded : awayNeeded)
+                            const winner = completed && fixture.winner_team_id === team.id
+                            return (
+                              <div key={team.id} style={{ textAlign: idx === 0 ? 'left' : 'right', padding: '10px', borderRadius: 'var(--radius-md)', border: needed ? `2px solid ${tone === 'out' ? '#c62828' : 'var(--accent-green)'}` : '1px solid var(--border-light)', background: needed ? 'var(--bg-card)' : 'rgba(255,255,255,0.45)', opacity: tone === 'out' && needed ? 0.65 : 1 }}>
+                                <div style={{ fontSize: '26px' }}>{team.flag_emoji}</div>
+                                <div style={{ fontSize: '13px', fontWeight: '900', color: needed ? t.colour : 'var(--text-primary)', marginTop: '4px' }}>{team.name}</div>
+                                <div style={{ fontSize: '10px', color: needed ? t.colour : 'var(--text-muted)', fontWeight: '800', marginTop: '2px' }}>
+                                  {winner ? 'Advanced ✓' : needed ? 'In your path' : 'Not in your path'}
+                                </div>
+                              </div>
+                            )
+                          })}
+                          <div style={{ gridColumn: 2, gridRow: 1, fontSize: '11px', fontWeight: '900', color: 'var(--text-muted)' }}>VS</div>
+                        </div>
+                        <div style={{ marginTop: '11px', paddingTop: '10px', borderTop: '1px solid var(--border-light)' }}>
+                          <div style={{ fontSize: '13px', fontWeight: '900', color: t.colour }}>{label}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '3px' }}>{detail}</div>
+                        </div>
                       </div>
                     )
-                  })}
+                  }) : (
+                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: '18px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                      Official {liveTrackerStats.stageLabel} fixtures are not confirmed yet. Your predicted path health is shown above.
+                    </div>
+                  )}
                 </div>
               )}
-
-
             </div>
           )
         })()}
