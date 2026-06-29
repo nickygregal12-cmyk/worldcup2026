@@ -1646,15 +1646,15 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
               {[
                 {
                   label: `${match.home_team?.name || match.home_team?.short_code || 'Home team'} win`,
-                  value: `${homeOnlyCount} player${homeOnlyCount === 1 ? '' : 's'} · +${availablePoints} pts`,
+                  value: `${homeOnlyCount} player${homeOnlyCount === 1 ? '' : 's'} · +${availablePoints} pts each`,
                 },
                 {
                   label: `${match.away_team?.name || match.away_team?.short_code || 'Away team'} win`,
-                  value: `${awayOnlyCount} player${awayOnlyCount === 1 ? '' : 's'} · +${availablePoints} pts`,
+                  value: `${awayOnlyCount} player${awayOnlyCount === 1 ? '' : 's'} · +${availablePoints} pts each`,
                 },
                 {
                   label: 'Points whichever team advances',
-                  value: `${eitherCount} player${eitherCount === 1 ? '' : 's'} · +${availablePoints} pts either way`,
+                  value: `${eitherCount} player${eitherCount === 1 ? '' : 's'} · +${availablePoints} pts each either way`,
                 },
                 {
                   label: 'No points available',
@@ -1687,6 +1687,17 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                 </div>
               ))}
             </div>
+
+            {!live && !completed && (
+              <div style={{
+                marginTop: '7px',
+                color: 'var(--text-muted)',
+                fontSize: '9.5px',
+                lineHeight: 1.4,
+              }}>
+                +{availablePoints} is the immediate points award for this fixture. Each player card below shows their full points at stake, including future rounds tied to the selected team.
+              </div>
+            )}
           </div>
 
           <div style={{
@@ -1887,8 +1898,12 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                         {r.hasCurrentTeamBacking && (() => {
                           const immediatePoints = 3 + roundPoints
 
-                          let label = `Potential +${immediatePoints} pts`
-                          let tone = 'neutral'
+                          let label = r.primaryExposure > 0
+                            ? r.primaryFutureExposure > 0
+                              ? `${r.primaryExposure} pts at stake · ${immediatePoints} this match + ${r.primaryFutureExposure} future`
+                              : `${r.primaryExposure} pts at stake`
+                            : `Potential +${immediatePoints} pts`
+                          let tone = r.primaryExposure > 0 && !live && !completed ? 'warn' : 'neutral'
 
                           if (live && currentLeadSide && r.projectedPoints > 0) {
                             label = r.futurePointsAlive > 0
