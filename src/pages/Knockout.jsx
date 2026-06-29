@@ -47,6 +47,10 @@ function slotLabel(slot) {
   if (bestThirdMatch) {
     return `Best 3rd place — Group ${bestThirdMatch[1].split('').join('/')}`
   }
+  const feederMatch = slot.match(/^([WL])(\d+)$/)
+  if (feederMatch) {
+    return `${feederMatch[1] === 'W' ? 'Winner' : 'Loser'} of M${feederMatch[2]}`
+  }
   return slot
 }
 
@@ -1292,6 +1296,39 @@ export default function Knockout() {
     return { fillable, lost, firstStage }
   })()
 
+  const describeFutureSlot = (slot) => {
+    const feeder = typeof slot === 'string' ? slot.match(/^([WL])(\d+)$/) : null
+    if (!feeder) {
+      return {
+        title: slotLabel(slot),
+        detail: slot?.startsWith('BT3_') ? 'Waiting for the best-third-place allocation' : 'Waiting for group results',
+      }
+    }
+
+    const resultWord = feeder[1] === 'W' ? 'Winner' : 'Loser'
+    const matchNumber = Number(feeder[2])
+    const fixture = realKoFixtures.find(match => Number(match.match_number) === matchNumber)
+    const candidates = [fixture?.home_team, fixture?.away_team].filter(Boolean)
+
+    if (candidates.length === 2) {
+      const homeName = candidates[0].name || candidates[0].short_code
+      const awayName = candidates[1].name || candidates[1].short_code
+      const homeCode = candidates[0].short_code || homeName
+      const awayCode = candidates[1].short_code || awayName
+      return {
+        title: `${resultWord} of ${homeName} v ${awayName}`,
+        detail: `${homeCode} or ${awayCode}`,
+      }
+    }
+
+    return {
+      title: `${resultWord} of M${matchNumber}`,
+      detail: candidates.length === 1
+        ? `${candidates[0].name || candidates[0].short_code} or their opponent`
+        : `Waiting for M${matchNumber} teams`,
+    }
+  }
+
   const renderMatch = (matchDef) => {
     const { home, away } = getMatchTeams(matchDef)
     const mn = matchDef.match_number
@@ -1344,12 +1381,20 @@ export default function Knockout() {
         <div style={{ height: '4px', background: accentColor, flexShrink: 0 }} />
 
         <div style={{ padding: '14px 16px 16px' }}>
-          {/* Final special header */}
+          {/* Final-specific header */}
           {matchDef.match_number === 104 && (
-            <div style={{ textAlign: 'center', marginBottom: '14px', padding: '12px', background: 'linear-gradient(135deg, rgba(184,134,11,0.1), rgba(184,134,11,0.05))', borderRadius: 'var(--radius-md)', border: '1px solid rgba(184,134,11,0.2)' }}>
-              <div style={{ fontSize: '28px', marginBottom: '4px' }}>🏆</div>
-              <div style={{ fontWeight: '900', fontSize: '16px', color: 'var(--accent-gold)', letterSpacing: '-0.02em' }}>The World Cup Final</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Pick your World Cup winner · Worth <strong style={{ color: 'var(--accent-gold)' }}>20 pts</strong></div>
+            <div style={{ textAlign: 'center', marginBottom: '14px', padding: '12px', background: 'linear-gradient(135deg, rgba(184,134,11,0.12), rgba(184,134,11,0.05))', borderRadius: 'var(--radius-md)', border: '1px solid rgba(184,134,11,0.24)' }}>
+              <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--accent-gold)', letterSpacing: '0.12em', textTransform: 'uppercase' }}>Final prediction</div>
+              <div style={{ fontSize: '28px', margin: '5px 0 3px' }}>🏆</div>
+              <div style={{ fontWeight: '900', fontSize: '16px', color: 'var(--accent-gold)', letterSpacing: '-0.02em' }}>Predicted Final</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', lineHeight: 1.45 }}>
+                {pick?.winner_id
+                  ? `CHAMPION PICK · ${getTeamById(pick.winner_id)?.name || 'Saved winner'}`
+                  : 'Choose your World Cup champion'}
+              </div>
+              <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', marginTop: '6px', lineHeight: 1.45 }}>
+                +20 pts for each predicted finalist who reaches the Final · +25 pts if your champion wins
+              </div>
             </div>
           )}
           {/* Affected / stale warning */}
@@ -1394,6 +1439,7 @@ export default function Knockout() {
                 const isPickedTeam = pick?.winner_id === team?.id
                 const isFinal = matchDef.match_number === 104
                 const canPickThisTeam = canPick && bothTeamsKnown && !!team
+                const futureSlot = !team ? describeFutureSlot(slot) : null
                 // Confirmed in real R32 (works for both picked and non-picked team)
                 const isConfirmedInR32 = activeStage === 'r32' && team?.id && confirmedR32Teams.has(team.id)
                 const isEliminatedFromR32 = activeStage === 'r32' && team?.id && isTeamOut(team.id)
@@ -1453,17 +1499,19 @@ export default function Knockout() {
                         )}
                       </button>
                     ) : (
-                      // Placeholder for unknown team
+                      // Helpful future-opponent wording without changing the slot or stored team IDs.
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: '12px',
                         padding: '10px 14px', borderRadius: 'var(--radius-md)',
                         border: '1.5px dashed var(--border-medium)', background: 'var(--bg-secondary)',
                       }}>
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--bg-tertiary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>🏳️</div>
-                        <div>
-                          <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-muted)' }}>{slotLabel(slot)}</div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.7, marginTop: '2px' }}>
-                            {slot.startsWith('W') ? `Waiting for M${slot.replace('W', '')} winner` : 'Waiting for group results'}
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: '800', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.35, overflowWrap: 'anywhere' }}>
+                            {futureSlot?.title || slotLabel(slot)}
+                          </div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', opacity: 0.85, marginTop: '3px', lineHeight: 1.35, overflowWrap: 'anywhere' }}>
+                            {futureSlot?.detail}
                           </div>
                         </div>
                       </div>
@@ -1727,11 +1775,12 @@ export default function Knockout() {
 
         {/* Points + stage progress row */}
         <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--scottish-navy-light)' }}>
-          <span style={{ fontSize: '12px', color: 'var(--scottish-navy)', fontWeight: '700' }}>
-            🏅 {activeStage === 'r32'
-              ? `${currentStage?.points}pts for each team you predicted to qualify that reaches this round`
-              : `${currentStage?.points}pts for each team you picked to advance that makes it to this round`}
-            {activeStage === 'final' && <span style={{ color: 'var(--accent-gold)' }}> + 25pts for World Cup Winner</span>}
+          <span style={{ fontSize: '12px', color: 'var(--scottish-navy)', fontWeight: '700', lineHeight: 1.4 }}>
+            {activeStage === 'final'
+              ? <><span style={{ color: 'var(--accent-gold)' }}>🏆 Final scoring</span> · {currentStage?.points}pts for each predicted finalist who reaches the Final · +25pts if your champion wins</>
+              : activeStage === 'r32'
+                ? <>🏅 {currentStage?.points}pts for each team you predicted to qualify that reaches this round</>
+                : <>🏅 {currentStage?.points}pts for each team you picked to advance that makes it to this round</>}
           </span>
           <span style={{ fontSize: '12px', fontWeight: '700', color: stagePicks === stageMatches.length ? 'var(--accent-green)' : 'var(--text-muted)' }}>
             {stagePicks === stageMatches.length ? '' : `${stagePicks}/${stageMatches.length} picked`}
@@ -2009,7 +2058,11 @@ export default function Knockout() {
                     return (
                       <div key={matchDef.match_number} style={{ background: t.bg, border: `1.5px solid ${t.border}`, borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', padding: '14px 16px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '11px' }}>
-                          <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Your original pick · M{matchDef.match_number} · {currentStage?.label}</div>
+                          <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                            {activeStage === 'final'
+                              ? `Predicted Final · M${matchDef.match_number}`
+                              : `Your original pick · M${matchDef.match_number} · ${currentStage?.label}`}
+                          </div>
                           <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-full)', background: t.bg, border: `1px solid ${t.border}`, color: t.colour, fontSize: '10px', fontWeight: '900', whiteSpace: 'nowrap' }}>{label.toUpperCase()}</span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '10px' }}>
@@ -2165,6 +2218,9 @@ export default function Knockout() {
             <div ref={championCardRef} style={{ background: 'linear-gradient(135deg, #001830, #002a5c)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(184,134,11,0.4)', overflow: 'hidden' }}>
               {/* Header */}
               <div style={{ padding: '16px 16px 12px', textAlign: 'center', borderBottom: '1px solid rgba(184,134,11,0.15)' }}>
+                <div style={{ display: 'inline-flex', padding: '4px 8px', marginBottom: '8px', borderRadius: '999px', border: '1px solid rgba(255,215,0,0.35)', color: '#FFD700', fontSize: '9px', fontWeight: '950', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                  Champion pick
+                </div>
                 <div style={{ fontSize: '32px', marginBottom: '4px' }}>{champion.flag_emoji}</div>
                 <div style={{ fontWeight: '900', fontSize: '18px', color: '#FFD700' }}>
                   {champion.name}

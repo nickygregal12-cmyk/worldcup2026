@@ -15,6 +15,37 @@ const STAGE_LABELS = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-fina
 // knockout-bracket progression value for the round.
 const BRACKET_STAGE_POINTS = { r32: 5, r16: 10, qf: 15, sf: 20, '3rd': 20, final: 20 }
 
+const getFixtureDefinition = matchNumber =>
+  ALL_STAGES
+    .flatMap(stage => stage.matches || [])
+    .find(definition => Number(definition.match_number) === Number(matchNumber))
+
+const describeFixtureSide = (fixture, side, allFixtures = []) => {
+  const team = side === 'home' ? fixture?.home_team : fixture?.away_team
+  if (team?.short_code || team?.name) return team.short_code || team.name
+
+  const definition = getFixtureDefinition(fixture?.match_number)
+  const slot = side === 'home' ? definition?.home_slot : definition?.away_slot
+  const feeder = typeof slot === 'string' ? slot.match(/^([WL])(\d+)$/) : null
+
+  if (feeder) {
+    const resultWord = feeder[1] === 'W' ? 'Winner' : 'Loser'
+    const feederNumber = Number(feeder[2])
+    const feederFixture = allFixtures.find(row => Number(row.match_number) === feederNumber)
+    const candidates = [feederFixture?.home_team, feederFixture?.away_team].filter(Boolean)
+
+    if (candidates.length === 2) {
+      return `${candidates[0].short_code || candidates[0].name} or ${candidates[1].short_code || candidates[1].name}`
+    }
+    return `${resultWord} of M${feederNumber}`
+  }
+
+  if (/^1[A-L]$/.test(slot || '')) return `Winner Group ${slot.slice(1)}`
+  if (/^2[A-L]$/.test(slot || '')) return `Runner-up Group ${slot.slice(1)}`
+  if (/^BT3_/.test(slot || '')) return 'Best third-place team'
+  return 'TBC'
+}
+
 const KO_SCORING = {
   correctResult: 5,
   exactScore: 10,
@@ -439,11 +470,16 @@ export default function MatchStats() {
       ])
 
       const fixtures = knockoutFixtures || []
-      const currentIndex = fixtures.findIndex(fixture => fixture.id === m.id)
+      const labelledFixtures = fixtures.map(fixture => ({
+        ...fixture,
+        home_display: describeFixtureSide(fixture, 'home', fixtures),
+        away_display: describeFixtureSide(fixture, 'away', fixtures),
+      }))
+      const currentIndex = labelledFixtures.findIndex(fixture => fixture.id === m.id)
       setAdjacentFixtures({
-        previous: currentIndex > 0 ? fixtures[currentIndex - 1] : null,
-        next: currentIndex >= 0 && currentIndex < fixtures.length - 1
-          ? fixtures[currentIndex + 1]
+        previous: currentIndex > 0 ? labelledFixtures[currentIndex - 1] : null,
+        next: currentIndex >= 0 && currentIndex < labelledFixtures.length - 1
+          ? labelledFixtures[currentIndex + 1]
           : null,
       })
 
@@ -510,8 +546,8 @@ export default function MatchStats() {
                   ? ` · Group ${adjacentFixtures.previous.group?.name || ''}`
                   : ''}
               </div>
-              <div style={{ fontSize: '11px', fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {adjacentFixtures.previous.home_team?.short_code || 'TBC'} v {adjacentFixtures.previous.away_team?.short_code || 'TBC'}
+              <div style={{ fontSize: '11px', fontWeight: 850, lineHeight: 1.3, overflowWrap: 'anywhere' }}>
+                {adjacentFixtures.previous.home_display || 'TBC'} v {adjacentFixtures.previous.away_display || 'TBC'}
               </div>
               <div style={{ marginTop: '2px', fontSize: '9px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                 {new Date(adjacentFixtures.previous.kickoff_time).toLocaleString('en-GB', {
@@ -550,8 +586,8 @@ export default function MatchStats() {
                   ? ` · Group ${adjacentFixtures.next.group?.name || ''}`
                   : ''}
               </div>
-              <div style={{ fontSize: '11px', fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {adjacentFixtures.next.home_team?.short_code || 'TBC'} v {adjacentFixtures.next.away_team?.short_code || 'TBC'}
+              <div style={{ fontSize: '11px', fontWeight: 850, lineHeight: 1.3, overflowWrap: 'anywhere' }}>
+                {adjacentFixtures.next.home_display || 'TBC'} v {adjacentFixtures.next.away_display || 'TBC'}
               </div>
               <div style={{ marginTop: '2px', fontSize: '9px', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
                 {new Date(adjacentFixtures.next.kickoff_time).toLocaleString('en-GB', {
@@ -1455,7 +1491,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
 
       {viewMode === 'ko' && (
       <div className="card fade-up" style={{ marginBottom: '14px', border: `2px solid ${myOnTrack ? 'var(--accent-green)' : 'var(--border-light)'}` }}>
-        <div style={{ fontSize: 'var(--t-tiny)', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>Your KO Predictor pick</div>
+        <div style={{ fontSize: 'var(--t-tiny)', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>
+          {match.stage === 'final' ? 'Your Final prediction · champion pick' : 'Your KO Predictor pick'}
+        </div>
         {koMine ? (
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2024,7 +2062,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
         })
 
         return (
-        <StatCard title={`${scopeLabel} · original tournament bracket picks`}>
+        <StatCard title={match.stage === 'final'
+          ? `${scopeLabel} · predicted Final and champion picks`
+          : `${scopeLabel} · original tournament bracket picks`}>
           <div style={{
             marginBottom: '11px',
             padding: '10px',
@@ -2562,16 +2602,35 @@ function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel, weather }
 }
 
 function KOHeader({ match, hasResult, live, weather, viewMode, possibleOpponents }) {
+  const isFinal = match.stage === 'final'
+  const stateLabel = live
+    ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : ''}`.trim()
+    : match.status === 'completed'
+      ? 'Full time'
+      : viewMode === 'bracket'
+        ? 'Tournament bracket'
+        : 'KO Predictor'
+
+  const heading = isFinal
+    ? live || match.status === 'completed'
+      ? `The Final · M${match.match_number} · ${stateLabel}`
+      : `${viewMode === 'bracket' ? 'Predicted Final' : 'Final prediction'} · M${match.match_number} · ${stateLabel}`
+    : `${STAGE_LABELS[match.stage] || 'Knockout'} · M${match.match_number} · ${stateLabel}`
+
   return (
-    <div className="card fade-up" style={{ marginBottom: '12px', textAlign: 'center' }}>
-      <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)', fontWeight: '700', marginBottom: '12px' }}>
-        {STAGE_LABELS[match.stage] || 'Knockout'} · M{match.match_number} · {live
-          ? `🔴 Live ${match.live_minute != null ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : ''}`.trim()
-          : match.status === 'completed'
-            ? 'Full time'
-            : viewMode === 'bracket'
-              ? 'Tournament bracket'
-              : 'KO Predictor'}
+    <div className="card fade-up" style={{
+      marginBottom: '12px',
+      textAlign: 'center',
+      border: isFinal ? '1.5px solid rgba(184,134,11,0.32)' : undefined,
+      background: isFinal ? 'linear-gradient(180deg, rgba(184,134,11,0.05), var(--bg-card))' : undefined,
+    }}>
+      {isFinal && (
+        <div style={{ marginBottom: '7px', color: 'var(--accent-gold)', fontSize: '9px', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+          🏆 Champion pick
+        </div>
+      )}
+      <div style={{ fontSize: 'var(--t-tiny)', textTransform: 'uppercase', letterSpacing: '0.08em', color: isFinal ? 'var(--accent-gold)' : 'var(--text-muted)', fontWeight: '800', marginBottom: '12px', lineHeight: 1.4 }}>
+        {heading}
       </div>
       <ScoreRow
         match={match}
@@ -2579,6 +2638,22 @@ function KOHeader({ match, hasResult, live, weather, viewMode, possibleOpponents
         possibleOpponents={possibleOpponents}
       />
       <MatchVenue match={match} weather={weather} />
+      {isFinal && (
+        <div style={{
+          marginTop: '11px',
+          padding: '8px 10px',
+          borderRadius: 'var(--radius-sm)',
+          background: 'rgba(184,134,11,0.08)',
+          border: '1px solid rgba(184,134,11,0.18)',
+          color: 'var(--text-secondary)',
+          fontSize: '10px',
+          lineHeight: 1.45,
+        }}>
+          {viewMode === 'bracket'
+            ? 'Final scoring: +20 pts for each predicted finalist who reaches this match · +25 pts if your champion wins.'
+            : 'Final scoring uses the normal KO Predictor rules: exact score or result, method, first-goal band and joker.'}
+        </div>
+      )}
     </div>
   )
 }
@@ -2596,9 +2671,9 @@ function ScoreRow({ match, hasResult, possibleOpponents }) {
       )
     }
 
-    if (candidates.length === 2) {
+    if (candidates.length > 0) {
       return (
-        <div style={{ textAlign: 'center', width: '118px' }}>
+        <div style={{ textAlign: 'center', width: '118px', minWidth: 0 }}>
           <div style={{
             fontSize: '9px',
             color: 'var(--text-muted)',
@@ -2607,7 +2682,7 @@ function ScoreRow({ match, hasResult, possibleOpponents }) {
             letterSpacing: '0.05em',
             marginBottom: '6px',
           }}>
-            Possible opponent
+            {match.stage === 'final' ? 'Possible finalist' : 'Possible team'}
           </div>
           <div style={{
             display: 'flex',
@@ -2646,17 +2721,17 @@ function ScoreRow({ match, hasResult, possibleOpponents }) {
     }
 
     return (
-      <div style={{ textAlign: 'center', width: '88px' }}>
+      <div style={{ textAlign: 'center', width: '100px' }}>
         <div style={{ fontSize: '28px', lineHeight: 1 }}>🏳️</div>
-        <div style={{ fontWeight: '800', fontSize: 'var(--t-small)', marginTop: '4px', color: 'var(--text-muted)' }}>
-          TBC
+        <div style={{ fontWeight: '800', fontSize: '10px', marginTop: '5px', color: 'var(--text-muted)', lineHeight: 1.3 }}>
+          {match.stage === 'final' ? 'Awaiting semi-final winner' : 'Awaiting feeder result'}
         </div>
       </div>
     )
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', minWidth: 0 }}>
       <TeamSide team={match.home_team} candidates={possibleOpponents?.home || []} />
 
       <div style={{ minWidth: '72px', textAlign: 'center' }}>

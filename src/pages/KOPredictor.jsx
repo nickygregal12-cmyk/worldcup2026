@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import { DATES } from '../lib/tournamentDates.js'
+import { ALL_STAGES } from '../lib/bracketUtils.js'
 import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
 const STAGES = [
@@ -394,20 +395,170 @@ export default function KOPredictor() {
     goToSmartKOStage()
   }, [loading, matches.length, predictions])
 
-  // A KO match is "confirmed" once both real teams are set (not null and not a
-  // "Winner of.."/"Runner-up.." placeholder). Undecided matches are hidden until
-  // their teams are known, rather than shown as empty cards.
+  // A KO match is confirmed only when both real teams are known. Future
+  // fixtures still render below as read-only cards with their narrowed feeder
+  // possibilities, rather than disappearing behind a generic TBC message.
   const isConfirmed = (m) =>
     !!(m.home_team_id && m.away_team_id) &&
     !/Winner|Runner/.test(m.home_team?.name || '') &&
     !/Winner|Runner/.test(m.away_team?.name || '')
 
-  const stageMatches = matches.filter(m => m.stage === activeStage && isConfirmed(m)).sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
-  const stagePending = matches.filter(m => m.stage === activeStage && !isConfirmed(m)).length
+  const getMatchDefinition = matchNumber =>
+    ALL_STAGES
+      .flatMap(stage => stage.matches || [])
+      .find(definition => Number(definition.match_number) === Number(matchNumber))
+
+  const describePendingSide = (match, side) => {
+    const team = side === 'home' ? match.home_team : match.away_team
+    if (team?.id) {
+      return {
+        title: team.name || team.short_code,
+        options: [team],
+      }
+    }
+
+    const definition = getMatchDefinition(match.match_number)
+    const slot = side === 'home' ? definition?.home_slot : definition?.away_slot
+    const feeder = typeof slot === 'string' ? slot.match(/^([WL])(\d+)$/) : null
+
+    if (feeder) {
+      const resultWord = feeder[1] === 'W' ? 'Winner' : 'Loser'
+      const feederNumber = Number(feeder[2])
+      const feederMatch = matches.find(row => Number(row.match_number) === feederNumber)
+      const options = [feederMatch?.home_team, feederMatch?.away_team].filter(Boolean)
+
+      if (options.length === 2) {
+        return {
+          title: `${resultWord} of ${options[0].short_code || options[0].name} v ${options[1].short_code || options[1].name}`,
+          options,
+        }
+      }
+
+      return {
+        title: `${resultWord} of M${feederNumber}`,
+        options,
+      }
+    }
+
+    if (/^1[A-L]$/.test(slot || '')) return { title: `Winner of Group ${slot.slice(1)}`, options: [] }
+    if (/^2[A-L]$/.test(slot || '')) return { title: `Runner-up of Group ${slot.slice(1)}`, options: [] }
+    if (/^BT3_/.test(slot || '')) return { title: 'Best third-place qualifier', options: [] }
+    return { title: 'To be confirmed', options: [] }
+  }
+
+  const stageMatches = matches
+    .filter(m => m.stage === activeStage && isConfirmed(m))
+    .sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
+  const pendingStageMatches = matches
+    .filter(m => m.stage === activeStage && !isConfirmed(m))
+    .sort((a, b) => new Date(a.kickoff_time) - new Date(b.kickoff_time))
+  const stagePending = pendingStageMatches.length
   const confirmedTotal = matches.filter(isConfirmed).length
   const getPredCount = (stage) => {
     const sm = matches.filter(m => m.stage === stage && isConfirmed(m))
     return sm.filter(m => predictions[m.id]?.home !== undefined && predictions[m.id]?.home !== '').length
+  }
+
+  const renderPendingMatch = (match) => {
+    const isFinal = match.stage === 'final'
+    const home = describePendingSide(match, 'home')
+    const away = describePendingSide(match, 'away')
+
+    const PendingSide = ({ side }) => (
+      <div style={{
+        minWidth: 0,
+        padding: '11px 9px',
+        borderRadius: 'var(--radius-md)',
+        border: '1px dashed var(--border-medium)',
+        background: 'var(--bg-secondary)',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: '9px', fontWeight: 900, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {isFinal ? 'Possible finalist' : 'Possible team'}
+        </div>
+        <div style={{ marginTop: '5px', fontSize: '11px', fontWeight: 850, color: 'var(--text-secondary)', lineHeight: 1.35, overflowWrap: 'anywhere' }}>
+          {side.title}
+        </div>
+        {side.options.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', flexWrap: 'wrap', marginTop: '7px' }}>
+            {side.options.map(team => (
+              <span key={team.id || team.short_code} style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 6px',
+                borderRadius: '999px',
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border-light)',
+                fontSize: '9.5px',
+                fontWeight: 850,
+                whiteSpace: 'nowrap',
+              }}>
+                <span>{team.flag_emoji}</span>
+                <span>{team.short_code || team.name}</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+
+    return (
+      <div key={match.id} className="card" style={{
+        border: isFinal ? '1.5px solid rgba(184,134,11,0.28)' : '1px solid var(--border-light)',
+        background: isFinal ? 'linear-gradient(180deg, rgba(184,134,11,0.05), var(--bg-card))' : 'var(--bg-card)',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: '10px',
+          marginBottom: '12px',
+        }}>
+          <div>
+            <div style={{ fontSize: '9px', fontWeight: 950, color: isFinal ? 'var(--accent-gold)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {isFinal ? '🏆 Final matchup forming' : 'Matchup forming'}
+            </div>
+            <div style={{ marginTop: '3px', fontSize: '11px', fontWeight: 750, color: 'var(--text-secondary)' }}>
+              M{match.match_number} · {formatDate(match.kickoff_time)} · {formatTime(match.kickoff_time)}
+            </div>
+          </div>
+          <span style={{
+            padding: '4px 7px',
+            borderRadius: '999px',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-light)',
+            color: 'var(--text-muted)',
+            fontSize: '9px',
+            fontWeight: 850,
+            whiteSpace: 'nowrap',
+          }}>
+            Not open yet
+          </span>
+        </div>
+
+        {isFinal && (
+          <div style={{
+            marginBottom: '10px',
+            padding: '8px 9px',
+            borderRadius: 'var(--radius-sm)',
+            background: 'rgba(184,134,11,0.08)',
+            border: '1px solid rgba(184,134,11,0.16)',
+            color: 'var(--text-secondary)',
+            fontSize: '10px',
+            lineHeight: 1.4,
+          }}>
+            Final prediction opens when both finalists are confirmed. Normal KO Predictor scoring applies.
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)', alignItems: 'stretch', gap: '8px' }}>
+          <PendingSide side={home} />
+          <div style={{ alignSelf: 'center', color: 'var(--text-muted)', fontSize: '10px', fontWeight: 900 }}>VS</div>
+          <PendingSide side={away} />
+        </div>
+      </div>
+    )
   }
 
   const renderMatch = (match) => {
@@ -557,6 +708,27 @@ export default function KOPredictor() {
     return (
       <div key={match.id} id={`ko-match-${match.id}`} className="card" style={{ border: cardBorder, background: cardBg, opacity: locked && !hasPrediction ? 0.6 : 1 }}>
 
+        {match.stage === 'final' && (
+          <div style={{
+            marginBottom: '11px',
+            padding: '10px 11px',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(184,134,11,0.09)',
+            border: '1px solid rgba(184,134,11,0.2)',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: '9px', fontWeight: 950, color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: '0.11em' }}>
+              🏆 Final prediction
+            </div>
+            <div style={{ marginTop: '3px', fontSize: '12px', fontWeight: 900, color: 'var(--text-primary)' }}>
+              Pick the score and your World Cup champion
+            </div>
+            <div style={{ marginTop: '3px', fontSize: '9.5px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Normal KO Predictor scoring applies: exact score or result, method, first-goal band and joker.
+            </div>
+          </div>
+        )}
+
         {/* Result badge */}
         {resultColour && (
           <div style={{
@@ -600,7 +772,7 @@ export default function KOPredictor() {
         {/* Match header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Match {match.match_number} · {formatDate(match.kickoff_time)} · {formatTime(match.kickoff_time)}
+            {match.stage === 'final' ? 'Final prediction' : 'Match'} {match.match_number} · {formatDate(match.kickoff_time)} · {formatTime(match.kickoff_time)}
             {match.venue?.city && ` · ${VENUE_FLAGS[match.venue.city] || ''} ${match.venue.city}`}
           </div>
           <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -1505,7 +1677,13 @@ export default function KOPredictor() {
                 >
                   <span>{stage.label}</span>
                   <span className={`ko-stage-count ${complete ? 'complete' : ''}`}>
-                    {complete ? '✓' : `${done}/${total}`}
+                    {complete
+                      ? '✓'
+                      : total > 0
+                        ? `${done}/${total}`
+                        : matches.some(m => m.stage === stage.key)
+                          ? '⏳'
+                          : '0/0'}
                   </span>
                 </button>
               )
@@ -1525,12 +1703,25 @@ export default function KOPredictor() {
         gap: '8px',
         flexWrap: 'wrap',
       }}>
-        <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
-          🥇 Exact score 10pts or correct result 5pts
-        </span>
-        <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
-          First goal +3 · ET +3 · Pens +5
-        </span>
+        {activeStage === 'final' ? (
+          <>
+            <span style={{ fontSize: '12px', color: 'var(--accent-gold)', fontWeight: '800' }}>
+              🏆 Final prediction · normal KO scoring
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
+              Exact 10 or result 5 · First goal +3 · ET +3 · Pens +5
+            </span>
+          </>
+        ) : (
+          <>
+            <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
+              🥇 Exact score 10pts or correct result 5pts
+            </span>
+            <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
+              First goal +3 · ET +3 · Pens +5
+            </span>
+          </>
+        )}
       </div>
 
       {/* Match list */}
@@ -1539,24 +1730,19 @@ export default function KOPredictor() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '48px' }}>
             <div className="spinner" />
           </div>
-        ) : stageMatches.length === 0 ? (
+        ) : stageMatches.length === 0 && pendingStageMatches.length === 0 ? (
           <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>
             <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
-            <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '8px' }}>
-              {stagePending > 0 ? 'Matchups not confirmed yet' : 'No matches yet for this round'}
-            </div>
-            <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
-              {stagePending > 0
-                ? `${stagePending} ${stagePending === 1 ? 'match' : 'matches'} will appear here once the teams are confirmed.`
-                : 'Teams will be confirmed as results come in'}
-            </div>
+            <div style={{ fontWeight: '700', fontSize: '16px', marginBottom: '8px' }}>No matches yet for this round</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Teams will be confirmed as results come in</div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {stageMatches.map(renderMatch)}
+            {pendingStageMatches.map(renderPendingMatch)}
             {stagePending > 0 && (
-              <div style={{ textAlign: 'center', padding: '14px', color: 'var(--text-muted)', fontSize: '13px', fontWeight: '600' }}>
-                ⏳ {stagePending} more {stagePending === 1 ? 'match' : 'matches'} to be confirmed — they'll appear here automatically.
+              <div style={{ textAlign: 'center', padding: '4px 14px 10px', color: 'var(--text-muted)', fontSize: '12px', fontWeight: '600', lineHeight: 1.4 }}>
+                These future fixtures are read-only. Prediction controls appear automatically when both teams are confirmed.
               </div>
             )}
           </div>
