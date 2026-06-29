@@ -650,20 +650,45 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
         const feederNumbers = [...new Set([homeFeeder, awayFeeder].filter(Boolean))]
 
         if (feederNumbers.length > 0) {
-          const { data: feederMatches } = await supabase
+          const { data: feederMatches, error: feederError } = await supabase
             .from('matches')
-            .select(`
-              match_number,
-              home_team:home_team_id(id,name,short_code,flag_emoji),
-              away_team:away_team_id(id,name,short_code,flag_emoji)
-            `)
+            .select('match_number, home_team_id, away_team_id')
             .in('match_number', feederNumbers)
+
+          if (feederError) {
+            console.error('Match Centre feeder lookup failed:', feederError)
+          }
+
+          const feederTeamIds = [...new Set(
+            (feederMatches || [])
+              .flatMap(row => [row.home_team_id, row.away_team_id])
+              .filter(Boolean)
+          )]
+
+          const { data: feederTeams, error: feederTeamsError } = feederTeamIds.length
+            ? await supabase
+                .from('teams')
+                .select('id, name, short_code, flag_emoji')
+                .in('id', feederTeamIds)
+            : { data: [], error: null }
+
+          if (feederTeamsError) {
+            console.error('Match Centre feeder teams lookup failed:', feederTeamsError)
+          }
+
+          const feederTeamById = Object.fromEntries(
+            (feederTeams || []).map(team => [team.id, team])
+          )
 
           const candidatesFor = matchNumber => {
             const feeder = (feederMatches || []).find(
               row => Number(row.match_number) === Number(matchNumber)
             )
-            return [feeder?.home_team, feeder?.away_team].filter(Boolean)
+            if (!feeder) return []
+
+            return [feeder.home_team_id, feeder.away_team_id]
+              .map(teamId => feederTeamById[teamId])
+              .filter(Boolean)
           }
 
           setPossibleOpponents({
@@ -1037,6 +1062,33 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                   : null,
               ].filter(Boolean)
 
+              const currentStageIndex = ALL_STAGES.findIndex(stage => stage.key === m.stage)
+              const futureBracketPointsFor = teamId => {
+                if (!teamId || currentStageIndex < 0) return 0
+
+                return ALL_STAGES
+                  .slice(currentStageIndex + 1)
+                  .reduce((total, stage) => {
+                    const teamPickedInStage = stage.matches.some(
+                      definition =>
+                        pickMap[Number(definition.match_number)]?.winner_team_id === teamId
+                    )
+                    return total + (teamPickedInStage ? (BRACKET_STAGE_POINTS[stage.key] || 0) : 0)
+                  }, 0)
+              }
+
+              const immediatePoints = 3 + (BRACKET_STAGE_POINTS[m.stage] || 0)
+              const homeFuturePoints = currentFixtureBackings.some(
+                backing => backing.teamId === m.home_team_id
+              )
+                ? futureBracketPointsFor(m.home_team_id)
+                : 0
+              const awayFuturePoints = currentFixtureBackings.some(
+                backing => backing.teamId === m.away_team_id
+              )
+                ? futureBracketPointsFor(m.away_team_id)
+                : 0
+
               return {
                 userId: memberId,
                 name: profile.display_name || profile.username || 'Player',
@@ -1051,6 +1103,15 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                 exactSide,
                 hasPick: Boolean(exactPick?.winner_team_id),
                 currentFixtureBackings,
+                immediatePoints,
+                homeFuturePoints,
+                awayFuturePoints,
+                homeTotalExposure: currentFixtureBackings.some(backing => backing.teamId === m.home_team_id)
+                  ? immediatePoints + homeFuturePoints
+                  : 0,
+                awayTotalExposure: currentFixtureBackings.some(backing => backing.teamId === m.away_team_id)
+                  ? immediatePoints + awayFuturePoints
+                  : 0,
               }
             })
           )
@@ -1292,6 +1353,29 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
           const homeRoute = r.currentFixtureBackings.find(backing => backing.teamId === match.home_team_id)?.route || null
           const awayRoute = r.currentFixtureBackings.find(backing => backing.teamId === match.away_team_id)?.route || null
 
+          const leadingTeamId = currentLeadSide === 'home'
+            ? match.home_team_id
+            : currentLeadSide === 'away'
+              ? match.away_team_id
+              : null
+          const trailingTeamId = currentLeadSide === 'home'
+            ? match.away_team_id
+            : currentLeadSide === 'away'
+              ? match.home_team_id
+              : null
+
+          const leadingExposure = leadingTeamId === match.home_team_id
+            ? Number(r.homeTotalExposure || 0)
+            : leadingTeamId === match.away_team_id
+              ? Number(r.awayTotalExposure || 0)
+              : 0
+
+          const trailingExposure = trailingTeamId === match.home_team_id
+            ? Number(r.homeTotalExposure || 0)
+            : trailingTeamId === match.away_team_id
+              ? Number(r.awayTotalExposure || 0)
+              : 0
+
           return {
             ...r,
             hasCurrentTeamBacking,
@@ -1299,6 +1383,11 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
             projectedPoints,
             homeRoute,
             awayRoute,
+            leadingExposure,
+            trailingExposure,
+            futurePointsAlive: Math.max(0, leadingExposure - projectedPoints),
+            totalPointsAtRisk: trailingExposure,
+            futurePointsAtRisk: Math.max(0, trailingExposure - (3 + roundPoints)),
           }
         })
 
@@ -1307,6 +1396,10 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
         const eitherCount = enrichedRows.filter(row => row.homeRoute && row.awayRoute).length
         const neitherCount = enrichedRows.filter(row => !row.homeRoute && !row.awayRoute).length
         const availablePoints = 3 + roundPoints
+        const totalLeaguePointsAtRisk = enrichedRows.reduce(
+          (sum, row) => sum + Number(row.totalPointsAtRisk || 0),
+          0
+        )
 
         const routeRank = route => route === 'exact' ? 2 : route === 'different' ? 1 : 0
         const projectedRows = [...enrichedRows].sort((a, b) => {
@@ -1359,6 +1452,21 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
             }}>
               League points impact
             </div>
+
+            {live && currentLeadSide && totalLeaguePointsAtRisk > 0 && (
+              <div style={{
+                marginBottom: '7px',
+                padding: '7px 9px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'rgba(198,40,40,0.06)',
+                border: '1px solid rgba(198,40,40,0.14)',
+                color: 'var(--accent-red)',
+                fontSize: '10px',
+                fontWeight: 850,
+              }}>
+                {totalLeaguePointsAtRisk} total bracket pts currently at risk across this league
+              </div>
+            )}
 
             <div style={{
               display: 'grid',
@@ -1607,26 +1715,66 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                         )}
 
                         {r.hasCurrentTeamBacking && (
-                          <span style={{
-                            padding: '3px 7px',
-                            borderRadius: '999px',
-                            background: r.projectedPoints > 0
-                              ? 'var(--accent-green-light)'
-                              : 'var(--bg-card)',
-                            border: `1px solid ${r.projectedPoints > 0
-                              ? 'rgba(0,122,51,0.2)'
-                              : 'var(--border-light)'}`,
-                            color: r.projectedPoints > 0
-                              ? 'var(--accent-green)'
-                              : 'var(--text-muted)',
-                            fontSize: '9.5px',
-                            fontWeight: 850,
-                            whiteSpace: 'nowrap',
-                          }}>
-                            {r.projectedPoints > 0
-                              ? `Live +${r.projectedPoints} pts`
-                              : `Potential +${3 + roundPoints} pts`}
-                          </span>
+                          <>
+                            <span style={{
+                              padding: '3px 7px',
+                              borderRadius: '999px',
+                              background: r.projectedPoints > 0
+                                ? 'var(--accent-green-light)'
+                                : live && r.totalPointsAtRisk > 0
+                                  ? 'rgba(198,40,40,0.08)'
+                                  : 'var(--bg-card)',
+                              border: `1px solid ${r.projectedPoints > 0
+                                ? 'rgba(0,122,51,0.2)'
+                                : live && r.totalPointsAtRisk > 0
+                                  ? 'rgba(198,40,40,0.20)'
+                                  : 'var(--border-light)'}`,
+                              color: r.projectedPoints > 0
+                                ? 'var(--accent-green)'
+                                : live && r.totalPointsAtRisk > 0
+                                  ? 'var(--accent-red)'
+                                  : 'var(--text-muted)',
+                              fontSize: '9.5px',
+                              fontWeight: 850,
+                              whiteSpace: 'nowrap',
+                            }}>
+                              {r.projectedPoints > 0
+                                ? `Live +${r.projectedPoints} pts`
+                                : live && r.totalPointsAtRisk > 0
+                                  ? `${r.totalPointsAtRisk} total pts at risk`
+                                  : `Potential +${3 + roundPoints} pts`}
+                            </span>
+
+                            {live && r.projectedPoints > 0 && r.futurePointsAlive > 0 && (
+                              <span style={{
+                                padding: '3px 7px',
+                                borderRadius: '999px',
+                                background: 'rgba(0,48,135,0.06)',
+                                border: '1px solid rgba(0,48,135,0.14)',
+                                color: 'var(--scottish-navy)',
+                                fontSize: '9.5px',
+                                fontWeight: 850,
+                                whiteSpace: 'nowrap',
+                              }}>
+                                {r.futurePointsAlive} future pts stay alive
+                              </span>
+                            )}
+
+                            {live && r.projectedPoints === 0 && r.futurePointsAtRisk > 0 && (
+                              <span style={{
+                                padding: '3px 7px',
+                                borderRadius: '999px',
+                                background: 'rgba(198,40,40,0.05)',
+                                border: '1px solid rgba(198,40,40,0.14)',
+                                color: 'var(--accent-red)',
+                                fontSize: '9.5px',
+                                fontWeight: 850,
+                                whiteSpace: 'nowrap',
+                              }}>
+                                Includes {r.futurePointsAtRisk} future pts
+                              </span>
+                            )}
+                          </>
                         )}
 
                         <span style={{
