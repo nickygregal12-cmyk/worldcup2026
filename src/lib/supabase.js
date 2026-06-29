@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
+import { ENVIRONMENT, validateClientEnvironment } from '../config/environment.js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const { supabaseUrl, supabaseAnonKey } = ENVIRONMENT
+const environmentCheck = validateClientEnvironment()
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables')
+if (!environmentCheck.valid) {
+  console.error(`Missing Supabase environment variables: ${environmentCheck.missing.join(', ')}`)
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {

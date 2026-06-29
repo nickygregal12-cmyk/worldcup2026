@@ -1,7 +1,21 @@
 /* global process */
 
 export const handler = async () => {
-  const siteUrl = (process.env.URL || process.env.SITE_URL || 'https://wc26predictor1.netlify.app').replace(/\/$/, '')
+  if (process.env.ENABLE_SCORE_SYNC !== 'true') {
+    return {
+      statusCode: 404,
+      body: JSON.stringify({ error: 'Automatic score sync is disabled for this environment' }),
+    }
+  }
+
+  const configuredSiteUrl = process.env.URL || process.env.SITE_URL
+  if (!configuredSiteUrl) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'SITE_URL is not configured' }),
+    }
+  }
+  const siteUrl = configuredSiteUrl.replace(/\/$/, '')
   const secret = process.env.ADMIN_FUNCTION_SECRET
 
   if (!secret) {

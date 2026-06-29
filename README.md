@@ -1,16 +1,48 @@
-# React + Vite
+# Euro 2028 Predictor
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages.
 
-Currently, two official plugins are available:
+## Environments
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+| Environment | Git branch | Database | Purpose |
+|---|---|---|---|
+| WC26 live | `main` | WC26 production Supabase | Current World Cup site |
+| Euro staging | `euro28-development` | Euro staging Supabase | Development and destructive testing |
 
-## React Compiler
+The Euro branch must never use the WC26 production Supabase URL or keys.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Local setup
 
-## Expanding the ESLint configuration
+```bash
+npm ci
+cp .env.example .env.local
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Fill `.env.local` with the Euro staging Supabase project URL and publishable key. Never add secret/service-role keys to variables beginning with `VITE_`.
+
+## Checks
+
+```bash
+npm run lint:foundation
+npm test
+npm run build
+```
+
+Run all three together with:
+
+```bash
+npm run check
+```
+
+The inherited WC26 code currently has a large pre-existing full-lint backlog. `lint:foundation` protects all new foundation code while that backlog is cleaned up incrementally.
+
+## Safety rules
+
+- Euro changes are made only on `euro28-development` or feature branches created from it.
+- Deploy previews and the Euro Netlify site use only the Euro staging database.
+- Automatic WC26 score syncing is disabled on this branch.
+- Database changes must be saved as reviewed migrations.
+- `supabase/reference/` contains audit material only and must not be executed directly.
+
+See `docs/DEVELOPMENT.md`, `docs/TESTING.md`, and `docs/DEPLOYMENT.md`.

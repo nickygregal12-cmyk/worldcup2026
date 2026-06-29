@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js'
+import { getNow } from './clock.js'
 
 const CACHE_KEY = 'wc26_tournament_pulse_v3'
 const CACHE_MS = 5 * 60 * 1000
@@ -59,7 +60,7 @@ export async function loadTournamentPulse({ force = false } = {}) {
   if (!force) {
     try {
       const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null')
-      if (cached?.savedAt && Date.now() - cached.savedAt < CACHE_MS && cached.data) return cached.data
+      if (cached?.savedAt && getNow().getTime() - cached.savedAt < CACHE_MS && cached.data) return cached.data
     } catch {}
   }
 
@@ -83,7 +84,7 @@ export async function loadTournamentPulse({ force = false } = {}) {
     if (m.home_team_id && m.home_team) teamMap[m.home_team_id] = m.home_team
     if (m.away_team_id && m.away_team) teamMap[m.away_team_id] = m.away_team
   })
-  const now = Date.now()
+  const now = getNow().getTime()
 
   const totalUsers = profiles.length
   const activeUserIds = new Set(predictions.map(p => p.user_id))

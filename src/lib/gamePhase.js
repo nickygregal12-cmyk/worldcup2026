@@ -7,6 +7,7 @@
 
 import { supabase } from './supabase.js'
 import { DATES } from './tournamentDates.js'
+import { getNow } from './clock.js'
 
 export { DATES } from './tournamentDates.js'
 
@@ -38,7 +39,7 @@ export function clearSettingsCache() {
  */
 export async function getGamePhase() {
   const settings = await getAppSettings()
-  const now = new Date()
+  const now = getNow()
 
   // Admin overrides take priority
   const phaseOverride = settings.game_phase_override // e.g. 'pre_tournament', 'group_stage', 'knockout_banner', 'ko_predictor', 'post_tournament'
