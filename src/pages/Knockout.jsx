@@ -857,12 +857,62 @@ export default function Knockout() {
     return { home, away }
   }, [getMatchTeams, knockoutPicks, getTeamById])
 
+  // Teams that have actually secured a place in the round currently being viewed.
+  // This is deliberately separate from route health: once a team reaches a round,
+  // the user's points for predicting that team in the round are secured even if
+  // the exact predicted matchup changed or the team is later eliminated.
+  const confirmedTeamsInActiveStage = useMemo(() => {
+    const confirmed = new Set()
+
+    if (activeStage === 'r32') {
+      confirmedR32Teams.forEach(teamId => confirmed.add(teamId))
+    } else {
+      const previousStage = {
+        r16: 'r32',
+        qf: 'r16',
+        sf: 'qf',
+        final: 'sf',
+      }[activeStage]
+
+      if (previousStage) {
+        realKoResults
+          .filter(match => match.stage === previousStage)
+          .forEach(match => {
+            const winnerId = match.winner_team_id
+              || (Number(match.home_score) > Number(match.away_score)
+                ? match.home_team_id
+                : Number(match.away_score) > Number(match.home_score)
+                  ? match.away_team_id
+                  : null)
+            if (winnerId) confirmed.add(winnerId)
+          })
+      }
+    }
+
+    // A populated official fixture is also definitive evidence that its teams
+    // reached this round, even if the previous result feed has not refreshed yet.
+    realKoFixtures
+      .filter(match => match.stage === activeStage)
+      .forEach(match => {
+        if (match.home_team_id || match.home_team?.id) {
+          confirmed.add(match.home_team_id || match.home_team.id)
+        }
+        if (match.away_team_id || match.away_team?.id) {
+          confirmed.add(match.away_team_id || match.away_team.id)
+        }
+      })
+
+    return confirmed
+  }, [activeStage, confirmedR32Teams, realKoResults, realKoFixtures])
+
   const predictedRoundHealth = useMemo(() => {
     const stageConfig = ALL_STAGES.find(s => s.key === activeStage)
     if (!stageConfig) return []
 
     const stageOrder = ['r32', 'r16', 'qf', 'sf', 'final']
     const activeIndex = stageOrder.indexOf(activeStage)
+    const stagePoints = Number(stageConfig.points || 0)
+    const roundName = stageConfig.label || activeStage
 
     return stageConfig.matches.map(matchDef => {
       const { home, away } = getOriginalPredictedMatchup(matchDef)
@@ -871,6 +921,11 @@ export default function Knockout() {
       const homeOut = !!home?.id && isTeamOut(home.id)
       const awayOut = !!away?.id && isTeamOut(away.id)
       const winnerOut = !!winner?.id && isTeamOut(winner.id)
+      const homeReached = !!home?.id && confirmedTeamsInActiveStage.has(home.id)
+      const awayReached = !!away?.id && confirmedTeamsInActiveStage.has(away.id)
+      const winnerReached = !!winner?.id && confirmedTeamsInActiveStage.has(winner.id)
+      const reachedCount = Number(homeReached) + Number(awayReached)
+      const earnedPoints = reachedCount * stagePoints
       const candidates = realRouteCandidates.get(matchDef.match_number) || new Set()
       const homeCanReach = !!home?.id && !homeOut && candidates.has(home.id)
       const awayCanReach = !!away?.id && !awayOut && candidates.has(away.id)
@@ -884,10 +939,39 @@ export default function Knockout() {
       if (!home?.id && !away?.id) {
         label = 'Prediction unavailable'
         detail = 'No saved predicted teams could be reconstructed for this fixture.'
+      } else if (homeReached && awayReached) {
+        tone = 'safe'
+        label = `Both reached · +${earnedPoints} pts`
+        detail = `${home.name} and ${away.name} both reached the ${roundName.toLowerCase()}, securing ${earnedPoints} bracket points. ${
+          exactMatchupPossible
+            ? 'This exact predicted fixture can still happen.'
+            : 'The points are secured even though their official routes no longer form this exact fixture.'
+        }`
+      } else if (homeReached || awayReached) {
+        tone = 'safe'
+        const reachedTeam = homeReached ? home : away
+        const reachedTeamOut = homeReached ? homeOut : awayOut
+        const otherTeam = homeReached ? away : home
+        const otherTeamOut = homeReached ? awayOut : homeOut
+        const otherTeamCanReach = homeReached ? awayCanReach : homeCanReach
+
+        label = `${reachedTeam.name} reached · +${stagePoints} pts`
+
+        if (reachedTeamOut) {
+          detail = `${reachedTeam.name} reached the ${roundName.toLowerCase()} and secured ${stagePoints} bracket points. They have since been eliminated, but those points remain awarded.`
+        } else if (otherTeam?.id && otherTeamOut) {
+          detail = `${reachedTeam.name} reached the ${roundName.toLowerCase()} and secured ${stagePoints} bracket points. ${otherTeam.name} has been eliminated, so the exact predicted matchup is no longer possible.`
+        } else if (otherTeam?.id && otherTeamCanReach) {
+          detail = `${reachedTeam.name} reached the ${roundName.toLowerCase()} and secured ${stagePoints} bracket points. ${otherTeam.name} can still reach this fixture.`
+        } else if (otherTeam?.id) {
+          detail = `${reachedTeam.name} reached the ${roundName.toLowerCase()} and secured ${stagePoints} bracket points. ${otherTeam.name} remains alive, but is currently off this official route.`
+        } else {
+          detail = `${reachedTeam.name} reached the ${roundName.toLowerCase()} and secured ${stagePoints} bracket points.`
+        }
       } else if (winner?.id && winnerOut) {
         tone = 'out'
         label = 'Saved winner eliminated'
-        detail = `${winner.name} can no longer reach the ${stageConfig.label.toLowerCase()}.`
+        detail = `${winner.name} can no longer reach the ${roundName.toLowerCase()}.`
       } else if (exactMatchupPossible) {
         tone = 'safe'
         label = 'Exact matchup still possible'
@@ -925,11 +1009,20 @@ export default function Knockout() {
 
       return {
         matchDef, home, away, winner, homeOut, awayOut, winnerOut,
+        homeReached, awayReached, winnerReached, reachedCount, earnedPoints, stagePoints,
         homeCanReach, awayCanReach, winnerCanReach, exactMatchupPossible,
         activeIndex, tone, label, detail,
       }
     })
-  }, [activeStage, knockoutPicks, getOriginalPredictedMatchup, getTeamById, isTeamOut, realRouteCandidates])
+  }, [
+    activeStage,
+    knockoutPicks,
+    getOriginalPredictedMatchup,
+    getTeamById,
+    isTeamOut,
+    realRouteCandidates,
+    confirmedTeamsInActiveStage,
+  ])
 
   const getBracketLockReason = useCallback((matchDef) => {
     if (new Date() >= mainBracketLockTime) return 'Bracket fully locked. Saved teams and winners are frozen.'
@@ -1701,6 +1794,12 @@ export default function Knockout() {
             .reduce((sum, ids) => sum + Math.max(0, ids.size - 1), 0)
           const maxScoringTeams = Math.max(0, summaryCorrect - guaranteedLosses)
           const maxRemaining = maxScoringTeams * summaryStagePoints
+          const securedTeamIds = new Set()
+          predictedRoundHealth.forEach(item => {
+            if (item.homeReached && item.home?.id) securedTeamIds.add(item.home.id)
+            if (item.awayReached && item.away?.id) securedTeamIds.add(item.away.id)
+          })
+          const securedStagePoints = securedTeamIds.size * summaryStagePoints
           return (
             <div style={{ marginTop: '10px' }}>
               <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
@@ -1731,6 +1830,11 @@ export default function Knockout() {
                     {guaranteedLosses > 0 && (
                       <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(184,134,11,0.08)', color: 'var(--accent-gold)', fontSize: '11px', fontWeight: '800' }}>
                         {guaranteedLosses} guaranteed loss{guaranteedLosses === 1 ? '' : 'es'}
+                      </span>
+                    )}
+                    {securedStagePoints > 0 && (
+                      <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(0,122,51,0.08)', color: 'var(--accent-green)', fontSize: '11px', fontWeight: '900' }}>
+                        +{securedStagePoints} pts secured
                       </span>
                     )}
                     <span style={{ padding: '5px 9px', borderRadius: 'var(--radius-full)', background: 'rgba(0,48,135,0.06)', color: 'var(--scottish-navy)', fontSize: '11px', fontWeight: '800' }}>Up to {maxRemaining} pts remain</span>
@@ -1893,7 +1997,7 @@ export default function Knockout() {
                         </div>
                       </Link>
                     )
-                  } ) : predictedRoundHealth.length > 0 ? predictedRoundHealth.map(({ matchDef, home, away, winner, homeOut, awayOut, homeCanReach, awayCanReach, tone, label, detail }) => {
+                  } ) : predictedRoundHealth.length > 0 ? predictedRoundHealth.map(({ matchDef, home, away, winner, homeOut, awayOut, homeReached, awayReached, earnedPoints, stagePoints, homeCanReach, awayCanReach, tone, label, detail }) => {
                     const toneMap = {
                       safe: { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.05)', border: 'rgba(0,122,51,0.25)' },
                       need: { colour: 'var(--scottish-navy)', bg: 'rgba(0,48,135,0.04)', border: 'rgba(0,48,135,0.22)' },
@@ -1909,13 +2013,74 @@ export default function Knockout() {
                           <span style={{ padding: '4px 8px', borderRadius: 'var(--radius-full)', background: t.bg, border: `1px solid ${t.border}`, color: t.colour, fontSize: '10px', fontWeight: '900', whiteSpace: 'nowrap' }}>{label.toUpperCase()}</span>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '10px' }}>
-                          {[{ team: home, out: homeOut, canReach: homeCanReach }, { team: away, out: awayOut, canReach: awayCanReach }].map(({ team, out, canReach }, idx) => {
+                          {[
+                            { team: home, out: homeOut, reached: homeReached, canReach: homeCanReach },
+                            { team: away, out: awayOut, reached: awayReached, canReach: awayCanReach },
+                          ].map(({ team, out, reached, canReach }, idx) => {
                             const isWinner = !!team?.id && team.id === winner?.id
+                            const teamBorder = isWinner
+                              ? `2px solid ${reached ? 'var(--accent-green)' : out ? '#c62828' : 'var(--scottish-navy)'}`
+                              : reached
+                                ? '1.5px solid rgba(0,122,51,0.35)'
+                                : '1px solid var(--border-light)'
+                            const teamStatus = reached
+                              ? out
+                                ? `+${stagePoints} pts secured · later eliminated`
+                                : `Reached ${currentStage?.label || 'this round'} · +${stagePoints} pts`
+                              : out
+                                ? 'Eliminated'
+                                : canReach
+                                  ? 'Can still reach this fixture'
+                                  : isWinner
+                                    ? 'Your saved winner · off this route'
+                                    : team
+                                      ? 'Alive, but off this route'
+                                      : 'Waiting'
+
                             return (
-                              <div key={team?.id || idx} style={{ textAlign: idx === 0 ? 'left' : 'right', padding: '10px', borderRadius: 'var(--radius-md)', border: isWinner ? `2px solid ${out ? '#c62828' : 'var(--scottish-navy)'}` : '1px solid var(--border-light)', background: 'var(--bg-card)', opacity: out ? 0.6 : 1 }}>
+                              <div
+                                key={team?.id || idx}
+                                style={{
+                                  textAlign: idx === 0 ? 'left' : 'right',
+                                  padding: '10px',
+                                  borderRadius: 'var(--radius-md)',
+                                  border: teamBorder,
+                                  background: reached ? 'rgba(0,122,51,0.035)' : 'var(--bg-card)',
+                                  opacity: out && !reached ? 0.6 : 1,
+                                }}
+                              >
                                 <div style={{ fontSize: '26px' }}>{team?.flag_emoji || '🏳️'}</div>
-                                <div style={{ fontSize: '13px', fontWeight: '900', color: out ? '#c62828' : isWinner ? 'var(--scottish-navy)' : 'var(--text-primary)', marginTop: '4px', textDecoration: out ? 'line-through' : 'none' }}>{team?.name || 'To be confirmed'}</div>
-                                <div style={{ fontSize: '10px', color: out ? '#c62828' : canReach ? 'var(--accent-green)' : isWinner ? 'var(--scottish-navy)' : 'var(--text-muted)', fontWeight: '800', marginTop: '2px' }}>{out ? 'Eliminated' : canReach ? 'Can still reach this fixture' : isWinner ? 'Your saved winner · off this route' : team ? 'Alive, but off this route' : 'Waiting'}</div>
+                                <div style={{
+                                  fontSize: '13px',
+                                  fontWeight: '900',
+                                  color: reached
+                                    ? 'var(--accent-green)'
+                                    : out
+                                      ? '#c62828'
+                                      : isWinner
+                                        ? 'var(--scottish-navy)'
+                                        : 'var(--text-primary)',
+                                  marginTop: '4px',
+                                  textDecoration: out && !reached ? 'line-through' : 'none',
+                                }}>
+                                  {team?.name || 'To be confirmed'}
+                                </div>
+                                <div style={{
+                                  fontSize: '10px',
+                                  color: reached
+                                    ? 'var(--accent-green)'
+                                    : out
+                                      ? '#c62828'
+                                      : canReach
+                                        ? 'var(--accent-green)'
+                                        : isWinner
+                                          ? 'var(--scottish-navy)'
+                                          : 'var(--text-muted)',
+                                  fontWeight: '800',
+                                  marginTop: '2px',
+                                }}>
+                                  {teamStatus}
+                                </div>
                               </div>
                             )
                           })}
@@ -1924,6 +2089,11 @@ export default function Knockout() {
                         <div style={{ marginTop: '11px', paddingTop: '10px', borderTop: '1px solid var(--border-light)' }}>
                           <div style={{ fontSize: '13px', fontWeight: '900', color: t.colour }}>{label}</div>
                           <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.45, marginTop: '3px' }}>{detail}</div>
+                          {earnedPoints > 0 && (
+                            <div style={{ marginTop: '7px', fontSize: '11px', fontWeight: '900', color: 'var(--accent-green)' }}>
+                              +{earnedPoints} bracket point{earnedPoints === 1 ? '' : 's'} secured in this round
+                            </div>
+                          )}
                         </div>
                       </div>
                     )
