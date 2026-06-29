@@ -1871,100 +1871,67 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                           </span>
                         )}
 
-                        {r.hasCurrentTeamBacking && (
-                          <>
+                        {r.hasCurrentTeamBacking && (() => {
+                          const immediatePoints = 3 + roundPoints
+
+                          let label = `Potential +${immediatePoints} pts`
+                          let tone = 'neutral'
+
+                          if (live && currentLeadSide && r.projectedPoints > 0) {
+                            label = r.futurePointsAlive > 0
+                              ? `+${r.projectedPoints} pts on track · ${r.futurePointsAlive} future stay alive`
+                              : `+${r.projectedPoints} pts on track`
+                            tone = 'good'
+                          } else if (live && currentLeadSide && r.totalPointsAtRisk > 0) {
+                            label = r.futurePointsAtRisk > 0
+                              ? `${r.totalPointsAtRisk} pts at risk · ${immediatePoints} now + ${r.futurePointsAtRisk} future`
+                              : `${r.totalPointsAtRisk} pts at risk`
+                            tone = 'bad'
+                          } else if (live && !currentLeadSide && r.primaryExposure > 0) {
+                            label = r.primaryFutureExposure > 0
+                              ? `${r.primaryExposure} pts at stake · ${immediatePoints} now + ${r.primaryFutureExposure} future`
+                              : `${r.primaryExposure} pts at stake`
+                            tone = 'warn'
+                          }
+
+                          const styles = {
+                            good: {
+                              background: 'var(--accent-green-light)',
+                              border: 'rgba(0,122,51,0.20)',
+                              color: 'var(--accent-green)',
+                            },
+                            bad: {
+                              background: 'rgba(198,40,40,0.08)',
+                              border: 'rgba(198,40,40,0.20)',
+                              color: 'var(--accent-red)',
+                            },
+                            warn: {
+                              background: 'rgba(245,158,11,0.09)',
+                              border: 'rgba(245,158,11,0.22)',
+                              color: '#a16207',
+                            },
+                            neutral: {
+                              background: 'var(--bg-card)',
+                              border: 'var(--border-light)',
+                              color: 'var(--text-muted)',
+                            },
+                          }[tone]
+
+                          return (
                             <span style={{
-                              padding: '3px 7px',
+                              padding: '4px 8px',
                               borderRadius: '999px',
-                              background: r.projectedPoints > 0
-                                ? 'var(--accent-green-light)'
-                                : live && r.totalPointsAtRisk > 0
-                                  ? 'rgba(198,40,40,0.08)'
-                                  : 'var(--bg-card)',
-                              border: `1px solid ${r.projectedPoints > 0
-                                ? 'rgba(0,122,51,0.2)'
-                                : live && r.totalPointsAtRisk > 0
-                                  ? 'rgba(198,40,40,0.20)'
-                                  : 'var(--border-light)'}`,
-                              color: r.projectedPoints > 0
-                                ? 'var(--accent-green)'
-                                : live && r.totalPointsAtRisk > 0
-                                  ? 'var(--accent-red)'
-                                  : 'var(--text-muted)',
+                              background: styles.background,
+                              border: `1px solid ${styles.border}`,
+                              color: styles.color,
                               fontSize: '9.5px',
                               fontWeight: 850,
-                              whiteSpace: 'nowrap',
+                              lineHeight: 1.3,
                             }}>
-                              {r.projectedPoints > 0
-                                ? `Live +${r.projectedPoints} pts`
-                                : live && r.totalPointsAtRisk > 0
-                                  ? `${r.totalPointsAtRisk} total pts at risk`
-                                  : `Potential +${3 + roundPoints} pts`}
+                              {label}
                             </span>
-
-                            {live && r.projectedPoints > 0 && r.futurePointsAlive > 0 && (
-                              <span style={{
-                                padding: '3px 7px',
-                                borderRadius: '999px',
-                                background: 'rgba(0,48,135,0.06)',
-                                border: '1px solid rgba(0,48,135,0.14)',
-                                color: 'var(--scottish-navy)',
-                                fontSize: '9.5px',
-                                fontWeight: 850,
-                                whiteSpace: 'nowrap',
-                              }}>
-                                {r.futurePointsAlive} future pts stay alive
-                              </span>
-                            )}
-
-                            {live && r.projectedPoints === 0 && r.futurePointsAtRisk > 0 && (
-                              <span style={{
-                                padding: '3px 7px',
-                                borderRadius: '999px',
-                                background: 'rgba(198,40,40,0.05)',
-                                border: '1px solid rgba(198,40,40,0.14)',
-                                color: 'var(--accent-red)',
-                                fontSize: '9.5px',
-                                fontWeight: 850,
-                                whiteSpace: 'nowrap',
-                              }}>
-                                Includes {r.futurePointsAtRisk} future pts
-                              </span>
-                            )}
-
-                            {live && !currentLeadSide && r.primaryExposure > 0 && (
-                              <>
-                                <span style={{
-                                  padding: '3px 7px',
-                                  borderRadius: '999px',
-                                  background: 'rgba(245,158,11,0.09)',
-                                  border: '1px solid rgba(245,158,11,0.22)',
-                                  color: '#a16207',
-                                  fontSize: '9.5px',
-                                  fontWeight: 850,
-                                  whiteSpace: 'nowrap',
-                                }}>
-                                  {r.primaryExposure} total pts at stake
-                                </span>
-
-                                {r.primaryFutureExposure > 0 && (
-                                  <span style={{
-                                    padding: '3px 7px',
-                                    borderRadius: '999px',
-                                    background: 'rgba(0,48,135,0.06)',
-                                    border: '1px solid rgba(0,48,135,0.14)',
-                                    color: 'var(--scottish-navy)',
-                                    fontSize: '9.5px',
-                                    fontWeight: 850,
-                                    whiteSpace: 'nowrap',
-                                  }}>
-                                    {r.primaryFutureExposure} future pts depend on {r.primaryTeamCode}
-                                  </span>
-                                )}
-                              </>
-                            )}
-                          </>
-                        )}
+                          )
+                        })()}
 
                         <span style={{
                           flex: '1 1 180px',
