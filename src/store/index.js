@@ -6,6 +6,8 @@ import { supabase, getProfile } from '../lib/supabase'
 let authListenerSetUp = false
 let visibilityListenerSetUp = false
 let initializationPromise = null
+let initialAuthEventSeen = false
+let initialAuthSession = null
 
 const SESSION_ONLY_KEY = 'wc26-session-only'
 const SESSION_ACTIVE_KEY = 'wc26-session-active'
@@ -110,11 +112,12 @@ export const useAuthStore = create(
             authListenerSetUp = true
 
             supabase.auth.onAuthStateChange((event, session) => {
-              // initialize() performs the authoritative first-session check.
-              // Ignoring this duplicate event avoids competing loading states.
-              if (event === 'INITIAL_SESSION') return
+              if (event === 'INITIAL_SESSION') {
+                initialAuthEventSeen = true
+                initialAuthSession = session || null
+              }
 
-              if (event === 'SIGNED_IN' && session?.user) {
+              if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session?.user) {
                 const signedInUser = session.user
                 set({
                   user: signedInUser,
@@ -130,6 +133,10 @@ export const useAuthStore = create(
                   })
                 return
               }
+
+              // A null INITIAL_SESSION is handled by initialize() after it has
+              // also checked getSession() and, when needed, refreshSession().
+              if (event === 'INITIAL_SESSION') return
 
               if (event === 'SIGNED_OUT') {
                 set({
@@ -194,8 +201,28 @@ export const useAuthStore = create(
           }
 
           try {
-            const { data: { session }, error } = await supabase.auth.getSession()
-            if (error) throw error
+            const sessionResult = await supabase.auth.getSession()
+            if (sessionResult.error) throw sessionResult.error
+
+            // Supabase can deliver INITIAL_SESSION a fraction later than the
+            // first getSession() call on a hard refresh. Give that event a brief
+            // chance to arrive, then prefer whichever source contains a user.
+            if (!initialAuthEventSeen) {
+              await new Promise(resolve => setTimeout(resolve, 250))
+            }
+
+            let session = initialAuthSession?.user
+              ? initialAuthSession
+              : sessionResult.data?.session || null
+
+            // When a persisted user exists but the first local session read is
+            // empty, perform one real refresh before showing the guest homepage.
+            if (!session?.user && get().user) {
+              const refreshed = await supabase.auth.refreshSession()
+              if (!refreshed.error && refreshed.data?.session?.user) {
+                session = refreshed.data.session
+              }
+            }
 
             if (session?.user) {
               set({ user: session.user })
