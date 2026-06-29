@@ -45,7 +45,7 @@ function ProtectedRoute({ children }) {
   const { user, isLoading, initialized } = useAuthStore()
   const location = useLocation()
 
-  if (isLoading || !initialized) return <PageLoader />
+  if (isLoading || !initialized || authStatus === 'checking') return <PageLoader />
   if (!user) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
@@ -63,7 +63,7 @@ function AdminRoute({ children }) {
 }
 
 export default function App() {
-  const { initialize, isLoading, initialized, profile, user } = useAuthStore()
+  const { initialize, isLoading, initialized, authStatus, profile, user } = useAuthStore()
   const { darkMode, loadAppSettings } = useAppStore()
   const [showAdminMsg, setShowAdminMsg] = useState(true)
   const location = useLocation()
@@ -71,7 +71,26 @@ export default function App() {
     route => location.pathname === route || location.pathname.startsWith(`${route}/`)
   )
 
-  useEffect(() => { initialize() }, [initialize])
+  useEffect(() => {
+    const persistApi = useAuthStore.persist
+    let unsubscribe
+
+    const beginInitialization = () => {
+      initialize().catch(error => {
+        console.error('Auth initialization failed:', error)
+      })
+    }
+
+    if (!persistApi?.hasHydrated || persistApi.hasHydrated()) {
+      beginInitialization()
+    } else {
+      unsubscribe = persistApi.onFinishHydration(beginInitialization)
+    }
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe()
+    }
+  }, [initialize])
   useEffect(() => { loadAppSettings() }, [loadAppSettings])
 
   // Settings change rarely. Refresh only every five minutes and only while visible.
@@ -82,10 +101,10 @@ export default function App() {
     return () => clearInterval(interval)
   }, [loadAppSettings])
 
-  // Refresh the session on app open and update presence at most once per hour.
+  // The store has already restored and verified the session. This effect only
+  // updates presence; a second refresh here caused competing auth events.
   useEffect(() => {
     if (!user) return
-    supabase.auth.refreshSession()
 
     const storageKey = `wc26-last-seen-${user.id}`
     const lastUpdate = Number(localStorage.getItem(storageKey) || 0)
