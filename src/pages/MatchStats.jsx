@@ -1257,6 +1257,39 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
     const myWinner = koMine ? (koMine.side === 'home' ? match.home_team : koMine.side === 'away' ? match.away_team : null) : null
     const myOnTrack = koMine && lead && lead === koMine.side
 
+    const scorePredictionCount = koRivals.filter(
+      rival => rival.home != null && rival.away != null
+    ).length
+    const exactScoreCount = completed && hasResult
+      ? koRivals.filter(
+          rival =>
+            rival.home != null &&
+            rival.away != null &&
+            Number(rival.home) === Number(match.home_score) &&
+            Number(rival.away) === Number(match.away_score)
+        ).length
+      : 0
+
+    const resultPredictionCount = koRivals.filter(rival => rival.side).length
+    const correctResultCount = completed && winnerSide
+      ? koRivals.filter(rival => rival.side === winnerSide).length
+      : 0
+
+    const goalBandPredictionCount = koRivals.filter(rival => rival.firstGoalBand).length
+    const correctGoalBandCount = completed && match.first_goal_band
+      ? koRivals.filter(
+          rival =>
+            rival.firstGoalBand &&
+            String(rival.firstGoalBand) === String(match.first_goal_band)
+        ).length
+      : 0
+
+    const winningTeam = winnerSide === 'home'
+      ? match.home_team
+      : winnerSide === 'away'
+        ? match.away_team
+        : null
+
     const firstGoalStatus = predictionBand => {
       if (!predictionBand) return null
       if (!match.first_goal_band) {
@@ -1343,6 +1376,125 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
           <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>You haven't predicted this one. <Link to="/ko-predictor" style={{ color: '#e65100', fontWeight: 700 }}>Make your KO pick →</Link></div>
         )}
       </div>
+      )}
+
+      {viewMode === 'ko' && completed && showKoRivals && totalBackers > 0 && (
+        <div className="card fade-up" style={{ marginBottom: '14px' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: 'space-between',
+            gap: '10px',
+            marginBottom: '10px',
+          }}>
+            <div style={{
+              fontSize: 'var(--t-tiny)',
+              fontWeight: 850,
+              letterSpacing: '0.07em',
+              textTransform: 'uppercase',
+              color: 'var(--text-muted)',
+            }}>
+              KO Predictor results
+            </div>
+            <div style={{
+              fontSize: '10px',
+              color: 'var(--text-muted)',
+              textAlign: 'right',
+            }}>
+              {totalBackers} prediction{totalBackers === 1 ? '' : 's'} in this view
+            </div>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gap: '7px',
+          }}>
+            {[
+              {
+                icon: '🎯',
+                label: 'Exact score',
+                count: exactScoreCount,
+                total: scorePredictionCount,
+                detail: hasResult ? `Actual ${match.home_score}–${match.away_score}` : 'Result unavailable',
+              },
+              {
+                icon: '✅',
+                label: 'Correct result',
+                count: correctResultCount,
+                total: resultPredictionCount,
+                detail: winningTeam
+                  ? `${winningTeam.short_code || winningTeam.name} advanced`
+                  : 'Winner unavailable',
+              },
+              {
+                icon: '⚽',
+                label: 'Goal band',
+                count: match.first_goal_band ? correctGoalBandCount : null,
+                total: goalBandPredictionCount,
+                detail: match.first_goal_band
+                  ? `Actual ${match.first_goal_band}`
+                  : 'Not recorded',
+              },
+            ].map(item => (
+              <div
+                key={item.label}
+                style={{
+                  minWidth: 0,
+                  padding: '10px 8px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-light)',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ fontSize: '16px', lineHeight: 1 }}>{item.icon}</div>
+                <div style={{
+                  marginTop: '5px',
+                  fontSize: '9px',
+                  fontWeight: 850,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                }}>
+                  {item.label}
+                </div>
+                <div style={{
+                  marginTop: '4px',
+                  fontSize: '18px',
+                  lineHeight: 1,
+                  fontWeight: 950,
+                  fontFamily: 'var(--font-mono)',
+                  color: item.count > 0 ? 'var(--accent-green)' : 'var(--text-primary)',
+                }}>
+                  {item.count == null ? '—' : item.count}
+                </div>
+                <div style={{
+                  marginTop: '3px',
+                  fontSize: '9px',
+                  color: 'var(--text-muted)',
+                }}>
+                  {item.count == null
+                    ? item.detail
+                    : `of ${item.total} player${item.total === 1 ? '' : 's'}`}
+                </div>
+                {item.count != null && (
+                  <div style={{
+                    marginTop: '3px',
+                    fontSize: '9px',
+                    fontWeight: 750,
+                    color: 'var(--text-secondary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {item.detail}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {viewMode === 'bracket' && bracketHealth && (
