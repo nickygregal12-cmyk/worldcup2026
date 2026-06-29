@@ -346,12 +346,13 @@ export default function MatchStats() {
           .select(`
             id,
             match_number,
+            stage,
             kickoff_time,
             status,
+            group:group_id(name),
             home_team:home_team_id(name,short_code,flag_emoji),
             away_team:away_team_id(name,short_code,flag_emoji)
           `)
-          .neq('stage', 'group')
           .order('kickoff_time', { ascending: true })
           .order('match_number', { ascending: true }),
       ])
@@ -374,7 +375,17 @@ export default function MatchStats() {
 
   const fixtureLink = fixture => {
     if (!fixture) return '#'
+
     const next = new URLSearchParams(searchParams)
+
+    // Group matches use the ordinary match-prediction view. Knockout fixtures
+    // keep the current KO Predictor / Tournament bracket mode and league scope.
+    if (fixture.stage === 'group') {
+      next.delete('view')
+      next.delete('league')
+      next.delete('koLeague')
+    }
+
     return `/match/${fixture.id}/stats${next.toString() ? `?${next.toString()}` : ''}`
   }
 
@@ -414,6 +425,9 @@ export default function MatchStats() {
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Previous fixture
+                {adjacentFixtures.previous.stage === 'group'
+                  ? ` · Group ${adjacentFixtures.previous.group?.name || ''}`
+                  : ''}
               </div>
               <div style={{ fontSize: '11px', fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {adjacentFixtures.previous.home_team?.short_code || 'TBC'} v {adjacentFixtures.previous.away_team?.short_code || 'TBC'}
@@ -451,6 +465,9 @@ export default function MatchStats() {
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Next fixture
+                {adjacentFixtures.next.stage === 'group'
+                  ? ` · Group ${adjacentFixtures.next.group?.name || ''}`
+                  : ''}
               </div>
               <div style={{ fontSize: '11px', fontWeight: 850, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {adjacentFixtures.next.home_team?.short_code || 'TBC'} v {adjacentFixtures.next.away_team?.short_code || 'TBC'}
