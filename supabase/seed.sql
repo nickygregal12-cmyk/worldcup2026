@@ -1,0 +1,4 @@
+-- Intentionally empty for Database Foundation Batch 2.
+--
+-- Provisional teams, venues, fixtures and test scenarios will be added only
+-- after the core schema has passed local and Euro staging validation.

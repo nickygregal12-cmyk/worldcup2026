@@ -45,4 +45,4 @@ The inherited WC26 code currently has a large pre-existing full-lint backlog. `l
 - Database changes must be saved as reviewed migrations.
 - `supabase/reference/` contains audit material only and must not be executed directly.
 
-See `docs/DEVELOPMENT.md`, `docs/TESTING.md`, and `docs/DEPLOYMENT.md`.
+See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, and `docs/DEPLOYMENT.md`.
