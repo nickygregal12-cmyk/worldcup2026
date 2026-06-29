@@ -42,21 +42,28 @@ function PageLoader() {
 }
 
 function ProtectedRoute({ children }) {
-  const { user, isLoading } = useAuthStore()
-  if (isLoading) return <PageLoader />
-  if (!user) return <Navigate to="/login" replace />
+  const { user, isLoading, initialized } = useAuthStore()
+  const location = useLocation()
+
+  if (isLoading || !initialized) return <PageLoader />
+  if (!user) {
+    return <Navigate to="/login" replace state={{ from: location }} />
+  }
   return children
 }
 
 function AdminRoute({ children }) {
-  const { user, isAdmin, isLeagueAdmin, isLoading } = useAuthStore()
-  if (isLoading) return <PageLoader />
-  if (!user || (!isAdmin && !isLeagueAdmin)) return <Navigate to="/" replace />
+  const { user, isAdmin, isLeagueAdmin, isLoading, initialized } = useAuthStore()
+
+  if (isLoading || !initialized) return <PageLoader />
+  if (!user || (!isAdmin && !isLeagueAdmin)) {
+    return <Navigate to="/" replace />
+  }
   return children
 }
 
 export default function App() {
-  const { initialize, isLoading, profile, user } = useAuthStore()
+  const { initialize, isLoading, initialized, profile, user } = useAuthStore()
   const { darkMode, loadAppSettings } = useAppStore()
   const [showAdminMsg, setShowAdminMsg] = useState(true)
   const location = useLocation()
@@ -98,7 +105,7 @@ export default function App() {
     document.documentElement.classList.toggle('dark', Boolean(darkMode))
   }, [darkMode])
 
-  if (isLoading) return <PageLoader />
+  if (isLoading || !initialized) return <PageLoader />
 
   return (
     <ErrorBoundary>

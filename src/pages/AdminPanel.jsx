@@ -275,16 +275,47 @@ async function callAdminFunction(path, options = {}) {
 
 
 export default function AdminPanel() {
-  const { user, isAdmin } = useAuthStore()
-  const [profile, setProfile] = useState(null)
+  const {
+    user,
+    profile: authProfile,
+    isAdmin,
+    isLeagueAdmin: storeIsLeagueAdmin,
+  } = useAuthStore()
+  const [profile, setProfile] = useState(authProfile || null)
+  const [profileChecked, setProfileChecked] = useState(Boolean(authProfile))
 
-  // Load profile to check admin_level
+  // AdminRoute already waits for the restored store profile. Keep this local
+  // lookup for a fresh admin_level value, but never redirect while it is pending.
   useEffect(() => {
-    if (user) supabase.from('profiles').select('admin_level, is_admin').eq('id', user.id).single().then(({ data }) => setProfile(data))
-  }, [user])
+    if (!user?.id) {
+      setProfile(null)
+      setProfileChecked(true)
+      return
+    }
 
-  const isSuperAdmin = isAdmin || profile?.is_admin
-  const isLeagueAdmin = profile?.admin_level === 'league_admin'
+    let cancelled = false
+    setProfile(authProfile || null)
+    setProfileChecked(Boolean(authProfile))
+
+    supabase
+      .from('profiles')
+      .select('id, admin_level, is_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (!error && data) setProfile(data)
+        setProfileChecked(true)
+      })
+      .catch(() => {
+        if (!cancelled) setProfileChecked(true)
+      })
+
+    return () => { cancelled = true }
+  }, [user?.id])
+
+  const isSuperAdmin = isAdmin || Boolean(profile?.is_admin)
+  const isLeagueAdmin = storeIsLeagueAdmin || profile?.admin_level === 'league_admin'
   const hasAdminAccess = isSuperAdmin || isLeagueAdmin
   const navigate = useNavigate()
   const [primarySection, setPrimarySection] = useState(() => isSuperAdmin ? 'overview' : 'competitions')
@@ -423,9 +454,15 @@ export default function AdminPanel() {
   const [leagueAmendSaving, setLeagueAmendSaving] = useState(false)
 
   useEffect(() => {
-    if (!user || !hasAdminAccess) { navigate('/'); return }
+    if (!user || !profileChecked) return
+
+    if (!hasAdminAccess) {
+      navigate('/', { replace: true })
+      return
+    }
+
     loadAll()
-  }, [user, hasAdminAccess])
+  }, [user?.id, profileChecked, hasAdminAccess])
 
   useEffect(() => {
     if (activeTab === 'ko') loadKoData()
