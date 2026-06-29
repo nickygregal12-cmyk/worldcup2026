@@ -1965,7 +1965,7 @@ function GroupHeader({ match, hasResult, live, statsTotal, scopeLabel, weather }
             ? 'Full time'
             : 'Predictions'}
       </div>
-      <ScoreRow match={match} hasResult={hasResult} possibleOpponents={possibleOpponents} />
+      <ScoreRow match={match} hasResult={hasResult} />
       <MatchVenue match={match} weather={weather} />
       <div style={{ fontSize: 'var(--t-tiny)', color: 'var(--text-muted)', marginTop: '12px' }}>
         📊 {statsTotal} predictions · {scopeLabel}
@@ -1986,7 +1986,11 @@ function KOHeader({ match, hasResult, live, weather, viewMode, possibleOpponents
               ? 'Tournament bracket'
               : 'KO Predictor'}
       </div>
-      <ScoreRow match={match} hasResult={hasResult} />
+      <ScoreRow
+        match={match}
+        hasResult={hasResult}
+        possibleOpponents={possibleOpponents}
+      />
       <MatchVenue match={match} weather={weather} />
     </div>
   )
