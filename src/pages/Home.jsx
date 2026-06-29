@@ -1939,6 +1939,8 @@ export default function Home() {
             const accent = isKoView ? '#e65100' : 'var(--scottish-navy)'
             const accentLight = isKoView ? 'rgba(230,81,0,0.08)' : 'var(--accent-blue-light)'
             const fullTableLink = `/leaderboard?game=${isKoView ? 'ko' : 'tournament'}`
+            const leaderboardTitle = isKoView ? '🔥 KO Predictor leaderboard' : '🏆 Tournament leaderboard'
+            const fullTableLabel = isKoView ? 'Full KO table →' : 'Full tournament table →'
 
             const preview = [...activeRows]
             if (user && profile && !preview.some(p => p.id === user.id) && activePoints > 0) {
@@ -1969,9 +1971,13 @@ export default function Home() {
 
             return (
               <div className="card fade-in">
-                <div className="section-header" style={{ marginBottom: koViewAvailable ? '10px' : undefined }}>
-                  <span className="section-title">🏆 Leaderboard</span>
-                  <Link to={fullTableLink} className="section-link">Full table →</Link>
+                <div className="section-header" style={{
+                  marginBottom: koViewAvailable ? '10px' : undefined,
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                }}>
+                  <span className="section-title">{leaderboardTitle}</span>
+                  <Link to={fullTableLink} className="section-link">{fullTableLabel}</Link>
                 </div>
 
                 {koViewAvailable && (

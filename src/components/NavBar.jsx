@@ -1,12 +1,22 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuthStore, useAppStore } from '../store/index.js'
+import { DATES } from '../lib/tournamentDates.js'
 
 export default function NavBar() {
   const { user, profile, isAdmin, isLeagueAdmin, logout } = useAuthStore()
-  const { darkMode, toggleDarkMode } = useAppStore()
+  const { darkMode, toggleDarkMode, appSettings } = useAppStore()
   const location = useLocation()
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false)
+
+  const phaseOverride = appSettings?.game_phase_override || ''
+  const koLive = phaseOverride === 'ko_predictor' || phaseOverride === 'post_tournament'
+    ? true
+    : phaseOverride && phaseOverride !== 'ko_predictor'
+      ? false
+      : new Date() >= DATES.KO_PREDICTOR_OPEN
+
+  const leaderboardLink = `/leaderboard?game=${koLive ? 'ko' : 'tournament'}`
 
   const navLinks = [
     { to: '/', label: 'Home' },
@@ -15,11 +25,14 @@ export default function NavBar() {
     { to: '/ko-predictor', label: 'KO Predictor' },
     { to: '/stats', label: 'Pulse' },
     { to: '/awards', label: 'Awards' },
-    { to: '/leaderboard', label: 'Leaderboard' },
+    { to: leaderboardLink, label: koLive ? 'KO Table' : 'Leaderboard' },
     { to: '/leagues', label: 'Leagues' },
   ]
 
-  const isActive = (to) => to === '/' ? location.pathname === '/' : location.pathname.startsWith(to)
+  const isActive = (to) => {
+    const path = to.split('?')[0]
+    return path === '/' ? location.pathname === '/' : location.pathname.startsWith(path)
+  }
 
   return (
     <>
