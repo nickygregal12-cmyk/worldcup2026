@@ -21,6 +21,132 @@ export function getPredResult(pred) {
   return 'wrong'
 }
 
+
+const KO_SCORING = {
+  correctResult: 5,
+  exactScore: 10,
+  firstGoalBand: 3,
+  extraTime: 3,
+  penalties: 5,
+}
+
+const KO_POINT_LABELS = {
+  correct_winner: 'Correct result',
+  winner: 'Correct result',
+  result: 'Correct result',
+  exact_score: 'Exact score',
+  exact: 'Exact score',
+  first_goal_band: 'First-goal band',
+  first_goal: 'First-goal band',
+  first_goal_time: 'First-goal time',
+  first_goal_minute: 'First-goal time',
+  first_goal_time_band: 'First-goal time',
+  extra_time: 'Extra-time bonus',
+  et_bonus: 'Extra-time bonus',
+  method_bonus: 'Method bonus',
+  correct_method: 'Correct method',
+  penalties: 'Penalties bonus',
+  penalties_bonus: 'Penalties bonus',
+  pen_bonus: 'Penalties bonus',
+  joker: 'Joker multiplier',
+  joker_bonus: 'Joker bonus',
+}
+
+const KO_OUTCOME_LABELS = {
+  '90mins': 'in 90 minutes',
+  et: 'after extra time',
+  penalties: 'on penalties',
+}
+
+const KO_GOAL_BAND_LABELS = {
+  '1-15': '1–15',
+  '16-30': '16–30',
+  '31-45': '31–45',
+  '46-60': '46–60',
+  '61-75': '61–75',
+  '76-90': '76–90+',
+  et: 'Extra time',
+  no_goals: 'No goals',
+}
+
+function normaliseKoPointsBreakdown(breakdown) {
+  if (!breakdown) return []
+
+  let value = breakdown
+  if (typeof value === 'string') {
+    try { value = JSON.parse(value) } catch { return [] }
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item, index) => {
+      if (typeof item === 'number') {
+        return { key: `item-${index}`, label: `Bonus ${index + 1}`, points: item }
+      }
+      if (typeof item === 'string') {
+        return { key: `item-${index}`, label: item, points: null }
+      }
+      const key = item?.key || item?.type || item?.name || `item-${index}`
+      const points = item?.points ?? item?.value ?? item?.amount ?? null
+      return {
+        key,
+        label: item?.label || KO_POINT_LABELS[key] || String(key).replaceAll('_', ' '),
+        points: Number.isFinite(Number(points)) ? Number(points) : null,
+      }
+    })
+  }
+
+  if (typeof value === 'object') {
+    return Object.entries(value).map(([key, points]) => ({
+      key,
+      label: KO_POINT_LABELS[key] || key.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+      points: Number.isFinite(Number(points)) ? Number(points) : null,
+    }))
+  }
+
+  return []
+}
+
+function resolveKoWinner(prediction, match) {
+  if (!prediction || !match) return null
+
+  if (prediction.winner_team_id === match.home_team?.id) return match.home_team
+  if (prediction.winner_team_id === match.away_team?.id) return match.away_team
+
+  if (prediction.home_score != null && prediction.away_score != null) {
+    if (Number(prediction.home_score) > Number(prediction.away_score)) return match.home_team
+    if (Number(prediction.away_score) > Number(prediction.home_score)) return match.away_team
+  }
+
+  return null
+}
+
+function koMaximumPoints(prediction) {
+  if (!prediction) return 0
+
+  const methodBonus = prediction.outcome_type === 'et'
+    ? KO_SCORING.extraTime
+    : prediction.outcome_type === 'penalties'
+      ? KO_SCORING.penalties
+      : 0
+
+  const rawMaximum =
+    KO_SCORING.exactScore +
+    methodBonus +
+    KO_SCORING.firstGoalBand
+
+  return rawMaximum * (prediction.is_joker ? 2 : 1)
+}
+
+function koPredictionDescription(prediction, match) {
+  if (!prediction) return 'No prediction made'
+
+  const winner = resolveKoWinner(prediction, match)
+  if (!winner) return 'Advancing team not recorded'
+
+  const outcome = KO_OUTCOME_LABELS[prediction.outcome_type] || 'in 90 minutes'
+  return `${winner.flag_emoji || ''} ${winner.short_code || winner.name} to advance ${outcome}`.trim()
+}
+
 // ─── sub-views ──────────────────────────────────────────────────────────────
 
 function MemberStandingsView({ predictions }) {
@@ -557,24 +683,29 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
 }
 
 
-function KOPredictorScoresView({ userId, currentUserId }) {
+function KOPredictorScoresView({ userId, currentUserId, targetName = 'Member' }) {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     let cancelled = false
+
     const load = async () => {
       setLoading(true)
       setError('')
+
       const { data: matchData, error: matchError } = await supabase
         .from('matches')
-        .select('id, match_number, stage, kickoff_time, status, home_score, away_score, winner_team_id, outcome_type, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
+        .select('id, match_number, stage, kickoff_time, status, home_score, away_score, winner_team_id, outcome_type, first_goal_band, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
         .in('stage', ['r32', 'r16', 'qf', 'sf', '3rd', 'final'])
         .order('kickoff_time', { ascending: true })
 
       if (matchError) {
-        if (!cancelled) { setError(matchError.message); setLoading(false) }
+        if (!cancelled) {
+          setError(matchError.message)
+          setLoading(false)
+        }
         return
       }
 
@@ -590,55 +721,182 @@ function KOPredictorScoresView({ userId, currentUserId }) {
 
       const visibleIds = visibleMatches.map(match => match.id)
       if (visibleIds.length === 0) {
-        if (!cancelled) { setRows([]); setLoading(false) }
+        if (!cancelled) {
+          setRows([])
+          setLoading(false)
+        }
         return
       }
+
+      const requestedUserIds = [...new Set(
+        [userId, currentUserId].filter(Boolean)
+      )]
 
       const { data: predData, error: predError } = await supabase
         .from('ko_predictions')
-        .select('match_id, home_score, away_score, outcome_type, winner_team_id, first_goal_band, is_joker, points_awarded, points_breakdown')
-        .eq('user_id', userId)
+        .select('user_id, match_id, home_score, away_score, outcome_type, winner_team_id, first_goal_band, is_joker, points_awarded, points_breakdown')
+        .in('user_id', requestedUserIds)
         .in('match_id', visibleIds)
 
       if (predError) {
-        if (!cancelled) { setError(predError.message); setLoading(false) }
+        if (!cancelled) {
+          setError(predError.message)
+          setLoading(false)
+        }
         return
       }
 
-      const predictionsByMatch = Object.fromEntries((predData || []).map(pred => [pred.match_id, pred]))
+      const predictionsByUser = {}
+      ;(predData || []).forEach(prediction => {
+        if (!predictionsByUser[prediction.user_id]) {
+          predictionsByUser[prediction.user_id] = {}
+        }
+        predictionsByUser[prediction.user_id][prediction.match_id] = prediction
+      })
+
       if (!cancelled) {
-        setRows(visibleMatches.map(match => ({ match, prediction: predictionsByMatch[match.id] || null })))
+        setRows(visibleMatches.map(match => ({
+          match,
+          prediction: predictionsByUser[userId]?.[match.id] || null,
+          myPrediction: currentUserId && currentUserId !== userId
+            ? predictionsByUser[currentUserId]?.[match.id] || null
+            : null,
+        })))
         setLoading(false)
       }
     }
+
     load()
     return () => { cancelled = true }
   }, [userId, currentUserId])
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
-  if (error) return <div style={{ textAlign: 'center', padding: '28px', color: 'var(--accent-red)' }}>Could not load KO Predictor picks: {error}</div>
-  if (rows.length === 0) return <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}><div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div><div style={{ fontWeight: '700' }}>No KO Predictor matches have locked yet</div></div>
+  if (loading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', padding: '32px' }}><div className="spinner" /></div>
+  }
 
-  const stageLabels = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-finals', sf: 'Semi-finals', '3rd': 'Third-place play-off', final: 'Final' }
-  const outcomeLabels = { '90mins': '90 mins', et: 'Extra time', penalties: 'Penalties' }
-  const goalBandLabels = { '1-15': '1–15', '16-30': '16–30', '31-45': '31–45', '46-60': '46–60', '61-75': '61–75', '76-90': '76–90+', et: 'Extra time', no_goals: 'No goals' }
+  if (error) {
+    return <div style={{ textAlign: 'center', padding: '28px', color: 'var(--accent-red)' }}>Could not load KO Predictor picks: {error}</div>
+  }
+
+  if (rows.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+        <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
+        <div style={{ fontWeight: '700' }}>No KO Predictor matches have locked yet</div>
+      </div>
+    )
+  }
+
+  const stageLabels = {
+    r32: 'Round of 32',
+    r16: 'Round of 16',
+    qf: 'Quarter-finals',
+    sf: 'Semi-finals',
+    '3rd': 'Third-place play-off',
+    final: 'Final',
+  }
+
+  const isComparing = Boolean(currentUserId && currentUserId !== userId)
 
   return (
     <div>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.45 }}>
         {userId === currentUserId
-          ? 'Testing view: your own saved KO Predictor picks are visible before kickoff. Other players remain hidden until each match locks.'
-          : 'Only matches that have kicked off are shown.'}
+          ? 'Your saved KO Predictor picks are visible before kickoff. Other players remain hidden until each match locks.'
+          : `Showing ${targetName}'s locked KO Predictor picks. Your matching picks are compared underneath.`}
       </div>
-      {rows.map(({ match, prediction }, index) => {
+
+      {rows.map(({ match, prediction, myPrediction }, index) => {
         const showStage = index === 0 || rows[index - 1]?.match?.stage !== match.stage
-        const winner = prediction?.winner_team_id === match.home_team?.id
+        const completed = match.status === 'completed'
+        const live = match.status === 'live'
+        const winner = resolveKoWinner(prediction, match)
+        const myWinner = resolveKoWinner(myPrediction, match)
+        const actualWinner = match.winner_team_id === match.home_team?.id
           ? match.home_team
-          : prediction?.winner_team_id === match.away_team?.id ? match.away_team : null
+          : match.winner_team_id === match.away_team?.id
+            ? match.away_team
+            : null
+
+        const totalEarned = Number(prediction?.points_awarded || 0)
+        const maximumPoints = koMaximumPoints(prediction)
+        const pointsMissed = completed
+          ? Math.max(0, maximumPoints - totalEarned)
+          : 0
+
+        const breakdown = completed && prediction
+          ? normaliseKoPointsBreakdown(prediction.points_breakdown)
+              .filter(item => {
+                const key = String(item.key).toLowerCase()
+                if (['total', 'points_total', 'total_points'].includes(key)) return false
+                if (key.includes('joker') && !prediction.is_joker) return false
+                return true
+              })
+          : []
+
+        const predictedGoalBand = prediction?.first_goal_band
+        const actualGoalBand = match.first_goal_band
+        const goalBandResolved = Boolean(actualGoalBand)
+        const goalBandCorrect = Boolean(
+          predictedGoalBand &&
+          actualGoalBand &&
+          String(predictedGoalBand) === String(actualGoalBand)
+        )
+
+        const sameScore = Boolean(
+          prediction &&
+          myPrediction &&
+          Number(prediction.home_score) === Number(myPrediction.home_score) &&
+          Number(prediction.away_score) === Number(myPrediction.away_score)
+        )
+        const sameWinner = Boolean(
+          winner?.id &&
+          myWinner?.id &&
+          winner.id === myWinner.id
+        )
+        const sameMethod = Boolean(
+          prediction &&
+          myPrediction &&
+          String(prediction.outcome_type || '90mins') === String(myPrediction.outcome_type || '90mins')
+        )
+        const sameGoalBand = Boolean(
+          prediction?.first_goal_band &&
+          myPrediction?.first_goal_band &&
+          String(prediction.first_goal_band) === String(myPrediction.first_goal_band)
+        )
+
+        const statusColour = completed
+          ? totalEarned > 0
+            ? 'var(--accent-green)'
+            : 'var(--text-muted)'
+          : live
+            ? 'var(--accent-red)'
+            : 'var(--scottish-navy)'
+
         return (
           <React.Fragment key={match.id}>
-            {showStage && <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>{stageLabels[match.stage] || match.stage}</div>}
-            <div style={{ padding: '10px 12px', marginBottom: '7px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+            {showStage && (
+              <div style={{
+                fontSize: '11px',
+                fontWeight: '800',
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                margin: '12px 0 6px',
+              }}>
+                {stageLabels[match.stage] || match.stage}
+              </div>
+            )}
+
+            <article style={{
+              padding: '11px 12px',
+              marginBottom: '9px',
+              background: 'var(--bg-secondary)',
+              borderRadius: 'var(--radius-md)',
+              border: completed && totalEarned > 0
+                ? '1px solid rgba(0,122,51,0.25)'
+                : '1px solid var(--border-light)',
+            }}>
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: '32px minmax(0, 1fr) auto minmax(0, 1fr)',
@@ -660,7 +918,7 @@ function KOPredictorScoresView({ userId, currentUserId }) {
                 </span>
 
                 <span style={{
-                  minWidth: '42px',
+                  minWidth: '44px',
                   textAlign: 'center',
                   fontFamily: 'var(--font-mono)',
                   fontSize: '14px',
@@ -668,8 +926,9 @@ function KOPredictorScoresView({ userId, currentUserId }) {
                   color: 'var(--text-primary)',
                   whiteSpace: 'nowrap',
                 }}>
-                  {(match.status === 'live' || match.status === 'completed') &&
-                  match.home_score != null && match.away_score != null
+                  {(live || completed) &&
+                  match.home_score != null &&
+                  match.away_score != null
                     ? `${match.home_score}–${match.away_score}`
                     : 'v'}
                 </span>
@@ -687,26 +946,309 @@ function KOPredictorScoresView({ userId, currentUserId }) {
                   <span style={{ fontSize: '18px', flexShrink: 0 }}>{match.away_team?.flag_emoji}</span>
                 </span>
               </div>
+
               {prediction ? (
-                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '10px', fontWeight: '850', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Prediction</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '15px', fontWeight: '900' }}>{prediction.home_score}–{prediction.away_score}</span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{outcomeLabels[prediction.outcome_type] || prediction.outcome_type || '90 mins'}</span>
-                  {winner && <span style={{ fontSize: '11px', fontWeight: '700' }}>{winner.flag_emoji} {winner.short_code} to advance</span>}
-                  {prediction.first_goal_band && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>First goal: {goalBandLabels[prediction.first_goal_band] || prediction.first_goal_band}</span>}
-                  {prediction.is_joker && <span title="Joker">🃏</span>}
-                  {match.status === 'completed' && <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '900', color: (prediction.points_awarded || 0) > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{prediction.points_awarded || 0}pts</span>}
+                <div style={{ marginTop: '9px', paddingTop: '9px', borderTop: '1px solid var(--border-light)' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                  }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '7px',
+                        flexWrap: 'wrap',
+                      }}>
+                        <span style={{
+                          fontSize: '9px',
+                          fontWeight: '850',
+                          color: 'var(--text-muted)',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                        }}>
+                          Prediction
+                        </span>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '16px',
+                          fontWeight: '900',
+                        }}>
+                          {prediction.home_score}–{prediction.away_score}
+                        </span>
+                        {prediction.is_joker && <span title="Joker">🃏</span>}
+                      </div>
+
+                      <div style={{
+                        marginTop: '4px',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        color: 'var(--text-primary)',
+                        lineHeight: 1.4,
+                      }}>
+                        {koPredictionDescription(prediction, match)}
+                      </div>
+                    </div>
+
+                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                      {completed ? (
+                        <>
+                          <div style={{
+                            fontSize: '12px',
+                            fontWeight: '950',
+                            fontFamily: 'var(--font-mono)',
+                            color: statusColour,
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {totalEarned} pts earned
+                          </div>
+                          <div style={{
+                            marginTop: '2px',
+                            fontSize: '9px',
+                            fontWeight: '800',
+                            color: pointsMissed > 0 ? 'var(--accent-red)' : 'var(--text-muted)',
+                            whiteSpace: 'nowrap',
+                          }}>
+                            {pointsMissed} pts missed
+                          </div>
+                        </>
+                      ) : live ? (
+                        <span style={{ fontSize: '10px', fontWeight: '900', color: 'var(--accent-red)' }}>● LIVE</span>
+                      ) : (
+                        <span style={{ fontSize: '10px', fontWeight: '900', color: 'var(--scottish-navy)' }}>
+                          Up to {maximumPoints} pts
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{
+                    marginTop: '8px',
+                    padding: '8px 9px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--bg-card)',
+                    border: '1px solid var(--border-light)',
+                    fontSize: '10px',
+                    lineHeight: 1.45,
+                  }}>
+                    <div style={{ fontWeight: '850', color: 'var(--text-secondary)' }}>
+                      First-goal band
+                    </div>
+                    <div style={{ marginTop: '2px', color: 'var(--text-muted)' }}>
+                      Predicted: {predictedGoalBand
+                        ? KO_GOAL_BAND_LABELS[predictedGoalBand] || predictedGoalBand
+                        : 'No prediction'}
+                      {' · '}
+                      Actual: {actualGoalBand
+                        ? KO_GOAL_BAND_LABELS[actualGoalBand] || actualGoalBand
+                        : live
+                          ? 'Waiting for first goal'
+                          : completed
+                            ? 'Not recorded'
+                            : 'Pending'}
+                    </div>
+
+                    {(live || completed) && goalBandResolved && (
+                      <div style={{
+                        marginTop: '3px',
+                        fontWeight: '900',
+                        color: goalBandCorrect ? 'var(--accent-green)' : 'var(--accent-red)',
+                      }}>
+                        {goalBandCorrect
+                          ? `✓ Correct${prediction.is_joker ? ' · joker doubled' : ''}`
+                          : predictedGoalBand
+                            ? '✗ Missed'
+                            : '✗ No prediction made'}
+                      </div>
+                    )}
+                  </div>
+
+                  {completed && (
+                    <div style={{
+                      marginTop: '8px',
+                      padding: '8px 9px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-light)',
+                      fontSize: '10px',
+                      color: 'var(--text-muted)',
+                      lineHeight: 1.4,
+                    }}>
+                      Actual outcome: {actualWinner
+                        ? `${actualWinner.flag_emoji || ''} ${actualWinner.short_code || actualWinner.name} advanced${match.outcome_type === 'et' ? ' after extra time' : match.outcome_type === 'penalties' ? ' on penalties' : ' in 90 minutes'}`
+                        : 'Winner not recorded'}
+                    </div>
+                  )}
+
+                  {completed && breakdown.length > 0 ? (
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                      gap: '6px',
+                      marginTop: '8px',
+                    }}>
+                      {breakdown.map(item => (
+                        <div key={item.key} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          padding: '7px 9px',
+                          borderRadius: 'var(--radius-sm)',
+                          background: Number(item.points || 0) > 0
+                            ? 'var(--accent-green-light)'
+                            : 'var(--bg-card)',
+                          border: '1px solid var(--border-light)',
+                          fontSize: '10px',
+                        }}>
+                          <span style={{ color: 'var(--text-secondary)', fontWeight: '750' }}>{item.label}</span>
+                          <span style={{
+                            fontFamily: 'var(--font-mono)',
+                            fontWeight: '900',
+                            color: Number(item.points || 0) > 0
+                              ? 'var(--accent-green)'
+                              : 'var(--text-muted)',
+                          }}>
+                            {item.points == null
+                              ? '—'
+                              : String(item.key).toLowerCase().includes('joker')
+                                ? `×${item.points}`
+                                : Number(item.points) > 0
+                                  ? `+${item.points}`
+                                  : '0'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : completed ? (
+                    <div style={{
+                      marginTop: '7px',
+                      fontSize: '10px',
+                      color: 'var(--text-muted)',
+                      lineHeight: 1.4,
+                    }}>
+                      Total points are confirmed above. A component breakdown was not returned for this saved prediction.
+                    </div>
+                  ) : null}
+
+                  {isComparing && (
+                    <div style={{
+                      marginTop: '9px',
+                      paddingTop: '9px',
+                      borderTop: '1px solid var(--border-light)',
+                    }}>
+                      <div style={{
+                        fontSize: '9px',
+                        fontWeight: '900',
+                        color: 'var(--text-muted)',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        marginBottom: '6px',
+                      }}>
+                        Compared with you
+                      </div>
+
+                      {myPrediction ? (
+                        <>
+                          <div style={{
+                            padding: '8px 9px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border-light)',
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: '8px',
+                            }}>
+                              <span style={{ fontSize: '10px', fontWeight: '850', color: 'var(--text-muted)' }}>Your pick</span>
+                              {completed && (
+                                <span style={{
+                                  fontSize: '10px',
+                                  fontWeight: '900',
+                                  color: Number(myPrediction.points_awarded || 0) > 0
+                                    ? 'var(--accent-green)'
+                                    : 'var(--text-muted)',
+                                }}>
+                                  {Number(myPrediction.points_awarded || 0)} pts
+                                </span>
+                              )}
+                            </div>
+                            <div style={{
+                              marginTop: '3px',
+                              fontSize: '11px',
+                              fontWeight: '850',
+                              color: 'var(--text-primary)',
+                              lineHeight: 1.4,
+                            }}>
+                              {myPrediction.home_score}–{myPrediction.away_score} · {koPredictionDescription(myPrediction, match)}
+                              {myPrediction.first_goal_band
+                                ? ` · First goal ${KO_GOAL_BAND_LABELS[myPrediction.first_goal_band] || myPrediction.first_goal_band}`
+                                : ' · No first-goal pick'}
+                              {myPrediction.is_joker ? ' 🃏' : ''}
+                            </div>
+                          </div>
+
+                          <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '5px',
+                            marginTop: '6px',
+                          }}>
+                            {[
+                              { label: 'Score', same: sameScore },
+                              { label: 'Advancing team', same: sameWinner },
+                              { label: 'Method', same: sameMethod },
+                              { label: 'First goal', same: sameGoalBand },
+                            ].map(item => (
+                              <span key={item.label} style={{
+                                padding: '4px 7px',
+                                borderRadius: '999px',
+                                background: item.same
+                                  ? 'var(--accent-green-light)'
+                                  : 'var(--bg-card)',
+                                border: '1px solid var(--border-light)',
+                                color: item.same
+                                  ? 'var(--accent-green)'
+                                  : 'var(--text-muted)',
+                                fontSize: '9px',
+                                fontWeight: '850',
+                              }}>
+                                {item.same ? '✓' : '≠'} {item.label}
+                              </span>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                          You did not make a prediction for this match.
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
-                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', fontSize: '11px', color: 'var(--text-muted)' }}>No prediction made</div>
+                <div style={{
+                  marginTop: '8px',
+                  paddingTop: '8px',
+                  borderTop: '1px solid var(--border-light)',
+                  fontSize: '11px',
+                  color: 'var(--text-muted)',
+                }}>
+                  No prediction made
+                </div>
               )}
-            </div>
+            </article>
           </React.Fragment>
         )
       })}
     </div>
   )
 }
+
 
 function AwardPredsView({ userId, leagueId, lockedSnapshot = false }) {
   const [preds, setPreds] = useState([])
@@ -1261,7 +1803,7 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
           ) : activeTab === 'knockout' ? (
             <KnockoutPicksView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
           ) : activeTab === 'koPredictor' ? (
-            <KOPredictorScoresView userId={memberModal.userId} currentUserId={currentUserId} />
+            <KOPredictorScoresView userId={memberModal.userId} currentUserId={currentUserId} targetName={memberModal.username} />
           ) : activeTab === 'awards' ? (
             <AwardPredsView userId={memberModal.userId} leagueId={memberModal.leagueId} lockedSnapshot={memberModal.lockedSnapshot} />
           ) : activeTab === 'compare' ? (
