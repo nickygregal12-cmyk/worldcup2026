@@ -1432,16 +1432,36 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
     )
     const myFirstGoalMissing = Boolean(koMine && !koMine.firstGoalBand && (live || completed))
     const mySecuredPoints = (myFirstGoalWon ? KO_SCORING.firstGoalBand : 0) * myMultiplier
-    const myMissedLivePoints = (
-      myFirstGoalLost || myFirstGoalMissing
+
+    const myExactScoreStillPossible = Boolean(
+      live &&
+      koMine &&
+      koMine.home != null &&
+      koMine.away != null &&
+      Number(match.home_score ?? 0) <= Number(koMine.home) &&
+      Number(match.away_score ?? 0) <= Number(koMine.away)
+    )
+    const myResultPointsStillAvailable = myExactScoreStillPossible
+      ? KO_SCORING.exactScore
+      : myWinner
+        ? KO_SCORING.correctResult
+        : 0
+    const myMethodPointsStillAvailable = myWinner ? myMethodBonus : 0
+    const myFirstGoalPointsStillAvailable =
+      !match.first_goal_band && koMine?.firstGoalBand
         ? KO_SCORING.firstGoalBand
         : 0
-    ) * myMultiplier
+
     const myRemainingAvailable = (
-      KO_SCORING.exactScore +
-      myMethodBonus +
-      (!match.first_goal_band && koMine?.firstGoalBand ? KO_SCORING.firstGoalBand : 0)
+      myResultPointsStillAvailable +
+      myMethodPointsStillAvailable +
+      myFirstGoalPointsStillAvailable
     ) * myMultiplier
+
+    const myMissedLivePoints = Math.max(
+      0,
+      myMaximumPoints - mySecuredPoints - myRemainingAvailable
+    )
     const myCompletedPoints = Number(koMine?.pointsAwarded || 0)
     const myCompletedMissed = Math.max(0, myMaximumPoints - myCompletedPoints)
     const myCompletedBreakdown = completed && koMine

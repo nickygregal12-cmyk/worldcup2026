@@ -661,15 +661,40 @@ export default function KOPredictor() {
 
     const firstGoalBandSelected = Boolean(pred.first_goal_band)
     const firstGoalResolved = Boolean(actualFirstGoalBand)
-    const securedRawPoints = firstGoalWon ? KO_SCORING.firstGoalBand : 0
-    const missedRawPoints =
-      (!firstGoalBandSelected && locked) || firstGoalLost
+
+    // A football score can only increase. Once either live score has gone above
+    // the predicted score, the exact-score award is no longer achievable.
+    // The predicted winner can still recover before full time, so the smaller
+    // correct-result award remains available until the match is completed.
+    const exactScoreStillPossible = Boolean(
+      isLive &&
+      hasPrediction &&
+      liveHomeScore <= homeScore &&
+      liveAwayScore <= awayScore
+    )
+    const resultPointsStillAvailable = exactScoreStillPossible
+      ? KO_SCORING.exactScore
+      : predictedWinnerId
+        ? KO_SCORING.correctResult
+        : 0
+    const methodPointsStillAvailable = predictedWinnerId ? methodBonus : 0
+    const firstGoalPointsStillAvailable =
+      !firstGoalResolved && firstGoalBandSelected
         ? KO_SCORING.firstGoalBand
         : 0
+
+    const securedRawPoints = firstGoalWon ? KO_SCORING.firstGoalBand : 0
     const remainingRawPoints =
-      KO_SCORING.exactScore +
-      methodBonus +
-      (!firstGoalResolved && firstGoalBandSelected ? KO_SCORING.firstGoalBand : 0)
+      resultPointsStillAvailable +
+      methodPointsStillAvailable +
+      firstGoalPointsStillAvailable
+
+    // Keep the live status internally consistent:
+    // maximum possible = secured + still available + missed.
+    const missedRawPoints = Math.max(
+      0,
+      maximumRawPoints - securedRawPoints - remainingRawPoints
+    )
 
     const securedPoints = securedRawPoints * liveMultiplier
     const missedPoints = missedRawPoints * liveMultiplier
