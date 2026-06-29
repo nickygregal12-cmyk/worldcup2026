@@ -37,6 +37,17 @@ export default function Leaderboard() {
   useEffect(() => {
     loadAll()
     loadAppSettings()
+
+    const refresh = () => {
+      if (!document.hidden) loadAll(true)
+    }
+    const interval = window.setInterval(refresh, 60000)
+    document.addEventListener('visibilitychange', refresh)
+
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', refresh)
+    }
   }, [loadAppSettings])
 
   useEffect(() => {
@@ -52,11 +63,11 @@ export default function Leaderboard() {
     setSearchParams({ game })
   }
 
-  const loadAll = async () => {
-    setLoading(true)
+  const loadAll = async (silent = false) => {
+    if (!silent) setLoading(true)
     const [tRes, koRes, prevRes, koEntriesRes] = await Promise.all([
       supabase.from('profiles')
-        .select('id, username, display_name, avatar_emoji, total_points, streak_current, perfect_rounds, streak_best, prediction_accuracy, total_predictions, is_banned')
+        .select('id, username, display_name, avatar_emoji, total_points, group_position_points, bracket_points, streak_current, perfect_rounds, streak_best, prediction_accuracy, total_predictions, is_banned')
         .order('total_points', { ascending: false })
         .order('username', { ascending: true })
         .limit(200),
@@ -75,7 +86,7 @@ export default function Leaderboard() {
     setKoPlayers(koRes.data || [])
     setKoEntrantIds(new Set((koEntriesRes.data || []).map(row => row.user_id).filter(Boolean)))
     setPrevRanks(prevRes.data || [])
-    setLoading(false)
+    if (!silent) setLoading(false)
   }
 
   const getRankIcon = (rank) => {
@@ -314,6 +325,11 @@ export default function Leaderboard() {
                           {isTournament && player.streak_current > 2 && <span style={{ fontSize: '11px', color: 'var(--accent-orange)' }}>🔥 {player.streak_current}</span>}
                           {isTournament && player.perfect_rounds > 0 && <span style={{ fontSize: '11px', color: 'var(--accent-green)' }}>🎯 {player.perfect_rounds}</span>}
                           {!isTournament && player.ko_exact_scores > 0 && <span style={{ fontSize: '11px', color: '#e65100' }}>🎯 {player.ko_exact_scores}</span>}
+                          {isTournament && Number(player.bracket_points || 0) > 0 && (
+                            <span style={{ fontSize: '11px', color: 'var(--accent-gold)', fontWeight: '800' }}>
+                              🏆 +{player.bracket_points}
+                            </span>
+                          )}
                           {isTournament && player.prediction_accuracy > 0 && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{player.prediction_accuracy}%</span>}
                         </div>
                       </div>

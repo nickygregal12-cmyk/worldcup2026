@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
-import { calcPredictedStandings, getBest3rdTeams } from '../lib/bracketUtils.js'
+import { ALL_STAGES, calcPredictedStandings, getBest3rdTeams } from '../lib/bracketUtils.js'
 
 const NAVY = 'var(--scottish-navy)'
 const GOLD = '#c8a430'
@@ -29,9 +29,19 @@ export default function PointsSummary() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState([])
 
-  const load = useCallback(async (uid) => {
-    setLoading(true)
-    const [{ data: prof }, { data: preds }, { data: gpos }, { data: groupMatchRows }, { data: r32Rows }, { data: gsRows }, { data: allTotals }] = await Promise.all([
+  const load = useCallback(async (uid, silent = false) => {
+    if (!silent) setLoading(true)
+    const [
+      { data: prof },
+      { data: preds },
+      { data: gpos },
+      { data: groupMatchRows },
+      { data: r32Rows },
+      { data: gsRows },
+      { data: allTotals },
+      { data: knockoutPickRows },
+      { data: knockoutMatchRows },
+    ] = await Promise.all([
       supabase.from('profiles').select('id, username, display_name, avatar_emoji, total_points, group_position_points, bracket_points, exact_scores, streak_current').eq('id', uid).maybeSingle(),
       supabase.from('predictions').select('home_score, away_score, is_confident, points_awarded, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, home_team:home_team_id(short_code, flag_emoji), away_team:away_team_id(short_code, flag_emoji))').eq('user_id', uid),
       supabase.from('predicted_group_positions').select('group_name, predicted_position, points_awarded, team:team_id(short_code, flag_emoji)').eq('user_id', uid).order('group_name').order('predicted_position'),
@@ -39,6 +49,10 @@ export default function PointsSummary() {
       supabase.from('matches').select('home_team_id, away_team_id, group:group_id(name)').eq('stage', 'r32'),
       supabase.from('group_standings').select('team_id, position, played, group:group_id(name)').eq('played', 3).lte('position', 2),
       supabase.from('profiles').select('total_points'),
+      supabase.from('knockout_picks').select('match_number, stage, winner_team_id').eq('user_id', uid),
+      supabase.from('matches')
+        .select('id, match_number, stage, status, home_team_id, away_team_id, winner_team_id, home_score, away_score, home_team:home_team_id(id, name, short_code, flag_emoji), away_team:away_team_id(id, name, short_code, flag_emoji)')
+        .neq('stage', 'group'),
     ])
     setProfile(prof)
 
@@ -78,42 +92,121 @@ export default function PointsSummary() {
     }).filter(g => g.pts > 0).sort((a, b) => b.pts - a.pts)
     setGroupLines(gl)
 
-    // ── Bracket progression lines (predicted teams that reached the R32) ──
+    // ── Bracket progression lines across every knockout round ──
+    // profiles.bracket_points remains the scoring source of truth. These lines
+    // only explain which predicted teams have already reached each real round.
     const groupMatches = groupMatchRows || []
-    // predictions keyed by match id for standings
-    const { data: gp2 } = await supabase.from('predictions').select('match_id, home_score, away_score').eq('user_id', uid)
+    const { data: gp2 } = await supabase
+      .from('predictions')
+      .select('match_id, home_score, away_score')
+      .eq('user_id', uid)
+
     const predMap = {}
-    ;(gp2 || []).forEach(p => { if (p.home_score != null && p.away_score != null) predMap[p.match_id] = { home: p.home_score, away: p.away_score } })
+    ;(gp2 || []).forEach(p => {
+      if (p.home_score != null && p.away_score != null) {
+        predMap[p.match_id] = { home: p.home_score, away: p.away_score }
+      }
+    })
 
     const standings = calcPredictedStandings(groupMatches, predMap, true)
-    const confirmed = new Set()
-    ;(r32Rows || []).forEach(r => { if (r.home_team_id) confirmed.add(r.home_team_id); if (r.away_team_id) confirmed.add(r.away_team_id) })
-    ;(gsRows || []).forEach(r => { if (r.team_id) confirmed.add(r.team_id) })
+    const scoringStages = ALL_STAGES.filter(stage =>
+      ['r32', 'r16', 'qf', 'sf', 'final'].includes(stage.key)
+    )
+    const stageByMatchNumber = new Map(
+      scoringStages.flatMap(stage =>
+        (stage.matches || []).map(match => [Number(match.match_number), stage.key])
+      )
+    )
 
     const teamMeta = {}
-    groupMatches.forEach(m => {
-      if (m.home_team) teamMeta[m.home_team_id] = { ...m.home_team, group: m.group?.name }
-      if (m.away_team) teamMeta[m.away_team_id] = { ...m.away_team, group: m.group?.name }
+    groupMatches.forEach(match => {
+      if (match.home_team_id && match.home_team) {
+        teamMeta[match.home_team_id] = { ...match.home_team, group: match.group?.name }
+      }
+      if (match.away_team_id && match.away_team) {
+        teamMeta[match.away_team_id] = { ...match.away_team, group: match.group?.name }
+      }
+    })
+    ;(knockoutMatchRows || []).forEach(match => {
+      if (match.home_team_id && match.home_team) teamMeta[match.home_team_id] = match.home_team
+      if (match.away_team_id && match.away_team) teamMeta[match.away_team_id] = match.away_team
+    })
+
+    const predictedByStage = Object.fromEntries(
+      scoringStages.map(stage => [stage.key, new Set()])
+    )
+
+    // The user's predicted R32 field comes from their frozen group standings.
+    for (const arr of Object.values(standings)) {
+      ;(arr || []).slice(0, 2).forEach(entry => {
+        if (entry?.id) predictedByStage.r32.add(entry.id)
+      })
+    }
+    getBest3rdTeams(standings).slice(0, 8).forEach(entry => {
+      if (entry?.id) predictedByStage.r32.add(entry.id)
+    })
+
+    // A winner selected in one round is the team predicted to reach the next.
+    const nextStageForPick = {
+      r32: 'r16',
+      r16: 'qf',
+      qf: 'sf',
+      sf: 'final',
+    }
+    ;(knockoutPickRows || []).forEach(pick => {
+      if (!pick.winner_team_id) return
+      const pickStage = pick.stage || stageByMatchNumber.get(Number(pick.match_number))
+      const nextStage = nextStageForPick[pickStage]
+      if (nextStage && predictedByStage[nextStage]) {
+        predictedByStage[nextStage].add(pick.winner_team_id)
+      }
+    })
+
+    const confirmedByStage = Object.fromEntries(
+      scoringStages.map(stage => [stage.key, new Set()])
+    )
+
+    ;(r32Rows || []).forEach(row => {
+      if (row.home_team_id) confirmedByStage.r32.add(row.home_team_id)
+      if (row.away_team_id) confirmedByStage.r32.add(row.away_team_id)
+    })
+    ;(gsRows || []).forEach(row => {
+      if (row.team_id) confirmedByStage.r32.add(row.team_id)
+    })
+
+    ;(knockoutMatchRows || []).forEach(match => {
+      if (confirmedByStage[match.stage]) {
+        if (match.home_team_id) confirmedByStage[match.stage].add(match.home_team_id)
+        if (match.away_team_id) confirmedByStage[match.stage].add(match.away_team_id)
+      }
+
+      if (match.status === 'completed' && match.winner_team_id) {
+        const nextStage = nextStageForPick[match.stage]
+        if (nextStage && confirmedByStage[nextStage]) {
+          confirmedByStage[nextStage].add(match.winner_team_id)
+        }
+      }
     })
 
     const bl = []
-    const seen = new Set()
-    for (const [grp, arr] of Object.entries(standings)) {
-      ;(arr || []).slice(0, 2).forEach((e, i) => {
-        const tid = e?.id
-        if (tid && !seen.has(tid)) {
-          seen.add(tid)
-          if (confirmed.has(tid)) bl.push({ id: tid, team: e.team || teamMeta[tid] || {}, detail: `${i === 0 ? 'Won' : 'Runner-up'} Group ${grp} → R32`, kind: 'pos' })
-        }
+    scoringStages.forEach(stage => {
+      const confirmed = confirmedByStage[stage.key]
+      const predicted = predictedByStage[stage.key]
+
+      ;[...predicted].forEach(teamId => {
+        if (!confirmed.has(teamId)) return
+        const team = teamMeta[teamId] || {}
+        bl.push({
+          id: `${stage.key}:${teamId}`,
+          team,
+          stageKey: stage.key,
+          stageLabel: stage.label,
+          points: Number(stage.points || 0),
+          detail: `Reached ${stage.label}`,
+        })
       })
-    }
-    getBest3rdTeams(standings).slice(0, 8).forEach(t => {
-      const tid = t?.id
-      if (tid && !seen.has(tid)) {
-        seen.add(tid)
-        if (confirmed.has(tid)) bl.push({ id: tid, team: t.team || teamMeta[tid] || {}, detail: `Best third (Group ${t.group}) → R32`, kind: '3rd' })
-      }
     })
+
     setBracketLines(bl)
 
     // ── Your Tournament stats ──
@@ -152,10 +245,25 @@ export default function PointsSummary() {
       best: fmtCall(best), miss: fmtCall(miss),
     })
 
-    setLoading(false)
+    if (!silent) setLoading(false)
   }, [])
 
-  useEffect(() => { if (targetId) load(targetId) }, [targetId, load])
+  useEffect(() => {
+    if (!targetId) return
+
+    load(targetId)
+
+    const refresh = () => {
+      if (!document.hidden) load(targetId, true)
+    }
+    const interval = window.setInterval(refresh, 60000)
+    document.addEventListener('visibilitychange', refresh)
+
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [targetId, load])
 
   // search players
   useEffect(() => {
@@ -314,18 +422,35 @@ export default function PointsSummary() {
         </Category>
 
         <Category open={open.bracket} onToggle={() => setOpen(o => ({ ...o, bracket: !o.bracket }))}
-          icon="🏆" iconBg="#fbf0d6" title="Bracket progression" sub={`${bracketLines.length} teams reached the R32 · 5pts each`} pts={totals.bracket}>
+          icon="🏆" iconBg="#fbf0d6" title="Bracket progression"
+          sub={`${bracketLines.length} scoring team-round${bracketLines.length === 1 ? '' : 's'} · ${bracketLines.reduce((sum, row) => sum + Number(row.points || 0), 0)} pts itemised`}
+          pts={totals.bracket}>
           {bracketLines.map(b => (
             <div key={b.id} style={lnStyle}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <b style={{ fontWeight: '700', fontSize: '13px' }}>{b.team.flag_emoji} {b.team.short_code || b.team.name}</b>
+                <b style={{ fontWeight: '700', fontSize: '13px' }}>{b.team.flag_emoji} {b.team.short_code || b.team.name || 'Team'}</b>
                 <span style={subLn}>{b.detail}</span>
               </div>
-              {b.kind === '3rd' && <span style={tagStyle('3RD')}>3RD</span>}
-              <span style={vStyle}>+5</span>
+              <span style={tagStyle()}>{b.stageLabel}</span>
+              <span style={vStyle}>+{b.points}</span>
             </div>
           ))}
-          {bracketLines.length === 0 && <Empty t="No teams through to the R32 yet" />}
+          {bracketLines.length === 0 && <Empty t="No bracket progression points yet" />}
+          {bracketLines.length > 0 &&
+            bracketLines.reduce((sum, row) => sum + Number(row.points || 0), 0) !== Number(totals.bracket || 0) && (
+              <div style={{
+                padding: '10px 14px',
+                background: 'rgba(184,134,11,0.08)',
+                borderTop: '1px solid rgba(184,134,11,0.18)',
+                color: 'var(--text-muted)',
+                fontSize: '10.5px',
+                lineHeight: 1.45,
+              }}>
+                Profile bracket total: <strong style={{ color: 'var(--accent-gold)' }}>+{totals.bracket}</strong>.
+                The visible round records currently itemise +{bracketLines.reduce((sum, row) => sum + Number(row.points || 0), 0)}.
+                The stored profile total remains the official score.
+              </div>
+            )}
         </Category>
 
         <Category open={open.awards} onToggle={() => setOpen(o => ({ ...o, awards: !o.awards }))}
@@ -334,7 +459,7 @@ export default function PointsSummary() {
         </Category>
 
         <div style={{ textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', padding: '6px 24px' }}>
-          Bracket points climb as more groups finish and the knockouts play out.
+          Bracket points are awarded each time one of your predicted teams reaches a scored round.
         </div>
       </div>
     </div>

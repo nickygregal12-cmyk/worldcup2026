@@ -726,7 +726,27 @@ export default function Leagues() {
     : phaseOverride && phaseOverride !== 'ko_predictor' ? false
     : new Date() >= KO_OPEN_DATE
 
-  useEffect(() => { if (user) { loadMyLeagues(); loadMyKoLeagues(); loadOverallRankings() } }, [user])
+  useEffect(() => {
+    if (!user) return
+
+    loadMyLeagues()
+    loadMyKoLeagues()
+    loadOverallRankings()
+
+    const refresh = () => {
+      if (document.hidden) return
+      loadMyLeagues(true)
+      loadMyKoLeagues(true)
+      loadOverallRankings(true)
+    }
+    const interval = window.setInterval(refresh, 60000)
+    document.addEventListener('visibilitychange', refresh)
+
+    return () => {
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', refresh)
+    }
+  }, [user?.id])
 
   useEffect(() => {
     if (collapsedLeagueIds === null || typeof window === 'undefined') return
@@ -766,21 +786,21 @@ export default function Leagues() {
     setLeagueOrder(next)
   }
 
-  const loadOverallRankings = async () => {
-    setLoadingOverall(true)
+  const loadOverallRankings = async (silent = false) => {
+    if (!silent) setLoadingOverall(true)
     const { data } = await supabase
       .from('profiles')
-      .select('id, username, display_name, total_points, streak_current, exact_scores, avatar_emoji, show_future_predictions')
+      .select('id, username, display_name, total_points, group_position_points, bracket_points, streak_current, exact_scores, avatar_emoji, show_future_predictions')
       .order('total_points', { ascending: false })
       .order('exact_scores', { ascending: false })
       .limit(100)
     setOverallRows(data || [])
-    setLoadingOverall(false)
+    if (!silent) setLoadingOverall(false)
   }
 
   const openOverallProfile = (profile) => openProfile(profile, user?.id)
 
-  const loadMyLeagues = async () => {
+  const loadMyLeagues = async (silent = false) => {
     const { data: memberships } = await supabase
       .from('league_members')
       .select('league_id, league:league_id(id, name, invite_code, is_global, created_by, scoring_preset, custom_scoring, lock_type, snapshot_taken_at)')
@@ -813,12 +833,12 @@ export default function Leagues() {
 
     // Auto-load all league members
     leagues.forEach(m => {
-      if (m.league_id) loadLeagueMembers(m.league_id)
+      if (m.league_id) loadLeagueMembers(m.league_id, silent)
     })
   }
 
-  const loadKoLeagueMembers = async (leagueId) => {
-    setLoadingKoMembers(prev => ({ ...prev, [leagueId]: true }))
+  const loadKoLeagueMembers = async (leagueId, silent = false) => {
+    if (!silent) setLoadingKoMembers(prev => ({ ...prev, [leagueId]: true }))
 
     const { data, error } = await supabase
       .from('ko_league_members')
@@ -843,11 +863,11 @@ export default function Leagues() {
 
     const rows = data || []
     setKoLeagueMembers(prev => ({ ...prev, [leagueId]: rows }))
-    setLoadingKoMembers(prev => ({ ...prev, [leagueId]: false }))
+    if (!silent) setLoadingKoMembers(prev => ({ ...prev, [leagueId]: false }))
     return rows
   }
 
-  const loadMyKoLeagues = async () => {
+  const loadMyKoLeagues = async (silent = false) => {
     const { data: memberships } = await supabase
       .from('ko_league_members')
       .select('league_id, league:league_id(id, name, invite_code, created_by)')
@@ -873,7 +893,7 @@ export default function Leagues() {
 
     setMyKoLeagues(leagues)
     leagues.forEach(m => {
-      if (m.league_id) loadKoLeagueMembers(m.league_id)
+      if (m.league_id) loadKoLeagueMembers(m.league_id, silent)
     })
   }
 
@@ -918,8 +938,8 @@ export default function Leagues() {
     loadMyKoLeagues()
   }
 
-  const loadLeagueMembers = async (leagueId) => {
-    setLoadingMembers(prev => ({ ...prev, [leagueId]: true }))
+  const loadLeagueMembers = async (leagueId, silent = false) => {
+    if (!silent) setLoadingMembers(prev => ({ ...prev, [leagueId]: true }))
     const { data } = await supabase
       .from('league_members')
       .select('*, league_points, rank_snapshot, profile:user_id(id, username, total_points, bracket_points, group_position_points, display_name, streak_current, exact_scores, avatar_emoji)')
@@ -950,7 +970,7 @@ export default function Leagues() {
     }))
 
     setLeagueMembers(prev => ({ ...prev, [leagueId]: [...(data || []), ...offlineMembers] }))
-    setLoadingMembers(prev => ({ ...prev, [leagueId]: false }))
+    if (!silent) setLoadingMembers(prev => ({ ...prev, [leagueId]: false }))
     return [...(data || []), ...offlineMembers]
 
   }
@@ -1522,7 +1542,16 @@ export default function Leagues() {
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'}</span>
                             {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>{profile.exact_scores > 0 ? `🎯 ${profile.exact_scores} exact` : 'Overall player'}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {Number(profile.bracket_points || 0) > 0 && (
+                              <span style={{ color: 'var(--accent-gold)', fontWeight: '800' }}>🏆 +{profile.bracket_points}</span>
+                            )}
+                            {profile.exact_scores > 0
+                              ? <span>🎯 {profile.exact_scores} exact</span>
+                              : Number(profile.bracket_points || 0) === 0
+                                ? <span>Overall player</span>
+                                : null}
+                          </div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '44px' }}>
                           <span style={{ fontWeight: '900', fontSize: '20px', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em', lineHeight: 1, color: isMe ? 'var(--scottish-navy)' : 'var(--text-primary)' }}>{profile.total_points || 0}</span>
@@ -1999,6 +2028,13 @@ export default function Leagues() {
                                       <span>behind leader</span>
                                     </span>
                                   )}
+                                  {!leagueUsesStoredPoints(league) &&
+                                    !member.profile?.is_offline &&
+                                    Number(member.profile?.bracket_points || 0) > 0 && (
+                                      <span style={{ color: 'var(--accent-gold)', fontWeight: '800' }}>
+                                        🏆 +{member.profile.bracket_points}
+                                      </span>
+                                    )}
                                   {member.profile?.streak_current > 2 && <span>🔥{member.profile.streak_current}</span>}
                                   {member.profile?.exact_scores > 0 && <span>🎯{member.profile.exact_scores}</span>}
                                 </div>

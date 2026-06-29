@@ -1733,9 +1733,10 @@ export default function Home() {
                 )
               })()}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: knockoutLive ? '14px' : '0' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '10px', marginBottom: knockoutLive ? '14px' : '0' }}>
                 {[
-                  { label: 'Points', value: profile.total_points || 0, icon: '🏅' },
+                  { label: 'Total Points', value: profile.total_points || 0, icon: '🏅' },
+                  { label: 'Bracket Points', value: profile.bracket_points || 0, icon: '🏆' },
                   { label: 'Streak', value: profile.streak_current || 0, icon: '🔥' },
                   { label: 'Exact Scores', value: profile.exact_scores || 0, icon: '🎯' },
                 ].map(({ label, value, icon }) => (
