@@ -628,7 +628,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
       // venue column must never make the entire Match Centre query return null.
       const { data: matchRow, error: matchError } = await supabase
         .from('matches')
-        .select('id, match_number, stage, home_score, away_score, winner_team_id, status, kickoff_time, live_minute, injury_time, home_team_id, away_team_id, venue_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .select('id, match_number, stage, home_score, away_score, winner_team_id, status, kickoff_time, live_minute, injury_time, first_goal_band, home_team_id, away_team_id, venue_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
         .eq('id', matchId)
         .maybeSingle()
 
@@ -1256,6 +1256,21 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
     const awayBackers = koRivals.filter(r => r.side === 'away').length
     const myWinner = koMine ? (koMine.side === 'home' ? match.home_team : koMine.side === 'away' ? match.away_team : null) : null
     const myOnTrack = koMine && lead && lead === koMine.side
+
+    const firstGoalStatus = predictionBand => {
+      if (!predictionBand) return null
+      if (!match.first_goal_band) {
+        return { label: `First goal ${predictionBand}`, tone: 'pending' }
+      }
+
+      const won = String(predictionBand) === String(match.first_goal_band)
+      return {
+        label: won ? `First goal ${predictionBand} ✓` : `First goal ${predictionBand} ✗`,
+        detail: won ? 'Correct band' : `Actual ${match.first_goal_band}`,
+        tone: won ? 'won' : 'lost',
+      }
+    }
+
     return wrap(<>
       <KOHeader
         match={match}
@@ -1284,7 +1299,37 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
               <div style={{ fontWeight: 800, fontSize: '15px' }}>
                 {myWinner?.name || (koMine.side ? 'Selected team' : 'Winner not recorded')} to advance {koMine.joker && '🃏'}
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Your score: {koMine.home}–{koMine.away}{koMine.firstGoalBand ? ` · First goal ${koMine.firstGoalBand}` : ''}</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                Your score: {koMine.home}–{koMine.away}
+              </div>
+              {koMine.firstGoalBand && (() => {
+                const status = firstGoalStatus(koMine.firstGoalBand)
+                return (
+                  <div style={{
+                    marginTop: '4px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '3px 7px',
+                    borderRadius: '999px',
+                    background: status?.tone === 'won'
+                      ? 'rgba(0,122,51,0.10)'
+                      : status?.tone === 'lost'
+                        ? 'rgba(198,40,40,0.08)'
+                        : 'var(--bg-secondary)',
+                    color: status?.tone === 'won'
+                      ? 'var(--accent-green)'
+                      : status?.tone === 'lost'
+                        ? 'var(--accent-red)'
+                        : 'var(--text-muted)',
+                    fontSize: '10px',
+                    fontWeight: 850,
+                  }}>
+                    <span>{status?.label}</span>
+                    {status?.detail && <span style={{ opacity: 0.8 }}>· {status.detail}</span>}
+                  </div>
+                )
+              })()}
             </div>
             {hasResult && <span style={{ fontSize: '11px', fontWeight: 800, color: myOnTrack ? 'var(--accent-green)' : 'var(--text-muted)' }}>{live && lead === 'draw' ? 'Level' : myOnTrack ? (live ? 'On track' : '✓ Through') : (live ? 'Trailing' : '✗ Missed')}</span>}
           </div>
@@ -1320,10 +1365,25 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
       {viewMode === 'ko' && showKoRivals && totalBackers > 0 && (
         <StatCard title={`${koScopeLabel} · who's backing who`}>
           <div>
-            <div style={{ display: 'flex', height: '30px', borderRadius: '8px', overflow: 'hidden', fontWeight: 800, fontSize: '12px', color: '#fff', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', height: '30px', borderRadius: '8px', overflow: 'hidden', fontWeight: 800, fontSize: '12px', color: '#fff', marginBottom: match.first_goal_band ? '7px' : '12px' }}>
               <div style={{ width: `${homeBackers / totalBackers * 100}%`, background: 'var(--scottish-navy)', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: homeBackers ? '46px' : 0 }}>{match.home_team?.short_code} {homeBackers}</div>
               <div style={{ width: `${awayBackers / totalBackers * 100}%`, background: '#7a4fd0', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: awayBackers ? '46px' : 0 }}>{match.away_team?.short_code} {awayBackers}</div>
             </div>
+
+            {match.first_goal_band && (
+              <div style={{
+                marginBottom: '8px',
+                padding: '6px 8px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-light)',
+                color: 'var(--text-secondary)',
+                fontSize: '10px',
+                fontWeight: 800,
+              }}>
+                ⚽ Actual first goal: {match.first_goal_band}
+              </div>
+            )}
             {koRivals.slice(0, 30).map((r, i) => {
               const me = r.userId === user?.id
               const winTeam = r.side === 'home' ? match.home_team : r.side === 'away' ? match.away_team : null
@@ -1331,13 +1391,35 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                 <div key={r.userId} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: me ? '8px' : '8px 0', borderRadius: me ? 'var(--radius-sm)' : 0, background: me ? 'var(--bg-secondary)' : 'transparent', borderBottom: i < Math.min(koRivals.length, 30) - 1 ? '1px solid var(--border-light)' : 'none' }}>
                   <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--scottish-navy)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '10px', flexShrink: 0 }}>{r.avatar || (r.name[0] || '?').toUpperCase()}</span>
                   <span style={{ flex: 1, fontWeight: 700, fontSize: '13px' }}>{me ? 'You' : r.name}</span>
-                  <span style={{ fontSize: '12px', fontWeight: 700, textAlign: 'right' }}>
-                    <span>{winTeam?.flag_emoji || '🏳️'} {winTeam?.short_code || 'Pick'}</span>
-                    {r.home != null && r.away != null && (
-                      <span style={{ color: 'var(--text-muted)', marginLeft: '6px', fontFamily: 'var(--font-mono)' }}>{r.home}–{r.away}</span>
-                    )}
-                    {r.joker ? ' 🃏' : ''}
-                  </span>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: '12px', fontWeight: 700 }}>
+                      <span>{winTeam?.flag_emoji || '🏳️'} {winTeam?.short_code || 'Pick'}</span>
+                      {r.home != null && r.away != null && (
+                        <span style={{ color: 'var(--text-muted)', marginLeft: '6px', fontFamily: 'var(--font-mono)' }}>{r.home}–{r.away}</span>
+                      )}
+                      {r.joker ? ' 🃏' : ''}
+                    </div>
+
+                    {r.firstGoalBand && (() => {
+                      const status = firstGoalStatus(r.firstGoalBand)
+                      return (
+                        <div style={{
+                          marginTop: '3px',
+                          fontSize: '9.5px',
+                          fontWeight: 800,
+                          color: status?.tone === 'won'
+                            ? 'var(--accent-green)'
+                            : status?.tone === 'lost'
+                              ? 'var(--accent-red)'
+                              : 'var(--text-muted)',
+                          whiteSpace: 'nowrap',
+                        }}>
+                          {status?.label}
+                          {status?.detail && <span style={{ marginLeft: '4px', opacity: 0.8 }}>· {status.detail}</span>}
+                        </div>
+                      )
+                    })()}
+                  </div>
                 </div>
               )
             })}
