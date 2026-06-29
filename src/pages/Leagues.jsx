@@ -1542,15 +1542,8 @@ export default function Leagues() {
                             <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile.display_name || profile.username || 'Unknown'}</span>
                             {isMe && <span style={{ fontSize: '9px', background: 'var(--scottish-navy)', color: 'white', padding: '2px 6px', borderRadius: '20px', fontWeight: '700', flexShrink: 0 }}>YOU</span>}
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {Number(profile.bracket_points || 0) > 0 && (
-                              <span style={{ color: 'var(--accent-gold)', fontWeight: '800' }}>🏆 +{profile.bracket_points}</span>
-                            )}
-                            {profile.exact_scores > 0
-                              ? <span>🎯 {profile.exact_scores} exact</span>
-                              : Number(profile.bracket_points || 0) === 0
-                                ? <span>Overall player</span>
-                                : null}
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '3px' }}>
+                            {profile.exact_scores > 0 ? `🎯 ${profile.exact_scores} exact` : 'Overall player'}
                           </div>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', minWidth: '44px' }}>
@@ -2028,13 +2021,6 @@ export default function Leagues() {
                                       <span>behind leader</span>
                                     </span>
                                   )}
-                                  {!leagueUsesStoredPoints(league) &&
-                                    !member.profile?.is_offline &&
-                                    Number(member.profile?.bracket_points || 0) > 0 && (
-                                      <span style={{ color: 'var(--accent-gold)', fontWeight: '800' }}>
-                                        🏆 +{member.profile.bracket_points}
-                                      </span>
-                                    )}
                                   {member.profile?.streak_current > 2 && <span>🔥{member.profile.streak_current}</span>}
                                   {member.profile?.exact_scores > 0 && <span>🎯{member.profile.exact_scores}</span>}
                                 </div>
