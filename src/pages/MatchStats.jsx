@@ -1301,6 +1301,12 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                 Your score: {koMine.home}–{koMine.away}
+                {koMine.outcomeType === 'et' && (
+                  <span style={{ marginLeft: '5px', color: '#e65100', fontWeight: 850 }}>AET</span>
+                )}
+                {koMine.outcomeType === 'penalties' && (
+                  <span style={{ marginLeft: '5px', color: '#6b46c1', fontWeight: 850 }}>PENS</span>
+                )}
               </div>
               {koMine.firstGoalBand && (() => {
                 const status = firstGoalStatus(koMine.firstGoalBand)
@@ -1395,7 +1401,37 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                     <div style={{ fontSize: '12px', fontWeight: 700 }}>
                       <span>{winTeam?.flag_emoji || '🏳️'} {winTeam?.short_code || 'Pick'}</span>
                       {r.home != null && r.away != null && (
-                        <span style={{ color: 'var(--text-muted)', marginLeft: '6px', fontFamily: 'var(--font-mono)' }}>{r.home}–{r.away}</span>
+                        <span style={{ color: 'var(--text-muted)', marginLeft: '6px', fontFamily: 'var(--font-mono)' }}>
+                          {r.home}–{r.away}
+                        </span>
+                      )}
+                      {r.outcomeType === 'et' && (
+                        <span style={{
+                          marginLeft: '5px',
+                          padding: '2px 5px',
+                          borderRadius: '999px',
+                          background: 'rgba(230,81,0,0.09)',
+                          color: '#e65100',
+                          fontSize: '8.5px',
+                          fontWeight: 900,
+                          whiteSpace: 'nowrap',
+                        }}>
+                          AET
+                        </span>
+                      )}
+                      {r.outcomeType === 'penalties' && (
+                        <span style={{
+                          marginLeft: '5px',
+                          padding: '2px 5px',
+                          borderRadius: '999px',
+                          background: 'rgba(122,79,208,0.10)',
+                          color: '#6b46c1',
+                          fontSize: '8.5px',
+                          fontWeight: 900,
+                          whiteSpace: 'nowrap',
+                        }}>
+                          PENS
+                        </span>
                       )}
                       {r.joker ? ' 🃏' : ''}
                     </div>
