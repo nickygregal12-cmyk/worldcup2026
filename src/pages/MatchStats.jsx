@@ -1511,6 +1511,25 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
               ? Number(r.awayTotalExposure || 0)
               : 0
 
+          // When the live match is level, nobody is currently advancing, so
+          // "at risk" would be misleading. Still show the full amount attached
+          // to the member's backed team so they can see what elimination would
+          // cost them.
+          const primaryBacking =
+            r.currentFixtureBackings.find(backing => backing.route === 'exact') ||
+            r.currentFixtureBackings[0] ||
+            null
+
+          const primaryExposure = primaryBacking?.teamId === match.home_team_id
+            ? Number(r.homeTotalExposure || 0)
+            : primaryBacking?.teamId === match.away_team_id
+              ? Number(r.awayTotalExposure || 0)
+              : 0
+
+          const primaryTeamCode = primaryBacking?.team?.short_code ||
+            primaryBacking?.team?.name ||
+            'this team'
+
           return {
             ...r,
             hasCurrentTeamBacking,
@@ -1523,6 +1542,9 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
             futurePointsAlive: Math.max(0, leadingExposure - projectedPoints),
             totalPointsAtRisk: trailingExposure,
             futurePointsAtRisk: Math.max(0, trailingExposure - (3 + roundPoints)),
+            primaryExposure,
+            primaryFutureExposure: Math.max(0, primaryExposure - (3 + roundPoints)),
+            primaryTeamCode,
           }
         })
 
@@ -1908,6 +1930,38 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                               }}>
                                 Includes {r.futurePointsAtRisk} future pts
                               </span>
+                            )}
+
+                            {live && !currentLeadSide && r.primaryExposure > 0 && (
+                              <>
+                                <span style={{
+                                  padding: '3px 7px',
+                                  borderRadius: '999px',
+                                  background: 'rgba(245,158,11,0.09)',
+                                  border: '1px solid rgba(245,158,11,0.22)',
+                                  color: '#a16207',
+                                  fontSize: '9.5px',
+                                  fontWeight: 850,
+                                  whiteSpace: 'nowrap',
+                                }}>
+                                  {r.primaryExposure} total pts at stake
+                                </span>
+
+                                {r.primaryFutureExposure > 0 && (
+                                  <span style={{
+                                    padding: '3px 7px',
+                                    borderRadius: '999px',
+                                    background: 'rgba(0,48,135,0.06)',
+                                    border: '1px solid rgba(0,48,135,0.14)',
+                                    color: 'var(--scottish-navy)',
+                                    fontSize: '9.5px',
+                                    fontWeight: 850,
+                                    whiteSpace: 'nowrap',
+                                  }}>
+                                    {r.primaryFutureExposure} future pts depend on {r.primaryTeamCode}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </>
                         )}
