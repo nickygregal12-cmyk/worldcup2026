@@ -420,6 +420,56 @@ export default function KOPredictor() {
         ? match.away_team
         : null
 
+    const isLive = match.status === 'live'
+    const liveHomeScore = Number(match.home_score ?? 0)
+    const liveAwayScore = Number(match.away_score ?? 0)
+    const currentLeaderId = liveHomeScore > liveAwayScore
+      ? match.home_team_id
+      : liveAwayScore > liveHomeScore
+        ? match.away_team_id
+        : null
+
+    const predictedWinnerId = hasPrediction
+      ? outcomeType === '90mins'
+        ? homeScore > awayScore
+          ? match.home_team_id
+          : awayScore > homeScore
+            ? match.away_team_id
+            : null
+        : pred.winner_team_id
+      : null
+
+    const winnerOnTrack = Boolean(
+      isLive &&
+      currentLeaderId &&
+      predictedWinnerId &&
+      currentLeaderId === predictedWinnerId
+    )
+
+    const exactScoreOnTrack = Boolean(
+      isLive &&
+      hasPrediction &&
+      liveHomeScore === homeScore &&
+      liveAwayScore === awayScore
+    )
+
+    const actualFirstGoalBand = match.first_goal_band || null
+    const firstGoalWon = Boolean(
+      actualFirstGoalBand &&
+      pred.first_goal_band &&
+      String(actualFirstGoalBand) === String(pred.first_goal_band)
+    )
+    const firstGoalLost = Boolean(
+      actualFirstGoalBand &&
+      pred.first_goal_band &&
+      String(actualFirstGoalBand) !== String(pred.first_goal_band)
+    )
+
+    const liveBasePoints = exactScoreOnTrack ? 10 : winnerOnTrack ? 5 : 0
+    const securedFirstGoalPoints = firstGoalWon ? 3 : 0
+    const liveMultiplier = hasJoker ? 2 : 1
+    const livePointsOnTrack = (liveBasePoints + securedFirstGoalPoints) * liveMultiplier
+
     const cardBorder = resultColour === 'gold' ? '2px solid var(--accent-gold)'
       : resultColour === 'green' ? '2px solid var(--accent-green)'
       : resultColour === 'red' ? '2px solid var(--accent-red)'
@@ -495,7 +545,188 @@ export default function KOPredictor() {
           </div>
         </div>
 
+        {/* Live match panel */}
+        {isLive && hasPrediction && (
+          <div style={{
+            marginBottom: '14px',
+            padding: '12px',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-light)',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+              marginBottom: '10px',
+            }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '11px',
+                fontWeight: 900,
+                color: 'var(--accent-red)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}>
+                🔴 Live {match.live_minute ? `${match.live_minute}${match.injury_time ? `+${match.injury_time}` : ''}'` : ''}
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '20px',
+                fontWeight: 950,
+              }}>
+                {liveHomeScore}–{liveAwayScore}
+              </div>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr auto 1fr',
+              alignItems: 'center',
+              gap: '10px',
+              marginBottom: '10px',
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '28px' }}>{match.home_team?.flag_emoji}</div>
+                <div style={{ fontSize: '11px', fontWeight: 850 }}>{match.home_team?.short_code}</div>
+              </div>
+              <div style={{ color: 'var(--text-muted)', fontWeight: 850 }}>vs</div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '28px' }}>{match.away_team?.flag_emoji}</div>
+                <div style={{ fontSize: '11px', fontWeight: 850 }}>{match.away_team?.short_code}</div>
+              </div>
+            </div>
+
+            <div style={{
+              paddingTop: '10px',
+              borderTop: '1px solid var(--border-light)',
+              display: 'grid',
+              gap: '7px',
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+                fontSize: '11px',
+              }}>
+                <span style={{ color: 'var(--text-muted)' }}>
+                  Your pick: <strong style={{ color: 'var(--text-primary)' }}>{pred.home}–{pred.away}</strong>
+                </span>
+                <span style={{
+                  fontWeight: 900,
+                  color: exactScoreOnTrack || winnerOnTrack
+                    ? 'var(--accent-green)'
+                    : 'var(--accent-red)',
+                }}>
+                  {exactScoreOnTrack
+                    ? 'Exact score on track'
+                    : winnerOnTrack
+                      ? 'Winner on track'
+                      : 'Result currently trailing'}
+                </span>
+              </div>
+
+              {pred.first_goal_band && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  padding: '7px 9px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: firstGoalWon
+                    ? 'var(--accent-green-light)'
+                    : firstGoalLost
+                      ? 'var(--accent-red-light)'
+                      : 'var(--bg-card)',
+                  border: '1px solid var(--border-light)',
+                  fontSize: '10px',
+                  fontWeight: 800,
+                }}>
+                  <span>
+                    First goal: {pred.first_goal_band}
+                    {actualFirstGoalBand && ` · Actual ${actualFirstGoalBand}`}
+                  </span>
+                  <span style={{
+                    color: firstGoalWon
+                      ? 'var(--accent-green)'
+                      : firstGoalLost
+                        ? 'var(--accent-red)'
+                        : 'var(--text-muted)',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {firstGoalWon
+                      ? '+3 pts secured'
+                      : firstGoalLost
+                        ? '0 pts'
+                        : 'Still available'}
+                  </span>
+                </div>
+              )}
+
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '10px',
+                padding: '8px 9px',
+                borderRadius: 'var(--radius-sm)',
+                background: livePointsOnTrack > 0
+                  ? 'var(--accent-green-light)'
+                  : 'var(--bg-card)',
+                border: '1px solid var(--border-light)',
+                fontSize: '11px',
+                fontWeight: 850,
+              }}>
+                <span>Points currently on track</span>
+                <span style={{
+                  fontFamily: 'var(--font-mono)',
+                  color: livePointsOnTrack > 0
+                    ? 'var(--accent-green)'
+                    : 'var(--text-muted)',
+                  fontSize: '13px',
+                }}>
+                  {livePointsOnTrack > 0 ? `+${livePointsOnTrack}` : '0'} pts
+                </span>
+              </div>
+
+              {hasJoker && (
+                <div style={{ fontSize: '9.5px', color: '#e65100', fontWeight: 850 }}>
+                  🃏 Joker active · live points shown at ×2
+                </div>
+              )}
+
+              <Link
+                to={`/match/${match.id}/stats?view=ko`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  marginTop: '2px',
+                  padding: '9px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'rgba(0,48,135,0.06)',
+                  border: '1px solid rgba(0,48,135,0.14)',
+                  color: 'var(--scottish-navy)',
+                  textDecoration: 'none',
+                  fontSize: '10.5px',
+                  fontWeight: 850,
+                }}
+              >
+                <span>See live predictions and points impact</span>
+                <span>View Match Centre →</span>
+              </Link>
+            </div>
+          </div>
+        )}
+
         {/* Teams + score inputs */}
+        {!isLive && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
             <span style={{ fontSize: '36px' }}>{match.home_team?.flag_emoji || '🏳️'}</span>
@@ -549,6 +780,7 @@ export default function KOPredictor() {
             {favourite === 'away' && matchOdds && !locked && !resultColour && <span style={{ fontSize: '10px', color: 'var(--accent-green)', fontWeight: '700' }}>⭐ Favourite</span>}
           </div>
         </div>
+        )}
 
         {/* Odds */}
         {matchOdds && !locked && (
