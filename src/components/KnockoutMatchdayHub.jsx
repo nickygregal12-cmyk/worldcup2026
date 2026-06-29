@@ -477,6 +477,32 @@ export default function KnockoutMatchdayHub({ user, profile }) {
     return map
   }, [publicKoPredictions])
 
+  // Display priority:
+  // 1. Live matches first.
+  // 2. Upcoming/non-completed matches in kickoff order.
+  // 3. Completed matches, newest first.
+  const displayMatches = useMemo(() => {
+    const statusPriority = match => {
+      if (match.status === 'live') return 0
+      if (match.status === 'completed') return 2
+      return 1
+    }
+
+    return [...matches].sort((a, b) => {
+      const priorityDifference = statusPriority(a) - statusPriority(b)
+      if (priorityDifference !== 0) return priorityDifference
+
+      const aKickoff = new Date(a.kickoff_time).getTime()
+      const bKickoff = new Date(b.kickoff_time).getTime()
+
+      if (a.status === 'completed' && b.status === 'completed') {
+        return bKickoff - aKickoff
+      }
+
+      return aKickoff - bKickoff
+    })
+  }, [matches])
+
   if (loading) {
     return (
       <div className="card fade-in" style={{ padding: '28px', textAlign: 'center' }}>
@@ -495,8 +521,8 @@ export default function KnockoutMatchdayHub({ user, profile }) {
 
   if (matches.length === 0) return null
 
-  const liveCount = matches.filter(match => match.status === 'live').length
-  const nextMatch = matches.find(match => match.status !== 'completed') || matches[0]
+  const liveCount = displayMatches.filter(match => match.status === 'live').length
+  const nextMatch = displayMatches.find(match => match.status !== 'completed') || displayMatches[0]
 
   return (
     <section style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -533,7 +559,7 @@ export default function KnockoutMatchdayHub({ user, profile }) {
         </div>
       </div>
 
-      {matches.map(match => (
+      {displayMatches.map(match => (
         <KnockoutMatchCard
           key={match.id}
           match={match}
