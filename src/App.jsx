@@ -42,7 +42,7 @@ function PageLoader() {
 }
 
 function ProtectedRoute({ children }) {
-  const { user, isLoading, initialized } = useAuthStore()
+  const { user, isLoading, initialized, authStatus } = useAuthStore()
   const location = useLocation()
 
   if (isLoading || !initialized || authStatus === 'checking') return <PageLoader />
@@ -53,9 +53,9 @@ function ProtectedRoute({ children }) {
 }
 
 function AdminRoute({ children }) {
-  const { user, isAdmin, isLeagueAdmin, isLoading, initialized } = useAuthStore()
+  const { user, isAdmin, isLeagueAdmin, isLoading, initialized, authStatus } = useAuthStore()
 
-  if (isLoading || !initialized) return <PageLoader />
+  if (isLoading || !initialized || authStatus === 'checking') return <PageLoader />
   if (!user || (!isAdmin && !isLeagueAdmin)) {
     return <Navigate to="/" replace />
   }
@@ -124,7 +124,7 @@ export default function App() {
     document.documentElement.classList.toggle('dark', Boolean(darkMode))
   }, [darkMode])
 
-  if (isLoading || !initialized) return <PageLoader />
+  if (isLoading || !initialized || authStatus === 'checking') return <PageLoader />
 
   return (
     <ErrorBoundary>
