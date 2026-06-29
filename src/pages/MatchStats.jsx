@@ -1553,10 +1553,23 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
         const eitherCount = enrichedRows.filter(row => row.homeRoute && row.awayRoute).length
         const neitherCount = enrichedRows.filter(row => !row.homeRoute && !row.awayRoute).length
         const availablePoints = 3 + roundPoints
-        const totalLeaguePointsAtRisk = enrichedRows.reduce(
-          (sum, row) => sum + Number(row.totalPointsAtRisk || 0),
-          0
-        )
+
+        // The league summary should only count points from this fixture that are
+        // currently set to be lost. Do not include downstream-round exposure,
+        // players who backed both teams, or players with no points available.
+        const trailingOnlyRows = currentLeadSide
+          ? enrichedRows.filter(row => currentLeadSide === 'home'
+              ? row.awayRoute && !row.homeRoute
+              : row.homeRoute && !row.awayRoute
+            )
+          : []
+        const playersCurrentlyLosing = trailingOnlyRows.length
+        const currentMatchPointsAtRisk = playersCurrentlyLosing * availablePoints
+        const leadingTeamName = currentLeadSide === 'home'
+          ? (match.home_team?.name || match.home_team?.short_code || 'the leading team')
+          : currentLeadSide === 'away'
+            ? (match.away_team?.name || match.away_team?.short_code || 'the leading team')
+            : null
 
         const routeRank = route => route === 'exact' ? 2 : route === 'different' ? 1 : 0
         const projectedRows = [...enrichedRows].sort((a, b) => {
@@ -1610,7 +1623,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
               League points impact
             </div>
 
-            {live && currentLeadSide && totalLeaguePointsAtRisk > 0 && (
+            {live && currentLeadSide && currentMatchPointsAtRisk > 0 && (
               <div style={{
                 marginBottom: '7px',
                 padding: '7px 9px',
@@ -1621,7 +1634,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                 fontSize: '10px',
                 fontWeight: 850,
               }}>
-                {totalLeaguePointsAtRisk} total bracket pts currently at risk across this league
+                {playersCurrentlyLosing} player{playersCurrentlyLosing === 1 ? '' : 's'} currently set to lose {currentMatchPointsAtRisk} bracket pts if {leadingTeamName} advance
               </div>
             )}
 
