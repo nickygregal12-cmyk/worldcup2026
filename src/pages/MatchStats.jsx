@@ -15,6 +15,87 @@ const STAGE_LABELS = { r32: 'Round of 32', r16: 'Round of 16', qf: 'Quarter-fina
 // knockout-bracket progression value for the round.
 const BRACKET_STAGE_POINTS = { r32: 5, r16: 10, qf: 15, sf: 20, '3rd': 20, final: 20 }
 
+const KO_SCORING = {
+  correctResult: 5,
+  exactScore: 10,
+  firstGoalBand: 3,
+  extraTime: 3,
+  penalties: 5,
+}
+
+const KO_POINT_LABELS = {
+  correct_winner: 'Correct result',
+  winner: 'Correct result',
+  result: 'Correct result',
+  exact_score: 'Exact score',
+  exact: 'Exact score',
+  first_goal_band: 'First-goal band',
+  first_goal: 'First-goal band',
+  first_goal_time: 'First-goal time',
+  first_goal_minute: 'First-goal time',
+  first_goal_time_band: 'First-goal time',
+  extra_time: 'Extra-time bonus',
+  et_bonus: 'Extra-time bonus',
+  method_bonus: 'Method bonus',
+  correct_method: 'Correct method',
+  penalties: 'Penalties bonus',
+  penalties_bonus: 'Penalties bonus',
+  pen_bonus: 'Penalties bonus',
+  joker: 'Joker multiplier',
+  joker_bonus: 'Joker bonus',
+}
+
+const normaliseKoPointsBreakdown = breakdown => {
+  if (!breakdown) return []
+
+  let value = breakdown
+  if (typeof value === 'string') {
+    try { value = JSON.parse(value) } catch { return [] }
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item, index) => {
+      if (typeof item === 'number') {
+        return { key: `item-${index}`, label: `Bonus ${index + 1}`, points: item }
+      }
+      if (typeof item === 'string') {
+        return { key: `item-${index}`, label: item, points: null }
+      }
+      const key = item?.key || item?.type || item?.name || `item-${index}`
+      const points = item?.points ?? item?.value ?? item?.amount ?? null
+      return {
+        key,
+        label: item?.label || KO_POINT_LABELS[key] || String(key).replaceAll('_', ' '),
+        points: Number.isFinite(Number(points)) ? Number(points) : null,
+      }
+    })
+  }
+
+  if (typeof value === 'object') {
+    return Object.entries(value).map(([key, points]) => ({
+      key,
+      label: KO_POINT_LABELS[key] || key.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
+      points: Number.isFinite(Number(points)) ? Number(points) : null,
+    }))
+  }
+
+  return []
+}
+
+const koMethodBonusFor = outcomeType =>
+  outcomeType === 'et'
+    ? KO_SCORING.extraTime
+    : outcomeType === 'penalties'
+      ? KO_SCORING.penalties
+      : 0
+
+const koMethodLabelFor = outcomeType =>
+  outcomeType === 'et'
+    ? 'after extra time'
+    : outcomeType === 'penalties'
+      ? 'on penalties'
+      : 'in 90 minutes'
+
 function MatchCentreDropdown({ value, options, onChange, disabled = false, ariaLabel }) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef(null)
@@ -628,7 +709,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
       // venue column must never make the entire Match Centre query return null.
       const { data: matchRow, error: matchError } = await supabase
         .from('matches')
-        .select('id, match_number, stage, home_score, away_score, winner_team_id, status, kickoff_time, live_minute, injury_time, first_goal_band, home_team_id, away_team_id, venue_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
+        .select('id, match_number, stage, home_score, away_score, winner_team_id, outcome_type, status, kickoff_time, live_minute, injury_time, first_goal_band, home_team_id, away_team_id, venue_id, home_team:home_team_id(name, flag_emoji, short_code), away_team:away_team_id(name, flag_emoji, short_code)')
         .eq('id', matchId)
         .maybeSingle()
 
@@ -836,7 +917,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
         }
 
         let koQ = supabase.from('ko_predictions')
-          .select('user_id, home_score, away_score, winner_team_id, is_joker, first_goal_band, outcome_type')
+          .select('user_id, home_score, away_score, winner_team_id, is_joker, first_goal_band, outcome_type, points_awarded, points_breakdown')
           .eq('match_id', matchId)
         if (koUserIds?.length) koQ = koQ.in('user_id', koUserIds)
         const koPreds = koUserIds && koUserIds.length === 0
@@ -875,6 +956,8 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
             joker: !!p.is_joker,
             firstGoalBand: p.first_goal_band,
             outcomeType: p.outcome_type,
+            pointsAwarded: Number(p.points_awarded || 0),
+            pointsBreakdown: p.points_breakdown,
           }
         })
         setKoRivals(rivals)
@@ -1289,6 +1372,54 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
       : winnerSide === 'away'
         ? match.away_team
         : null
+    const jokerPredictionCount = koRivals.filter(rival => rival.joker).length
+    const scoringJokerCount = completed
+      ? koRivals.filter(rival => rival.joker && Number(rival.pointsAwarded || 0) > 0).length
+      : 0
+
+    const myMultiplier = koMine?.joker ? 2 : 1
+    const myMethodBonus = koMethodBonusFor(koMine?.outcomeType)
+    const myMaximumPoints = (
+      KO_SCORING.exactScore +
+      myMethodBonus +
+      KO_SCORING.firstGoalBand
+    ) * myMultiplier
+    const myFirstGoalWon = Boolean(
+      match.first_goal_band &&
+      koMine?.firstGoalBand &&
+      String(match.first_goal_band) === String(koMine.firstGoalBand)
+    )
+    const myFirstGoalLost = Boolean(
+      match.first_goal_band &&
+      koMine?.firstGoalBand &&
+      String(match.first_goal_band) !== String(koMine.firstGoalBand)
+    )
+    const myFirstGoalMissing = Boolean(koMine && !koMine.firstGoalBand && (live || completed))
+    const mySecuredPoints = (myFirstGoalWon ? KO_SCORING.firstGoalBand : 0) * myMultiplier
+    const myMissedLivePoints = (
+      myFirstGoalLost || myFirstGoalMissing
+        ? KO_SCORING.firstGoalBand
+        : 0
+    ) * myMultiplier
+    const myRemainingAvailable = (
+      KO_SCORING.exactScore +
+      myMethodBonus +
+      (!match.first_goal_band && koMine?.firstGoalBand ? KO_SCORING.firstGoalBand : 0)
+    ) * myMultiplier
+    const myCompletedPoints = Number(koMine?.pointsAwarded || 0)
+    const myCompletedMissed = Math.max(0, myMaximumPoints - myCompletedPoints)
+    const myCompletedBreakdown = completed && koMine
+      ? normaliseKoPointsBreakdown(koMine.pointsBreakdown)
+          .filter(item => {
+            const key = String(item.key).toLowerCase()
+            if (['total', 'points_total', 'total_points'].includes(key)) return false
+            if (key.includes('joker') && !koMine.joker) return false
+            return true
+          })
+      : []
+    const myPredictionSummary = koMine && myWinner
+      ? `${myWinner.name || myWinner.short_code} to advance ${koMethodLabelFor(koMine.outcomeType)}`
+      : null
 
     const firstGoalStatus = predictionBand => {
       if (!predictionBand) return null
@@ -1326,11 +1457,12 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
       <div className="card fade-up" style={{ marginBottom: '14px', border: `2px solid ${myOnTrack ? 'var(--accent-green)' : 'var(--border-light)'}` }}>
         <div style={{ fontSize: 'var(--t-tiny)', fontWeight: 800, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '8px' }}>Your KO Predictor pick</div>
         {koMine ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '26px' }}>{myWinner?.flag_emoji}</span>
-            <div style={{ flex: 1 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '26px' }}>{myWinner?.flag_emoji}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontWeight: 800, fontSize: '15px' }}>
-                {myWinner?.name || (koMine.side ? 'Selected team' : 'Winner not recorded')} to advance {koMine.joker && '🃏'}
+                {myPredictionSummary || 'Winner not recorded'} {koMine.joker && '🃏'}
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                 Your score: {koMine.home}–{koMine.away}
@@ -1369,8 +1501,126 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                   </div>
                 )
               })()}
+              </div>
+              {hasResult && <span style={{ fontSize: '11px', fontWeight: 800, color: myOnTrack ? 'var(--accent-green)' : 'var(--text-muted)' }}>{live && lead === 'draw' ? 'Level' : myOnTrack ? (live ? 'On track' : '✓ Through') : (live ? 'Trailing' : '✗ Missed')}</span>}
             </div>
-            {hasResult && <span style={{ fontSize: '11px', fontWeight: 800, color: myOnTrack ? 'var(--accent-green)' : 'var(--text-muted)' }}>{live && lead === 'draw' ? 'Level' : myOnTrack ? (live ? 'On track' : '✓ Through') : (live ? 'Trailing' : '✗ Missed')}</span>}
+
+            {live && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: '7px',
+                marginTop: '11px',
+                paddingTop: '10px',
+                borderTop: '1px solid var(--border-light)',
+              }}>
+                <div style={{
+                  padding: '8px 9px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: mySecuredPoints > 0 ? 'var(--accent-green-light)' : 'var(--bg-secondary)',
+                  border: '1px solid var(--border-light)',
+                }}>
+                  <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Secured</div>
+                  <div style={{ marginTop: '3px', fontSize: '14px', fontWeight: 950, fontFamily: 'var(--font-mono)', color: mySecuredPoints > 0 ? 'var(--accent-green)' : 'var(--text-primary)' }}>
+                    {mySecuredPoints} pts
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '8px 9px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-light)',
+                }}>
+                  <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Still available</div>
+                  <div style={{ marginTop: '3px', fontSize: '13px', fontWeight: 950, fontFamily: 'var(--font-mono)', color: 'var(--scottish-navy)' }}>
+                    Up to {myRemainingAvailable} more
+                  </div>
+                </div>
+
+                {myMissedLivePoints > 0 && (
+                  <div style={{
+                    gridColumn: '1 / -1',
+                    padding: '7px 9px',
+                    borderRadius: 'var(--radius-sm)',
+                    background: 'var(--accent-red-light)',
+                    border: '1px solid rgba(198,40,40,0.18)',
+                    color: 'var(--accent-red)',
+                    fontSize: '10px',
+                    fontWeight: 850,
+                  }}>
+                    {myMissedLivePoints} pts missed
+                  </div>
+                )}
+              </div>
+            )}
+
+            {completed && (
+              <div style={{ marginTop: '11px', paddingTop: '10px', borderTop: '1px solid var(--border-light)' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '10px',
+                  padding: '9px 10px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: myCompletedPoints > 0 ? 'var(--accent-green-light)' : 'var(--bg-secondary)',
+                  border: '1px solid var(--border-light)',
+                }}>
+                  <span style={{ fontSize: '11px', fontWeight: 850 }}>Match points</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 950, fontFamily: 'var(--font-mono)', color: myCompletedPoints > 0 ? 'var(--accent-green)' : 'var(--text-primary)' }}>
+                      {myCompletedPoints} pts earned
+                    </div>
+                    <div style={{ marginTop: '2px', fontSize: '9px', fontWeight: 800, color: myCompletedMissed > 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>
+                      {myCompletedMissed} pts missed
+                    </div>
+                  </div>
+                </div>
+
+                {myCompletedBreakdown.length > 0 ? (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                    gap: '6px',
+                    marginTop: '8px',
+                  }}>
+                    {myCompletedBreakdown.map(item => (
+                      <div key={item.key} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '8px',
+                        padding: '7px 9px',
+                        borderRadius: 'var(--radius-sm)',
+                        background: Number(item.points || 0) > 0 ? 'var(--accent-green-light)' : 'var(--bg-secondary)',
+                        border: '1px solid var(--border-light)',
+                        fontSize: '10px',
+                      }}>
+                        <span style={{ color: 'var(--text-secondary)', fontWeight: 750 }}>{item.label}</span>
+                        <span style={{
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 900,
+                          color: Number(item.points || 0) > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
+                        }}>
+                          {item.points == null
+                            ? '—'
+                            : String(item.key).toLowerCase().includes('joker')
+                              ? `×${item.points}`
+                              : Number(item.points) > 0
+                                ? `+${item.points}`
+                                : '0'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: '7px', fontSize: '10px', lineHeight: 1.4, color: 'var(--text-muted)' }}>
+                    Total points are confirmed above. A component breakdown was not returned for this saved prediction.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : (
           <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>You haven't predicted this one. <Link to="/ko-predictor" style={{ color: '#e65100', fontWeight: 700 }}>Make your KO pick →</Link></div>
@@ -1407,7 +1657,7 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))',
             gap: '7px',
           }}>
             {[
@@ -1429,12 +1679,21 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
               },
               {
                 icon: '⚽',
-                label: 'Goal band',
+                label: 'First-goal band',
                 count: match.first_goal_band ? correctGoalBandCount : null,
                 total: goalBandPredictionCount,
                 detail: match.first_goal_band
                   ? `Actual ${match.first_goal_band}`
                   : 'Not recorded',
+              },
+              {
+                icon: '🃏',
+                label: 'Scoring jokers',
+                count: jokerPredictionCount > 0 ? scoringJokerCount : null,
+                total: jokerPredictionCount,
+                detail: jokerPredictionCount > 0
+                  ? 'Joker prediction earned points'
+                  : 'No jokers used',
               },
             ].map(item => (
               <div
@@ -1586,6 +1845,15 @@ function MatchCentre({ matchId, leagueCode, koLeagueCode, viewMode, divider }) {
                         </span>
                       )}
                       {r.joker ? ' 🃏' : ''}
+                      {completed && (
+                        <span style={{
+                          marginLeft: '6px',
+                          color: Number(r.pointsAwarded || 0) > 0 ? 'var(--accent-green)' : 'var(--text-muted)',
+                          fontWeight: 900,
+                        }}>
+                          {Number(r.pointsAwarded || 0)} pts
+                        </span>
+                      )}
                     </div>
 
                     {r.firstGoalBand && (() => {

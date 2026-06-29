@@ -36,21 +36,48 @@ const VENUE_FLAGS = {
 
 
 const POINT_LABELS = {
-  correct_winner: 'Correct winner',
-  winner: 'Correct winner',
-  result: 'Correct winner',
+  correct_winner: 'Correct result',
+  winner: 'Correct result',
+  result: 'Correct result',
   exact_score: 'Exact score',
   exact: 'Exact score',
   first_goal_band: 'First-goal band',
   first_goal: 'First-goal band',
+  first_goal_time: 'First-goal time',
+  first_goal_minute: 'First-goal time',
+  first_goal_time_band: 'First-goal time',
   extra_time: 'Extra-time bonus',
   et_bonus: 'Extra-time bonus',
+  method_bonus: 'Method bonus',
+  correct_method: 'Correct method',
   penalties: 'Penalties bonus',
   penalties_bonus: 'Penalties bonus',
   pen_bonus: 'Penalties bonus',
   joker: 'Joker multiplier',
   joker_bonus: 'Joker bonus',
 }
+
+const KO_SCORING = {
+  correctResult: 5,
+  exactScore: 10,
+  firstGoalBand: 3,
+  extraTime: 3,
+  penalties: 5,
+}
+
+const methodBonusFor = outcomeType =>
+  outcomeType === 'et'
+    ? KO_SCORING.extraTime
+    : outcomeType === 'penalties'
+      ? KO_SCORING.penalties
+      : 0
+
+const methodLabelFor = outcomeType =>
+  outcomeType === 'et'
+    ? 'after extra time'
+    : outcomeType === 'penalties'
+      ? 'on penalties'
+      : 'in 90 minutes'
 
 function normalisePointsBreakdown(breakdown) {
   if (!breakdown) return []
@@ -115,7 +142,13 @@ export default function KOPredictor() {
   useEffect(() => {
     loadData()
     loadOdds()
-  }, [user])
+
+    const interval = window.setInterval(() => {
+      loadData({ silent: true })
+    }, 60000)
+
+    return () => window.clearInterval(interval)
+  }, [user?.id])
 
   useEffect(() => { loadFreshJokerCount() }, [user])
 
@@ -134,8 +167,8 @@ export default function KOPredictor() {
     await supabase.from('profiles').update({ ko_jokers_remaining: remaining }).eq('id', user.id)
   }
 
-  const loadData = async () => {
-    setLoading(true)
+  const loadData = async ({ silent = false } = {}) => {
+    if (!silent) setLoading(true)
 
     // Check if M73 (first R32 match) has both teams confirmed — opens KO Predictor early
     const { data: m73 } = await supabase
@@ -174,9 +207,11 @@ export default function KOPredictor() {
       const jokerCount = predData?.filter(p => p.is_joker === true).length || 0
       const remaining = Math.max(0, 5 - jokerCount)
       setJokersRemaining(remaining)
-      await supabase.from('profiles').update({ ko_jokers_remaining: remaining }).eq('id', user.id)
+      if (!silent) {
+        await supabase.from('profiles').update({ ko_jokers_remaining: remaining }).eq('id', user.id)
+      }
     }
-    setLoading(false)
+    if (!silent) setLoading(false)
   }
 
   const loadOdds = async () => {
@@ -465,10 +500,39 @@ export default function KOPredictor() {
       String(actualFirstGoalBand) !== String(pred.first_goal_band)
     )
 
-    const liveBasePoints = exactScoreOnTrack ? 10 : winnerOnTrack ? 5 : 0
-    const securedFirstGoalPoints = firstGoalWon ? 3 : 0
     const liveMultiplier = hasJoker ? 2 : 1
-    const livePointsOnTrack = (liveBasePoints + securedFirstGoalPoints) * liveMultiplier
+    const methodBonus = methodBonusFor(outcomeType)
+    const maximumRawPoints =
+      KO_SCORING.exactScore +
+      methodBonus +
+      KO_SCORING.firstGoalBand
+    const maximumPoints = maximumRawPoints * liveMultiplier
+
+    const firstGoalBandSelected = Boolean(pred.first_goal_band)
+    const firstGoalResolved = Boolean(actualFirstGoalBand)
+    const securedRawPoints = firstGoalWon ? KO_SCORING.firstGoalBand : 0
+    const missedRawPoints =
+      (!firstGoalBandSelected && locked) || firstGoalLost
+        ? KO_SCORING.firstGoalBand
+        : 0
+    const remainingRawPoints =
+      KO_SCORING.exactScore +
+      methodBonus +
+      (!firstGoalResolved && firstGoalBandSelected ? KO_SCORING.firstGoalBand : 0)
+
+    const securedPoints = securedRawPoints * liveMultiplier
+    const missedPoints = missedRawPoints * liveMultiplier
+    const remainingAvailablePoints = remainingRawPoints * liveMultiplier
+    const completedMissedPoints = Math.max(0, maximumPoints - totalAwarded)
+
+    const predictedWinner = predictedWinnerId === match.home_team_id
+      ? match.home_team
+      : predictedWinnerId === match.away_team_id
+        ? match.away_team
+        : null
+    const predictionSummary = predictedWinner
+      ? `${predictedWinner.name || predictedWinner.short_code} to advance ${methodLabelFor(outcomeType)}`
+      : 'Advancing team not recorded'
 
     const cardBorder = resultColour === 'gold' ? '2px solid var(--accent-gold)'
       : resultColour === 'green' ? '2px solid var(--accent-green)'
@@ -615,6 +679,9 @@ export default function KOPredictor() {
               }}>
                 <span style={{ color: 'var(--text-muted)' }}>
                   Your pick: <strong style={{ color: 'var(--text-primary)' }}>{pred.home}–{pred.away}</strong>
+                  <span style={{ marginLeft: '5px', color: 'var(--text-secondary)', fontWeight: 750 }}>
+                    · {predictionSummary}
+                  </span>
                 </span>
                 <span style={{
                   fontWeight: 900,
@@ -660,38 +727,80 @@ export default function KOPredictor() {
                     whiteSpace: 'nowrap',
                   }}>
                     {firstGoalWon
-                      ? '+3 pts secured'
+                      ? `+${KO_SCORING.firstGoalBand * liveMultiplier} pts secured`
                       : firstGoalLost
-                        ? '0 pts'
+                        ? `${KO_SCORING.firstGoalBand * liveMultiplier} pts missed`
                         : 'Still available'}
                   </span>
                 </div>
               )}
 
               <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '10px',
-                padding: '8px 9px',
-                borderRadius: 'var(--radius-sm)',
-                background: livePointsOnTrack > 0
-                  ? 'var(--accent-green-light)'
-                  : 'var(--bg-card)',
-                border: '1px solid var(--border-light)',
-                fontSize: '11px',
-                fontWeight: 850,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: '7px',
               }}>
-                <span>Points currently on track</span>
-                <span style={{
-                  fontFamily: 'var(--font-mono)',
-                  color: livePointsOnTrack > 0
-                    ? 'var(--accent-green)'
-                    : 'var(--text-muted)',
-                  fontSize: '13px',
+                <div style={{
+                  padding: '8px 9px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: securedPoints > 0 ? 'var(--accent-green-light)' : 'var(--bg-card)',
+                  border: '1px solid var(--border-light)',
                 }}>
-                  {livePointsOnTrack > 0 ? `+${livePointsOnTrack}` : '0'} pts
-                </span>
+                  <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>
+                    Secured
+                  </div>
+                  <div style={{
+                    marginTop: '3px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '14px',
+                    fontWeight: 950,
+                    color: securedPoints > 0 ? 'var(--accent-green)' : 'var(--text-primary)',
+                  }}>
+                    {securedPoints} pts
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '8px 9px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-light)',
+                }}>
+                  <div style={{ fontSize: '9px', color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase' }}>
+                    Still available
+                  </div>
+                  <div style={{
+                    marginTop: '3px',
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '14px',
+                    fontWeight: 950,
+                    color: 'var(--scottish-navy)',
+                  }}>
+                    Up to {remainingAvailablePoints} more
+                  </div>
+                </div>
+              </div>
+
+              {missedPoints > 0 && (
+                <div style={{
+                  padding: '7px 9px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'var(--accent-red-light)',
+                  border: '1px solid rgba(198,40,40,0.18)',
+                  color: 'var(--accent-red)',
+                  fontSize: '10px',
+                  fontWeight: 850,
+                }}>
+                  {missedPoints} pts missed
+                </div>
+              )}
+
+              <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 750 }}>
+                Current position: {exactScoreOnTrack
+                  ? 'exact score currently on track'
+                  : winnerOnTrack
+                    ? 'correct result currently on track'
+                    : 'prediction currently trailing'}
               </div>
 
               {hasJoker && (
@@ -722,6 +831,42 @@ export default function KOPredictor() {
                 <span>View Match Centre →</span>
               </Link>
             </div>
+          </div>
+        )}
+
+        {!locked && hasPrediction && (
+          <div style={{
+            marginBottom: '14px',
+            padding: '11px 12px',
+            borderRadius: 'var(--radius-md)',
+            background: 'rgba(0,48,135,0.06)',
+            border: '1px solid rgba(0,48,135,0.14)',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '10px',
+            }}>
+              <span style={{ fontSize: '11px', fontWeight: 850, color: 'var(--text-secondary)' }}>
+                Up to {maximumPoints} pts available
+              </span>
+              {hasJoker && (
+                <span style={{ fontSize: '9.5px', fontWeight: 850, color: '#e65100' }}>
+                  🃏 Maximum doubled
+                </span>
+              )}
+            </div>
+            <div style={{ marginTop: '4px', fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+              Exact score {KO_SCORING.exactScore} (or correct result {KO_SCORING.correctResult})
+              {methodBonus > 0 ? ` · method bonus ${methodBonus}` : ''}
+              {' · first-goal band '}{KO_SCORING.firstGoalBand}
+            </div>
+            {!firstGoalBandSelected && (
+              <div style={{ marginTop: '5px', fontSize: '10px', fontWeight: 800, color: 'var(--accent-red)' }}>
+                Select a first-goal band to keep all {maximumPoints} points available.
+              </div>
+            )}
           </div>
         )}
 
@@ -1008,21 +1153,27 @@ export default function KOPredictor() {
               marginTop: '9px',
               fontSize: '12px',
             }}>
-              <span style={{ color: 'var(--text-muted)' }}>
+              <span style={{ color: 'var(--text-muted)', minWidth: 0 }}>
                 Your pick: <strong style={{ color: 'var(--text-primary)' }}>{pred.home}–{pred.away}</strong>
-                {outcomeType !== '90mins' && (
-                  <span style={{ marginLeft: '4px', color: '#e65100', fontSize: '10px', fontWeight: 800 }}>
-                    {outcomeType === 'et' ? 'AET' : 'PENS'}
-                  </span>
-                )}
+                <span style={{ marginLeft: '5px', color: 'var(--text-secondary)', fontWeight: 750 }}>
+                  · {predictionSummary}
+                </span>
                 {pred.first_goal_band && (
-                  <span style={{ marginLeft: '6px' }}>· Your first goal {pred.first_goal_band}</span>
+                  <span style={{ marginLeft: '6px' }}>· First goal {pred.first_goal_band}</span>
+                )}
+                {!pred.first_goal_band && (
+                  <span style={{ marginLeft: '6px', color: 'var(--accent-red)' }}>· No first-goal pick</span>
                 )}
                 {hasJoker && <span style={{ marginLeft: '6px', color: '#ff9800' }}>🃏</span>}
               </span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 950, color: totalAwarded > 0 ? 'var(--accent-green)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                {totalAwarded > 0 ? `+${totalAwarded}` : '0'} pts
-              </span>
+              <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 950, color: totalAwarded > 0 ? 'var(--accent-green)' : 'var(--text-primary)' }}>
+                  {totalAwarded} pts earned
+                </div>
+                <div style={{ marginTop: '2px', fontSize: '9.5px', fontWeight: 800, color: completedMissedPoints > 0 ? 'var(--accent-red)' : 'var(--text-muted)' }}>
+                  {completedMissedPoints} pts missed
+                </div>
+              </div>
             </div>
 
             {match.first_goal_band && (
@@ -1041,15 +1192,21 @@ export default function KOPredictor() {
                   : 'var(--text-secondary)',
               }}>
                 Actual first goal: {match.first_goal_band}
-                {pred.first_goal_band && (
+                {pred.first_goal_band ? (
                   <span style={{ marginLeft: '6px' }}>
-                    {pred.first_goal_band === match.first_goal_band ? '✓ Correct band' : `· Your pick ${pred.first_goal_band}`}
+                    {pred.first_goal_band === match.first_goal_band
+                      ? `✓ Correct band · +${KO_SCORING.firstGoalBand * liveMultiplier} pts`
+                      : `· Your pick ${pred.first_goal_band} · ${KO_SCORING.firstGoalBand * liveMultiplier} pts missed`}
+                  </span>
+                ) : (
+                  <span style={{ marginLeft: '6px', color: 'var(--accent-red)' }}>
+                    · No prediction · {KO_SCORING.firstGoalBand * liveMultiplier} pts missed
                   </span>
                 )}
               </div>
             )}
 
-            {completedBreakdown.length > 0 && (
+            {completedBreakdown.length > 0 ? (
               <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
@@ -1084,6 +1241,19 @@ export default function KOPredictor() {
                     </span>
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div style={{
+                marginTop: '9px',
+                padding: '8px 9px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-light)',
+                color: 'var(--text-muted)',
+                fontSize: '10px',
+                lineHeight: 1.4,
+              }}>
+                Total points are confirmed above. A component-by-component breakdown was not returned for this saved prediction.
               </div>
             )}
 
@@ -1345,12 +1515,21 @@ export default function KOPredictor() {
       </div>
 
       {/* Points info bar */}
-      <div style={{ background: 'var(--accent-blue-light)', borderBottom: '1px solid var(--border-light)', padding: '8px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{
+        background: 'var(--accent-blue-light)',
+        borderBottom: '1px solid var(--border-light)',
+        padding: '8px 16px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: '8px',
+        flexWrap: 'wrap',
+      }}>
         <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
-          🥇 Correct winner = 5pts · Exact score = 10pts
+          🥇 Exact score 10pts or correct result 5pts
         </span>
         <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
-          ET +3 · Pens +5
+          First goal +3 · ET +3 · Pens +5
         </span>
       </div>
 
