@@ -639,18 +639,60 @@ function KOPredictorScoresView({ userId, currentUserId }) {
           <React.Fragment key={match.id}>
             {showStage && <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>{stageLabels[match.stage] || match.stage}</div>}
             <div style={{ padding: '10px 12px', marginBottom: '7px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '28px' }}>M{match.match_number}</span>
-                <span style={{ fontSize: '18px' }}>{match.home_team?.flag_emoji}</span>
-                <span style={{ fontSize: '12px', fontWeight: '800', flex: 1 }}>{match.home_team?.short_code} v {match.away_team?.short_code}</span>
-                <span style={{ fontSize: '18px' }}>{match.away_team?.flag_emoji}</span>
-                {match.status === 'completed' && <span style={{ fontSize: '12px', fontWeight: '800' }}>{match.home_score}–{match.away_score}</span>}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '32px minmax(0, 1fr) auto minmax(0, 1fr)',
+                alignItems: 'center',
+                gap: '8px',
+              }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>M{match.match_number}</span>
+
+                <span style={{
+                  minWidth: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12px',
+                  fontWeight: '800',
+                }}>
+                  <span style={{ fontSize: '18px', flexShrink: 0 }}>{match.home_team?.flag_emoji}</span>
+                  <span>{match.home_team?.short_code}</span>
+                </span>
+
+                <span style={{
+                  minWidth: '42px',
+                  textAlign: 'center',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '14px',
+                  fontWeight: '900',
+                  color: 'var(--text-primary)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {(match.status === 'live' || match.status === 'completed') &&
+                  match.home_score != null && match.away_score != null
+                    ? `${match.home_score}–${match.away_score}`
+                    : 'v'}
+                </span>
+
+                <span style={{
+                  minWidth: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: '6px',
+                  fontSize: '12px',
+                  fontWeight: '800',
+                }}>
+                  <span>{match.away_team?.short_code}</span>
+                  <span style={{ fontSize: '18px', flexShrink: 0 }}>{match.away_team?.flag_emoji}</span>
+                </span>
               </div>
               {prediction ? (
                 <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '10px', fontWeight: '850', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Prediction</span>
                   <span style={{ fontFamily: 'var(--font-mono)', fontSize: '15px', fontWeight: '900' }}>{prediction.home_score}–{prediction.away_score}</span>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{outcomeLabels[prediction.outcome_type] || prediction.outcome_type || '90 mins'}</span>
-                  {winner && <span style={{ fontSize: '11px', fontWeight: '700' }}>Winner: {winner.flag_emoji} {winner.short_code}</span>}
+                  {winner && <span style={{ fontSize: '11px', fontWeight: '700' }}>{winner.flag_emoji} {winner.short_code} to advance</span>}
                   {prediction.first_goal_band && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>First goal: {goalBandLabels[prediction.first_goal_band] || prediction.first_goal_band}</span>}
                   {prediction.is_joker && <span title="Joker">🃏</span>}
                   {match.status === 'completed' && <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '900', color: (prediction.points_awarded || 0) > 0 ? 'var(--accent-green)' : 'var(--text-muted)' }}>{prediction.points_awarded || 0}pts</span>}
