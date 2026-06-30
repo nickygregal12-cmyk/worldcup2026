@@ -117,7 +117,7 @@ function normalisePointsBreakdown(breakdown) {
   return []
 }
 
-function canonicaliseCompletedBreakdown(items, hasJoker = false) {
+function canonicaliseCompletedBreakdown(items, hasJoker = false, context = {}) {
   const byKey = new Map(items.map(item => [String(item.key).toLowerCase(), Number(item.points || 0)]))
 
   const firstValue = keys => {
@@ -144,10 +144,19 @@ function canonicaliseCompletedBreakdown(items, hasJoker = false) {
     ? Math.max(1, firstValue(['joker_multiplier', 'joker']) || 2)
     : 1
 
+  const actualMethod = context.actualMethod || '90mins'
+  const predictedMethod = context.predictedMethod || '90mins'
+  const advancementIsSeparate = actualMethod !== '90mins' || predictedMethod !== '90mins' || advancePoints > 0
+  const methodIsRelevant = actualMethod !== '90mins' || predictedMethod !== '90mins' || methodPoints > 0
+
   const rows = [
     { key: 'score', label: '90-minute score', points: scorePoints },
-    { key: 'advance', label: 'Advancing team', points: advancePoints },
-    { key: 'method', label: 'Method', points: methodPoints },
+    ...(advancementIsSeparate
+      ? [{ key: 'advance', label: 'Advancing team', points: advancePoints }]
+      : []),
+    ...(methodIsRelevant
+      ? [{ key: 'method', label: 'Method', points: methodPoints }]
+      : []),
     { key: 'first-goal', label: 'First-goal band', points: firstGoalPoints },
   ]
 
@@ -632,6 +641,10 @@ export default function KOPredictor() {
       ? canonicaliseCompletedBreakdown(
           normalisePointsBreakdown(pred.points_breakdown),
           hasJoker,
+          {
+            actualMethod: match.outcome_type || '90mins',
+            predictedMethod: outcomeType || '90mins',
+          },
         )
       : []
     const totalAwarded = Number(pred.points_awarded || 0)
@@ -1769,16 +1782,16 @@ export default function KOPredictor() {
               🏆 Final prediction · normal KO scoring
             </span>
             <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
-              Exact 10 or result 5 · First goal +3 · ET +3 · Pens +5
+              Exact 10 · Result 5 · Advance +5 when separate · First goal +3 · ET +3 · Pens +5 · Joker ×2
             </span>
           </>
         ) : (
           <>
             <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
-              🥇 Exact score 10pts or correct result 5pts
+              🎯 90-minute score: exact 10pts or correct result 5pts
             </span>
             <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
-              First goal +3 · ET +3 · Pens +5
+              Advance +5 when separate · First goal +3 · ET +3 · Pens +5 · Joker ×2
             </span>
           </>
         )}
