@@ -1,20 +1,27 @@
+import {
+  calculateMatchPredictionPoints,
+  MATCH_SCORE_POINTS,
+} from '../contracts/predictionContract.js'
+
+/**
+ * Compatibility export for the quarantined WC26 modules.
+ * Euro 2028 has no joker/confidence multiplier.
+ */
 export const GROUP_SCORING = Object.freeze({
-  EXACT_SCORE: 5,
-  CORRECT_RESULT: 3,
-  JOKER_MULTIPLIER: 2,
+  EXACT_SCORE: MATCH_SCORE_POINTS.EXACT_SCORE,
+  CORRECT_RESULT: MATCH_SCORE_POINTS.CORRECT_OUTCOME,
 })
 
 export function calculateGroupPredictionPoints(prediction, result) {
   if (!prediction || !result) return 0
-  const predictedOutcome = prediction.home_score > prediction.away_score
-    ? 'H'
-    : prediction.home_score < prediction.away_score ? 'A' : 'D'
-  const actualOutcome = result.home_score > result.away_score
-    ? 'H'
-    : result.home_score < result.away_score ? 'A' : 'D'
-
-  if (predictedOutcome !== actualOutcome) return 0
-  const exact = prediction.home_score === result.home_score && prediction.away_score === result.away_score
-  const base = exact ? GROUP_SCORING.EXACT_SCORE : GROUP_SCORING.CORRECT_RESULT
-  return base * (prediction.is_confident ? GROUP_SCORING.JOKER_MULTIPLIER : 1)
+  return calculateMatchPredictionPoints(
+    {
+      home_score: prediction.home_score,
+      away_score: prediction.away_score,
+    },
+    {
+      normalTimeHomeGoals: result.home_score,
+      normalTimeAwayGoals: result.away_score,
+    },
+  ).total
 }

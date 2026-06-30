@@ -133,7 +133,18 @@ function walk(directory) {
 }
 walk(srcRoot)
 
-const quarantinedFiles = allSourceFiles.filter(filePath => !activeFiles.includes(filePath))
+const protectedEuroLogicFiles = allSourceFiles.filter(filePath => {
+  const rel = relative(filePath)
+  return rel.startsWith('src/contracts/') ||
+    rel === 'src/config/scoringConfig.js' ||
+    rel === 'src/config/__tests__/scoringConfig.test.js' ||
+    rel === 'src/lib/scoring.js' ||
+    rel === 'src/lib/__tests__/scoring.test.js'
+})
+const protectedEuroLogicSet = new Set(protectedEuroLogicFiles)
+const quarantinedFiles = allSourceFiles.filter(filePath =>
+  !activeFiles.includes(filePath) && !protectedEuroLogicSet.has(filePath),
+)
 
 if (errors.length > 0) {
   console.error('Legacy application boundary check failed:')
@@ -143,6 +154,7 @@ if (errors.length > 0) {
 
 console.log('Legacy application boundary check passed.')
 console.log(`Active foundation files: ${activeFiles.length}`)
+console.log(`Protected Euro contract files: ${protectedEuroLogicFiles.length}`)
 console.log(`Quarantined inherited source files: ${quarantinedFiles.length}`)
 console.log('Active browser database writes: 0')
 console.log('Inherited prediction, authentication, league and admin routes: unreachable')
