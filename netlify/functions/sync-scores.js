@@ -7,6 +7,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 )
 
+const SCORE_SYNC_COOLDOWN_MS = 75 * 1000
+const PROVIDER_LIVE_STATUSES = new Set(['IN_PLAY', 'PAUSED', 'EXTRA_TIME', 'PENALTY_SHOOTOUT'])
+const PROVIDER_FINISHED_STATUSES = new Set(['FINISHED', 'AWARDED'])
+
 // Idempotently recalculate league_points for every offline player who has a
 // prediction on this match. Recomputes each player's TOTAL from all their
 // predictions against completed matches — never additive, so safe to re-run.
@@ -180,12 +184,73 @@ export const handler = async (event) => {
   }
 
   try {
-    const response = await fetch(
-      'https://api.football-data.org/v4/competitions/WC/matches?season=2026',
-      { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY, 'X-Api-Version': 'v4.1' } }
-    )
+    const syncSource = event.headers?.['x-sync-source'] || event.headers?.['X-Sync-Source'] || 'manual'
 
-    if (!response.ok) throw new Error(`API error: ${response.status}`)
+    // One shared cooldown protects the provider from overlapping scheduled runs,
+    // retries and repeated admin-button presses. last_sync_at is written before
+    // the provider call so another invocation will stand down immediately.
+    const { data: lastSyncSetting } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'last_sync_at')
+      .maybeSingle()
+
+    const lastSyncAt = lastSyncSetting?.value ? new Date(lastSyncSetting.value).getTime() : 0
+    const elapsedMs = Date.now() - lastSyncAt
+    if (lastSyncAt && elapsedMs >= 0 && elapsedMs < SCORE_SYNC_COOLDOWN_MS) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          skipped: true,
+          message: `Score sync cooldown active (${Math.ceil((SCORE_SYNC_COOLDOWN_MS - elapsedMs) / 1000)}s remaining)`,
+          source: syncSource,
+          providerCalls: 0,
+        }),
+      }
+    }
+
+    const startedAt = new Date().toISOString()
+    await supabase.from('app_settings')
+      .update({ value: startedAt })
+      .eq('key', 'last_sync_at')
+
+    let providerCalls = 0
+    const providerFetch = async (url, options = {}) => {
+      providerCalls += 1
+      const response = await fetch(url, options)
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '')
+        const retryAfter = response.headers.get('retry-after')
+        const error = new Error(`football-data.org ${response.status}${detail ? `: ${detail.slice(0, 240)}` : ''}`)
+        error.providerStatus = response.status
+        error.retryAfter = retryAfter
+        throw error
+      }
+      return response
+    }
+
+    let response
+    try {
+      response = await providerFetch(
+        'https://api.football-data.org/v4/competitions/WC/matches?season=2026',
+        { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY } }
+      )
+    } catch (providerError) {
+      // Return 200 so Netlify scheduled functions do not retry a provider failure
+      // two more times within the same minute.
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          skipped: true,
+          providerError: true,
+          message: providerError.message,
+          providerStatus: providerError.providerStatus || null,
+          retryAfter: providerError.retryAfter || null,
+          source: syncSource,
+          providerCalls,
+        }),
+      }
+    }
 
     const data = await response.json()
     const matches = data.matches || []
@@ -204,7 +269,7 @@ export const handler = async (event) => {
     let updated = 0
     let pointsCalculated = 0
     let fixturesPopulated = 0
-    let standingsSynced = false
+    let detailRequests = 0
     const errors = []
 
     // ── PASS 0: Fill the "easy" R32 slots (group winners/runners-up) the moment
@@ -308,24 +373,29 @@ export const handler = async (event) => {
       }
     }
 
-    for (const match of matches) {
-      const providerLiveStatuses = new Set(['IN_PLAY', 'PAUSED', 'EXTRA_TIME', 'PENALTY_SHOOTOUT'])
-      const providerFinishedStatuses = new Set(['FINISHED', 'AWARDED'])
+    // Process live matches first, then the most recently finished fixtures.
+    // This ensures the single permitted detail request is spent where it matters.
+    const syncMatches = [...matches].sort((a, b) => {
+      const priority = status => PROVIDER_LIVE_STATUSES.has(status) ? 0 : PROVIDER_FINISHED_STATUSES.has(status) ? 1 : 2
+      return priority(a.status) - priority(b.status) || new Date(b.utcDate || 0) - new Date(a.utcDate || 0)
+    })
 
-      if (!providerLiveStatuses.has(match.status) && !providerFinishedStatuses.has(match.status)) continue
+    for (const match of syncMatches) {
+      if (!PROVIDER_LIVE_STATUSES.has(match.status) && !PROVIDER_FINISHED_STATUSES.has(match.status)) continue
 
       // The competition-wide endpoint can lag behind and may fold the goals
       // list. Fetch the individual match while live, on first completion, or
       // when a completed match still has no first-goal band locally.
       const localState = localSyncState.get(String(match.id))
-      const needsCompletedDetail = providerFinishedStatuses.has(match.status) &&
+      const needsCompletedDetail = PROVIDER_FINISHED_STATUSES.has(match.status) &&
         localState &&
         !localState.use_manual_override &&
         (localState.status !== 'completed' || !localState.first_goal_band)
 
-      if (providerLiveStatuses.has(match.status) || needsCompletedDetail) {
+      if ((PROVIDER_LIVE_STATUSES.has(match.status) || needsCompletedDetail) && detailRequests < 1) {
         try {
-          const detailResponse = await fetch(
+          detailRequests += 1
+          const detailResponse = await providerFetch(
             `https://api.football-data.org/v4/matches/${encodeURIComponent(match.id)}`,
             {
               headers: {
@@ -334,12 +404,8 @@ export const handler = async (event) => {
               },
             }
           )
-          if (detailResponse.ok) {
-            const detail = await detailResponse.json()
-            Object.assign(match, detail)
-          } else {
-            errors.push(`Live detail M${match.id}: HTTP ${detailResponse.status}`)
-          }
+          const detail = await detailResponse.json()
+          Object.assign(match, detail)
         } catch (detailError) {
           errors.push(`Live detail M${match.id}: ${detailError.message}`)
         }
@@ -353,9 +419,9 @@ export const handler = async (event) => {
       const apiPenaltyScore = readScorePair(match.score?.penalties)
       const anyApiScore = apiRegularScore || apiFullTimeScore || apiCurrentScore || apiHalfTimeScore
       const hasApiScore = Boolean(anyApiScore)
-      const newStatus = providerFinishedStatuses.has(match.status)
+      const newStatus = PROVIDER_FINISHED_STATUSES.has(match.status)
         ? 'completed'
-        : providerLiveStatuses.has(match.status)
+        : PROVIDER_LIVE_STATUSES.has(match.status)
           ? 'live'
           : 'scheduled'
 
@@ -622,54 +688,20 @@ export const handler = async (event) => {
       if (scoringSucceeded) pointsCalculated++
     }
 
-    // Sync top scorers
-    try {
-      const scorersRes = await fetch(
-        'https://api.football-data.org/v4/competitions/WC/scorers?season=2026&limit=10',
-        { headers: { 'X-Auth-Token': process.env.FOOTBALL_DATA_KEY } }
-      )
-      if (scorersRes.ok) {
-        const scorersData = await scorersRes.json()
-        const scorers = scorersData.scorers || []
-        // Delete existing and re-insert fresh
-        await supabase.from('tournament_scorers').delete().neq('id', '00000000-0000-0000-0000-000000000000')
-        if (scorers.length > 0) {
-          await supabase.from('tournament_scorers').insert(
-            scorers.map(s => ({
-              player_name: s.player?.name || '',
-              player_id: s.player?.id || null,
-              team_name: normalise(s.team?.name || ''),
-              goals: s.goals || 0,
-              assists: s.assists || 0,
-              penalties: s.penalties || 0,
-              updated_at: new Date().toISOString(),
-            }))
-          )
-        }
-      }
-    } catch(e) { errors.push(`Scorers sync failed: ${e.message}`) }
+    // Scorers are deliberately not fetched during live score polling.
+    // They can be refreshed separately at a much lower frequency.
 
-    // Update last sync time — use UPDATE not upsert to avoid INSERT policy issues
+    // Mark successful completion.
     await supabase.from('app_settings')
       .update({ value: new Date().toISOString() })
       .eq('key', 'last_sync_at')
 
-    // Auto-trigger standings sync if any group matches were updated
-    if (updated > 0) {
-      try {
-        const siteUrl = process.env.URL || 'https://wc26predictor1.netlify.app'
-        const standingsResponse = await fetch(`${siteUrl}/.netlify/functions/sync-standings`, {
-          method: 'POST',
-          headers: { 'x-admin-secret': process.env.ADMIN_FUNCTION_SECRET }
-        })
-        if (!standingsResponse.ok) throw new Error(`HTTP ${standingsResponse.status}`)
-        standingsSynced = true
-      } catch(e) { errors.push(`Standings auto-sync failed: ${e.message}`) }
-    }
+    // Standings are no longer auto-fetched by every score poll. During the
+    // knockout stage this would be an unnecessary extra provider request.
 
     // New knockout participants can change bracket-progression points even when
     // no group standings were updated in this run.
-    if (fixturesPopulated > 0 && !standingsSynced) {
+    if (fixturesPopulated > 0) {
       try {
         await runRpc('recalculate_all_points_safe')
       } catch (e) {
@@ -677,8 +709,24 @@ export const handler = async (event) => {
       }
     }
 
-    return { statusCode: 200, body: JSON.stringify({ message: 'Sync complete', updated, pointsCalculated, fixturesPopulated, errors }) }
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        message: 'Sync complete',
+        source: syncSource,
+        updated,
+        pointsCalculated,
+        fixturesPopulated,
+        detailRequests,
+        providerCalls,
+        errors,
+      }),
+    }
   } catch (error) {
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) }
+    console.error('Score sync failed', error)
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ skipped: true, error: error.message, message: error.message }),
+    }
   }
 }

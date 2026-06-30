@@ -17,16 +17,20 @@ export const handler = async () => {
       headers: {
         'Content-Type': 'application/json',
         'x-admin-secret': secret,
+        'x-sync-source': 'scheduled',
       },
     })
 
     const body = await response.text()
 
     if (!response.ok) {
+      // Scheduled functions may be retried rapidly after a non-2xx response.
+      // Always acknowledge the schedule invocation so one provider failure does
+      // not become a burst of duplicate score-sync requests.
       console.error('Scheduled score sync failed', response.status, body)
       return {
-        statusCode: response.status,
-        body,
+        statusCode: 200,
+        body: JSON.stringify({ acknowledged: true, downstreamStatus: response.status, downstreamBody: body }),
       }
     }
 
@@ -38,8 +42,8 @@ export const handler = async () => {
   } catch (error) {
     console.error('Scheduled score sync failed', error)
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      statusCode: 200,
+      body: JSON.stringify({ acknowledged: true, error: error.message }),
     }
   }
 }
