@@ -104,6 +104,46 @@ const KO_STAGES = new Set(['r32', 'r16', 'qf', 'sf', '3rd', 'final'])
 
 const firstDefined = (...values) => values.find(value => value !== null && value !== undefined)
 
+// football-data v4 normally uses { home, away }, while some older/sample
+// payloads use { homeTeam, awayTeam }. Accept both so score sync does not
+// silently fail when the provider varies the shape.
+const readScorePair = (node) => {
+  if (!node) return null
+  const home = firstDefined(node.home, node.homeTeam)
+  const away = firstDefined(node.away, node.awayTeam)
+  return home !== undefined && away !== undefined ? { home, away } : null
+}
+
+const orientPair = (pair, reversed) => {
+  if (!pair) return null
+  return reversed
+    ? { home: pair.away, away: pair.home }
+    : { home: pair.home, away: pair.away }
+}
+
+const firstGoalBandFromApi = (apiMatch, completedScore) => {
+  const goals = Array.isArray(apiMatch.goals) ? apiMatch.goals : []
+  const matchGoals = goals
+    .filter(goal => Number.isFinite(Number(goal?.minute)))
+    .sort((a, b) => Number(a.minute) - Number(b.minute))
+
+  if (matchGoals.length > 0) {
+    const minute = Number(matchGoals[0].minute)
+    if (minute <= 15) return '1-15'
+    if (minute <= 30) return '16-30'
+    if (minute <= 45) return '31-45'
+    if (minute <= 60) return '46-60'
+    if (minute <= 75) return '61-75'
+    if (minute <= 90) return '76-90'
+    return 'et'
+  }
+
+  // A completed 0-0 match genuinely had no first goal. Do not infer this for
+  // any other score because a folded provider response may simply omit goals.
+  if (completedScore?.home === 0 && completedScore?.away === 0) return 'no_goals'
+  return null
+}
+
 async function runRpc(name, args = {}) {
   const { data, error } = await supabase.rpc(name, args)
   if (error) throw new Error(`${name}: ${error.message}`)
@@ -149,6 +189,18 @@ export const handler = async (event) => {
 
     const data = await response.json()
     const matches = data.matches || []
+
+    // Lightweight local state lets us fetch the detailed match resource only
+    // when it adds value. This avoids repeatedly spending provider requests on
+    // every old completed fixture while still backfilling a missing first goal.
+    const { data: localSyncRows } = await supabase
+      .from('matches')
+      .select('external_match_id, status, first_goal_band, use_manual_override')
+      .not('external_match_id', 'is', null)
+    const localSyncState = new Map(
+      (localSyncRows || []).map(row => [String(row.external_match_id), row])
+    )
+
     let updated = 0
     let pointsCalculated = 0
     let fixturesPopulated = 0
@@ -262,9 +314,16 @@ export const handler = async (event) => {
 
       if (!providerLiveStatuses.has(match.status) && !providerFinishedStatuses.has(match.status)) continue
 
-      // The competition-wide endpoint can lag behind on the minute. While a
-      // fixture is live, refresh the individual fixture before writing to the DB.
-      if (providerLiveStatuses.has(match.status)) {
+      // The competition-wide endpoint can lag behind and may fold the goals
+      // list. Fetch the individual match while live, on first completion, or
+      // when a completed match still has no first-goal band locally.
+      const localState = localSyncState.get(String(match.id))
+      const needsCompletedDetail = providerFinishedStatuses.has(match.status) &&
+        localState &&
+        !localState.use_manual_override &&
+        (localState.status !== 'completed' || !localState.first_goal_band)
+
+      if (providerLiveStatuses.has(match.status) || needsCompletedDetail) {
         try {
           const detailResponse = await fetch(
             `https://api.football-data.org/v4/matches/${encodeURIComponent(match.id)}`,
@@ -286,17 +345,14 @@ export const handler = async (event) => {
         }
       }
 
-      const apiHomeScore = firstDefined(
-        match.score?.fullTime?.home,
-        match.score?.currentScore?.home,
-        match.score?.halfTime?.home
-      )
-      const apiAwayScore = firstDefined(
-        match.score?.fullTime?.away,
-        match.score?.currentScore?.away,
-        match.score?.halfTime?.away
-      )
-      const hasApiScore = apiHomeScore !== undefined && apiAwayScore !== undefined
+      const apiRegularScore = readScorePair(match.score?.regularTime)
+      const apiFullTimeScore = readScorePair(match.score?.fullTime)
+      const apiCurrentScore = readScorePair(match.score?.currentScore)
+      const apiHalfTimeScore = readScorePair(match.score?.halfTime)
+      const apiExtraTimeGoals = readScorePair(match.score?.extraTime)
+      const apiPenaltyScore = readScorePair(match.score?.penalties)
+      const anyApiScore = apiRegularScore || apiFullTimeScore || apiCurrentScore || apiHalfTimeScore
+      const hasApiScore = Boolean(anyApiScore)
       const newStatus = providerFinishedStatuses.has(match.status)
         ? 'completed'
         : providerLiveStatuses.has(match.status)
@@ -310,7 +366,7 @@ export const handler = async (event) => {
 
       let { data: ourMatch, error: lookupError } = await supabase
         .from('matches')
-        .select('id, match_number, external_match_id, status, home_score, away_score, live_minute, injury_time, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name)')
+        .select('id, match_number, external_match_id, status, home_score, away_score, live_minute, injury_time, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, aet_home_score, aet_away_score, home_score_aet, away_score_aet, home_score_pens, away_score_pens, first_goal_band, home_team:home_team_id(name), away_team:away_team_id(name)')
         .eq('external_match_id', match.id.toString())
         .maybeSingle()
 
@@ -326,7 +382,7 @@ export const handler = async (event) => {
         if (!matchDate) continue
         const { data: candidates, error: candidateError } = await supabase
           .from('matches')
-          .select('id, match_number, external_match_id, status, home_score, away_score, live_minute, injury_time, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
+          .select('id, match_number, external_match_id, status, home_score, away_score, live_minute, injury_time, winner_team_id, outcome_type, use_manual_override, stage, home_team_id, away_team_id, aet_home_score, aet_away_score, home_score_aet, away_score_aet, home_score_pens, away_score_pens, first_goal_band, home_team:home_team_id(name), away_team:away_team_id(name), kickoff_time')
           .gte('kickoff_time', `${matchDate}T00:00:00Z`)
           .lte('kickoff_time', `${matchDate}T23:59:59Z`)
 
@@ -361,38 +417,70 @@ export const handler = async (event) => {
         continue
       }
 
-      const orientedHomeScore = hasApiScore ? (orientation.reversed ? apiAwayScore : apiHomeScore) : undefined
-      const orientedAwayScore = hasApiScore ? (orientation.reversed ? apiHomeScore : apiAwayScore) : undefined
+      const isKnockout = KO_STAGES.has(ourMatch.stage)
+      const duration = match.score?.duration || 'REGULAR'
 
-      if (ourMatch.use_manual_override) {
-        if (newStatus === 'completed' && hasApiScore &&
-            ourMatch.home_score === orientedHomeScore && ourMatch.away_score === orientedAwayScore) {
-          const { error: overrideError } = await supabase
-            .from('matches')
-            .update({ use_manual_override: false })
-            .eq('id', ourMatch.id)
-          if (overrideError) errors.push(`Clear manual override M${ourMatch.match_number}: ${overrideError.message}`)
-        }
-        continue
-      }
+      // For completed knockout matches, regularTime is the authoritative
+      // 90-minute score. fullTime can include ET or even the shootout total.
+      const rawNinetyScore = isKnockout && newStatus === 'completed'
+        ? (apiRegularScore || apiFullTimeScore)
+        : (apiFullTimeScore || apiCurrentScore || apiHalfTimeScore)
+      const orientedNinetyScore = orientPair(rawNinetyScore, orientation.reversed)
+      const orientedRegularScore = orientPair(apiRegularScore, orientation.reversed)
+      const orientedFullTimeScore = orientPair(apiFullTimeScore, orientation.reversed)
+      const orientedExtraTimeGoals = orientPair(apiExtraTimeGoals, orientation.reversed)
+      const orientedPenaltyScore = orientPair(apiPenaltyScore, orientation.reversed)
 
-      let effectiveHomeScore = hasApiScore ? orientedHomeScore : ourMatch.home_score
-      let effectiveAwayScore = hasApiScore ? orientedAwayScore : ourMatch.away_score
-      if (newStatus === 'live' && hasApiScore && orientedHomeScore === 0 && orientedAwayScore === 0 &&
+      // Manual control is explicit. The API must never clear it automatically,
+      // even when the visible 90-minute score happens to match.
+      if (ourMatch.use_manual_override) continue
+
+      let effectiveHomeScore = orientedNinetyScore?.home ?? ourMatch.home_score
+      let effectiveAwayScore = orientedNinetyScore?.away ?? ourMatch.away_score
+      if (newStatus === 'live' && hasApiScore && orientedNinetyScore?.home === 0 && orientedNinetyScore?.away === 0 &&
           ((ourMatch.home_score || 0) > 0 || (ourMatch.away_score || 0) > 0)) {
         effectiveHomeScore = ourMatch.home_score
         effectiveAwayScore = ourMatch.away_score
       }
 
-      const isKnockout = KO_STAGES.has(ourMatch.stage)
       let winnerTeamId = ourMatch.winner_team_id || null
       let outcomeType = ourMatch.outcome_type || '90mins'
 
+      let aetHomeScore = firstDefined(ourMatch.aet_home_score, ourMatch.home_score_aet)
+      let aetAwayScore = firstDefined(ourMatch.aet_away_score, ourMatch.away_score_aet)
+      let pensHomeScore = ourMatch.home_score_pens
+      let pensAwayScore = ourMatch.away_score_pens
+
       if (newStatus === 'completed' && isKnockout) {
         const winner = match.score?.winner
-        const duration = match.score?.duration
         outcomeType = duration === 'EXTRA_TIME' ? 'et'
           : duration === 'PENALTY_SHOOTOUT' ? 'penalties' : '90mins'
+
+        if (outcomeType === 'et' || outcomeType === 'penalties') {
+          // extraTime contains only goals scored in ET, so add it to the
+          // regularTime score. Fall back to fullTime for an ET-only finish.
+          if (orientedRegularScore && orientedExtraTimeGoals) {
+            aetHomeScore = orientedRegularScore.home + orientedExtraTimeGoals.home
+            aetAwayScore = orientedRegularScore.away + orientedExtraTimeGoals.away
+          } else if (outcomeType === 'et' && orientedFullTimeScore) {
+            aetHomeScore = orientedFullTimeScore.home
+            aetAwayScore = orientedFullTimeScore.away
+          } else if (orientedRegularScore) {
+            aetHomeScore = orientedRegularScore.home
+            aetAwayScore = orientedRegularScore.away
+          }
+        } else {
+          aetHomeScore = null
+          aetAwayScore = null
+        }
+
+        if (outcomeType === 'penalties' && orientedPenaltyScore) {
+          pensHomeScore = orientedPenaltyScore.home
+          pensAwayScore = orientedPenaltyScore.away
+        } else if (outcomeType !== 'penalties') {
+          pensHomeScore = null
+          pensAwayScore = null
+        }
 
         if (winner === 'HOME_TEAM') {
           winnerTeamId = orientation.reversed ? ourMatch.away_team_id : ourMatch.home_team_id
@@ -405,34 +493,74 @@ export const handler = async (event) => {
         }
       }
 
-      const nextLiveMinute = newStatus === 'live' ? (match.minute ?? null) : null
-      const nextInjuryTime = newStatus === 'live' ? (match.injuryTime ?? null) : null
+      const completedMatchScore = isKnockout && (outcomeType === 'et' || outcomeType === 'penalties')
+        ? (aetHomeScore != null && aetAwayScore != null ? { home: aetHomeScore, away: aetAwayScore } : null)
+        : (effectiveHomeScore != null && effectiveAwayScore != null ? { home: effectiveHomeScore, away: effectiveAwayScore } : null)
+      const apiFirstGoalBand = firstGoalBandFromApi(match, newStatus === 'completed' ? completedMatchScore : null)
+      const firstGoalBand = apiFirstGoalBand || ourMatch.first_goal_band || null
+
+      let koResultComplete = true
+      if (newStatus === 'completed' && isKnockout) {
+        if (!winnerTeamId) koResultComplete = false
+        if (outcomeType === '90mins' && effectiveHomeScore === effectiveAwayScore) koResultComplete = false
+        if (outcomeType === 'et' && (effectiveHomeScore !== effectiveAwayScore || aetHomeScore == null || aetAwayScore == null || aetHomeScore === aetAwayScore)) koResultComplete = false
+        if (outcomeType === 'penalties' && (
+          effectiveHomeScore !== effectiveAwayScore ||
+          aetHomeScore == null || aetAwayScore == null || aetHomeScore !== aetAwayScore ||
+          pensHomeScore == null || pensAwayScore == null || pensHomeScore === pensAwayScore
+        )) koResultComplete = false
+
+        if (!koResultComplete) {
+          errors.push(`M${ourMatch.match_number}: incomplete knockout result from provider; left for admin completion`)
+        }
+      }
+
+      const safeStatus = newStatus === 'completed' && isKnockout && !koResultComplete
+        ? ourMatch.status
+        : newStatus
+
+      const nextLiveMinute = safeStatus === 'live' ? (match.minute ?? null) : null
+      const nextInjuryTime = safeStatus === 'live' ? (match.injuryTime ?? null) : null
 
       const scoreChanged = ourMatch.home_score !== effectiveHomeScore || ourMatch.away_score !== effectiveAwayScore
-      const statusChanged = ourMatch.status !== newStatus
+      const statusChanged = ourMatch.status !== safeStatus
       const minuteChanged = ourMatch.live_minute !== nextLiveMinute || ourMatch.injury_time !== nextInjuryTime
-      const koResultChanged = isKnockout && newStatus === 'completed' &&
-        (ourMatch.winner_team_id !== winnerTeamId || ourMatch.outcome_type !== outcomeType)
-      const needsUpdate = scoreChanged || statusChanged || minuteChanged || koResultChanged ||
+      const koResultChanged = isKnockout && safeStatus === 'completed' && (
+        ourMatch.winner_team_id !== winnerTeamId ||
+        ourMatch.outcome_type !== outcomeType ||
+        firstDefined(ourMatch.aet_home_score, ourMatch.home_score_aet) !== aetHomeScore ||
+        firstDefined(ourMatch.aet_away_score, ourMatch.away_score_aet) !== aetAwayScore ||
+        ourMatch.home_score_pens !== pensHomeScore ||
+        ourMatch.away_score_pens !== pensAwayScore
+      )
+      const firstGoalChanged = firstGoalBand !== ourMatch.first_goal_band
+      const needsUpdate = scoreChanged || statusChanged || minuteChanged || koResultChanged || firstGoalChanged ||
         ourMatch.external_match_id !== match.id.toString()
       if (!needsUpdate) continue
 
-      if (newStatus === 'live' && ourMatch.status === 'scheduled') {
+      if (safeStatus === 'live' && ourMatch.status === 'scheduled') {
         try { await runRpc('snapshot_user_ranks') } catch (error) { errors.push(error.message) }
       }
 
       const updateFields = {
         home_score: effectiveHomeScore ?? null,
         away_score: effectiveAwayScore ?? null,
-        status: newStatus,
+        status: safeStatus,
         external_match_id: match.id.toString(),
         api_synced_at: new Date().toISOString(),
         live_minute: nextLiveMinute,
         injury_time: nextInjuryTime,
+        first_goal_band: firstGoalBand,
       }
-      if (isKnockout && newStatus === 'completed') {
+      if (isKnockout && safeStatus === 'completed') {
         updateFields.winner_team_id = winnerTeamId
         updateFields.outcome_type = outcomeType
+        updateFields.aet_home_score = aetHomeScore
+        updateFields.aet_away_score = aetAwayScore
+        updateFields.home_score_aet = aetHomeScore
+        updateFields.away_score_aet = aetAwayScore
+        updateFields.home_score_pens = pensHomeScore
+        updateFields.away_score_pens = pensAwayScore
       }
 
       const { error: updateError } = await supabase.from('matches').update(updateFields).eq('id', ourMatch.id)
@@ -442,7 +570,7 @@ export const handler = async (event) => {
       }
       updated++
 
-      const shouldRescore = newStatus === 'completed' && (statusChanged || scoreChanged || koResultChanged)
+      const shouldRescore = safeStatus === 'completed' && (statusChanged || scoreChanged || koResultChanged || firstGoalChanged)
       if (!shouldRescore) continue
 
       let scoringSucceeded = true
