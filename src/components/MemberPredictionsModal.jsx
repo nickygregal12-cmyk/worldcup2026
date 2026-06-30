@@ -77,33 +77,84 @@ function normaliseKoPointsBreakdown(breakdown) {
     try { value = JSON.parse(value) } catch { return [] }
   }
 
-  if (Array.isArray(value)) {
-    return value.map((item, index) => {
-      if (typeof item === 'number') {
-        return { key: `item-${index}`, label: `Bonus ${index + 1}`, points: item }
-      }
-      if (typeof item === 'string') {
-        return { key: `item-${index}`, label: item, points: null }
-      }
-      const key = item?.key || item?.type || item?.name || `item-${index}`
-      const points = item?.points ?? item?.value ?? item?.amount ?? null
-      return {
-        key,
-        label: item?.label || KO_POINT_LABELS[key] || String(key).replaceAll('_', ' '),
-        points: Number.isFinite(Number(points)) ? Number(points) : null,
-      }
-    })
+  const entries = Array.isArray(value)
+    ? value.reduce((acc, item, index) => {
+        if (item && typeof item === 'object') {
+          const key = item.key || item.type || item.name || `item-${index}`
+          acc[key] = item.points ?? item.value ?? item.amount ?? 0
+        }
+        return acc
+      }, {})
+    : typeof value === 'object'
+      ? value
+      : {}
+
+  const numeric = key => {
+    const number = Number(entries?.[key])
+    return Number.isFinite(number) ? number : 0
   }
 
-  if (typeof value === 'object') {
-    return Object.entries(value).map(([key, points]) => ({
-      key,
-      label: KO_POINT_LABELS[key] || key.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase()),
-      points: Number.isFinite(Number(points)) ? Number(points) : null,
-    }))
+  const highest = keys => Math.max(0, ...keys.map(numeric))
+
+  // The saved JSON currently contains several historic aliases for the same
+  // award. Collapse those aliases into the four real scoring categories so a
+  // single five-point award is not displayed three or four times.
+  const scorePoints = highest([
+    'score_points',
+    'exact_score',
+    'exact',
+    'correct_90_result',
+    'correct_winner',
+    'winner',
+    'result',
+    'base',
+  ])
+
+  const advancePoints = highest([
+    'advance_points',
+    'advancing_team',
+    'correct_advancing_team',
+    'team_to_advance',
+  ])
+
+  const methodPoints = highest([
+    'method_points',
+    'method_bonus',
+    'correct_method',
+    'extra_time_bonus',
+    'et_bonus',
+    'penalties_bonus',
+    'pen_bonus',
+    'extra_time',
+    'penalties',
+  ])
+
+  const firstGoalPoints = highest([
+    'first_goal_points',
+    'first_goal_band',
+    'first_goal',
+    'first_goal_time',
+    'first_goal_minute',
+    'first_goal_time_band',
+  ])
+
+  const jokerMultiplier = highest([
+    'joker_multiplier',
+    'joker',
+  ])
+
+  const rows = [
+    { key: 'score_points', label: '90-minute score', points: scorePoints },
+    { key: 'advance_points', label: 'Advancing team', points: advancePoints },
+    { key: 'method_points', label: 'Method', points: methodPoints },
+    { key: 'first_goal_points', label: 'First-goal band', points: firstGoalPoints },
+  ]
+
+  if (jokerMultiplier > 1) {
+    rows.push({ key: 'joker_multiplier', label: 'Joker', points: jokerMultiplier })
   }
 
-  return []
+  return rows
 }
 
 function resolveKoWinner(prediction, match) {
