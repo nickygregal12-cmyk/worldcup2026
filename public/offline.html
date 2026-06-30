@@ -1,46 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>WC26 Predictor — Offline</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, 'DM Sans', sans-serif;
-      background: #f8f9fa;
-      display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; padding: 24px; text-align: center;
-    }
-    .card {
-      background: white; border-radius: 16px;
-      padding: 40px 32px; max-width: 360px; width: 100%;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-    }
-    .icon { font-size: 56px; margin-bottom: 16px; }
-    h1 { font-size: 22px; font-weight: 800; color: #003087; margin-bottom: 8px; }
-    p { font-size: 14px; color: #636363; line-height: 1.6; margin-bottom: 24px; }
-    .note {
-      background: #e8eef8; border-radius: 10px;
-      padding: 12px 16px; font-size: 13px; color: #003087;
-      font-weight: 600; margin-bottom: 20px;
-    }
-    button {
-      background: #003087; color: white; border: none;
-      padding: 12px 28px; border-radius: 10px;
-      font-size: 14px; font-weight: 700; cursor: pointer;
-      font-family: inherit;
-    }
-    button:hover { background: #00206b; }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="icon">📡</div>
-    <h1>You're offline</h1>
-    <p>No internet connection detected. Check your connection and try again.</p>
-    <div class="note">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Your predictions are saved — nothing has been lost!</div>
-    <button onclick="window.location.reload()">Try again</button>
-  </div>
-</body>
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Euro 2028 Predictor — Offline</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        padding: 24px;
+        display: grid;
+        place-items: center;
+        font-family: system-ui, sans-serif;
+        color: #172033;
+        background: #edf2f7;
+      }
+      main {
+        width: min(420px, 100%);
+        padding: 32px;
+        background: #fff;
+        border: 1px solid #d9e1ea;
+        border-radius: 20px;
+        box-shadow: 0 14px 40px rgba(39, 58, 83, 0.08);
+        text-align: center;
+      }
+      strong { display: block; color: #075c9a; font-size: 42px; }
+      h1 { margin: 12px 0 8px; font-size: 24px; }
+      p { margin: 0 0 22px; color: #64748b; line-height: 1.6; }
+      button {
+        padding: 11px 18px;
+        color: #fff;
+        background: #075c9a;
+        border: 0;
+        border-radius: 10px;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <strong>28</strong>
+      <h1>Euro staging is offline</h1>
+      <p>The read-only tournament model needs an internet connection. No prediction features are enabled in this foundation build.</p>
+      <button type="button" onclick="window.location.reload()">Try again</button>
+    </main>
+  </body>
 </html>

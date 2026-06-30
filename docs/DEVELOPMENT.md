@@ -19,4 +19,6 @@ A change is complete only when:
 
 ## Current compatibility state
 
-The application still contains inherited WC26 pages and data assumptions. The new tournament configuration and clock provide safe central seams while those areas are replaced incrementally. Legacy WC26 date fallbacks are clearly named and must be removed before public Euro testing.
+The repository still contains inherited WC26 pages, components, functions and data assumptions as quarantined reference code. The active browser entrypoint no longer imports them. `npm run audit:legacy` protects that boundary and fails if the Euro foundation reaches the inherited application or gains a browser database write.
+
+Legacy WC26 date fallbacks remain only inside quarantined modules and must be replaced before any related feature is reintroduced.

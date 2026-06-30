@@ -2,7 +2,7 @@
 
 ## Unit tests
 
-Vitest protects pure tournament logic. Initial coverage includes group match scoring, joker behaviour, tournament configuration and the controllable application clock.
+Vitest protects pure tournament logic. Coverage includes inherited pure scoring behaviour retained for reference, tournament configuration, the controllable application clock and the new Euro foundation data summary.
 
 ```bash
 npm test
@@ -13,6 +13,14 @@ For watch mode:
 ```bash
 npm run test:watch
 ```
+
+## Inherited application boundary
+
+```bash
+npm run audit:legacy
+```
+
+This verifies that the active Euro entrypoint cannot reach quarantined WC26 pages, components, stores or write paths.
 
 ## Linting
 

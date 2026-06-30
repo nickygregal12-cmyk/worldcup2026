@@ -1,6 +1,6 @@
 # Euro 2028 Predictor
 
-This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages.
+This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages. The inherited WC26 browser application is now quarantined behind a read-only Euro foundation screen.
 
 ## Environments
 
@@ -29,13 +29,19 @@ npm test
 npm run build
 ```
 
-Run all three together with:
+Run the database guard, inherited-code boundary, foundation lint, tests and build together with:
 
 ```bash
 npm run check
 ```
 
-The inherited WC26 code currently has a large pre-existing full-lint backlog. `lint:foundation` protects all new foundation code while that backlog is cleaned up incrementally.
+The inherited application boundary can also be checked directly with:
+
+```bash
+npm run audit:legacy
+```
+
+The inherited WC26 code currently has a large pre-existing full-lint backlog. It remains in the repository as quarantined reference code. `lint:foundation` and `audit:legacy` protect the active Euro foundation while that backlog is reviewed incrementally.
 
 ## Safety rules
 
@@ -45,4 +51,4 @@ The inherited WC26 code currently has a large pre-existing full-lint backlog. `l
 - Database changes must be saved as reviewed migrations.
 - `supabase/reference/` contains audit material only and must not be executed directly.
 
-See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, and `docs/DEPLOYMENT.md`.
+See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, `docs/DEPLOYMENT.md`, and `docs/STAGE-2-APPLICATION-ISOLATION.md`.

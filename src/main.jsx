@@ -1,32 +1,29 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App.jsx'
-import './styles/globals.css'
+import './foundation/foundation.css'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5,
-      retry: 1,
-    },
-  },
-})
+async function retireInheritedServiceWorker() {
+  if (!('serviceWorker' in navigator)) return
 
-// Register service worker for Android PWA install
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {})
-  })
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    await Promise.all(registrations.map(registration => registration.unregister()))
+
+    if ('caches' in window) {
+      const cacheNames = await window.caches.keys()
+      const inheritedCaches = cacheNames.filter(name => name.startsWith('wc26-'))
+      await Promise.all(inheritedCaches.map(name => window.caches.delete(name)))
+    }
+  } catch (error) {
+    console.warn('Could not retire the inherited service worker cleanly.', error)
+  }
 }
+
+window.addEventListener('load', retireInheritedServiceWorker, { once: true })
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </QueryClientProvider>
+    <App />
   </React.StrictMode>,
 )

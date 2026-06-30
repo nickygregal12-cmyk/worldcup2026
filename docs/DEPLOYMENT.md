@@ -19,3 +19,19 @@
 Automatic score syncing is disabled in Euro staging. `netlify.toml` has no scheduled score-sync declaration, and the scheduled function also requires `ENABLE_SCORE_SYNC=true` before it can run.
 
 Do not add WC26 API keys, service-role keys or production database credentials to the Euro Netlify site.
+
+
+## Stage 2 foundation deployment
+
+The staging site currently serves a read-only development foundation rather than the inherited WC26 application.
+
+- Search indexing is blocked.
+- The manifest uses browser display mode and has no feature shortcuts.
+- The application does not register a service worker.
+- Existing WC26 service-worker registrations and WC26 cache names are retired in the browser.
+
+After a staging deploy, verify the public shell with:
+
+```bash
+npm run verify:foundation-page
+```
