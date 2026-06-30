@@ -40,5 +40,7 @@
 
 # Automatic live-score refresh. This server-side function calls the protected
 # sync endpoint using ADMIN_FUNCTION_SECRET, so no browser/admin session is needed.
-[functions."scheduled-score-sync"]
-  schedule = "*/2 * * * *"
+# Automatic score sync is temporarily paused while the provider account is disabled.
+# Re-enable only after the account is restored and one controlled manual sync succeeds.
+# [functions."scheduled-score-sync"]
+#   schedule = "*/2 * * * *"
