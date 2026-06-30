@@ -93,7 +93,18 @@ export default function KoPredictorManager({ admin }) {
                 {koMatches.filter(m => m.stage === koStageFilter).map(match => {
                   const isEditing = koEditingMatch === match.id
                   const s = koScores[match.id] || {}
-                  const isDraw = parseInt(s.home) === parseInt(s.away) && s.home !== '' && s.away !== ''
+                  const outcomeType = s.outcome_type || '90mins'
+                  const hasAetResult = outcomeType === 'et' || outcomeType === 'penalties'
+                  const completedAetHome = match.aet_home_score ?? match.home_score_aet
+                  const completedAetAway = match.aet_away_score ?? match.away_score_aet
+                  const completedPensHome = match.home_score_pens
+                  const completedPensAway = match.away_score_pens
+                  const displayedWinner = match.winner_team_id === match.home_team_id
+                    ? match.home_team?.short_code
+                    : match.winner_team_id === match.away_team_id
+                      ? match.away_team?.short_code
+                      : null
+
                   return (
                     <div key={match.id} className="card" style={{ border: match.status === 'completed' ? '1px solid var(--accent-green)' : '1px solid var(--border-light)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
@@ -113,9 +124,21 @@ export default function KoPredictorManager({ admin }) {
                         </div>
                         <div style={{ textAlign: 'center', fontSize: '18px', fontWeight: '800', fontFamily: 'var(--font-mono)' }}>
                           {match.status === 'completed' ? `${match.home_score ?? '?'} – ${match.away_score ?? '?'}` : 'vs'}
-                          {match.outcome_type && match.outcome_type !== '90mins' && (
-                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>
-                              {match.outcome_type === 'et' ? 'AET' : 'PENS'}
+                          {match.status === 'completed' && (
+                            <div style={{ marginTop: '3px', display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>
+                              <span>{match.outcome_type === '90mins' || !match.outcome_type ? 'FULL TIME' : 'AFTER 90 MINS'}</span>
+                              {match.outcome_type === 'et' && completedAetHome != null && completedAetAway != null && (
+                                <span>AET {completedAetHome}–{completedAetAway}</span>
+                              )}
+                              {match.outcome_type === 'penalties' && (
+                                <>
+                                  {completedAetHome != null && completedAetAway != null && <span>AET {completedAetHome}–{completedAetAway}</span>}
+                                  <span>
+                                    PENS{completedPensHome != null && completedPensAway != null ? ` ${completedPensHome}–${completedPensAway}` : ''}
+                                  </span>
+                                </>
+                              )}
+                              {displayedWinner && <span style={{ color: '#e65100' }}>WINNER: {displayedWinner}</span>}
                             </div>
                           )}
                         </div>
@@ -127,63 +150,128 @@ export default function KoPredictorManager({ admin }) {
 
                       {isEditing && (
                         <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', marginBottom: '10px' }}>
-                          {/* Score */}
-                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '10px' }}>
-                            <input type="number" min="0" max="20" placeholder="H"
-                              value={s.home || ''}
-                              onChange={e => setKoScores(p => ({ ...p, [match.id]: { ...s, home: e.target.value } }))}
-                              style={{ width: '52px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
-                            <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>–</span>
-                            <input type="number" min="0" max="20" placeholder="A"
-                              value={s.away || ''}
-                              onChange={e => setKoScores(p => ({ ...p, [match.id]: { ...s, away: e.target.value } }))}
-                              style={{ width: '52px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
-                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>90 min score</span>
+                          <div style={{ marginBottom: '12px', padding: '10px', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '8px', fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                            Enter the result in order: <strong>score after 90 minutes</strong>, how the match ended, then the <strong>score after extra time</strong> and winner where required.
+                          </div>
+
+                          {/* Score after 90 minutes */}
+                          <div style={{ marginBottom: '12px' }}>
+                            <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>Score after 90 minutes</div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <input type="number" min="0" max="20" placeholder="H"
+                                value={s.home ?? ''}
+                                onChange={e => setKoScores(p => ({ ...p, [match.id]: { ...s, home: e.target.value } }))}
+                                style={{ width: '58px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                              <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>–</span>
+                              <input type="number" min="0" max="20" placeholder="A"
+                                value={s.away ?? ''}
+                                onChange={e => setKoScores(p => ({ ...p, [match.id]: { ...s, away: e.target.value } }))}
+                                style={{ width: '58px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                            </div>
                           </div>
 
                           {/* Outcome type */}
-                          <div style={{ marginBottom: '10px' }}>
-                            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>How did it end?</div>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              {['90mins', 'et', 'penalties'].map(ot => (
-                                <button key={ot} onClick={() => setKoScores(p => ({ ...p, [match.id]: { ...s, outcome_type: ot } }))}
+                          <div style={{ marginBottom: '12px' }}>
+                            <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>How did the match end?</div>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              {[
+                                { key: '90mins', label: '90 minutes' },
+                                { key: 'et', label: 'Extra time' },
+                                { key: 'penalties', label: 'Penalties' },
+                              ].map(option => (
+                                <button key={option.key}
+                                  onClick={() => setKoScores(p => ({
+                                    ...p,
+                                    [match.id]: {
+                                      ...s,
+                                      outcome_type: option.key,
+                                      winner_id: s.winner_id,
+                                    },
+                                  }))}
                                   style={{
-                                    padding: '5px 10px', fontSize: '12px', fontWeight: '600', borderRadius: '6px', cursor: 'pointer',
-                                    background: (s.outcome_type || '90mins') === ot ? '#e65100' : 'var(--bg-card)',
-                                    color: (s.outcome_type || '90mins') === ot ? 'white' : 'var(--text-secondary)',
+                                    padding: '7px 11px', fontSize: '12px', fontWeight: '700', borderRadius: '6px', cursor: 'pointer',
+                                    background: outcomeType === option.key ? '#e65100' : 'var(--bg-card)',
+                                    color: outcomeType === option.key ? 'white' : 'var(--text-secondary)',
                                     border: '1px solid var(--border-light)',
                                   }}>
-                                  {ot === '90mins' ? '90 mins' : ot === 'et' ? 'Extra Time' : 'Penalties'}
+                                  {option.label}
                                 </button>
                               ))}
                             </div>
                           </div>
 
-                          {/* Winner picker (ET or Pens) */}
-                          {(s.outcome_type === 'et' || s.outcome_type === 'penalties') && (
-                            <div style={{ marginBottom: '10px' }}>
-                              <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>Winner</div>
-                              <div style={{ display: 'flex', gap: '6px' }}>
-                                {[
-                                  { id: match.home_team_id, label: match.home_team?.short_code },
-                                  { id: match.away_team_id, label: match.away_team?.short_code },
-                                ].map(team => (
-                                  <button key={team.id} onClick={() => setKoScores(p => ({ ...p, [match.id]: { ...s, winner_id: team.id } }))}
-                                    style={{
-                                      padding: '5px 14px', fontSize: '13px', fontWeight: '700', borderRadius: '6px', cursor: 'pointer',
-                                      background: s.winner_id === team.id ? '#e65100' : 'var(--bg-card)',
-                                      color: s.winner_id === team.id ? 'white' : 'var(--text-secondary)',
-                                      border: '1px solid var(--border-light)',
-                                    }}>
-                                    {team.label}
-                                  </button>
-                                ))}
+                          {/* Score after extra time */}
+                          {hasAetResult && (
+                            <div style={{ marginBottom: '12px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '3px' }}>Score after extra time</div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                                This is the total score after 120 minutes, not just the goals scored during extra time.
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input type="number" min="0" max="30" placeholder="H"
+                                  value={s.aet_home ?? ''}
+                                  onChange={e => setKoScores(p => ({ ...p, [match.id]: { ...s, aet_home: e.target.value } }))}
+                                  style={{ width: '58px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                                <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>–</span>
+                                <input type="number" min="0" max="30" placeholder="A"
+                                  value={s.aet_away ?? ''}
+                                  onChange={e => setKoScores(p => ({ ...p, [match.id]: { ...s, aet_away: e.target.value } }))}
+                                  style={{ width: '58px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
                               </div>
                             </div>
                           )}
 
+                          {/* Penalty shootout score */}
+                          {outcomeType === 'penalties' && (
+                            <div style={{ marginBottom: '12px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '3px' }}>Penalty shootout score</div>
+                              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                                Enter the final shootout score. The selected winner must match this score.
+                              </div>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input type="number" min="0" max="30" placeholder="H"
+                                  value={s.pens_home ?? ''}
+                                  onChange={e => setKoScores(p => ({ ...p, [match.id]: { ...s, pens_home: e.target.value } }))}
+                                  style={{ width: '58px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                                <span style={{ fontWeight: '800', color: 'var(--text-muted)' }}>–</span>
+                                <input type="number" min="0" max="30" placeholder="A"
+                                  value={s.pens_away ?? ''}
+                                  onChange={e => setKoScores(p => ({ ...p, [match.id]: { ...s, pens_away: e.target.value } }))}
+                                  style={{ width: '58px', height: '40px', fontSize: '18px', fontWeight: '700', textAlign: 'center', border: '2px solid var(--border-medium)', borderRadius: 'var(--radius-sm)' }} />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Winner picker */}
+                          <div style={{ marginBottom: '12px' }}>
+                              <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                                Select match winner
+                              </div>
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                {[
+                                  { id: match.home_team_id, label: match.home_team?.short_code, flag: match.home_team?.flag_emoji },
+                                  { id: match.away_team_id, label: match.away_team?.short_code, flag: match.away_team?.flag_emoji },
+                                ].map(team => (
+                                  <button key={team.id} onClick={() => setKoScores(p => ({ ...p, [match.id]: { ...s, winner_id: team.id } }))}
+                                    style={{
+                                      padding: '7px 14px', fontSize: '13px', fontWeight: '700', borderRadius: '6px', cursor: 'pointer',
+                                      background: s.winner_id === team.id ? '#e65100' : 'var(--bg-card)',
+                                      color: s.winner_id === team.id ? 'white' : 'var(--text-secondary)',
+                                      border: '1px solid var(--border-light)',
+                                    }}>
+                                    {team.flag} {team.label}
+                                  </button>
+                                ))}
+                              </div>
+                              <div style={{ marginTop: '5px', fontSize: '10px', color: 'var(--text-muted)' }}>
+                                {outcomeType === '90mins' && 'The selected winner must match the score after 90 minutes.'}
+                                {outcomeType === 'et' && 'The selected winner must match the score after extra time.'}
+                                {outcomeType === 'penalties' && 'The selected winner must match the penalty shootout score.'}
+                              </div>
+                            </div>
+
                           {/* First goal band */}
-                          <div style={{ marginBottom: '10px' }}>
+                          <div style={{ marginBottom: '12px' }}>
                             <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>First Goal Minute (optional)</div>
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                               {['1-15','16-30','31-45','46-60','61-75','76-90','et','no_goals'].map(band => (
@@ -202,7 +290,7 @@ export default function KoPredictorManager({ admin }) {
 
                           <div style={{ display: 'flex', gap: '8px' }}>
                             <button onClick={() => saveKoMatchResult(match)} disabled={koSaving[match.id]} className="btn btn-primary btn-sm" style={{ background: '#e65100' }}>
-                              {koSaving[match.id] ? '...' : 'Save & Calculate Points'}
+                              {koSaving[match.id] ? '...' : 'Save & Recalculate Points'}
                             </button>
                             <button onClick={() => setKoEditingMatch(null)} className="btn btn-secondary btn-sm">Cancel</button>
                           </div>
@@ -217,6 +305,10 @@ export default function KoPredictorManager({ admin }) {
                             away: match.away_score ?? '',
                             outcome_type: match.outcome_type || '90mins',
                             winner_id: match.winner_team_id || null,
+                            aet_home: match.aet_home_score ?? match.home_score_aet ?? '',
+                            aet_away: match.aet_away_score ?? match.away_score_aet ?? '',
+                            pens_home: match.home_score_pens ?? '',
+                            pens_away: match.away_score_pens ?? '',
                             first_goal_band: match.first_goal_band || null,
                           }}))
                         }} className="btn btn-secondary btn-sm">

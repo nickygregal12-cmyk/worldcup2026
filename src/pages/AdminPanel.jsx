@@ -743,34 +743,133 @@ export default function AdminPanel() {
 
   const saveKoMatchResult = async (match) => {
     const s = koScores[match.id] || {}
-    if (s.home === undefined || s.away === undefined) return
-    setKoSaving(prev => ({ ...prev, [match.id]: true }))
-    const homeScore = parseInt(s.home)
-    const awayScore = parseInt(s.away)
+    const parseScore = value => {
+      if (value === '' || value === null || value === undefined) return null
+      const parsed = Number.parseInt(value, 10)
+      return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
+    }
+
+    const homeScore = parseScore(s.home)
+    const awayScore = parseScore(s.away)
     const outcomeType = s.outcome_type || '90mins'
-    const winnerId = s.winner_id ||
-      (homeScore > awayScore ? match.home_team_id :
-       awayScore > homeScore ? match.away_team_id : null)
+    const aetHomeScore = parseScore(s.aet_home)
+    const aetAwayScore = parseScore(s.aet_away)
+    const pensHomeScore = parseScore(s.pens_home)
+    const pensAwayScore = parseScore(s.pens_away)
+
+    if (homeScore === null || awayScore === null) {
+      setActionResult('❌ Enter the score after 90 minutes for both teams')
+      return
+    }
+
+    let winnerId = null
+
+    if (!s.winner_id || ![match.home_team_id, match.away_team_id].includes(s.winner_id)) {
+      setActionResult('❌ Select the match winner')
+      return
+    }
+
+    if (outcomeType === '90mins') {
+      if (homeScore === awayScore) {
+        setActionResult('❌ A knockout match cannot finish level after 90 minutes. Select Extra Time or Penalties.')
+        return
+      }
+      winnerId = homeScore > awayScore ? match.home_team_id : match.away_team_id
+      if (s.winner_id !== winnerId) {
+        setActionResult('❌ The selected winner does not match the score after 90 minutes')
+        return
+      }
+    }
+
+    if (outcomeType === 'et') {
+      if (homeScore !== awayScore) {
+        setActionResult('❌ Extra time requires the score after 90 minutes to be level')
+        return
+      }
+      if (aetHomeScore === null || aetAwayScore === null) {
+        setActionResult('❌ Enter the score after extra time')
+        return
+      }
+      if (aetHomeScore === aetAwayScore) {
+        setActionResult('❌ An extra-time result must have a winner. Select Penalties if it was still level after 120 minutes.')
+        return
+      }
+      winnerId = aetHomeScore > aetAwayScore ? match.home_team_id : match.away_team_id
+      if (s.winner_id && s.winner_id !== winnerId) {
+        setActionResult('❌ The selected winner does not match the score after extra time')
+        return
+      }
+    }
+
+    if (outcomeType === 'penalties') {
+      if (homeScore !== awayScore) {
+        setActionResult('❌ Penalties require the score after 90 minutes to be level')
+        return
+      }
+      if (aetHomeScore === null || aetAwayScore === null) {
+        setActionResult('❌ Enter the score after extra time before recording a penalty shootout')
+        return
+      }
+      if (aetHomeScore !== aetAwayScore) {
+        setActionResult('❌ A penalty shootout can only happen when the score is still level after extra time')
+        return
+      }
+      if (pensHomeScore === null || pensAwayScore === null) {
+        setActionResult('❌ Enter the penalty shootout score for both teams')
+        return
+      }
+      if (pensHomeScore === pensAwayScore) {
+        setActionResult('❌ Penalty shootout scores cannot finish level')
+        return
+      }
+      const shootoutWinner = pensHomeScore > pensAwayScore ? match.home_team_id : match.away_team_id
+      if (shootoutWinner !== s.winner_id) {
+        setActionResult('❌ The selected winner does not match the penalty shootout score')
+        return
+      }
+      winnerId = s.winner_id
+    }
+
+    setKoSaving(prev => ({ ...prev, [match.id]: true }))
 
     const { error } = await supabase.from('matches').update({
+      // These are deliberately the scores after 90 minutes. KO prediction
+      // exact-score points are based on this result.
       home_score: homeScore,
       away_score: awayScore,
       winner_team_id: winnerId,
       outcome_type: outcomeType,
-      aet_home_score: s.aet_home ? parseInt(s.aet_home) : null,
-      aet_away_score: s.aet_away ? parseInt(s.aet_away) : null,
+      // Keep both historic AET column pairs in sync while WC26 is live.
+      aet_home_score: outcomeType === '90mins' ? null : aetHomeScore,
+      aet_away_score: outcomeType === '90mins' ? null : aetAwayScore,
+      home_score_aet: outcomeType === '90mins' ? null : aetHomeScore,
+      away_score_aet: outcomeType === '90mins' ? null : aetAwayScore,
+      home_score_pens: outcomeType === 'penalties' ? pensHomeScore : null,
+      away_score_pens: outcomeType === 'penalties' ? pensAwayScore : null,
       first_goal_band: s.first_goal_band || null,
       status: 'completed',
       use_manual_override: true,
     }).eq('id', match.id)
 
-    if (error) { setActionResult(`❌ Error: ${error.message}`); setKoSaving(prev => ({ ...prev, [match.id]: false })); return }
+    if (error) {
+      setActionResult(`❌ Error: ${error.message}`)
+      setKoSaving(prev => ({ ...prev, [match.id]: false }))
+      return
+    }
 
     const { error: rpcErr } = await supabase.rpc('calculate_ko_prediction_points', { p_match_id: match.id })
-    if (rpcErr) setActionResult(`⚠️ Score saved but KO points calc failed: ${rpcErr.message}`)
-    else setActionResult(`✅ KO Match ${match.match_number} result saved — points calculated`)
+    if (rpcErr) setActionResult(`⚠️ Result saved but KO points calculation failed: ${rpcErr.message}`)
+    else setActionResult(`✅ KO Match ${match.match_number} result saved — points recalculated safely`)
 
-    await logAudit('KO_SCORE_ENTRY', { match_id: match.id, match_number: match.match_number, home: homeScore, away: awayScore, outcome: outcomeType })
+    await logAudit('KO_SCORE_ENTRY', {
+      match_id: match.id,
+      match_number: match.match_number,
+      score_after_90: `${homeScore}-${awayScore}`,
+      score_after_extra_time: aetHomeScore === null ? null : `${aetHomeScore}-${aetAwayScore}`,
+      penalty_score: pensHomeScore === null ? null : `${pensHomeScore}-${pensAwayScore}`,
+      winner_team_id: winnerId,
+      outcome: outcomeType,
+    })
     setKoEditingMatch(null)
     loadKoData()
     setKoSaving(prev => ({ ...prev, [match.id]: false }))
