@@ -69,7 +69,7 @@ const KO_GOAL_BAND_LABELS = {
   no_goals: 'No goals',
 }
 
-function normaliseKoPointsBreakdown(breakdown) {
+function normaliseKoPointsBreakdown(breakdown, prediction, match) {
   if (!breakdown) return []
 
   let value = breakdown
@@ -143,12 +143,27 @@ function normaliseKoPointsBreakdown(breakdown) {
     'joker',
   ])
 
+  const predictedMethod = String(prediction?.outcome_type || '90mins')
+  const actualMethod = String(match?.outcome_type || '90mins')
+  const predictedDraw = Number(prediction?.home_score) === Number(prediction?.away_score)
+
   const rows = [
     { key: 'score_points', label: '90-minute score', points: scorePoints },
-    { key: 'advance_points', label: 'Advancing team', points: advancePoints },
-    { key: 'method_points', label: 'Method', points: methodPoints },
-    { key: 'first_goal_points', label: 'First-goal band', points: firstGoalPoints },
   ]
+
+  // For a straightforward normal-time prediction, the advancing team is
+  // already represented by the 90-minute result and there is no separate
+  // method award. Hiding those zero-value rows avoids making a correct pick
+  // look partly wrong.
+  if (advancePoints > 0 || predictedDraw || predictedMethod !== '90mins') {
+    rows.push({ key: 'advance_points', label: 'Advancing team', points: advancePoints })
+  }
+
+  if (methodPoints > 0 || actualMethod !== '90mins' || predictedMethod !== '90mins') {
+    rows.push({ key: 'method_points', label: 'Method', points: methodPoints })
+  }
+
+  rows.push({ key: 'first_goal_points', label: 'First-goal band', points: firstGoalPoints })
 
   if (jokerMultiplier > 1) {
     rows.push({ key: 'joker_multiplier', label: 'Joker', points: jokerMultiplier })
@@ -876,7 +891,7 @@ function KOPredictorScoresView({ userId, currentUserId, targetName = 'Member' })
           : 0
 
         const breakdown = completed && prediction
-          ? normaliseKoPointsBreakdown(prediction.points_breakdown)
+          ? normaliseKoPointsBreakdown(prediction.points_breakdown, prediction, match)
               .filter(item => {
                 const key = String(item.key).toLowerCase()
                 if (['total', 'points_total', 'total_points'].includes(key)) return false
