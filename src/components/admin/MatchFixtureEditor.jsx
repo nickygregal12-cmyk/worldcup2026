@@ -32,8 +32,11 @@ export default function MatchFixtureEditor({ match, teams, groups, venues, onClo
     match_number: match.match_number ?? '', stage: match.stage || 'group', group_id: match.group_id || '',
     home_team_id: match.home_team_id || '', away_team_id: match.away_team_id || '', venue_id: match.venue_id || '',
     kickoff_time: toLocalInput(match.kickoff_time), status: match.status || 'scheduled', live_minute: match.live_minute ?? '',
-    home_score: match.home_score ?? '', away_score: match.away_score ?? '', aet_home_score: match.aet_home_score ?? '',
-    aet_away_score: match.aet_away_score ?? '', outcome_type: match.outcome_type || '90mins', first_goal_band: match.first_goal_band || '',
+    home_score: match.home_score ?? '', away_score: match.away_score ?? '',
+    aet_home_score: match.aet_home_score ?? match.home_score_aet ?? '',
+    aet_away_score: match.aet_away_score ?? match.away_score_aet ?? '',
+    home_score_pens: match.home_score_pens ?? '', away_score_pens: match.away_score_pens ?? '',
+    winner_team_id: match.winner_team_id || '', outcome_type: match.outcome_type || '90mins', first_goal_band: match.first_goal_band || '',
     external_match_id: match.external_match_id || '', use_manual_override: match.use_manual_override ?? true,
     home_slot: def.home_slot || '', away_slot: def.away_slot || '',
   })
@@ -74,14 +77,55 @@ export default function MatchFixtureEditor({ match, teams, groups, venues, onClo
 
   const save = async () => {
     if (form.home_team_id && form.away_team_id && form.home_team_id === form.away_team_id) return setActionResult('Home and away team cannot be the same.')
+
+    const isKo = form.stage !== 'group'
+    const home90 = num(form.home_score)
+    const away90 = num(form.away_score)
+    const aetHome = num(form.aet_home_score)
+    const aetAway = num(form.aet_away_score)
+    const pensHome = num(form.home_score_pens)
+    const pensAway = num(form.away_score_pens)
+
+    if (isKo && form.status === 'completed') {
+      if (home90 === null || away90 === null) return setActionResult('Enter the score after 90 minutes for both teams.')
+      if (!form.winner_team_id || ![form.home_team_id, form.away_team_id].includes(form.winner_team_id)) return setActionResult('Select the advancing team.')
+
+      if (form.outcome_type === '90mins') {
+        if (home90 === away90) return setActionResult('A completed knockout match cannot finish level after 90 minutes. Select Extra time or Penalties.')
+        const expected = home90 > away90 ? form.home_team_id : form.away_team_id
+        if (form.winner_team_id !== expected) return setActionResult('The advancing team does not match the 90-minute score.')
+      }
+
+      if (form.outcome_type === 'et') {
+        if (home90 !== away90) return setActionResult('Extra time requires the score after 90 minutes to be level.')
+        if (aetHome === null || aetAway === null || aetHome === aetAway) return setActionResult('Enter a non-level score after 120 minutes for an extra-time result.')
+        const expected = aetHome > aetAway ? form.home_team_id : form.away_team_id
+        if (form.winner_team_id !== expected) return setActionResult('The advancing team does not match the score after extra time.')
+      }
+
+      if (form.outcome_type === 'penalties') {
+        if (home90 !== away90) return setActionResult('Penalties require the score after 90 minutes to be level.')
+        if (aetHome === null || aetAway === null || aetHome !== aetAway) return setActionResult('A penalty shootout requires the score after 120 minutes to be level.')
+        if (pensHome === null || pensAway === null || pensHome === pensAway) return setActionResult('Enter a non-level penalty shootout score.')
+        const expected = pensHome > pensAway ? form.home_team_id : form.away_team_id
+        if (form.winner_team_id !== expected) return setActionResult('The advancing team does not match the penalty shootout score.')
+      }
+    }
+
     setSaving(true)
     const payload = {
       match_number: Number(form.match_number), stage: form.stage,
       group_id: form.stage === 'group' ? (form.group_id || null) : null,
       home_team_id: form.home_team_id || null, away_team_id: form.away_team_id || null, venue_id: form.venue_id || null,
       kickoff_time: form.kickoff_time ? new Date(form.kickoff_time).toISOString() : null,
-      status: form.status, live_minute: num(form.live_minute), home_score: num(form.home_score), away_score: num(form.away_score),
-      aet_home_score: num(form.aet_home_score), aet_away_score: num(form.aet_away_score),
+      status: form.status, live_minute: num(form.live_minute), home_score: home90, away_score: away90,
+      aet_home_score: form.outcome_type === '90mins' ? null : aetHome,
+      aet_away_score: form.outcome_type === '90mins' ? null : aetAway,
+      home_score_aet: form.outcome_type === '90mins' ? null : aetHome,
+      away_score_aet: form.outcome_type === '90mins' ? null : aetAway,
+      home_score_pens: form.outcome_type === 'penalties' ? pensHome : null,
+      away_score_pens: form.outcome_type === 'penalties' ? pensAway : null,
+      winner_team_id: isKo ? (form.winner_team_id || null) : null,
       outcome_type: form.outcome_type || null, first_goal_band: form.first_goal_band || null,
       external_match_id: form.external_match_id ? String(form.external_match_id) : null,
       use_manual_override: Boolean(form.use_manual_override),
@@ -116,11 +160,20 @@ export default function MatchFixtureEditor({ match, teams, groups, venues, onClo
         <Field label="Stadium"><select className="input" value={form.venue_id} onChange={e=>update('venue_id',e.target.value)}><option value="">Choose stadium</option>{venues.map(v=><option key={v.id} value={v.id}>{v.name || v.stadium_name || v.city} · {v.city}</option>)}</select></Field>
         <Field label="Kickoff date and time"><input className="input" type="datetime-local" value={form.kickoff_time} onChange={e=>update('kickoff_time',e.target.value)} /></Field>
         <Field label="Live minute"><input className="input" type="number" min="0" max="130" value={form.live_minute} onChange={e=>update('live_minute',e.target.value)} /></Field>
-        <Field label="Outcome"><select className="input" value={form.outcome_type} onChange={e=>update('outcome_type',e.target.value)}><option value="90mins">90 minutes</option><option value="et">Extra time</option><option value="penalties">Penalties</option></select></Field>
-        <Field label="First goal"><select className="input" value={form.first_goal_band} onChange={e=>update('first_goal_band',e.target.value)}><option value="">Not set</option>{['0-15','16-30','31-45','46-60','61-75','76-90','no_goal'].map(v=><option key={v} value={v}>{v==='no_goal'?'No goal':`${v} mins`}</option>)}</select></Field>
+        <Field label="How was the match decided?"><select className="input" value={form.outcome_type} onChange={e=>update('outcome_type',e.target.value)}><option value="90mins">90 minutes</option><option value="et">Extra time</option><option value="penalties">Penalties</option></select></Field>
+        <Field label="First-goal band"><select className="input" value={form.first_goal_band} onChange={e=>update('first_goal_band',e.target.value)}><option value="">Not set</option>{['0-15','16-30','31-45','46-60','61-75','76-90','no_goal'].map(v=><option key={v} value={v}>{v==='no_goal'?'No goal':`${v} mins`}</option>)}</select></Field>
         <Field label="External API ID"><input className="input" value={form.external_match_id} onChange={e=>update('external_match_id',e.target.value)} /></Field>
       </div>
-      <div style={{ marginTop:'14px', padding:'14px', background:'var(--bg-secondary)', borderRadius:'12px' }}><div style={{ fontWeight:900, marginBottom:'10px' }}>Result details</div><div style={{ display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', gap:'10px' }}>{[['home_score','Home score'],['away_score','Away score'],['aet_home_score','AET home'],['aet_away_score','AET away']].map(([k,l])=><Field key={k} label={l}><input className="input" type="number" min="0" max="30" value={form[k]} onChange={e=>update(k,e.target.value)} /></Field>)}</div></div>
+      <div style={{ marginTop:'14px', padding:'14px', background:'var(--bg-secondary)', borderRadius:'12px' }}>
+        <div style={{ fontWeight:900, marginBottom:'4px' }}>Result details</div>
+        <div style={{ fontSize:'11px', color:'var(--text-muted)', marginBottom:'10px' }}>The main score is always the score after 90 minutes. Extra-time and penalty scores are stored separately.</div>
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', gap:'10px' }}>
+          {[['home_score','90 mins · home'],['away_score','90 mins · away']].map(([k,l])=><Field key={k} label={l}><input className="input" type="number" min="0" max="30" value={form[k]} onChange={e=>update(k,e.target.value)} /></Field>)}
+          {form.stage !== 'group' && form.outcome_type !== '90mins' && [['aet_home_score','120 mins · home'],['aet_away_score','120 mins · away']].map(([k,l])=><Field key={k} label={l}><input className="input" type="number" min="0" max="30" value={form[k]} onChange={e=>update(k,e.target.value)} /></Field>)}
+          {form.stage !== 'group' && form.outcome_type === 'penalties' && [['home_score_pens','Shootout · home'],['away_score_pens','Shootout · away']].map(([k,l])=><Field key={k} label={l}><input className="input" type="number" min="0" max="30" value={form[k]} onChange={e=>update(k,e.target.value)} /></Field>)}
+        </div>
+        {form.stage !== 'group' && <div style={{ marginTop:'10px' }}><Field label="Advancing team"><select className="input" value={form.winner_team_id} onChange={e=>update('winner_team_id',e.target.value)}><option value="">Select winner</option>{teams.filter(t=>[form.home_team_id,form.away_team_id].includes(t.id)).map(t=><option key={t.id} value={t.id}>{t.flag_emoji || ''} {t.name}</option>)}</select></Field></div>}
+      </div>
       <label style={{ display:'flex', gap:'9px', alignItems:'center', marginTop:'14px', fontWeight:800 }}><input type="checkbox" checked={form.use_manual_override} onChange={e=>update('use_manual_override',e.target.checked)} /> Protect manual changes from API overwrite</label>
       <div style={{ display:'flex', gap:'8px', position:'sticky', bottom:0, background:'var(--bg-card)', paddingTop:'14px', marginTop:'8px' }}><button className="btn btn-primary" style={{ flex:1 }} onClick={save} disabled={saving}>{saving?'Saving…':'Save all match changes'}</button><button className="btn btn-secondary" onClick={onClose}>Cancel</button></div>
     </div>

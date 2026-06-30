@@ -46,6 +46,9 @@ export default function KoPredictorManager({ admin }) {
                 🔥 Knockout Predictor — "Your Second Chance" launches 27 Jun 23:00 BST when all teams are confirmed.
                 Use this panel to enter match results, manage leagues, and adjust points.
               </div>
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#8a4b00', lineHeight: 1.5 }}>
+                Display target: exact 90-minute score 10 pts · correct 90-minute result 5 pts · correct advancing team +5 pts · correct method +3 pts · first-goal band +3 pts · joker doubles the total.
+              </div>
             </div>
 
             {/* Quick actions */}
@@ -272,9 +275,10 @@ export default function KoPredictorManager({ admin }) {
 
                           {/* First goal band */}
                           <div style={{ marginBottom: '12px' }}>
-                            <div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '6px' }}>First Goal Minute (optional)</div>
+                            <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)', marginBottom: '3px' }}>First-goal band</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>Select the band containing the first goal. This is worth +3 pts when correct.</div>
                             <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                              {['1-15','16-30','31-45','46-60','61-75','76-90','et','no_goals'].map(band => (
+                              {['0-15','16-30','31-45','46-60','61-75','76-90','et','no_goal'].map(band => (
                                 <button key={band} onClick={() => setKoScores(p => ({ ...p, [match.id]: { ...s, first_goal_band: s.first_goal_band === band ? null : band } }))}
                                   style={{
                                     padding: '3px 8px', fontSize: '11px', borderRadius: '4px', cursor: 'pointer',
@@ -282,7 +286,7 @@ export default function KoPredictorManager({ admin }) {
                                     color: s.first_goal_band === band ? 'white' : 'var(--text-muted)',
                                     border: '1px solid var(--border-light)',
                                   }}>
-                                  {band}
+                                  {band === 'et' ? 'Extra time' : band === 'no_goal' ? 'No goal' : `${band} mins`}
                                 </button>
                               ))}
                             </div>
@@ -290,7 +294,7 @@ export default function KoPredictorManager({ admin }) {
 
                           <div style={{ display: 'flex', gap: '8px' }}>
                             <button onClick={() => saveKoMatchResult(match)} disabled={koSaving[match.id]} className="btn btn-primary btn-sm" style={{ background: '#e65100' }}>
-                              {koSaving[match.id] ? '...' : 'Save & Recalculate Points'}
+                              {koSaving[match.id] ? '...' : 'Save result & recalculate'}
                             </button>
                             <button onClick={() => setKoEditingMatch(null)} className="btn btn-secondary btn-sm">Cancel</button>
                           </div>
