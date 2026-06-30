@@ -1,6 +1,6 @@
 # Euro 2028 Predictor
 
-This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages. The inherited WC26 browser application is now quarantined behind a read-only Euro foundation screen. The first Euro prediction, locking and result contract is defined in pure code and tests. Scoring categories are fixed structurally, while the current point values remain provisional in one central configuration file. No prediction tables or browser writes exist yet.
+This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages. The inherited WC26 browser application is now quarantined behind a read-only Euro foundation screen. The first Euro prediction, locking and result contract is defined in pure code and tests. Scoring categories are fixed structurally, while the current point values remain provisional in one central configuration file. No prediction tables or browser writes exist yet. The proposed prediction database is now documented as a non-executable design with an atomic future write boundary.
 
 ## Environments
 
@@ -40,6 +40,7 @@ The inherited application boundary and prediction contract can also be checked d
 ```bash
 npm run audit:legacy
 npm run audit:contracts
+npm run audit:db-design
 ```
 
 The inherited WC26 code currently has a large pre-existing full-lint backlog. It remains in the repository as quarantined reference code. `lint:foundation` and `audit:legacy` protect the active Euro foundation while that backlog is reviewed incrementally.
@@ -52,4 +53,4 @@ The inherited WC26 code currently has a large pre-existing full-lint backlog. It
 - Database changes must be saved as reviewed migrations.
 - `supabase/reference/` contains audit material only and must not be executed directly.
 
-See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, `docs/DEPLOYMENT.md`, `docs/STAGE-2-APPLICATION-ISOLATION.md`, and `docs/STAGE-2-PREDICTION-CONTRACTS.md`.
+See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, `docs/DEPLOYMENT.md`, `docs/STAGE-2-APPLICATION-ISOLATION.md`, `docs/STAGE-2-PREDICTION-CONTRACTS.md`, and `docs/STAGE-2-PREDICTION-DATABASE-DESIGN.md`.

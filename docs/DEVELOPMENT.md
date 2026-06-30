@@ -33,3 +33,22 @@ npm run audit:contracts
 ```
 
 The agreed baseline has one global opening-match lock, uniform normal-time score categories, separate shoot-out data and no jokers, confidence multipliers, rolling locks or league-specific rules. The working point values are provisional and live only in `src/config/scoringConfig.js`; calculations and future interfaces must import that source rather than copying numbers.
+
+## Prediction database design
+
+Stage 2 Batch 3 defines `euro28-prediction-db-v1` before Migration 005 exists.
+The planned storage uses one versioned scoring ruleset, one prediction set per
+user and tournament, and complete match-prediction rows with projected
+participants. The future write path must save the whole bundle atomically and
+reject stale revisions.
+
+Run:
+
+```bash
+npm run audit:db-design
+```
+
+Migration 005 is deliberately schema/read-security only. It must not grant
+direct prediction-table writes to the browser. The trusted atomic save path is
+deferred until the canonical Euro group-table, best-third and knockout resolver
+has its own tests.

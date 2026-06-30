@@ -115,3 +115,20 @@ Never use `supabase db reset --linked` against staging or production.
   scenario scripts.
 - Review RLS and grants with every new table.
 - Use stable slot codes and bracket rules rather than team names.
+
+## Prediction database design gate
+
+Stage 2 Batch 3 is review material only. The non-executable blueprint is:
+
+```text
+supabase/design/005-prediction-system-blueprint.md
+```
+
+The blueprint plans three tables: `scoring_rulesets`, `prediction_sets` and
+`match_predictions`. Migration 005 will add storage and read-security only. It
+will not create a browser write path. A later reviewed migration will add the
+trusted atomic bundle save API after the canonical predicted group-table and
+knockout resolver is implemented and tested.
+
+Files under `supabase/design/` are not migration history and must never be
+passed to `supabase db push`.

@@ -47,3 +47,14 @@ npm run build
 ## Continuous integration
 
 GitHub Actions runs foundation lint, unit tests and the production build on pull requests and pushes to `euro28-development`.
+
+## Prediction database design
+
+```bash
+npm run audit:db-design
+```
+
+This verifies that Migration 005 has not been created prematurely, the design
+uses the three agreed tables, the browser cannot write directly to them, the
+database clock controls the one global lock, scoring values remain versioned in
+one ruleset, and future saves use an atomic bundle with optimistic revision.
