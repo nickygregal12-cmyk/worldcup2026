@@ -27,7 +27,7 @@ const KO_SCORING = {
   exactScore: 10,
   firstGoalBand: 3,
   extraTime: 3,
-  penalties: 3,
+  penalties: 5,
 }
 
 const KO_POINT_LABELS = {
@@ -186,21 +186,31 @@ function resolveKoWinner(prediction, match) {
   return null
 }
 
-function koMaximumPoints(prediction) {
+function koMaximumBasePoints(prediction, match) {
   if (!prediction) return 0
 
-  const methodBonus = prediction.outcome_type === 'et'
+  // Once a match is complete, the true maximum depends on how the match was
+  // actually decided, not on the method the member happened to predict.
+  const method = match?.status === 'completed'
+    ? String(match?.outcome_type || '90mins')
+    : String(prediction?.outcome_type || '90mins')
+
+  const hasSeparateAdvanceAward = method === 'et' || method === 'penalties'
+  const methodBonus = method === 'et'
     ? KO_SCORING.extraTime
-    : prediction.outcome_type === 'penalties'
+    : method === 'penalties'
       ? KO_SCORING.penalties
       : 0
 
-  const rawMaximum =
-    KO_SCORING.exactScore +
-    methodBonus +
-    KO_SCORING.firstGoalBand
+  return KO_SCORING.exactScore
+    + (hasSeparateAdvanceAward ? 5 : 0)
+    + methodBonus
+    + KO_SCORING.firstGoalBand
+}
 
-  return rawMaximum * (prediction.is_joker ? 2 : 1)
+function koMaximumPoints(prediction, match) {
+  const baseMaximum = koMaximumBasePoints(prediction, match)
+  return baseMaximum * (prediction?.is_joker ? 2 : 1)
 }
 
 function koPredictionDescription(prediction, match) {
@@ -885,9 +895,22 @@ function KOPredictorScoresView({ userId, currentUserId, targetName = 'Member' })
             : null
 
         const totalEarned = Number(prediction?.points_awarded || 0)
-        const maximumPoints = koMaximumPoints(prediction)
+        const maximumBasePoints = koMaximumBasePoints(prediction, match)
+        const maximumPoints = koMaximumPoints(prediction, match)
+        const storedBreakdown = prediction?.points_breakdown && typeof prediction.points_breakdown === 'string'
+          ? (() => { try { return JSON.parse(prediction.points_breakdown) } catch { return {} } })()
+          : (prediction?.points_breakdown || {})
+
+        const totalBeforeJoker = Number(
+          storedBreakdown?.total_before_joker ??
+          (prediction?.is_joker ? totalEarned / 2 : totalEarned)
+        )
+
+        // "Points missed" is shown before the Joker multiplier. This keeps the
+        // figure tied to the match's real scoring ceiling (13 in a normal-time
+        // game) rather than making missed opportunities look doubled.
         const pointsMissed = completed
-          ? Math.max(0, maximumPoints - totalEarned)
+          ? Math.max(0, maximumBasePoints - totalBeforeJoker)
           : 0
 
         const breakdown = completed && prediction
@@ -1077,7 +1100,7 @@ function KOPredictorScoresView({ userId, currentUserId, targetName = 'Member' })
                             color: pointsMissed > 0 ? 'var(--accent-red)' : 'var(--text-muted)',
                             whiteSpace: 'nowrap',
                           }}>
-                            {pointsMissed} pts missed
+                            {pointsMissed} base pts missed
                           </div>
                         </>
                       ) : live ? (
