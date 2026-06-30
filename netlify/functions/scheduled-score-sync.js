@@ -5,9 +5,10 @@ export const handler = async () => {
   const secret = process.env.ADMIN_FUNCTION_SECRET
 
   if (!secret) {
+    console.error('Scheduled score sync skipped: ADMIN_FUNCTION_SECRET is not configured')
     return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'ADMIN_FUNCTION_SECRET is not configured' }),
+      statusCode: 200,
+      body: JSON.stringify({ skipped: true, reason: 'ADMIN_FUNCTION_SECRET is not configured' }),
     }
   }
 
@@ -17,33 +18,26 @@ export const handler = async () => {
       headers: {
         'Content-Type': 'application/json',
         'x-admin-secret': secret,
-        'x-sync-source': 'scheduled',
       },
+      body: JSON.stringify({ source: 'scheduled' }),
     })
 
     const body = await response.text()
+    console.log('Scheduled score sync result', response.status, body)
 
-    if (!response.ok) {
-      // Scheduled functions may be retried rapidly after a non-2xx response.
-      // Always acknowledge the schedule invocation so one provider failure does
-      // not become a burst of duplicate score-sync requests.
-      console.error('Scheduled score sync failed', response.status, body)
-      return {
-        statusCode: 200,
-        body: JSON.stringify({ acknowledged: true, downstreamStatus: response.status, downstreamBody: body }),
-      }
-    }
-
-    console.log('Scheduled score sync complete', body)
+    // Always return 200 to Netlify. The shared sync function records provider
+    // failures and cooldowns, so an immediate platform retry would only create
+    // another unnecessary provider request.
     return {
       statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       body,
     }
   } catch (error) {
-    console.error('Scheduled score sync failed', error)
+    console.error('Scheduled score sync transport failure', error)
     return {
       statusCode: 200,
-      body: JSON.stringify({ acknowledged: true, error: error.message }),
+      body: JSON.stringify({ skipped: true, reason: error.message }),
     }
   }
 }

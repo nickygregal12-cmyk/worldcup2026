@@ -38,9 +38,6 @@
 
 # Push notifications triggered via Supabase pg_cron instead of Netlify scheduler
 
-# Automatic live-score refresh. This server-side function calls the protected
-# sync endpoint using ADMIN_FUNCTION_SECRET, so no browser/admin session is needed.
-# Automatic score sync is temporarily paused while the provider account is disabled.
-# Re-enable only after the account is restored and one controlled manual sync succeeds.
-# [functions."scheduled-score-sync"]
-#   schedule = "*/2 * * * *"
+# Automatic score syncing is intentionally paused while the provider account
+# is being restored. Do not add a Netlify schedule here. Once restored, use the
+# single Supabase cron job supplied in ENABLE_SCORE_CRON_LATER.sql.
