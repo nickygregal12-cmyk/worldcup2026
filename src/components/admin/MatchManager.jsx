@@ -47,8 +47,7 @@ export default function MatchManager({ admin }) {
   const {
     matches, filteredMatches, matchSearch, setMatchSearch,
     matchStatusFilter, setMatchStatusFilter, stageFilter, setStageFilter,
-    setFixtureEditorMatch, editingMatch, setEditingMatch, scores, setScores,
-    saving, saveMatchResult, setMatchLive, resetMatchOverride, loadMatches, fmt, prepopulateMatchIds,
+    setFixtureEditorMatch, saving, setMatchLive, resetMatchOverride, loadMatches, fmt, prepopulateMatchIds,
   } = admin
 
   useEffect(() => {
@@ -174,8 +173,6 @@ export default function MatchManager({ admin }) {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: '10px' }}>
           {healthFilteredMatches.map(match => {
-            const isEditing = editingMatch === match.id
-            const s = scores[match.id] || { home: match.home_score ?? '', away: match.away_score ?? '' }
             const venueName = match.venue?.name || match.venue?.stadium_name || match.venue?.city || 'Venue not set'
             const matchDef = { ...(MATCH_DEFS.get(Number(match.match_number)) || {}), ...(slotOverrides[Number(match.match_number)] || {}) }
             return (
@@ -204,21 +201,14 @@ export default function MatchManager({ admin }) {
                   </div>
                 )}
 
-                {isEditing && (
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', padding: '10px', background: 'var(--bg-secondary)', borderRadius: '10px', marginBottom: '10px' }}>
-                    <input className="input" type="number" min="0" max="30" value={s.home} onChange={e => setScores(prev => ({ ...prev, [match.id]: { ...s, home: e.target.value } }))} style={{ width: '72px', textAlign: 'center', fontWeight: 900 }} />
-                    <span>–</span>
-                    <input className="input" type="number" min="0" max="30" value={s.away} onChange={e => setScores(prev => ({ ...prev, [match.id]: { ...s, away: e.target.value } }))} style={{ width: '72px', textAlign: 'center', fontWeight: 900 }} />
-                    <button className="btn btn-primary btn-sm" disabled={saving[match.id]} onClick={() => saveMatchResult(match)}>Save result</button>
-                    <button className="btn btn-secondary btn-sm" onClick={() => setEditingMatch(null)}>Cancel</button>
-                  </div>
-                )}
-
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
-                  <button className="btn btn-primary btn-sm" onClick={() => setFixtureEditorMatch(match)}>Edit match</button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => { setEditingMatch(isEditing ? null : match.id); setScores(prev => ({ ...prev, [match.id]: { home: match.home_score ?? '', away: match.away_score ?? '' } })) }}>{isEditing ? 'Close score' : 'Enter result'}</button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => setMatchLive(match)}>{match.status === 'live' ? 'Update live' : 'Mark live'}</button>
-                  {match.use_manual_override ? <button className="btn btn-secondary btn-sm" onClick={() => resetMatchOverride(match)}>Return to API control</button> : <button className="btn btn-secondary btn-sm" onClick={() => setFixtureEditorMatch(match)}>Set manual control</button>}
+                  <button className="btn btn-primary btn-sm" style={{ gridColumn: '1 / -1' }} onClick={() => setFixtureEditorMatch(match)}>
+                    {match.status === 'completed' ? 'Review or correct match' : 'Manage match'}
+                  </button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => setMatchLive(match)}>{match.status === 'live' ? 'Update live status' : 'Mark live'}</button>
+                  {match.use_manual_override
+                    ? <button className="btn btn-secondary btn-sm" onClick={() => resetMatchOverride(match)}>Return to API control</button>
+                    : <button className="btn btn-secondary btn-sm" onClick={() => setFixtureEditorMatch(match)}>Use manual control</button>}
                 </div>
               </div>
             )
