@@ -37,23 +37,23 @@ const VENUE_FLAGS = {
 
 
 const POINT_LABELS = {
-  correct_winner: 'Correct result',
-  winner: 'Correct result',
-  result: 'Correct result',
-  exact_score: 'Exact score',
-  exact: 'Exact score',
+  correct_winner: 'Correct 90-minute result',
+  winner: 'Correct 90-minute result',
+  result: 'Correct 90-minute result',
+  exact_score: 'Exact 90-minute score',
+  exact: 'Exact 90-minute score',
   first_goal_band: 'First-goal band',
   first_goal: 'First-goal band',
   first_goal_time: 'First-goal time',
   first_goal_minute: 'First-goal time',
   first_goal_time_band: 'First-goal time',
-  extra_time: 'Extra-time bonus',
-  et_bonus: 'Extra-time bonus',
+  extra_time: 'Correct method',
+  et_bonus: 'Correct method',
   method_bonus: 'Method bonus',
   correct_method: 'Correct method',
-  penalties: 'Penalties bonus',
-  penalties_bonus: 'Penalties bonus',
-  pen_bonus: 'Penalties bonus',
+  penalties: 'Correct method',
+  penalties_bonus: 'Correct method',
+  pen_bonus: 'Correct method',
   joker: 'Joker multiplier',
   joker_bonus: 'Joker bonus',
 }
@@ -63,7 +63,7 @@ const KO_SCORING = {
   exactScore: 10,
   firstGoalBand: 3,
   extraTime: 3,
-  penalties: 5,
+  penalties: 3,
 }
 
 const methodBonusFor = outcomeType =>
@@ -282,7 +282,7 @@ export default function KOPredictor() {
 
     // Validation
     if (isDraw && !outcomeType) {
-      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: 'Select how it ends — Extra Time or Penalties' } }))
+      setPredictions(prev => ({ ...prev, [match.id]: { ...prev[match.id], _error: 'Select how the match will be decided — Extra Time or Penalties' } }))
       return
     }
     if (isDraw && outcomeType === '90mins') {
@@ -749,7 +749,7 @@ export default function KOPredictor() {
               Pick the score and your World Cup champion
             </div>
             <div style={{ marginTop: '3px', fontSize: '9.5px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-              Normal KO Predictor scoring applies: exact score or result, method, first-goal band and joker.
+              Normal KO Predictor scoring applies: 90-minute score, advancing team, method, first-goal band and joker.
             </div>
           </div>
         )}
@@ -769,7 +769,7 @@ export default function KOPredictor() {
             color: resultColour === 'gold' ? '#b8860b' : resultColour === 'green' ? 'var(--accent-green)' : 'var(--accent-red)',
           }}>
             <span>
-              {resultColour === 'gold' ? '🎯 Exact score!' : resultColour === 'green' ? '✅ Correct result' : '❌ Wrong result'}
+              {resultColour === 'gold' ? '🎯 Exact 90-minute score!' : resultColour === 'green' ? '✅ Points earned' : '❌ No points earned'}
               {hasJoker && resultColour !== 'red' && <span style={{ marginLeft: '4px', color: 'var(--accent-gold)' }}>🃏 ×2</span>}
               {hasJoker && resultColour === 'red' && <span style={{ marginLeft: '4px' }}>🃏 wasted</span>}
             </span>
@@ -1055,7 +1055,7 @@ export default function KOPredictor() {
               )}
             </div>
             <div style={{ marginTop: '4px', fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
-              Exact score {KO_SCORING.exactScore} (or correct result {KO_SCORING.correctResult})
+              Exact 90-minute score {KO_SCORING.exactScore} (or correct 90-minute result {KO_SCORING.correctResult})
               {methodBonus > 0 ? ` · method bonus ${methodBonus}` : ''}
               {' · first-goal band '}{KO_SCORING.firstGoalBand}
             </div>
@@ -1164,8 +1164,8 @@ export default function KOPredictor() {
               // Draw — must pick ET or Penalties
               <div style={{ display: 'flex', gap: '6px' }}>
                 {[
-                  { key: 'et',        label: '⏱ Extra Time', sub: '+3pts bonus' },
-                  { key: 'penalties', label: '🎯 Penalties', sub: '+5pts bonus' },
+                  { key: 'et',        label: '⏱ Extra Time', sub: '' },
+                  { key: 'penalties', label: '🎯 Penalties', sub: '' },
                 ].map(opt => (
                   <button key={opt.key}
                     onClick={() => setPredictions(prev => ({
@@ -1220,6 +1220,11 @@ export default function KOPredictor() {
                 </button>
               ))}
             </div>
+            {isDraw && (
+              <div style={{ marginTop: '7px', fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 700, textAlign: 'center' }}>
+                Correct method of advancement: +3 pts
+              </div>
+            )}
           </div>
         )}
 
@@ -1330,8 +1335,12 @@ export default function KOPredictor() {
                   {match.home_score}–{match.away_score}
                 </div>
                 {actualWinner && (
-                  <div style={{ marginTop: '2px', fontSize: '9.5px', color: 'var(--accent-green)', fontWeight: 800 }}>
-                    {actualWinner.short_code || actualWinner.name} advanced
+                  <div style={{ marginTop: '3px', fontSize: '9.5px', color: 'var(--accent-green)', fontWeight: 850, lineHeight: 1.35 }}>
+                    {match.outcome_type === 'penalties' && match.home_score_pens != null && match.away_score_pens != null
+                      ? `${actualWinner.short_code || actualWinner.name} win ${match.home_score_pens}–${match.away_score_pens} on penalties`
+                      : match.outcome_type === 'et'
+                        ? `${actualWinner.short_code || actualWinner.name} win after extra time`
+                        : `${actualWinner.short_code || actualWinner.name} advanced`}
                   </div>
                 )}
               </div>
@@ -1734,16 +1743,16 @@ export default function KOPredictor() {
               🏆 Final prediction · normal KO scoring
             </span>
             <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
-              Exact 10 or result 5 · First goal +3 · ET +3 · Pens +5
+              Exact 90-minute score 10 · 90-minute result 5 · Team to advance +5 · Method +3 · First goal +3
             </span>
           </>
         ) : (
           <>
             <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
-              🥇 Exact score 10pts or correct result 5pts
+              🥇 Exact 90-minute score 10pts or correct 90-minute result 5pts
             </span>
             <span style={{ fontSize: '12px', color: 'var(--accent-blue)', fontWeight: '700' }}>
-              First goal +3 · ET +3 · Pens +5
+              Team to advance +5 · Method +3 · First goal +3
             </span>
           </>
         )}

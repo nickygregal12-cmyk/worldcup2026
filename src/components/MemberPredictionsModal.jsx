@@ -27,27 +27,27 @@ const KO_SCORING = {
   exactScore: 10,
   firstGoalBand: 3,
   extraTime: 3,
-  penalties: 5,
+  penalties: 3,
 }
 
 const KO_POINT_LABELS = {
-  correct_winner: 'Correct result',
-  winner: 'Correct result',
-  result: 'Correct result',
-  exact_score: 'Exact score',
-  exact: 'Exact score',
+  correct_winner: 'Correct 90-minute result',
+  winner: 'Correct 90-minute result',
+  result: 'Correct 90-minute result',
+  exact_score: 'Exact 90-minute score',
+  exact: 'Exact 90-minute score',
   first_goal_band: 'First-goal band',
   first_goal: 'First-goal band',
   first_goal_time: 'First-goal time',
   first_goal_minute: 'First-goal time',
   first_goal_time_band: 'First-goal time',
-  extra_time: 'Extra-time bonus',
-  et_bonus: 'Extra-time bonus',
+  extra_time: 'Correct method',
+  et_bonus: 'Correct method',
   method_bonus: 'Method bonus',
   correct_method: 'Correct method',
-  penalties: 'Penalties bonus',
-  penalties_bonus: 'Penalties bonus',
-  pen_bonus: 'Penalties bonus',
+  penalties: 'Correct method',
+  penalties_bonus: 'Correct method',
+  pen_bonus: 'Correct method',
   joker: 'Joker multiplier',
   joker_bonus: 'Joker bonus',
 }
@@ -697,7 +697,7 @@ function KOPredictorScoresView({ userId, currentUserId, targetName = 'Member' })
 
       const { data: matchData, error: matchError } = await supabase
         .from('matches')
-        .select('id, match_number, stage, kickoff_time, status, home_score, away_score, winner_team_id, outcome_type, first_goal_band, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
+        .select('id, match_number, stage, kickoff_time, status, home_score, away_score, aet_home_score, aet_away_score, home_score_pens, away_score_pens, winner_team_id, outcome_type, first_goal_band, home_team:home_team_id(id,name,flag_emoji,short_code), away_team:away_team_id(id,name,flag_emoji,short_code)')
         .in('stage', ['r32', 'r16', 'qf', 'sf', '3rd', 'final'])
         .order('kickoff_time', { ascending: true })
 
@@ -1077,7 +1077,9 @@ function KOPredictorScoresView({ userId, currentUserId, targetName = 'Member' })
                       lineHeight: 1.4,
                     }}>
                       Actual outcome: {actualWinner
-                        ? `${actualWinner.flag_emoji || ''} ${actualWinner.short_code || actualWinner.name} advanced${match.outcome_type === 'et' ? ' after extra time' : match.outcome_type === 'penalties' ? ' on penalties' : ' in 90 minutes'}`
+                        ? match.outcome_type === 'penalties' && match.home_score_pens != null && match.away_score_pens != null
+                          ? `${actualWinner.flag_emoji || ''} ${actualWinner.short_code || actualWinner.name} win ${match.home_score_pens}–${match.away_score_pens} on penalties`
+                          : `${actualWinner.flag_emoji || ''} ${actualWinner.short_code || actualWinner.name} advanced${match.outcome_type === 'et' ? ' after extra time' : ' in 90 minutes'}`
                         : 'Winner not recorded'}
                     </div>
                   )}

@@ -110,7 +110,7 @@ const FAQS = [
   },
   {
     q: 'What is the KO Predictor?',
-    a: 'The KO Predictor is completely separate from the Knockout Bracket — do not confuse the two! The Knockout Bracket is where you predict which teams advance each round (based on your group predictions). The KO Predictor opens once all 32 knockout teams are confirmed from real results. You predict scores for all 32 knockout matches with a completely fresh start — everyone begins on 0 points regardless of their group stage performance. It has its own separate leaderboard. For each match you also predict whether it ends in 90 minutes, extra time, or penalties — getting the right winner earns 5pts, with a bonus if you also called ET or pens correctly. If you picked the right winner but wrong outcome (e.g. said 90 mins but it went to ET) you get 3pts instead.',
+    a: 'The KO Predictor is completely separate from the Knockout Bracket. For every match, predict the score after 90 minutes, the team that will advance, the method of advancement when required, and the first-goal band. An exact 90-minute score earns 10pts, a correct 90-minute result earns 5pts, the correct advancing team can earn +5pts where it is not already rewarded by the normal-time result, the correct method earns +3pts only when the advancing team is also correct, and the first-goal band earns +3pts. A joker doubles the complete total.',
   },
   {
     q: 'How does the leaderboard work?',
@@ -253,12 +253,12 @@ export default function HowToPlay() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
             <tbody>
               {[
-                { label: 'Correct winner only', pts: '5pts' },
-                { label: 'Correct winner + exact score', pts: '10pts' },
-                { label: 'Predicted ET correctly', pts: '+3pts bonus', highlight: true },
-                { label: 'Predicted Penalties correctly', pts: '+5pts bonus', highlight: true },
-                { label: 'Got winner right but wrong on ET/Pens', pts: '3pts ⚠️' },
-                { label: 'First goal time band correct', pts: '+3pts' },
+                { label: 'Exact 90-minute score', pts: '10pts' },
+                { label: 'Correct 90-minute result', pts: '5pts' },
+                { label: 'Correct team to advance', pts: '+5pts' },
+                { label: 'Correct method of advancement', pts: '+3pts', highlight: true },
+                { label: 'Correct first-goal band', pts: '+3pts' },
+                { label: 'Joker doubles the complete total', pts: '2×', highlight: true },
                 { label: 'KO Predictor jokers available', pts: '5 total' },
               ].map(({ label, pts, highlight }) => (
                 <tr key={label} style={{ borderBottom: '1px solid var(--border-light)' }}>
@@ -268,6 +268,9 @@ export default function HowToPlay() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.55, margin: '-1px 4px 12px' }}>
+          The method bonus applies only when the selected advancing team is also correct. A normal-time winner is not rewarded twice for the same prediction.
         </div>
 
         {/* FAQ */}
