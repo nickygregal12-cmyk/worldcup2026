@@ -213,6 +213,63 @@ export default function MatchFixtureEditor({ match, teams, groups, venues, onClo
     onClose()
   }
 
+
+  const saveLiveUpdate = async () => {
+    if (!validateTeams()) return
+
+    const homeScore = num(form.home_score)
+    const awayScore = num(form.away_score)
+    const liveMinute = num(form.live_minute)
+
+    if (homeScore === null || awayScore === null) {
+      setActionResult('Enter the current live score for both teams.')
+      return
+    }
+
+    if (!form.home_team_id || !form.away_team_id) {
+      setActionResult('Both teams must be confirmed before saving a live score.')
+      return
+    }
+
+    setSavingMode('live')
+
+    const payload = {
+      ...basePayload(),
+      status: 'live',
+      live_minute: liveMinute,
+      home_score: homeScore,
+      away_score: awayScore,
+      winner_team_id: null,
+      first_goal_band: form.first_goal_band || null,
+      use_manual_override: true,
+    }
+
+    const { error } = await supabase.from('matches').update(payload).eq('id', match.id)
+    if (error) {
+      setSavingMode('')
+      setActionResult(`Live score failed to save: ${error.message}`)
+      return
+    }
+
+    const slotError = await saveSlots(payload.match_number)
+    await logAudit('UPDATE_LIVE_MATCH', {
+      match_id: match.id,
+      match_number: payload.match_number,
+      live_score: `${homeScore}-${awayScore}`,
+      live_minute: liveMinute,
+      first_goal_band: payload.first_goal_band,
+      slot_error: slotError?.message || null,
+    })
+
+    setActionResult(slotError
+      ? `Live score saved for Match ${payload.match_number}, but bracket slots failed: ${slotError.message}`
+      : `Match ${payload.match_number} live score updated to ${homeScore}-${awayScore}${liveMinute !== null ? ` at ${liveMinute} minutes` : ''}. No final points were awarded.`)
+
+    await onSaved()
+    setSavingMode('')
+    onClose()
+  }
+
   const completeAndCalculate = async () => {
     if (!validateTeams()) return
 
@@ -351,9 +408,9 @@ export default function MatchFixtureEditor({ match, teams, groups, venues, onClo
         </div>
 
         <div style={{ ...sectionStyle, border:'1px solid rgba(0,48,135,.25)', background:'rgba(0,48,135,.04)' }}>
-          <div style={{ fontWeight:900, marginBottom:'3px' }}>2. Final result and scoring</div>
+          <div style={{ fontWeight:900, marginBottom:'3px' }}>2. Score control</div>
           <div style={{ fontSize:'11px', color:'var(--text-muted)', marginBottom:'12px' }}>
-            Enter the complete final result here. Saving this section sets the match to completed, protects the result from API overwrite and recalculates every relevant points system.
+            Use these score fields for both live updates and the final result. Updating a live score does not award points. Completing the match saves the final result and recalculates every relevant points system.
           </div>
 
           {isKo && (
@@ -363,7 +420,7 @@ export default function MatchFixtureEditor({ match, teams, groups, venues, onClo
           )}
 
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,minmax(0,1fr))', gap:'10px' }}>
-            {[['home_score','90 mins · home'],['away_score','90 mins · away']].map(([k,l])=><Field key={k} label={l}><input className="input" type="number" min="0" max="30" value={form[k]} onChange={e=>update(k,e.target.value)} /></Field>)}
+            {[['home_score','Current / 90 mins · home'],['away_score','Current / 90 mins · away']].map(([k,l])=><Field key={k} label={l}><input className="input" type="number" min="0" max="30" value={form[k]} onChange={e=>update(k,e.target.value)} /></Field>)}
             {isKo && form.outcome_type !== '90mins' && [['aet_home_score','120 mins · home'],['aet_away_score','120 mins · away']].map(([k,l])=><Field key={k} label={l}><input className="input" type="number" min="0" max="30" value={form[k]} onChange={e=>update(k,e.target.value)} /></Field>)}
             {isKo && form.outcome_type === 'penalties' && [['home_score_pens','Shootout · home'],['away_score_pens','Shootout · away']].map(([k,l])=><Field key={k} label={l}><input className="input" type="number" min="0" max="30" value={form[k]} onChange={e=>update(k,e.target.value)} /></Field>)}
           </div>
@@ -380,8 +437,17 @@ export default function MatchFixtureEditor({ match, teams, groups, venues, onClo
             )}
           </div>
 
+          {form.status !== 'completed' && (
+            <div style={{ padding:'10px 12px', borderRadius:'10px', background:'rgba(21,88,176,.06)', border:'1px solid rgba(21,88,176,.20)', marginTop:'12px', fontSize:'11px', color:'var(--text-muted)', lineHeight:1.5 }}>
+              <b style={{ color:'var(--text-primary)' }}>Live update:</b> save the current score, minute and first-goal band without completing the match or awarding final points.
+              <button className="btn btn-secondary" style={{ width:'100%', marginTop:'10px' }} onClick={saveLiveUpdate} disabled={Boolean(savingMode)}>
+                {savingMode === 'live' ? 'Saving live score…' : 'Update live score'}
+              </button>
+            </div>
+          )}
+
           <div style={{ padding:'10px 12px', borderRadius:'10px', background:'var(--bg-card)', border:'1px solid var(--border-light)', marginTop:'12px', fontSize:'11px', color:'var(--text-muted)', lineHeight:1.5 }}>
-            <b style={{ color:'var(--text-primary)' }}>This one action will:</b> save the complete result, set the match to completed, calculate original tournament points, calculate KO Predictor points for knockout matches, and rebuild user totals.
+            <b style={{ color:'var(--text-primary)' }}>Final result:</b> save the complete result, set the match to completed, calculate original tournament points, calculate KO Predictor points for knockout matches, and rebuild user totals.
           </div>
 
           <button className="btn btn-primary" style={{ width:'100%', marginTop:'12px' }} onClick={completeAndCalculate} disabled={Boolean(savingMode)}>

@@ -47,7 +47,7 @@ export default function MatchManager({ admin }) {
   const {
     matches, filteredMatches, matchSearch, setMatchSearch,
     matchStatusFilter, setMatchStatusFilter, stageFilter, setStageFilter,
-    setFixtureEditorMatch, saving, setMatchLive, resetMatchOverride, loadMatches, fmt, prepopulateMatchIds,
+    setFixtureEditorMatch, saving, loadMatches, fmt, prepopulateMatchIds,
   } = admin
 
   useEffect(() => {
@@ -201,14 +201,13 @@ export default function MatchManager({ admin }) {
                   </div>
                 )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7px' }}>
-                  <button className="btn btn-primary btn-sm" style={{ gridColumn: '1 / -1' }} onClick={() => setFixtureEditorMatch(match)}>
-                    {match.status === 'completed' ? 'Review or correct match' : 'Manage match'}
+                <div>
+                  <button className="btn btn-primary btn-sm" style={{ width: '100%' }} onClick={() => setFixtureEditorMatch(match)}>
+                    {match.status === 'completed' ? 'Review or correct match' : match.status === 'live' ? 'Update live match' : 'Manage match'}
                   </button>
-                  <button className="btn btn-secondary btn-sm" onClick={() => setMatchLive(match)}>{match.status === 'live' ? 'Update live status' : 'Mark live'}</button>
-                  {match.use_manual_override
-                    ? <button className="btn btn-secondary btn-sm" onClick={() => resetMatchOverride(match)}>Return to API control</button>
-                    : <button className="btn btn-secondary btn-sm" onClick={() => setFixtureEditorMatch(match)}>Use manual control</button>}
+                  <div style={{ fontSize:'10px', color:'var(--text-muted)', textAlign:'center', marginTop:'7px' }}>
+                    Fixture details, manual control, live score and final result are all managed in one place.
+                  </div>
                 </div>
               </div>
             )
