@@ -1,7 +1,6 @@
 # Stage 2 Batch 3 — Prediction database and RLS design
 
-**Status:** design review — no Migration 005 exists and no database change has
-been applied.
+**Status:** complete — the database design has been reviewed and approved. No Migration 005 exists and no database change has been applied.
 
 ## Purpose
 
@@ -11,7 +10,7 @@ application rules and an executable migration.
 
 Design version: `euro28-prediction-db-v1`.
 
-## Decisions proposed for approval
+## Approved decisions
 
 1. There is one prediction set per authenticated user and tournament.
 2. A prediction set has no separate submit button. Valid rows auto-save as a
@@ -199,7 +198,4 @@ constraint can inspect other table rows.
 
 ## Review point
 
-This design is not complete until the proposed decisions above are accepted.
-After approval, the next batch will turn only the Migration 005 portion into
-executable SQL, run it against a clean local database, and keep browser writes
-disabled.
+Stage 2 Batch 3 is complete. The next batch will turn only the Migration 005 portion into executable SQL, run it against a clean local database, and keep browser writes disabled.
