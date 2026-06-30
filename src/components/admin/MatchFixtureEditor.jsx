@@ -132,14 +132,56 @@ export default function MatchFixtureEditor({ match, teams, groups, venues, onClo
     }
     const { error } = await supabase.from('matches').update(payload).eq('id', match.id)
     if (error) { setSaving(false); return setActionResult(`Fixture save failed: ${error.message}`) }
+
     if (form.stage !== 'group') {
       await supabase.from('app_settings').upsert({
         key: `ko_slot_override_${payload.match_number}`,
         value: JSON.stringify({ home_slot: form.home_slot, away_slot: form.away_slot }),
       }, { onConflict: 'key' })
     }
-    await logAudit('EDIT_MATCH_FIXTURE', { match_id: match.id, match_number: payload.match_number, changes: payload, slots: { home_slot: form.home_slot, away_slot: form.away_slot } })
-    setActionResult(`Match ${payload.match_number} updated.`)
+
+    const followUpErrors = []
+    if (payload.status === 'completed') {
+      if (isKo) {
+        const { error: originalKoErr } = await supabase.rpc('calculate_knockout_points', { p_match_id: match.id })
+        if (originalKoErr) followUpErrors.push(`original tournament KO: ${originalKoErr.message}`)
+
+        const { error: koPredictorErr } = await supabase.rpc('calculate_ko_prediction_points', { p_match_id: match.id })
+        if (koPredictorErr) followUpErrors.push(`KO Predictor: ${koPredictorErr.message}`)
+      } else {
+        const { error: groupErr } = await supabase.rpc('calculate_prediction_points', { p_match_id: match.id })
+        if (groupErr) followUpErrors.push(`group match points: ${groupErr.message}`)
+
+        const { error: bonusErr } = await supabase.rpc('check_group_bonuses', { p_match_id: match.id })
+        if (bonusErr && !String(bonusErr.message || '').toLowerCase().includes('function')) {
+          followUpErrors.push(`group bonuses: ${bonusErr.message}`)
+        }
+      }
+
+      const { data: profiles, error: profilesErr } = await supabase.from('profiles').select('id')
+      if (profilesErr) {
+        followUpErrors.push(`profile totals: ${profilesErr.message}`)
+      } else {
+        for (const profile of profiles || []) {
+          const { error: totalErr } = await supabase.rpc('recalculate_user_total_points', { p_user_id: profile.id })
+          if (totalErr) {
+            followUpErrors.push(`total points for ${profile.id}: ${totalErr.message}`)
+            break
+          }
+        }
+      }
+    }
+
+    await logAudit('EDIT_MATCH_FIXTURE', { match_id: match.id, match_number: payload.match_number, changes: payload, slots: { home_slot: form.home_slot, away_slot: form.away_slot }, follow_up_errors: followUpErrors })
+
+    if (followUpErrors.length) {
+      setActionResult(`Match ${payload.match_number} saved, but follow-up failed: ${followUpErrors.join(' · ')}`)
+    } else if (payload.status === 'completed') {
+      setActionResult(`Match ${payload.match_number} saved — results and all relevant points recalculated.`)
+    } else {
+      setActionResult(`Match ${payload.match_number} updated.`)
+    }
+
     await onSaved(); setSaving(false); onClose()
   }
 

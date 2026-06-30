@@ -857,9 +857,32 @@ export default function AdminPanel() {
       return
     }
 
-    const { error: rpcErr } = await supabase.rpc('calculate_ko_prediction_points', { p_match_id: match.id })
-    if (rpcErr) setActionResult(`⚠️ Result saved but KO points calculation failed: ${rpcErr.message}`)
-    else setActionResult(`✅ KO Match ${match.match_number} result saved — points recalculated safely`)
+    const scoringErrors = []
+
+    const { error: originalKoErr } = await supabase.rpc('calculate_knockout_points', { p_match_id: match.id })
+    if (originalKoErr) scoringErrors.push(`original tournament KO: ${originalKoErr.message}`)
+
+    const { error: koPredictorErr } = await supabase.rpc('calculate_ko_prediction_points', { p_match_id: match.id })
+    if (koPredictorErr) scoringErrors.push(`KO Predictor: ${koPredictorErr.message}`)
+
+    const { data: allProfiles, error: profileLoadErr } = await supabase.from('profiles').select('id')
+    if (profileLoadErr) {
+      scoringErrors.push(`profile totals: ${profileLoadErr.message}`)
+    } else {
+      for (const profileRow of allProfiles || []) {
+        const { error: totalErr } = await supabase.rpc('recalculate_user_total_points', { p_user_id: profileRow.id })
+        if (totalErr) {
+          scoringErrors.push(`total points for ${profileRow.id}: ${totalErr.message}`)
+          break
+        }
+      }
+    }
+
+    if (scoringErrors.length) {
+      setActionResult(`⚠️ Result saved, but some follow-up actions failed: ${scoringErrors.join(' · ')}`)
+    } else {
+      setActionResult(`✅ KO Match ${match.match_number} saved — original tournament points, KO Predictor points and user totals recalculated`)
+    }
 
     await logAudit('KO_SCORE_ENTRY', {
       match_id: match.id,
@@ -1084,6 +1107,12 @@ export default function AdminPanel() {
   const saveMatchResult = async (match) => {
     const s = scores[match.id] || {}
     if (s.home === undefined || s.away === undefined) return
+
+    if (match.stage !== 'group') {
+      setActionResult('⚠️ Use KO Match Results or the full fixture editor for knockout games so extra time, penalties, advancing team and both scoring systems are handled correctly.')
+      return
+    }
+
     setSaving(prev => ({ ...prev, [match.id]: true }))
     const homeScore = parseInt(s.home)
     const awayScore = parseInt(s.away)
@@ -1096,7 +1125,7 @@ export default function AdminPanel() {
 
     if (error) { setActionResult(`Error saving score: ${error.message}`); setSaving(prev => ({ ...prev, [match.id]: false })); return }
 
-    // Score real users
+    // Score real users for the original tournament group-stage predictor.
     const { error: rpcErr } = await supabase.rpc('calculate_prediction_points', { p_match_id: match.id })
 
     // Score offline players — idempotently recompute each affected player's
