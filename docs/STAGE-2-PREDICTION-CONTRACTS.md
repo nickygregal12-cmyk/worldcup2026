@@ -2,9 +2,9 @@
 
 ## Batch 2: Agree the rules before creating prediction tables
 
-Prepared: 1 July 2026
+Completed: 1 July 2026
 
-Hosted verification is still required before this batch is marked complete.
+Local checks, the Euro staging deployment, the foundation page and the hosted tournament model have been verified.
 
 ## Purpose
 
@@ -233,8 +233,8 @@ UEFA confirms that final-tournament knockout matches use two 15-minute periods o
 
 ## Current position
 
-Stage 2 Batch 2 is prepared and locally tested. Hosted deployment verification is pending.
+Stage 2 Batch 2 is complete.
 
-No prediction tables, authentication features, browser write policies or scoring jobs have been created.
+No prediction tables, authentication features, browser write policies or scoring jobs were created.
 
 The next controlled batch will translate this agreed contract into a reviewed database design, including a versioned single-source scoring ruleset, before any migration is applied.
