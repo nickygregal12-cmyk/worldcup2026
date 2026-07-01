@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { GUEST_STATE_UPDATED_EVENT } from '../predictions/predictionSaveConfig.js'
 import {
   buildGuestBundleFilename,
   createGuestPredictionState,
@@ -65,6 +66,7 @@ export default function GuestWorkspaceFoundation({ reference }) {
       storageStatus: saved.status,
       storageError: saved.error ?? null,
     })
+    globalThis.dispatchEvent?.(new Event(GUEST_STATE_UPDATED_EVENT))
     setNotice(saved.status === 'saved'
       ? { tone: 'safe', message: successMessage }
       : { tone: 'warning', message: saved.error ?? 'Progress remains available only in this tab.' })
@@ -116,8 +118,7 @@ export default function GuestWorkspaceFoundation({ reference }) {
           <span className="foundation-kicker">Stage 4 · Guest/explore foundation</span>
           <h2 id="guest-foundation-title">Browser-only prediction workspace</h2>
           <p className="foundation-panel-copy">
-            The 51-match draft structure is ready and uses the canonical guest resolver. No account,
-            profile or prediction row is sent to Supabase.
+            The 51-match draft structure is ready and uses the canonical guest resolver. Nothing is sent automatically; a complete draft can be imported only through the explicit Stage 6 action below.
           </p>
         </div>
         <span className="foundation-pill foundation-pill--safe">{storageLabel}</span>

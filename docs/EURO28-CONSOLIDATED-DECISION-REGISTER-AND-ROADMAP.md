@@ -1,31 +1,26 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 1.6 — Stage 5 authentication, profiles and hosted scoring correction
+### Version 1.7 — Stage 6 atomic prediction saving
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
 ## 1. Purpose and authority
 
-This document consolidates the verified Stage 1 and Stage 2 work, the latest product decisions, and the useful parts of the uploaded “Canonical Tournament Reference & Build Rules — v5.1”. It is the agreed planning authority for the next build stages.
-
-The uploaded v5.1 reference is advisory. It does not automatically supersede later verified decisions.
+This document consolidates the verified tournament foundation, the agreed prediction rules and the current build sequence. Earlier references remain advisory where they conflict with later verified decisions.
 
 ## 2. Current return point
 
-- Stage 1 complete.
-- Stage 2 application isolation and contracts complete.
-- Migration 005 deployed and verified locally and on Euro staging.
-- Stage 3 canonical tournament resolver implemented.
-- Stage 4 browser-only guest/explore foundation implemented.
-- Stage 5 Euro authentication and owner-only profiles implemented.
-- Migration 006 adds validated profiles, Auth creation trigger and controlled profile RPCs.
-- Migration 007 removes unintended browser-role function grants and hardens future function defaults.
-- Migration 008 restores both exact joker caps to unresolved `NULL` values after hosted drift was diagnosed.
-- All 51 guest draft rows remain local and separate from signed-in account state.
-- Group tables, provisional tie handling, all 15 best-third combinations and matches 37–51 are covered by one pure engine.
-- Guest, predicted and live contexts use the same resolver and cannot be blended.
-- No prediction save RPC, guest server storage, leagues, scoring runs or admin result UI has been introduced.
-- Next stage: trusted atomic prediction saving.
+- Stage 1 tournament model complete.
+- Stage 2 isolation, contracts and prediction-storage foundation complete.
+- Migrations 001–009 deployed only through the controlled Euro workflow.
+- Stage 3 canonical tournament resolver complete.
+- Stage 4 browser-only guest/explore foundation complete.
+- Stage 5 authentication and owner-only profiles complete.
+- Stage 6 trusted atomic prediction saving implemented.
+- Direct browser writes to prediction tables remain unavailable.
+- Guest drafts remain browser-only unless deliberately imported before lock.
+- No leagues, scoring runs, results controls or admin control room have been introduced.
+- Next stage: the real prediction journey and reversible submit/review experience.
 
 ## 3. Environment
 
@@ -44,82 +39,66 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 | Subject | Status | Agreed position |
 |---|---|---|
 | Submission | Confirmed | Reversible user-side review mode; no copy, scoring gate or eligibility effect |
-| Saving | Confirmed | Autosave UX with atomic full-bundle write and revision checking |
-| Saved but unsubmitted | Confirmed | Counts exactly the same at lock |
-| Prediction lock | Confirmed | First tournament kick-off |
-| Jokers | Confirmed | Core feature; movable only among unstarted matches |
-| Joker caps | Provisional | Central configuration; exact values unresolved |
-| Knockout score | Confirmed | Always 90-minute score |
-| Advancing team | Confirmed | Separate field |
-| Decision method | Confirmed | Normal time / extra time / penalties |
-| Grace windows | Confirmed | Admin-only, audited, one user + one unstarted match |
-| Guest mode | Confirmed | Core architecture, browser-only, unscored |
+| Saving | Confirmed | Autosave UX backed by one atomic full-bundle write with revision checking |
+| Saved but unsubmitted | Confirmed | Counts exactly the same as submitted entries at lock |
+| Prediction lock | Confirmed | Prediction content locks at the first tournament kick-off |
+| Jokers | Confirmed | Core feature; movable only among matches that have not started |
+| Joker caps | Provisional | Central configuration; exact group and knockout values unresolved |
+| Joker multiplier | Provisional | Current working value `2×` |
+| Knockout score | Confirmed | Always the score after 90 minutes plus added time |
+| Advancing team | Confirmed | Separate from the 90-minute score |
+| Decision method | Confirmed | Normal time, extra time or penalties |
+| Grace windows | Confirmed | Audited exception for one user and one specific unstarted match |
+| Guest mode | Confirmed | Browser-only, unscored and separate from account storage |
+| Guest import | Confirmed | Explicit complete pre-lock import; never automatic; cannot overwrite account rows |
 | Live vs predicted | Confirmed | Never blended |
-| Best-third allocation | Confirmed | One matrix, one resolver, all 15 combinations tested |
-| Results API | Deferred | Manual results authoritative; provider added later |
-| Scoring values | Provisional | Central, versioned and changeable before ruleset lock |
-| League scoring differences | Rejected | One scoring model throughout |
-| Confidence multipliers | Rejected | Jokers are the only multiplier |
+| Best-third allocation | Confirmed | One matrix, one resolver and all 15 combinations tested |
+| Results API | Deferred | Manual results remain authoritative until later provider work |
+| Scoring values | Provisional | Central and versioned until formal ruleset lock |
+| League-specific scoring | Rejected | One scoring model throughout |
+| Confidence multipliers | Rejected | Jokers are the only planned match multiplier |
 
 ## 5. Core rules
 
-### Submission
-- Predictions save normally.
-- Submit switches to a clean read-only review state.
-- `submitted_at` may preserve that state.
-- Edit Predictions returns to edit mode before global lock.
-- Submitted and unsubmitted saved predictions score identically.
+### Submission and saving
 
-### Jokers
-- Server-enforced.
-- Can be moved only between unstarted matches.
-- Started-match joker is fixed.
-- Caps and multiplier live in the versioned scoring ruleset.
+- Prediction rows are always live within one prediction set.
+- Each save supplies the caller's complete current bundle.
+- `expected_revision` prevents stale overwrites.
+- `submitted_at` records review mode only.
+- Edit Predictions clears review mode before the global lock.
+- Submitted and unsubmitted saved rows score identically.
 
-### Grace
-- Global lock is never reopened.
-- Admin grants a temporary window for one user and one specific unstarted match.
-- Fully audited.
-- Scores normally.
+### Locks, jokers and grace
+
+- Prediction content locks globally at first tournament kick-off.
+- Joker allocation remains independently movable on unstarted matches.
+- A joker on a started match is fixed.
+- Grace never reopens the tournament. It permits content changes only for its user and match while that match remains unstarted and the grant remains active.
 
 ### Brackets
-- Guest, signed-in predicted and live are separate contexts.
-- All use the same canonical resolver.
-- Predicted and live brackets are never blended.
+
+- Guest, signed-in predicted and live contexts use the same canonical resolver.
+- Context records cannot be mixed.
+- The server reconstructs the predicted knockout path before accepting knockout rows.
+- A client-supplied participant path cannot override the resolver.
 
 ## 6. Delivered database foundations
 
-- `scoring_rulesets`, `prediction_sets`, `match_predictions` and `prediction_grace_windows`.
-- Reversible `submitted_at`.
-- Match-level `joker_applied`.
-- Central configurable joker caps and multiplier.
-- Scheduled and persisted global prediction locks.
-- Per-match joker timing support.
-- Expiring and revocable audited grace records.
-- RLS on all new tables.
-- Controlled reads and no browser writes.
-- No final prediction save route, guest server storage, leagues, scoring runs or admin result UI.
+Migrations 005–009 provide:
 
-Migration 006 adds:
-
-- one `profiles` row per Auth user;
-- validated and case-insensitively unique display names;
-- automatic profile creation from sign-up metadata;
-- owner-only profile reads through RLS;
-- controlled display-name availability and owner-update RPCs;
-- no direct browser table writes.
-
-Migration 007 adds:
-
-- explicit revocation of internal function execution from `anon` and `authenticated`;
-- intended grants only for display-name availability and authenticated owner rename;
-- safe default privileges for future `postgres` functions in `public`.
-
-Migration 008 adds:
-
-- a guarded correction of the canonical provisional ruleset;
-- `NULL` group-stage and knockout joker caps, preserving the unresolved decision;
-- no changes to point values, multiplier, lock behaviour or permissions.
+- versioned scoring rulesets;
+- prediction sets and match predictions;
+- reversible review state;
+- joker allocation;
+- global and per-match lock foundations;
+- audited grace windows;
+- owner-only profiles;
+- hardened browser-role function privileges;
+- corrected unresolved joker-cap values;
+- one authenticated atomic prediction save RPC;
+- complete pre-lock guest import;
+- no direct browser prediction-table writes.
 
 ## 7. Roadmap
 
@@ -128,8 +107,8 @@ Migration 008 adds:
 3. Canonical tournament resolver — complete.
 4. Guest/explore foundation — complete.
 5. Authentication and profiles — complete.
-6. Atomic prediction saving — next.
-7. Prediction journey and submit/review mode.
+6. Atomic prediction saving — complete pending the standard local/linked deployment verification for Migration 009.
+7. Prediction journey and submit/review mode — next.
 8. Joker and grace controls.
 9. Results, live tables and live bracket.
 10. Scoring and idempotent recalculation.
@@ -137,26 +116,25 @@ Migration 008 adds:
 12. Admin control room.
 13. Shared design system and page rebuild.
 14. Seeded full tournament test.
-15. Pre-tournament configuration and optional API integration.
+15. Pre-tournament configuration and optional result provider integration.
 
 ## 8. Immediate next actions
 
-1. Reset-test Migration 008 locally.
-2. Rerun Migration 005, Stage 5 and Migration 008 pgTAP suites.
-3. Verify the linked project is `gcfdwobpnanjchcnvdco`.
-4. Dry-run and push only Migration 008.
-5. Confirm both hosted joker caps are `NULL` and the ruleset remains provisional.
-6. Commit Migrations 007–008 and the reconciled documentation with a clean working tree.
-7. Begin Stage 6 with one trusted atomic full-bundle prediction save operation.
-8. Preserve browser-only guest state until the deliberate pre-lock import step exists.
-9. Keep all prediction-table writes unavailable to direct browser table access.
+1. Install the Stage 6 package over committed Stage 5 checkpoint `9d0d1c0`.
+2. Run `npm run check`.
+3. Reset local Supabase and run pgTAP suites 005, 006, 008 and 009.
+4. Verify the linked project reference.
+5. Dry-run and push only Migration 009.
+6. Run all four linked pgTAP suites and remote database lint.
+7. Commit and push Stage 6 with a clean working tree.
+8. Begin Stage 7 using `save_my_prediction_bundle()` as the only prediction write route.
 
 ## 9. Open decisions
 
-- Exact group joker cap.
+- Exact group-stage joker cap.
 - Exact knockout joker cap.
 - Final joker multiplier.
-- Official 2028 tie-break rules.
-- Exact teams, group heads and kick-off times.
-- Results API provider.
+- Official Euro 2028 tie-break regulations.
+- Final team identities, group positions and kick-off times.
+- Result provider.
 - Awards categories.

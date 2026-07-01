@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ATOMIC_PREDICTION_SAVE_SCOPE,
   DATABASE_SCORING_MODEL,
   GRACE_WINDOW_DATABASE_MODEL,
   GUEST_PREDICTION_MODEL,
@@ -25,7 +26,9 @@ describe('reconciled Euro prediction database design', () => {
     expect(PREDICTION_DATABASE_SCOPE.activeMigrationCountAfterImplementation).toBe(5)
     expect(PREDICTION_DATABASE_SCOPE.createsBrowserTableWrites).toBe(false)
     expect(PREDICTION_DATABASE_SCOPE.createsFinalSaveRpc).toBe(false)
-    expect(PREDICTION_WRITE_MODEL.implementationMigration).toBe('006_or_later')
+    expect(PREDICTION_WRITE_MODEL.implementationMigration).toBe('009')
+    expect(PREDICTION_WRITE_MODEL.implemented).toBe(true)
+    expect(ATOMIC_PREDICTION_SAVE_SCOPE.rpcName).toBe('save_my_prediction_bundle')
   })
 
   it('plans four focused tables including audited grace windows', () => {
@@ -42,6 +45,8 @@ describe('reconciled Euro prediction database design', () => {
 
   it('stores submission only as a reversible review state', () => {
     expect(PREDICTION_SET_COLUMNS).toContain('submitted_at')
+    expect(PREDICTION_SET_COLUMNS).toContain('guest_imported_at')
+    expect(PREDICTION_SET_COLUMNS).toContain('last_save_source')
     expect(PREDICTION_COMPLETION_MODEL.submitReviewModeAvailable).toBe(true)
     expect(PREDICTION_COMPLETION_MODEL.submitAffectsEligibility).toBe(false)
     expect(PREDICTION_COMPLETION_MODEL.submitCopiesPredictionRows).toBe(false)
@@ -61,6 +66,16 @@ describe('reconciled Euro prediction database design', () => {
     expect(PREDICTION_WRITE_MODEL.validatesWholeBracketPath).toBe(true)
     expect(PREDICTION_WRITE_MODEL.validatesJokerCaps).toBe(true)
     expect(PREDICTION_WRITE_MODEL.validatesJokerMatchKickoff).toBe(true)
+  })
+
+  it('implements explicit complete guest import without overwriting account rows', () => {
+    expect(ATOMIC_PREDICTION_SAVE_SCOPE.migrationNumber).toBe('009')
+    expect(ATOMIC_PREDICTION_SAVE_SCOPE.activeMigrationCountAfterImplementation).toBe(9)
+    expect(ATOMIC_PREDICTION_SAVE_SCOPE.supportsGuestImport).toBe(true)
+    expect(ATOMIC_PREDICTION_SAVE_SCOPE.guestImportRequiresCompleteBundle).toBe(true)
+    expect(ATOMIC_PREDICTION_SAVE_SCOPE.guestImportOverwritesAccountRows).toBe(false)
+    expect(GUEST_PREDICTION_MODEL.importBeforeLockImplemented).toBe(true)
+    expect(GUEST_PREDICTION_MODEL.serverStorage).toBe(false)
   })
 
   it('keeps ownership, timestamps and timing server-controlled', () => {

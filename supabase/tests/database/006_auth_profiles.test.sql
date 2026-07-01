@@ -243,8 +243,8 @@ select is(
     where n.nspname = 'public'
       and p.proname ~ '(save.*prediction|prediction.*save)'
   ),
-  0::bigint,
-  'Migration 006 still does not create the prediction save RPC'
+  1::bigint,
+  'Stage 6 adds exactly one trusted prediction save RPC after Migration 006'
 );
 
 select * from finish();

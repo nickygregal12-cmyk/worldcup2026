@@ -2,46 +2,66 @@
 
 ## Euro staging
 
-- Netlify site: `euro28-predictor-dev`
-- Production branch for that site: `euro28-development`
-- Database: Euro 2028 Predictor Staging Supabase project
+The Euro branch deploys to:
 
-## Required browser variables
+```text
+https://euro28-predictor-dev.netlify.app
+```
 
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_APP_ENV=staging`
-- `VITE_TOURNAMENT_ID=euro-2028-staging`
-- `VITE_TOURNAMENT_YEAR=2028`
+It must use only Supabase project:
 
-## Score syncing
+```text
+gcfdwobpnanjchcnvdco
+```
 
-Automatic score syncing is disabled in Euro staging. `netlify.toml` has no scheduled score-sync declaration, and the scheduled function also requires `ENABLE_SCORE_SYNC=true` before it can run.
+## Browser variables
 
-Do not add WC26 API keys, service-role keys or production database credentials to the Euro Netlify site.
+Only the Euro project URL and publishable key belong in Netlify browser variables. Never use a service-role secret in a `VITE_` variable.
 
+## Authentication redirects
 
-## Authentication redirect configuration
+Supabase Auth URL configuration must include:
 
-In the Euro staging Supabase dashboard, set Authentication → URL Configuration to the Euro Netlify site only:
+```text
+Site URL
+https://euro28-predictor-dev.netlify.app
 
-- Site URL: `https://euro28-predictor-dev.netlify.app`
-- Redirect URL: `https://euro28-predictor-dev.netlify.app/**`
-- Local redirects: `http://127.0.0.1:5173/**` and `http://localhost:5173/**`
+Redirect URLs
+https://euro28-predictor-dev.netlify.app/**
+http://127.0.0.1:5173/**
+http://localhost:5173/**
+```
 
-Do not change the WC26 Supabase project. The hosted project should require email confirmation until the final launch configuration is reviewed.
+## Migration 009 deployment
 
-## Foundation deployment
+Verify the linked reference, capture the dry run and continue only when Migration 009 is the sole pending migration:
 
-The staging site serves the isolated Euro foundation rather than the inherited WC26 application. Tournament reference and prediction tables remain read-only from the browser; Auth and controlled profile RPCs are active.
+```bash
+cat supabase/.temp/project-ref
+npx supabase db push --dry-run 2>&1 | tee /tmp/euro28-migration009-dry-run.txt
+```
 
-- Search indexing is blocked.
-- The manifest uses browser display mode and has no feature shortcuts.
-- The application does not register a service worker.
-- Existing WC26 service-worker registrations and WC26 cache names are retired in the browser.
+After pushing:
 
-After a staging deploy, verify the public shell with:
+```bash
+npx supabase migration list --linked
+npm run test:db:005:linked
+npm run test:db:006:linked
+npm run test:db:008:linked
+npm run test:db:009:linked
+npx supabase db lint --linked --level warning
+```
+
+## Netlify verification
+
+After the branch deploy completes:
 
 ```bash
 npm run verify:foundation-page
 ```
+
+The page must identify the Stage 6 atomic saving foundation, include the guest bundle and Euro Auth UI, and contain no active WC26 application bundle.
+
+## Score syncing
+
+WC26 automatic score syncing remains disabled on the Euro branch. Stage 6 adds no result provider and no result-writing job.

@@ -55,6 +55,14 @@ export function buildGuestReference() {
     tournamentName: 'UEFA EURO 2028',
     groups,
     groupMatches,
+    knockoutMatches: Array.from({ length: 15 }, (_, index) => ({
+      matchId: `match-${index + 37}`,
+      matchNumber: index + 37,
+      fixtureCode: `KO-${index + 37}`,
+      scheduledDate: '2028-06-22',
+      kickoffAt: null,
+      status: 'scheduled',
+    })),
     knockoutMatchNumbers: Array.from({ length: 15 }, (_, index) => index + 37),
     teamsById: Object.fromEntries(groups.flatMap(group => group.teams.map(team => [team.teamId, team]))),
   }
@@ -85,14 +93,26 @@ export function buildRawReferenceRows() {
     draw_position: team.drawPosition,
     position_code: team.slotCode,
   })))
-  const matches = reference.groupMatches.map(match => ({
+  const matches = [
+    ...reference.groupMatches.map(match => ({
     id: match.matchId,
     stage_id: 'stage-group',
     group_id: `group-${match.groupCode}`,
     match_number: match.matchNumber,
     fixture_code: match.fixtureCode,
     scheduled_date: match.scheduledDate,
-  }))
+  })),
+    ...reference.knockoutMatches.map(match => ({
+      id: match.matchId,
+      stage_id: 'stage-r16',
+      group_id: null,
+      match_number: match.matchNumber,
+      fixture_code: match.fixtureCode,
+      scheduled_date: match.scheduledDate,
+      kickoff_at: match.kickoffAt,
+      status: match.status,
+    })),
+  ]
   const matchSlots = reference.groupMatches.flatMap(match => [
     {
       match_id: match.matchId,

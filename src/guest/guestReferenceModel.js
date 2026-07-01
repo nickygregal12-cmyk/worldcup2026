@@ -61,7 +61,9 @@ export function buildGuestReferenceModel({
   ]) assertArray(value, label)
 
   const groupStageIds = new Set(stages.filter(stage => stage.stage_type === 'group').map(stage => stage.id))
+  const knockoutStageIds = new Set(stages.filter(stage => stage.stage_type === 'knockout').map(stage => stage.id))
   const groupMatches = matches.filter(match => groupStageIds.has(match.stage_id))
+  const knockoutMatches = matches.filter(match => knockoutStageIds.has(match.stage_id))
   const groupMatchIds = new Set(groupMatches.map(match => match.id))
   const groupMatchSlots = matchSlots.filter(slot => groupMatchIds.has(slot.match_id))
 
@@ -69,12 +71,14 @@ export function buildGuestReferenceModel({
   if (tournamentTeams.length !== 24) throw new TypeError('Guest reference requires 24 tournament teams')
   if (groupMemberships.length !== 24) throw new TypeError('Guest reference requires 24 group memberships')
   if (groupMatches.length !== 36) throw new TypeError('Guest reference requires 36 group matches')
+  if (knockoutMatches.length !== 15) throw new TypeError('Guest reference requires 15 knockout matches')
   if (groupMatchSlots.length !== 72) throw new TypeError('Guest reference requires 72 group match slots')
 
   requireUnique(groups, row => row.id, 'groups')
   requireUnique(tournamentTeams, row => row.id, 'tournamentTeams')
   requireUnique(groupMemberships, row => row.position_code, 'groupMemberships')
   requireUnique(groupMatches, row => row.match_number, 'groupMatches')
+  requireUnique(knockoutMatches, row => row.match_number, 'knockoutMatches')
 
   const teamById = new Map(tournamentTeams.map(team => [team.id, team]))
   const groupById = new Map(groups.map(group => [group.id, group]))
@@ -138,6 +142,22 @@ export function buildGuestReferenceModel({
       })
     })
 
+  const resolverKnockoutMatches = [...knockoutMatches]
+    .sort((left, right) => left.match_number - right.match_number)
+    .map(match => Object.freeze({
+      matchId: match.id,
+      matchNumber: match.match_number,
+      fixtureCode: match.fixture_code,
+      scheduledDate: match.scheduled_date ?? null,
+      kickoffAt: match.kickoff_at ?? null,
+      status: match.status,
+    }))
+
+  if (resolverKnockoutMatches.map(match => match.matchNumber).join(',') !==
+      EURO28_KNOCKOUT_MATCHES.map(match => match.matchNumber).join(',')) {
+    throw new TypeError('Guest reference knockout matches must be numbered 37 to 51')
+  }
+
   const scheduleVersion = readScheduleVersion(groupMatchSlots)
   const referenceVersion = `${GUEST_REFERENCE_MODEL_VERSION}:${scheduleVersion}`
   const teamsById = Object.fromEntries(
@@ -154,6 +174,7 @@ export function buildGuestReferenceModel({
     tournamentName: tournament.name,
     groups: Object.freeze(resolverGroups),
     groupMatches: Object.freeze(resolverGroupMatches),
+    knockoutMatches: Object.freeze(resolverKnockoutMatches),
     knockoutMatchNumbers: Object.freeze(EURO28_KNOCKOUT_MATCHES.map(match => match.matchNumber)),
     teamsById: Object.freeze(teamsById),
   })

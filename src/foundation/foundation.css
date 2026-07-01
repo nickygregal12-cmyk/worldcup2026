@@ -802,3 +802,59 @@ button {
     max-width: none;
   }
 }
+
+.prediction-save-foundation {
+  display: grid;
+  gap: 1rem;
+}
+
+.prediction-save-foundation__heading {
+  align-items: flex-start;
+}
+
+.prediction-save-foundation__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.prediction-save-card {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  border: 1px solid #d9e1ea;
+  border-radius: 16px;
+  padding: 1rem;
+  background: #f8fafc;
+}
+
+.prediction-save-card span {
+  margin-top: 0.5rem;
+  color: #667085;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.prediction-save-card span:first-child { margin-top: 0; }
+
+.prediction-save-card button {
+  justify-self: start;
+  margin-top: 0.8rem;
+  border: 0;
+  border-radius: 12px;
+  padding: 0.78rem 1rem;
+  background: #0068b5;
+  color: #fff;
+  font: inherit;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.prediction-save-card button:disabled { opacity: 0.5; cursor: not-allowed; }
+.prediction-save-note { margin: 0; color: #526174; font-size: 0.9rem; }
+
+@media (max-width: 760px) {
+  .prediction-save-foundation__grid { grid-template-columns: 1fr; }
+}

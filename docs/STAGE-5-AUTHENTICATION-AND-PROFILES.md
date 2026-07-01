@@ -120,9 +120,9 @@ The Euro Supabase project must allow these URLs in Authentication → URL Config
 
 Only the Euro staging project should be changed.
 
-## Deliberately excluded
+## Deliberately excluded from Stage 5
 
-Stage 5 does not add:
+Stage 5 itself did not add:
 
 - the atomic prediction save RPC;
 - guest-to-account prediction import;
@@ -133,6 +133,6 @@ Stage 5 does not add:
 - social/OAuth providers;
 - anonymous Supabase Auth accounts.
 
-## Next stage
+## Handover
 
-Stage 6 is the trusted atomic full-bundle prediction save operation. It must validate revision, global lock state, match timing, bracket consistency and joker rules in one server-controlled transaction.
+Stage 6 now implements the trusted atomic full-bundle prediction save operation in Migration 009. Stage 7 is next and will connect the group and knockout prediction journey to that route.

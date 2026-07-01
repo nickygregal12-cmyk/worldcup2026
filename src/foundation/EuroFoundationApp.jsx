@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ENVIRONMENT } from '../config/environment.js'
 import EuroAuthFoundation from '../auth/EuroAuthFoundation.jsx'
 import GuestWorkspaceFoundation from '../guest/GuestWorkspaceFoundation.jsx'
+import PredictionSaveFoundation from '../predictions/PredictionSaveFoundation.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
@@ -108,22 +109,20 @@ export default function EuroFoundationApp() {
             <span className="foundation-brand__mark" aria-hidden="true">28</span>
             <span>
               <strong>Euro 2028 Predictor</strong>
-              <small>Authentication foundation staging</small>
+              <small>Atomic prediction saving staging</small>
             </span>
           </a>
-          <StatusPill tone="safe">Controlled auth · read-only predictions</StatusPill>
+          <StatusPill tone="safe">Atomic saves · no direct table writes</StatusPill>
         </div>
       </header>
 
       <main className="foundation-main">
         <section className="foundation-hero">
           <div>
-            <StatusPill tone="info">Stage 5 · Authentication and profiles</StatusPill>
-            <h1>Euro account access is now isolated and ready.</h1>
+            <StatusPill tone="info">Stage 6 · Atomic prediction saving</StatusPill>
+            <h1>Trusted account prediction saving is now active.</h1>
             <p>
-              The verified guest workspace remains browser-only, while Euro-specific account registration,
-              sign-in, recovery and owner-only profiles now use the isolated staging project. Prediction
-              saving remains disabled until the atomic full-bundle route is approved.
+              The guest workspace remains browser-only until an explicit import. Signed-in users now have a trusted full-bundle save route with optimistic revision, global and per-match locks, canonical bracket validation and server-enforced joker rules.
             </p>
           </div>
           <div className="foundation-environment" aria-label="Environment details">
@@ -199,6 +198,12 @@ export default function EuroFoundationApp() {
 
             <EuroAuthFoundation client={clientState.client} />
 
+            <PredictionSaveFoundation
+              client={clientState.client}
+              reference={state.data.guestReference}
+              tournament={state.data.tournament}
+            />
+
             <section className="foundation-two-column">
               <article className="foundation-panel">
                 <div className="foundation-section-heading">
@@ -228,7 +233,6 @@ export default function EuroFoundationApp() {
                   These areas will return only after their Euro-specific database design, RLS and tests are approved.
                 </p>
                 <ul className="foundation-check-list">
-                  <li>Account prediction saving and guest import</li>
                   <li>The full group and knockout editing journey</li>
                   <li>Scoring and leaderboards</li>
                   <li>Private leagues and sharing</li>
@@ -240,13 +244,12 @@ export default function EuroFoundationApp() {
             <section className="foundation-panel foundation-next-step">
               <div>
                 <span className="foundation-kicker">Next controlled batch</span>
-                <h2>Add the trusted atomic prediction save route.</h2>
+                <h2>Build the complete prediction journey.</h2>
                 <p>
-                  Stage 6 can validate and save one complete prediction bundle with revision checking,
-                  global-lock enforcement, bracket consistency and server-enforced joker rules.
+                  Stage 7 can connect the group and knockout editors, quiet autosave, completeness guidance and reversible submit/review mode to the trusted Stage 6 route.
                 </p>
               </div>
-              <StatusPill tone="warning">No prediction writes</StatusPill>
+              <StatusPill tone="warning">Stage 7 next</StatusPill>
             </section>
           </>
         )}

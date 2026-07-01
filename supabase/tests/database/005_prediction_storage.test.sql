@@ -112,8 +112,8 @@ select is(
     where n.nspname = 'public'
       and p.proname ~ '(save.*prediction|prediction.*save)'
   ),
-  0::bigint,
-  'the final prediction save RPC is still absent'
+  1::bigint,
+  'the trusted atomic prediction save RPC now exists exactly once'
 );
 
 select lives_ok(

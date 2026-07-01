@@ -12,7 +12,7 @@ export async function loadEuroFoundation(client) {
 
   const tournamentResult = await client
     .from('tournaments')
-    .select('id,code,name,short_name,edition_year,timezone,format_code,team_count,group_count,teams_per_group,best_third_qualifiers,status,is_public,is_provisional,starts_on,ends_on')
+    .select('id,code,name,short_name,edition_year,timezone,format_code,team_count,group_count,teams_per_group,best_third_qualifiers,status,is_public,is_provisional,starts_on,ends_on,prediction_lock_at,prediction_locked_at')
     .eq('code', EURO_TOURNAMENT_CODE)
     .single()
 

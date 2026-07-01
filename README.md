@@ -1,43 +1,47 @@
 # Euro 2028 Predictor
 
-This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages. The inherited WC26 browser application remains quarantined behind the active Euro foundation. Migration 005 defines the read-secured prediction storage foundation, Stage 3 supplies the canonical tournament resolver, Stage 4 adds the browser-only guest workspace, Migration 006 adds isolated Euro authentication and owner-only profiles, Migration 007 hardens browser-role function privileges for the linked staging project, and Migration 008 restores both provisional joker caps to unresolved NULL values after hosted drift was detected. Guest, predicted and live data remain strictly separated. The final atomic prediction save route and all direct browser writes to prediction tables remain deferred.
+This branch is the isolated Euro 2028 rebuild. It began from the WC26 repository, but the inherited World Cup browser application remains quarantined and unreachable from the active Euro entrypoint.
+
+The verified build now includes:
+
+- the official 51-match tournament skeleton;
+- read-secured prediction storage;
+- one canonical group, best-third and knockout resolver;
+- browser-only guest prediction state;
+- Euro authentication and owner-only profiles;
+- one trusted atomic prediction save RPC.
+
+Guest, predicted and live tournament contexts remain separate. WC26 `main` and the WC26 production Supabase project must never be used in this workflow.
 
 ## Environments
 
 | Environment | Git branch | Database | Purpose |
 |---|---|---|---|
-| WC26 live | `main` | WC26 production Supabase | Current World Cup site |
-| Euro staging | `euro28-development` | Euro staging Supabase | Development and destructive testing |
-
-The Euro branch must never use the WC26 production Supabase URL or keys.
+| WC26 live | `main` | WC26 production Supabase | Existing World Cup site |
+| Euro staging | `euro28-development` | `gcfdwobpnanjchcnvdco` | Euro development and testing |
 
 ## Local setup
 
 ```bash
+cd ~/Desktop/euro28predictor
+git switch euro28-development
 npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
-Fill `.env.local` with the Euro staging Supabase project URL and publishable key. Never add secret/service-role keys to variables beginning with `VITE_`.
+Use only the Euro staging project URL and publishable key in `.env.local`. Never expose a service-role key through a `VITE_` variable.
 
-## Checks
-
-```bash
-npm run lint:foundation
-npm test
-npm run build
-```
-
-Run the database guard, inherited-code boundary, foundation lint, tests and build together with:
+## Main checks
 
 ```bash
 npm run check
 ```
 
-The inherited application boundary and prediction contract can also be checked directly with:
+Focused checks:
 
 ```bash
+npm run db:safety
 npm run audit:legacy
 npm run audit:contracts
 npm run audit:db-design
@@ -45,22 +49,34 @@ npm run audit:resolver
 npm run audit:guest
 npm run audit:auth
 npm run audit:scoring-correction
+npm run audit:prediction-save
 ```
 
-The inherited WC26 code currently has a large pre-existing full-lint backlog. It remains in the repository as quarantined reference code. `lint:foundation` and `audit:legacy` protect the active Euro foundation while that backlog is reviewed incrementally.
+## Database checks
 
-## Safety rules
+After a local reset:
 
-- Euro changes are made only on `euro28-development` or feature branches created from it.
-- Deploy previews and the Euro Netlify site use only the Euro staging database.
-- Automatic WC26 score syncing is disabled on this branch.
-- Database changes must be saved as reviewed migrations.
-- `supabase/reference/` contains audit material only and must not be executed directly.
+```bash
+npx supabase db reset
+npm run test:db:005:local
+npm run test:db:006:local
+npm run test:db:008:local
+npm run test:db:009:local
+```
 
-See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, `docs/DEPLOYMENT.md`, `docs/STAGE-4-GUEST-EXPLORE-FOUNDATION.md`, `docs/STAGE-5-AUTHENTICATION-AND-PROFILES.md`, and `docs/STAGE-5-SCORING-RULESET-CORRECTION.md`.
+Never run `npx supabase db reset --linked`.
 
-## Current Euro development return point
+## Current return point
 
-Stage 5 is complete. Migration 006 creates one validated, case-insensitively unique profile per Auth user, with owner-only RLS and controlled profile RPCs. Migration 007 explicitly revokes unintended `anon` and `authenticated` execution grants and locks down future public functions by default. Migration 008 restores both exact joker caps to `NULL`, matching the still-unresolved product decision without changing any other scoring value. The staging page supports sign-up, sign-in, sign-out and password recovery while retaining the separate browser-only guest draft. No prediction save RPC, guest upload, leagues, scoring runs or admin result UI has been introduced.
+Stage 6 is implemented in Migration 009. Signed-in prediction writes now use `save_my_prediction_bundle()` only. The function validates ownership, expected revision, tournament lock, match-scoped grace, per-match joker timing, joker caps, group fixtures and the complete canonical knockout path before replacing the supplied full bundle in one transaction.
 
-See `docs/STAGE-5-AUTHENTICATION-AND-PROFILES.md` and `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`.
+A complete browser-only guest draft can be imported deliberately before lock. It cannot overwrite existing account prediction rows. Guest state remains in the browser after import.
+
+Stage 7 is next: build the real group and knockout prediction journey, quiet autosave, completeness guidance and reversible submit/review mode on top of the Stage 6 route.
+
+See:
+
+- `docs/STAGE-6-ATOMIC-PREDICTION-SAVING.md`
+- `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`
+- `docs/DATABASE.md`
+- `docs/TESTING.md`

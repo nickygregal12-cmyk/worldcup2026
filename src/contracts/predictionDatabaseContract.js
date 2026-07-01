@@ -35,6 +35,19 @@ export const PREDICTION_DATABASE_SCOPE = Object.freeze({
   ]),
 })
 
+export const ATOMIC_PREDICTION_SAVE_SCOPE = Object.freeze({
+  activeMigrationCountAfterImplementation: 9,
+  migrationNumber: '009',
+  migrationFilename: '202607010009_euro28_atomic_prediction_save.sql',
+  implementationStatus: 'trusted_atomic_save_implemented',
+  rpcName: 'save_my_prediction_bundle',
+  authenticatedExecuteOnly: true,
+  directBrowserTableWrites: false,
+  supportsGuestImport: true,
+  guestImportRequiresCompleteBundle: true,
+  guestImportOverwritesAccountRows: false,
+})
+
 export const SCORING_RULE_CODES = Object.freeze([
   'match_exact_score',
   'match_correct_outcome',
@@ -81,6 +94,8 @@ export const PREDICTION_SET_COLUMNS = Object.freeze([
   'scoring_ruleset_id',
   'revision',
   'submitted_at',
+  'guest_imported_at',
+  'last_save_source',
   'created_at',
   'updated_at',
 ])
@@ -128,7 +143,10 @@ export const PREDICTION_WRITE_MODEL = Object.freeze({
   validatesJokerMatchKickoff: true,
   validatesGraceScope: true,
   deletesOmittedDraftRowsBeforeLock: true,
-  implementationMigration: '006_or_later',
+  implementationMigration: '009',
+  implemented: true,
+  rpcName: 'save_my_prediction_bundle',
+  guestImportImplemented: true,
 })
 
 export const PREDICTION_VISIBILITY_MODEL = Object.freeze({
@@ -157,7 +175,7 @@ export const JOKER_DATABASE_MODEL = Object.freeze({
   multiplierStoredOnRuleset: true,
   unresolvedCapsStoredAsNull: true,
   movableOnlyBetweenUnstartedMatches: true,
-  serverEnforcedByFutureTrustedWrite: true,
+  serverEnforcedByTrustedWrite: true,
 })
 
 export const GRACE_WINDOW_DATABASE_MODEL = Object.freeze({
@@ -175,7 +193,9 @@ export const GUEST_PREDICTION_MODEL = Object.freeze({
   serverStorage: false,
   scored: false,
   usesCanonicalResolver: true,
-  importBeforeLockPlanned: true,
+  importBeforeLockImplemented: true,
+  explicitImportOnly: true,
+  accountOverwriteAllowed: false,
 })
 
 export const DATABASE_SCORING_MODEL = Object.freeze({
@@ -270,6 +290,9 @@ export function validatePredictionDatabaseContract() {
   if (PREDICTION_DATABASE_SCOPE.createsBrowserTableWrites) errors.push('Migration 005 must not enable direct browser table writes')
   if (PREDICTION_DATABASE_SCOPE.createsFinalSaveRpc) errors.push('Migration 005 must not create the final save RPC')
   if (PREDICTION_DATABASE_SCOPE.createsGuestServerStorage) errors.push('Migration 005 must not store guest predictions')
+  if (ATOMIC_PREDICTION_SAVE_SCOPE.activeMigrationCountAfterImplementation !== 9) errors.push('Stage 6 must leave nine active migrations')
+  if (!PREDICTION_WRITE_MODEL.implemented || PREDICTION_WRITE_MODEL.implementationMigration !== '009') errors.push('the trusted atomic save must be implemented by Migration 009')
+  if (ATOMIC_PREDICTION_SAVE_SCOPE.directBrowserTableWrites) errors.push('Stage 6 must not enable direct browser table writes')
   if (PREDICTION_WRITE_MODEL.mode !== 'atomic_bundle') errors.push('prediction writes must use one atomic bundle')
   if (!PREDICTION_WRITE_MODEL.expectedRevisionRequired) errors.push('prediction writes must reject stale revisions')
   if (!PREDICTION_WRITE_MODEL.databaseTimeAuthoritative) errors.push('the database clock must be authoritative')

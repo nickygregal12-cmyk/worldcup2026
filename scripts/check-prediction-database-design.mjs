@@ -105,7 +105,7 @@ else {
   const requiredDatabaseTests = [
     "has_table('public', 'scoring_rulesets'",
     'no browser write policies',
-    'final prediction save rpc is still absent',
+    'trusted atomic prediction save rpc now exists exactly once',
     'persisted global prediction lock cannot be reopened',
     'guest predictions have no server-side table',
   ]
@@ -134,5 +134,5 @@ if (!process.exitCode) {
   console.log('Global lock: persisted monotonic tournament timestamp')
   console.log('Guest mode: no server-side prediction storage')
   console.log('Direct browser table writes: none')
-  console.log('Final atomic save RPC: deferred')
+  console.log('Final atomic save RPC: implemented separately by Migration 009')
 }

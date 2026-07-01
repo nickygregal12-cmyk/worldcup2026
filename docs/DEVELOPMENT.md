@@ -2,98 +2,59 @@
 
 ## Branches
 
-- `main` remains the feature-frozen WC26 production branch.
-- `euro28-development` is the integration branch for Euro work.
-- Create a short-lived feature branch for each implementation batch when useful.
+- `main` is the live WC26 branch and must not be changed during Euro development.
+- `euro28-development` is the Euro staging branch.
+- Local work is always performed in `~/Desktop/euro28predictor`.
 
 ## Definition of done
 
-A change is complete only when:
+A batch is complete only when:
 
-- The intended behaviour is covered by tests.
-- Loading, empty and error states are considered when UI is introduced.
-- `npm run check` passes.
-- Database changes have a migration and RLS review.
-- No Euro preview points at WC26 production data.
-- Documentation is updated when behaviour or configuration changes.
-- The working tree is clean and the Euro branch is pushed.
+- code and documentation agree;
+- `npm run check` passes;
+- relevant local database resets and pgTAP suites pass;
+- the linked project reference is verified before remote commands;
+- the dry run contains only the intended migration;
+- hosted migration history, linked pgTAP and database lint pass;
+- the working tree is clean and the commit is pushed.
 
 ## Current compatibility state
 
-The repository still contains inherited WC26 pages, components, functions and data assumptions as quarantined reference code. The active browser entrypoint does not import them. `npm run audit:legacy` protects that boundary and fails if the Euro foundation reaches the inherited application or gains a browser database write.
+The active Euro application can reach only the foundation, auth, guest, prediction-save and canonical resolver modules. Inherited WC26 pages, stores, components and bracket utilities remain quarantined.
 
-The inherited `src/lib/bracketUtils.js` is not a Euro resolver. It remains quarantined and must not be reintroduced.
+## Core contracts
 
-## Euro prediction contract
+Prediction content locks globally at the first tournament kick-off. Joker placement locks separately at each match kick-off. Grace is an audited exception for one user and one unstarted match. Knockout score predictions always mean the 90-minute score; advancing team and decision method are separate.
 
-The reconciled `euro28-v2` contract provides:
+## Canonical resolver
 
-- one global prediction-content lock at the opening tournament kick-off;
-- a reversible submit/review state;
-- saved but unsubmitted predictions remaining eligible;
-- 90-minute score predictions for every match;
-- separate advancing-team and decision-method fields for knockout matches;
-- jokers as the only multiplier, with per-match kick-off timing;
-- one-user, one-unstarted-match audited grace windows;
-- one centrally versioned provisional scoring ruleset.
+`src/resolver/` is the only tournament progression engine. Guest, predicted and live contexts use its output but cannot be blended. It covers all six groups, best-third ranking, all 15 allocation combinations and matches 37–51.
 
-Run:
+## Guest workspace
 
-```bash
-npm run audit:contracts
-```
+`src/guest/` stores drafts in browser `localStorage`. It performs no Supabase write and contains no account identity. Exported bundles remain portable and unscored.
 
-## Prediction database foundation
+## Authentication
 
-Migration 005 provides versioned scoring rulesets, prediction sets, match predictions and grace-window storage. It has RLS and no direct browser writes. The trusted atomic full-bundle save route remains deferred.
+`src/auth/` handles Euro sign-up, sign-in, recovery, sign-out and owner profile changes. Profile writes use their own narrow RPCs and are not a prediction write path.
 
-Run:
+## Atomic prediction saving
 
-```bash
-npm run audit:db-design
-```
+`src/predictions/` converts complete guest drafts into canonical database rows, calls only `save_my_prediction_bundle()` for writes, and loads owner rows with both tournament and user filters.
 
-## Canonical tournament resolver
+Migration 009 is the sole prediction write path. It validates the full supplied bundle on the server and increments the prediction-set revision after a successful transaction.
 
-Stage 3 introduces `euro28-canonical-resolver-v1` in `src/resolver/`.
-
-It calculates group tables, ranks the six third-placed teams, applies all 15 best-third combinations and progresses the official knockout route. Guest, predicted and live records are processed by the same engine but cannot be mixed in one call.
-
-The tie-break contract remains explicitly provisional pending final UEFA EURO 2028 regulations. A stable fallback may support previews, but the resolver reports it as unresolved rather than presenting it as official.
-
-Run:
-
-```bash
-npm run audit:resolver
-```
-
-No database migration is part of Stage 3.
-
-## Guest/explore foundation
-
-Stage 4 introduces `euro28-guest-state-v1` in `src/guest/`.
-
-It creates all 51 draft rows locally, accepts partial browser drafts, feeds only complete score rows into the canonical guest resolver, tracks group and knockout completeness, and supports versioned JSON import/export. Browser storage is scoped by tournament and reference version. No guest prediction is sent to Supabase.
-
-Run:
-
-```bash
-npm run audit:guest
-```
-
-The active staging page exposes guest-data import, export and clear controls. The full prediction editor remains deferred.
-
-## Authentication and profiles
-
-Stage 5 introduces Migration 006, the follow-up privilege-hardening Migration 007, the hosted scoring-ruleset correction Migration 008 and `src/auth/`. Euro accounts use email/password Auth, persistent sessions, recovery links and one owner-only profile row. Display-name creation and updates are validated by the database. Guest state remains local and is never cleared or uploaded by auth actions.
-
-Run:
-
-```bash
-npm run audit:auth
-npm run audit:scoring-correction
-```
+The guest import button is deliberately explicit. Signing in does not upload the browser draft automatically, and a guest draft cannot overwrite existing account predictions.
 
 ## Next implementation boundary
 
-Stage 6 may add the trusted atomic full-bundle prediction save route. It must validate ownership, revision, lock state, bracket consistency and joker rules without enabling direct table writes.
+Stage 7 may add:
+
+- group prediction screens;
+- knockout prediction screens;
+- quiet autosave using the Stage 6 RPC;
+- save status and stale-revision recovery;
+- completeness guidance;
+- submit/review and Edit Predictions controls.
+
+Stage 7 must not add scoring, leagues, results entry or admin controls.

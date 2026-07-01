@@ -174,7 +174,7 @@ export default function EuroAuthFoundation({ client }) {
       setNotice({
         tone: 'safe',
         message: result.session
-          ? 'Account created and signed in. Your guest draft remains separate until the future import step.'
+          ? 'Account created and signed in. Your guest draft remains separate until you explicitly import it through Stage 6.'
           : 'Account created. Check your email to confirm it before signing in.',
       })
     })
@@ -234,10 +234,10 @@ export default function EuroAuthFoundation({ client }) {
       <section className="foundation-panel auth-foundation">
         <div className="foundation-section-heading auth-foundation__heading">
           <div>
-            <span className="foundation-kicker">Stage 5 · Authentication and profiles</span>
+            <span className="foundation-kicker">Stage 6 · Authentication retained</span>
             <h2>Signed in as {profile?.display_name || emailAddress}</h2>
             <p className="foundation-panel-copy">
-              Account identity is live. Prediction saving and guest-to-account import remain deliberately unavailable until Stage 6.
+              Account identity is live. The trusted Stage 6 save route is available below; the complete editor remains deferred to Stage 7.
             </p>
           </div>
           <button className="foundation-secondary-button" type="button" onClick={handleSignOut} disabled={busy}>
@@ -273,7 +273,7 @@ export default function EuroAuthFoundation({ client }) {
     <section className="foundation-panel auth-foundation">
       <div className="foundation-section-heading auth-foundation__heading">
         <div>
-          <span className="foundation-kicker">Stage 5 · Authentication and profiles</span>
+          <span className="foundation-kicker">Stage 6 · Authentication retained</span>
           <h2>{isRecovery ? 'Choose a new password' : 'Create or access your Euro account'}</h2>
           <p className="foundation-panel-copy">
             Your guest draft remains browser-only. Signing in does not upload, replace or clear it.
