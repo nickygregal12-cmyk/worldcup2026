@@ -10,8 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint:foundation": "eslint src/App.jsx src/main.jsx src/config src/contracts src/foundation src/resolver src/lib/clock.js src/lib/tournamentDates.js src/lib/gamePhase.js src/lib/scoring.js src/lib/__tests__ netlify/functions/scheduled-score-sync.js scripts/check-database-safety.mjs scripts/check-legacy-boundary.mjs scripts/check-prediction-contracts.mjs scripts/check-prediction-database-design.mjs scripts/check-tournament-resolver.mjs scripts/verify-euro28-knockout.mjs scripts/verify-euro28-foundation-page.mjs vite.config.js",
-    "check": "npm run db:safety && npm run audit:legacy && npm run audit:contracts && npm run audit:db-design && npm run audit:resolver && npm run lint:foundation && npm test && npm run build",
+    "lint:foundation": "eslint src/App.jsx src/main.jsx src/config src/contracts src/foundation src/guest src/resolver src/lib/clock.js src/lib/tournamentDates.js src/lib/gamePhase.js src/lib/scoring.js src/lib/__tests__ netlify/functions/scheduled-score-sync.js scripts/check-database-safety.mjs scripts/check-legacy-boundary.mjs scripts/check-prediction-contracts.mjs scripts/check-prediction-database-design.mjs scripts/check-tournament-resolver.mjs scripts/check-guest-foundation.mjs scripts/verify-euro28-knockout.mjs scripts/verify-euro28-foundation-page.mjs vite.config.js",
+    "check": "npm run db:safety && npm run audit:legacy && npm run audit:contracts && npm run audit:db-design && npm run audit:resolver && npm run audit:guest && npm run lint:foundation && npm test && npm run build",
     "db:safety": "node scripts/check-database-safety.mjs",
     "verify:knockout": "node scripts/verify-euro28-knockout.mjs",
     "audit:legacy": "node scripts/check-legacy-boundary.mjs",
@@ -20,7 +20,8 @@
     "audit:db-design": "node scripts/check-prediction-database-design.mjs",
     "test:db:005:local": "npx supabase test db --local supabase/tests/database/005_prediction_storage.test.sql",
     "test:db:005:linked": "npx supabase test db --linked supabase/tests/database/005_prediction_storage.test.sql",
-    "audit:resolver": "node scripts/check-tournament-resolver.mjs"
+    "audit:resolver": "node scripts/check-tournament-resolver.mjs",
+    "audit:guest": "node scripts/check-guest-foundation.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

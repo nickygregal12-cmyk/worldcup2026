@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 1.2 — Stage 3 canonical resolver
+### Version 1.3 — Stage 4 guest/explore foundation
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
@@ -16,10 +16,12 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 - Stage 2 application isolation and contracts complete.
 - Migration 005 deployed and verified locally and on Euro staging.
 - Stage 3 canonical tournament resolver implemented.
+- Stage 4 browser-only guest/explore foundation implemented.
+- All 51 guest draft rows persist locally and use versioned import/export bundles.
 - Group tables, provisional tie handling, all 15 best-third combinations and matches 37–51 are covered by one pure engine.
 - Guest, predicted and live contexts use the same resolver and cannot be blended.
 - No Migration 006, save RPC, guest server storage, auth UI, leagues, scoring runs or admin result UI has been introduced.
-- Next stage: browser-only guest/explore foundation.
+- Next stage: Euro-specific authentication and profiles.
 
 ## 3. Environment
 
@@ -99,8 +101,8 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 1. Reconciliation batch — complete.
 2. Revised Migration 005 — complete and hosted.
 3. Canonical tournament resolver — complete.
-4. Guest/explore foundation — next.
-5. Authentication and profiles.
+4. Guest/explore foundation — complete.
+5. Authentication and profiles — next.
 6. Atomic prediction saving.
 7. Prediction journey and submit/review mode.
 8. Joker and grace controls.
@@ -114,14 +116,14 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 
 ## 8. Immediate next actions
 
-1. Install the Stage 3 canonical resolver package.
-2. Run `npm run check` and `npm run audit:resolver`.
-3. Commit and push the resolver on `euro28-development`.
-4. Confirm a clean working tree.
-5. Begin Stage 4 with browser-only guest/explore state.
-6. Use `resolveEuro28Tournament()` for guest previews rather than the inherited WC26 bracket utility.
-7. Preserve strict guest, predicted and live context isolation.
-8. Add no guest Supabase prediction storage or browser write route.
+1. Install the Stage 4 guest/explore foundation package.
+2. Run `npm run audit:guest` and `npm run check`.
+3. Confirm the staging page restores and exports browser-only guest state.
+4. Commit and push on `euro28-development` with a clean working tree.
+5. Begin Stage 5 with Euro-specific authentication and profiles.
+6. Keep guest data browser-only until a deliberate pre-lock account import is implemented.
+7. Keep all prediction-table writes behind the future trusted atomic save route.
+8. Preserve strict guest, predicted and live context isolation.
 
 ## 9. Open decisions
 

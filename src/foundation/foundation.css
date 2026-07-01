@@ -525,3 +525,136 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+.guest-foundation {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.guest-foundation__heading {
+  align-items: flex-start;
+}
+
+.guest-foundation__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  gap: 1rem;
+}
+
+.guest-progress-card,
+.guest-data-card {
+  border: 1px solid #d9e1ea;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 1rem;
+}
+
+.guest-progress-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.guest-progress-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #d9e1ea;
+}
+
+.guest-progress-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.guest-progress-row > div:first-child,
+.guest-progress-row__value {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.guest-progress-row span,
+.guest-data-card p,
+.guest-foundation__meta {
+  color: #667085;
+}
+
+.guest-progress-row__value {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.guest-data-card {
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+}
+
+.guest-data-card p {
+  margin: 0;
+  line-height: 1.55;
+}
+
+.guest-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.guest-import-button {
+  cursor: pointer;
+}
+
+.guest-import-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.guest-clear-button {
+  border: 0;
+  background: transparent;
+  color: #667085;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+  cursor: pointer;
+}
+
+.guest-foundation__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.78rem;
+}
+
+.guest-notice {
+  margin: 0;
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.9rem;
+}
+
+.guest-notice--safe {
+  background: rgba(52, 211, 153, 0.12);
+}
+
+.guest-notice--warning {
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.guest-notice--danger {
+  background: rgba(248, 113, 113, 0.12);
+}
+
+@media (max-width: 760px) {
+  .guest-foundation__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guest-progress-row {
+    align-items: flex-start;
+  }
+}

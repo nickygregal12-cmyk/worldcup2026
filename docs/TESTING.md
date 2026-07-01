@@ -14,7 +14,7 @@ For watch mode:
 npm run test:watch
 ```
 
-The Stage 3 suite contains 109 tests across 14 files.
+The Stage 4 suite contains 130 tests across 19 files.
 
 ## Prediction contracts
 
@@ -52,6 +52,24 @@ This verifies:
 
 Unit coverage includes group statistics, recursive head-to-head handling, provisional tie fallbacks, best-third ranking, every allocation combination, official knockout sources, advancing-team propagation and mixed-context rejection.
 
+## Guest/explore foundation
+
+```bash
+npm run audit:guest
+```
+
+This verifies:
+
+- a 51-row browser-only guest state;
+- 36 group and 15 knockout drafts;
+- the versioned local-storage key and portable bundle format;
+- guest-only resolver context;
+- no account identity in exports;
+- no Supabase import, database write or network persistence in guest modules;
+- no Migration 006.
+
+Unit coverage includes partial drafts, local-storage failures, bundle round-trips, reference mismatches, completeness tracking and stale knockout decisions.
+
 ## Database integration tests
 
 After a local Supabase reset:
@@ -66,7 +84,7 @@ Against the verified Euro staging project:
 npm run test:db:005:linked
 ```
 
-The pgTAP file contains 31 checks for Migration 005. Stage 3 creates no Migration 006 and does not require another database push.
+The pgTAP file contains 31 checks for Migration 005. Stages 3 and 4 create no Migration 006 and require no database push.
 
 ## Inherited application boundary
 
@@ -82,7 +100,7 @@ This verifies that the active Euro entrypoint cannot reach quarantined WC26 page
 npm run lint:foundation
 ```
 
-The strict scope includes all active Euro contracts and resolver code while inherited WC26 files remain quarantined.
+The strict scope includes all active Euro contracts, resolver and guest-foundation code while inherited WC26 files remain quarantined.
 
 ## Build
 
@@ -96,4 +114,4 @@ npm run build
 npm run check
 ```
 
-This runs database safety, legacy isolation, prediction contract audits, database-design audit, resolver audit, foundation lint, all unit tests and the production build.
+This runs database safety, legacy isolation, prediction contract audits, database-design audit, resolver audit, guest-foundation audit, foundation lint, all unit tests and the production build.

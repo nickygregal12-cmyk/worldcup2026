@@ -69,6 +69,20 @@ npm run audit:resolver
 
 No database migration is part of Stage 3.
 
+## Guest/explore foundation
+
+Stage 4 introduces `euro28-guest-state-v1` in `src/guest/`.
+
+It creates all 51 draft rows locally, accepts partial browser drafts, feeds only complete score rows into the canonical guest resolver, tracks group and knockout completeness, and supports versioned JSON import/export. Browser storage is scoped by tournament and reference version. No guest prediction is sent to Supabase.
+
+Run:
+
+```bash
+npm run audit:guest
+```
+
+The active staging page exposes guest-data import, export and clear controls. The full prediction editor remains deferred.
+
 ## Next implementation boundary
 
-Stage 4 may introduce browser-only guest/explore state using the canonical resolver. It must not create guest server storage or direct Supabase prediction writes.
+Stage 5 may add Euro-specific authentication and profile ownership. It must preserve browser-only guest storage and must not add direct browser writes to prediction tables.

@@ -137,6 +137,7 @@ const protectedEuroLogicFiles = allSourceFiles.filter(filePath => {
   const rel = relative(filePath)
   return rel.startsWith('src/contracts/') ||
     rel.startsWith('src/resolver/') ||
+    rel.startsWith('src/guest/') ||
     rel === 'src/config/scoringConfig.js' ||
     rel === 'src/config/__tests__/scoringConfig.test.js' ||
     rel === 'src/lib/scoring.js' ||

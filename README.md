@@ -1,6 +1,6 @@
 # Euro 2028 Predictor
 
-This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages. The inherited WC26 browser application is now quarantined behind a read-only Euro foundation screen. The first Euro prediction, locking and result contract is defined in pure code and tests. Scoring categories are fixed structurally, while the current point values remain provisional in one central configuration file. Migration 005 defines the read-secured prediction storage foundation. Stage 3 now adds the pure canonical tournament resolver for group tables, best-third ranking and the 15-match knockout route. Guest, predicted and live data use the same engine but are strictly isolated. The final atomic save route and all browser writes remain deferred.
+This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages. The inherited WC26 browser application remains quarantined behind the active Euro foundation. Migration 005 defines the read-secured signed-in prediction storage foundation, Stage 3 supplies the canonical tournament resolver, and Stage 4 now adds a 51-match browser-only guest workspace with local persistence, portable import/export and completeness tracking. Guest, predicted and live data use the same engine but remain strictly isolated. The final atomic save route and all direct browser database writes remain deferred.
 
 ## Environments
 
@@ -41,6 +41,8 @@ The inherited application boundary and prediction contract can also be checked d
 npm run audit:legacy
 npm run audit:contracts
 npm run audit:db-design
+npm run audit:resolver
+npm run audit:guest
 ```
 
 The inherited WC26 code currently has a large pre-existing full-lint backlog. It remains in the repository as quarantined reference code. `lint:foundation` and `audit:legacy` protect the active Euro foundation while that backlog is reviewed incrementally.
@@ -53,10 +55,10 @@ The inherited WC26 code currently has a large pre-existing full-lint backlog. It
 - Database changes must be saved as reviewed migrations.
 - `supabase/reference/` contains audit material only and must not be executed directly.
 
-See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, `docs/DEPLOYMENT.md`, `docs/STAGE-2-APPLICATION-ISOLATION.md`, `docs/STAGE-2-PREDICTION-CONTRACTS.md`, and `docs/STAGE-2-PREDICTION-DATABASE-DESIGN.md`.
+See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, `docs/DEPLOYMENT.md`, `docs/STAGE-3-CANONICAL-TOURNAMENT-RESOLVER.md`, and `docs/STAGE-4-GUEST-EXPLORE-FOUNDATION.md`.
 
 ## Current Euro development return point
 
-Stage 2 and Migration 005 are complete. Stage 3 adds `euro28-canonical-resolver-v1`, with provisional tie-break reporting, all 15 best-third combinations and knockout progression from match 37 to match 51. The inherited WC26 bracket utility remains quarantined. No Migration 006, save RPC, guest server storage, auth UI, leagues, scoring runs or admin result UI have been introduced.
+Stage 4 is complete. `euro28-guest-state-v1` creates browser-only draft rows for all 51 matches, persists them locally, validates portable JSON bundles and calculates guest completeness through `euro28-canonical-resolver-v1`. The staging page exposes import, export and clear controls without adding a prediction editor or any server persistence. No Migration 006, save RPC, auth UI, leagues, scoring runs or admin result UI have been introduced.
 
-See `docs/STAGE-3-CANONICAL-TOURNAMENT-RESOLVER.md` and `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`.
+See `docs/STAGE-4-GUEST-EXPLORE-FOUNDATION.md` and `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`.

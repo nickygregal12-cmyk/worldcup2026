@@ -1,3 +1,4 @@
+import { buildGuestReferenceModel } from '../guest/guestReferenceModel.js'
 import { EURO_TOURNAMENT_CODE, summariseFoundationData } from './foundationModel.js'
 
 function throwForError(label, error) {
@@ -23,6 +24,7 @@ export async function loadEuroFoundation(client) {
     groupsResult,
     tournamentTeamsResult,
     tournamentVenuesResult,
+    groupMembershipsResult,
     matchesResult,
     matchSlotsResult,
   ] = await Promise.all([
@@ -38,7 +40,7 @@ export async function loadEuroFoundation(client) {
       .order('sequence'),
     client
       .from('tournament_teams')
-      .select('id,slot_code,team_id,qualification_status,is_provisional')
+      .select('id,slot_code,team_id,qualification_status,is_provisional,display_order,metadata')
       .eq('tournament_id', tournament.id)
       .order('display_order'),
     client
@@ -47,13 +49,18 @@ export async function loadEuroFoundation(client) {
       .eq('tournament_id', tournament.id)
       .order('display_order'),
     client
+      .from('group_memberships')
+      .select('group_id,tournament_team_id,draw_position,position_code,is_provisional')
+      .eq('tournament_id', tournament.id)
+      .order('position_code'),
+    client
       .from('matches')
       .select('id,stage_id,group_id,venue_id,match_number,fixture_code,scheduled_date,kickoff_at,status,schedule_status,participants_status')
       .eq('tournament_id', tournament.id)
       .order('match_number'),
     client
       .from('match_slots')
-      .select('id,match_id,side,source_type,rule_code,resolved_tournament_team_id')
+      .select('id,match_id,side,source_type,source_tournament_team_id,rule_code,rule_data,resolved_tournament_team_id')
       .eq('tournament_id', tournament.id),
   ])
 
@@ -61,16 +68,23 @@ export async function loadEuroFoundation(client) {
   throwForError('Group read failed', groupsResult.error)
   throwForError('Tournament-slot read failed', tournamentTeamsResult.error)
   throwForError('Venue read failed', tournamentVenuesResult.error)
+  throwForError('Group-membership read failed', groupMembershipsResult.error)
   throwForError('Match read failed', matchesResult.error)
   throwForError('Match-slot read failed', matchSlotsResult.error)
 
-  return summariseFoundationData({
+  const sourceRows = {
     tournament,
     stages: stagesResult.data || [],
     groups: groupsResult.data || [],
     tournamentTeams: tournamentTeamsResult.data || [],
+    groupMemberships: groupMembershipsResult.data || [],
     tournamentVenues: tournamentVenuesResult.data || [],
     matches: matchesResult.data || [],
     matchSlots: matchSlotsResult.data || [],
-  })
+  }
+
+  return {
+    ...summariseFoundationData(sourceRows),
+    guestReference: buildGuestReferenceModel(sourceRows),
+  }
 }

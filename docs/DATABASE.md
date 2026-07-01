@@ -100,11 +100,13 @@ npx supabase db lint --linked --level warning
 
 Never run `npx supabase db reset --linked`.
 
-## Stage 3 database position
+## Stage 3 and Stage 4 database position
 
-The canonical tournament resolver lives in `src/resolver/` and reads plain input objects. It does not connect to Supabase, mutate `match_slots` or persist resolved brackets. Future adapters may map public reference rows into the resolver, but guest predictions remain browser-only and live/predicted data remain separate.
+The canonical tournament resolver lives in `src/resolver/` and reads plain input objects. It does not connect to Supabase, mutate `match_slots` or persist resolved brackets.
 
-No database push is required for Stage 3.
+Stage 4 adds a read-only adapter for public tournament teams, group memberships, matches and match-slot rules. The resulting guest reference model is held in memory. Guest predictions are stored only in browser `localStorage`; they are never written to Supabase.
+
+No database push is required for Stage 3 or Stage 4. Migration count remains five.
 
 ## Migration rules
 

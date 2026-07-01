@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ENVIRONMENT } from '../config/environment.js'
+import GuestWorkspaceFoundation from '../guest/GuestWorkspaceFoundation.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
@@ -106,22 +107,22 @@ export default function EuroFoundationApp() {
             <span className="foundation-brand__mark" aria-hidden="true">28</span>
             <span>
               <strong>Euro 2028 Predictor</strong>
-              <small>Foundation staging</small>
+              <small>Guest foundation staging</small>
             </span>
           </a>
-          <StatusPill tone="safe">Read-only</StatusPill>
+          <StatusPill tone="safe">Database read-only</StatusPill>
         </div>
       </header>
 
       <main className="foundation-main">
         <section className="foundation-hero">
           <div>
-            <StatusPill tone="info">Stage 2 · Application isolation</StatusPill>
-            <h1>The Euro build now has a clean front door.</h1>
+            <StatusPill tone="info">Stage 4 · Guest/explore foundation</StatusPill>
+            <h1>The browser-only guest foundation is ready.</h1>
             <p>
-              This staging screen reads only the verified Euro 2028 tournament-reference tables.
-              The inherited WC26 predictions, authentication, leagues, scoring and admin interface
-              remain in the repository as reference code, but they are deliberately unreachable.
+              The page reads the verified Euro tournament reference and prepares a local 51-match
+              guest workspace. Guest progress stays in this browser and uses the same canonical resolver
+              planned for signed-in predictions and the live tournament.
             </p>
           </div>
           <div className="foundation-environment" aria-label="Environment details">
@@ -190,6 +191,11 @@ export default function EuroFoundationApp() {
               />
             </section>
 
+            <GuestWorkspaceFoundation
+              key={state.data.guestReference.referenceVersion}
+              reference={state.data.guestReference}
+            />
+
             <section className="foundation-two-column">
               <article className="foundation-panel">
                 <div className="foundation-section-heading">
@@ -220,7 +226,7 @@ export default function EuroFoundationApp() {
                 </p>
                 <ul className="foundation-check-list">
                   <li>Account registration and sign-in</li>
-                  <li>Match and knockout predictions</li>
+                  <li>The full group and knockout editing journey</li>
                   <li>Scoring and leaderboards</li>
                   <li>Private leagues and sharing</li>
                   <li>Admin result entry and API syncing</li>
@@ -231,13 +237,13 @@ export default function EuroFoundationApp() {
             <section className="foundation-panel foundation-next-step">
               <div>
                 <span className="foundation-kicker">Next controlled batch</span>
-                <h2>Define the Euro prediction and lock model.</h2>
+                <h2>Add Euro-specific authentication and profiles.</h2>
                 <p>
-                  The next work remains design-first: one tournament-wide lock, explicit score meanings,
-                  bracket-source rules and a new RLS plan before any browser write access is created.
+                  Stage 5 can add account registration, recovery and profile ownership while keeping
+                  guest progress browser-only and prediction-table writes behind the future trusted save route.
                 </p>
               </div>
-              <StatusPill tone="warning">No writes enabled</StatusPill>
+              <StatusPill tone="warning">No database writes</StatusPill>
             </section>
           </>
         )}
