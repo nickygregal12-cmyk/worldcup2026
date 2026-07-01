@@ -1,3 +1,5 @@
+> **Superseded by Stage 8:** Stage 7 temporarily represented knockout score rows inside the original 51-row bundle. Stage 8 corrects this: the original bracket is winner-only with no jokers, while real knockout score predictions belong to a completely separate KO Predictor competition.
+
 # Stage 7 — Prediction Journey and Autosave UX
 
 ## Status

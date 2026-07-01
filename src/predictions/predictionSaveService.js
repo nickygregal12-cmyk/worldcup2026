@@ -7,17 +7,18 @@ function requireClient(client) {
 
 function normaliseSaveResult(data) {
   const result = Array.isArray(data) ? data[0] : data
-  if (!result || !Number.isInteger(Number(result.revision))) {
-    throw new Error('The atomic prediction save result was not returned.')
-  }
+  if (!result || !Number.isInteger(Number(result.revision))) throw new Error('The atomic original-predictor save result was not returned.')
   return {
     predictionSetId: result.prediction_set_id,
     tournamentId: result.tournament_id,
+    competitionKey: result.competition_key ?? 'original',
     revision: Number(result.revision),
     submittedAt: result.submitted_at ?? null,
     guestImportedAt: result.guest_imported_at ?? null,
     lastSaveSource: result.last_save_source,
     savedPredictionCount: Number(result.saved_prediction_count),
+    savedGroupCount: Number(result.saved_group_count ?? 0),
+    savedBracketCount: Number(result.saved_bracket_count ?? 0),
   }
 }
 
@@ -36,29 +37,53 @@ export async function loadMyPredictionBundle(client, tournamentId, userId) {
 
   const setResult = await client
     .from('prediction_sets')
-    .select('id,tournament_id,user_id,revision,submitted_at,guest_imported_at,last_save_source,created_at,updated_at')
+    .select('id,tournament_id,user_id,competition_key,revision,submitted_at,guest_imported_at,last_save_source,created_at,updated_at')
     .eq('tournament_id', tournamentId)
     .eq('user_id', userId)
+    .eq('competition_key', 'original')
     .maybeSingle()
   if (setResult.error) throw setResult.error
   if (!setResult.data) return null
 
-  const rowsResult = await client
-    .from('match_predictions')
-    .select('match_id,predicted_home_tournament_team_id,predicted_away_tournament_team_id,home_score_90,away_score_90,advancing_tournament_team_id,decision_method,joker_applied,updated_at')
-    .eq('prediction_set_id', setResult.data.id)
-  if (rowsResult.error) throw rowsResult.error
+  const [groupResult, bracketResult] = await Promise.all([
+    client
+      .from('match_predictions')
+      .select('match_id,predicted_home_tournament_team_id,predicted_away_tournament_team_id,home_score_90,away_score_90,joker_applied,updated_at')
+      .eq('prediction_set_id', setResult.data.id),
+    client
+      .from('bracket_predictions')
+      .select('match_id,predicted_home_tournament_team_id,predicted_away_tournament_team_id,advancing_tournament_team_id,updated_at')
+      .eq('prediction_set_id', setResult.data.id),
+  ])
+  if (groupResult.error) throw groupResult.error
+  if (bracketResult.error) throw bracketResult.error
+
+  const groupRows = (groupResult.data ?? []).map(row => ({
+    ...row,
+    prediction_kind: 'group_score',
+    advancing_tournament_team_id: null,
+    decision_method: null,
+  }))
+  const bracketRows = (bracketResult.data ?? []).map(row => ({
+    ...row,
+    prediction_kind: 'bracket_pick',
+    home_score_90: null,
+    away_score_90: null,
+    decision_method: null,
+    joker_applied: false,
+  }))
 
   return {
     predictionSetId: setResult.data.id,
     tournamentId: setResult.data.tournament_id,
+    competitionKey: setResult.data.competition_key,
     revision: Number(setResult.data.revision),
     submittedAt: setResult.data.submitted_at,
     guestImportedAt: setResult.data.guest_imported_at,
     lastSaveSource: setResult.data.last_save_source,
     createdAt: setResult.data.created_at,
     updatedAt: setResult.data.updated_at,
-    predictions: rowsResult.data ?? [],
+    predictions: [...groupRows, ...bracketRows],
   }
 }
 

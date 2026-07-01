@@ -6,83 +6,55 @@
 npm run check
 ```
 
-This runs database safety, inherited-code isolation, all Euro audits, foundation lint, unit tests and a production build.
-
-## Unit tests
-
-```bash
-npm test
-```
-
-Stage 7 has 163 passing tests across contracts, scoring configuration, resolver, guest storage, authentication and prediction-save request/service logic.
+Stage 8 currently has **173 passing unit tests across 27 files**. The gate also runs database safety, all Euro audits, lint and a production build.
 
 ## Focused audits
 
 ```bash
 npm run audit:contracts
 npm run audit:db-design
-npm run audit:resolver
-npm run audit:guest
-npm run audit:auth
-npm run audit:scoring-correction
-npm run audit:prediction-save
 npm run audit:journey
+npm run audit:competition-split
 ```
 
-The Stage 6 and Stage 7 audits verify:
+These verify:
 
-- exactly nine active migrations;
-- authenticated-only execution of the trusted save RPC;
-- no direct browser prediction-table writes;
-- optimistic revision checking;
-- full canonical bracket validation;
-- global content lock, match-scoped grace and per-match joker lock;
-- explicit complete pre-lock guest import;
-- no guest overwrite of existing account rows;
-- groups, knockout and review are the only journey views;
-- guest edits remain local and account edits use the atomic RPC;
-- quiet autosave uses an 800 ms delay;
-- no Migration 010 or direct browser table writes.
+- ten active migrations;
+- 36 original group scores and 15 winner-only bracket picks;
+- five group jokers and zero original-bracket jokers;
+- a separate 15-match KO Predictor with five jokers;
+- separate revisions, points and future leaderboards;
+- competition-scoped grace;
+- no direct browser table writes.
 
-## Database integration tests
+## Database tests
 
-After a local reset:
+After local reset:
 
 ```bash
 npm run test:db:005:local
 npm run test:db:006:local
 npm run test:db:008:local
 npm run test:db:009:local
+npm run test:db:010:local
 ```
 
-Against the verified Euro staging project:
+Against verified Euro staging:
 
 ```bash
 npm run test:db:005:linked
 npm run test:db:006:linked
 npm run test:db:008:linked
 npm run test:db:009:linked
+npm run test:db:010:linked
 ```
 
-Coverage totals:
+Current planned pgTAP counts after Migration 010:
 
-- Migration 005 storage: 31 pgTAP checks;
-- Stage 5 profiles and function privileges: 39 checks;
-- Migration 008 joker-cap correction: 7 checks;
-- Migration 009 atomic saving: 54 checks.
+- Migration 005 storage: 31;
+- profiles/privileges: 39;
+- Migration 008 correction: 7;
+- final-state atomic-save regression: 24;
+- Migration 010 competition split: 48.
 
-Migration 009 uses real tournament rows to build all 36 group predictions and then resolves matches 37–51 progressively through the server's canonical resolver. It tests revision conflicts, invalid sources, duplicate rows, unresolved joker caps, canonical tampering, guest import, reversible review mode, global lock, grace scope, future joker movement, started-match joker locking and cross-user isolation.
-
-## Behavioural SQL validation
-
-Before packaging, all nine migrations are also applied to an isolated PostgreSQL-compatible database and the main Stage 6 save scenarios are exercised end to end. This supplements, but does not replace, the Docker-backed local Supabase reset and pgTAP run.
-
-## Deployed foundation check
-
-After Netlify deploys the pushed commit:
-
-```bash
-npm run verify:foundation-page
-```
-
-This verifies Euro branding, no indexing, retired WC26 service worker behaviour, guest format, auth UI and the Stage 7 prediction journey and trusted save bundle.
+The Docker-backed local reset and linked tests are the authoritative SQL execution checks for Migration 010.

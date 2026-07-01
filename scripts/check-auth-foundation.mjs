@@ -24,7 +24,7 @@ const scoringCorrectionMigrationName = '202607010008_euro28_provisional_joker_ca
 const migrationPath = path.join(root, 'supabase/migrations', migrationName)
 const correctionMigrationPath = path.join(root, 'supabase/migrations', correctionMigrationName)
 
-if (migrations.length !== 9) fail(`Stage 7 must retain nine active migrations, found ${migrations.length}`)
+if (migrations.length !== 10) fail(`Stage 8 must contain ten active migrations, found ${migrations.length}`)
 if (!migrations.includes(migrationName)) fail(`required Migration 006 is missing: ${migrationName}`)
 if (migrations.filter(name => name.includes('0006_')).length !== 1) fail('exactly one active Migration 006 file is required')
 if (!migrations.includes(correctionMigrationName)) fail(`required Migration 007 is missing: ${correctionMigrationName}`)
@@ -138,7 +138,7 @@ if (!client.includes('detectSessionInUrl: true')) fail('auth client must process
 
 const app = read('src/foundation/EuroFoundationApp.jsx')
 if (!app.includes('EuroAuthFoundation')) fail('active foundation page must expose Euro authentication')
-if (!app.includes('no direct table writes')) fail('active page must keep the trusted-RPC write boundary visible')
+if (!app.includes('PredictionJourneyFoundation') || !app.includes('KoPredictorFoundation')) fail('active page must expose both trusted prediction journeys')
 
 const databaseTest = read('supabase/tests/database/006_auth_profiles.test.sql')
 for (const required of [
@@ -146,7 +146,7 @@ for (const required of [
   'authenticated users cannot insert profiles directly',
   'auth.users has the Euro profile creation trigger',
   'display names are unique without case sensitivity',
-  'Stage 6 adds exactly one trusted prediction save RPC after Migration 006',
+  'Stage 8 exposes separate original and KO Predictor save RPCs',
   'anonymous users cannot rename profiles',
   'new postgres functions do not grant execute to anonymous users',
 ]) {
@@ -172,5 +172,5 @@ console.log('Migration 008: provisional joker-cap drift correction')
 console.log('Account flows: sign-up, sign-in, sign-out and password recovery')
 console.log('Profile writes: controlled RPC only; no direct browser table writes')
 console.log('Guest draft: retained locally unless the signed-in user explicitly imports it through Stage 6')
-console.log('Prediction save RPC: isolated in Migration 009')
-console.log('Active migrations: 9')
+console.log('Prediction save RPCs: separated by Migration 010')
+console.log('Active migrations: 10')

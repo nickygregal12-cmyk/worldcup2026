@@ -135,6 +135,8 @@ export function buildGuestReferenceModel({
         fixtureCode: match.fixture_code,
         groupCode: group.code,
         scheduledDate: match.scheduled_date ?? null,
+        kickoffAt: match.kickoff_at ?? null,
+        status: match.status ?? 'scheduled',
         homeTeamId: slots.home.source_tournament_team_id,
         awayTeamId: slots.away.source_tournament_team_id,
         homeScore: null,
@@ -142,16 +144,30 @@ export function buildGuestReferenceModel({
       })
     })
 
+  const allSlotsByMatch = new Map()
+  for (const slot of matchSlots) {
+    const existing = allSlotsByMatch.get(slot.match_id) ?? {}
+    allSlotsByMatch.set(slot.match_id, { ...existing, [slot.side]: slot })
+  }
+
   const resolverKnockoutMatches = [...knockoutMatches]
     .sort((left, right) => left.match_number - right.match_number)
-    .map(match => Object.freeze({
-      matchId: match.id,
-      matchNumber: match.match_number,
-      fixtureCode: match.fixture_code,
-      scheduledDate: match.scheduled_date ?? null,
-      kickoffAt: match.kickoff_at ?? null,
-      status: match.status,
-    }))
+    .map(match => {
+      const slots = allSlotsByMatch.get(match.id) ?? {}
+      const homeTeamId = slots.home?.resolved_tournament_team_id ?? null
+      const awayTeamId = slots.away?.resolved_tournament_team_id ?? null
+      return Object.freeze({
+        matchId: match.id,
+        matchNumber: match.match_number,
+        fixtureCode: match.fixture_code,
+        scheduledDate: match.scheduled_date ?? null,
+        kickoffAt: match.kickoff_at ?? null,
+        status: match.status,
+        homeTeamId,
+        awayTeamId,
+        participantsResolved: Boolean(homeTeamId && awayTeamId),
+      })
+    })
 
   if (resolverKnockoutMatches.map(match => match.matchNumber).join(',') !==
       EURO28_KNOCKOUT_MATCHES.map(match => match.matchNumber).join(',')) {

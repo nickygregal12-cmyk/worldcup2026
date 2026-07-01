@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ENVIRONMENT } from '../config/environment.js'
 import EuroAuthFoundation from '../auth/EuroAuthFoundation.jsx'
 import PredictionJourneyFoundation from '../journey/PredictionJourneyFoundation.jsx'
+import KoPredictorFoundation from '../koPredictor/KoPredictorFoundation.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
@@ -108,20 +109,20 @@ export default function EuroFoundationApp() {
             <span className="foundation-brand__mark" aria-hidden="true">28</span>
             <span>
               <strong>Euro 2028 Predictor</strong>
-              <small>Prediction journey staging</small>
+              <small>Competition split staging</small>
             </span>
           </a>
-          <StatusPill tone="safe">Autosave · review mode · no direct table writes</StatusPill>
+          <StatusPill tone="safe">Original + KO Predictor · separate points</StatusPill>
         </div>
       </header>
 
       <main className="foundation-main">
         <section className="foundation-hero">
           <div>
-            <StatusPill tone="info">Stage 7 · Prediction journey</StatusPill>
-            <h1>The complete Euro 2028 prediction journey is now active.</h1>
+            <StatusPill tone="info">Stage 8 · Competition split and jokers</StatusPill>
+            <h1>The original predictor and KO Predictor are now separate competitions.</h1>
             <p>
-              Guests can predict all 51 matches in this browser. Signed-in users use quiet atomic autosave, one canonical knockout bracket and a reversible submit-for-review mode before the tournament lock.
+              The original predictor contains group scores plus a winner-only pre-tournament bracket. The KO Predictor uses real knockout fixtures, its own five jokers, separate points and a separate future leaderboard.
             </p>
           </div>
           <div className="foundation-environment" aria-label="Environment details">
@@ -199,6 +200,11 @@ export default function EuroFoundationApp() {
               tournament={state.data.tournament}
             />
 
+            <KoPredictorFoundation
+              client={clientState.client}
+              reference={state.data.guestReference}
+            />
+
             <section className="foundation-two-column">
               <article className="foundation-panel">
                 <div className="foundation-section-heading">
@@ -239,12 +245,12 @@ export default function EuroFoundationApp() {
             <section className="foundation-panel foundation-next-step">
               <div>
                 <span className="foundation-kicker">Next controlled batch</span>
-                <h2>Add joker and grace controls.</h2>
+                <h2>Verify competition-scoped joker and grace controls.</h2>
                 <p>
-                  Stage 8 can expose server-enforced joker placement and controlled per-user, per-match grace windows after the final joker caps are agreed.
+                  Stage 8 confirms five group jokers, no original-bracket jokers and five separate KO Predictor jokers. Grace remains competition-scoped, audited and server-controlled.
                 </p>
               </div>
-              <StatusPill tone="warning">Stage 8 next</StatusPill>
+              <StatusPill tone="warning">Stage 8 active</StatusPill>
             </section>
           </>
         )}

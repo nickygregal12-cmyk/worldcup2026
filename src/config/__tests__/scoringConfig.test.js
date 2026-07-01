@@ -10,16 +10,21 @@ describe('Euro scoring configuration', () => {
     expect(validateScoringConfig(EURO_SCORING_CONFIG)).toEqual({ valid: true, errors: [] })
   })
 
-  it('is explicitly provisional rather than permanently approved', () => {
+  it('remains provisional while using confirmed joker caps', () => {
     expect(EURO_SCORING_CONFIG.status).toBe(SCORING_CONFIG_STATUS.PROVISIONAL)
     expect(EURO_SCORING_CONFIG.version).toContain('provisional')
+    expect(EURO_SCORING_CONFIG.joker.MULTIPLIER).toBe(2)
   })
 
-  it('includes jokers while leaving exact caps visibly unresolved', () => {
-    expect(EURO_SCORING_CONFIG.joker.ENABLED).toBe(true)
-    expect(EURO_SCORING_CONFIG.joker.MULTIPLIER).toBeGreaterThan(0)
-    expect(EURO_SCORING_CONFIG.joker.GROUP_STAGE_CAP).toBeNull()
-    expect(EURO_SCORING_CONFIG.joker.KNOCKOUT_CAP).toBeNull()
+  it('keeps original and KO Predictor joker scopes separate', () => {
+    expect(EURO_SCORING_CONFIG.joker.GROUP_STAGE_CAP).toBe(5)
+    expect(EURO_SCORING_CONFIG.joker.ORIGINAL_BRACKET_CAP).toBe(0)
+    expect(EURO_SCORING_CONFIG.joker.KO_PREDICTOR_CAP).toBe(5)
+  })
+
+  it('keeps KO Predictor match points separate from bracket points', () => {
+    expect(EURO_SCORING_CONFIG.koPredictor.CORRECT_ADVANCING_TEAM).toBe(10)
+    expect(EURO_SCORING_CONFIG.bracket.champion).toBe(50)
   })
 
   it('rejects invalid point and joker values', () => {
@@ -31,7 +36,7 @@ describe('Euro scoring configuration', () => {
 
     const invalidJoker = {
       ...EURO_SCORING_CONFIG,
-      joker: { ...EURO_SCORING_CONFIG.joker, MULTIPLIER: 0 },
+      joker: { ...EURO_SCORING_CONFIG.joker, KO_PREDICTOR_CAP: 4 },
     }
     expect(validateScoringConfig(invalidJoker).valid).toBe(false)
   })

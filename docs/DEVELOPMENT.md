@@ -1,64 +1,34 @@
 # Development workflow
 
-## Branches
+## Safety
 
-- `main` is the live WC26 branch and must not be changed during Euro development.
-- `euro28-development` is the Euro staging branch.
-- Local work is always performed in `~/Desktop/euro28predictor`.
+- Work only in `~/Desktop/euro28predictor` on `euro28-development`.
+- Never alter WC26 `main` or its production Supabase project.
+- Never run `npx supabase db reset --linked`.
+- Never use `sudo` or `npm audit fix --force`.
 
 ## Definition of done
 
-A batch is complete only when:
+A batch is complete only when code and documentation agree, `npm run check` passes, local reset and pgTAP pass, the linked project is verified, only the intended migration appears in the dry run, hosted tests/lint pass, and the branch is pushed cleanly.
 
-- code and documentation agree;
-- `npm run check` passes;
-- relevant local database resets and pgTAP suites pass;
-- the linked project reference is verified before remote commands;
-- the dry run contains only the intended migration;
-- hosted migration history, linked pgTAP and database lint pass;
-- the working tree is clean and the commit is pushed.
+## Stage 8 architecture
 
-## Current compatibility state
+### Original predictor
 
-The active Euro application can reach only the foundation, auth, guest, prediction-save, prediction-journey and canonical resolver modules. Inherited WC26 pages, stores, components and bracket utilities remain quarantined.
+`src/journey/` edits 36 group scores and a winner-only pre-tournament bracket. Five jokers are available only on group matches. No bracket score, decision method or joker is stored.
 
-## Core contracts
+### KO Predictor
 
-Prediction content locks globally at the first tournament kick-off. Joker placement locks separately at each match kick-off. Grace is an audited exception for one user and one unstarted match. Knockout score predictions always mean the 90-minute score; advancing team and decision method are separate.
+`src/koPredictor/` is a separate competition using resolved real knockout fixtures. It predicts 90-minute score, advancing team and method, with five separate jokers. Its revision, future scoring, leaderboard and winner are independent of the original predictor.
 
-## Canonical resolver
+### Grace
 
-`src/resolver/` is the only tournament progression engine. Guest, predicted and live contexts use its output but cannot be blended. It covers all six groups, best-third ranking, all 15 allocation combinations and matches 37–51.
+`src/grace/` reads competition-scoped exceptions. Server grant/revoke operations remain service-role only. A grant can affect only one competition, one user and one unstarted match.
 
-## Guest workspace
+### Canonical progression
 
-`src/guest/` stores drafts in browser `localStorage`. It performs no Supabase write and contains no account identity. Exported bundles remain portable and unscored.
+`src/resolver/` remains the only group, best-third and bracket progression engine. The original predicted bracket and live bracket are never blended. The KO Predictor consumes real resolved fixtures rather than the user's original bracket.
 
-## Authentication
+## Deliberate exclusions
 
-`src/auth/` handles Euro sign-up, sign-in, recovery, sign-out and owner profile changes. Profile writes use their own narrow RPCs and are not a prediction write path.
-
-## Atomic prediction saving
-
-`src/predictions/` converts complete guest drafts into canonical database rows, calls only `save_my_prediction_bundle()` for writes, and loads owner rows with both tournament and user filters.
-
-Migration 009 is the sole prediction write path. It validates the full supplied bundle on the server and increments the prediction-set revision after a successful transaction.
-
-The guest import button is deliberately explicit. Signing in does not upload the browser draft automatically, and a guest draft cannot overwrite existing account predictions.
-
-## Prediction journey
-
-`src/journey/` is the active Stage 7 editing experience. It reuses the guest draft shape for browser and account editing, builds only server-valid rows, drives knockout participants from the canonical resolver and calls the Stage 6 RPC after an 800 ms quiet autosave delay.
-
-Submit is a reversible review state. It does not copy rows or affect scoring eligibility. Account drafts use optimistic revisions; guest drafts remain browser-only.
-
-## Next implementation boundary
-
-Stage 8 may add:
-
-- visible joker allocation once exact caps are agreed;
-- per-match joker lock feedback;
-- controlled admin grace-window creation and revocation;
-- audit visibility for joker and grace actions.
-
-Stage 8 must not add scoring runs, leagues, results entry or the live bracket.
+Stage 8 does not implement points calculation, scoring runs, leaderboards, live results, admin result entry or the full admin control room.

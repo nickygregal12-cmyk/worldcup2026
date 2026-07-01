@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { DECISION_METHOD } from '../contracts/resultContract.js'
 import {
   buildGuestBundleFilename,
   createGuestPredictionState,
@@ -14,6 +13,12 @@ import {
 } from '../predictions/predictionSaveService.js'
 import { GUEST_STATE_UPDATED_EVENT, PREDICTION_SAVE_SOURCE } from '../predictions/predictionSaveConfig.js'
 import {
+  hasActivePredictionGrace,
+  isPredictionMatchStarted,
+  loadMyPredictionGraceWindows,
+  PREDICTION_COMPETITION_KEY,
+} from '../grace/index.js'
+import {
   EURO28_PREDICTION_JOURNEY_VERSION,
   PREDICTION_AUTOSAVE_DELAY_MS,
   PREDICTION_AUTOSAVE_STATE,
@@ -22,11 +27,11 @@ import {
 import {
   buildGuestReviewStorageKey,
   buildPredictionJourneyRows,
-  clearStaleKnockoutSelections,
+  clearStaleBracketSelections,
   createPredictionJourneyDraft,
   summarisePredictionJourney,
   updatePredictionJourneyGroup,
-  updatePredictionJourneyKnockout,
+  updatePredictionJourneyBracket,
 } from './predictionJourneyModel.js'
 
 function browserStorage() {
@@ -57,7 +62,7 @@ function messageForError(error) {
   const message = error?.message ?? String(error)
   if (/revision is stale/i.test(message)) return 'These predictions changed in another session. Reload the account draft before editing again.'
   if (/globally locked/i.test(message) || /global lock/i.test(message)) return 'Prediction content is locked for the tournament.'
-  if (/joker cap is not configured/i.test(message)) return 'Jokers remain unavailable until the final tournament caps are confirmed.'
+  if (/joker cap/i.test(message)) return 'The configured joker limit has been reached.'
   if (/guest import cannot overwrite/i.test(message)) return 'This account already contains predictions, so the browser draft was not imported.'
   return message
 }
@@ -144,59 +149,84 @@ function AutosaveBadge({ context, status, revision, savedAt }) {
   )
 }
 
-function GroupEditor({ reference, draft, disabled, onChange }) {
+function GroupEditor({ reference, draft, summary, scoreLocked, reviewMode, graceWindows, onChange }) {
   return (
-    <div className="journey-group-grid">
-      {reference.groups.map(group => {
-        const matches = reference.groupMatches.filter(match => match.groupCode === group.code)
-        return (
-          <section className="journey-group-card" key={group.code}>
-            <div className="journey-group-card__heading">
-              <div>
-                <span>Group {group.code}</span>
-                <strong>{group.teams.map(team => team.label).join(' · ')}</strong>
+    <div>
+      <div className="journey-joker-summary">
+        <div>
+          <strong>{summary.groupJokers}/{summary.groupJokerCap} group jokers selected</strong>
+          <span>Jokers double eligible group-match points. They do not apply to bracket picks.</span>
+        </div>
+        <span className="foundation-pill foundation-pill--safe">2× multiplier</span>
+      </div>
+      <div className="journey-group-grid">
+        {reference.groups.map(group => {
+          const matches = reference.groupMatches.filter(match => match.groupCode === group.code)
+          return (
+            <section className="journey-group-card" key={group.code}>
+              <div className="journey-group-card__heading">
+                <div>
+                  <span>Group {group.code}</span>
+                  <strong>{group.teams.map(team => team.label).join(' · ')}</strong>
+                </div>
+                <b>{matches.filter(match => {
+                  const row = draft.groupPredictions[String(match.matchNumber)]
+                  return row.homeScore != null && row.awayScore != null
+                }).length}/6</b>
               </div>
-              <b>{matches.filter(match => {
-                const row = draft.groupPredictions[String(match.matchNumber)]
-                return row.homeScore != null && row.awayScore != null
-              }).length}/6</b>
-            </div>
 
-            <div className="journey-match-list">
-              {matches.map(match => {
-                const row = draft.groupPredictions[String(match.matchNumber)]
-                return (
-                  <div className="journey-match-row" key={match.matchId}>
-                    <div className="journey-match-meta">
-                      <span>Match {match.matchNumber}</span>
-                      <small>{formatDate(match.scheduledDate)}</small>
+              <div className="journey-match-list">
+                {matches.map(match => {
+                  const row = draft.groupPredictions[String(match.matchNumber)]
+                  const capReached = summary.groupJokers >= summary.groupJokerCap && !row.jokerApplied
+                  const hasGrace = hasActivePredictionGrace(graceWindows, {
+                    competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
+                    matchId: match.matchId,
+                  })
+                  const scoreDisabled = reviewMode || (scoreLocked && !hasGrace)
+                  const jokerDisabled = reviewMode || isPredictionMatchStarted(match) || capReached
+                  return (
+                    <div className={`journey-match-row${row.jokerApplied ? ' journey-match-row--joker' : ''}`} key={match.matchId}>
+                      <div className="journey-match-meta">
+                        <span>Match {match.matchNumber}</span>
+                        <small>{formatDate(match.scheduledDate)}</small>
+                      </div>
+                      <div className="journey-team journey-team--home">
+                        <strong>{teamLabel(reference, match.homeTeamId)}</strong>
+                      </div>
+                      <ScoreInput
+                        value={row.homeScore}
+                        label={`Match ${match.matchNumber} home score`}
+                        disabled={scoreDisabled}
+                        onChange={homeScore => onChange(match, { homeScore })}
+                      />
+                      <span className="journey-score-separator">–</span>
+                      <ScoreInput
+                        value={row.awayScore}
+                        label={`Match ${match.matchNumber} away score`}
+                        disabled={scoreDisabled}
+                        onChange={awayScore => onChange(match, { awayScore })}
+                      />
+                      <div className="journey-team journey-team--away">
+                        <strong>{teamLabel(reference, match.awayTeamId)}</strong>
+                      </div>
+                      <button
+                        type="button"
+                        className={row.jokerApplied ? 'journey-joker-button journey-joker-button--active' : 'journey-joker-button'}
+                        disabled={jokerDisabled}
+                        aria-pressed={row.jokerApplied}
+                        onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })}
+                      >
+                        {row.jokerApplied ? 'Joker ✓' : 'Add joker'}
+                      </button>
                     </div>
-                    <div className="journey-team journey-team--home">
-                      <strong>{teamLabel(reference, match.homeTeamId)}</strong>
-                    </div>
-                    <ScoreInput
-                      value={row.homeScore}
-                      label={`Match ${match.matchNumber} home score`}
-                      disabled={disabled}
-                      onChange={homeScore => onChange(match, { homeScore })}
-                    />
-                    <span className="journey-score-separator">–</span>
-                    <ScoreInput
-                      value={row.awayScore}
-                      label={`Match ${match.matchNumber} away score`}
-                      disabled={disabled}
-                      onChange={awayScore => onChange(match, { awayScore })}
-                    />
-                    <div className="journey-team journey-team--away">
-                      <strong>{teamLabel(reference, match.awayTeamId)}</strong>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )
-      })}
+                  )
+                })}
+              </div>
+            </section>
+          )
+        })}
+      </div>
     </div>
   )
 }
@@ -208,11 +238,18 @@ const ROUND_LABELS = Object.freeze({
   final: 'Final',
 })
 
-function KnockoutEditor({ reference, draft, preview, disabled, onChange }) {
+function BracketEditor({ reference, draft, preview, contentLocked, reviewMode, graceWindows, onChange }) {
   const rounds = ['round_of_16', 'quarter_final', 'semi_final', 'final']
 
   return (
-    <div className="journey-knockout-rounds">
+    <div className="journey-bracket-rounds">
+      <div className="journey-joker-summary journey-joker-summary--neutral">
+        <div>
+          <strong>Pre-tournament bracket — winner picks only</strong>
+          <span>No scores, decision methods or jokers are attached to this bracket. The separate KO Predictor opens for real knockout fixtures.</span>
+        </div>
+        <span className="foundation-pill">0 bracket jokers</span>
+      </div>
       {rounds.map(round => {
         const matches = preview.resolution.knockout.matches.filter(match => match.stage === round)
         return (
@@ -224,75 +261,38 @@ function KnockoutEditor({ reference, draft, preview, disabled, onChange }) {
 
             <div className="journey-knockout-grid">
               {matches.map(match => {
-                const row = draft.knockoutPredictions[String(match.matchNumber)]
-                const matchDisabled = disabled || !match.participantsResolved
-                const scoresComplete = row.homeScore != null && row.awayScore != null
-                const isDraw = scoresComplete && row.homeScore === row.awayScore
-
+                const row = draft.bracketPredictions[String(match.matchNumber)]
+                const referenceMatch = reference.knockoutMatches.find(item => item.matchNumber === match.matchNumber)
+                const hasGrace = hasActivePredictionGrace(graceWindows, {
+                  competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
+                  matchId: referenceMatch?.matchId,
+                })
+                const matchDisabled = reviewMode || (contentLocked && !hasGrace) || !match.participantsResolved
                 return (
                   <article className={`journey-knockout-card${match.participantsResolved ? '' : ' journey-knockout-card--blocked'}`} key={match.matchNumber}>
                     <div className="journey-knockout-card__meta">
                       <strong>Match {match.matchNumber}</strong>
-                      <span>{formatDate(reference.knockoutMatches.find(item => item.matchNumber === match.matchNumber)?.scheduledDate)}</span>
+                      <span>{formatDate(referenceMatch?.scheduledDate)}</span>
                     </div>
 
                     {!match.participantsResolved ? (
                       <p className="journey-blocked-copy">Complete the earlier predictions that feed this match.</p>
                     ) : (
-                      <>
-                        <div className="journey-knockout-score">
-                          <span>{teamLabel(reference, match.homeTeamId)}</span>
-                          <ScoreInput
-                            value={row.homeScore}
-                            label={`Match ${match.matchNumber} home score after 90 minutes`}
+                      <div className="journey-bracket-pick-row">
+                        {[match.homeTeamId, match.awayTeamId].map(teamId => (
+                          <button
+                            type="button"
+                            key={teamId}
+                            className={row.advancingTeamId === teamId ? 'journey-bracket-team journey-bracket-team--selected' : 'journey-bracket-team'}
                             disabled={matchDisabled}
-                            onChange={homeScore => onChange(match, { homeScore })}
-                          />
-                          <span className="journey-score-separator">–</span>
-                          <ScoreInput
-                            value={row.awayScore}
-                            label={`Match ${match.matchNumber} away score after 90 minutes`}
-                            disabled={matchDisabled}
-                            onChange={awayScore => onChange(match, { awayScore })}
-                          />
-                          <span>{teamLabel(reference, match.awayTeamId)}</span>
-                        </div>
-
-                        <div className="journey-knockout-controls">
-                          <label>
-                            <span>Advancing team</span>
-                            <select
-                              value={row.advancingTeamId ?? ''}
-                              disabled={matchDisabled || !scoresComplete}
-                              onChange={event => onChange(match, { advancingTeamId: event.target.value || null })}
-                            >
-                              <option value="">Choose team</option>
-                              <option value={match.homeTeamId}>{teamLabel(reference, match.homeTeamId)}</option>
-                              <option value={match.awayTeamId}>{teamLabel(reference, match.awayTeamId)}</option>
-                            </select>
-                          </label>
-
-                          <label>
-                            <span>How they advance</span>
-                            <select
-                              value={row.decisionMethod ?? ''}
-                              disabled={matchDisabled || !scoresComplete || !isDraw}
-                              onChange={event => onChange(match, { decisionMethod: event.target.value || null })}
-                            >
-                              {!scoresComplete && <option value="">Enter the score first</option>}
-                              {scoresComplete && !isDraw && <option value={DECISION_METHOD.NORMAL_TIME}>Normal time</option>}
-                              {scoresComplete && isDraw && (
-                                <>
-                                  <option value={DECISION_METHOD.EXTRA_TIME}>Extra time</option>
-                                  <option value={DECISION_METHOD.PENALTIES}>Penalties</option>
-                                </>
-                              )}
-                            </select>
-                          </label>
-                        </div>
-
-                        <small className="journey-90-note">Score prediction always means the score after 90 minutes plus added time.</small>
-                      </>
+                            aria-pressed={row.advancingTeamId === teamId}
+                            onClick={() => onChange(match, row.advancingTeamId === teamId ? null : teamId)}
+                          >
+                            <span>{teamLabel(reference, teamId)}</span>
+                            <small>{row.advancingTeamId === teamId ? 'Selected to advance' : 'Pick to advance'}</small>
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </article>
                 )
@@ -315,8 +315,8 @@ function ReviewPanel({ reference, summary, context, reviewMode, locked, busy, on
           <strong>{summary.groupComplete}/36 complete</strong>
         </article>
         <article>
-          <span>Knockout predictions</span>
-          <strong>{summary.knockoutComplete}/15 complete</strong>
+          <span>Bracket picks</span>
+          <strong>{summary.bracketComplete}/15 complete</strong>
         </article>
         <article>
           <span>Predicted champion</span>
@@ -330,8 +330,8 @@ function ReviewPanel({ reference, summary, context, reviewMode, locked, busy, on
 
       {summary.preview.diagnostics.length > 0 && (
         <div className="journey-warning-box">
-          <strong>Some knockout selections became stale.</strong>
-          <p>Group or earlier knockout changes altered the predicted participants. Return to the knockout tab and update those matches.</p>
+          <strong>Some bracket selections became stale.</strong>
+          <p>Group or earlier bracket changes altered the predicted participants. Return to the bracket tab and update those matches.</p>
         </div>
       )}
 
@@ -373,6 +373,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   })
   const [guestReview, setGuestReview] = useState(() => readGuestReview(reference))
   const [accountBundle, setAccountBundle] = useState(null)
+  const [graceWindows, setGraceWindows] = useState([])
   const [accountDraft, setAccountDraft] = useState(() => createPredictionJourneyDraft(reference))
   const [accountLoading, setAccountLoading] = useState(false)
   const [view, setView] = useState(PREDICTION_JOURNEY_VIEW.GROUPS)
@@ -398,6 +399,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   const loadAccount = useCallback(async nextSession => {
     if (!client || !nextSession?.user) {
       setAccountBundle(null)
+      setGraceWindows([])
       setAccountDraft(createPredictionJourneyDraft(reference))
       setEditVersion(0)
       setSavedEditVersion(0)
@@ -406,8 +408,12 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
 
     setAccountLoading(true)
     try {
-      const bundle = await loadMyPredictionBundle(client, reference.tournamentId, nextSession.user.id)
+      const [bundle, grace] = await Promise.all([
+        loadMyPredictionBundle(client, reference.tournamentId, nextSession.user.id),
+        loadMyPredictionGraceWindows(client, reference.tournamentId, nextSession.user.id),
+      ])
       setAccountBundle(bundle)
+      setGraceWindows(grace)
       setAccountDraft(createPredictionJourneyDraft(reference, bundle))
       setEditVersion(0)
       setSavedEditVersion(0)
@@ -449,7 +455,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
 
   const saveAccount = useCallback(async ({ submitted, targetVersion, draftSnapshot }) => {
     if (!client || !session?.user || savingRef.current) return null
-    if (!lockConfigured || locked) {
+    if (!lockConfigured) {
       setAutosaveStatus(PREDICTION_AUTOSAVE_STATE.LOCKED)
       return null
     }
@@ -490,10 +496,10 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
     } finally {
       savingRef.current = false
     }
-  }, [accountBundle, client, lockConfigured, locked, reference, session])
+  }, [accountBundle, client, lockConfigured, reference, session])
 
   useEffect(() => {
-    if (!signedIn || accountLoading || reviewMode || locked || !lockConfigured) return undefined
+    if (!signedIn || accountLoading || reviewMode || !lockConfigured) return undefined
     if (editVersion <= savedEditVersion || savingRef.current) return undefined
 
     setAutosaveStatus(PREDICTION_AUTOSAVE_STATE.DIRTY)
@@ -509,7 +515,6 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
     accountLoading,
     editVersion,
     lockConfigured,
-    locked,
     reviewMode,
     saveAccount,
     savedEditVersion,
@@ -526,8 +531,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
       : { tone: 'warning', message: result.error ?? message })
   }
 
-  function updateDraft(updater) {
-    if (readOnly) return
+  function applyDraftUpdate(updater) {
     if (signedIn) {
       setAccountDraft(current => updater(current))
       setEditVersion(value => value + 1)
@@ -537,14 +541,29 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   }
 
   function updateGroup(match, patch) {
-    updateDraft(current => updatePredictionJourneyGroup(current, {
+    if (reviewMode) return
+    const hasGrace = hasActivePredictionGrace(graceWindows, {
+      competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
+      matchId: match.matchId,
+    })
+    const scoreChange = Object.hasOwn(patch, 'homeScore') || Object.hasOwn(patch, 'awayScore')
+    if (scoreChange && locked && !hasGrace) return
+    if (Object.hasOwn(patch, 'jokerApplied') && isPredictionMatchStarted(match)) return
+    applyDraftUpdate(current => updatePredictionJourneyGroup(current, {
       matchNumber: match.matchNumber,
       ...patch,
     }))
   }
 
-  function updateKnockout(match, patch) {
-    updateDraft(current => updatePredictionJourneyKnockout(current, match, patch))
+  function updateBracket(match, advancingTeamId) {
+    if (reviewMode) return
+    const referenceMatch = reference.knockoutMatches.find(item => item.matchNumber === match.matchNumber)
+    const hasGrace = hasActivePredictionGrace(graceWindows, {
+      competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
+      matchId: referenceMatch?.matchId,
+    })
+    if (locked && !hasGrace) return
+    applyDraftUpdate(current => updatePredictionJourneyBracket(current, match, advancingTeamId))
   }
 
   async function importGuestDraft() {
@@ -596,8 +615,9 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   }
 
   function clearStale() {
-    updateDraft(current => clearStaleKnockoutSelections(reference, current))
-    setNotice({ tone: 'safe', message: 'Stale knockout selections were cleared.' })
+    if (readOnly) return
+    applyDraftUpdate(current => clearStaleBracketSelections(reference, current))
+    setNotice({ tone: 'safe', message: 'Stale bracket selections were cleared.' })
   }
 
   async function submitReview() {
@@ -647,15 +667,15 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
     <section className="foundation-panel prediction-journey" aria-labelledby="prediction-journey-title">
       <div className="foundation-section-heading prediction-journey__heading">
         <div>
-          <span className="foundation-kicker">Stage 7 · Prediction journey</span>
+          <span className="foundation-kicker">Stage 8 · Original predictor</span>
           <h2 id="prediction-journey-title">Predict the full Euro 2028 tournament</h2>
           <p className="foundation-panel-copy">
-            Group scores drive one canonical knockout bracket. Guest changes stay in this browser; signed-in account changes autosave through the trusted Stage 6 transaction.
+            Group scores drive one canonical winner-only bracket. This original competition is completely separate from the real-match KO Predictor and its points.
           </p>
         </div>
         <AutosaveBadge
           context={context}
-          status={locked ? PREDICTION_AUTOSAVE_STATE.LOCKED : autosaveStatus}
+          status={autosaveStatus}
           revision={accountBundle?.revision ?? 0}
           savedAt={savedAt}
         />
@@ -701,7 +721,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
       <nav className="journey-tabs" aria-label="Prediction sections">
         {[
           [PREDICTION_JOURNEY_VIEW.GROUPS, 'Groups', `${summary.groupComplete}/36`],
-          [PREDICTION_JOURNEY_VIEW.KNOCKOUT, 'Knockout', `${summary.knockoutComplete}/15`],
+          [PREDICTION_JOURNEY_VIEW.BRACKET, 'Bracket', `${summary.bracketComplete}/15`],
           [PREDICTION_JOURNEY_VIEW.REVIEW, 'Review', summary.canSubmit ? 'Ready' : `${summary.remaining} left`],
         ].map(([value, label, note]) => (
           <button
@@ -721,32 +741,42 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
       ) : (
         <>
           {view === PREDICTION_JOURNEY_VIEW.GROUPS && (
-            <GroupEditor reference={reference} draft={draft} disabled={readOnly} onChange={updateGroup} />
+            <GroupEditor
+              reference={reference}
+              draft={draft}
+              summary={summary}
+              scoreLocked={locked}
+              reviewMode={reviewMode}
+              graceWindows={graceWindows}
+              onChange={updateGroup}
+            />
           )}
 
-          {view === PREDICTION_JOURNEY_VIEW.KNOCKOUT && (
+          {view === PREDICTION_JOURNEY_VIEW.BRACKET && (
             <>
               {summary.groupComplete < 36 && (
                 <div className="journey-warning-box">
-                  <strong>Complete all 36 group scores to unlock the predicted knockout bracket.</strong>
+                  <strong>Complete all 36 group scores to unlock the predicted bracket.</strong>
                   <p>The same canonical group-table and best-third resolver is used for guest, account and future live contexts.</p>
                 </div>
               )}
               {summary.preview.diagnostics.length > 0 && (
                 <div className="journey-warning-box journey-warning-box--action">
                   <div>
-                    <strong>Some knockout picks no longer match the predicted bracket.</strong>
+                    <strong>Some bracket picks no longer match the predicted bracket.</strong>
                     <p>Clear the stale selections before continuing.</p>
                   </div>
                   <button type="button" onClick={clearStale} disabled={readOnly}>Clear stale picks</button>
                 </div>
               )}
-              <KnockoutEditor
+              <BracketEditor
                 reference={reference}
                 draft={draft}
                 preview={summary.preview}
-                disabled={readOnly || summary.groupComplete < 36}
-                onChange={updateKnockout}
+                contentLocked={locked || summary.groupComplete < 36}
+                reviewMode={reviewMode}
+                graceWindows={graceWindows}
+                onChange={updateBracket}
               />
             </>
           )}
@@ -766,6 +796,15 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
         </>
       )}
 
+      {signedIn && graceWindows.some(window => hasActivePredictionGrace(graceWindows, {
+        competitionKey: window.competition_key,
+        matchId: window.match_id,
+      })) && (
+        <p className="guest-notice guest-notice--safe">
+          A temporary match-specific grace window is active. It applies only to the named competition and unstarted match, and expires automatically.
+        </p>
+      )}
+
       {!lockConfigured && (
         <p className="guest-notice guest-notice--warning">
           Account autosave is intentionally blocked until the official first kick-off lock is configured. Guest browser saving still works.
@@ -775,7 +814,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
 
       <div className="journey-footer-meta">
         <span>{EURO28_PREDICTION_JOURNEY_VERSION}</span>
-        <span>Jokers hidden until both caps are confirmed</span>
+        <span>5 group jokers · no bracket jokers</span>
         <span>{summary.savableRows} rows currently valid for atomic saving</span>
       </div>
     </section>

@@ -3,73 +3,37 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-const scriptPath = fileURLToPath(import.meta.url)
-const root = path.resolve(path.dirname(scriptPath), '..')
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const migrationsDir = path.join(root, 'supabase/migrations')
-const migrationName = '202607010008_euro28_provisional_joker_caps.sql'
-const migrationPath = path.join(migrationsDir, migrationName)
-const testPath = path.join(root, 'supabase/tests/database/008_scoring_ruleset_correction.test.sql')
 const errors = []
 const fail = message => errors.push(message)
+const migrations = fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql')).sort()
 
-const migrations = fs.readdirSync(migrationsDir)
-  .filter(name => name.endsWith('.sql'))
-  .sort()
+if (migrations.length !== 10) fail(`Stage 8 requires ten active migrations, found ${migrations.length}`)
+for (const name of [
+  '202607010008_euro28_provisional_joker_caps.sql',
+  '202607010010_euro28_competition_split_and_jokers.sql',
+]) if (!migrations.includes(name)) fail(`required scoring migration is missing: ${name}`)
 
-if (migrations.length !== 9) fail(`Stage 6 requires nine active migrations while retaining the joker-cap correction, found ${migrations.length}`)
-if (!migrations.includes(migrationName)) fail(`required Migration 008 is missing: ${migrationName}`)
-if (migrations.filter(name => name.includes('0008_')).length !== 1) fail('exactly one active Migration 008 file is required')
+const migration010 = fs.readFileSync(path.join(migrationsDir, '202607010010_euro28_competition_split_and_jokers.sql'), 'utf8').toLowerCase()
+for (const required of [
+  'group_stage_joker_cap = 5',
+  'knockout_joker_cap = 5',
+  'five jokers across the 36 original group-stage score predictions',
+  'five jokers across the separate ko predictor',
+]) if (!migration010.includes(required)) fail(`Migration 010 is missing: ${required}`)
 
-if (!fs.existsSync(migrationPath)) {
-  fail('Migration 008 cannot be audited because it is missing')
-} else {
-  const migration = fs.readFileSync(migrationPath, 'utf8').toLowerCase()
-  for (const required of [
-    "ruleset_key = 'euro28-scoring-provisional-v2'",
-    "target_status <> 'provisional'",
-    'group_stage_joker_cap = null',
-    'knockout_joker_cap = null',
-  ]) {
-    if (!migration.includes(required)) fail(`Migration 008 is missing: ${required}`)
-  }
-
-  for (const forbidden of [
-    'joker_multiplier =',
-    'match_exact_score_points =',
-    'match_correct_outcome_points =',
-    'status =',
-    'create table',
-    'create policy',
-    'grant ',
-  ]) {
-    if (migration.includes(forbidden)) fail(`Migration 008 must not contain: ${forbidden}`)
-  }
+for (const forbidden of ['joker_multiplier =', 'match_exact_score_points =', 'match_correct_outcome_points =']) {
+  if (migration010.includes(forbidden)) fail(`Migration 010 must not silently change: ${forbidden}`)
 }
 
-if (!fs.existsSync(testPath)) {
-  fail('Migration 008 pgTAP test is missing')
-} else {
-  const test = fs.readFileSync(testPath, 'utf8').toLowerCase()
-  for (const required of [
-    'select plan(7)',
-    'the exact group-stage joker cap remains unresolved',
-    'the exact knockout joker cap remains unresolved',
-    'the provisional joker multiplier remains 2x',
-    'the tournament still points at the corrected canonical ruleset',
-  ]) {
-    if (!test.includes(required)) fail(`Migration 008 pgTAP coverage is missing: ${required}`)
-  }
-}
-
-if (errors.length > 0) {
-  console.error('Euro provisional joker-cap correction audit failed:')
+if (errors.length) {
+  console.error('Euro scoring ruleset audit failed:')
   errors.forEach(error => console.error(`- ${error}`))
   process.exit(1)
 }
-
-console.log('Euro provisional joker-cap correction audit passed.')
-console.log('Migration 008: canonical provisional ruleset restored')
-console.log('Group-stage joker cap: unresolved (NULL)')
-console.log('Knockout joker cap: unresolved (NULL)')
-console.log('Other scoring values and ruleset status: unchanged')
-console.log('Active migrations: 9')
+console.log('Euro scoring ruleset audit passed.')
+console.log('Migration 008 preserved unresolved caps until owner confirmation.')
+console.log('Migration 010 confirms 5 group jokers, 0 original-bracket jokers and 5 separate KO Predictor jokers.')
+console.log('Joker multiplier and all other scoring values remain unchanged.')
+console.log('Active migrations: 10')

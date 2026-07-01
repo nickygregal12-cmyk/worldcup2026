@@ -36,6 +36,8 @@ export function buildGuestReference() {
         fixtureCode: `GS-${code}-${code}${home}-${code}${away}`,
         groupCode: code,
         scheduledDate: '2028-06-09',
+        kickoffAt: null,
+        status: 'scheduled',
         homeTeamId: `${code}${home}`,
         awayTeamId: `${code}${away}`,
         homeScore: null,
@@ -46,8 +48,8 @@ export function buildGuestReference() {
   }
 
   return {
-    modelVersion: 'euro28-guest-reference-v1',
-    referenceVersion: 'euro28-guest-reference-v1:2025-11-12',
+    modelVersion: 'euro28-guest-reference-v2',
+    referenceVersion: 'euro28-guest-reference-v2:2025-11-12',
     scheduleVersion: '2025-11-12',
     context: RESOLVER_CONTEXT.GUEST,
     tournamentId: 'tournament-euro-2028',

@@ -1,4 +1,3 @@
-import { validateKnockoutPrediction } from '../contracts/predictionContract.js'
 import {
   resolveEuro28Tournament,
   resolveKnockoutBracket,
@@ -8,14 +7,6 @@ import { validateGuestPredictionState } from './guestPredictionState.js'
 
 function isScore(value) {
   return Number.isInteger(value) && value >= 0 && value <= 99
-}
-
-function isEmptyKnockoutRow(row) {
-  return row.homeScore == null &&
-    row.awayScore == null &&
-    row.advancingTeamId == null &&
-    row.decisionMethod == null &&
-    row.jokerApplied === false
 }
 
 function buildGroupInputs(reference, state) {
@@ -31,7 +22,7 @@ function buildGroupInputs(reference, state) {
   })
 }
 
-function buildValidatedKnockoutDecisions(baseResolution, state) {
+function buildValidatedBracketDecisions(baseResolution, state) {
   const decisions = []
   const diagnostics = []
 
@@ -42,16 +33,16 @@ function buildValidatedKnockoutDecisions(baseResolution, state) {
       knockoutDecisions: decisions,
     })
     const match = currentBracket.byMatchNumber[matchNumber]
-    const draft = state.knockoutPredictions[String(matchNumber)]
+    const draft = state.bracketPredictions[String(matchNumber)]
 
     if (!draft.advancingTeamId) continue
     if (!match.participantsResolved) {
-      diagnostics.push({ code: 'GUEST_KNOCKOUT_BLOCKED', matchNumber })
+      diagnostics.push({ code: 'GUEST_BRACKET_BLOCKED', matchNumber })
       continue
     }
     if (![match.homeTeamId, match.awayTeamId].includes(draft.advancingTeamId)) {
       diagnostics.push({
-        code: 'GUEST_KNOCKOUT_STALE_ADVANCING_TEAM',
+        code: 'GUEST_BRACKET_STALE_ADVANCING_TEAM',
         matchNumber,
         advancingTeamId: draft.advancingTeamId,
       })
@@ -71,53 +62,35 @@ function groupCompleteness(state) {
   const rows = Object.values(state.groupPredictions)
   const complete = rows.filter(row => isScore(row.homeScore) && isScore(row.awayScore)).length
   const empty = rows.filter(row => row.homeScore == null && row.awayScore == null && !row.jokerApplied).length
-  return {
-    total: rows.length,
-    complete,
-    partial: rows.length - complete - empty,
-    empty,
-  }
+  return { total: rows.length, complete, partial: rows.length - complete - empty, empty }
 }
 
-function knockoutCompleteness(state, bracket) {
+function bracketCompleteness(state, bracket) {
   let complete = 0
-  let partial = 0
   let empty = 0
   let blocked = 0
   let invalid = 0
 
   for (const match of bracket.matches) {
-    const row = state.knockoutPredictions[String(match.matchNumber)]
-    if (isEmptyKnockoutRow(row)) {
+    const row = state.bracketPredictions[String(match.matchNumber)]
+    if (!row.advancingTeamId) {
       empty += 1
       if (!match.participantsResolved) blocked += 1
       continue
     }
     if (!match.participantsResolved) {
       blocked += 1
-      partial += 1
+      invalid += 1
       continue
     }
-    const validation = validateKnockoutPrediction({
-      home_score: row.homeScore,
-      away_score: row.awayScore,
-      advancing_team_id: row.advancingTeamId,
-      decision_method: row.decisionMethod,
-    }, {
-      homeTeamId: match.homeTeamId,
-      awayTeamId: match.awayTeamId,
-    })
-    if (validation.valid) complete += 1
-    else {
-      partial += 1
-      invalid += 1
-    }
+    if ([match.homeTeamId, match.awayTeamId].includes(row.advancingTeamId)) complete += 1
+    else invalid += 1
   }
 
   return {
     total: bracket.matches.length,
     complete,
-    partial,
+    partial: invalid,
     empty,
     blocked,
     invalid,
@@ -136,7 +109,7 @@ export function resolveGuestTournamentPreview(reference, state) {
     groupMatches,
     knockoutDecisions: [],
   })
-  const validated = buildValidatedKnockoutDecisions(baseResolution, state)
+  const validated = buildValidatedBracketDecisions(baseResolution, state)
   const resolved = resolveEuro28Tournament({
     context: RESOLVER_CONTEXT.GUEST,
     groups: reference.groups,
@@ -145,20 +118,22 @@ export function resolveGuestTournamentPreview(reference, state) {
   })
 
   const groups = groupCompleteness(state)
-  const knockout = knockoutCompleteness(state, resolved.knockout)
-  const complete = groups.complete + knockout.complete
+  const bracket = bracketCompleteness(state, resolved.knockout)
+  const complete = groups.complete + bracket.complete
 
   return {
     resolution: resolved,
     completeness: {
       groups,
-      knockout,
+      bracket,
+      // Compatibility key for existing callers during the Stage 8 transition.
+      knockout: bracket,
       overall: {
-        total: groups.total + knockout.total,
+        total: groups.total + bracket.total,
         complete,
-        remaining: (groups.total + knockout.total) - complete,
-        readyForAccountImport: complete === groups.total + knockout.total &&
-          knockout.invalid === 0 && validated.diagnostics.length === 0,
+        remaining: (groups.total + bracket.total) - complete,
+        readyForAccountImport: complete === groups.total + bracket.total &&
+          bracket.invalid === 0 && validated.diagnostics.length === 0,
       },
     },
     diagnostics: validated.diagnostics,

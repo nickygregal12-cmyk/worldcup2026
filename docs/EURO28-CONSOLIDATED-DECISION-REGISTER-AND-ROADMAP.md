@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 1.8 — Stage 7 prediction journey
+### Version 1.9 — Stage 8 competition split and jokers
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
@@ -12,16 +12,17 @@ This document consolidates the verified tournament foundation, the agreed predic
 
 - Stage 1 tournament model complete.
 - Stage 2 isolation, contracts and prediction-storage foundation complete.
-- Migrations 001–009 deployed only through the controlled Euro workflow.
+- Migrations 001–010 defined through the controlled Euro workflow.
 - Stage 3 canonical tournament resolver complete.
 - Stage 4 browser-only guest/explore foundation complete.
 - Stage 5 authentication and owner-only profiles complete.
 - Stage 6 trusted atomic prediction saving implemented.
-- Stage 7 group, knockout, autosave and reversible review journey implemented.
+- Stage 7 original prediction journey implemented.
+- Stage 8 separates the original predictor from the real-match KO Predictor and confirms joker limits.
 - Direct browser writes to prediction tables remain unavailable.
 - Guest drafts remain browser-only unless deliberately imported before lock.
 - No leagues, scoring runs, results controls or admin control room have been introduced.
-- Next stage: visible joker controls and audited grace-window operations.
+- Next stage: results, live tables and scoring foundations after Stage 8 deployment is verified.
 
 ## 3. Environment
 
@@ -44,9 +45,11 @@ This document consolidates the verified tournament foundation, the agreed predic
 | Saved but unsubmitted | Confirmed | Counts exactly the same as submitted entries at lock |
 | Prediction lock | Confirmed | Prediction content locks at the first tournament kick-off |
 | Jokers | Confirmed | Core feature; movable only among matches that have not started |
-| Joker caps | Provisional | Central configuration; exact group and knockout values unresolved |
+| Joker caps | Confirmed | 5 across original group matches; 0 on original bracket picks; 5 in the separate KO Predictor |
 | Joker multiplier | Provisional | Current working value `2×` |
-| Knockout score | Confirmed | Always the score after 90 minutes plus added time |
+| Original bracket | Confirmed | Winner/progression picks only; no score, method or joker |
+| KO Predictor | Confirmed | Separate competition using real knockout fixtures; separate points, leaderboard and winner |
+| Knockout score | Confirmed | KO Predictor score always means 90 minutes plus added time |
 | Advancing team | Confirmed | Separate from the 90-minute score |
 | Decision method | Confirmed | Normal time, extra time or penalties |
 | Grace windows | Confirmed | Audited exception for one user and one specific unstarted match |
@@ -72,8 +75,10 @@ This document consolidates the verified tournament foundation, the agreed predic
 
 ### Locks, jokers and grace
 
-- Prediction content locks globally at first tournament kick-off.
-- Joker allocation remains independently movable on unstarted matches.
+- Original score and bracket content locks globally at first tournament kick-off.
+- Five group jokers remain independently movable only among unstarted group matches.
+- The original bracket has no jokers.
+- The separate KO Predictor has five jokers and locks each row at the real match kick-off.
 - A joker on a started match is fixed.
 - Grace never reopens the tournament. It permits content changes only for its user and match while that match remains unstarted and the grant remains active.
 

@@ -5,21 +5,27 @@ This branch is the isolated Euro 2028 rebuild. It began from the WC26 repository
 The verified build now includes:
 
 - the official 51-match tournament skeleton;
-- read-secured prediction storage;
-- one canonical group, best-third and knockout resolver;
-- browser-only guest prediction state;
-- Euro authentication and owner-only profiles;
-- one trusted atomic prediction save RPC;
-- the complete group, knockout and reversible review journey.
+- read-secured prediction storage and Euro authentication;
+- one canonical group, best-third and bracket resolver;
+- browser-only guest predictions;
+- trusted atomic prediction saving;
+- the original group-and-bracket prediction journey;
+- a separate real-match KO Predictor foundation;
+- competition-scoped joker and grace controls.
 
-Guest, predicted and live tournament contexts remain separate. WC26 `main` and the WC26 production Supabase project must never be used in this workflow.
+The two competitions are deliberately separate:
 
-## Environments
+- **Original predictor:** 36 group score predictions, five group jokers and a winner-only pre-tournament knockout bracket with no jokers.
+- **KO Predictor:** 15 real knockout fixtures, 90-minute scores, advancing teams, decision methods, five separate jokers, separate points and a separate future leaderboard/winner.
 
-| Environment | Git branch | Database | Purpose |
-|---|---|---|---|
-| WC26 live | `main` | WC26 production Supabase | Existing World Cup site |
-| Euro staging | `euro28-development` | `gcfdwobpnanjchcnvdco` | Euro development and testing |
+KO Predictor points must never be combined with original-predictor points. Guest, predicted and live contexts also remain separate. WC26 `main` and the WC26 production Supabase project must never be used in this workflow.
+
+## Environment
+
+| Environment | Git branch | Database |
+|---|---|---|
+| WC26 live | `main` | WC26 production Supabase |
+| Euro staging | `euro28-development` | `gcfdwobpnanjchcnvdco` |
 
 ## Local setup
 
@@ -31,7 +37,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Use only the Euro staging project URL and publishable key in `.env.local`. Never expose a service-role key through a `VITE_` variable.
+Use only the Euro staging URL and publishable key in `.env.local`. Never expose a service-role key through a `VITE_` variable.
 
 ## Main checks
 
@@ -39,24 +45,15 @@ Use only the Euro staging project URL and publishable key in `.env.local`. Never
 npm run check
 ```
 
-Focused checks:
+Focused Stage 8 checks:
 
 ```bash
-npm run db:safety
-npm run audit:legacy
-npm run audit:contracts
-npm run audit:db-design
-npm run audit:resolver
-npm run audit:guest
-npm run audit:auth
-npm run audit:scoring-correction
-npm run audit:prediction-save
 npm run audit:journey
+npm run audit:competition-split
+npm run test:db:010:local
 ```
 
 ## Database checks
-
-After a local reset:
 
 ```bash
 npx supabase db reset
@@ -64,22 +61,13 @@ npm run test:db:005:local
 npm run test:db:006:local
 npm run test:db:008:local
 npm run test:db:009:local
+npm run test:db:010:local
 ```
 
 Never run `npx supabase db reset --linked`.
 
 ## Current return point
 
-Stage 7 is complete. Guests can edit all 51 predictions with immediate browser persistence. Signed-in users use quiet 800 ms autosave through `save_my_prediction_bundle()`, optimistic revisions, canonical knockout progression and a reversible submit-for-review mode.
+Stage 8 implements the competition split and confirmed joker limits. Migration 010 separates original bracket picks from knockout match scores, creates the separate KO Predictor save route and makes grace competition-specific.
 
-A complete guest draft can still be imported deliberately before lock and cannot overwrite account predictions. Jokers remain hidden until both exact caps are confirmed.
-
-Stage 8 is next: expose server-enforced joker controls and controlled grace-window administration without changing the prediction write path.
-
-See:
-
-- `docs/STAGE-7-PREDICTION-JOURNEY.md`
-- `docs/STAGE-6-ATOMIC-PREDICTION-SAVING.md`
-- `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`
-- `docs/DATABASE.md`
-- `docs/TESTING.md`
+Scoring runs, actual leaderboards, results entry and the admin control room remain deferred.

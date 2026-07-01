@@ -2,137 +2,67 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import {
+  COMPETITION_SPLIT_SCOPE,
   DATABASE_SCORING_MODEL,
   EURO_PREDICTION_DATABASE_CONTRACT_VERSION,
   GRACE_WINDOW_DATABASE_MODEL,
   GUEST_PREDICTION_MODEL,
-  JOKER_DATABASE_MODEL,
-  PREDICTION_COMPLETION_MODEL,
-  PREDICTION_DATABASE_SCOPE,
+  KO_PREDICTOR_MODEL,
+  ORIGINAL_PREDICTOR_MODEL,
+  PREDICTION_DATABASE_TABLES,
   PREDICTION_VISIBILITY_MODEL,
   PREDICTION_WRITE_MODEL,
   validatePredictionDatabaseContract,
 } from '../src/contracts/predictionDatabaseContract.js'
 
 const root = process.cwd()
-const fail = message => {
-  console.error(`Prediction database implementation check failed: ${message}`)
-  process.exitCode = 1
-}
+const errors = []
+const fail = message => errors.push(message)
+const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).sort()
 
 validatePredictionDatabaseContract().errors.forEach(fail)
-
-const migrationsDirectory = path.join(root, 'supabase/migrations')
-const activeMigrations = fs.readdirSync(migrationsDirectory).filter(name => name.endsWith('.sql')).sort()
-const migrationName = PREDICTION_DATABASE_SCOPE.migrationFilename
-const migrationPath = path.join(migrationsDirectory, migrationName)
-
-if (activeMigrations.length < PREDICTION_DATABASE_SCOPE.activeMigrationCountAfterImplementation) {
-  fail(`expected at least ${PREDICTION_DATABASE_SCOPE.activeMigrationCountAfterImplementation} active migrations after Migration 005, found ${activeMigrations.length}`)
-}
-if (!activeMigrations.includes(migrationName)) fail(`required Migration 005 is missing: ${migrationName}`)
-if (activeMigrations.filter(name => name.includes('0005_')).length !== 1) {
-  fail('exactly one active Migration 005 file is required')
+if (migrations.length !== 10) fail(`Stage 8 requires ten active migrations, found ${migrations.length}`)
+for (const name of ['202607010005_euro28_prediction_storage.sql', '202607010009_euro28_atomic_prediction_save.sql', COMPETITION_SPLIT_SCOPE.migrationFilename]) {
+  if (!migrations.includes(name)) fail(`required migration is missing: ${name}`)
 }
 
-if (!fs.existsSync(migrationPath)) {
-  fail('Migration 005 SQL cannot be audited because it is missing')
-} else {
-  const migration = fs.readFileSync(migrationPath, 'utf8')
-  const lower = migration.toLowerCase()
-
-  const requiredSnippets = [
-    'create table public.scoring_rulesets',
-    'create table public.prediction_sets',
-    'create table public.match_predictions',
-    'create table public.prediction_grace_windows',
-    'active_scoring_ruleset_id',
-    'prediction_contract_version',
-    'prediction_locked_at',
-    'submitted_at',
-    'joker_applied',
-    'joker_multiplier',
-    'group_stage_joker_cap',
-    'knockout_joker_cap',
-    "decision_method in ('normal_time', 'extra_time', 'penalties')",
-    'guard_tournament_prediction_lock',
-    'guard_scoring_ruleset_state',
-    'from public, anon, authenticated',
-    'grant select on table public.scoring_rulesets to anon, authenticated',
-    'euro28-scoring-provisional-v2',
-    'euro28-prediction-db-v2',
-  ]
-  requiredSnippets.forEach((snippet) => {
-    if (!lower.includes(snippet.toLowerCase())) fail(`Migration 005 is missing: ${snippet}`)
-  })
-
-  for (const table of PREDICTION_DATABASE_SCOPE.createdTables) {
-    if (!lower.includes(`alter table public.${table} enable row level security`)) {
-      fail(`RLS is not enabled for public.${table}`)
-    }
-  }
-
-  const browserWritePolicy = /for\s+(insert|update|delete|all)\s+to\s+(anon|authenticated)/i
-  if (browserWritePolicy.test(migration)) fail('Migration 005 creates a browser write policy')
-
-  const browserWriteGrant = /grant\s+(?:all|[\s\S]{0,100}\b(?:insert|update|delete)\b)[\s\S]{0,250}?\bto\s+(?:anon|authenticated)\b/i
-  if (browserWriteGrant.test(migration)) fail('Migration 005 grants direct browser writes')
-
-  const finalSaveRpc = /create\s+(?:or\s+replace\s+)?function\s+public\.[a-z0-9_]*(?:save[a-z0-9_]*prediction|prediction[a-z0-9_]*save)/i
-  if (finalSaveRpc.test(migration)) fail('Migration 005 creates the deferred final save RPC')
-
-  const excludedTables = [
-    'profiles',
-    'leagues',
-    'league_members',
-    'scoring_runs',
-    'prediction_points',
-    'guest_predictions',
-  ]
-  for (const table of excludedTables) {
-    if (lower.includes(`create table public.${table}`)) fail(`Migration 005 creates excluded table public.${table}`)
-  }
-
-  if (!lower.includes('group_stage_joker_cap is null') || !lower.includes('knockout_joker_cap is null')) {
-    fail('the seeded exact joker caps must remain unresolved/null')
-  }
+const migration010 = fs.readFileSync(path.join(root, 'supabase/migrations', COMPETITION_SPLIT_SCOPE.migrationFilename), 'utf8').toLowerCase()
+for (const snippet of [
+  'create table public.bracket_predictions',
+  "competition_key in ('original', 'ko_predictor')",
+  'unique (tournament_id, user_id, competition_key)',
+  'group_stage_joker_cap = 5',
+  'knockout_joker_cap = 5',
+  'create or replace function public.save_my_prediction_bundle',
+  'create or replace function public.save_my_ko_prediction_bundle',
+  'alter table public.bracket_predictions enable row level security',
+  'grant execute on function public.save_my_ko_prediction_bundle',
+]) {
+  if (!migration010.includes(snippet)) fail(`Migration 010 is missing: ${snippet}`)
 }
-
-const databaseTestPath = path.join(root, 'supabase/tests/database/005_prediction_storage.test.sql')
-if (!fs.existsSync(databaseTestPath)) fail('the Migration 005 pgTAP verification file is missing')
-else {
-  const databaseTest = fs.readFileSync(databaseTestPath, 'utf8')
-  const requiredDatabaseTests = [
-    "has_table('public', 'scoring_rulesets'",
-    'no browser write policies',
-    'trusted atomic prediction save rpc now exists exactly once',
-    'persisted global prediction lock cannot be reopened',
-    'guest predictions have no server-side table',
-  ]
-  requiredDatabaseTests.forEach((snippet) => {
-    if (!databaseTest.toLowerCase().includes(snippet.toLowerCase())) fail(`database verification is missing: ${snippet}`)
-  })
+if (/grant\s+(?:all|[\s\S]{0,100}\b(?:insert|update|delete)\b)[\s\S]{0,250}?\bon\s+(?:table\s+)?public\.(?:prediction_sets|match_predictions|bracket_predictions|prediction_grace_windows)[\s\S]{0,150}?\bto\s+(?:anon|authenticated)\b/i.test(migration010)) {
+  fail('Migration 010 grants direct browser table writes')
 }
-
+if (ORIGINAL_PREDICTOR_MODEL.bracketStoresScores || ORIGINAL_PREDICTOR_MODEL.bracketStoresJokers) fail('original bracket must be winner-only without jokers')
+if (ORIGINAL_PREDICTOR_MODEL.groupJokerCap !== 5) fail('original group joker cap must be five')
+if (KO_PREDICTOR_MODEL.jokerCap !== 5 || !KO_PREDICTOR_MODEL.pointsSeparateFromOriginal) fail('KO Predictor must have five jokers and separate points')
 if (PREDICTION_WRITE_MODEL.directBrowserTableWrites) fail('direct browser writes must remain disabled')
 if (PREDICTION_VISIBILITY_MODEL.anonymousPredictionAccess) fail('anonymous prediction access must remain disabled')
-if (!DATABASE_SCORING_MODEL.lockedRulesetsImmutable) fail('locked scoring rulesets must be immutable')
-if (!PREDICTION_COMPLETION_MODEL.submitReviewModeAvailable) fail('submit/review mode must be represented')
-if (!JOKER_DATABASE_MODEL.enabled) fail('joker allocation must be represented')
-if (GRACE_WINDOW_DATABASE_MODEL.scope !== 'user_and_match') fail('grace must be user + match scoped')
+if (!DATABASE_SCORING_MODEL.competitionTotalsMustRemainSeparate) fail('competition totals must remain separate')
+if (GRACE_WINDOW_DATABASE_MODEL.crossesCompetitionBoundary) fail('grace must not cross competitions')
 if (GUEST_PREDICTION_MODEL.serverStorage) fail('guest predictions must not use server storage')
+if (!Object.values(PREDICTION_DATABASE_TABLES).includes('bracket_predictions')) fail('bracket table is missing from the database contract')
 
-if (!process.exitCode) {
-  console.log('Euro prediction database implementation checks passed.')
-  console.log(`Database contract: ${EURO_PREDICTION_DATABASE_CONTRACT_VERSION}`)
-  console.log(`Active migrations: ${activeMigrations.length}`)
-  console.log(`Migration 005: ${migrationName}`)
-  console.log('Created tables: scoring_rulesets, prediction_sets, match_predictions, prediction_grace_windows')
-  console.log('Submit: reversible submitted_at review state only')
-  console.log('Jokers: stored per match; unresolved caps and multiplier are central ruleset values')
-  console.log('Grace: audited user + match record with expiry and revocation fields')
-  console.log('Global lock: persisted monotonic tournament timestamp')
-  console.log('Guest mode: no server-side prediction storage')
-  console.log('Direct browser table writes: none')
-  console.log('Final atomic save RPC: implemented separately by Migration 009')
+if (errors.length) {
+  console.error('Prediction database implementation check failed:')
+  errors.forEach(error => console.error(`- ${error}`))
+  process.exit(1)
 }
+console.log('Euro prediction database implementation checks passed.')
+console.log(`Database contract: ${EURO_PREDICTION_DATABASE_CONTRACT_VERSION}`)
+console.log(`Active migrations: ${migrations.length}`)
+console.log('Original predictor: 36 group scores + 15 winner-only bracket picks')
+console.log('KO Predictor: separate 15-match competition with separate points and five jokers')
+console.log('Group jokers: five; original bracket jokers: zero')
+console.log('Competition-scoped grace and separate atomic RPCs: active')
+console.log('Direct browser table writes: none')

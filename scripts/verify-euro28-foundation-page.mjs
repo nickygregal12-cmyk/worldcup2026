@@ -1,59 +1,44 @@
 import process from 'node:process'
 
 const siteUrl = (process.env.EURO28_SITE_URL || 'https://euro28-predictor-dev.netlify.app').replace(/\/$/, '')
-
-function assert(condition, message) {
-  if (!condition) throw new Error(message)
-}
-
+const assert = (condition, message) => { if (!condition) throw new Error(message) }
 async function readText(pathname) {
-  const response = await fetch(`${siteUrl}${pathname}`, {
-    headers: { 'user-agent': 'Euro28FoundationVerifier/1.0' },
-  })
+  const response = await fetch(`${siteUrl}${pathname}`, { headers: { 'user-agent': 'Euro28FoundationVerifier/1.0' } })
   assert(response.ok, `${pathname} returned HTTP ${response.status}`)
   return response.text()
 }
 
 const [html, manifestText, worker, robots] = await Promise.all([
-  readText('/'),
-  readText('/manifest.json'),
-  readText('/sw.js'),
-  readText('/robots.txt'),
+  readText('/'), readText('/manifest.json'), readText('/sw.js'), readText('/robots.txt'),
 ])
-
 assert(html.includes('<title>Euro 2028 Predictor — Foundation Staging</title>'), 'The deployed HTML title is not the Euro foundation title.')
 assert(html.includes('noindex, nofollow, noarchive'), 'The staging HTML is missing the no-index directive.')
-assert(!html.includes('WC26 Predictor'), 'The deployed HTML still contains WC26 branding.')
-assert(!html.includes('wc26predictor1.netlify.app'), 'The deployed HTML still points at the WC26 live domain.')
-
+assert(!html.includes('WC26 Predictor') && !html.includes('wc26predictor1.netlify.app'), 'The deployed HTML still contains WC26 references.')
 const manifest = JSON.parse(manifestText)
-assert(manifest.name === 'Euro 2028 Predictor — Foundation Staging', 'The deployed web manifest is not the Euro foundation manifest.')
-assert(manifest.display === 'browser', 'The foundation manifest must not advertise an installable standalone app.')
-
-assert(worker.includes('registration.unregister()'), 'The deployed retirement worker does not unregister itself.')
-assert(robots.includes('Disallow: /'), 'The Euro development site is not blocked from indexing.')
-
+assert(manifest.name === 'Euro 2028 Predictor — Foundation Staging', 'The deployed manifest is incorrect.')
+assert(manifest.display === 'browser', 'The foundation must not advertise a standalone install.')
+assert(worker.includes('registration.unregister()'), 'The retirement worker does not unregister itself.')
+assert(robots.includes('Disallow: /'), 'The staging site is not blocked from indexing.')
 const scriptMatch = html.match(/<script[^>]+src="([^"]*\/assets\/index-[^"]+\.js)"/)
-assert(scriptMatch, 'Could not find the deployed Vite application bundle.')
-const bundlePath = scriptMatch[1].startsWith('http')
-  ? scriptMatch[1].replace(siteUrl, '')
-  : scriptMatch[1]
+assert(scriptMatch, 'Could not locate the deployed Vite bundle.')
+const bundlePath = scriptMatch[1].startsWith('http') ? scriptMatch[1].replace(siteUrl, '') : scriptMatch[1]
 const bundle = await readText(bundlePath)
-assert(bundle.includes('The complete Euro 2028 prediction journey is now active.'), 'The deployed bundle is not the Stage 7 prediction journey application.')
-assert(bundle.includes('euro28-guest-prediction-bundle'), 'The deployed bundle is missing the versioned guest export format.')
-assert(bundle.includes('Create or access your Euro account'), 'The deployed bundle is missing the Euro authentication foundation.')
-assert(bundle.includes('save_my_prediction_bundle'), 'The deployed bundle is missing the trusted prediction save route.')
-assert(bundle.includes('Submit predictions for review'), 'The deployed bundle is missing reversible review mode.')
-assert(bundle.includes('Score prediction always means the score after 90 minutes'), 'The deployed bundle is missing the knockout score contract.')
-assert(!bundle.includes('WC26 Control Centre'), 'The active deployed bundle still contains the inherited admin application.')
+for (const text of [
+  'The original predictor and KO Predictor are now separate competitions.',
+  'Stage 8 · Original predictor',
+  'Separate competition · KO Predictor',
+  'five group jokers',
+  'save_my_prediction_bundle',
+  'save_my_ko_prediction_bundle',
+  'euro28-guest-prediction-bundle',
+]) assert(bundle.includes(text), `The deployed Stage 8 bundle is missing: ${text}`)
+assert(!bundle.includes('WC26 Control Centre'), 'The inherited WC26 admin application is active.')
 
 console.log('Euro 2028 foundation page verification passed.')
 console.log(`Site: ${siteUrl}`)
-console.log('Public branding: Euro 2028 prediction journey')
-console.log('Search indexing: blocked')
-console.log('Inherited service worker: retirement enabled')
+console.log('Public branding: Stage 8 competition split and joker controls')
+console.log('Original predictor: group scores plus winner-only bracket')
+console.log('KO Predictor: separate real-match competition and points')
+console.log('Jokers: 5 group, 0 original bracket, 5 KO Predictor')
 console.log('Guest storage: browser-only')
-console.log('Euro authentication: active on staging')
-console.log('Prediction journey: groups, knockout and reversible review mode active')
-console.log('Account autosave: active through the trusted RPC')
 console.log('Inherited WC26 application bundle: inactive')

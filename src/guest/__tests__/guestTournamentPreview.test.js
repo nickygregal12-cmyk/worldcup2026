@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   createGuestPredictionState,
+  updateGuestBracketPrediction,
   updateGuestGroupPrediction,
-  updateGuestKnockoutPrediction,
 } from '../guestPredictionState.js'
 import { resolveGuestTournamentPreview } from '../guestTournamentPreview.js'
 import {
@@ -29,7 +29,7 @@ describe('guest tournament preview', () => {
     expect(preview.resolution.context).toBe('guest')
     expect(preview.resolution.resolverVersion).toBe('euro28-canonical-resolver-v1')
     expect(preview.completeness.groups.complete).toBe(0)
-    expect(preview.completeness.knockout.complete).toBe(0)
+    expect(preview.completeness.bracket.complete).toBe(0)
     expect(preview.completeness.overall.total).toBe(51)
   })
 
@@ -43,41 +43,32 @@ describe('guest tournament preview', () => {
     expect(preview.resolution.groupTables.A.completedMatchCount).toBe(0)
   })
 
-  it('progresses a complete guest bracket without blending another context', () => {
+  it('progresses a complete winner-only guest bracket', () => {
     const reference = buildGuestReference()
     let state = fillGroups(createGuestPredictionState(reference))
 
     for (const [matchNumber, advancingTeamId] of ALL_HOME_KNOCKOUT) {
-      state = updateGuestKnockoutPrediction(state, {
-        matchNumber,
-        homeScore: 2,
-        awayScore: 0,
-        advancingTeamId,
-        decisionMethod: 'normal_time',
-      })
+      state = updateGuestBracketPrediction(state, { matchNumber, advancingTeamId })
     }
 
     const preview = resolveGuestTournamentPreview(reference, state)
     expect(preview.resolution.knockout.championTeamId).toBe('B1')
     expect(preview.completeness.groups.complete).toBe(36)
-    expect(preview.completeness.knockout.complete).toBe(15)
+    expect(preview.completeness.bracket.complete).toBe(15)
     expect(preview.completeness.overall.readyForAccountImport).toBe(true)
   })
 
-  it('diagnoses a stale advancing-team selection instead of crashing progression', () => {
+  it('diagnoses a stale bracket winner instead of crashing progression', () => {
     const reference = buildGuestReference()
     let state = fillGroups(createGuestPredictionState(reference))
-    state = updateGuestKnockoutPrediction(state, {
+    state = updateGuestBracketPrediction(state, {
       matchNumber: 37,
-      homeScore: 2,
-      awayScore: 0,
       advancingTeamId: 'F4',
-      decisionMethod: 'normal_time',
     })
 
     const preview = resolveGuestTournamentPreview(reference, state)
     expect(preview.diagnostics).toContainEqual({
-      code: 'GUEST_KNOCKOUT_STALE_ADVANCING_TEAM',
+      code: 'GUEST_BRACKET_STALE_ADVANCING_TEAM',
       matchNumber: 37,
       advancingTeamId: 'F4',
     })

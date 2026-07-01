@@ -7,7 +7,7 @@ describe('guest reference model', () => {
     const model = buildGuestReferenceModel(buildRawReferenceRows())
 
     expect(model.context).toBe('guest')
-    expect(model.referenceVersion).toBe('euro28-guest-reference-v1:2025-11-12')
+    expect(model.referenceVersion).toBe('euro28-guest-reference-v2:2025-11-12')
     expect(model.groups).toHaveLength(6)
     expect(model.groupMatches).toHaveLength(36)
     expect(model.knockoutMatchNumbers).toEqual(Array.from({ length: 15 }, (_, index) => index + 37))

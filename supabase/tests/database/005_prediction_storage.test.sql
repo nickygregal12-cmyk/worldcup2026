@@ -86,11 +86,11 @@ select is(
 );
 select ok(
   (
-    select group_stage_joker_cap is null and knockout_joker_cap is null
+    select group_stage_joker_cap = 5 and knockout_joker_cap = 5
     from public.scoring_rulesets
     where ruleset_key = 'euro28-scoring-provisional-v2'
   ),
-  'both exact joker caps remain deliberately unresolved'
+  'the original group and separate KO Predictor joker caps are both five'
 );
 select ok(
   exists (
@@ -112,8 +112,8 @@ select is(
     where n.nspname = 'public'
       and p.proname ~ '(save.*prediction|prediction.*save)'
   ),
-  1::bigint,
-  'the trusted atomic prediction save RPC now exists exactly once'
+  2::bigint,
+  'the original and separate KO Predictor save RPCs both exist'
 );
 
 select lives_ok(

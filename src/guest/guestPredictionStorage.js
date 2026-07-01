@@ -1,5 +1,5 @@
 import { buildGuestStorageKey } from './guestPredictionConfig.js'
-import { validateGuestPredictionState } from './guestPredictionState.js'
+import { upgradeLegacyGuestPredictionState, validateGuestPredictionState } from './guestPredictionState.js'
 
 function storageAvailable(storage) {
   return storage &&
@@ -27,7 +27,8 @@ export function createGuestPredictionStorage({ storage, reference }) {
       try {
         const raw = storage.getItem(key)
         if (!raw) return { status: 'empty', state: null, error: null }
-        const state = JSON.parse(raw)
+        const parsed = JSON.parse(raw)
+        const state = upgradeLegacyGuestPredictionState(parsed, reference)
         const validation = validateGuestPredictionState(state, reference)
         if (!validation.valid) {
           return { status: 'invalid', state: null, error: validation.errors.join('; ') }

@@ -4,6 +4,11 @@
   background: #edf2f7;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  --foundation-border: #d9e1ea;
+  --foundation-safe: #16825d;
+  --foundation-warning: #b97800;
+  --foundation-surface: #ffffff;
+  --foundation-surface-muted: #f8fafc;
 }
 
 * {
@@ -1376,5 +1381,101 @@ button {
   .journey-knockout-controls,
   .journey-review-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Stage 8 competition split and joker controls */
+.journey-joker-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--foundation-safe) 9%, transparent);
+}
+
+.journey-joker-summary > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.journey-joker-summary span {
+  font-size: 0.82rem;
+}
+
+.journey-joker-summary--neutral {
+  background: var(--foundation-surface-muted);
+}
+
+.journey-match-row--joker {
+  outline: 2px solid color-mix(in srgb, var(--foundation-warning) 65%, transparent);
+  outline-offset: -2px;
+}
+
+.journey-joker-button,
+.journey-bracket-team {
+  border: 1px solid var(--foundation-border);
+  border-radius: 10px;
+  background: var(--foundation-surface);
+  color: inherit;
+  padding: 0.55rem 0.7rem;
+  cursor: pointer;
+}
+
+.journey-joker-button--active,
+.journey-bracket-team--selected {
+  border-color: var(--foundation-warning);
+  background: color-mix(in srgb, var(--foundation-warning) 14%, var(--foundation-surface));
+  font-weight: 700;
+}
+
+.journey-bracket-pick-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.journey-bracket-team {
+  display: grid;
+  gap: 0.2rem;
+  text-align: left;
+}
+
+.journey-bracket-team small {
+  opacity: 0.72;
+}
+
+.ko-predictor-foundation {
+  margin-top: 1rem;
+}
+
+.ko-predictor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.ko-predictor-grid select,
+.ko-predictor-grid input {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .journey-joker-summary,
+  .journey-bracket-pick-row {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
+  .journey-match-row {
+    grid-template-columns: 1fr auto auto auto 1fr;
+  }
+
+  .journey-joker-button {
+    grid-column: 1 / -1;
   }
 }

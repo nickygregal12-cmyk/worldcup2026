@@ -1,10 +1,11 @@
 /**
  * Single source of truth for Euro 2028 scoring values and joker limits.
  *
- * The scoring categories are agreed, while the numeric values and joker caps
- * remain provisional until the ruleset is formally approved. Every active
- * calculator, rules screen and future server-side scoring job must consume
- * this configuration rather than copying values.
+ * The original predictor and KO Predictor are separate competitions:
+ * - original: group scores plus pre-tournament bracket progression;
+ * - KO Predictor: real knockout-match scores, advancing team and method.
+ *
+ * KO Predictor points and jokers never contribute to the original predictor.
  */
 export const SCORING_CONFIG_STATUS = Object.freeze({
   PROVISIONAL: 'provisional',
@@ -18,7 +19,7 @@ export const EURO_SCORING_CONFIG = Object.freeze({
     EXACT_SCORE: 30,
     CORRECT_OUTCOME: 10,
   }),
-  knockout: Object.freeze({
+  koPredictor: Object.freeze({
     CORRECT_ADVANCING_TEAM: 10,
     CORRECT_DECISION_METHOD: 5,
   }),
@@ -32,8 +33,9 @@ export const EURO_SCORING_CONFIG = Object.freeze({
   joker: Object.freeze({
     ENABLED: true,
     MULTIPLIER: 2,
-    GROUP_STAGE_CAP: null,
-    KNOCKOUT_CAP: null,
+    GROUP_STAGE_CAP: 5,
+    ORIGINAL_BRACKET_CAP: 0,
+    KO_PREDICTOR_CAP: 5,
   }),
 })
 
@@ -43,10 +45,6 @@ function isNonNegativeInteger(value) {
 
 function isPositiveNumber(value) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
-}
-
-function isNullableNonNegativeInteger(value) {
-  return value === null || isNonNegativeInteger(value)
 }
 
 export function validateScoringConfig(config = EURO_SCORING_CONFIG) {
@@ -59,13 +57,16 @@ export function validateScoringConfig(config = EURO_SCORING_CONFIG) {
   const values = [
     ['match.EXACT_SCORE', config.match?.EXACT_SCORE],
     ['match.CORRECT_OUTCOME', config.match?.CORRECT_OUTCOME],
-    ['knockout.CORRECT_ADVANCING_TEAM', config.knockout?.CORRECT_ADVANCING_TEAM],
-    ['knockout.CORRECT_DECISION_METHOD', config.knockout?.CORRECT_DECISION_METHOD],
+    ['koPredictor.CORRECT_ADVANCING_TEAM', config.koPredictor?.CORRECT_ADVANCING_TEAM],
+    ['koPredictor.CORRECT_DECISION_METHOD', config.koPredictor?.CORRECT_DECISION_METHOD],
     ['bracket.round_of_16', config.bracket?.round_of_16],
     ['bracket.quarter_final', config.bracket?.quarter_final],
     ['bracket.semi_final', config.bracket?.semi_final],
     ['bracket.final', config.bracket?.final],
     ['bracket.champion', config.bracket?.champion],
+    ['joker.GROUP_STAGE_CAP', config.joker?.GROUP_STAGE_CAP],
+    ['joker.ORIGINAL_BRACKET_CAP', config.joker?.ORIGINAL_BRACKET_CAP],
+    ['joker.KO_PREDICTOR_CAP', config.joker?.KO_PREDICTOR_CAP],
   ]
 
   for (const [label, value] of values) {
@@ -80,12 +81,9 @@ export function validateScoringConfig(config = EURO_SCORING_CONFIG) {
 
   if (config.joker?.ENABLED !== true) errors.push('jokers must remain enabled in the agreed Euro contract')
   if (!isPositiveNumber(config.joker?.MULTIPLIER)) errors.push('joker.MULTIPLIER must be a positive number')
-  if (!isNullableNonNegativeInteger(config.joker?.GROUP_STAGE_CAP)) {
-    errors.push('joker.GROUP_STAGE_CAP must be null or a non-negative integer')
-  }
-  if (!isNullableNonNegativeInteger(config.joker?.KNOCKOUT_CAP)) {
-    errors.push('joker.KNOCKOUT_CAP must be null or a non-negative integer')
-  }
+  if (config.joker?.GROUP_STAGE_CAP !== 5) errors.push('the original group-stage joker cap must be 5')
+  if (config.joker?.ORIGINAL_BRACKET_CAP !== 0) errors.push('the original bracket must not allow jokers')
+  if (config.joker?.KO_PREDICTOR_CAP !== 5) errors.push('the separate KO Predictor joker cap must be 5')
 
   return { valid: errors.length === 0, errors }
 }

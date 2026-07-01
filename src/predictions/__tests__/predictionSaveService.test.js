@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { buildGuestReference, ALL_HOME_KNOCKOUT, COMPLETE_GROUP_SCORES } from '../../guest/__tests__/fixtures.js'
-import { createGuestPredictionState, updateGuestGroupPrediction, updateGuestKnockoutPrediction } from '../../guest/guestPredictionState.js'
+import { createGuestPredictionState, updateGuestBracketPrediction, updateGuestGroupPrediction } from '../../guest/guestPredictionState.js'
+import { PREDICTION_ROW_KIND } from '../../contracts/predictionDatabaseContract.js'
 import { importGuestDraftToAccount, loadMyPredictionBundle, saveMyPredictionBundle } from '../predictionSaveService.js'
 
 function completeState(reference) {
@@ -10,15 +11,13 @@ function completeState(reference) {
     state = updateGuestGroupPrediction(state, { matchNumber, homeScore, awayScore })
   }
   for (const [matchNumber, advancingTeamId] of ALL_HOME_KNOCKOUT) {
-    state = updateGuestKnockoutPrediction(state, {
-      matchNumber, homeScore: 2, awayScore: 0, advancingTeamId, decisionMethod: 'normal_time',
-    })
+    state = updateGuestBracketPrediction(state, { matchNumber, advancingTeamId })
   }
   return state
 }
 
 describe('prediction save service', () => {
-  it('calls only the atomic RPC and normalises its result', async () => {
+  it('calls only the original atomic RPC and normalises its result', async () => {
     const rpc = vi.fn().mockResolvedValue({
       data: {
         prediction_set_id: 'set-1', tournament_id: 't1', revision: 3,
@@ -29,6 +28,7 @@ describe('prediction save service', () => {
     const result = await saveMyPredictionBundle({ rpc }, {
       tournamentId: 't1', expectedRevision: 2, submitted: false, source: 'account',
       predictions: [{
+        prediction_kind: PREDICTION_ROW_KIND.GROUP_SCORE,
         match_id: 'm1', predicted_home_tournament_team_id: 'a', predicted_away_tournament_team_id: 'b',
         home_score_90: 1, away_score_90: 0, advancing_tournament_team_id: null,
         decision_method: null, joker_applied: false,
@@ -38,7 +38,7 @@ describe('prediction save service', () => {
     expect(result).toMatchObject({ predictionSetId: 'set-1', revision: 3, savedPredictionCount: 1 })
   })
 
-  it('builds an explicit guest import request', async () => {
+  it('builds an explicit original guest import request', async () => {
     const reference = buildGuestReference()
     const rpc = vi.fn().mockResolvedValue({
       data: {
@@ -53,12 +53,14 @@ describe('prediction save service', () => {
     })
     expect(rpc).toHaveBeenCalledWith('save_my_prediction_bundle', expect.objectContaining({
       p_source: 'guest_import',
-      p_predictions: expect.arrayContaining([expect.objectContaining({ match_id: 'match-51' })]),
+      p_predictions: expect.arrayContaining([
+        expect.objectContaining({ match_id: 'match-51', prediction_kind: PREDICTION_ROW_KIND.BRACKET_PICK }),
+      ]),
     }))
     expect(result.savedPredictionCount).toBe(51)
   })
 
-  it('loads only the signed-in owners prediction set', async () => {
+  it('loads only the signed-in owners original prediction set', async () => {
     const chain = {
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
@@ -68,5 +70,6 @@ describe('prediction save service', () => {
     await expect(loadMyPredictionBundle(client, 't1', 'user-1')).resolves.toBeNull()
     expect(chain.eq).toHaveBeenNthCalledWith(1, 'tournament_id', 't1')
     expect(chain.eq).toHaveBeenNthCalledWith(2, 'user_id', 'user-1')
+    expect(chain.eq).toHaveBeenNthCalledWith(3, 'competition_key', 'original')
   })
 })

@@ -34,8 +34,8 @@ select is(
     from public.scoring_rulesets
     where ruleset_key = 'euro28-scoring-provisional-v2'
   ),
-  null::integer,
-  'the exact group-stage joker cap remains unresolved'
+  5,
+  'the original group-stage joker cap is five'
 );
 
 select is(
@@ -44,8 +44,8 @@ select is(
     from public.scoring_rulesets
     where ruleset_key = 'euro28-scoring-provisional-v2'
   ),
-  null::integer,
-  'the exact knockout joker cap remains unresolved'
+  5,
+  'the separate KO Predictor joker cap is five'
 );
 
 select is(

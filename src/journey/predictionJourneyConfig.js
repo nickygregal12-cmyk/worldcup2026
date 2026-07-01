@@ -1,8 +1,8 @@
-export const EURO28_PREDICTION_JOURNEY_VERSION = 'euro28-prediction-journey-v1'
+export const EURO28_PREDICTION_JOURNEY_VERSION = 'euro28-prediction-journey-v2'
 
 export const PREDICTION_JOURNEY_VIEW = Object.freeze({
   GROUPS: 'groups',
-  KNOCKOUT: 'knockout',
+  BRACKET: 'bracket',
   REVIEW: 'review',
 })
 

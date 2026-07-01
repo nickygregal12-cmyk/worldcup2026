@@ -1,10 +1,6 @@
 # Database development
 
-## Current state
-
-The Euro project has its own migration history. WC26 SQL under `supabase/reference/` is audit material only.
-
-Active migrations:
+## Active migrations
 
 1. `202606300001_euro28_core_tournament.sql`
 2. `202606300002_euro28_provisional_group_slots.sql`
@@ -15,103 +11,60 @@ Active migrations:
 7. `202607010007_euro28_auth_function_privileges.sql`
 8. `202607010008_euro28_provisional_joker_caps.sql`
 9. `202607010009_euro28_atomic_prediction_save.sql`
+10. `202607010010_euro28_competition_split_and_jokers.sql`
 
-## Prediction storage
+## Stage 8 competition model
 
-Migration 005 creates:
+Migration 010 corrects the Stage 7 combined model.
 
-- versioned `scoring_rulesets`;
-- one `prediction_sets` row per user and tournament;
-- `match_predictions` containing 90-minute scores, separate knockout progression and joker allocation;
-- audited `prediction_grace_windows`;
-- the active ruleset pointer, contract version and monotonic `prediction_locked_at` field.
+### Original predictor
 
-Both exact joker caps remain `NULL`. The current multiplier remains provisional at `2×`.
+- one `prediction_sets` row with `competition_key = 'original'`;
+- 36 group score rows in `match_predictions`;
+- five group jokers;
+- 15 winner-only pre-tournament progression rows in `bracket_predictions`;
+- no score, decision method or joker columns on bracket picks;
+- one globally locked original competition.
 
-## Authentication and profiles
+### KO Predictor
 
-Migration 006 creates Auth-linked profiles, validated case-insensitively unique display names, an Auth creation trigger and controlled profile RPCs. Migration 007 removes unintended browser-role function grants and hardens future function defaults. Migration 008 restores both provisional joker caps to `NULL` after hosted drift was detected.
+- a separate `prediction_sets` row with `competition_key = 'ko_predictor'`;
+- score predictions only for resolved real knockout fixtures;
+- 90-minute score, advancing team and decision method;
+- five separate jokers;
+- independent revision, storage, future points total, leaderboard and winner.
 
-## Atomic prediction saving
+Original and KO Predictor points must never be combined.
 
-Migration 009 adds:
+## Trusted writes
 
-- `prediction_sets.guest_imported_at`;
-- `prediction_sets.last_save_source`;
-- private resolver and validation helpers;
-- authenticated RPC `public.save_my_prediction_bundle()`.
+The browser has no direct write policies or table grants. It uses:
 
-The RPC:
+```text
+public.save_my_prediction_bundle()
+public.save_my_ko_prediction_bundle()
+```
 
-- derives the caller from `auth.uid()`;
-- locks the tournament and the caller's prediction set while saving;
-- requires a non-negative expected revision;
-- rejects stale revisions;
-- validates every supplied match and tournament-team reference;
-- validates official group participants;
-- reconstructs and validates the canonical knockout path;
-- enforces active-ruleset joker caps;
-- locks joker changes at each match kick-off;
-- locks prediction content at the tournament global lock;
-- permits content changes after global lock only through active grace for that user and match;
-- keeps `submitted_at` reversible only before global lock;
-- replaces omitted rows as part of one full-bundle transaction;
-- permits explicit complete guest import only before lock and only when account rows do not already exist.
+The original RPC validates group scores and the canonical winner-only bracket. The KO RPC validates actual resolved knockout participants, scores, advancement, method and its own joker cap.
 
-The browser receives `EXECUTE` on this RPC only. It still has no direct `INSERT`, `UPDATE` or `DELETE` privilege or policy on prediction tables. Private helper functions are unavailable to browser roles.
+## Locks and grace
 
-## Local validation
+- Original score and bracket content locks globally at the first tournament kick-off.
+- Original group jokers may still move only among matches that have not started.
+- KO Predictor rows and jokers lock per real knockout-match kick-off.
+- Grace is scoped to one competition, one user and one unstarted match.
+- Grant and revocation functions are service-role only and audited.
+
+## Validation
 
 ```bash
-cd ~/Desktop/euro28predictor
-git switch euro28-development
 npm run check
-npx supabase start
-npm run db:safety
 npx supabase db reset
 npm run test:db:005:local
 npm run test:db:006:local
 npm run test:db:008:local
 npm run test:db:009:local
+npm run test:db:010:local
 ```
 
 `db reset` must remain local. Never add `--linked`.
-
-## Staging deployment
-
-Before a remote operation, verify:
-
-```bash
-cat supabase/.temp/project-ref
-```
-
-The only acceptable value is:
-
-```text
-gcfdwobpnanjchcnvdco
-```
-
-Capture the dry run, including stderr, and confirm that only the intended migration is pending:
-
-```bash
-npx supabase db push --dry-run 2>&1 | tee /tmp/euro28-migration009-dry-run.txt
-```
-
-After deployment:
-
-```bash
-npx supabase migration list --linked
-npm run test:db:005:linked
-npm run test:db:006:linked
-npm run test:db:008:linked
-npm run test:db:009:linked
-npx supabase db lint --linked --schema public,private --level warning --fail-on error
-```
-
-## Stage 7 application layer
-
-Stage 7 adds no migration. The browser journey builds the caller's current valid bundle and sends it only through Migration 009. Guest edits remain in local browser storage. Account edits use quiet atomic autosave and optimistic revisions.
-
-## Deliberate exclusions
-
-Stage 7 does not add scoring runs, result entry, leagues, leaderboards, admin grace controls or live-result progression. Joker inputs remain hidden while both exact caps are unresolved.
