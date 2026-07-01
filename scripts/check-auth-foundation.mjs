@@ -24,7 +24,7 @@ const scoringCorrectionMigrationName = '202607010008_euro28_provisional_joker_ca
 const migrationPath = path.join(root, 'supabase/migrations', migrationName)
 const correctionMigrationPath = path.join(root, 'supabase/migrations', correctionMigrationName)
 
-if (migrations.length !== 9) fail(`Stage 6 requires nine active migrations, found ${migrations.length}`)
+if (migrations.length !== 9) fail(`Stage 7 must retain nine active migrations, found ${migrations.length}`)
 if (!migrations.includes(migrationName)) fail(`required Migration 006 is missing: ${migrationName}`)
 if (migrations.filter(name => name.includes('0006_')).length !== 1) fail('exactly one active Migration 006 file is required')
 if (!migrations.includes(correctionMigrationName)) fail(`required Migration 007 is missing: ${correctionMigrationName}`)

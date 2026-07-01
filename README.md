@@ -9,7 +9,8 @@ The verified build now includes:
 - one canonical group, best-third and knockout resolver;
 - browser-only guest prediction state;
 - Euro authentication and owner-only profiles;
-- one trusted atomic prediction save RPC.
+- one trusted atomic prediction save RPC;
+- the complete group, knockout and reversible review journey.
 
 Guest, predicted and live tournament contexts remain separate. WC26 `main` and the WC26 production Supabase project must never be used in this workflow.
 
@@ -50,6 +51,7 @@ npm run audit:guest
 npm run audit:auth
 npm run audit:scoring-correction
 npm run audit:prediction-save
+npm run audit:journey
 ```
 
 ## Database checks
@@ -68,14 +70,15 @@ Never run `npx supabase db reset --linked`.
 
 ## Current return point
 
-Stage 6 is implemented in Migration 009. Signed-in prediction writes now use `save_my_prediction_bundle()` only. The function validates ownership, expected revision, tournament lock, match-scoped grace, per-match joker timing, joker caps, group fixtures and the complete canonical knockout path before replacing the supplied full bundle in one transaction.
+Stage 7 is complete. Guests can edit all 51 predictions with immediate browser persistence. Signed-in users use quiet 800 ms autosave through `save_my_prediction_bundle()`, optimistic revisions, canonical knockout progression and a reversible submit-for-review mode.
 
-A complete browser-only guest draft can be imported deliberately before lock. It cannot overwrite existing account prediction rows. Guest state remains in the browser after import.
+A complete guest draft can still be imported deliberately before lock and cannot overwrite account predictions. Jokers remain hidden until both exact caps are confirmed.
 
-Stage 7 is next: build the real group and knockout prediction journey, quiet autosave, completeness guidance and reversible submit/review mode on top of the Stage 6 route.
+Stage 8 is next: expose server-enforced joker controls and controlled grace-window administration without changing the prediction write path.
 
 See:
 
+- `docs/STAGE-7-PREDICTION-JOURNEY.md`
 - `docs/STAGE-6-ATOMIC-PREDICTION-SAVING.md`
 - `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`
 - `docs/DATABASE.md`

@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 1.7 — Stage 6 atomic prediction saving
+### Version 1.8 — Stage 7 prediction journey
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
@@ -17,10 +17,11 @@ This document consolidates the verified tournament foundation, the agreed predic
 - Stage 4 browser-only guest/explore foundation complete.
 - Stage 5 authentication and owner-only profiles complete.
 - Stage 6 trusted atomic prediction saving implemented.
+- Stage 7 group, knockout, autosave and reversible review journey implemented.
 - Direct browser writes to prediction tables remain unavailable.
 - Guest drafts remain browser-only unless deliberately imported before lock.
 - No leagues, scoring runs, results controls or admin control room have been introduced.
-- Next stage: the real prediction journey and reversible submit/review experience.
+- Next stage: visible joker controls and audited grace-window operations.
 
 ## 3. Environment
 
@@ -108,8 +109,8 @@ Migrations 005–009 provide:
 4. Guest/explore foundation — complete.
 5. Authentication and profiles — complete.
 6. Atomic prediction saving — complete pending the standard local/linked deployment verification for Migration 009.
-7. Prediction journey and submit/review mode — next.
-8. Joker and grace controls.
+7. Prediction journey and submit/review mode — complete.
+8. Joker and grace controls — next.
 9. Results, live tables and live bracket.
 10. Scoring and idempotent recalculation.
 11. Leagues and shared prediction viewing.

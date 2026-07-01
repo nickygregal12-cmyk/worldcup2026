@@ -111,14 +111,14 @@ if (!loader.includes(".from('group_memberships')")) fail('foundation loader must
 if (!loader.includes('buildGuestReferenceModel')) fail('foundation loader must build the guest reference model')
 
 const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
-if (!app.includes('GuestWorkspaceFoundation')) fail('active foundation page must expose the guest workspace foundation')
+if (!app.includes('PredictionJourneyFoundation')) fail('active foundation page must expose guest editing through the integrated prediction journey')
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 9) fail(`Stage 6 must contain nine active migrations, found ${migrations.length}`)
+if (migrations.length !== 9) fail(`Stage 7 must retain nine active migrations, found ${migrations.length}`)
 if (!migrations.some(name => name.includes('0006_euro28_auth_profiles'))) fail('Stage 5 auth/profile Migration 006 is missing')
 if (!migrations.some(name => name.includes('0007_euro28_auth_function_privileges'))) fail('Stage 5 privilege correction Migration 007 is missing')
 if (!migrations.some(name => name.includes('0008_euro28_provisional_joker_caps'))) fail('Stage 5 scoring correction Migration 008 is missing')
-if (!migrations.some(name => name.includes('0009_euro28_atomic_prediction_save'))) fail('Stage 6 atomic save Migration 009 is missing')
+if (!migrations.some(name => name.includes('0009_euro28_atomic_prediction_save'))) fail('Migration 009 atomic saving is missing')
 
 if (errors.length > 0) {
   console.error('Euro guest/explore foundation audit failed:')

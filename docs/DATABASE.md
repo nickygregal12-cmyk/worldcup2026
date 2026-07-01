@@ -91,7 +91,7 @@ The only acceptable value is:
 gcfdwobpnanjchcnvdco
 ```
 
-Capture the dry run, including stderr, and confirm that only Migration 009 is pending:
+Capture the dry run, including stderr, and confirm that only the intended migration is pending:
 
 ```bash
 npx supabase db push --dry-run 2>&1 | tee /tmp/euro28-migration009-dry-run.txt
@@ -105,9 +105,13 @@ npm run test:db:005:linked
 npm run test:db:006:linked
 npm run test:db:008:linked
 npm run test:db:009:linked
-npx supabase db lint --linked --level warning
+npx supabase db lint --linked --schema public,private --level warning --fail-on error
 ```
+
+## Stage 7 application layer
+
+Stage 7 adds no migration. The browser journey builds the caller's current valid bundle and sends it only through Migration 009. Guest edits remain in local browser storage. Account edits use quiet atomic autosave and optimistic revisions.
 
 ## Deliberate exclusions
 
-Stage 6 does not add scoring runs, result entry, leagues, leaderboards, admin grace controls or the final prediction editor. The visible Stage 6 panel is a foundation check and explicit guest-import entry point. Stage 7 will provide the actual prediction journey.
+Stage 7 does not add scoring runs, result entry, leagues, leaderboards, admin grace controls or live-result progression. Joker inputs remain hidden while both exact caps are unresolved.

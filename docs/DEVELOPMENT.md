@@ -20,7 +20,7 @@ A batch is complete only when:
 
 ## Current compatibility state
 
-The active Euro application can reach only the foundation, auth, guest, prediction-save and canonical resolver modules. Inherited WC26 pages, stores, components and bracket utilities remain quarantined.
+The active Euro application can reach only the foundation, auth, guest, prediction-save, prediction-journey and canonical resolver modules. Inherited WC26 pages, stores, components and bracket utilities remain quarantined.
 
 ## Core contracts
 
@@ -46,15 +46,19 @@ Migration 009 is the sole prediction write path. It validates the full supplied 
 
 The guest import button is deliberately explicit. Signing in does not upload the browser draft automatically, and a guest draft cannot overwrite existing account predictions.
 
+## Prediction journey
+
+`src/journey/` is the active Stage 7 editing experience. It reuses the guest draft shape for browser and account editing, builds only server-valid rows, drives knockout participants from the canonical resolver and calls the Stage 6 RPC after an 800 ms quiet autosave delay.
+
+Submit is a reversible review state. It does not copy rows or affect scoring eligibility. Account drafts use optimistic revisions; guest drafts remain browser-only.
+
 ## Next implementation boundary
 
-Stage 7 may add:
+Stage 8 may add:
 
-- group prediction screens;
-- knockout prediction screens;
-- quiet autosave using the Stage 6 RPC;
-- save status and stale-revision recovery;
-- completeness guidance;
-- submit/review and Edit Predictions controls.
+- visible joker allocation once exact caps are agreed;
+- per-match joker lock feedback;
+- controlled admin grace-window creation and revocation;
+- audit visibility for joker and grace actions.
 
-Stage 7 must not add scoring, leagues, results entry or admin controls.
+Stage 8 must not add scoring runs, leagues, results entry or the live bracket.

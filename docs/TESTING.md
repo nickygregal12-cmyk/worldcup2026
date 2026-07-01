@@ -14,7 +14,7 @@ This runs database safety, inherited-code isolation, all Euro audits, foundation
 npm test
 ```
 
-Stage 6 has 155 passing tests across contracts, scoring configuration, resolver, guest storage, authentication and prediction-save request/service logic.
+Stage 7 has 163 passing tests across contracts, scoring configuration, resolver, guest storage, authentication and prediction-save request/service logic.
 
 ## Focused audits
 
@@ -26,9 +26,10 @@ npm run audit:guest
 npm run audit:auth
 npm run audit:scoring-correction
 npm run audit:prediction-save
+npm run audit:journey
 ```
 
-The Stage 6 audit verifies:
+The Stage 6 and Stage 7 audits verify:
 
 - exactly nine active migrations;
 - authenticated-only execution of the trusted save RPC;
@@ -37,7 +38,11 @@ The Stage 6 audit verifies:
 - full canonical bracket validation;
 - global content lock, match-scoped grace and per-match joker lock;
 - explicit complete pre-lock guest import;
-- no guest overwrite of existing account rows.
+- no guest overwrite of existing account rows;
+- groups, knockout and review are the only journey views;
+- guest edits remain local and account edits use the atomic RPC;
+- quiet autosave uses an 800 ms delay;
+- no Migration 010 or direct browser table writes.
 
 ## Database integration tests
 
@@ -80,4 +85,4 @@ After Netlify deploys the pushed commit:
 npm run verify:foundation-page
 ```
 
-This verifies Euro branding, no indexing, retired WC26 service worker behaviour, guest format, auth UI and the Stage 6 trusted save bundle.
+This verifies Euro branding, no indexing, retired WC26 service worker behaviour, guest format, auth UI and the Stage 7 prediction journey and trusted save bundle.

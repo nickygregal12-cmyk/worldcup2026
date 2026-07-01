@@ -25,7 +25,7 @@ const migrations = fs.readdirSync(migrationsDir).filter(name => name.endsWith('.
 const migrationName = ATOMIC_PREDICTION_SAVE_SCOPE.migrationFilename
 const migrationPath = path.join(migrationsDir, migrationName)
 
-if (migrations.length !== 9) fail(`Stage 6 requires nine active migrations, found ${migrations.length}`)
+if (migrations.length !== 9) fail(`Stage 7 must retain nine active migrations, found ${migrations.length}`)
 if (!migrations.includes(migrationName)) fail(`required Migration 009 is missing: ${migrationName}`)
 if (migrations.filter(name => name.includes('0009_')).length !== 1) fail('exactly one active Migration 009 file is required')
 
@@ -108,9 +108,9 @@ for (const required of [
 }
 
 const app = read('src/foundation/EuroFoundationApp.jsx')
-if (!app.includes('PredictionSaveFoundation')) fail('the active Euro foundation must expose Stage 6 prediction storage')
-const guestWorkspace = read('src/guest/GuestWorkspaceFoundation.jsx')
-if (!guestWorkspace.includes('explicit')) fail('the guest workspace must describe account import as explicit')
+if (!app.includes('PredictionJourneyFoundation')) fail('the active Euro foundation must expose Stage 6 saving through the integrated Stage 7 journey')
+const journey = read('src/journey/PredictionJourneyFoundation.jsx')
+if (!journey.includes('will never overwrite account predictions')) fail('the integrated journey must describe guest import as explicit and non-overwriting')
 
 const databaseTestPath = path.join(root, 'supabase/tests/database/009_atomic_prediction_save.test.sql')
 if (!fs.existsSync(databaseTestPath)) {

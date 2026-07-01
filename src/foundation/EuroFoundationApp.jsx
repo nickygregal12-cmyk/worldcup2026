@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ENVIRONMENT } from '../config/environment.js'
 import EuroAuthFoundation from '../auth/EuroAuthFoundation.jsx'
-import GuestWorkspaceFoundation from '../guest/GuestWorkspaceFoundation.jsx'
-import PredictionSaveFoundation from '../predictions/PredictionSaveFoundation.jsx'
+import PredictionJourneyFoundation from '../journey/PredictionJourneyFoundation.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
@@ -109,20 +108,20 @@ export default function EuroFoundationApp() {
             <span className="foundation-brand__mark" aria-hidden="true">28</span>
             <span>
               <strong>Euro 2028 Predictor</strong>
-              <small>Atomic prediction saving staging</small>
+              <small>Prediction journey staging</small>
             </span>
           </a>
-          <StatusPill tone="safe">Atomic saves · no direct table writes</StatusPill>
+          <StatusPill tone="safe">Autosave · review mode · no direct table writes</StatusPill>
         </div>
       </header>
 
       <main className="foundation-main">
         <section className="foundation-hero">
           <div>
-            <StatusPill tone="info">Stage 6 · Atomic prediction saving</StatusPill>
-            <h1>Trusted account prediction saving is now active.</h1>
+            <StatusPill tone="info">Stage 7 · Prediction journey</StatusPill>
+            <h1>The complete Euro 2028 prediction journey is now active.</h1>
             <p>
-              The guest workspace remains browser-only until an explicit import. Signed-in users now have a trusted full-bundle save route with optimistic revision, global and per-match locks, canonical bracket validation and server-enforced joker rules.
+              Guests can predict all 51 matches in this browser. Signed-in users use quiet atomic autosave, one canonical knockout bracket and a reversible submit-for-review mode before the tournament lock.
             </p>
           </div>
           <div className="foundation-environment" aria-label="Environment details">
@@ -191,14 +190,10 @@ export default function EuroFoundationApp() {
               />
             </section>
 
-            <GuestWorkspaceFoundation
-              key={state.data.guestReference.referenceVersion}
-              reference={state.data.guestReference}
-            />
-
             <EuroAuthFoundation client={clientState.client} />
 
-            <PredictionSaveFoundation
+            <PredictionJourneyFoundation
+              key={state.data.guestReference.referenceVersion}
               client={clientState.client}
               reference={state.data.guestReference}
               tournament={state.data.tournament}
@@ -233,9 +228,9 @@ export default function EuroFoundationApp() {
                   These areas will return only after their Euro-specific database design, RLS and tests are approved.
                 </p>
                 <ul className="foundation-check-list">
-                  <li>The full group and knockout editing journey</li>
-                  <li>Scoring and leaderboards</li>
-                  <li>Private leagues and sharing</li>
+                  <li>Scoring calculations and points breakdowns</li>
+                  <li>Live results, tables and the live bracket</li>
+                  <li>Private leagues, leaderboards and sharing</li>
                   <li>Admin result entry and API syncing</li>
                 </ul>
               </article>
@@ -244,12 +239,12 @@ export default function EuroFoundationApp() {
             <section className="foundation-panel foundation-next-step">
               <div>
                 <span className="foundation-kicker">Next controlled batch</span>
-                <h2>Build the complete prediction journey.</h2>
+                <h2>Add joker and grace controls.</h2>
                 <p>
-                  Stage 7 can connect the group and knockout editors, quiet autosave, completeness guidance and reversible submit/review mode to the trusted Stage 6 route.
+                  Stage 8 can expose server-enforced joker placement and controlled per-user, per-match grace windows after the final joker caps are agreed.
                 </p>
               </div>
-              <StatusPill tone="warning">Stage 7 next</StatusPill>
+              <StatusPill tone="warning">Stage 8 next</StatusPill>
             </section>
           </>
         )}

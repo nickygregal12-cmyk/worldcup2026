@@ -140,6 +140,7 @@ const protectedEuroLogicFiles = allSourceFiles.filter(filePath => {
     rel.startsWith('src/guest/') ||
     rel.startsWith('src/auth/') ||
     rel.startsWith('src/predictions/') ||
+    rel.startsWith('src/journey/') ||
     rel === 'src/config/scoringConfig.js' ||
     rel === 'src/config/__tests__/scoringConfig.test.js' ||
     rel === 'src/lib/scoring.js' ||
@@ -162,4 +163,4 @@ console.log(`Protected Euro contract files: ${protectedEuroLogicFiles.length}`)
 console.log(`Quarantined inherited source files: ${quarantinedFiles.length}`)
 console.log('Active browser database writes: 0')
 console.log('Inherited prediction, league and admin routes: unreachable')
-console.log('Euro authentication and atomic prediction saving: isolated and active')
+console.log('Euro authentication, atomic saving and prediction journey: isolated and active')
