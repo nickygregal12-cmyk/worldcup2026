@@ -4,6 +4,7 @@ import EuroAuthFoundation from '../auth/EuroAuthFoundation.jsx'
 import PredictionJourneyFoundation from '../journey/PredictionJourneyFoundation.jsx'
 import KoPredictorFoundation from '../koPredictor/KoPredictorFoundation.jsx'
 import ResultsAndLeaderboardsFoundation from '../results/ResultsAndLeaderboardsFoundation.jsx'
+import AdminOperationsFoundation from '../admin/AdminOperationsFoundation.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
@@ -110,20 +111,20 @@ export default function EuroFoundationApp() {
             <span className="foundation-brand__mark" aria-hidden="true">28</span>
             <span>
               <strong>Euro 2028 Predictor</strong>
-              <small>Results and scoring staging</small>
+              <small>Secure tournament operations staging</small>
             </span>
           </a>
-          <StatusPill tone="safe">Canonical results · separate leaderboards</StatusPill>
+          <StatusPill tone="safe">Audited admin operations · no browser table writes</StatusPill>
         </div>
       </header>
 
       <main className="foundation-main">
         <section className="foundation-hero">
           <div>
-            <StatusPill tone="info">Stage 9 · Results, scoring and leaderboards</StatusPill>
-            <h1>Canonical results now drive live tables, the live bracket and two separate leaderboards.</h1>
+            <StatusPill tone="info">Stage 10 · Admin results and tournament operations</StatusPill>
+            <h1>Secure manual result entry now sits above revisioned results, replacement scoring and two separate leaderboards.</h1>
             <p>
-              Every result has a revision and audit event. Recalculation replaces old point rows, while original-predictor and KO Predictor totals remain completely separate.
+              Tournament admins use revision checks, required notes and append-only operation logs. External score APIs remain deferred, while original-predictor and KO Predictor totals stay completely separate.
             </p>
           </div>
           <div className="foundation-environment" aria-label="Environment details">
@@ -211,6 +212,11 @@ export default function EuroFoundationApp() {
               reference={state.data.guestReference}
             />
 
+            <AdminOperationsFoundation
+              client={clientState.client}
+              reference={state.data.guestReference}
+            />
+
             <section className="foundation-two-column">
               <article className="foundation-panel">
                 <div className="foundation-section-heading">
@@ -253,10 +259,10 @@ export default function EuroFoundationApp() {
                 <span className="foundation-kicker">Next controlled batch</span>
                 <h2>Prepare league architecture and controlled shared views.</h2>
                 <p>
-                  Stage 9 establishes canonical result revisions, idempotent recalculation, live tables, a live bracket and two leaderboards. League membership and shared prediction viewing remain isolated for the next controlled stage.
+                  Stage 10 adds secure manual result entry, status controls, correction history and explicit recalculation above the Stage 9 canonical scoring layer. External score APIs and private leagues remain deferred.
                 </p>
               </div>
-              <StatusPill tone="warning">Stage 9 active</StatusPill>
+              <StatusPill tone="warning">Stage 10 active</StatusPill>
             </section>
           </>
         )}

@@ -14,9 +14,10 @@ The verified build now includes:
 - competition-scoped joker and grace controls;
 - revisioned canonical results;
 - idempotent scoring and separate leaderboards;
-- live group tables and a live knockout bracket.
+- live group tables and a live knockout bracket;
+- secure manual result entry and tournament operations.
 
-The two competitions are deliberately separate:
+The two competitions remain separate:
 
 - **Original predictor:** 36 group score predictions, five group jokers and a winner-only pre-tournament knockout bracket with no jokers.
 - **KO Predictor:** 15 real knockout fixtures, 90-minute scores, advancing teams, decision methods, five separate jokers, separate points and a separate winner.
@@ -46,7 +47,7 @@ Use only the Euro staging URL and publishable key in `.env.local`. Never expose 
 
 ```bash
 npm run check
-npm run audit:results-scoring
+npm run audit:admin-operations
 ```
 
 ## Database checks
@@ -59,12 +60,13 @@ npm run test:db:008:local
 npm run test:db:009:local
 npm run test:db:010:local
 npm run test:db:011:local
+npm run test:db:012:local
 ```
 
 Never run `npx supabase db reset --linked`.
 
 ## Current return point
 
-Stage 9 adds Migration 011. Results are revisioned and audited; corrections replace old point rows; original and KO Predictor totals and leaderboards remain separate.
+Stage 10 adds Migration 012. Tournament administrators are service-managed, result writes use optimistic revision checks and required notes, and every browser operation is append-only audited.
 
-Browser result entry, private leagues, member comparison and external result-provider integration remain deferred.
+Private leagues, member comparison and external result-provider integration remain deferred.

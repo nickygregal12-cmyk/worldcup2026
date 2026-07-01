@@ -6,25 +6,29 @@
 npm run check
 ```
 
-Stage 9 has **182 passing unit tests across 29 files** before the authoritative Docker-backed SQL run. The gate also runs database safety, all Euro audits, lint and a production build.
+Stage 10 has **196 passing unit tests across 31 files** before the authoritative Docker-backed SQL run. The gate also runs database safety, all Euro audits, lint and a production build.
 
 ## Focused audits
 
 ```bash
 npm run audit:competition-split
 npm run audit:results-scoring
+npm run audit:admin-operations
 ```
 
-The Stage 9 audit verifies:
+The Stage 10 audits verify:
 
-- eleven active migrations;
+- twelve active migrations;
 - revisioned and audited canonical results;
 - service-role-only result writes and recalculation;
 - replacement-based scoring after corrections;
 - separate original and KO Predictor totals;
 - separate authenticated leaderboards;
 - live resolver context isolation;
-- no direct browser writes.
+- no direct browser writes;
+- service-managed admin access with no browser self-grant;
+- revision-safe result writes and append-only operational auditing;
+- status-only controls and confirmed-result recalculation.
 
 ## Database tests
 
@@ -37,6 +41,7 @@ npm run test:db:008:local
 npm run test:db:009:local
 npm run test:db:010:local
 npm run test:db:011:local
+npm run test:db:012:local
 ```
 
 Against verified Euro staging:
@@ -48,6 +53,7 @@ npm run test:db:008:linked
 npm run test:db:009:linked
 npm run test:db:010:linked
 npm run test:db:011:linked
+npm run test:db:012:linked
 ```
 
 Expected established counts:
@@ -58,4 +64,4 @@ Expected established counts:
 - final-state atomic saving: 24;
 - Migration 010 competition split: 48.
 
-Migration 011 uses pgTAP `no_plan()` because its integration suite intentionally exercises result revisions, corrections, scoring replacement, penalties and both leaderboard contexts in one transaction.
+Migrations 011 and 012 use pgTAP `no_plan()` because their integration suites exercise result revisions, corrections, scoring replacement, administrator access, stale-write rejection, status controls and recalculation in complete transactions.

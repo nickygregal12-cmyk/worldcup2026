@@ -1,16 +1,17 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 2.0 — Stage 9 results, scoring and separate leaderboards
+### Version 2.1 — Stage 10 admin results and tournament operations
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
 ## Current return point
 
-- Migrations 001–011 are defined through the controlled Euro workflow.
+- Migrations 001–012 are defined through the controlled Euro workflow.
 - Canonical resolver, guest mode, authentication and atomic saving are complete.
 - Original predictor and KO Predictor are separate competitions.
 - Joker limits are 5 group, 0 original bracket and 5 KO Predictor.
 - Stage 9 adds revisioned canonical results, correction audits, idempotent scoring, live tables, a live bracket and separate leaderboards.
+- Stage 10 adds service-managed administrator access, revision-safe manual result entry, status controls, correction history and explicit recalculation.
 - Direct browser writes to predictions, results and scoring tables remain unavailable.
 - Guest predictions remain browser-only and unscored.
 
@@ -29,7 +30,9 @@
 | Scoring corrections | Replacement recalculation, never additive duplication |
 | Live vs predicted | Separate resolver contexts, never blended |
 | Guest mode | Browser-only and unscored |
-| Result writes | Service-role only until admin controls are approved |
+| Result writes | Authenticated admin RPCs after service-managed access checks |
+| Admin assignment | Service-role or trusted SQL only; never self-service in the browser |
+| Admin audit | Required notes and append-only operation events |
 
 ## Scoring model
 
@@ -58,9 +61,9 @@
 6. Atomic saving — complete.
 7. Prediction journey — complete.
 8. Competition split, jokers and grace — complete.
-9. Results, scoring, live tables and separate leaderboards — current.
-10. Leagues and controlled shared prediction viewing.
-11. Admin result and tournament control room.
+9. Results, scoring, live tables and separate leaderboards — complete.
+10. Admin result and tournament control room — current.
+11. Leagues and controlled shared prediction viewing.
 12. Shared design system and page rebuild.
 13. Seeded full-tournament test.
 14. Pre-tournament configuration and optional result-provider integration.

@@ -11,28 +11,28 @@
 
 A batch is complete only when code and documentation agree, `npm run check` passes, local reset and pgTAP pass, the linked project is verified, only the intended migration appears in the dry run, hosted tests/lint pass, and the branch is pushed cleanly.
 
-## Stage 9 architecture
+## Stage 10 architecture
 
-### Canonical results
+### Service-managed admin access
 
-`public.matches` is the current result record. `match_result_events` is the append-only revision history. Only a completed and confirmed result can score.
+`private.tournament_admins` is not browser-readable or writable. Only service-role or trusted SQL may grant or revoke access.
 
-### Idempotent scoring
+### Safe result operations
 
-`private.euro28_recalculate_points()` deletes and rebuilds affected point rows. A correction cannot add a second award on top of the first.
+Browser controls use authenticated security-definer RPCs. Result writes include an expected revision, require a note and fail rather than overwrite a newer correction.
 
-### Original predictor
+### Append-only audit
 
-Group scores and original bracket milestones feed only the original total and original leaderboard.
+`admin_operation_events` records grants, revocations, result writes, status changes and manual recalculation. Rows cannot be updated or deleted.
 
-### KO Predictor
+### Status and recalculation
 
-Real knockout scores, advancing teams, methods and KO jokers feed only the KO Predictor total and KO leaderboard.
+Status-only changes preserve the result revision. Explicit recalculation is limited to confirmed results and uses the Stage 9 replacement-scoring function.
 
-### Live context
+### Canonical separation
 
-`src/results/` converts canonical result rows into `live` resolver records. Guest, predicted and live records cannot be mixed.
+Original predictor totals and KO Predictor totals remain separate. Guest, predicted and live resolver contexts remain separate.
 
 ## Deliberate exclusions
 
-Stage 9 does not implement browser result-entry controls, private leagues, member prediction comparison, the full admin control room or an external result provider.
+Stage 10 does not implement private leagues, shared member prediction viewing, automated result polling or an external result provider.

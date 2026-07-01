@@ -1611,3 +1611,164 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Stage 10 secure tournament administration */
+.foundation-admin {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.foundation-admin-action-message {
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(42, 142, 91, 0.25);
+  border-radius: 0.8rem;
+  background: rgba(42, 142, 91, 0.08);
+  color: var(--foundation-text);
+}
+
+.foundation-admin-layout {
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 2fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.foundation-admin-match-list,
+.foundation-admin-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.foundation-admin-match-list {
+  position: sticky;
+  top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 1rem;
+  background: var(--foundation-card);
+}
+
+.foundation-admin label {
+  display: grid;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--foundation-muted);
+}
+
+.foundation-admin select,
+.foundation-admin input,
+.foundation-admin textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.7rem;
+  background: var(--foundation-surface);
+  color: var(--foundation-text);
+  padding: 0.7rem 0.75rem;
+  font: inherit;
+}
+
+.foundation-admin textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.foundation-admin-match-summary {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--foundation-border);
+}
+
+.foundation-admin-match-summary span,
+.foundation-admin-match-summary small {
+  color: var(--foundation-muted);
+}
+
+.foundation-admin-form-grid,
+.foundation-admin-score-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.foundation-admin-score-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 0.9rem;
+}
+
+.foundation-admin-note {
+  margin-top: 0.9rem;
+}
+
+.foundation-admin-validation {
+  margin: 0.8rem 0;
+  padding: 0.8rem 1rem 0.8rem 2rem;
+  border-radius: 0.75rem;
+  background: rgba(173, 70, 51, 0.09);
+  color: var(--foundation-warning);
+}
+
+.foundation-admin-history {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.foundation-admin-history li,
+.foundation-admin-runs > div {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--foundation-border);
+}
+
+.foundation-admin-history li:last-child,
+.foundation-admin-runs > div:last-child {
+  border-bottom: 0;
+}
+
+.foundation-admin-history li > div,
+.foundation-admin-runs > div {
+  justify-content: space-between;
+}
+
+.foundation-admin-history li > div {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.foundation-admin-history p {
+  margin: 0;
+}
+
+.foundation-admin-history span,
+.foundation-admin-history small,
+.foundation-admin-runs span,
+.foundation-admin-runs small {
+  color: var(--foundation-muted);
+}
+
+.foundation-admin-runs {
+  display: grid;
+}
+
+@media (max-width: 860px) {
+  .foundation-admin-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .foundation-admin-match-list {
+    position: static;
+  }
+
+  .foundation-admin-form-grid,
+  .foundation-admin-score-grid {
+    grid-template-columns: 1fr;
+  }
+}

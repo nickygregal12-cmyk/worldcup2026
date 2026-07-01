@@ -13,6 +13,7 @@
 9. `202607010009_euro28_atomic_prediction_save.sql`
 10. `202607010010_euro28_competition_split_and_jokers.sql`
 11. `202607010011_euro28_results_scoring_leaderboards.sql`
+12. `202607010012_euro28_admin_results_operations.sql`
 
 ## Competition model
 
@@ -38,12 +39,14 @@ No database total combines the two competitions.
 
 Current result fields remain on `public.matches`. Migration 011 adds result status, revision and confirmation metadata. `match_result_events` is the append-only correction history.
 
-Only service role may call:
+The canonical writers remain private and trusted:
 
 ```text
 private.euro28_record_match_result()
 private.euro28_recalculate_points()
 ```
+
+Stage 10 browser administration calls public security-definer wrappers after checking `private.tournament_admins`. Admin assignment itself remains service-role only.
 
 Only completed and confirmed results score. Void, pending and manual-review results do not score.
 
@@ -65,7 +68,7 @@ public.get_competition_leaderboard()
 public.get_my_competition_points()
 ```
 
-Direct browser writes to result and scoring tables remain unavailable.
+Direct browser writes to result, scoring and admin tables remain unavailable. Every admin action writes an append-only `admin_operation_events` record.
 
 ## Validation
 
@@ -78,6 +81,7 @@ npm run test:db:008:local
 npm run test:db:009:local
 npm run test:db:010:local
 npm run test:db:011:local
+npm run test:db:012:local
 ```
 
 `db reset` must remain local. Never add `--linked`.
