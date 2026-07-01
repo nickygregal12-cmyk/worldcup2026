@@ -54,3 +54,9 @@ The inherited WC26 code currently has a large pre-existing full-lint backlog. It
 - `supabase/reference/` contains audit material only and must not be executed directly.
 
 See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, `docs/DEPLOYMENT.md`, `docs/STAGE-2-APPLICATION-ISOLATION.md`, `docs/STAGE-2-PREDICTION-CONTRACTS.md`, and `docs/STAGE-2-PREDICTION-DATABASE-DESIGN.md`.
+
+## Current Euro development return point
+
+Stage 2 rules have been reconciled before Migration 005. Submit is a reversible review state, jokers are included with per-match kick-off locks, exceptional grace is user-and-match scoped, and guest mode is part of the shared resolver architecture. The previously generated Batch 4 package is superseded and must not be used.
+
+See `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`.

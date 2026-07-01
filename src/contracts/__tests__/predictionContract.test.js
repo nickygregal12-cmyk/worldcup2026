@@ -5,6 +5,7 @@ import {
   calculateMatchPredictionPoints,
   EURO_PREDICTION_CONTRACT_VERSION,
   getScoreOutcome,
+  JOKER_RULES,
   KNOCKOUT_MATCH_POINTS,
   MATCH_SCORE_POINTS,
   validateGroupPrediction,
@@ -16,7 +17,7 @@ const participants = { homeTeamId: 'home', awayTeamId: 'away' }
 
 describe('Euro prediction contract', () => {
   it('has an explicit version', () => {
-    expect(EURO_PREDICTION_CONTRACT_VERSION).toBe('euro28-v1')
+    expect(EURO_PREDICTION_CONTRACT_VERSION).toBe('euro28-v2')
   })
 
   it('accepts non-negative integer group scores only after participants resolve', () => {
@@ -100,11 +101,13 @@ describe('uniform match scoring', () => {
       decisionMethod: DECISION_METHOD.PENALTIES,
     }, { isKnockout: true })
 
-    expect(points).toEqual({
+    expect(points).toMatchObject({
       exactScore: MATCH_SCORE_POINTS.EXACT_SCORE,
       correctOutcome: 0,
       correctAdvancingTeam: KNOCKOUT_MATCH_POINTS.CORRECT_ADVANCING_TEAM,
       correctDecisionMethod: KNOCKOUT_MATCH_POINTS.CORRECT_DECISION_METHOD,
+      jokerApplied: false,
+      jokerMultiplier: 1,
       total: MATCH_SCORE_POINTS.EXACT_SCORE +
         KNOCKOUT_MATCH_POINTS.CORRECT_ADVANCING_TEAM +
         KNOCKOUT_MATCH_POINTS.CORRECT_DECISION_METHOD,
@@ -128,7 +131,22 @@ describe('uniform match scoring', () => {
     expect(points.total).toBe(MATCH_SCORE_POINTS.EXACT_SCORE)
   })
 
-  it('has no joker or confidence multiplier', () => {
+  it('applies the centrally configured joker multiplier', () => {
+    const ordinary = calculateMatchPredictionPoints(
+      { home_score: 2, away_score: 0 },
+      { normalTimeHomeGoals: 2, normalTimeAwayGoals: 0 },
+    )
+    const joker = calculateMatchPredictionPoints(
+      { home_score: 2, away_score: 0 },
+      { normalTimeHomeGoals: 2, normalTimeAwayGoals: 0 },
+      { jokerApplied: true },
+    )
+    expect(joker.jokerApplied).toBe(true)
+    expect(joker.jokerMultiplier).toBe(JOKER_RULES.MULTIPLIER)
+    expect(joker.total).toBe(ordinary.total * JOKER_RULES.MULTIPLIER)
+  })
+
+  it('does not treat the legacy confidence field as a joker', () => {
     const ordinary = calculateMatchPredictionPoints(
       { home_score: 2, away_score: 0 },
       { normalTimeHomeGoals: 2, normalTimeAwayGoals: 0 },
@@ -138,6 +156,7 @@ describe('uniform match scoring', () => {
       { normalTimeHomeGoals: 2, normalTimeAwayGoals: 0 },
     )
     expect(legacyShaped.total).toBe(ordinary.total)
+    expect(legacyShaped.jokerApplied).toBe(false)
   })
 })
 

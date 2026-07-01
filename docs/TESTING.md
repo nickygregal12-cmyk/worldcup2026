@@ -58,3 +58,15 @@ This verifies that Migration 005 has not been created prematurely, the design
 uses the three agreed tables, the browser cannot write directly to them, the
 database clock controls the one global lock, scoring values remain versioned in
 one ruleset, and future saves use an atomic bundle with optimistic revision.
+
+## Reconciled contract tests
+
+The contract suite must prove:
+
+- submit does not copy rows or affect eligibility;
+- prediction content locks globally;
+- joker movement locks at each target match kick-off;
+- grace works only before both its expiry and the target match kick-off;
+- joker values come from the central provisional scoring configuration;
+- guest mode has no server-side storage;
+- the revised Migration 005 blueprint remains non-executable and no active fifth migration exists.

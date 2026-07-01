@@ -15,11 +15,24 @@ describe('Euro scoring configuration', () => {
     expect(EURO_SCORING_CONFIG.version).toContain('provisional')
   })
 
-  it('rejects invalid point values', () => {
-    const invalid = {
+  it('includes jokers while leaving exact caps visibly unresolved', () => {
+    expect(EURO_SCORING_CONFIG.joker.ENABLED).toBe(true)
+    expect(EURO_SCORING_CONFIG.joker.MULTIPLIER).toBeGreaterThan(0)
+    expect(EURO_SCORING_CONFIG.joker.GROUP_STAGE_CAP).toBeNull()
+    expect(EURO_SCORING_CONFIG.joker.KNOCKOUT_CAP).toBeNull()
+  })
+
+  it('rejects invalid point and joker values', () => {
+    const invalidPoints = {
       ...EURO_SCORING_CONFIG,
       match: { ...EURO_SCORING_CONFIG.match, EXACT_SCORE: -1 },
     }
-    expect(validateScoringConfig(invalid).valid).toBe(false)
+    expect(validateScoringConfig(invalidPoints).valid).toBe(false)
+
+    const invalidJoker = {
+      ...EURO_SCORING_CONFIG,
+      joker: { ...EURO_SCORING_CONFIG.joker, MULTIPLIER: 0 },
+    }
+    expect(validateScoringConfig(invalidJoker).valid).toBe(false)
   })
 })

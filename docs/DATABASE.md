@@ -132,3 +132,7 @@ knockout resolver is implemented and tested.
 
 Files under `supabase/design/` are not migration history and must never be
 passed to `supabase db push`.
+
+## Revised prediction-storage boundary
+
+The next Migration 005 must plan four tables: `scoring_rulesets`, `prediction_sets`, `match_predictions`, and `prediction_grace_windows`. It must include `submitted_at` and `joker_applied`, keep joker caps and multiplier on the versioned ruleset, enable RLS, and grant no browser writes. Guest predictions have no server storage.

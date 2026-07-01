@@ -1,11 +1,17 @@
-import { PREDICTION_LOCK_STATE, resolvePredictionLock } from './lockContract.js'
+import {
+  PREDICTION_LOCK_STATE,
+  canEditJoker,
+  canUsePredictionGrace,
+  resolvePredictionLock,
+} from './lockContract.js'
 
-export const EURO_PREDICTION_DATABASE_CONTRACT_VERSION = 'euro28-prediction-db-v1'
+export const EURO_PREDICTION_DATABASE_CONTRACT_VERSION = 'euro28-prediction-db-v2'
 
 export const PREDICTION_DATABASE_TABLES = Object.freeze({
   SCORING_RULESETS: 'scoring_rulesets',
   PREDICTION_SETS: 'prediction_sets',
   MATCH_PREDICTIONS: 'match_predictions',
+  PREDICTION_GRACE_WINDOWS: 'prediction_grace_windows',
 })
 
 export const PREDICTION_DATABASE_SCOPE = Object.freeze({
@@ -35,6 +41,9 @@ export const SCORING_RULE_CODES = Object.freeze([
   'bracket_semi_final',
   'bracket_final',
   'bracket_champion',
+  'joker_multiplier',
+  'joker_group_stage_cap',
+  'joker_knockout_cap',
 ])
 
 export const PREDICTION_SET_COLUMNS = Object.freeze([
@@ -44,6 +53,7 @@ export const PREDICTION_SET_COLUMNS = Object.freeze([
   'contract_version',
   'scoring_ruleset_id',
   'revision',
+  'submitted_at',
   'created_at',
   'updated_at',
 ])
@@ -59,8 +69,21 @@ export const MATCH_PREDICTION_COLUMNS = Object.freeze([
   'away_score_90',
   'advancing_tournament_team_id',
   'decision_method',
+  'joker_applied',
   'created_at',
   'updated_at',
+])
+
+export const PREDICTION_GRACE_WINDOW_COLUMNS = Object.freeze([
+  'id',
+  'tournament_id',
+  'user_id',
+  'match_id',
+  'granted_by_user_id',
+  'granted_at',
+  'expires_at',
+  'reason',
+  'created_at',
 ])
 
 export const PREDICTION_WRITE_MODEL = Object.freeze({
@@ -71,6 +94,9 @@ export const PREDICTION_WRITE_MODEL = Object.freeze({
   serverControlsOwnership: true,
   serverControlsTimestamps: true,
   validatesWholeBracketPath: true,
+  validatesJokerCaps: true,
+  validatesJokerMatchKickoff: true,
+  validatesGraceScope: true,
   deletesOmittedDraftRowsBeforeLock: true,
   implementationMigration: '006_or_later',
 })
@@ -84,10 +110,38 @@ export const PREDICTION_VISIBILITY_MODEL = Object.freeze({
 })
 
 export const PREDICTION_COMPLETION_MODEL = Object.freeze({
-  explicitSubmitRequired: false,
+  submitReviewModeAvailable: true,
+  submitAffectsEligibility: false,
+  submitCopiesPredictionRows: false,
+  editReviewModeBeforeLock: true,
   savesAreDraftsUntilGlobalLock: true,
   completenessIsDerived: true,
   incompleteRowsMayRemainAtLock: true,
+})
+
+export const JOKER_DATABASE_MODEL = Object.freeze({
+  enabled: true,
+  storedOnMatchPrediction: true,
+  capsStoredOnRuleset: true,
+  movableOnlyBetweenUnstartedMatches: true,
+  serverEnforced: true,
+})
+
+export const GRACE_WINDOW_DATABASE_MODEL = Object.freeze({
+  enabled: true,
+  scope: 'user_and_match',
+  adminGranted: true,
+  targetMatchMustBeUnstarted: true,
+  expiresAutomatically: true,
+  audited: true,
+})
+
+export const GUEST_PREDICTION_MODEL = Object.freeze({
+  coreArchitectureContext: true,
+  serverStorage: false,
+  scored: false,
+  usesCanonicalResolver: true,
+  importBeforeLockPlanned: true,
 })
 
 export const DATABASE_SCORING_MODEL = Object.freeze({
@@ -96,6 +150,7 @@ export const DATABASE_SCORING_MODEL = Object.freeze({
   activeRulesetReferencedByTournament: true,
   predictionSetPinsRuleset: true,
   numericValuesStoredOnRulesetOnly: true,
+  jokerValuesStoredOnRulesetOnly: true,
   lockedRulesetsImmutable: true,
   pointValuesCopiedIntoPredictionRows: false,
 })
@@ -108,43 +163,34 @@ function isGoal(value) {
   return Number.isInteger(value) && value >= 0 && value <= 99
 }
 
-/**
- * Database-facing access model. The database clock and persisted lock are
- * authoritative. A missing scheduled lock fails closed.
- */
 export function resolvePredictionDatabaseAccess({
   userId,
   ownerId,
   now = new Date(),
   scheduledLockAt = null,
   persistedLockedAt = null,
+  matchKickoffAt = null,
+  graceExpiresAt = null,
 } = {}) {
   const authenticated = nonEmptyString(userId)
   const owner = authenticated && userId === ownerId
-  const lock = resolvePredictionLock({
-    now,
-    openingKickoffAt: scheduledLockAt,
-    persistedLockedAt,
-  })
+  const lock = resolvePredictionLock({ now, openingKickoffAt: scheduledLockAt, persistedLockedAt })
+  const grace = owner && canUsePredictionGrace({ now, matchKickoffAt, graceExpiresAt })
 
   return Object.freeze({
     lockState: lock.state,
     canRead: owner || (authenticated && lock.canReveal),
-    canMutate: owner && lock.canEdit,
+    canMutatePredictionContent: owner && (lock.canEdit || grace),
+    canMutateJoker: owner && canEditJoker({ now, matchKickoffAt }),
+    graceActive: grace,
     revealToAuthenticated: authenticated && lock.canReveal,
     failClosed: lock.state === PREDICTION_LOCK_STATE.UNCONFIGURED,
   })
 }
 
-/**
- * Shape-only validation for the future atomic bundle endpoint. Canonical
- * participant and bracket-path validation remains a trusted server concern.
- */
 export function validatePredictionBundleShape(bundle) {
   const errors = []
-  if (!bundle || typeof bundle !== 'object') {
-    return { valid: false, errors: ['bundle is required'] }
-  }
+  if (!bundle || typeof bundle !== 'object') return { valid: false, errors: ['bundle is required'] }
   if (!nonEmptyString(bundle.tournament_id)) errors.push('tournament_id is required')
   if (!Number.isInteger(bundle.expected_revision) || bundle.expected_revision < 0) {
     errors.push('expected_revision must be a non-negative integer')
@@ -176,6 +222,9 @@ export function validatePredictionBundleShape(bundle) {
     }
     if (!isGoal(prediction.home_score_90)) errors.push(`${prefix}.home_score_90 must be an integer from 0 to 99`)
     if (!isGoal(prediction.away_score_90)) errors.push(`${prefix}.away_score_90 must be an integer from 0 to 99`)
+    if (prediction.joker_applied != null && typeof prediction.joker_applied !== 'boolean') {
+      errors.push(`${prefix}.joker_applied must be a boolean`)
+    }
   })
 
   return { valid: errors.length === 0, errors }
@@ -183,32 +232,21 @@ export function validatePredictionBundleShape(bundle) {
 
 export function validatePredictionDatabaseContract() {
   const errors = []
-  if (PREDICTION_DATABASE_SCOPE.createsBrowserTableWrites) {
-    errors.push('Migration 005 must not enable direct browser table writes')
-  }
-  if (PREDICTION_WRITE_MODEL.mode !== 'atomic_bundle') {
-    errors.push('prediction writes must use one atomic bundle')
-  }
-  if (!PREDICTION_WRITE_MODEL.expectedRevisionRequired) {
-    errors.push('prediction writes must reject stale revisions')
-  }
-  if (!PREDICTION_WRITE_MODEL.databaseTimeAuthoritative) {
-    errors.push('the database clock must be authoritative')
-  }
-  if (!DATABASE_SCORING_MODEL.lockedRulesetsImmutable) {
-    errors.push('locked scoring rulesets must be immutable')
-  }
-  if (DATABASE_SCORING_MODEL.pointValuesCopiedIntoPredictionRows) {
-    errors.push('prediction rows must not copy scoring point values')
-  }
-  if (PREDICTION_VISIBILITY_MODEL.otherAuthenticatedUsersCanReadBeforeLock) {
-    errors.push('other users must not see predictions before the global lock')
-  }
-  if (!PREDICTION_VISIBILITY_MODEL.authenticatedUsersCanReadAfterLock) {
-    errors.push('authenticated users must be able to view predictions after the global lock')
-  }
-  if (new Set(SCORING_RULE_CODES).size !== SCORING_RULE_CODES.length) {
-    errors.push('scoring rule codes must be unique')
-  }
+  if (PREDICTION_DATABASE_SCOPE.createsBrowserTableWrites) errors.push('Migration 005 must not enable direct browser table writes')
+  if (PREDICTION_WRITE_MODEL.mode !== 'atomic_bundle') errors.push('prediction writes must use one atomic bundle')
+  if (!PREDICTION_WRITE_MODEL.expectedRevisionRequired) errors.push('prediction writes must reject stale revisions')
+  if (!PREDICTION_WRITE_MODEL.databaseTimeAuthoritative) errors.push('the database clock must be authoritative')
+  if (!PREDICTION_WRITE_MODEL.validatesJokerCaps) errors.push('the server must validate joker caps')
+  if (!PREDICTION_WRITE_MODEL.validatesJokerMatchKickoff) errors.push('the server must lock jokers at match kick-off')
+  if (!DATABASE_SCORING_MODEL.lockedRulesetsImmutable) errors.push('locked scoring rulesets must be immutable')
+  if (DATABASE_SCORING_MODEL.pointValuesCopiedIntoPredictionRows) errors.push('prediction rows must not copy scoring point values')
+  if (PREDICTION_VISIBILITY_MODEL.otherAuthenticatedUsersCanReadBeforeLock) errors.push('other users must not see predictions before the global lock')
+  if (!PREDICTION_VISIBILITY_MODEL.authenticatedUsersCanReadAfterLock) errors.push('authenticated users must be able to view predictions after the global lock')
+  if (PREDICTION_COMPLETION_MODEL.submitAffectsEligibility) errors.push('submission must not affect eligibility')
+  if (PREDICTION_COMPLETION_MODEL.submitCopiesPredictionRows) errors.push('submission must not copy prediction rows')
+  if (!JOKER_DATABASE_MODEL.enabled) errors.push('jokers must be represented in the storage design')
+  if (GRACE_WINDOW_DATABASE_MODEL.scope !== 'user_and_match') errors.push('grace windows must be scoped to one user and match')
+  if (GUEST_PREDICTION_MODEL.serverStorage) errors.push('guest predictions must not use server storage')
+  if (new Set(SCORING_RULE_CODES).size !== SCORING_RULE_CODES.length) errors.push('scoring rule codes must be unique')
   return { valid: errors.length === 0, errors }
 }

@@ -1,13 +1,15 @@
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
 import { DECISION_METHOD } from './resultContract.js'
 
-export const EURO_PREDICTION_CONTRACT_VERSION = 'euro28-v1'
+export const EURO_PREDICTION_CONTRACT_VERSION = 'euro28-v2'
 
 export const MATCH_SCORE_POINTS = EURO_SCORING_CONFIG.match
 
 export const KNOCKOUT_MATCH_POINTS = EURO_SCORING_CONFIG.knockout
 
 export const BRACKET_REACH_POINTS = EURO_SCORING_CONFIG.bracket
+
+export const JOKER_RULES = EURO_SCORING_CONFIG.joker
 
 export const BRACKET_MILESTONES = Object.freeze(Object.keys(BRACKET_REACH_POINTS))
 
@@ -85,13 +87,16 @@ function calculateBaseScorePoints(prediction, result) {
  * advancement and method are separate, transparent additions. A method bonus
  * is available only when the advancing team is also correct.
  */
-export function calculateMatchPredictionPoints(prediction, canonicalResult, { isKnockout = false } = {}) {
+export function calculateMatchPredictionPoints(prediction, canonicalResult, { isKnockout = false, jokerApplied = false } = {}) {
   if (!prediction || !canonicalResult) {
     return Object.freeze({
       exactScore: 0,
       correctOutcome: 0,
       correctAdvancingTeam: 0,
       correctDecisionMethod: 0,
+      jokerApplied: false,
+      jokerMultiplier: 1,
+      totalBeforeJoker: 0,
       total: 0,
     })
   }
@@ -107,12 +112,18 @@ export function calculateMatchPredictionPoints(prediction, canonicalResult, { is
     }
   }
 
+  const totalBeforeJoker = base.total + advancing + method
+  const jokerMultiplier = jokerApplied && JOKER_RULES.ENABLED ? JOKER_RULES.MULTIPLIER : 1
+
   return Object.freeze({
     exactScore: base.exactScore,
     correctOutcome: base.correctOutcome,
     correctAdvancingTeam: advancing,
     correctDecisionMethod: method,
-    total: base.total + advancing + method,
+    jokerApplied: jokerApplied && JOKER_RULES.ENABLED,
+    jokerMultiplier,
+    totalBeforeJoker,
+    total: totalBeforeJoker * jokerMultiplier,
   })
 }
 

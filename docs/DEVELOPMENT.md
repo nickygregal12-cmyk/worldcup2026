@@ -52,3 +52,13 @@ Migration 005 is deliberately schema/read-security only. It must not grant
 direct prediction-table writes to the browser. The trusted atomic save path is
 deferred until the canonical Euro group-table, best-third and knockout resolver
 has its own tests.
+
+## Reconciled prediction workflow
+
+- Prediction content locks at the opening tournament kick-off.
+- Submit is a reversible review mode and never an eligibility gate.
+- Autosave will use one server-validated atomic bundle with expected revision.
+- Jokers remain movable only between unstarted matches.
+- Exceptional grace is limited to one user and one unstarted match and must be audited.
+- Guest predictions remain browser-only but use the canonical resolver.
+- Do not create or apply Migration 005 until the reconciled contracts pass.
