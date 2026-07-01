@@ -17,7 +17,9 @@
     "audit:legacy": "node scripts/check-legacy-boundary.mjs",
     "verify:foundation-page": "node scripts/verify-euro28-foundation-page.mjs",
     "audit:contracts": "node scripts/check-prediction-contracts.mjs",
-    "audit:db-design": "node scripts/check-prediction-database-design.mjs"
+    "audit:db-design": "node scripts/check-prediction-database-design.mjs",
+    "test:db:005:local": "npx supabase test db --local supabase/tests/database/005_prediction_storage.test.sql",
+    "test:db:005:linked": "npx supabase test db --linked supabase/tests/database/005_prediction_storage.test.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

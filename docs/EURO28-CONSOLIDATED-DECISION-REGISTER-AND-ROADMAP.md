@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 1.0 — Pre-Migration 005 reconciliation
+### Version 1.1 — Migration 005 implementation
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
@@ -12,13 +12,15 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 
 ## 2. Current return point
 
-**Do not use the previously generated Stage 2 Batch 4 ZIP.**
+**The earlier Batch 4 ZIP remains superseded. Use only the revised Migration 005 package.**
 
 - Stage 1 complete.
-- Stage 2 Batch 1 complete.
-- Stage 2 Batch 2 complete, but some assumptions are superseded.
-- Stage 2 Batch 3 complete, but the database design needs revision.
-- Next task: update contracts, tests, roadmap and Migration 005 design before applying anything.
+- Stage 2 application isolation complete.
+- Stage 2 rules and database contracts reconciled.
+- Revised Migration 005 implemented as a storage-only foundation.
+- Four prediction tables, RLS, read policies, central scoring configuration, joker allocation and grace-window storage are included.
+- The final atomic save route, guest server storage, auth UI, leagues, scoring runs and admin result UI remain excluded.
+- Completion requires local reset, local pgTAP, linked-project verification, dry run, staging push and linked pgTAP.
 
 ## 3. Environment
 
@@ -80,25 +82,23 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 - All use the same canonical resolver.
 - Predicted and live brackets are never blended.
 
-## 6. Revised Migration 005 requirements
+## 6. Migration 005 delivered scope
 
-- Scoring rulesets.
-- Prediction sets.
-- Match predictions.
-- `submitted_at`.
-- Joker allocation structure.
-- Configurable joker caps/multiplier.
-- Global prediction lock and per-match joker lock distinction.
-- Grace-window foundation.
-- RLS enabled.
-- No browser writes.
-- No final save route yet.
-- No auth UI, leagues, scoring runs or admin result UI.
+- `scoring_rulesets`, `prediction_sets`, `match_predictions` and `prediction_grace_windows`.
+- Reversible `submitted_at`.
+- Match-level `joker_applied`.
+- Central configurable joker caps and multiplier.
+- Scheduled and persisted global prediction locks.
+- Per-match joker timing support.
+- Expiring and revocable audited grace records.
+- RLS on all new tables.
+- Controlled reads and no browser writes.
+- No final save route, guest server storage, auth UI, leagues, scoring runs or admin result UI.
 
 ## 7. Roadmap
 
-1. Reconciliation batch.
-2. Revised Migration 005.
+1. Reconciliation batch — complete.
+2. Revised Migration 005 — implemented; deployment verification required.
 3. Canonical tournament resolver.
 4. Guest/explore foundation.
 5. Authentication and profiles.
@@ -115,12 +115,14 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 
 ## 8. Immediate next actions
 
-1. Update Stage 2 contracts and tests.
-2. Add this roadmap to the repository.
-3. Regenerate Batch 4 and Migration 005.
-4. Install only the revised package when the laptop is available.
-5. Local reset, dry run, push and hosted verification.
-6. Create a polished separate-chat handover after Migration 005.
+1. Install only the revised Batch 4 package.
+2. Run `npm run check`.
+3. Run a local Supabase reset and the Migration 005 pgTAP file.
+4. Confirm the linked ref is `gcfdwobpnanjchcnvdco`.
+5. Dry-run and push only Migration 005.
+6. Confirm linked migration history and run linked pgTAP.
+7. Commit, push and confirm a clean working tree.
+8. Begin Stage 3 with the canonical tournament resolver.
 
 ## 9. Open decisions
 

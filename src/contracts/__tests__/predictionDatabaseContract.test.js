@@ -13,6 +13,7 @@ import {
   PREDICTION_VISIBILITY_MODEL,
   PREDICTION_WRITE_MODEL,
   SCORING_RULE_CODES,
+  SCORING_RULESET_COLUMNS,
   resolvePredictionDatabaseAccess,
   validatePredictionBundleShape,
   validatePredictionDatabaseContract,
@@ -20,13 +21,15 @@ import {
 
 describe('reconciled Euro prediction database design', () => {
   it('keeps Migration 005 storage-only with no direct browser writes', () => {
-    expect(PREDICTION_DATABASE_SCOPE.plannedMigrationNumber).toBe('005')
+    expect(PREDICTION_DATABASE_SCOPE.migrationNumber).toBe('005')
+    expect(PREDICTION_DATABASE_SCOPE.activeMigrationCountAfterImplementation).toBe(5)
     expect(PREDICTION_DATABASE_SCOPE.createsBrowserTableWrites).toBe(false)
+    expect(PREDICTION_DATABASE_SCOPE.createsFinalSaveRpc).toBe(false)
     expect(PREDICTION_WRITE_MODEL.implementationMigration).toBe('006_or_later')
   })
 
   it('plans four focused tables including audited grace windows', () => {
-    expect(PREDICTION_DATABASE_SCOPE.plannedTables).toEqual([
+    expect(PREDICTION_DATABASE_SCOPE.createdTables).toEqual([
       PREDICTION_DATABASE_TABLES.SCORING_RULESETS,
       PREDICTION_DATABASE_TABLES.PREDICTION_SETS,
       PREDICTION_DATABASE_TABLES.MATCH_PREDICTIONS,
@@ -34,6 +37,7 @@ describe('reconciled Euro prediction database design', () => {
     ])
     expect(PREDICTION_GRACE_WINDOW_COLUMNS).toContain('expires_at')
     expect(PREDICTION_GRACE_WINDOW_COLUMNS).toContain('granted_by_user_id')
+    expect(PREDICTION_GRACE_WINDOW_COLUMNS).toContain('revoked_at')
   })
 
   it('stores submission only as a reversible review state', () => {
@@ -118,6 +122,9 @@ describe('reconciled Euro prediction database design', () => {
     expect(DATABASE_SCORING_MODEL.pointValuesCopiedIntoPredictionRows).toBe(false)
     expect(DATABASE_SCORING_MODEL.jokerValuesStoredOnRulesetOnly).toBe(true)
     expect(SCORING_RULE_CODES).toHaveLength(12)
+    expect(SCORING_RULESET_COLUMNS).toContain('joker_multiplier')
+    expect(SCORING_RULESET_COLUMNS).toContain('group_stage_joker_cap')
+    expect(SCORING_RULESET_COLUMNS).toContain('knockout_joker_cap')
   })
 
   it('makes guest mode architectural but never server-persisted', () => {
@@ -151,5 +158,6 @@ describe('reconciled Euro prediction database design', () => {
   it('keeps the reconciled design internally consistent', () => {
     expect(validatePredictionDatabaseContract()).toEqual({ valid: true, errors: [] })
     expect(PREDICTION_VISIBILITY_MODEL.rawWritesGrantedToAuthenticated).toBe(false)
+    expect(PREDICTION_DATABASE_SCOPE.createsGuestServerStorage).toBe(false)
   })
 })

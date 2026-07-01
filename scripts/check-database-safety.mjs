@@ -115,7 +115,17 @@ for (const migrationPath of activeMigrationFiles) {
     migrationVersions.add(filenameMatch[1])
   }
 
-  const content = fs.readFileSync(migrationPath, 'utf8').toLowerCase()
+  const rawContent = fs.readFileSync(migrationPath, 'utf8')
+  const content = rawContent.toLowerCase()
+
+  if (/for\s+(insert|update|delete|all)\s+to\s+(anon|authenticated)/i.test(rawContent)) {
+    errors.push(`${relative(migrationPath)} creates a browser write policy.`)
+  }
+
+  const browserWriteGrant = /grant\s+(?:all|[\s\S]{0,100}\b(?:insert|update|delete)\b)[\s\S]{0,250}?\bto\s+(?:anon|authenticated)\b/i
+  if (browserWriteGrant.test(rawContent)) {
+    errors.push(`${relative(migrationPath)} grants direct browser writes.`)
+  }
 
   for (const term of blockedActiveTerms) {
     if (content.includes(term.toLowerCase())) {
@@ -196,4 +206,4 @@ console.log(
     : 'Linked staging project: not linked in this working copy',
 )
 console.log('WC26 production project reference: blocked')
-console.log('Browser write policies in baseline: none')
+console.log('Browser write policies and grants in active migrations: none')

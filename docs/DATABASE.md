@@ -2,137 +2,110 @@
 
 ## Current state
 
-The Euro staging database starts from a clean migration history. The WC26
-production schema and its historical hardening migration are reference material
-only.
+The Euro staging database uses its own clean migration history. WC26 production SQL remains reference material only.
 
-Active database files:
+Active migrations:
 
-- `supabase/config.toml`
-- `supabase/migrations/202606300001_euro28_core_tournament.sql`
-- `supabase/seed.sql` (intentionally empty until the next data batch)
+1. `202606300001_euro28_core_tournament.sql`
+2. `202606300002_euro28_provisional_group_slots.sql`
+3. `202606300003_euro28_official_group_schedule.sql`
+4. `202606300004_euro28_official_knockout_skeleton.sql`
+5. `202607010005_euro28_prediction_storage.sql`
 
-Archived reference:
+Migration 005 adds the read-secured prediction storage foundation. It does not add the final prediction save route.
+
+Archived WC26 reference:
 
 - `supabase/reference/wc26-production-schema-20260630.sql`
 - `supabase/reference/wc26-migrations/202606270001_harden_prediction_writes.sql`
 
-Never move a reference SQL file back into `supabase/migrations` without a new
-review.
+Never move a reference SQL file into `supabase/migrations` without creating and reviewing a new Euro migration.
 
-## First migration scope
+## Migration 005 scope
 
-The initial migration creates only public tournament/reference structures:
+Migration 005 creates:
 
-- tournaments;
-- teams and tournament slots;
-- venues;
-- stages and groups;
-- group memberships;
-- matches;
-- bracket-facing match slots.
+- versioned `scoring_rulesets`;
+- one `prediction_sets` row per user and tournament;
+- `match_predictions` with 90-minute scores, separate knockout progression and joker allocation;
+- audited `prediction_grace_windows`;
+- an active ruleset pointer and contract version on `tournaments`;
+- a persisted monotonic `prediction_locked_at` field.
 
-It does not create profiles, participants, predictions, leagues, scoring or
-admin write access. Those will be separate migrations.
-
-The canonical Euro row describes the confirmed 24-team, six-group tournament
-format. Team assignments, venues, fixtures and dates remain separate and may be
-provisional until reviewed.
+The provisional ruleset stores the current points and `2×` joker multiplier. Group-stage and knockout joker caps remain `NULL` until approved.
 
 ## Security position
 
-RLS is enabled on every table in the first migration.
+RLS is enabled on every table.
 
-Anonymous and authenticated clients receive read-only access to published
-reference data. There are no browser insert, update or delete policies. Trusted
-writes will be added deliberately in later migrations.
+Published tournament reference data and published scoring configuration have controlled read policies. Prediction and grace data have authenticated read policies only. Migration 005 grants no direct browser insert, update or delete privileges and creates no browser write policies.
 
-Run the local guard before every database command:
+The later atomic full-bundle save operation must be a separately reviewed migration or server route.
+
+Run the guard before every database command:
 
 ```bash
 npm run db:safety
 ```
-
-The guard fails if it finds the known WC26 production project reference in the
-Euro environment or local Supabase link. It also checks that WC26-only bracket
-and lock terms have not returned to the active migration directory.
 
 ## Local validation workflow
 
-Docker Desktop must be running. The first `supabase start` can take several minutes while Docker images are downloaded.
+Docker Desktop must be running.
 
 ```bash
+cd ~/Desktop/euro28predictor
+git switch euro28-development
+npm run check
 npx supabase start
 npm run db:safety
 npx supabase db reset
+npx supabase test db --local supabase/tests/database/005_prediction_storage.test.sql
 ```
 
-`db reset` is safe here because it targets the local Supabase stack by default.
-Do not add `--linked`.
-
-After the reset, inspect the local Studio URL printed by `supabase start` and
-confirm the migration created ten public tables, five stages and six groups.
+`db reset` is safe only because it targets the local Supabase stack by default. Never add `--linked`.
 
 ## Staging deployment workflow
 
-Do not deploy a migration to staging until it has passed local reset.
-
-Before any remote operation, verify the linked project:
+Before every remote operation:
 
 ```bash
 cat supabase/.temp/project-ref
 ```
 
-The Euro staging project ref is:
+The only acceptable project ref is:
 
 ```text
 gcfdwobpnanjchcnvdco
 ```
 
-The WC26 production ref must never appear in the Euro repository link or
-environment.
-
-Preview the remote migration plan first:
+Preview the migration plan:
 
 ```bash
 npx supabase db push --dry-run
 ```
 
-Only after reviewing the dry run should the migration be pushed:
+The dry run must list only Migration 005. Then apply it:
 
 ```bash
 npx supabase db push
 ```
 
-Never use `supabase db reset --linked` against staging or production.
+Verify migration history and hosted schema behaviour:
+
+```bash
+npx supabase migration list --linked
+npx supabase test db --linked supabase/tests/database/005_prediction_storage.test.sql
+npx supabase db lint --linked --level warning
+```
+
+Never run `npx supabase db reset --linked`.
 
 ## Migration rules
 
-- Make every schema change through a new timestamped migration.
-- Do not edit remote tables in the Supabase Dashboard.
-- Do not mix schema creation with fake tournament scenario data.
-- Keep repeatable local/staging test data in `supabase/seed.sql` or later
-  scenario scripts.
-- Review RLS and grants with every new table.
-- Use stable slot codes and bracket rules rather than team names.
-
-## Prediction database design gate
-
-Stage 2 Batch 3 is review material only. The non-executable blueprint is:
-
-```text
-supabase/design/005-prediction-system-blueprint.md
-```
-
-The blueprint plans three tables: `scoring_rulesets`, `prediction_sets` and
-`match_predictions`. Migration 005 will add storage and read-security only. It
-will not create a browser write path. A later reviewed migration will add the
-trusted atomic bundle save API after the canonical predicted group-table and
-knockout resolver is implemented and tested.
-
-Files under `supabase/design/` are not migration history and must never be
-passed to `supabase db push`.
-
-## Revised prediction-storage boundary
-
-The next Migration 005 must plan four tables: `scoring_rulesets`, `prediction_sets`, `match_predictions`, and `prediction_grace_windows`. It must include `submitted_at` and `joker_applied`, keep joker caps and multiplier on the versioned ruleset, enable RLS, and grant no browser writes. Guest predictions have no server storage.
+- Every schema change uses a new timestamped migration.
+- Do not edit hosted tables manually in the Dashboard.
+- Do not mix fake scenario data into schema migrations.
+- Review RLS, grants and function execution privileges with every migration.
+- Keep the scheduled global lock separate from the persisted monotonic lock.
+- Keep prediction content locks separate from per-match joker timing.
+- Keep guest predictions in browser storage only.

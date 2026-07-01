@@ -2,7 +2,7 @@
 
 ## Unit tests
 
-Vitest protects pure tournament logic. Coverage includes the Euro prediction and result contracts, tournament configuration, the controllable application clock and the Euro foundation data summary.
+Vitest protects the Euro prediction, locking, result, scoring, tournament configuration, application clock and foundation contracts.
 
 ```bash
 npm test
@@ -14,13 +14,39 @@ For watch mode:
 npm run test:watch
 ```
 
-## Prediction contract
+The current suite contains 65 tests.
+
+## Prediction contracts
 
 ```bash
 npm run audit:contracts
 ```
 
-This verifies the one-lock model, separate penalty shoot-out data, the absence of inherited joker or league-specific lock behaviour, and that every calculator reads the provisional point values from the single central scoring configuration.
+This verifies the global prediction-content lock, separate per-match joker timing, scoped grace, separate penalty shoot-out data and central provisional scoring configuration.
+
+## Prediction database implementation
+
+```bash
+npm run audit:db-design
+```
+
+This verifies that the active fifth migration is the revised Migration 005, all four required tables exist in SQL, RLS is enabled, exact joker caps remain unresolved, no browser write policy or grant exists, guest storage is absent and the final save RPC remains deferred.
+
+## Database integration tests
+
+After a local Supabase reset:
+
+```bash
+npm run test:db:005:local
+```
+
+After Migration 005 is pushed to the verified Euro staging project:
+
+```bash
+npm run test:db:005:linked
+```
+
+The pgTAP file contains 31 checks covering tables, columns, RLS, privileges, policies, seeded ruleset values, active ruleset linkage, the absence of a save RPC, locked-ruleset immutability, monotonic global locking and the absence of guest server storage.
 
 ## Inherited application boundary
 
@@ -36,7 +62,7 @@ This verifies that the active Euro entrypoint cannot reach quarantined WC26 page
 npm run lint:foundation
 ```
 
-The inherited WC26 project currently has thousands of full-project lint errors. The strict foundation lint scope prevents new code from adding to that backlog. Full lint remains available with `npm run lint` and will be reduced in planned cleanup batches.
+The inherited WC26 project has a large pre-existing full-project lint backlog. The strict foundation scope prevents active Euro work from adding to it.
 
 ## Build
 
@@ -44,29 +70,26 @@ The inherited WC26 project currently has thousands of full-project lint errors. 
 npm run build
 ```
 
-## Continuous integration
-
-GitHub Actions runs foundation lint, unit tests and the production build on pull requests and pushes to `euro28-development`.
-
-## Prediction database design
+## Full local code gate
 
 ```bash
-npm run audit:db-design
+npm run check
 ```
 
-This verifies that Migration 005 has not been created prematurely, the design
-uses the three agreed tables, the browser cannot write directly to them, the
-database clock controls the one global lock, scoring values remain versioned in
-one ruleset, and future saves use an atomic bundle with optimistic revision.
+This runs database safety, legacy isolation, contract audits, implementation audit, foundation lint, all unit tests and the production build. The Docker-backed local reset and pgTAP run remain separate required database gates.
 
-## Reconciled contract tests
+## Required contract outcomes
 
-The contract suite must prove:
+The combined tests must continue to prove that:
 
-- submit does not copy rows or affect eligibility;
+- submit is reversible and does not copy rows or affect eligibility;
+- saved but unsubmitted predictions remain valid at lock;
 - prediction content locks globally;
 - joker movement locks at each target match kick-off;
-- grace works only before both its expiry and the target match kick-off;
-- joker values come from the central provisional scoring configuration;
+- grace is one user plus one unstarted match and expires automatically;
+- scoring and joker values come from one versioned ruleset;
+- locked rulesets cannot be silently changed;
+- the persisted global lock cannot be reopened;
 - guest mode has no server-side storage;
-- the revised Migration 005 blueprint remains non-executable and no active fifth migration exists.
+- Migration 005 grants no direct browser writes;
+- the final atomic save route is still absent.

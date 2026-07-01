@@ -15,15 +15,19 @@ export const PREDICTION_DATABASE_TABLES = Object.freeze({
 })
 
 export const PREDICTION_DATABASE_SCOPE = Object.freeze({
-  activeMigrationCountBeforeImplementation: 4,
-  plannedMigrationNumber: '005',
+  activeMigrationCountAfterImplementation: 5,
+  migrationNumber: '005',
+  migrationFilename: '202607010005_euro28_prediction_storage.sql',
+  implementationStatus: 'storage_foundation_implemented',
   createsAuthenticationUi: false,
   createsProfiles: false,
   createsLeagues: false,
   createsScoredPoints: false,
   createsAdminCorrectionTools: false,
   createsBrowserTableWrites: false,
-  plannedTables: Object.freeze(Object.values(PREDICTION_DATABASE_TABLES)),
+  createsFinalSaveRpc: false,
+  createsGuestServerStorage: false,
+  createdTables: Object.freeze(Object.values(PREDICTION_DATABASE_TABLES)),
   tournamentColumns: Object.freeze([
     'active_scoring_ruleset_id',
     'prediction_contract_version',
@@ -44,6 +48,29 @@ export const SCORING_RULE_CODES = Object.freeze([
   'joker_multiplier',
   'joker_group_stage_cap',
   'joker_knockout_cap',
+])
+
+export const SCORING_RULESET_COLUMNS = Object.freeze([
+  'id',
+  'tournament_id',
+  'ruleset_key',
+  'version',
+  'status',
+  'match_exact_score_points',
+  'match_correct_outcome_points',
+  'knockout_advancing_team_points',
+  'knockout_decision_method_points',
+  'round_of_16_team_points',
+  'quarter_final_team_points',
+  'semi_final_team_points',
+  'finalist_points',
+  'champion_points',
+  'joker_multiplier',
+  'group_stage_joker_cap',
+  'knockout_joker_cap',
+  'locked_at',
+  'created_at',
+  'updated_at',
 ])
 
 export const PREDICTION_SET_COLUMNS = Object.freeze([
@@ -83,6 +110,9 @@ export const PREDICTION_GRACE_WINDOW_COLUMNS = Object.freeze([
   'granted_at',
   'expires_at',
   'reason',
+  'revoked_at',
+  'revoked_by_user_id',
+  'revocation_reason',
   'created_at',
 ])
 
@@ -102,7 +132,8 @@ export const PREDICTION_WRITE_MODEL = Object.freeze({
 })
 
 export const PREDICTION_VISIBILITY_MODEL = Object.freeze({
-  anonymousAccess: false,
+  anonymousPredictionAccess: false,
+  anonymousRulesetRead: true,
   ownerCanReadBeforeLock: true,
   otherAuthenticatedUsersCanReadBeforeLock: false,
   authenticatedUsersCanReadAfterLock: true,
@@ -123,8 +154,10 @@ export const JOKER_DATABASE_MODEL = Object.freeze({
   enabled: true,
   storedOnMatchPrediction: true,
   capsStoredOnRuleset: true,
+  multiplierStoredOnRuleset: true,
+  unresolvedCapsStoredAsNull: true,
   movableOnlyBetweenUnstartedMatches: true,
-  serverEnforced: true,
+  serverEnforcedByFutureTrustedWrite: true,
 })
 
 export const GRACE_WINDOW_DATABASE_MODEL = Object.freeze({
@@ -133,6 +166,7 @@ export const GRACE_WINDOW_DATABASE_MODEL = Object.freeze({
   adminGranted: true,
   targetMatchMustBeUnstarted: true,
   expiresAutomatically: true,
+  revocable: true,
   audited: true,
 })
 
@@ -232,7 +266,10 @@ export function validatePredictionBundleShape(bundle) {
 
 export function validatePredictionDatabaseContract() {
   const errors = []
+  if (PREDICTION_DATABASE_SCOPE.activeMigrationCountAfterImplementation !== 5) errors.push('Migration 005 must leave five active migrations')
   if (PREDICTION_DATABASE_SCOPE.createsBrowserTableWrites) errors.push('Migration 005 must not enable direct browser table writes')
+  if (PREDICTION_DATABASE_SCOPE.createsFinalSaveRpc) errors.push('Migration 005 must not create the final save RPC')
+  if (PREDICTION_DATABASE_SCOPE.createsGuestServerStorage) errors.push('Migration 005 must not store guest predictions')
   if (PREDICTION_WRITE_MODEL.mode !== 'atomic_bundle') errors.push('prediction writes must use one atomic bundle')
   if (!PREDICTION_WRITE_MODEL.expectedRevisionRequired) errors.push('prediction writes must reject stale revisions')
   if (!PREDICTION_WRITE_MODEL.databaseTimeAuthoritative) errors.push('the database clock must be authoritative')

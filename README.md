@@ -1,6 +1,6 @@
 # Euro 2028 Predictor
 
-This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages. The inherited WC26 browser application is now quarantined behind a read-only Euro foundation screen. The first Euro prediction, locking and result contract is defined in pure code and tests. Scoring categories are fixed structurally, while the current point values remain provisional in one central configuration file. No prediction tables or browser writes exist yet. The proposed prediction database is now documented as a non-executable design with an atomic future write boundary.
+This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages. The inherited WC26 browser application is now quarantined behind a read-only Euro foundation screen. The first Euro prediction, locking and result contract is defined in pure code and tests. Scoring categories are fixed structurally, while the current point values remain provisional in one central configuration file. Migration 005 now defines the read-secured prediction storage foundation. It creates versioned scoring rulesets, prediction sets, match predictions and audited grace windows, while keeping the final atomic save route and all browser writes deferred.
 
 ## Environments
 
@@ -57,6 +57,6 @@ See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, `docs/DEPLOYME
 
 ## Current Euro development return point
 
-Stage 2 rules have been reconciled before Migration 005. Submit is a reversible review state, jokers are included with per-match kick-off locks, exceptional grace is user-and-match scoped, and guest mode is part of the shared resolver architecture. The previously generated Batch 4 package is superseded and must not be used.
+The revised Stage 2 Batch 4 package implements Migration 005 as a storage-only foundation. Submit remains a reversible review state, jokers use per-match kick-off timing, grace is user-and-match scoped, and guest mode has no server storage. No final save RPC, auth UI, leagues, scoring runs or admin result UI have been introduced.
 
-See `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`.
+See `docs/STAGE-2-MIGRATION-005-COMPLETION.md` and `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`.
