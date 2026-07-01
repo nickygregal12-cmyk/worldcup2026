@@ -21,7 +21,7 @@ const fail = message => errors.push(message)
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).sort()
 
 validatePredictionDatabaseContract().errors.forEach(fail)
-if (migrations.length !== 10) fail(`Stage 8 requires ten active migrations, found ${migrations.length}`)
+if (migrations.length !== 11) fail(`Stage 9 requires eleven active migrations, found ${migrations.length}`)
 for (const name of ['202607010005_euro28_prediction_storage.sql', '202607010009_euro28_atomic_prediction_save.sql', COMPETITION_SPLIT_SCOPE.migrationFilename]) {
   if (!migrations.includes(name)) fail(`required migration is missing: ${name}`)
 }

@@ -1,10 +1,12 @@
 export const MATCH_STATUS = Object.freeze({
   SCHEDULED: 'scheduled',
   LIVE: 'live',
+  PAUSED: 'paused',
   SUSPENDED: 'suspended',
   POSTPONED: 'postponed',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
+  ABANDONED: 'abandoned',
   AWARDED: 'awarded',
 })
 

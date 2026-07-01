@@ -3,6 +3,7 @@ import { ENVIRONMENT } from '../config/environment.js'
 import EuroAuthFoundation from '../auth/EuroAuthFoundation.jsx'
 import PredictionJourneyFoundation from '../journey/PredictionJourneyFoundation.jsx'
 import KoPredictorFoundation from '../koPredictor/KoPredictorFoundation.jsx'
+import ResultsAndLeaderboardsFoundation from '../results/ResultsAndLeaderboardsFoundation.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
@@ -109,20 +110,20 @@ export default function EuroFoundationApp() {
             <span className="foundation-brand__mark" aria-hidden="true">28</span>
             <span>
               <strong>Euro 2028 Predictor</strong>
-              <small>Competition split staging</small>
+              <small>Results and scoring staging</small>
             </span>
           </a>
-          <StatusPill tone="safe">Original + KO Predictor · separate points</StatusPill>
+          <StatusPill tone="safe">Canonical results · separate leaderboards</StatusPill>
         </div>
       </header>
 
       <main className="foundation-main">
         <section className="foundation-hero">
           <div>
-            <StatusPill tone="info">Stage 8 · Competition split and jokers</StatusPill>
-            <h1>The original predictor and KO Predictor are now separate competitions.</h1>
+            <StatusPill tone="info">Stage 9 · Results, scoring and leaderboards</StatusPill>
+            <h1>Canonical results now drive live tables, the live bracket and two separate leaderboards.</h1>
             <p>
-              The original predictor contains group scores plus a winner-only pre-tournament bracket. The KO Predictor uses real knockout fixtures, its own five jokers, separate points and a separate future leaderboard.
+              Every result has a revision and audit event. Recalculation replaces old point rows, while original-predictor and KO Predictor totals remain completely separate.
             </p>
           </div>
           <div className="foundation-environment" aria-label="Environment details">
@@ -205,6 +206,11 @@ export default function EuroFoundationApp() {
               reference={state.data.guestReference}
             />
 
+            <ResultsAndLeaderboardsFoundation
+              client={clientState.client}
+              reference={state.data.guestReference}
+            />
+
             <section className="foundation-two-column">
               <article className="foundation-panel">
                 <div className="foundation-section-heading">
@@ -234,10 +240,10 @@ export default function EuroFoundationApp() {
                   These areas will return only after their Euro-specific database design, RLS and tests are approved.
                 </p>
                 <ul className="foundation-check-list">
-                  <li>Scoring calculations and points breakdowns</li>
-                  <li>Live results, tables and the live bracket</li>
-                  <li>Private leagues, leaderboards and sharing</li>
-                  <li>Admin result entry and API syncing</li>
+                  <li>Private leagues and league-specific membership</li>
+                  <li>Admin result-entry and correction controls</li>
+                  <li>Shared member prediction comparison and sharing</li>
+                  <li>Optional external results API syncing</li>
                 </ul>
               </article>
             </section>
@@ -245,12 +251,12 @@ export default function EuroFoundationApp() {
             <section className="foundation-panel foundation-next-step">
               <div>
                 <span className="foundation-kicker">Next controlled batch</span>
-                <h2>Verify competition-scoped joker and grace controls.</h2>
+                <h2>Prepare league architecture and controlled shared views.</h2>
                 <p>
-                  Stage 8 confirms five group jokers, no original-bracket jokers and five separate KO Predictor jokers. Grace remains competition-scoped, audited and server-controlled.
+                  Stage 9 establishes canonical result revisions, idempotent recalculation, live tables, a live bracket and two leaderboards. League membership and shared prediction viewing remain isolated for the next controlled stage.
                 </p>
               </div>
-              <StatusPill tone="warning">Stage 8 active</StatusPill>
+              <StatusPill tone="warning">Stage 9 active</StatusPill>
             </section>
           </>
         )}

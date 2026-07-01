@@ -1,6 +1,6 @@
 # Euro 2028 Predictor
 
-This branch is the isolated Euro 2028 rebuild. It began from the WC26 repository, but the inherited World Cup browser application remains quarantined and unreachable from the active Euro entrypoint.
+This branch is the isolated Euro 2028 rebuild. The inherited WC26 browser application remains quarantined and unreachable from the active Euro entrypoint.
 
 The verified build now includes:
 
@@ -10,15 +10,18 @@ The verified build now includes:
 - browser-only guest predictions;
 - trusted atomic prediction saving;
 - the original group-and-bracket prediction journey;
-- a separate real-match KO Predictor foundation;
-- competition-scoped joker and grace controls.
+- a separate real-match KO Predictor;
+- competition-scoped joker and grace controls;
+- revisioned canonical results;
+- idempotent scoring and separate leaderboards;
+- live group tables and a live knockout bracket.
 
 The two competitions are deliberately separate:
 
 - **Original predictor:** 36 group score predictions, five group jokers and a winner-only pre-tournament knockout bracket with no jokers.
-- **KO Predictor:** 15 real knockout fixtures, 90-minute scores, advancing teams, decision methods, five separate jokers, separate points and a separate future leaderboard/winner.
+- **KO Predictor:** 15 real knockout fixtures, 90-minute scores, advancing teams, decision methods, five separate jokers, separate points and a separate winner.
 
-KO Predictor points must never be combined with original-predictor points. Guest, predicted and live contexts also remain separate. WC26 `main` and the WC26 production Supabase project must never be used in this workflow.
+KO Predictor points never combine with original-predictor points. Guest, predicted and live resolver contexts also remain separate.
 
 ## Environment
 
@@ -43,14 +46,7 @@ Use only the Euro staging URL and publishable key in `.env.local`. Never expose 
 
 ```bash
 npm run check
-```
-
-Focused Stage 8 checks:
-
-```bash
-npm run audit:journey
-npm run audit:competition-split
-npm run test:db:010:local
+npm run audit:results-scoring
 ```
 
 ## Database checks
@@ -62,12 +58,13 @@ npm run test:db:006:local
 npm run test:db:008:local
 npm run test:db:009:local
 npm run test:db:010:local
+npm run test:db:011:local
 ```
 
 Never run `npx supabase db reset --linked`.
 
 ## Current return point
 
-Stage 8 implements the competition split and confirmed joker limits. Migration 010 separates original bracket picks from knockout match scores, creates the separate KO Predictor save route and makes grace competition-specific.
+Stage 9 adds Migration 011. Results are revisioned and audited; corrections replace old point rows; original and KO Predictor totals and leaderboards remain separate.
 
-Scoring runs, actual leaderboards, results entry and the admin control room remain deferred.
+Browser result entry, private leagues, member comparison and external result-provider integration remain deferred.

@@ -11,24 +11,28 @@
 
 A batch is complete only when code and documentation agree, `npm run check` passes, local reset and pgTAP pass, the linked project is verified, only the intended migration appears in the dry run, hosted tests/lint pass, and the branch is pushed cleanly.
 
-## Stage 8 architecture
+## Stage 9 architecture
+
+### Canonical results
+
+`public.matches` is the current result record. `match_result_events` is the append-only revision history. Only a completed and confirmed result can score.
+
+### Idempotent scoring
+
+`private.euro28_recalculate_points()` deletes and rebuilds affected point rows. A correction cannot add a second award on top of the first.
 
 ### Original predictor
 
-`src/journey/` edits 36 group scores and a winner-only pre-tournament bracket. Five jokers are available only on group matches. No bracket score, decision method or joker is stored.
+Group scores and original bracket milestones feed only the original total and original leaderboard.
 
 ### KO Predictor
 
-`src/koPredictor/` is a separate competition using resolved real knockout fixtures. It predicts 90-minute score, advancing team and method, with five separate jokers. Its revision, future scoring, leaderboard and winner are independent of the original predictor.
+Real knockout scores, advancing teams, methods and KO jokers feed only the KO Predictor total and KO leaderboard.
 
-### Grace
+### Live context
 
-`src/grace/` reads competition-scoped exceptions. Server grant/revoke operations remain service-role only. A grant can affect only one competition, one user and one unstarted match.
-
-### Canonical progression
-
-`src/resolver/` remains the only group, best-third and bracket progression engine. The original predicted bracket and live bracket are never blended. The KO Predictor consumes real resolved fixtures rather than the user's original bracket.
+`src/results/` converts canonical result rows into `live` resolver records. Guest, predicted and live records cannot be mixed.
 
 ## Deliberate exclusions
 
-Stage 8 does not implement points calculation, scoring runs, leaderboards, live results, admin result entry or the full admin control room.
+Stage 9 does not implement browser result-entry controls, private leagues, member prediction comparison, the full admin control room or an external result provider.

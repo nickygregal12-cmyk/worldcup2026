@@ -1,146 +1,75 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 1.9 — Stage 8 competition split and jokers
+### Version 2.0 — Stage 9 results, scoring and separate leaderboards
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
-## 1. Purpose and authority
+## Current return point
 
-This document consolidates the verified tournament foundation, the agreed prediction rules and the current build sequence. Earlier references remain advisory where they conflict with later verified decisions.
+- Migrations 001–011 are defined through the controlled Euro workflow.
+- Canonical resolver, guest mode, authentication and atomic saving are complete.
+- Original predictor and KO Predictor are separate competitions.
+- Joker limits are 5 group, 0 original bracket and 5 KO Predictor.
+- Stage 9 adds revisioned canonical results, correction audits, idempotent scoring, live tables, a live bracket and separate leaderboards.
+- Direct browser writes to predictions, results and scoring tables remain unavailable.
+- Guest predictions remain browser-only and unscored.
 
-## 2. Current return point
+## Confirmed decisions
 
-- Stage 1 tournament model complete.
-- Stage 2 isolation, contracts and prediction-storage foundation complete.
-- Migrations 001–010 defined through the controlled Euro workflow.
-- Stage 3 canonical tournament resolver complete.
-- Stage 4 browser-only guest/explore foundation complete.
-- Stage 5 authentication and owner-only profiles complete.
-- Stage 6 trusted atomic prediction saving implemented.
-- Stage 7 original prediction journey implemented.
-- Stage 8 separates the original predictor from the real-match KO Predictor and confirms joker limits.
-- Direct browser writes to prediction tables remain unavailable.
-- Guest drafts remain browser-only unless deliberately imported before lock.
-- No leagues, scoring runs, results controls or admin control room have been introduced.
-- Next stage: results, live tables and scoring foundations after Stage 8 deployment is verified.
-
-## 3. Environment
-
-| Item | Value |
+| Subject | Agreed position |
 |---|---|
-| Repository | github.com/nickygregal12-cmyk/worldcup2026 |
-| Euro branch | `euro28-development` |
-| WC26 live branch | `main` |
-| Euro local folder | `~/Desktop/euro28predictor` |
-| Euro Netlify staging | `https://euro28-predictor-dev.netlify.app` |
-| Euro Supabase staging | `gcfdwobpnanjchcnvdco` |
-| Blocked WC26 Supabase | `ouhxawizadnwrhrjppld` |
+| Original predictor | 36 group scores plus winner-only pre-tournament bracket |
+| KO Predictor | Separate real knockout-match competition and winner |
+| Points separation | Original and KO totals never combine |
+| Jokers | 5 group, 0 original bracket, 5 KO Predictor |
+| Score meaning | 90 minutes plus added time |
+| Advancement | Separate team field |
+| Method | Normal time, extra time or penalties |
+| Results | One canonical current record plus append-only revisions |
+| Scoring corrections | Replacement recalculation, never additive duplication |
+| Live vs predicted | Separate resolver contexts, never blended |
+| Guest mode | Browser-only and unscored |
+| Result writes | Service-role only until admin controls are approved |
 
-## 4. Decision register
+## Scoring model
 
-| Subject | Status | Agreed position |
-|---|---|---|
-| Submission | Confirmed | Reversible user-side review mode; no copy, scoring gate or eligibility effect |
-| Saving | Confirmed | Autosave UX backed by one atomic full-bundle write with revision checking |
-| Saved but unsubmitted | Confirmed | Counts exactly the same as submitted entries at lock |
-| Prediction lock | Confirmed | Prediction content locks at the first tournament kick-off |
-| Jokers | Confirmed | Core feature; movable only among matches that have not started |
-| Joker caps | Confirmed | 5 across original group matches; 0 on original bracket picks; 5 in the separate KO Predictor |
-| Joker multiplier | Provisional | Current working value `2×` |
-| Original bracket | Confirmed | Winner/progression picks only; no score, method or joker |
-| KO Predictor | Confirmed | Separate competition using real knockout fixtures; separate points, leaderboard and winner |
-| Knockout score | Confirmed | KO Predictor score always means 90 minutes plus added time |
-| Advancing team | Confirmed | Separate from the 90-minute score |
-| Decision method | Confirmed | Normal time, extra time or penalties |
-| Grace windows | Confirmed | Audited exception for one user and one specific unstarted match |
-| Guest mode | Confirmed | Browser-only, unscored and separate from account storage |
-| Guest import | Confirmed | Explicit complete pre-lock import; never automatic; cannot overwrite account rows |
-| Live vs predicted | Confirmed | Never blended |
-| Best-third allocation | Confirmed | One matrix, one resolver and all 15 combinations tested |
-| Results API | Deferred | Manual results remain authoritative until later provider work |
-| Scoring values | Provisional | Central and versioned until formal ruleset lock |
-| League-specific scoring | Rejected | One scoring model throughout |
-| Confidence multipliers | Rejected | Jokers are the only planned match multiplier |
+### Original predictor
 
-## 5. Core rules
+- Exact group score: 30.
+- Correct group outcome: 10.
+- Group joker: provisional 2×.
+- Original bracket: points by team reaching each milestone.
 
-### Submission and saving
+### KO Predictor
 
-- Prediction rows are always live within one prediction set.
-- Each save supplies the caller's complete current bundle.
-- `expected_revision` prevents stale overwrites.
-- `submitted_at` records review mode only.
-- Edit Predictions clears review mode before the global lock.
-- Submitted and unsubmitted saved rows score identically.
+- Exact 90-minute score: 30.
+- Correct 90-minute outcome: 10.
+- Correct advancing team: 10.
+- Correct decision method: 5 when the advancing team is also correct.
+- KO joker: provisional 2×.
 
-### Locks, jokers and grace
+## Roadmap
 
-- Original score and bracket content locks globally at first tournament kick-off.
-- Five group jokers remain independently movable only among unstarted group matches.
-- The original bracket has no jokers.
-- The separate KO Predictor has five jokers and locks each row at the real match kick-off.
-- A joker on a started match is fixed.
-- Grace never reopens the tournament. It permits content changes only for its user and match while that match remains unstarted and the grant remains active.
-
-### Brackets
-
-- Guest, signed-in predicted and live contexts use the same canonical resolver.
-- Context records cannot be mixed.
-- The server reconstructs the predicted knockout path before accepting knockout rows.
-- A client-supplied participant path cannot override the resolver.
-
-## 6. Delivered database foundations
-
-Migrations 005–009 provide:
-
-- versioned scoring rulesets;
-- prediction sets and match predictions;
-- reversible review state;
-- joker allocation;
-- global and per-match lock foundations;
-- audited grace windows;
-- owner-only profiles;
-- hardened browser-role function privileges;
-- corrected unresolved joker-cap values;
-- one authenticated atomic prediction save RPC;
-- complete pre-lock guest import;
-- no direct browser prediction-table writes.
-
-## 7. Roadmap
-
-1. Reconciliation batch — complete.
-2. Revised Migration 005 — complete and hosted.
-3. Canonical tournament resolver — complete.
-4. Guest/explore foundation — complete.
+1. Reconciliation — complete.
+2. Prediction storage — complete.
+3. Canonical resolver — complete.
+4. Guest foundation — complete.
 5. Authentication and profiles — complete.
-6. Atomic prediction saving — complete pending the standard local/linked deployment verification for Migration 009.
-7. Prediction journey and submit/review mode — complete.
-8. Joker and grace controls — next.
-9. Results, live tables and live bracket.
-10. Scoring and idempotent recalculation.
-11. Leagues and shared prediction viewing.
-12. Admin control room.
-13. Shared design system and page rebuild.
-14. Seeded full tournament test.
-15. Pre-tournament configuration and optional result provider integration.
+6. Atomic saving — complete.
+7. Prediction journey — complete.
+8. Competition split, jokers and grace — complete.
+9. Results, scoring, live tables and separate leaderboards — current.
+10. Leagues and controlled shared prediction viewing.
+11. Admin result and tournament control room.
+12. Shared design system and page rebuild.
+13. Seeded full-tournament test.
+14. Pre-tournament configuration and optional result-provider integration.
 
-## 8. Immediate next actions
+## Open decisions
 
-1. Install the Stage 6 package over committed Stage 5 checkpoint `9d0d1c0`.
-2. Run `npm run check`.
-3. Reset local Supabase and run pgTAP suites 005, 006, 008 and 009.
-4. Verify the linked project reference.
-5. Dry-run and push only Migration 009.
-6. Run all four linked pgTAP suites and remote database lint.
-7. Commit and push Stage 6 with a clean working tree.
-8. Begin Stage 7 using `save_my_prediction_bundle()` as the only prediction write route.
-
-## 9. Open decisions
-
-- Exact group-stage joker cap.
-- Exact knockout joker cap.
 - Final joker multiplier.
 - Official Euro 2028 tie-break regulations.
 - Final team identities, group positions and kick-off times.
 - Result provider.
 - Awards categories.
+- Final leaderboard tie-break policy beyond shared rank on equal points.

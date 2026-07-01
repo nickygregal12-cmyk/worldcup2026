@@ -1479,3 +1479,135 @@ button {
     grid-column: 1 / -1;
   }
 }
+
+.foundation-results {
+  display: grid;
+  gap: 20px;
+}
+
+.foundation-result-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.foundation-result-summary > div {
+  display: grid;
+  gap: 3px;
+  padding: 14px 16px;
+  border: 1px solid #dce5ef;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.foundation-result-summary strong {
+  font-size: 24px;
+}
+
+.foundation-result-summary span,
+.foundation-results-card small,
+.foundation-live-bracket small {
+  color: #6c788c;
+}
+
+.foundation-results-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.foundation-results-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #dce5ef;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.foundation-results-card--wide {
+  grid-column: span 1;
+}
+
+.foundation-results-card__heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.foundation-live-groups,
+.foundation-live-bracket,
+.foundation-leaderboard-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.foundation-live-group {
+  border: 1px solid #e0e7ef;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.foundation-live-group summary {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 14px;
+  cursor: pointer;
+  background: #f7f9fc;
+}
+
+.foundation-table-wrap {
+  overflow-x: auto;
+}
+
+.foundation-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.foundation-table-wrap th,
+.foundation-table-wrap td {
+  padding: 8px 10px;
+  border-top: 1px solid #edf1f5;
+  text-align: left;
+  font-size: 13px;
+}
+
+.foundation-live-bracket > div,
+.foundation-leaderboard-list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e4eaf1;
+  border-radius: 12px;
+}
+
+.foundation-live-bracket span,
+.foundation-leaderboard-list b {
+  color: #6f7c90;
+  font-size: 12px;
+}
+
+.foundation-leaderboard-list {
+  padding: 0;
+  list-style: none;
+}
+
+.foundation-empty-copy {
+  margin: 12px 0 0;
+  color: #718096;
+}
+
+@media (max-width: 760px) {
+  .foundation-result-summary,
+  .foundation-results-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .foundation-live-bracket > div {
+    grid-template-columns: 1fr;
+  }
+}

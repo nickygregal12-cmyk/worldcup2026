@@ -6,26 +6,25 @@
 npm run check
 ```
 
-Stage 8 currently has **173 passing unit tests across 27 files**. The gate also runs database safety, all Euro audits, lint and a production build.
+Stage 9 has **182 passing unit tests across 29 files** before the authoritative Docker-backed SQL run. The gate also runs database safety, all Euro audits, lint and a production build.
 
 ## Focused audits
 
 ```bash
-npm run audit:contracts
-npm run audit:db-design
-npm run audit:journey
 npm run audit:competition-split
+npm run audit:results-scoring
 ```
 
-These verify:
+The Stage 9 audit verifies:
 
-- ten active migrations;
-- 36 original group scores and 15 winner-only bracket picks;
-- five group jokers and zero original-bracket jokers;
-- a separate 15-match KO Predictor with five jokers;
-- separate revisions, points and future leaderboards;
-- competition-scoped grace;
-- no direct browser table writes.
+- eleven active migrations;
+- revisioned and audited canonical results;
+- service-role-only result writes and recalculation;
+- replacement-based scoring after corrections;
+- separate original and KO Predictor totals;
+- separate authenticated leaderboards;
+- live resolver context isolation;
+- no direct browser writes.
 
 ## Database tests
 
@@ -37,6 +36,7 @@ npm run test:db:006:local
 npm run test:db:008:local
 npm run test:db:009:local
 npm run test:db:010:local
+npm run test:db:011:local
 ```
 
 Against verified Euro staging:
@@ -47,14 +47,15 @@ npm run test:db:006:linked
 npm run test:db:008:linked
 npm run test:db:009:linked
 npm run test:db:010:linked
+npm run test:db:011:linked
 ```
 
-Current planned pgTAP counts after Migration 010:
+Expected established counts:
 
 - Migration 005 storage: 31;
 - profiles/privileges: 39;
 - Migration 008 correction: 7;
-- final-state atomic-save regression: 24;
+- final-state atomic saving: 24;
 - Migration 010 competition split: 48.
 
-The Docker-backed local reset and linked tests are the authoritative SQL execution checks for Migration 010.
+Migration 011 uses pgTAP `no_plan()` because its integration suite intentionally exercises result revisions, corrections, scoring replacement, penalties and both leaderboard contexts in one transaction.

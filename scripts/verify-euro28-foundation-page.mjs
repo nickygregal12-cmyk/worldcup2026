@@ -24,21 +24,24 @@ assert(scriptMatch, 'Could not locate the deployed Vite bundle.')
 const bundlePath = scriptMatch[1].startsWith('http') ? scriptMatch[1].replace(siteUrl, '') : scriptMatch[1]
 const bundle = await readText(bundlePath)
 for (const text of [
-  'The original predictor and KO Predictor are now separate competitions.',
-  'Stage 8 · Original predictor',
-  'Separate competition · KO Predictor',
-  'five group jokers',
+  'Canonical results now drive live tables, the live bracket and two separate leaderboards.',
+  'Stage 9 · Results and scoring',
+  'Original predictor',
+  'KO Predictor',
+  'get_competition_leaderboard',
+  'get_my_competition_points',
   'save_my_prediction_bundle',
   'save_my_ko_prediction_bundle',
   'euro28-guest-prediction-bundle',
-]) assert(bundle.includes(text), `The deployed Stage 8 bundle is missing: ${text}`)
+]) assert(bundle.includes(text), `The deployed Stage 9 bundle is missing: ${text}`)
 assert(!bundle.includes('WC26 Control Centre'), 'The inherited WC26 admin application is active.')
 
 console.log('Euro 2028 foundation page verification passed.')
 console.log(`Site: ${siteUrl}`)
-console.log('Public branding: Stage 8 competition split and joker controls')
-console.log('Original predictor: group scores plus winner-only bracket')
-console.log('KO Predictor: separate real-match competition and points')
-console.log('Jokers: 5 group, 0 original bracket, 5 KO Predictor')
-console.log('Guest storage: browser-only')
+console.log('Public branding: Stage 9 results, scoring and separate leaderboards')
+console.log('Canonical results: revisioned and audited')
+console.log('Scoring: idempotent correction replacement')
+console.log('Leaderboards: original and KO Predictor remain separate')
+console.log('Live tables and bracket: canonical live context')
+console.log('Guest storage: browser-only and unscored')
 console.log('Inherited WC26 application bundle: inactive')

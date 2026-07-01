@@ -10,8 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint:foundation": "eslint src/App.jsx src/main.jsx src/config src/contracts src/foundation src/auth src/guest src/predictions src/journey src/koPredictor src/grace src/resolver src/lib/clock.js src/lib/tournamentDates.js src/lib/gamePhase.js src/lib/scoring.js src/lib/__tests__ netlify/functions/scheduled-score-sync.js scripts/check-database-safety.mjs scripts/check-legacy-boundary.mjs scripts/check-prediction-contracts.mjs scripts/check-prediction-database-design.mjs scripts/check-tournament-resolver.mjs scripts/check-guest-foundation.mjs scripts/check-auth-foundation.mjs scripts/check-scoring-ruleset-correction.mjs scripts/check-prediction-save.mjs scripts/check-prediction-journey.mjs scripts/check-competition-split.mjs scripts/verify-euro28-knockout.mjs scripts/verify-euro28-foundation-page.mjs vite.config.js",
-    "check": "npm run db:safety && npm run audit:legacy && npm run audit:contracts && npm run audit:db-design && npm run audit:resolver && npm run audit:guest && npm run audit:auth && npm run audit:scoring-correction && npm run audit:prediction-save && npm run audit:journey && npm run audit:competition-split && npm run lint:foundation && npm test && npm run build",
+    "lint:foundation": "eslint src/App.jsx src/main.jsx src/config src/contracts src/foundation src/auth src/guest src/predictions src/journey src/koPredictor src/grace src/results src/resolver src/lib/clock.js src/lib/tournamentDates.js src/lib/gamePhase.js src/lib/scoring.js src/lib/__tests__ netlify/functions/scheduled-score-sync.js scripts/check-database-safety.mjs scripts/check-legacy-boundary.mjs scripts/check-prediction-contracts.mjs scripts/check-prediction-database-design.mjs scripts/check-tournament-resolver.mjs scripts/check-guest-foundation.mjs scripts/check-auth-foundation.mjs scripts/check-scoring-ruleset-correction.mjs scripts/check-prediction-save.mjs scripts/check-prediction-journey.mjs scripts/check-competition-split.mjs scripts/check-results-scoring.mjs scripts/verify-euro28-knockout.mjs scripts/verify-euro28-foundation-page.mjs vite.config.js",
+    "check": "npm run db:safety && npm run audit:legacy && npm run audit:contracts && npm run audit:db-design && npm run audit:resolver && npm run audit:guest && npm run audit:auth && npm run audit:scoring-correction && npm run audit:prediction-save && npm run audit:journey && npm run audit:competition-split && npm run audit:results-scoring && npm run lint:foundation && npm test && npm run build",
     "db:safety": "node scripts/check-database-safety.mjs",
     "verify:knockout": "node scripts/verify-euro28-knockout.mjs",
     "audit:legacy": "node scripts/check-legacy-boundary.mjs",
@@ -34,7 +34,10 @@
     "audit:journey": "node scripts/check-prediction-journey.mjs",
     "audit:competition-split": "node scripts/check-competition-split.mjs",
     "test:db:010:local": "npx supabase test db --local supabase/tests/database/010_competition_split_and_jokers.test.sql",
-    "test:db:010:linked": "npx supabase test db --linked supabase/tests/database/010_competition_split_and_jokers.test.sql"
+    "test:db:010:linked": "npx supabase test db --linked supabase/tests/database/010_competition_split_and_jokers.test.sql",
+    "audit:results-scoring": "node scripts/check-results-scoring.mjs",
+    "test:db:011:local": "npx supabase test db --local supabase/tests/database/011_results_scoring_leaderboards.test.sql",
+    "test:db:011:linked": "npx supabase test db --linked supabase/tests/database/011_results_scoring_leaderboards.test.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

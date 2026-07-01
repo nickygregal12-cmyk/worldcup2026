@@ -12,48 +12,60 @@
 8. `202607010008_euro28_provisional_joker_caps.sql`
 9. `202607010009_euro28_atomic_prediction_save.sql`
 10. `202607010010_euro28_competition_split_and_jokers.sql`
+11. `202607010011_euro28_results_scoring_leaderboards.sql`
 
-## Stage 8 competition model
-
-Migration 010 corrects the Stage 7 combined model.
+## Competition model
 
 ### Original predictor
 
-- one `prediction_sets` row with `competition_key = 'original'`;
 - 36 group score rows in `match_predictions`;
 - five group jokers;
-- 15 winner-only pre-tournament progression rows in `bracket_predictions`;
-- no score, decision method or joker columns on bracket picks;
-- one globally locked original competition.
+- 15 winner-only rows in `bracket_predictions`;
+- group-match and bracket milestone points;
+- its own total and leaderboard.
 
 ### KO Predictor
 
-- a separate `prediction_sets` row with `competition_key = 'ko_predictor'`;
-- score predictions only for resolved real knockout fixtures;
-- 90-minute score, advancing team and decision method;
+- a separate `prediction_sets` row;
+- 15 real knockout-match predictions;
 - five separate jokers;
-- independent revision, storage, future points total, leaderboard and winner.
+- score, advancing-team and method points;
+- its own total and leaderboard.
 
-Original and KO Predictor points must never be combined.
+No database total combines the two competitions.
 
-## Trusted writes
+## Canonical results
 
-The browser has no direct write policies or table grants. It uses:
+Current result fields remain on `public.matches`. Migration 011 adds result status, revision and confirmation metadata. `match_result_events` is the append-only correction history.
+
+Only service role may call:
 
 ```text
-public.save_my_prediction_bundle()
-public.save_my_ko_prediction_bundle()
+private.euro28_record_match_result()
+private.euro28_recalculate_points()
 ```
 
-The original RPC validates group scores and the canonical winner-only bracket. The KO RPC validates actual resolved knockout participants, scores, advancement, method and its own joker cap.
+Only completed and confirmed results score. Void, pending and manual-review results do not score.
 
-## Locks and grace
+## Scoring storage
 
-- Original score and bracket content locks globally at the first tournament kick-off.
-- Original group jokers may still move only among matches that have not started.
-- KO Predictor rows and jokers lock per real knockout-match kick-off.
-- Grace is scoped to one competition, one user and one unstarted match.
-- Grant and revocation functions are service-role only and audited.
+```text
+scoring_runs
+prediction_match_points
+prediction_bracket_points
+prediction_totals
+```
+
+Recalculation replaces point rows for the affected result revision and then rebuilds totals. It does not increment an existing total.
+
+Authenticated reads use:
+
+```text
+public.get_competition_leaderboard()
+public.get_my_competition_points()
+```
+
+Direct browser writes to result and scoring tables remain unavailable.
 
 ## Validation
 
@@ -65,6 +77,7 @@ npm run test:db:006:local
 npm run test:db:008:local
 npm run test:db:009:local
 npm run test:db:010:local
+npm run test:db:011:local
 ```
 
 `db reset` must remain local. Never add `--linked`.

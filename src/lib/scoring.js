@@ -5,7 +5,7 @@ import {
 
 /**
  * Compatibility export for the quarantined WC26 modules.
- * Euro 2028 has no joker/confidence multiplier.
+ * Euro 2028 has no confidence multiplier. Server scoring applies only the configured jokers.
  */
 export const GROUP_SCORING = Object.freeze({
   EXACT_SCORE: MATCH_SCORE_POINTS.EXACT_SCORE,

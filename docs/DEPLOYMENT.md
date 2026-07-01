@@ -9,19 +9,19 @@ gcfdwobpnanjchcnvdco
 
 Never use the WC26 production Supabase project. Only the Euro URL and publishable key belong in browser variables.
 
-## Stage 8 database deployment
+## Stage 9 database deployment
 
-Verify that only Migration 010 is pending:
+Verify that only Migration 011 is pending:
 
 ```bash
 cat supabase/.temp/project-ref
-npx supabase db push --dry-run 2>&1 | tee /tmp/euro28-migration010-dry-run.txt
+npx supabase db push --dry-run 2>&1 | tee /tmp/euro28-migration011-dry-run.txt
 ```
 
 The dry run must list only:
 
 ```text
-202607010010_euro28_competition_split_and_jokers.sql
+202607010011_euro28_results_scoring_leaderboards.sql
 ```
 
 After push:
@@ -33,6 +33,7 @@ npm run test:db:006:linked
 npm run test:db:008:linked
 npm run test:db:009:linked
 npm run test:db:010:linked
+npm run test:db:011:linked
 npx supabase db lint --linked --schema public,private --level warning --fail-on error
 ```
 
@@ -54,4 +55,4 @@ http://localhost:5173/**
 npm run verify:foundation-page
 ```
 
-The deployed page must state that the original predictor and KO Predictor are separate competitions and contain no active WC26 application bundle.
+The deployed page must expose Stage 9 canonical results and two separate leaderboards, with no active WC26 application bundle.
