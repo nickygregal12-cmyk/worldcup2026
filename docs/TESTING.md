@@ -2,7 +2,7 @@
 
 ## Unit tests
 
-Vitest protects the Euro prediction, locking, result, scoring, tournament configuration, application clock and foundation contracts.
+Vitest protects the Euro prediction, locking, result, scoring, tournament configuration, application clock, foundation and canonical tournament resolver contracts.
 
 ```bash
 npm test
@@ -14,7 +14,7 @@ For watch mode:
 npm run test:watch
 ```
 
-The current suite contains 65 tests.
+The Stage 3 suite contains 109 tests across 14 files.
 
 ## Prediction contracts
 
@@ -30,7 +30,27 @@ This verifies the global prediction-content lock, separate per-match joker timin
 npm run audit:db-design
 ```
 
-This verifies that the active fifth migration is the revised Migration 005, all four required tables exist in SQL, RLS is enabled, exact joker caps remain unresolved, no browser write policy or grant exists, guest storage is absent and the final save RPC remains deferred.
+This verifies Migration 005, its four required tables, RLS, unresolved joker caps, the absence of browser write policies and grants, browser-only guest storage and the deferred save RPC.
+
+## Canonical tournament resolver
+
+```bash
+npm run audit:resolver
+```
+
+This verifies:
+
+- one versioned resolver;
+- separate guest, predicted and live contexts;
+- six groups and 36 group fixtures;
+- 15 knockout matches;
+- all 15 best-third combinations;
+- exact parity between the runtime matrix and Migration 004;
+- provisional tie-break status;
+- no inherited WC26 bracket import;
+- no database writes in resolver code.
+
+Unit coverage includes group statistics, recursive head-to-head handling, provisional tie fallbacks, best-third ranking, every allocation combination, official knockout sources, advancing-team propagation and mixed-context rejection.
 
 ## Database integration tests
 
@@ -40,13 +60,13 @@ After a local Supabase reset:
 npm run test:db:005:local
 ```
 
-After Migration 005 is pushed to the verified Euro staging project:
+Against the verified Euro staging project:
 
 ```bash
 npm run test:db:005:linked
 ```
 
-The pgTAP file contains 31 checks covering tables, columns, RLS, privileges, policies, seeded ruleset values, active ruleset linkage, the absence of a save RPC, locked-ruleset immutability, monotonic global locking and the absence of guest server storage.
+The pgTAP file contains 31 checks for Migration 005. Stage 3 creates no Migration 006 and does not require another database push.
 
 ## Inherited application boundary
 
@@ -54,7 +74,7 @@ The pgTAP file contains 31 checks covering tables, columns, RLS, privileges, pol
 npm run audit:legacy
 ```
 
-This verifies that the active Euro entrypoint cannot reach quarantined WC26 pages, components, stores or write paths.
+This verifies that the active Euro entrypoint cannot reach quarantined WC26 pages, components, stores or write paths. Canonical resolver files are protected Euro logic rather than quarantined legacy files.
 
 ## Linting
 
@@ -62,7 +82,7 @@ This verifies that the active Euro entrypoint cannot reach quarantined WC26 page
 npm run lint:foundation
 ```
 
-The inherited WC26 project has a large pre-existing full-project lint backlog. The strict foundation scope prevents active Euro work from adding to it.
+The strict scope includes all active Euro contracts and resolver code while inherited WC26 files remain quarantined.
 
 ## Build
 
@@ -76,20 +96,4 @@ npm run build
 npm run check
 ```
 
-This runs database safety, legacy isolation, contract audits, implementation audit, foundation lint, all unit tests and the production build. The Docker-backed local reset and pgTAP run remain separate required database gates.
-
-## Required contract outcomes
-
-The combined tests must continue to prove that:
-
-- submit is reversible and does not copy rows or affect eligibility;
-- saved but unsubmitted predictions remain valid at lock;
-- prediction content locks globally;
-- joker movement locks at each target match kick-off;
-- grace is one user plus one unstarted match and expires automatically;
-- scoring and joker values come from one versioned ruleset;
-- locked rulesets cannot be silently changed;
-- the persisted global lock cannot be reopened;
-- guest mode has no server-side storage;
-- Migration 005 grants no direct browser writes;
-- the final atomic save route is still absent.
+This runs database safety, legacy isolation, prediction contract audits, database-design audit, resolver audit, foundation lint, all unit tests and the production build.

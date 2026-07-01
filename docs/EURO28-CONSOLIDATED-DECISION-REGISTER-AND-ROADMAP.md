@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 1.1 — Migration 005 implementation
+### Version 1.2 — Stage 3 canonical resolver
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
@@ -12,15 +12,14 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 
 ## 2. Current return point
 
-**The earlier Batch 4 ZIP remains superseded. Use only the revised Migration 005 package.**
-
 - Stage 1 complete.
-- Stage 2 application isolation complete.
-- Stage 2 rules and database contracts reconciled.
-- Revised Migration 005 implemented as a storage-only foundation.
-- Four prediction tables, RLS, read policies, central scoring configuration, joker allocation and grace-window storage are included.
-- The final atomic save route, guest server storage, auth UI, leagues, scoring runs and admin result UI remain excluded.
-- Completion requires local reset, local pgTAP, linked-project verification, dry run, staging push and linked pgTAP.
+- Stage 2 application isolation and contracts complete.
+- Migration 005 deployed and verified locally and on Euro staging.
+- Stage 3 canonical tournament resolver implemented.
+- Group tables, provisional tie handling, all 15 best-third combinations and matches 37–51 are covered by one pure engine.
+- Guest, predicted and live contexts use the same resolver and cannot be blended.
+- No Migration 006, save RPC, guest server storage, auth UI, leagues, scoring runs or admin result UI has been introduced.
+- Next stage: browser-only guest/explore foundation.
 
 ## 3. Environment
 
@@ -98,9 +97,9 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 ## 7. Roadmap
 
 1. Reconciliation batch — complete.
-2. Revised Migration 005 — implemented; deployment verification required.
-3. Canonical tournament resolver.
-4. Guest/explore foundation.
+2. Revised Migration 005 — complete and hosted.
+3. Canonical tournament resolver — complete.
+4. Guest/explore foundation — next.
 5. Authentication and profiles.
 6. Atomic prediction saving.
 7. Prediction journey and submit/review mode.
@@ -115,14 +114,14 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 
 ## 8. Immediate next actions
 
-1. Install only the revised Batch 4 package.
-2. Run `npm run check`.
-3. Run a local Supabase reset and the Migration 005 pgTAP file.
-4. Confirm the linked ref is `gcfdwobpnanjchcnvdco`.
-5. Dry-run and push only Migration 005.
-6. Confirm linked migration history and run linked pgTAP.
-7. Commit, push and confirm a clean working tree.
-8. Begin Stage 3 with the canonical tournament resolver.
+1. Install the Stage 3 canonical resolver package.
+2. Run `npm run check` and `npm run audit:resolver`.
+3. Commit and push the resolver on `euro28-development`.
+4. Confirm a clean working tree.
+5. Begin Stage 4 with browser-only guest/explore state.
+6. Use `resolveEuro28Tournament()` for guest previews rather than the inherited WC26 bracket utility.
+7. Preserve strict guest, predicted and live context isolation.
+8. Add no guest Supabase prediction storage or browser write route.
 
 ## 9. Open decisions
 

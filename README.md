@@ -1,6 +1,6 @@
 # Euro 2028 Predictor
 
-This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages. The inherited WC26 browser application is now quarantined behind a read-only Euro foundation screen. The first Euro prediction, locking and result contract is defined in pure code and tests. Scoring categories are fixed structurally, while the current point values remain provisional in one central configuration file. Migration 005 now defines the read-secured prediction storage foundation. It creates versioned scoring rulesets, prediction sets, match predictions and audited grace windows, while keeping the final atomic save route and all browser writes deferred.
+This repository branch is the isolated development version of the Euro 2028 predictor. It began as a copy of the completed WC26 predictor and is being rebuilt in controlled stages. The inherited WC26 browser application is now quarantined behind a read-only Euro foundation screen. The first Euro prediction, locking and result contract is defined in pure code and tests. Scoring categories are fixed structurally, while the current point values remain provisional in one central configuration file. Migration 005 defines the read-secured prediction storage foundation. Stage 3 now adds the pure canonical tournament resolver for group tables, best-third ranking and the 15-match knockout route. Guest, predicted and live data use the same engine but are strictly isolated. The final atomic save route and all browser writes remain deferred.
 
 ## Environments
 
@@ -57,6 +57,6 @@ See `docs/DEVELOPMENT.md`, `docs/DATABASE.md`, `docs/TESTING.md`, `docs/DEPLOYME
 
 ## Current Euro development return point
 
-The revised Stage 2 Batch 4 package implements Migration 005 as a storage-only foundation. Submit remains a reversible review state, jokers use per-match kick-off timing, grace is user-and-match scoped, and guest mode has no server storage. No final save RPC, auth UI, leagues, scoring runs or admin result UI have been introduced.
+Stage 2 and Migration 005 are complete. Stage 3 adds `euro28-canonical-resolver-v1`, with provisional tie-break reporting, all 15 best-third combinations and knockout progression from match 37 to match 51. The inherited WC26 bracket utility remains quarantined. No Migration 006, save RPC, guest server storage, auth UI, leagues, scoring runs or admin result UI have been introduced.
 
-See `docs/STAGE-2-MIGRATION-005-COMPLETION.md` and `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`.
+See `docs/STAGE-3-CANONICAL-TOURNAMENT-RESOLVER.md` and `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md`.

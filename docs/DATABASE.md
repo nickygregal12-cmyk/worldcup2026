@@ -12,7 +12,7 @@ Active migrations:
 4. `202606300004_euro28_official_knockout_skeleton.sql`
 5. `202607010005_euro28_prediction_storage.sql`
 
-Migration 005 adds the read-secured prediction storage foundation. It does not add the final prediction save route.
+Migration 005 adds the read-secured prediction storage foundation. It is deployed and verified. Stage 3 is pure application logic and creates no Migration 006 or database change.
 
 Archived WC26 reference:
 
@@ -99,6 +99,12 @@ npx supabase db lint --linked --level warning
 ```
 
 Never run `npx supabase db reset --linked`.
+
+## Stage 3 database position
+
+The canonical tournament resolver lives in `src/resolver/` and reads plain input objects. It does not connect to Supabase, mutate `match_slots` or persist resolved brackets. Future adapters may map public reference rows into the resolver, but guest predictions remain browser-only and live/predicted data remain separate.
+
+No database push is required for Stage 3.
 
 ## Migration rules
 
