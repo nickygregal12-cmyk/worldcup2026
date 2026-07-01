@@ -83,6 +83,16 @@ npm run audit:guest
 
 The active staging page exposes guest-data import, export and clear controls. The full prediction editor remains deferred.
 
+## Authentication and profiles
+
+Stage 5 introduces Migration 006 and `src/auth/`. Euro accounts use email/password Auth, persistent sessions, recovery links and one owner-only profile row. Display-name creation and updates are validated by the database. Guest state remains local and is never cleared or uploaded by auth actions.
+
+Run:
+
+```bash
+npm run audit:auth
+```
+
 ## Next implementation boundary
 
-Stage 5 may add Euro-specific authentication and profile ownership. It must preserve browser-only guest storage and must not add direct browser writes to prediction tables.
+Stage 6 may add the trusted atomic full-bundle prediction save route. It must validate ownership, revision, lock state, bracket consistency and joker rules without enabling direct table writes.

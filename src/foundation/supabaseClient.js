@@ -14,9 +14,9 @@ export function createFoundationClient() {
   return {
     client: createClient(ENVIRONMENT.supabaseUrl, ENVIRONMENT.supabaseAnonKey, {
       auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-        detectSessionInUrl: false,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
       },
       realtime: {
         params: {

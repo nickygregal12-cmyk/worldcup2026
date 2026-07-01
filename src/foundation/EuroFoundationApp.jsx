@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ENVIRONMENT } from '../config/environment.js'
+import EuroAuthFoundation from '../auth/EuroAuthFoundation.jsx'
 import GuestWorkspaceFoundation from '../guest/GuestWorkspaceFoundation.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
@@ -107,22 +108,22 @@ export default function EuroFoundationApp() {
             <span className="foundation-brand__mark" aria-hidden="true">28</span>
             <span>
               <strong>Euro 2028 Predictor</strong>
-              <small>Guest foundation staging</small>
+              <small>Authentication foundation staging</small>
             </span>
           </a>
-          <StatusPill tone="safe">Database read-only</StatusPill>
+          <StatusPill tone="safe">Controlled auth · read-only predictions</StatusPill>
         </div>
       </header>
 
       <main className="foundation-main">
         <section className="foundation-hero">
           <div>
-            <StatusPill tone="info">Stage 4 · Guest/explore foundation</StatusPill>
-            <h1>The browser-only guest foundation is ready.</h1>
+            <StatusPill tone="info">Stage 5 · Authentication and profiles</StatusPill>
+            <h1>Euro account access is now isolated and ready.</h1>
             <p>
-              The page reads the verified Euro tournament reference and prepares a local 51-match
-              guest workspace. Guest progress stays in this browser and uses the same canonical resolver
-              planned for signed-in predictions and the live tournament.
+              The verified guest workspace remains browser-only, while Euro-specific account registration,
+              sign-in, recovery and owner-only profiles now use the isolated staging project. Prediction
+              saving remains disabled until the atomic full-bundle route is approved.
             </p>
           </div>
           <div className="foundation-environment" aria-label="Environment details">
@@ -196,6 +197,8 @@ export default function EuroFoundationApp() {
               reference={state.data.guestReference}
             />
 
+            <EuroAuthFoundation client={clientState.client} />
+
             <section className="foundation-two-column">
               <article className="foundation-panel">
                 <div className="foundation-section-heading">
@@ -225,7 +228,7 @@ export default function EuroFoundationApp() {
                   These areas will return only after their Euro-specific database design, RLS and tests are approved.
                 </p>
                 <ul className="foundation-check-list">
-                  <li>Account registration and sign-in</li>
+                  <li>Account prediction saving and guest import</li>
                   <li>The full group and knockout editing journey</li>
                   <li>Scoring and leaderboards</li>
                   <li>Private leagues and sharing</li>
@@ -237,13 +240,13 @@ export default function EuroFoundationApp() {
             <section className="foundation-panel foundation-next-step">
               <div>
                 <span className="foundation-kicker">Next controlled batch</span>
-                <h2>Add Euro-specific authentication and profiles.</h2>
+                <h2>Add the trusted atomic prediction save route.</h2>
                 <p>
-                  Stage 5 can add account registration, recovery and profile ownership while keeping
-                  guest progress browser-only and prediction-table writes behind the future trusted save route.
+                  Stage 6 can validate and save one complete prediction bundle with revision checking,
+                  global-lock enforcement, bracket consistency and server-enforced joker rules.
                 </p>
               </div>
-              <StatusPill tone="warning">No database writes</StatusPill>
+              <StatusPill tone="warning">No prediction writes</StatusPill>
             </section>
           </>
         )}

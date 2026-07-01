@@ -27,8 +27,8 @@ const activeMigrations = fs.readdirSync(migrationsDirectory).filter(name => name
 const migrationName = PREDICTION_DATABASE_SCOPE.migrationFilename
 const migrationPath = path.join(migrationsDirectory, migrationName)
 
-if (activeMigrations.length !== PREDICTION_DATABASE_SCOPE.activeMigrationCountAfterImplementation) {
-  fail(`expected ${PREDICTION_DATABASE_SCOPE.activeMigrationCountAfterImplementation} active migrations after Migration 005, found ${activeMigrations.length}`)
+if (activeMigrations.length < PREDICTION_DATABASE_SCOPE.activeMigrationCountAfterImplementation) {
+  fail(`expected at least ${PREDICTION_DATABASE_SCOPE.activeMigrationCountAfterImplementation} active migrations after Migration 005, found ${activeMigrations.length}`)
 }
 if (!activeMigrations.includes(migrationName)) fail(`required Migration 005 is missing: ${migrationName}`)
 if (activeMigrations.filter(name => name.includes('0005_')).length !== 1) {

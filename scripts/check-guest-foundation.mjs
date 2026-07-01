@@ -114,8 +114,8 @@ const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.js
 if (!app.includes('GuestWorkspaceFoundation')) fail('active foundation page must expose the guest workspace foundation')
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 5) fail(`Stage 4 must retain five migrations, found ${migrations.length}`)
-if (migrations.some(name => name.includes('006'))) fail('Stage 4 must not add Migration 006')
+if (migrations.length !== 6) fail(`Stage 5 must retain six migrations, found ${migrations.length}`)
+if (!migrations.some(name => name.includes('0006_euro28_auth_profiles'))) fail('Stage 5 auth/profile Migration 006 is missing')
 
 if (errors.length > 0) {
   console.error('Euro guest/explore foundation audit failed:')
@@ -130,4 +130,4 @@ console.log('Storage: browser localStorage only; no guest server persistence')
 console.log('Prediction rows: 36 group + 15 knockout = 51')
 console.log('Resolver context: guest; predicted and live records are not accepted')
 console.log('Account identity in exports: none')
-console.log('Active migrations: 5; Migration 006: absent')
+console.log('Active migrations: 6; guest server storage remains absent')

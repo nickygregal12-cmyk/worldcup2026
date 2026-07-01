@@ -21,9 +21,19 @@ Automatic score syncing is disabled in Euro staging. `netlify.toml` has no sched
 Do not add WC26 API keys, service-role keys or production database credentials to the Euro Netlify site.
 
 
-## Stage 2 foundation deployment
+## Authentication redirect configuration
 
-The staging site currently serves a read-only development foundation rather than the inherited WC26 application.
+In the Euro staging Supabase dashboard, set Authentication → URL Configuration to the Euro Netlify site only:
+
+- Site URL: `https://euro28-predictor-dev.netlify.app`
+- Redirect URL: `https://euro28-predictor-dev.netlify.app/**`
+- Local redirects: `http://127.0.0.1:5173/**` and `http://localhost:5173/**`
+
+Do not change the WC26 Supabase project. The hosted project should require email confirmation until the final launch configuration is reviewed.
+
+## Foundation deployment
+
+The staging site serves the isolated Euro foundation rather than the inherited WC26 application. Tournament reference and prediction tables remain read-only from the browser; Auth and controlled profile RPCs are active.
 
 - Search indexing is blocked.
 - The manifest uses browser display mode and has no feature shortcuts.

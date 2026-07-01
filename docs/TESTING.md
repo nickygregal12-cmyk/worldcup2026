@@ -14,7 +14,7 @@ For watch mode:
 npm run test:watch
 ```
 
-The Stage 4 suite contains 130 tests across 19 files.
+The Stage 5 suite contains 146 tests across 21 files.
 
 ## Prediction contracts
 
@@ -66,9 +66,29 @@ This verifies:
 - guest-only resolver context;
 - no account identity in exports;
 - no Supabase import, database write or network persistence in guest modules;
-- no Migration 006.
+- guest storage remains server-free after Migration 006.
 
 Unit coverage includes partial drafts, local-storage failures, bundle round-trips, reference mismatches, completeness tracking and stale knockout decisions.
+
+
+## Authentication and profiles
+
+```bash
+npm run audit:auth
+```
+
+This verifies:
+
+- Migration 006 and its Auth-linked `profiles` table;
+- display-name validation and case-insensitive uniqueness;
+- the Auth profile-creation trigger;
+- owner-only profile RLS;
+- controlled profile RPC execution grants;
+- persistent browser Auth configuration;
+- retention of browser-only guest state;
+- absence of the prediction save RPC.
+
+Unit coverage includes validation, availability checks, sign-up metadata, sign-in, recovery, password updates, owner profile reads and controlled profile renames.
 
 ## Database integration tests
 
@@ -76,15 +96,17 @@ After a local Supabase reset:
 
 ```bash
 npm run test:db:005:local
+npm run test:db:006:local
 ```
 
 Against the verified Euro staging project:
 
 ```bash
 npm run test:db:005:linked
+npm run test:db:006:linked
 ```
 
-The pgTAP file contains 31 checks for Migration 005. Stages 3 and 4 create no Migration 006 and require no database push.
+Migration 005 retains 31 pgTAP checks. Migration 006 adds 30 pgTAP checks for profile structure, grants, RLS, triggers, validation and controlled updates.
 
 ## Inherited application boundary
 
@@ -114,4 +136,4 @@ npm run build
 npm run check
 ```
 
-This runs database safety, legacy isolation, prediction contract audits, database-design audit, resolver audit, guest-foundation audit, foundation lint, all unit tests and the production build.
+This runs database safety, legacy isolation, prediction contract audits, database-design audit, resolver audit, guest-foundation audit, authentication audit, foundation lint, all unit tests and the production build.

@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 1.3 — Stage 4 guest/explore foundation
+### Version 1.4 — Stage 5 authentication and profiles
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
@@ -17,11 +17,13 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 - Migration 005 deployed and verified locally and on Euro staging.
 - Stage 3 canonical tournament resolver implemented.
 - Stage 4 browser-only guest/explore foundation implemented.
-- All 51 guest draft rows persist locally and use versioned import/export bundles.
+- Stage 5 Euro authentication and owner-only profiles implemented.
+- Migration 006 adds validated profiles, Auth creation trigger and controlled profile RPCs.
+- All 51 guest draft rows remain local and separate from signed-in account state.
 - Group tables, provisional tie handling, all 15 best-third combinations and matches 37–51 are covered by one pure engine.
 - Guest, predicted and live contexts use the same resolver and cannot be blended.
-- No Migration 006, save RPC, guest server storage, auth UI, leagues, scoring runs or admin result UI has been introduced.
-- Next stage: Euro-specific authentication and profiles.
+- No prediction save RPC, guest server storage, leagues, scoring runs or admin result UI has been introduced.
+- Next stage: trusted atomic prediction saving.
 
 ## 3. Environment
 
@@ -83,7 +85,7 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 - All use the same canonical resolver.
 - Predicted and live brackets are never blended.
 
-## 6. Migration 005 delivered scope
+## 6. Delivered database foundations
 
 - `scoring_rulesets`, `prediction_sets`, `match_predictions` and `prediction_grace_windows`.
 - Reversible `submitted_at`.
@@ -94,7 +96,16 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 - Expiring and revocable audited grace records.
 - RLS on all new tables.
 - Controlled reads and no browser writes.
-- No final save route, guest server storage, auth UI, leagues, scoring runs or admin result UI.
+- No final prediction save route, guest server storage, leagues, scoring runs or admin result UI.
+
+Migration 006 adds:
+
+- one `profiles` row per Auth user;
+- validated and case-insensitively unique display names;
+- automatic profile creation from sign-up metadata;
+- owner-only profile reads through RLS;
+- controlled display-name availability and owner-update RPCs;
+- no direct browser table writes.
 
 ## 7. Roadmap
 
@@ -102,8 +113,8 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 2. Revised Migration 005 — complete and hosted.
 3. Canonical tournament resolver — complete.
 4. Guest/explore foundation — complete.
-5. Authentication and profiles — next.
-6. Atomic prediction saving.
+5. Authentication and profiles — complete.
+6. Atomic prediction saving — next.
 7. Prediction journey and submit/review mode.
 8. Joker and grace controls.
 9. Results, live tables and live bracket.
@@ -116,14 +127,16 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 
 ## 8. Immediate next actions
 
-1. Install the Stage 4 guest/explore foundation package.
-2. Run `npm run audit:guest` and `npm run check`.
-3. Confirm the staging page restores and exports browser-only guest state.
-4. Commit and push on `euro28-development` with a clean working tree.
-5. Begin Stage 5 with Euro-specific authentication and profiles.
-6. Keep guest data browser-only until a deliberate pre-lock account import is implemented.
-7. Keep all prediction-table writes behind the future trusted atomic save route.
-8. Preserve strict guest, predicted and live context isolation.
+1. Install and reset-test Migration 006 locally.
+2. Run both Migration 005 and Migration 006 pgTAP files.
+3. Verify the linked project is `gcfdwobpnanjchcnvdco`.
+4. Dry-run and push only Migration 006.
+5. Verify hosted profile RLS, trigger behaviour and controlled RPCs.
+6. Configure only the Euro staging Auth redirect URLs.
+7. Commit and push Stage 5 with a clean working tree.
+8. Begin Stage 6 with one trusted atomic full-bundle prediction save operation.
+9. Preserve browser-only guest state until the deliberate pre-lock import step exists.
+10. Keep all prediction-table writes unavailable to direct browser table access.
 
 ## 9. Open decisions
 
