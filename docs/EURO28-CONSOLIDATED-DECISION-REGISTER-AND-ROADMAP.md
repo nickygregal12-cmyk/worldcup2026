@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 1.4 — Stage 5 authentication and profiles
+### Version 1.6 — Stage 5 authentication, profiles and hosted scoring correction
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
@@ -19,6 +19,8 @@ The uploaded v5.1 reference is advisory. It does not automatically supersede lat
 - Stage 4 browser-only guest/explore foundation implemented.
 - Stage 5 Euro authentication and owner-only profiles implemented.
 - Migration 006 adds validated profiles, Auth creation trigger and controlled profile RPCs.
+- Migration 007 removes unintended browser-role function grants and hardens future function defaults.
+- Migration 008 restores both exact joker caps to unresolved `NULL` values after hosted drift was diagnosed.
 - All 51 guest draft rows remain local and separate from signed-in account state.
 - Group tables, provisional tie handling, all 15 best-third combinations and matches 37–51 are covered by one pure engine.
 - Guest, predicted and live contexts use the same resolver and cannot be blended.
@@ -107,6 +109,18 @@ Migration 006 adds:
 - controlled display-name availability and owner-update RPCs;
 - no direct browser table writes.
 
+Migration 007 adds:
+
+- explicit revocation of internal function execution from `anon` and `authenticated`;
+- intended grants only for display-name availability and authenticated owner rename;
+- safe default privileges for future `postgres` functions in `public`.
+
+Migration 008 adds:
+
+- a guarded correction of the canonical provisional ruleset;
+- `NULL` group-stage and knockout joker caps, preserving the unresolved decision;
+- no changes to point values, multiplier, lock behaviour or permissions.
+
 ## 7. Roadmap
 
 1. Reconciliation batch — complete.
@@ -127,16 +141,15 @@ Migration 006 adds:
 
 ## 8. Immediate next actions
 
-1. Install and reset-test Migration 006 locally.
-2. Run both Migration 005 and Migration 006 pgTAP files.
+1. Reset-test Migration 008 locally.
+2. Rerun Migration 005, Stage 5 and Migration 008 pgTAP suites.
 3. Verify the linked project is `gcfdwobpnanjchcnvdco`.
-4. Dry-run and push only Migration 006.
-5. Verify hosted profile RLS, trigger behaviour and controlled RPCs.
-6. Configure only the Euro staging Auth redirect URLs.
-7. Commit and push Stage 5 with a clean working tree.
-8. Begin Stage 6 with one trusted atomic full-bundle prediction save operation.
-9. Preserve browser-only guest state until the deliberate pre-lock import step exists.
-10. Keep all prediction-table writes unavailable to direct browser table access.
+4. Dry-run and push only Migration 008.
+5. Confirm both hosted joker caps are `NULL` and the ruleset remains provisional.
+6. Commit Migrations 007–008 and the reconciled documentation with a clean working tree.
+7. Begin Stage 6 with one trusted atomic full-bundle prediction save operation.
+8. Preserve browser-only guest state until the deliberate pre-lock import step exists.
+9. Keep all prediction-table writes unavailable to direct browser table access.
 
 ## 9. Open decisions
 

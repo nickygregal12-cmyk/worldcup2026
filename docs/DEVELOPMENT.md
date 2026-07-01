@@ -85,12 +85,13 @@ The active staging page exposes guest-data import, export and clear controls. Th
 
 ## Authentication and profiles
 
-Stage 5 introduces Migration 006 and `src/auth/`. Euro accounts use email/password Auth, persistent sessions, recovery links and one owner-only profile row. Display-name creation and updates are validated by the database. Guest state remains local and is never cleared or uploaded by auth actions.
+Stage 5 introduces Migration 006, the follow-up privilege-hardening Migration 007, the hosted scoring-ruleset correction Migration 008 and `src/auth/`. Euro accounts use email/password Auth, persistent sessions, recovery links and one owner-only profile row. Display-name creation and updates are validated by the database. Guest state remains local and is never cleared or uploaded by auth actions.
 
 Run:
 
 ```bash
 npm run audit:auth
+npm run audit:scoring-correction
 ```
 
 ## Next implementation boundary

@@ -19,11 +19,18 @@ const migrations = fs.readdirSync(path.join(root, 'supabase/migrations'))
   .filter(name => name.endsWith('.sql'))
   .sort()
 const migrationName = '202607010006_euro28_auth_profiles.sql'
+const correctionMigrationName = '202607010007_euro28_auth_function_privileges.sql'
+const scoringCorrectionMigrationName = '202607010008_euro28_provisional_joker_caps.sql'
 const migrationPath = path.join(root, 'supabase/migrations', migrationName)
+const correctionMigrationPath = path.join(root, 'supabase/migrations', correctionMigrationName)
 
-if (migrations.length !== 6) fail(`Stage 5 requires six active migrations, found ${migrations.length}`)
+if (migrations.length !== 8) fail(`Stage 5 requires eight active migrations after the linked corrections, found ${migrations.length}`)
 if (!migrations.includes(migrationName)) fail(`required Migration 006 is missing: ${migrationName}`)
 if (migrations.filter(name => name.includes('0006_')).length !== 1) fail('exactly one active Migration 006 file is required')
+if (!migrations.includes(correctionMigrationName)) fail(`required Migration 007 is missing: ${correctionMigrationName}`)
+if (migrations.filter(name => name.includes('0007_')).length !== 1) fail('exactly one active Migration 007 file is required')
+if (!migrations.includes(scoringCorrectionMigrationName)) fail(`required Migration 008 is missing: ${scoringCorrectionMigrationName}`)
+if (migrations.filter(name => name.includes('0008_')).length !== 1) fail('exactly one active Migration 008 file is required')
 
 if (!fs.existsSync(migrationPath)) {
   fail('Migration 006 SQL cannot be audited because it is missing')
@@ -61,6 +68,29 @@ if (!fs.existsSync(migrationPath)) {
   for (const excluded of ['leagues', 'league_members', 'scoring_runs', 'prediction_points', 'guest_predictions']) {
     if (lower.includes(`create table public.${excluded}`)) fail(`Migration 006 creates excluded table public.${excluded}`)
   }
+}
+
+if (!fs.existsSync(correctionMigrationPath)) {
+  fail('Migration 007 privilege correction cannot be audited because it is missing')
+} else {
+  const correction = fs.readFileSync(correctionMigrationPath, 'utf8')
+  const required = [
+    'alter default privileges for role postgres in schema public',
+    'revoke execute on functions from public',
+    'revoke execute on functions from anon, authenticated',
+    'revoke execute on function public.normalise_profile_display_name(text)',
+    'revoke execute on function public.handle_new_euro_user_profile()',
+    'revoke execute on function public.update_my_profile_display_name(text)',
+    'grant execute on function public.is_display_name_available(text)',
+    'to anon, authenticated',
+    'grant execute on function public.update_my_profile_display_name(text)',
+    'to authenticated',
+  ]
+  required.forEach(snippet => {
+    if (!correction.toLowerCase().includes(snippet.toLowerCase())) {
+      fail(`Migration 007 is missing: ${snippet}`)
+    }
+  })
 }
 
 const authSourceFiles = []
@@ -117,6 +147,8 @@ for (const required of [
   'auth.users has the Euro profile creation trigger',
   'display names are unique without case sensitivity',
   'Migration 006 still does not create the prediction save RPC',
+  'anonymous users cannot rename profiles',
+  'new postgres functions do not grant execute to anonymous users',
 ]) {
   if (!databaseTest.toLowerCase().includes(required.toLowerCase())) fail(`Migration 006 pgTAP coverage is missing: ${required}`)
 }
@@ -135,8 +167,10 @@ if (errors.length > 0) {
 
 console.log('Euro authentication and profile foundation audit passed.')
 console.log('Migration 006: profiles, auth trigger and owner-scoped RLS')
+console.log('Migration 007: explicit browser-role function privilege hardening')
+console.log('Migration 008: provisional joker-cap drift correction')
 console.log('Account flows: sign-up, sign-in, sign-out and password recovery')
 console.log('Profile writes: controlled RPC only; no direct browser table writes')
 console.log('Guest draft: retained locally and never uploaded by Stage 5')
 console.log('Prediction save RPC: absent')
-console.log('Active migrations: 6')
+console.log('Active migrations: 8')

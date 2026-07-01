@@ -75,11 +75,12 @@ Unit coverage includes partial drafts, local-storage failures, bundle round-trip
 
 ```bash
 npm run audit:auth
+npm run audit:scoring-correction
 ```
 
 This verifies:
 
-- Migration 006 and its Auth-linked `profiles` table;
+- Migrations 006 and 007, including the Auth-linked `profiles` table and explicit function privilege hardening;
 - display-name validation and case-insensitive uniqueness;
 - the Auth profile-creation trigger;
 - owner-only profile RLS;
@@ -97,6 +98,7 @@ After a local Supabase reset:
 ```bash
 npm run test:db:005:local
 npm run test:db:006:local
+npm run test:db:008:local
 ```
 
 Against the verified Euro staging project:
@@ -104,9 +106,10 @@ Against the verified Euro staging project:
 ```bash
 npm run test:db:005:linked
 npm run test:db:006:linked
+npm run test:db:008:linked
 ```
 
-Migration 005 retains 31 pgTAP checks. Migration 006 adds 30 pgTAP checks for profile structure, grants, RLS, triggers, validation and controlled updates.
+Migration 005 retains 31 pgTAP checks. The Stage 5 profile suite runs 39 pgTAP checks for structure, RLS, trigger behaviour, validation, controlled updates, explicit RPC grants and safe default privileges for future functions. Migration 008 adds 7 focused checks for the canonical provisional ruleset and both unresolved joker caps.
 
 ## Inherited application boundary
 
@@ -136,4 +139,4 @@ npm run build
 npm run check
 ```
 
-This runs database safety, legacy isolation, prediction contract audits, database-design audit, resolver audit, guest-foundation audit, authentication audit, foundation lint, all unit tests and the production build.
+This runs database safety, legacy isolation, prediction contract audits, database-design audit, resolver audit, guest-foundation audit, authentication audit, scoring-correction audit, foundation lint, all unit tests and the production build.

@@ -6,7 +6,13 @@ create extension if not exists pgtap with schema extensions;
 
 set local search_path = public, extensions;
 
-select plan(30);
+select plan(39);
+
+create function public.euro28_default_execute_probe()
+returns integer
+language sql
+set search_path = ''
+as $$ select 1 $$;
 
 select has_table('public', 'profiles', 'profiles exists');
 select has_column('public', 'profiles', 'id', 'profiles owns the auth user id');
@@ -73,6 +79,42 @@ select has_function(
 select ok(
   has_function_privilege('anon', 'public.is_display_name_available(text)', 'EXECUTE'),
   'anonymous sign-up flow may check display-name availability'
+);
+select ok(
+  has_function_privilege('authenticated', 'public.is_display_name_available(text)', 'EXECUTE'),
+  'authenticated users may check display-name availability'
+);
+select ok(
+  not has_function_privilege('anon', 'public.normalise_profile_display_name(text)', 'EXECUTE'),
+  'anonymous users cannot execute the internal display-name normaliser'
+);
+select ok(
+  not has_function_privilege('authenticated', 'public.normalise_profile_display_name(text)', 'EXECUTE'),
+  'authenticated users cannot execute the internal display-name normaliser'
+);
+select ok(
+  not has_function_privilege('anon', 'public.normalise_profile_before_write()', 'EXECUTE'),
+  'anonymous users cannot execute the profile write trigger function'
+);
+select ok(
+  not has_function_privilege('authenticated', 'public.normalise_profile_before_write()', 'EXECUTE'),
+  'authenticated users cannot execute the profile write trigger function'
+);
+select ok(
+  not has_function_privilege('anon', 'public.handle_new_euro_user_profile()', 'EXECUTE'),
+  'anonymous users cannot execute the Auth profile trigger function'
+);
+select ok(
+  not has_function_privilege('authenticated', 'public.handle_new_euro_user_profile()', 'EXECUTE'),
+  'authenticated users cannot execute the Auth profile trigger function'
+);
+select ok(
+  not has_function_privilege('anon', 'public.euro28_default_execute_probe()', 'EXECUTE'),
+  'new postgres functions do not grant execute to anonymous users'
+);
+select ok(
+  not has_function_privilege('authenticated', 'public.euro28_default_execute_probe()', 'EXECUTE'),
+  'new postgres functions do not grant execute to authenticated users'
 );
 select ok(
   not has_function_privilege('anon', 'public.update_my_profile_display_name(text)', 'EXECUTE'),

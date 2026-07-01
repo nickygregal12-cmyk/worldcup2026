@@ -12,8 +12,10 @@ Active migrations:
 4. `202606300004_euro28_official_knockout_skeleton.sql`
 5. `202607010005_euro28_prediction_storage.sql`
 6. `202607010006_euro28_auth_profiles.sql`
+7. `202607010007_euro28_auth_function_privileges.sql`
+8. `202607010008_euro28_provisional_joker_caps.sql`
 
-Migration 005 adds the read-secured prediction storage foundation. Migration 006 adds Auth-linked profiles and controlled profile RPCs. Both must be reset-tested and deployed only to Euro staging.
+Migration 005 adds the read-secured prediction storage foundation. Migration 006 adds Auth-linked profiles and controlled profile RPCs. Migration 007 explicitly corrects browser-role function privileges on the linked staging project and hardens default privileges for future functions. Migration 008 restores both exact joker caps to unresolved `NULL` values after linked staging drift was detected. All must be reset-tested and deployed only to Euro staging.
 
 Archived WC26 reference:
 
@@ -49,6 +51,24 @@ Migration 006 creates:
 
 Anonymous users cannot read profile rows. Authenticated users receive `SELECT` only, constrained by RLS. Direct browser table inserts, updates and deletes remain revoked. Prediction-table grants and policies are unchanged.
 
+## Migration 007 scope
+
+Migration 007 corrects a linked-project privilege difference discovered by pgTAP. Existing Supabase projects can automatically grant new `public` functions to `anon` and `authenticated`. The migration:
+
+- revokes browser-role execution from internal trigger and validation functions;
+- keeps display-name availability callable by `anon` and `authenticated`;
+- keeps profile rename callable only by `authenticated`;
+- changes `postgres` default privileges so future public functions are not browser-callable unless explicitly granted.
+
+## Migration 008 scope
+
+Migration 008 corrects one hosted data value only. The canonical provisional ruleset had drifted to `group_stage_joker_cap = 8` while the agreed decision remains unresolved. The migration:
+
+- requires exactly one `euro28-scoring-provisional-v2` row;
+- requires that row to remain `provisional`;
+- sets both `group_stage_joker_cap` and `knockout_joker_cap` to `NULL`;
+- changes no point values, multiplier, ruleset status, lock or table privilege.
+
 ## Security position
 
 RLS is enabled on every table.
@@ -76,6 +96,7 @@ npm run db:safety
 npx supabase db reset
 npm run test:db:005:local
 npm run test:db:006:local
+npm run test:db:008:local
 ```
 
 `db reset` is safe only because it targets the local Supabase stack by default. Never add `--linked`.
@@ -100,7 +121,7 @@ Preview the migration plan:
 npx supabase db push --dry-run
 ```
 
-For a Stage 5 deployment from the completed Stage 4 checkpoint, the dry run must list only Migration 006. Then apply it:
+After Migration 007 is hosted, the scoring-ruleset correction dry run must list only Migration 008. Then apply it:
 
 ```bash
 npx supabase db push
@@ -112,6 +133,7 @@ Verify migration history and hosted schema behaviour:
 npx supabase migration list --linked
 npm run test:db:005:linked
 npm run test:db:006:linked
+npm run test:db:008:linked
 npx supabase db lint --linked --level warning
 ```
 
@@ -123,7 +145,7 @@ The canonical tournament resolver lives in `src/resolver/` and reads plain input
 
 Stage 4 adds a read-only adapter for public tournament teams, group memberships, matches and match-slot rules. The resulting guest reference model is held in memory. Guest predictions are stored only in browser `localStorage`; they are never written to Supabase.
 
-No database push was required for Stage 3 or Stage 4. Stage 5 adds Migration 006, bringing the active migration count to six.
+No database push was required for Stage 3 or Stage 4. Stage 5 uses Migration 006 for profiles, Migration 007 for linked-project function privilege hardening and Migration 008 for the provisional joker-cap drift correction, bringing the active migration count to eight.
 
 ## Migration rules
 

@@ -4,7 +4,9 @@
 
 Implemented for the isolated Euro staging project.
 
-- Migration: `202607010006_euro28_auth_profiles.sql`
+- Profile migration: `202607010006_euro28_auth_profiles.sql`
+- Privilege correction: `202607010007_euro28_auth_function_privileges.sql`
+- Scoring drift correction: `202607010008_euro28_provisional_joker_caps.sql`
 - Profile table: `public.profiles`
 - Profile ownership: one row per `auth.users.id`
 - Browser prediction writes: still disabled
@@ -65,6 +67,8 @@ Profile renames use `public.update_my_profile_display_name(text)`, a `SECURITY D
 
 The availability RPC returns only a boolean and never exposes another profile row.
 
+Migration 007 explicitly removes role-specific `anon` and `authenticated` execution grants that existed on the linked staging project, restores only the intended RPC grants, and changes future `postgres` function defaults to opt-in browser execution. Migration 008 separately restores both provisional joker caps to unresolved `NULL` values after a linked data diagnostic found a stale group-stage cap of 8.
+
 ## Guest boundary
 
 Signing up, signing in, signing out or resetting a password does not:
@@ -80,6 +84,8 @@ The deliberate guest-to-account import step remains deferred until the trusted a
 ## Files
 
 - `supabase/migrations/202607010006_euro28_auth_profiles.sql`
+- `supabase/migrations/202607010007_euro28_auth_function_privileges.sql`
+- `supabase/migrations/202607010008_euro28_provisional_joker_caps.sql`
 - `supabase/tests/database/006_auth_profiles.test.sql`
 - `src/auth/authValidation.js`
 - `src/auth/euroAuthService.js`
@@ -92,13 +98,16 @@ The deliberate guest-to-account import step remains deferred until the trusted a
 
 ```bash
 npm run audit:auth
+npm run audit:scoring-correction
 npm run check
 npm run test:db:006:local
 npm run test:db:006:linked
+npm run test:db:008:local
+npm run test:db:008:linked
 npx supabase db lint --linked --level warning
 ```
 
-The application suite contains 146 passing tests across 21 files before the database integration tests are run.
+The application suite contains 146 passing tests across 21 files before the database integration tests are run. The Stage 5 database suite contains 39 pgTAP checks after privilege hardening.
 
 ## Hosted Auth configuration
 
