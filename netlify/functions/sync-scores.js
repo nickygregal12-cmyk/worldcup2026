@@ -303,7 +303,7 @@ export const handler = async (event) => {
     // every old completed fixture while still backfilling a missing first goal.
     const { data: localSyncRows } = await supabase
       .from('matches')
-      .select('external_match_id, status, first_goal_band, use_manual_override')
+      .select('external_match_id, status, first_goal_band, use_manual_override, stage, outcome_type, home_score_pens, away_score_pens')
       .not('external_match_id', 'is', null)
     const localSyncState = new Map(
       (localSyncRows || []).map(row => [String(row.external_match_id), row])
@@ -417,6 +417,8 @@ export const handler = async (event) => {
 
     const statusPriority = { IN_PLAY: 0, PAUSED: 0, EXTRA_TIME: 0, PENALTY_SHOOTOUT: 0, FINISHED: 1, AWARDED: 1 }
     const orderedMatches = [...matches].sort((a, b) => (statusPriority[a.status] ?? 9) - (statusPriority[b.status] ?? 9))
+    const recentFinishedCutoff = Date.now() - (6 * 60 * 60 * 1000)
+    let completedResultChanged = false
 
     for (const match of orderedMatches) {
       const providerLiveStatuses = new Set(['IN_PLAY', 'PAUSED', 'EXTRA_TIME', 'PENALTY_SHOOTOUT'])
@@ -428,6 +430,24 @@ export const handler = async (event) => {
       // list. Fetch the individual match while live, on first completion, or
       // when a completed match still has no first-goal band locally.
       const localState = localSyncState.get(String(match.id))
+
+      // Never spend time re-processing old, already-complete fixtures. The
+      // competition endpoint returns the whole tournament, and walking every
+      // finished match caused Netlify timeouts. Only revisit a completed local
+      // row when a required field is still missing, or when the provider match
+      // finished within the last six hours.
+      if (providerFinishedStatuses.has(match.status) && localState) {
+        if (localState.use_manual_override) continue
+        const isKoLocal = KO_STAGES.has(localState.stage)
+        const missingPens = localState.outcome_type === 'penalties' &&
+          (localState.home_score_pens == null || localState.away_score_pens == null)
+        const locallyComplete = localState.status === 'completed' &&
+          Boolean(localState.first_goal_band) &&
+          (!isKoLocal || !missingPens)
+        const finishedAt = new Date(match.utcDate || 0).getTime()
+        if (locallyComplete && finishedAt < recentFinishedCutoff) continue
+      }
+
       const needsCompletedDetail = providerFinishedStatuses.has(match.status) &&
         localState &&
         !localState.use_manual_override &&
@@ -700,39 +720,23 @@ export const handler = async (event) => {
         errors.push(`Scoring M${ourMatch.match_number}: ${error.message}`)
       }
 
-      try {
-        if (isKnockout) {
-          const { data: allUsers, error: usersError } = await supabase.from('profiles').select('id')
-          if (usersError) throw usersError
-          for (const profile of allUsers || []) {
-            await runRpc('recalculate_user_total_points', { p_user_id: profile.id })
-          }
-        } else {
-          const { error: recalcError } = await supabase.rpc('recalculate_match_user_points', { p_match_id: ourMatch.id })
-          if (recalcError) {
-            const { data: preds, error: predsError } = await supabase
-              .from('predictions')
-              .select('user_id')
-              .eq('match_id', ourMatch.id)
-            if (predsError) throw predsError
-            for (const pred of preds || []) {
-              await runRpc('recalculate_user_total_points', { p_user_id: pred.user_id })
-            }
-          }
-        }
-      } catch (error) {
-        scoringSucceeded = false
-        errors.push(`Total points M${ourMatch.match_number}: ${error.message}`)
-      }
-
-      try {
-        await scoreOfflinePlayers(supabase, ourMatch.id)
-      } catch (error) {
-        scoringSucceeded = false
-        errors.push(`Offline scoring M${ourMatch.match_number}: ${error.message}`)
-      }
+      // The match-specific scoring functions update the prediction rows.
+      // Rebuilding every user's overall total one-by-one here caused 504
+      // timeouts. Mark one consolidated totals refresh for after the match loop.
+      completedResultChanged = true
 
       if (scoringSucceeded) pointsCalculated++
+    }
+
+    // Rebuild totals once, server-side, after all changed completed matches.
+    // This replaces dozens of sequential per-user RPC calls and keeps the
+    // Netlify request comfortably inside its timeout.
+    if (completedResultChanged) {
+      try {
+        await runRpc('recalculate_all_points_safe')
+      } catch (e) {
+        errors.push(`Overall totals refresh failed: ${e.message}`)
+      }
     }
 
     // Scorers and standings are intentionally not called from live score sync.
