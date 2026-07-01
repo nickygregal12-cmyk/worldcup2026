@@ -6,6 +6,9 @@ create extension if not exists pgtap with schema extensions;
 
 set local search_path = public, extensions;
 
+set local lock_timeout = '10s';
+set local statement_timeout = '120s';
+
 select plan(54);
 
 select has_function(
@@ -213,6 +216,21 @@ begin
 end;
 $$;
 
+create temp table euro28_stage6_complete_bundle_cache
+on commit drop
+as
+select pg_temp.euro28_complete_bundle() as bundle;
+
+create or replace function pg_temp.euro28_cached_complete_bundle()
+returns jsonb
+language sql
+stable
+set search_path = ''
+as $$
+  select bundle
+  from pg_temp.euro28_stage6_complete_bundle_cache;
+$$;
+
 select set_config('request.jwt.claim.sub', '', true);
 select throws_ok(
   $$
@@ -399,14 +417,14 @@ select is(
 );
 
 select is(
-  jsonb_array_length(pg_temp.euro28_complete_bundle()),
+  jsonb_array_length(pg_temp.euro28_cached_complete_bundle()),
   51,
   'the server resolver produces a complete canonical 51-match bundle'
 );
 select is(
   (
     select count(*)
-    from private.euro28_prediction_rows(pg_temp.euro28_complete_bundle()) prediction
+    from private.euro28_prediction_rows(pg_temp.euro28_cached_complete_bundle()) prediction
     where prediction.advancing_tournament_team_id is not null
   ),
   15::bigint,
@@ -424,7 +442,7 @@ select is(
       'e0280000-0000-4000-8000-000000000001',
       0,
       false,
-      pg_temp.euro28_complete_bundle(),
+      pg_temp.euro28_cached_complete_bundle(),
       'guest_import'
     )->>'revision'
   )::integer,
@@ -467,7 +485,7 @@ select throws_ok(
       'e0280000-0000-4000-8000-000000000001',
       1,
       false,
-      pg_temp.euro28_complete_bundle(),
+      pg_temp.euro28_cached_complete_bundle(),
       'guest_import'
     )
   $$,
@@ -478,7 +496,7 @@ select throws_ok(
 select throws_ok(
   $$
     with complete as (
-      select pg_temp.euro28_complete_bundle() as bundle
+      select pg_temp.euro28_cached_complete_bundle() as bundle
     ), tampered as (
       select jsonb_set(
         jsonb_set(
@@ -514,7 +532,7 @@ select ok(
       'e0280000-0000-4000-8000-000000000001',
       1,
       true,
-      pg_temp.euro28_complete_bundle(),
+      pg_temp.euro28_cached_complete_bundle(),
       'account'
     )->>'submitted_at'
   ) is not null,
@@ -526,7 +544,7 @@ select ok(
       'e0280000-0000-4000-8000-000000000001',
       2,
       false,
-      pg_temp.euro28_complete_bundle(),
+      pg_temp.euro28_cached_complete_bundle(),
       'account'
     )->'submitted_at'
   ) = 'null'::jsonb,
@@ -547,7 +565,7 @@ select throws_ok(
       'e0280000-0000-4000-8000-000000000001',
       3,
       false,
-      jsonb_set(pg_temp.euro28_complete_bundle(), '{0,home_score_90}', '2'::jsonb),
+      jsonb_set(pg_temp.euro28_cached_complete_bundle(), '{0,home_score_90}', '2'::jsonb),
       'account'
     )
   $$,
@@ -561,7 +579,7 @@ select throws_ok(
       'e0280000-0000-4000-8000-000000000001',
       3,
       true,
-      pg_temp.euro28_complete_bundle(),
+      pg_temp.euro28_cached_complete_bundle(),
       'account'
     )
   $$,
@@ -580,7 +598,7 @@ select throws_ok(
       'e0280000-0000-4000-8000-000000000001',
       3,
       false,
-      pg_temp.euro28_complete_bundle(),
+      pg_temp.euro28_cached_complete_bundle(),
       'guest_import'
     )
   $$,
@@ -594,14 +612,14 @@ select lives_ok(
     update public.matches
     set kickoff_at = now() + interval '2 days',
         status = 'scheduled'
-    where id = (pg_temp.euro28_complete_bundle()->0->>'match_id')::uuid;
+    where id = (pg_temp.euro28_cached_complete_bundle()->0->>'match_id')::uuid;
 
     insert into public.prediction_grace_windows (
       tournament_id, user_id, match_id, granted_by_user_id, expires_at, reason
     ) values (
       'e0280000-0000-4000-8000-000000000001',
       'e0290000-0000-4000-8000-000000000002',
-      (pg_temp.euro28_complete_bundle()->0->>'match_id')::uuid,
+      (pg_temp.euro28_cached_complete_bundle()->0->>'match_id')::uuid,
       'e0290000-0000-4000-8000-000000000003',
       now() + interval '1 hour',
       'Stage 6 scoped save test'
@@ -620,7 +638,7 @@ select is(
       'e0280000-0000-4000-8000-000000000001',
       3,
       false,
-      jsonb_set(pg_temp.euro28_complete_bundle(), '{0,home_score_90}', '2'::jsonb),
+      jsonb_set(pg_temp.euro28_cached_complete_bundle(), '{0,home_score_90}', '2'::jsonb),
       'account'
     )->>'revision'
   )::integer,
@@ -634,7 +652,7 @@ select throws_ok(
       4,
       false,
       jsonb_set(
-        jsonb_set(pg_temp.euro28_complete_bundle(), '{0,home_score_90}', '2'::jsonb),
+        jsonb_set(pg_temp.euro28_cached_complete_bundle(), '{0,home_score_90}', '2'::jsonb),
         '{1,home_score_90}',
         '2'::jsonb
       ),
@@ -652,7 +670,7 @@ select is(
       4,
       false,
       jsonb_set(
-        jsonb_set(pg_temp.euro28_complete_bundle(), '{0,home_score_90}', '2'::jsonb),
+        jsonb_set(pg_temp.euro28_cached_complete_bundle(), '{0,home_score_90}', '2'::jsonb),
         '{0,joker_applied}',
         'true'::jsonb
       ),
@@ -666,7 +684,7 @@ select lives_ok(
   $$
     update public.matches
     set kickoff_at = now() - interval '1 minute'
-    where id = (pg_temp.euro28_complete_bundle()->0->>'match_id')::uuid
+    where id = (pg_temp.euro28_cached_complete_bundle()->0->>'match_id')::uuid
   $$,
   'the test starts the joker target match'
 );
@@ -676,7 +694,7 @@ select throws_ok(
       'e0280000-0000-4000-8000-000000000001',
       5,
       false,
-      jsonb_set(pg_temp.euro28_complete_bundle(), '{0,home_score_90}', '2'::jsonb),
+      jsonb_set(pg_temp.euro28_cached_complete_bundle(), '{0,home_score_90}', '2'::jsonb),
       'account'
     )
   $$,
