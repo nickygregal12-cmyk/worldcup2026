@@ -63,7 +63,7 @@ if (!process.exitCode) {
   console.log(`Scoring ruleset: ${EURO_SCORING_CONFIG.version} (${EURO_SCORING_CONFIG.status})`)
   console.log(`Match score: exact ${EURO_SCORING_CONFIG.match.EXACT_SCORE}, correct outcome ${EURO_SCORING_CONFIG.match.CORRECT_OUTCOME}`)
   console.log(`Knockout: advancing team ${EURO_SCORING_CONFIG.knockout.CORRECT_ADVANCING_TEAM}, decision method ${EURO_SCORING_CONFIG.knockout.CORRECT_DECISION_METHOD}`)
-  console.log(`Jokers: enabled, multiplier ${EURO_SCORING_CONFIG.joker.MULTIPLIER}, caps unresolved`) 
+  console.log(`Jokers: enabled, multiplier ${EURO_SCORING_CONFIG.joker.MULTIPLIER}, caps unresolved`)
   console.log('All scoring values are read from src/config/scoringConfig.js')
   console.log('Penalty shoot-out scores: stored separately')
 }
