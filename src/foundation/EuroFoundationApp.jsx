@@ -129,7 +129,7 @@ export default function EuroFoundationApp() {
     content = (
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Private competitions" title="Your leagues" description="One member list, with separate Original Predictor and KO Predictor tables." />
-        <LeaguesFoundation client={clientState.client} tournamentId={foundation.tournament.id} />
+        <LeaguesFoundation client={clientState.client} tournamentId={foundation.tournament.id} reference={foundation.guestReference} />
       </div>
     )
   } else if (route === APP_ROUTE.RESULTS) {

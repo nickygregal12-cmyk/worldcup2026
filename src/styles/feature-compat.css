@@ -2081,3 +2081,384 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* Stage 13D — complete league, result, sharing and points journeys */
+.foundation-league-manage {
+  border: 1px solid var(--foundation-border);
+  border-radius: 1rem;
+  background: var(--foundation-surface-soft);
+  overflow: hidden;
+}
+
+.foundation-league-manage > summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.foundation-league-manage .foundation-league-actions {
+  padding: 0 1rem 1rem;
+}
+
+.foundation-league-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.foundation-league-summary-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.2rem 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.9rem;
+  background: var(--foundation-surface);
+}
+
+.foundation-league-summary-card .foundation-kicker,
+.foundation-league-summary-card small {
+  grid-column: 1 / -1;
+}
+
+.foundation-league-summary-card > strong {
+  font-size: 1.65rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.foundation-league-summary-card > span:not(.foundation-kicker) {
+  align-self: end;
+  color: var(--foundation-muted);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.foundation-league-summary-card.is-error {
+  border-color: var(--state-danger-border);
+}
+
+.foundation-member-count {
+  margin: 0 0 1rem;
+  color: var(--foundation-muted);
+}
+
+.foundation-competition-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1rem 0 0.75rem;
+}
+
+.foundation-competition-heading h3,
+.foundation-member-predictions h4,
+.foundation-live-bracket-rounds h4 {
+  margin: 0;
+}
+
+.foundation-member-prediction-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.foundation-member-predictions {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.9rem;
+  background: var(--foundation-surface);
+}
+
+.foundation-member-predictions > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.foundation-member-prediction-list {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+  max-height: 38rem;
+  overflow-y: auto;
+}
+
+.foundation-member-prediction {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.75rem;
+  background: var(--foundation-surface-soft);
+}
+
+.foundation-member-prediction > div:first-child,
+.foundation-member-prediction__pick {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.foundation-member-prediction > p {
+  margin: 0;
+  color: var(--foundation-muted);
+  font-size: 0.82rem;
+}
+
+.foundation-member-prediction__pick {
+  justify-items: end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.foundation-member-prediction.is-private {
+  border-style: dashed;
+}
+
+.foundation-results-card--full {
+  grid-column: 1 / -1;
+}
+
+.foundation-leaderboard-list li.is-current-user {
+  background: var(--surface-emphasis);
+}
+
+.foundation-leaderboard-score {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.foundation-result-feed {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+
+.foundation-result-feed-section {
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.85rem;
+  overflow: hidden;
+}
+
+.foundation-result-feed-section > summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+  background: var(--foundation-surface-soft);
+}
+
+.foundation-result-feed-list {
+  display: grid;
+}
+
+.foundation-result-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.85rem;
+  align-items: center;
+  padding: 0.8rem 1rem;
+  border-top: 1px solid var(--foundation-border);
+}
+
+.foundation-result-row > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.foundation-result-row__score {
+  justify-items: end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.foundation-result-row.is-live {
+  background: var(--state-info-soft);
+}
+
+.foundation-result-row.is-manual_review,
+.foundation-result-row.is-awaiting_confirmation {
+  background: var(--state-warning-soft);
+}
+
+.foundation-revision-chip {
+  display: inline-flex;
+  padding: 0.25rem 0.45rem;
+  border: 1px solid var(--state-warning-border);
+  border-radius: 999px;
+  color: var(--state-warning);
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.foundation-live-bracket-rounds {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.foundation-live-bracket-rounds > section {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.foundation-live-bracket > article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.75rem;
+  background: var(--foundation-surface-soft);
+}
+
+.foundation-live-bracket > article > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.foundation-live-bracket > article > span {
+  color: var(--state-live);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.foundation-live-bracket > article.is-unresolved {
+  border-style: dashed;
+}
+
+.foundation-live-bracket__result {
+  justify-items: end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.foundation-points-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.9rem 0;
+}
+
+.foundation-points-summary > span {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 999px;
+  background: var(--foundation-surface-soft);
+}
+
+.foundation-correction-note {
+  padding: 0.75rem;
+  border: 1px solid var(--state-warning-border);
+  border-radius: 0.75rem;
+  background: var(--state-warning-soft);
+}
+
+.foundation-points-details {
+  margin-top: 0.7rem;
+  border-top: 1px solid var(--foundation-border);
+}
+
+.foundation-points-details > summary {
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.foundation-points-row {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--foundation-border);
+}
+
+.foundation-points-row > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 760px) {
+  .foundation-league-summary-grid,
+  .foundation-member-prediction-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .foundation-competition-heading,
+  .foundation-member-predictions > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .foundation-league-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .foundation-league-table,
+  .foundation-league-table tbody,
+  .foundation-league-table tr,
+  .foundation-league-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .foundation-league-table tr {
+    margin-bottom: 0.65rem;
+    padding: 0.7rem;
+    border: 1px solid var(--foundation-border);
+    border-radius: 0.8rem;
+    background: var(--foundation-surface-soft);
+  }
+
+  .foundation-league-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.35rem 0;
+    border: 0;
+    text-align: right;
+  }
+
+  .foundation-league-table td::before {
+    content: attr(data-label);
+    color: var(--foundation-muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-align: left;
+  }
+
+  .foundation-result-row,
+  .foundation-live-bracket > article,
+  .foundation-member-prediction {
+    grid-template-columns: 1fr;
+  }
+
+  .foundation-result-row__score,
+  .foundation-live-bracket__result,
+  .foundation-member-prediction__pick {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .foundation-revision-chip {
+    justify-self: start;
+  }
+}

@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { buildGuestReference } from '../../guest/__tests__/fixtures.js'
 import {
+  buildCanonicalResultFeed,
+  buildLiveBracketRounds,
   buildLiveTournamentSnapshot,
   mapStoredDecisionMethod,
   normaliseCanonicalResult,
   normaliseLeaderboard,
+  normalisePointsBreakdown,
   RESULT_COMPETITION,
 } from '../resultModel.js'
 
@@ -12,7 +15,7 @@ function reference() {
   return buildGuestReference()
 }
 
-describe('Stage 9 result model', () => {
+describe('Stage 13D result model', () => {
   it('maps stored database methods without adding shoot-out kicks to the score', () => {
     expect(mapStoredDecisionMethod('regulation')).toBe('normal_time')
     expect(mapStoredDecisionMethod('penalties')).toBe('penalties')
@@ -67,5 +70,56 @@ describe('Stage 9 result model', () => {
     }], RESULT_COMPETITION.ORIGINAL)
     expect(rows[0]).toMatchObject({ totalPoints: 50, competitionKey: 'original' })
     expect(() => normaliseLeaderboard([], 'combined')).toThrow('Unsupported leaderboard competition')
+  })
+
+  it('builds a complete canonical result feed with correction state', () => {
+    const model = reference()
+    const first = model.groupMatches[0]
+    const snapshot = buildLiveTournamentSnapshot({
+      reference: model,
+      resultRows: [{
+        id: first.matchId, match_number: first.matchNumber, status: 'completed', result_status: 'confirmed',
+        result_revision: 2, home_score_90: 2, away_score_90: 1, result_method: 'regulation',
+      }],
+    })
+    const feed = buildCanonicalResultFeed({ reference: model, liveSnapshot: snapshot })
+    expect(feed.rows).toHaveLength(51)
+    expect(feed.sections.completed[0]).toMatchObject({ score: '2–1', corrected: true, resultRevision: 2 })
+    expect(feed.sections.upcoming).toHaveLength(50)
+  })
+
+  it('shows all 15 live bracket positions including unresolved source labels', () => {
+    const model = reference()
+    const snapshot = buildLiveTournamentSnapshot({ reference: model, resultRows: [] })
+    const rounds = buildLiveBracketRounds({ reference: model, liveSnapshot: snapshot })
+    expect(rounds.flatMap(round => round.matches)).toHaveLength(15)
+    expect(rounds[0].matches[0].homeLabel).toBe('1A')
+    expect(rounds.at(-1).label).toBe('Final')
+  })
+
+  it('normalises separate Original and KO point components and correction revisions', () => {
+    const model = reference()
+    const first = model.groupMatches[0]
+    const points = normalisePointsBreakdown({
+      competition_key: 'original',
+      match_points: 20,
+      bracket_points: 10,
+      total_points: 30,
+      scored_match_count: 1,
+      match_breakdown: [{
+        match_id: first.matchId,
+        exact_score_points: 10,
+        correct_outcome_points: 0,
+        advancing_team_points: 0,
+        decision_method_points: 0,
+        joker_multiplier: 2,
+        total_points: 20,
+        result_revision: 3,
+      }],
+      bracket_breakdown: [{ milestone: 'quarter_final', tournament_team_id: 'A1', points: 10 }],
+    }, RESULT_COMPETITION.ORIGINAL, model)
+    expect(points).toMatchObject({ totalPoints: 30, correctedMatchCount: 1 })
+    expect(points.matchBreakdown[0]).toMatchObject({ matchNumber: 1, jokerBonus: 10, corrected: true })
+    expect(points.bracketBreakdown[0].teamLabel).toBe('Group A slot 1')
   })
 })

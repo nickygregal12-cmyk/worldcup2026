@@ -1,11 +1,25 @@
 import {
+  buildLeagueCompetitionSummary,
+  buildSharedLeagueMemberList,
   compareSharedPredictionBundles,
+  LEAGUE_COMPETITION,
   normaliseLeague,
   normaliseStanding,
 } from './leagueModel.js'
 
 function throwForError(label, error) {
   if (error) throw new Error(`${label}: ${error.message}`)
+}
+
+function settledSection(result, emptyValue) {
+  if (result.status === 'fulfilled') {
+    return Object.freeze({ status: 'ready', data: result.value, error: null })
+  }
+  return Object.freeze({
+    status: 'error',
+    data: emptyValue,
+    error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+  })
 }
 
 export async function readLeagueSession(client) {
@@ -57,6 +71,33 @@ export async function getLeagueStandings(client, { leagueId, competitionKey }) {
   })
   throwForError('League standings failed', response.error)
   return Object.freeze((response.data ?? []).map(normaliseStanding))
+}
+
+export async function loadLeagueOverview(client, leagueId) {
+  const [originalResult, koResult] = await Promise.allSettled([
+    getLeagueStandings(client, {
+      leagueId,
+      competitionKey: LEAGUE_COMPETITION.ORIGINAL,
+    }),
+    getLeagueStandings(client, {
+      leagueId,
+      competitionKey: LEAGUE_COMPETITION.KO_PREDICTOR,
+    }),
+  ])
+
+  const original = settledSection(originalResult, Object.freeze([]))
+  const koPredictor = settledSection(koResult, Object.freeze([]))
+  const readySections = [original, koPredictor].filter(section => section.status === 'ready').length
+
+  return Object.freeze({
+    status: readySections === 2 ? 'ready' : readySections === 1 ? 'partial' : 'error',
+    sections: Object.freeze({ original, koPredictor }),
+    summaries: Object.freeze({
+      original: buildLeagueCompetitionSummary(original.data, LEAGUE_COMPETITION.ORIGINAL),
+      koPredictor: buildLeagueCompetitionSummary(koPredictor.data, LEAGUE_COMPETITION.KO_PREDICTOR),
+    }),
+    members: buildSharedLeagueMemberList(original.data, koPredictor.data),
+  })
 }
 
 export async function getLeagueMemberPredictions(client, {

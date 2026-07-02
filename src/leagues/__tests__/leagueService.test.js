@@ -5,6 +5,7 @@ import {
   getMyLeagues,
   joinLeague,
   loadLeagueHeadToHead,
+  loadLeagueOverview,
 } from '../leagueService.js'
 
 function rpcClient(responses) {
@@ -56,6 +57,23 @@ describe('league service', () => {
     expect(client.rpc).toHaveBeenCalledWith('get_league_standings', {
       p_league_id: 'l1', p_competition_key: 'ko_predictor',
     })
+  })
+
+  it('loads both league tables and preserves a partial result', async () => {
+    const client = {
+      rpc: vi.fn(async (_name, args) => {
+        if (args.p_competition_key === 'ko_predictor') return { data: null, error: { message: 'temporary failure' } }
+        return {
+          data: [{ rank: 1, user_id: 'me', display_name: 'Nicky', total_points: 10, is_current_user: true }],
+          error: null,
+        }
+      }),
+    }
+    const overview = await loadLeagueOverview(client, 'l1')
+    expect(overview.status).toBe('partial')
+    expect(overview.sections.original.status).toBe('ready')
+    expect(overview.sections.koPredictor.status).toBe('error')
+    expect(overview.members).toHaveLength(1)
   })
 
   it('loads two member bundles and creates a head-to-head comparison', async () => {
