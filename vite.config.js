@@ -1,11 +1,19 @@
+import process from 'node:process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const release = process.env.SENTRY_RELEASE || process.env.COMMIT_REF || ''
+const sentryUploadEnabled = ['SENTRY_AUTH_TOKEN', 'SENTRY_ORG', 'SENTRY_PROJECT']
+  .every(name => Boolean(process.env[name])) && Boolean(release)
+
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_SENTRY_RELEASE': JSON.stringify(release),
+  },
   plugins: [react()],
   build: {
     outDir: 'dist',
-    sourcemap: false,
+    sourcemap: sentryUploadEnabled ? 'hidden' : false,
     chunkSizeWarningLimit: 550,
     rollupOptions: {
       output: {

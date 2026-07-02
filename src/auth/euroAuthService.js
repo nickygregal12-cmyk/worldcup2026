@@ -4,6 +4,8 @@ import {
   validateEmail,
   validatePassword,
 } from './authValidation.js'
+import { externalRecordSchema, parseExternal } from '../contracts/externalValidation.js'
+import { profileRowSchema } from '../contracts/externalSchemas.js'
 
 function requireClient(client) {
   if (!client) throw new Error('The Euro authentication client is unavailable.')
@@ -59,7 +61,7 @@ export async function signUpWithEmail(client, {
   })
 
   if (error) throw error
-  return data
+  return parseExternal(externalRecordSchema, data ?? {}, 'Sign-up response')
 }
 
 export async function signInWithEmail(client, { email, password }) {
@@ -72,7 +74,7 @@ export async function signInWithEmail(client, { email, password }) {
   })
 
   if (error) throw error
-  return data
+  return parseExternal(externalRecordSchema, data ?? {}, 'Sign-in response')
 }
 
 export async function requestPasswordReset(client, {
@@ -86,7 +88,7 @@ export async function requestPasswordReset(client, {
   })
 
   if (error) throw error
-  return data
+  return parseExternal(externalRecordSchema, data ?? {}, 'Password reset response')
 }
 
 export async function updatePassword(client, password) {
@@ -95,7 +97,7 @@ export async function updatePassword(client, password) {
   const { data, error } = await client.auth.updateUser({ password: validatedPassword })
 
   if (error) throw error
-  return data
+  return parseExternal(externalRecordSchema, data ?? {}, 'Password update response')
 }
 
 export async function signOut(client) {
@@ -112,7 +114,7 @@ export async function loadOwnProfile(client) {
     .single()
 
   if (error) throw error
-  return data
+  return parseExternal(profileRowSchema, data, 'Profile response')
 }
 
 export async function updateOwnDisplayName(client, displayName) {
@@ -125,7 +127,7 @@ export async function updateOwnDisplayName(client, displayName) {
   if (error) throw error
   const profile = Array.isArray(data) ? data[0] : data
   if (!profile) throw new Error('The updated profile was not returned.')
-  return profile
+  return parseExternal(profileRowSchema, profile, 'Updated profile response')
 }
 
 export function getEmailForSession(session) {

@@ -171,7 +171,7 @@ Requirements:
 - No migration was required; the checkpoint remained at 14 migrations.
 - Real multi-user and clock-driven staging acceptance is deferred to Stage 16 rather than forcing irreversible tournament state.
 
-### Stage 13E — Team Profile Sheet — IMPLEMENTED IN THIS PACKAGE
+### Stage 13E — Team Profile Sheet — COMPLETE
 
 Implemented once through `<TeamLabel>` and presented as a responsive bottom sheet.
 
@@ -191,11 +191,15 @@ Binding gates:
 - charter tokens, both themes, loading, empty, error and partial-failure states;
 - one provisional sample team is enough until Stage 17.
 
-## Stage 14 — Observability and resilience
+## Stage 14 — Observability and resilience — IMPLEMENTED IN THIS PACKAGE
 
-- Sentry in the ErrorBoundary and Netlify functions with source maps.
-- Scheduled-function heartbeat and health endpoint.
-- Zod validation retrofitted to all external function boundaries.
+- Root ErrorBoundary plus browser and Netlify function error reporting through an optional Sentry-compatible ingestion boundary.
+- Guarded release/source-map upload using Netlify release variables; no public source maps when configuration is absent or incomplete.
+- Read-only Netlify health endpoint and hourly scheduled heartbeat.
+- Protected administrator runtime-health panel with healthy, degraded and retry states.
+- Zod validation across active Euro foundation, prediction, results, league, Team Profile and administrator response boundaries.
+- Quarantined inherited WC26 functions remain inactive and are not retrofitted.
+- No Migration 016; the checkpoint remains at 15 migrations.
 
 ## Stage 15 — End-to-end browser testing
 
@@ -255,4 +259,4 @@ Binding gates:
 
 ## Next single task
 
-After Stage 13E is installed, locally database-tested, migrated to Euro staging and deployed, begin Stage 14: observability and resilience. Do not begin external result-provider work.
+After Stage 14 is installed, tested and deployed, begin Stage 15: end-to-end browser testing. Do not begin external result-provider work.

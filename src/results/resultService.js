@@ -5,6 +5,13 @@ import {
   RESULT_COMPETITION,
 } from './resultModel.js'
 import { compareSharedPredictionBundles } from '../leagues/leagueModel.js'
+import { parseExternal } from '../contracts/externalValidation.js'
+import {
+  canonicalResultRowsSchema,
+  leaderboardRowsSchema,
+  pointsBreakdownSchema,
+  sharedPredictionBundleSchema,
+} from '../contracts/externalSchemas.js'
 
 const RESULT_COLUMNS = [
   'id',
@@ -51,7 +58,7 @@ export async function loadCanonicalTournamentSnapshot(client, reference) {
   throwForError('Canonical result read failed', response.error)
   return buildLiveTournamentSnapshot({
     reference,
-    resultRows: response.data ?? [],
+    resultRows: parseExternal(canonicalResultRowsSchema, response.data ?? [], 'Canonical results response'),
   })
 }
 
@@ -67,7 +74,8 @@ async function readLeaderboard(client, tournamentId, competitionKey) {
     p_competition_key: competitionKey,
   })
   throwForError(`${competitionKey} leaderboard read failed`, response.error)
-  return normaliseLeaderboard(response.data ?? [], competitionKey)
+  const rows = parseExternal(leaderboardRowsSchema, response.data ?? [], `${competitionKey} leaderboard response`)
+  return normaliseLeaderboard(rows, competitionKey)
 }
 
 async function readMyPoints(client, tournamentId, competitionKey, reference) {
@@ -76,7 +84,8 @@ async function readMyPoints(client, tournamentId, competitionKey, reference) {
     p_competition_key: competitionKey,
   })
   throwForError(`${competitionKey} points read failed`, response.error)
-  return normalisePointsBreakdown(response.data ?? null, competitionKey, reference)
+  const breakdown = parseExternal(pointsBreakdownSchema, response.data ?? null, `${competitionKey} points response`)
+  return normalisePointsBreakdown(breakdown, competitionKey, reference)
 }
 
 async function readSharedPredictionBundle(client, tournamentId, memberUserId, competitionKey) {
@@ -86,7 +95,7 @@ async function readSharedPredictionBundle(client, tournamentId, memberUserId, co
     p_competition_key: competitionKey,
   })
   throwForError(`${competitionKey} shared prediction read failed`, response.error)
-  return response.data
+  return parseExternal(sharedPredictionBundleSchema, response.data ?? {}, `${competitionKey} shared prediction response`)
 }
 
 export async function loadOverallHeadToHead(client, {

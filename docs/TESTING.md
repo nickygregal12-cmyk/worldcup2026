@@ -121,3 +121,21 @@ Vitest covers bracket slot labels and progress, lock/grace presentation, predict
 `npm run audit:team-profile` verifies the shared TeamLabel trigger, bottom-sheet states, centrally stored curated facts, canonical tournament source, owner-only editing, pre-lock aggregate omission, Migration 015 and its database test.
 
 Run `npm run test:db:015:local` against a disposable local database before considering the migration accepted. Do not use the linked test casually because it exercises the tournament lock inside a rolled-back test transaction.
+
+## Stage 14 observability and resilience
+
+`npm run audit:observability` verifies:
+
+- the migration count remains 15 and no Migration 016 exists;
+- Zod is a production dependency;
+- the active Euro root is wrapped by the recovery boundary;
+- browser and Netlify error reporting contain no committed secrets;
+- source maps are generated only for a complete release upload and are removed after upload;
+- the public health endpoint uses only the anon/RLS read boundary;
+- the hourly heartbeat validates the health payload;
+- active Euro Supabase/RPC response services use the central validation boundary;
+- WC26 remains inactive and blocked.
+
+Vitest covers the external-response error type, Sentry envelope redaction, browser health service, Netlify health endpoint, heartbeat response validation and the existing validated Euro services.
+
+A deployed smoke check must request `/.netlify/functions/health` and run `npm run verify:foundation-page`. A real Sentry event/source-map check is completed only after the owner configures the Sentry project and Netlify environment variables.

@@ -1,13 +1,16 @@
 import { buildCompleteGuestImportRows, buildPredictionSaveRequest } from './predictionSaveBundle.js'
 import { EURO28_PREDICTION_SAVE_RPC, PREDICTION_SAVE_SOURCE } from './predictionSaveConfig.js'
+import { parseExternal } from '../contracts/externalValidation.js'
+import { bracketPredictionRowsSchema, matchPredictionRowsSchema, predictionSaveResultSchema, predictionSetRowSchema } from '../contracts/externalSchemas.js'
 
 function requireClient(client) {
   if (!client) throw new Error('The Euro prediction client is unavailable.')
 }
 
 function normaliseSaveResult(data) {
-  const result = Array.isArray(data) ? data[0] : data
-  if (!result || !Number.isInteger(Number(result.revision))) throw new Error('The atomic original-predictor save result was not returned.')
+  const candidate = Array.isArray(data) ? data[0] : data
+  const result = parseExternal(predictionSaveResultSchema, candidate, 'Original prediction save response')
+  if (!Number.isInteger(Number(result.revision))) throw new Error('The atomic original-predictor save result was not returned.')
   return {
     predictionSetId: result.prediction_set_id,
     tournamentId: result.tournament_id,
@@ -44,27 +47,28 @@ export async function loadMyPredictionBundle(client, tournamentId, userId) {
     .maybeSingle()
   if (setResult.error) throw setResult.error
   if (!setResult.data) return null
+  const predictionSet = parseExternal(predictionSetRowSchema, setResult.data, 'Original prediction set response')
 
   const [groupResult, bracketResult] = await Promise.all([
     client
       .from('match_predictions')
       .select('match_id,predicted_home_tournament_team_id,predicted_away_tournament_team_id,home_score_90,away_score_90,joker_applied,updated_at')
-      .eq('prediction_set_id', setResult.data.id),
+      .eq('prediction_set_id', predictionSet.id),
     client
       .from('bracket_predictions')
       .select('match_id,predicted_home_tournament_team_id,predicted_away_tournament_team_id,advancing_tournament_team_id,updated_at')
-      .eq('prediction_set_id', setResult.data.id),
+      .eq('prediction_set_id', predictionSet.id),
   ])
   if (groupResult.error) throw groupResult.error
   if (bracketResult.error) throw bracketResult.error
 
-  const groupRows = (groupResult.data ?? []).map(row => ({
+  const groupRows = parseExternal(matchPredictionRowsSchema, groupResult.data ?? [], 'Original match prediction response').map(row => ({
     ...row,
     prediction_kind: 'group_score',
     advancing_tournament_team_id: null,
     decision_method: null,
   }))
-  const bracketRows = (bracketResult.data ?? []).map(row => ({
+  const bracketRows = parseExternal(bracketPredictionRowsSchema, bracketResult.data ?? [], 'Original bracket prediction response').map(row => ({
     ...row,
     prediction_kind: 'bracket_pick',
     home_score_90: null,
@@ -74,15 +78,15 @@ export async function loadMyPredictionBundle(client, tournamentId, userId) {
   }))
 
   return {
-    predictionSetId: setResult.data.id,
-    tournamentId: setResult.data.tournament_id,
-    competitionKey: setResult.data.competition_key,
-    revision: Number(setResult.data.revision),
-    submittedAt: setResult.data.submitted_at,
-    guestImportedAt: setResult.data.guest_imported_at,
-    lastSaveSource: setResult.data.last_save_source,
-    createdAt: setResult.data.created_at,
-    updatedAt: setResult.data.updated_at,
+    predictionSetId: predictionSet.id,
+    tournamentId: predictionSet.tournament_id,
+    competitionKey: predictionSet.competition_key,
+    revision: Number(predictionSet.revision),
+    submittedAt: predictionSet.submitted_at,
+    guestImportedAt: predictionSet.guest_imported_at,
+    lastSaveSource: predictionSet.last_save_source,
+    createdAt: predictionSet.created_at,
+    updatedAt: predictionSet.updated_at,
     predictions: [...groupRows, ...bracketRows],
   }
 }

@@ -1,5 +1,7 @@
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { buildTeamTournamentSummary, mergeTeamProfileSections } from './teamProfileModel.js'
+import { parseExternal } from '../contracts/externalValidation.js'
+import { teamProfilePayloadSchema } from '../contracts/externalSchemas.js'
 
 function throwForError(label, error) {
   if (error) throw new Error(`${label}: ${error.message}`)
@@ -11,7 +13,7 @@ async function readProfileContent(client, tournamentId, tournamentTeamId) {
     p_tournament_team_id: tournamentTeamId,
   })
   throwForError('Team profile read failed', response.error)
-  return response.data ?? {}
+  return parseExternal(teamProfilePayloadSchema, response.data ?? {}, 'Team profile response')
 }
 
 export async function loadTeamProfileSheet(client, { reference, team }) {

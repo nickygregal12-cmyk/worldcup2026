@@ -1778,3 +1778,129 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+/* Stage 14 observability and recovery */
+.observability-error-card {
+  width: min(100%, 44rem);
+  margin: auto;
+}
+
+.observability-error-reference {
+  overflow-wrap: anywhere;
+}
+
+.observability-error-actions,
+.runtime-health-card__heading,
+.runtime-health-status,
+.runtime-health-check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.observability-error-actions {
+  flex-wrap: wrap;
+  margin-top: var(--space-6);
+}
+
+.runtime-health-card__heading,
+.runtime-health-status {
+  justify-content: space-between;
+}
+
+.runtime-health-card__heading h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.runtime-health-card__heading button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.runtime-health-status {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.runtime-health-status.is-healthy,
+.runtime-health-check.is-healthy {
+  color: var(--state-success);
+}
+
+.runtime-health-status.is-degraded,
+.runtime-health-check.is-degraded {
+  color: var(--state-danger);
+}
+
+.runtime-health-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-block: var(--space-4);
+}
+
+.runtime-health-check {
+  align-items: flex-start;
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.runtime-health-check div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.runtime-health-check span {
+  color: var(--text-muted);
+}
+
+@media (max-width: 42rem) {
+  .runtime-health-card__heading,
+  .runtime-health-status {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .runtime-health-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .runtime-health-card__heading button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+.runtime-health-test {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.runtime-health-test > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.runtime-health-test span,
+.runtime-health-test small {
+  color: var(--text-muted);
+}
+
+@media (max-width: 42rem) {
+  .runtime-health-test {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

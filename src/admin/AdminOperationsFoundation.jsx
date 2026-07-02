@@ -8,6 +8,7 @@ import {
 } from './adminOperationsModel.js'
 import AdminControlRoomSections from './AdminControlRoomSections.jsx'
 import AdminTeamProfiles from './AdminTeamProfiles.jsx'
+import { RuntimeHealthPanel } from '../observability/index.js'
 import {
   loadAdminMatchHistory,
   loadAdminOperations,
@@ -256,6 +257,7 @@ export default function AdminOperationsFoundation({ client, reference }) {
       </div>
 
       <AdminSummary matches={matches} role={state.data.access.adminRole} />
+      <RuntimeHealthPanel />
 
       {action.message && (
         <p className={action.status === 'error' ? 'foundation-warning-text' : 'foundation-admin-action-message'} role="status">

@@ -3,13 +3,18 @@ import process from 'node:process'
 const siteUrl = (process.env.EURO28_SITE_URL || 'https://euro28-predictor-dev.netlify.app').replace(/\/$/, '')
 const assert = (condition, message) => { if (!condition) throw new Error(message) }
 async function readText(pathname) {
-  const response = await fetch(`${siteUrl}${pathname}`, { headers: { 'user-agent': 'Euro28AppShellVerifier/2.0' } })
+  const response = await fetch(`${siteUrl}${pathname}`, { headers: { 'user-agent': 'Euro28AppShellVerifier/3.0' } })
   assert(response.ok, `${pathname} returned HTTP ${response.status}`)
   return response.text()
 }
+async function readJson(pathname) {
+  const response = await fetch(`${siteUrl}${pathname}`, { headers: { 'user-agent': 'Euro28AppShellVerifier/3.0', accept: 'application/json' } })
+  assert(response.ok, `${pathname} returned HTTP ${response.status}`)
+  return response.json()
+}
 
-const [html, manifestText, worker, robots] = await Promise.all([
-  readText('/'), readText('/manifest.json'), readText('/sw.js'), readText('/robots.txt'),
+const [html, manifestText, worker, robots, health] = await Promise.all([
+  readText('/'), readText('/manifest.json'), readText('/sw.js'), readText('/robots.txt'), readJson('/.netlify/functions/health'),
 ])
 assert(html.includes('<title>Euro 2028 Predictor</title>'), 'The deployed HTML title is not the Euro product title.')
 assert(html.includes('noindex, nofollow, noarchive'), 'The staging HTML is missing the no-index directive.')
@@ -19,6 +24,8 @@ assert(manifest.name === 'Euro 2028 Predictor', 'The deployed manifest is incorr
 assert(manifest.display === 'browser', 'The staging build must not silently change its install mode.')
 assert(worker.includes('registration.unregister()'), 'The retirement worker does not unregister itself.')
 assert(robots.includes('Disallow: /'), 'The staging site is not blocked from indexing.')
+assert(health.service === 'euro28-predictor' && health.status === 'ok', 'The deployed Stage 14 health endpoint is not healthy.')
+assert(health.checks?.application?.status === 'ok' && health.checks?.database?.status === 'ok', 'The deployed Stage 14 health checks are incomplete.')
 const scriptMatch = html.match(/<script[^>]+src="([^"]*\/assets\/index-[^"]+\.js)"/)
 assert(scriptMatch, 'Could not locate the deployed Vite bundle.')
 const bundlePath = scriptMatch[1].startsWith('http') ? scriptMatch[1].replace(siteUrl, '') : scriptMatch[1]
@@ -91,13 +98,20 @@ for (const text of [
   'get_team_profile_sheet',
   'admin_list_team_profiles',
   'admin_upsert_team_profile',
-]) assert(bundle.includes(text), `The deployed Stage 13D bundle is missing: ${text}`)
+  'Euro 2028 Predictor hit a problem',
+  'Runtime heartbeat',
+  'Runtime health response',
+  'Send Sentry test event',
+]) assert(bundle.includes(text), `The deployed Euro bundle is missing: ${text}`)
 assert(!bundle.includes('WC26 Control Centre'), 'The inherited WC26 admin application is active.')
 
 console.log('Euro 2028 app-shell verification passed.')
 console.log(`Site: ${siteUrl}`)
-console.log('Public experience: Stage 13E team profiles plus Stage 13D leagues, results, sharing and separate points journeys')
-console.log('Stage 13D leagues, shared predictions, canonical results and separate points remain active beneath Stage 13E')
+console.log('Public experience: Stage 14 observability and resilience plus Stage 13E team profiles and Stage 13D journeys')
+console.log('Stage 13D leagues, shared predictions, canonical results and separate points remain active beneath Stage 14')
+console.log('Runtime health: read-only Netlify endpoint and hourly validated heartbeat')
+console.log('Error recovery: root boundary and optional Sentry-compatible browser/function reporting')
+console.log('Validation: active Euro Supabase, RPC and health boundaries use Zod-backed parsing')
 console.log('Themes: persisted light and dark appearance')
 console.log('Groups: 36 mobile-first score cards with local flags, explicit states and five-joker controls')
 console.log('Review: saved predictions count whether submitted or not')
@@ -107,5 +121,6 @@ console.log('Competition boundary: Original and KO points remain separate; predi
 console.log('Admin controls: protected operations and revision-safe curated team profiles remain owner-controlled')
 console.log('Team profile sources: curated admin facts, app-owned tournament data and privacy-gated Original Predictor aggregates')
 console.log('External result APIs: deferred')
+console.log('Database migrations: unchanged at 15')
 console.log('Guest storage: browser-only and unscored')
 console.log('Inherited WC26 application bundle: inactive')

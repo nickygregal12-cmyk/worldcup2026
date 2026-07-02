@@ -10,6 +10,8 @@ import {
   normalisePredictionGrace,
   normaliseScoringRuns,
 } from './adminOperationsModel.js'
+import { parseExternal } from '../contracts/externalValidation.js'
+import { adminAccessSchema, adminRecordRowsSchema, adminRecordSchema, mutationResultSchema } from '../contracts/externalSchemas.js'
 
 function throwForError(label, error) {
   if (!error) return
@@ -24,7 +26,7 @@ export async function loadAdminAccess(client, tournamentId) {
     p_tournament_id: tournamentId,
   })
   throwForError('Admin access check failed', response.error)
-  return normaliseAdminAccess(response.data)
+  return normaliseAdminAccess(parseExternal(adminAccessSchema, response.data ?? null, 'Admin access response'))
 }
 
 export async function loadAdminOperations(client, tournamentId) {
@@ -50,12 +52,12 @@ export async function loadAdminOperations(client, tournamentId) {
 
   return Object.freeze({
     access,
-    matches: Object.freeze((matchesResponse.data ?? []).map(normaliseAdminMatch)),
-    scoringRuns: normaliseScoringRuns(runsResponse.data ?? []),
-    controlRoom: normaliseAdminControlRoom(controlResponse.data ?? {}),
-    graceWindows: normalisePredictionGrace(graceResponse.data ?? []),
-    operationEvents: normaliseAdminOperationEvents(timelineResponse.data ?? []),
-    teamProfiles: normaliseAdminTeamProfiles(teamProfilesResponse.data ?? []),
+    matches: Object.freeze(parseExternal(adminRecordRowsSchema, matchesResponse.data ?? [], 'Admin matches response').map(normaliseAdminMatch)),
+    scoringRuns: normaliseScoringRuns(parseExternal(adminRecordRowsSchema, runsResponse.data ?? [], 'Admin scoring runs response')),
+    controlRoom: normaliseAdminControlRoom(parseExternal(adminRecordSchema, controlResponse.data ?? {}, 'Admin control-room response')),
+    graceWindows: normalisePredictionGrace(parseExternal(adminRecordRowsSchema, graceResponse.data ?? [], 'Admin grace response')),
+    operationEvents: normaliseAdminOperationEvents(parseExternal(adminRecordRowsSchema, timelineResponse.data ?? [], 'Admin timeline response')),
+    teamProfiles: normaliseAdminTeamProfiles(parseExternal(adminRecordRowsSchema, teamProfilesResponse.data ?? [], 'Admin team profiles response')),
   })
 }
 
@@ -65,7 +67,7 @@ export async function loadAdminMatchHistory(client, tournamentId, matchId) {
     p_match_id: matchId,
   })
   throwForError('Admin result history failed', response.error)
-  return normaliseAdminHistory(response.data ?? [])
+  return normaliseAdminHistory(parseExternal(adminRecordRowsSchema, response.data ?? [], 'Admin result history response'))
 }
 
 export async function saveAdminMatchResult(client, tournamentId, match, draft) {
@@ -78,7 +80,7 @@ export async function saveAdminMatchResult(client, tournamentId, match, draft) {
     p_note: built.note,
   })
   throwForError('Admin result save failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Admin result save response')
 }
 
 export async function updateAdminMatchStatus(client, tournamentId, match, nextStatus, note) {
@@ -90,7 +92,7 @@ export async function updateAdminMatchStatus(client, tournamentId, match, nextSt
     p_note: note,
   })
   throwForError('Admin match status update failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Admin match status response')
 }
 
 export async function recalculateAdminMatchPoints(client, tournamentId, match, note) {
@@ -101,7 +103,7 @@ export async function recalculateAdminMatchPoints(client, tournamentId, match, n
     p_note: note,
   })
   throwForError('Admin points recalculation failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Admin recalculation response')
 }
 
 export async function applyGlobalPredictionLock(client, tournamentId, note) {
@@ -110,7 +112,7 @@ export async function applyGlobalPredictionLock(client, tournamentId, note) {
     p_note: note,
   })
   throwForError('Global prediction lock failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Global lock response')
 }
 
 export async function updateTournamentFeature(client, tournamentId, feature, isEnabled, note) {
@@ -122,7 +124,7 @@ export async function updateTournamentFeature(client, tournamentId, feature, isE
     p_note: note,
   })
   throwForError('Feature control update failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Feature control response')
 }
 
 export async function searchAdminPredictionUsers(client, tournamentId, query) {
@@ -132,7 +134,7 @@ export async function searchAdminPredictionUsers(client, tournamentId, query) {
     p_limit: 20,
   })
   throwForError('Predictor search failed', response.error)
-  return normaliseAdminUserSearch(response.data ?? [])
+  return normaliseAdminUserSearch(parseExternal(adminRecordRowsSchema, response.data ?? [], 'Admin user search response'))
 }
 
 export async function grantAdminPredictionGrace(client, tournamentId, values) {
@@ -145,7 +147,7 @@ export async function grantAdminPredictionGrace(client, tournamentId, values) {
     p_reason: values.reason,
   })
   throwForError('Prediction grace grant failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Prediction grace grant response')
 }
 
 export async function revokeAdminPredictionGrace(client, tournamentId, graceId, reason) {
@@ -155,7 +157,7 @@ export async function revokeAdminPredictionGrace(client, tournamentId, graceId, 
     p_reason: reason,
   })
   throwForError('Prediction grace revocation failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Prediction grace revocation response')
 }
 
 
@@ -169,5 +171,5 @@ export async function saveAdminTeamProfile(client, tournamentId, profile, valida
     p_note: checked.note,
   })
   throwForError('Admin team profile save failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Admin team profile save response')
 }

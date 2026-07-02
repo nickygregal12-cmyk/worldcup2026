@@ -5,13 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/upload-sentry-sourcemaps.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run --maxWorkers=4",
     "test:watch": "vitest",
-    "lint:foundation": "eslint src/App.jsx src/main.jsx src/config src/contracts src/foundation src/app src/design-system src/home src/tournament src/auth src/guest src/predictions src/journey src/koPredictor src/grace src/results src/teamProfile src/admin src/leagues src/resolver src/lib/clock.js src/lib/latestRequest.js src/lib/tournamentDates.js src/lib/gamePhase.js src/lib/scoring.js src/lib/__tests__ netlify/functions/scheduled-score-sync.js scripts/check-database-safety.mjs scripts/check-database-backup.mjs scripts/check-staging-admin-access.mjs scripts/generate-staging-admin-sql.mjs scripts/lib/stagingAdminSql.mjs scripts/__tests__/stagingAdminSql.test.js scripts/backup-database.mjs scripts/verify-database-backup.mjs scripts/lib/databaseBackup.mjs scripts/__tests__/databaseBackup.test.js scripts/check-legacy-boundary.mjs scripts/check-prediction-contracts.mjs scripts/check-prediction-database-design.mjs scripts/check-tournament-resolver.mjs scripts/check-guest-foundation.mjs scripts/check-auth-foundation.mjs scripts/check-scoring-ruleset-correction.mjs scripts/check-prediction-save.mjs scripts/check-prediction-journey.mjs scripts/check-competition-split.mjs scripts/check-results-scoring.mjs scripts/check-admin-operations.mjs scripts/check-leagues-and-sharing.mjs scripts/check-admin-control-room.mjs scripts/check-design-tokens.mjs scripts/check-groups-predictor.mjs scripts/check-knockout-experiences.mjs scripts/check-stage13d-integration.mjs scripts/check-stage13d-responsive.mjs scripts/check-stage13d-hardening.mjs scripts/check-team-profile-sheet.mjs scripts/verify-euro28-knockout.mjs scripts/verify-euro28-foundation-page.mjs vite.config.js",
-    "check": "npm run db:safety && npm run audit:backup && npm run audit:staging-admin && npm run audit:package-lock && npm run audit:legacy && npm run audit:contracts && npm run audit:db-design && npm run audit:resolver && npm run audit:guest && npm run audit:auth && npm run audit:scoring-correction && npm run audit:prediction-save && npm run audit:journey && npm run audit:competition-split && npm run audit:results-scoring && npm run audit:admin-operations && npm run audit:leagues && npm run audit:control-room && npm run audit:design-tokens && npm run audit:groups-predictor && npm run audit:knockout-experiences && npm run audit:stage13d && npm run audit:stage13d:responsive && npm run audit:stage13d:hardening && npm run audit:team-profile && npm run lint:foundation && npm test && npm run build",
+    "lint:foundation": "eslint src/App.jsx src/main.jsx src/config src/contracts src/foundation src/app src/design-system src/home src/tournament src/auth src/guest src/predictions src/journey src/koPredictor src/grace src/results src/teamProfile src/observability src/admin src/leagues src/resolver src/lib/clock.js src/lib/latestRequest.js src/lib/tournamentDates.js src/lib/gamePhase.js src/lib/scoring.js src/lib/__tests__ netlify/functions/scheduled-score-sync.js netlify/functions/_observability.js netlify/functions/health.js netlify/functions/scheduled-heartbeat.js netlify/functions/__tests__ scripts/check-database-safety.mjs scripts/check-database-backup.mjs scripts/check-staging-admin-access.mjs scripts/generate-staging-admin-sql.mjs scripts/lib/stagingAdminSql.mjs scripts/__tests__/stagingAdminSql.test.js scripts/backup-database.mjs scripts/verify-database-backup.mjs scripts/lib/databaseBackup.mjs scripts/__tests__/databaseBackup.test.js scripts/check-legacy-boundary.mjs scripts/check-prediction-contracts.mjs scripts/check-prediction-database-design.mjs scripts/check-tournament-resolver.mjs scripts/check-guest-foundation.mjs scripts/check-auth-foundation.mjs scripts/check-scoring-ruleset-correction.mjs scripts/check-prediction-save.mjs scripts/check-prediction-journey.mjs scripts/check-competition-split.mjs scripts/check-results-scoring.mjs scripts/check-admin-operations.mjs scripts/check-leagues-and-sharing.mjs scripts/check-admin-control-room.mjs scripts/check-design-tokens.mjs scripts/check-groups-predictor.mjs scripts/check-knockout-experiences.mjs scripts/check-stage13d-integration.mjs scripts/check-stage13d-responsive.mjs scripts/check-stage13d-hardening.mjs scripts/check-team-profile-sheet.mjs scripts/check-observability-resilience.mjs scripts/upload-sentry-sourcemaps.mjs scripts/verify-euro28-knockout.mjs scripts/verify-euro28-foundation-page.mjs vite.config.js",
+    "check": "npm run db:safety && npm run audit:backup && npm run audit:staging-admin && npm run audit:package-lock && npm run audit:legacy && npm run audit:contracts && npm run audit:db-design && npm run audit:resolver && npm run audit:guest && npm run audit:auth && npm run audit:scoring-correction && npm run audit:prediction-save && npm run audit:journey && npm run audit:competition-split && npm run audit:results-scoring && npm run audit:admin-operations && npm run audit:leagues && npm run audit:control-room && npm run audit:design-tokens && npm run audit:groups-predictor && npm run audit:knockout-experiences && npm run audit:stage13d && npm run audit:stage13d:responsive && npm run audit:stage13d:hardening && npm run audit:team-profile && npm run audit:observability && npm run lint:foundation && npm test && npm run build",
     "db:safety": "node scripts/check-database-safety.mjs",
     "verify:knockout": "node scripts/verify-euro28-knockout.mjs",
     "audit:legacy": "node scripts/check-legacy-boundary.mjs",
@@ -61,7 +61,8 @@
     "audit:stage13d:hardening": "node scripts/check-stage13d-hardening.mjs",
     "audit:team-profile": "node scripts/check-team-profile-sheet.mjs",
     "test:db:015:local": "npx supabase test db --local supabase/tests/database/015_team_profile_sheet.test.sql",
-    "test:db:015:linked": "npx supabase test db --linked supabase/tests/database/015_team_profile_sheet.test.sql"
+    "test:db:015:linked": "npx supabase test db --linked supabase/tests/database/015_team_profile_sheet.test.sql",
+    "audit:observability": "node scripts/check-observability-resilience.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
@@ -77,7 +78,8 @@
     "react-router-dom": "^7.16.0",
     "web-push": "^3.6.7",
     "xlsx": "^0.18.5",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.14",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

@@ -1,4 +1,6 @@
 import { EURO28_KO_PREDICTOR_RPC, KO_PREDICTOR_COMPETITION_KEY } from './koPredictorConfig.js'
+import { parseExternal } from '../contracts/externalValidation.js'
+import { leaderboardRowsSchema, matchPredictionRowsSchema, pointsBreakdownSchema, predictionSaveResultSchema, predictionSetRowSchema } from '../contracts/externalSchemas.js'
 
 export async function loadMyKoPredictionBundle(client, tournamentId, userId) {
   if (!client || !tournamentId || !userId) return null
@@ -11,12 +13,14 @@ export async function loadMyKoPredictionBundle(client, tournamentId, userId) {
     .maybeSingle()
   if (setResult.error) throw setResult.error
   if (!setResult.data) return null
+  const predictionSet = parseExternal(predictionSetRowSchema, setResult.data, 'KO prediction set response')
   const rowsResult = await client
     .from('match_predictions')
     .select('match_id,predicted_home_tournament_team_id,predicted_away_tournament_team_id,home_score_90,away_score_90,advancing_tournament_team_id,decision_method,joker_applied,updated_at')
-    .eq('prediction_set_id', setResult.data.id)
+    .eq('prediction_set_id', predictionSet.id)
   if (rowsResult.error) throw rowsResult.error
-  return { revision: Number(setResult.data.revision), predictions: rowsResult.data ?? [] }
+  const predictions = parseExternal(matchPredictionRowsSchema, rowsResult.data ?? [], 'KO prediction response')
+  return { revision: Number(predictionSet.revision), predictions }
 }
 
 export async function loadMyKoPredictorStanding(client, tournamentId, userId) {
@@ -33,9 +37,11 @@ export async function loadMyKoPredictorStanding(client, tournamentId, userId) {
   ])
   if (pointsResponse.error) throw pointsResponse.error
   if (leaderboardResponse.error) throw leaderboardResponse.error
-  const rankRow = (leaderboardResponse.data ?? []).find(row => row.user_id === userId)
+  const points = parseExternal(pointsBreakdownSchema, pointsResponse.data ?? null, 'KO points response')
+  const leaderboard = parseExternal(leaderboardRowsSchema, leaderboardResponse.data ?? [], 'KO leaderboard response')
+  const rankRow = leaderboard.find(row => row.user_id === userId)
   return Object.freeze({
-    points: Number(pointsResponse.data?.total_points ?? 0),
+    points: Number(points?.total_points ?? 0),
     rank: rankRow ? Number(rankRow.rank) : null,
   })
 }
@@ -47,7 +53,8 @@ export async function saveMyKoPredictionBundle(client, { tournamentId, expectedR
     p_predictions: predictions,
   })
   if (error) throw error
-  const result = Array.isArray(data) ? data[0] : data
+  const candidate = Array.isArray(data) ? data[0] : data
+  const result = parseExternal(predictionSaveResultSchema, candidate, 'KO prediction save response')
   return {
     predictionSetId: result.prediction_set_id,
     competitionKey: result.competition_key,

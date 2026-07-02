@@ -11,6 +11,9 @@
 [functions]
   node_bundler = "esbuild"
 
+[functions."scheduled-heartbeat"]
+  schedule = "0 * * * *"
+
 [[headers]]
   for = "/assets/*"
   [headers.values]

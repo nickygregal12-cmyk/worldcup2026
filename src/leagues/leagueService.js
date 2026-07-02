@@ -6,6 +6,8 @@ import {
   normaliseLeague,
   normaliseStanding,
 } from './leagueModel.js'
+import { parseExternal } from '../contracts/externalValidation.js'
+import { leagueRowsSchema, leagueStandingRowsSchema, mutationResultSchema, sharedPredictionBundleSchema } from '../contracts/externalSchemas.js'
 
 function throwForError(label, error) {
   if (error) throw new Error(`${label}: ${error.message}`)
@@ -31,7 +33,8 @@ export async function readLeagueSession(client) {
 export async function getMyLeagues(client, tournamentId) {
   const response = await client.rpc('get_my_leagues', { p_tournament_id: tournamentId })
   throwForError('League list failed', response.error)
-  return Object.freeze((response.data ?? []).map(normaliseLeague))
+  const rows = parseExternal(leagueRowsSchema, response.data ?? [], 'League list response')
+  return Object.freeze(rows.map(normaliseLeague))
 }
 
 export async function createLeague(client, { tournamentId, name }) {
@@ -40,7 +43,7 @@ export async function createLeague(client, { tournamentId, name }) {
     p_name: name,
   })
   throwForError('League creation failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'League creation response')
 }
 
 export async function joinLeague(client, { tournamentId, joinCode }) {
@@ -49,19 +52,19 @@ export async function joinLeague(client, { tournamentId, joinCode }) {
     p_join_code: joinCode,
   })
   throwForError('League join failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'League join response')
 }
 
 export async function leaveLeague(client, leagueId) {
   const response = await client.rpc('leave_my_league', { p_league_id: leagueId })
   throwForError('Leaving league failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Leave league response')
 }
 
 export async function deleteLeague(client, leagueId) {
   const response = await client.rpc('delete_my_league', { p_league_id: leagueId })
   throwForError('Deleting league failed', response.error)
-  return response.data
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Delete league response')
 }
 
 export async function getLeagueStandings(client, { leagueId, competitionKey }) {
@@ -70,7 +73,8 @@ export async function getLeagueStandings(client, { leagueId, competitionKey }) {
     p_competition_key: competitionKey,
   })
   throwForError('League standings failed', response.error)
-  return Object.freeze((response.data ?? []).map(normaliseStanding))
+  const rows = parseExternal(leagueStandingRowsSchema, response.data ?? [], 'League standings response')
+  return Object.freeze(rows.map(normaliseStanding))
 }
 
 export async function loadLeagueOverview(client, leagueId) {
@@ -111,7 +115,7 @@ export async function getLeagueMemberPredictions(client, {
     p_competition_key: competitionKey,
   })
   throwForError('Shared prediction read failed', response.error)
-  return response.data
+  return parseExternal(sharedPredictionBundleSchema, response.data ?? {}, 'League member prediction response')
 }
 
 export async function loadLeagueHeadToHead(client, {

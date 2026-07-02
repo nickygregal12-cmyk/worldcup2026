@@ -1,3 +1,6 @@
+import { parseExternal } from '../contracts/externalValidation.js'
+import { graceWindowRowsSchema } from '../contracts/externalSchemas.js'
+
 export const PREDICTION_COMPETITION_KEY = Object.freeze({
   ORIGINAL: 'original',
   KO_PREDICTOR: 'ko_predictor',
@@ -42,5 +45,5 @@ export async function loadMyPredictionGraceWindows(client, tournamentId, userId)
     .eq('user_id', userId)
     .order('expires_at', { ascending: false })
   if (error) throw error
-  return data ?? []
+  return parseExternal(graceWindowRowsSchema, data ?? [], 'Prediction grace response')
 }

@@ -1,5 +1,16 @@
 import { buildGuestReferenceModel } from '../guest/guestReferenceModel.js'
 import { EURO_TOURNAMENT_CODE, summariseFoundationData } from './foundationModel.js'
+import { parseExternal } from '../contracts/externalValidation.js'
+import {
+  foundationGroupRowsSchema,
+  foundationStageRowsSchema,
+  groupMembershipRowsSchema,
+  matchRowsSchema,
+  matchSlotRowsSchema,
+  tournamentRowSchema,
+  tournamentTeamRowsSchema,
+  tournamentVenueRowsSchema,
+} from '../contracts/externalSchemas.js'
 
 function throwForError(label, error) {
   if (error) {
@@ -17,7 +28,7 @@ export async function loadEuroFoundation(client) {
     .single()
 
   throwForError('Tournament read failed', tournamentResult.error)
-  const tournament = tournamentResult.data
+  const tournament = parseExternal(tournamentRowSchema, tournamentResult.data, 'Tournament response')
 
   const [
     stagesResult,
@@ -74,13 +85,13 @@ export async function loadEuroFoundation(client) {
 
   const sourceRows = {
     tournament,
-    stages: stagesResult.data || [],
-    groups: groupsResult.data || [],
-    tournamentTeams: tournamentTeamsResult.data || [],
-    groupMemberships: groupMembershipsResult.data || [],
-    tournamentVenues: tournamentVenuesResult.data || [],
-    matches: matchesResult.data || [],
-    matchSlots: matchSlotsResult.data || [],
+    stages: parseExternal(foundationStageRowsSchema, stagesResult.data ?? [], 'Tournament stages response'),
+    groups: parseExternal(foundationGroupRowsSchema, groupsResult.data ?? [], 'Tournament groups response'),
+    tournamentTeams: parseExternal(tournamentTeamRowsSchema, tournamentTeamsResult.data ?? [], 'Tournament teams response'),
+    groupMemberships: parseExternal(groupMembershipRowsSchema, groupMembershipsResult.data ?? [], 'Group memberships response'),
+    tournamentVenues: parseExternal(tournamentVenueRowsSchema, tournamentVenuesResult.data ?? [], 'Tournament venues response'),
+    matches: parseExternal(matchRowsSchema, matchesResult.data ?? [], 'Tournament matches response'),
+    matchSlots: parseExternal(matchSlotRowsSchema, matchSlotsResult.data ?? [], 'Match slots response'),
   }
 
   return {
