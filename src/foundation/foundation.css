@@ -1937,3 +1937,158 @@ button {
     gap: 0.2rem;
   }
 }
+
+/* Stage 12 expanded tournament control room */
+.foundation-control-room {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.foundation-control-health {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 0.65rem;
+}
+
+.foundation-control-health > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.8rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.8rem;
+  background: var(--foundation-panel-strong);
+}
+
+.foundation-control-health strong {
+  font-size: 1.2rem;
+}
+
+.foundation-control-health span,
+.foundation-feature-control span,
+.foundation-feature-control small,
+.foundation-control-table span,
+.foundation-control-table small {
+  color: var(--foundation-muted);
+}
+
+.foundation-feature-controls,
+.foundation-grace-list,
+.foundation-control-table {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.foundation-feature-control,
+.foundation-grace-list > div,
+.foundation-control-table > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: flex-start;
+  padding: 0.8rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.75rem;
+  background: var(--foundation-panel-strong);
+}
+
+.foundation-feature-control > div:first-child,
+.foundation-grace-list > div > div:first-child,
+.foundation-control-table > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.foundation-feature-control--disabled {
+  border-color: color-mix(in srgb, #b91c1c 55%, var(--foundation-border));
+}
+
+.foundation-feature-control__action {
+  display: grid;
+  gap: 0.45rem;
+  min-width: min(100%, 260px);
+}
+
+.foundation-feature-control__action input,
+.foundation-grace-builder input,
+.foundation-grace-builder select {
+  width: 100%;
+}
+
+.foundation-grace-builder {
+  display: grid;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--foundation-border);
+}
+
+.foundation-grace-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: end;
+}
+
+.foundation-grace-users {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.55rem;
+}
+
+.foundation-grace-users button {
+  display: grid;
+  gap: 0.15rem;
+  text-align: left;
+  background: var(--foundation-panel-strong);
+  color: inherit;
+  border: 1px solid var(--foundation-border);
+}
+
+.foundation-grace-users button.is-selected {
+  outline: 2px solid currentColor;
+}
+
+.foundation-control-review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.8rem;
+}
+
+.foundation-control-review-grid details {
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  background: var(--foundation-panel-strong);
+}
+
+.foundation-control-review-grid summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.foundation-control-table {
+  margin-top: 0.7rem;
+  max-height: 28rem;
+  overflow: auto;
+}
+
+.foundation-danger-button {
+  background: #991b1b;
+  color: #fff;
+}
+
+@media (max-width: 720px) {
+  .foundation-feature-control,
+  .foundation-grace-list > div {
+    display: grid;
+  }
+
+  .foundation-feature-control__action {
+    min-width: 0;
+  }
+
+  .foundation-grace-search {
+    grid-template-columns: 1fr;
+  }
+}

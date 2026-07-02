@@ -9,7 +9,7 @@ const errors = []
 const fail = message => errors.push(message)
 const migrations = fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql')).sort()
 
-if (migrations.length !== 13) fail(`Stage 11 requires thirteen active migrations, found ${migrations.length}`)
+if (migrations.length !== 14) fail(`Stage 12 requires fourteen active migrations, found ${migrations.length}`)
 for (const name of [
   '202607010008_euro28_provisional_joker_caps.sql',
   '202607010010_euro28_competition_split_and_jokers.sql',
@@ -36,4 +36,4 @@ console.log('Euro scoring ruleset audit passed.')
 console.log('Migration 008 preserved unresolved caps until owner confirmation.')
 console.log('Migration 010 confirms 5 group jokers, 0 original-bracket jokers and 5 separate KO Predictor jokers.')
 console.log('Joker multiplier and all other scoring values remain unchanged.')
-console.log('Active migrations: 13')
+console.log('Active migrations: 14')

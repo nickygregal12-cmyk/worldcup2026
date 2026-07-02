@@ -24,33 +24,43 @@ assert(scriptMatch, 'Could not locate the deployed Vite bundle.')
 const bundlePath = scriptMatch[1].startsWith('http') ? scriptMatch[1].replace(siteUrl, '') : scriptMatch[1]
 const bundle = await readText(bundlePath)
 for (const text of [
-  'Private leagues now sit above two separate competition standings',
-  'Stage 11 · Leagues and shared prediction viewing',
-  'Private leagues with two separate tables',
+  'The tournament control room now covers lock, grace, joker allocation and kill-switch controls',
+  'Stage 12 · Expanded tournament control room',
+  'Operational kill-switches',
+  'Prediction grace windows',
+  'Joker locks and knockout allocation',
+  'Combined audit timeline',
+  'admin_get_tournament_control_room',
+  'admin_apply_global_prediction_lock',
+  'admin_update_feature_control',
+  'admin_search_prediction_users',
+  'admin_list_prediction_grace',
+  'admin_grant_prediction_grace',
+  'admin_revoke_prediction_grace',
+  'admin_list_operation_events',
   'get_my_leagues',
   'get_league_standings',
   'get_league_member_predictions',
   'get_member_predictions_after_lock',
-  'create_my_league',
-  'join_league_by_code',
-  'Stage 10 · Tournament operations',
-  'Manual results and operational safeguards',
   'get_my_tournament_admin_access',
   'admin_list_tournament_matches',
   'admin_record_match_result',
   'admin_update_match_status',
   'admin_recalculate_match_points',
   'get_competition_leaderboard',
-  'get_my_competition_points',
   'save_my_prediction_bundle',
   'save_my_ko_prediction_bundle',
   'euro28-guest-prediction-bundle',
-]) assert(bundle.includes(text), `The deployed Stage 11 bundle is missing: ${text}`)
+]) assert(bundle.includes(text), `The deployed Stage 12 bundle is missing: ${text}`)
 assert(!bundle.includes('WC26 Control Centre'), 'The inherited WC26 admin application is active.')
 
 console.log('Euro 2028 foundation page verification passed.')
 console.log(`Site: ${siteUrl}`)
-console.log('Public branding: Stage 11 leagues and controlled shared predictions')
+console.log('Public branding: Stage 12 expanded tournament control room')
+console.log('Global lock: owner-only and irreversible')
+console.log('Grace: one user, one competition and one unstarted match')
+console.log('Feature controls: database-enforced browser kill-switches')
+console.log('Operational review: health, joker locks and knockout allocation')
 console.log('Leagues: one member list with separate Original and KO tables')
 console.log('Shared predictions: original after global lock; KO match by match after start')
 console.log('Admin access: service-managed and browser self-grant blocked')

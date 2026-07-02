@@ -27,4 +27,4 @@ console.log('Original predictor: group scores + winner-only pre-tournament brack
 console.log('Original jokers: five in groups, zero in the bracket')
 console.log('KO Predictor: real knockout fixtures, five jokers, separate points and winner')
 console.log('Storage, revision, grace and RPC boundaries: competition-specific')
-console.log('Active migrations: 13')
+console.log('Active migrations: 14')

@@ -112,20 +112,20 @@ export default function EuroFoundationApp() {
             <span className="foundation-brand__mark" aria-hidden="true">28</span>
             <span>
               <strong>Euro 2028 Predictor</strong>
-              <small>Private leagues and shared predictions staging</small>
+              <small>Expanded admin control room staging</small>
             </span>
           </a>
-          <StatusPill tone="safe">Private leagues · separate competition standings</StatusPill>
+          <StatusPill tone="safe">Admin control room · protected operations</StatusPill>
         </div>
       </header>
 
       <main className="foundation-main">
         <section className="foundation-hero">
           <div>
-            <StatusPill tone="info">Stage 11 · Leagues and shared prediction viewing</StatusPill>
-            <h1>Private leagues now sit above two separate competition standings with lock-aware shared prediction viewing.</h1>
+            <StatusPill tone="info">Stage 12 · Expanded tournament control room</StatusPill>
+            <h1>The tournament control room now covers lock, grace, joker allocation and kill-switch controls.</h1>
             <p>
-              One league membership list supports separate Original Predictor and KO Predictor tables. Original predictions remain private until the global lock, while KO Predictor picks appear only after each real match starts.
+              Owner-only controls now apply the irreversible global lock, manage one-match grace windows and pause browser features safely. Results, leagues and the two competition leaderboards remain separate and protected.
             </p>
           </div>
           <div className="foundation-environment" aria-label="Environment details">
@@ -252,9 +252,9 @@ export default function EuroFoundationApp() {
                   These areas will return only after their Euro-specific database design, RLS and tests are approved.
                 </p>
                 <ul className="foundation-check-list">
-                  <li>Full lock, grace and joker allocation control room</li>
-                  <li>Operational feature kill-switches</li>
-                  <li>Full shared design-system page rebuild</li>
+                  <li>Shared design-system page rebuild</li>
+                  <li>Seeded full-tournament scenario testing</li>
+                  <li>Pre-tournament configuration review</li>
                   <li>Optional external results API syncing</li>
                 </ul>
               </article>
@@ -263,12 +263,12 @@ export default function EuroFoundationApp() {
             <section className="foundation-panel foundation-next-step">
               <div>
                 <span className="foundation-kicker">Next controlled batch</span>
-                <h2>Expand the admin tournament control room.</h2>
+                <h2>Build the shared design system and rebuild the main pages.</h2>
                 <p>
-                  Stage 11 adds private leagues, two separate league standings and lock-aware member comparisons. The next controlled batch expands administration into lock, grace, joker-allocation and feature-control operations.
+                  Stage 12 completes the operational control room. The next controlled batch turns the current foundation screens into the final mobile-first Home, Groups, Knockout and Leagues experience.
                 </p>
               </div>
-              <StatusPill tone="warning">Stage 11 active</StatusPill>
+              <StatusPill tone="warning">Stage 12 active</StatusPill>
             </section>
           </>
         )}

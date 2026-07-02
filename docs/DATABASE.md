@@ -15,6 +15,7 @@
 11. `202607010011_euro28_results_scoring_leaderboards.sql`
 12. `202607010012_euro28_admin_results_operations.sql`
 13. `202607010013_euro28_leagues_and_shared_predictions.sql`
+14. `202607020014_euro28_admin_control_room.sql`
 
 ## Competition model
 
@@ -36,41 +37,59 @@
 
 No database total combines the two competitions.
 
-## Private league model
+## Stage 12 control-room model
 
 ```text
-leagues
-league_members
+tournament_feature_controls
+admin_operation_events
+prediction_grace_windows
 ```
 
-One league membership list supports both competition tabs. `get_league_standings()` always receives either `original` or `ko_predictor`; there is no combined key or combined total.
-
-Browser league operations use:
+Five feature controls are seeded for every current tournament:
 
 ```text
-create_my_league()
-join_league_by_code()
-leave_my_league()
-delete_my_league()
-get_my_leagues()
-get_league_standings()
-get_league_member_predictions()
-get_member_predictions_after_lock()
+prediction_saving
+ko_predictor
+league_create_join
+result_entry
+scoring_recalculation
 ```
 
-RLS is enabled on both league tables. Authenticated browsers have no direct table read or write grants.
+Browser roles have no direct table writes. Owner changes use `admin_update_feature_control()` with an optimistic revision and required audit note.
 
-## Prediction visibility
+### Enforcement
 
-- Original league comparisons require the persisted global `prediction_locked_at`.
-- KO Predictor comparisons return only matches whose kick-off has passed or whose canonical status shows they have started.
-- Users outside the league cannot read its private standings or league-member route.
-- Signed-in overall-leaderboard users may view another predictor only after the same lock rules pass.
-- Email addresses and auth metadata are never returned.
+- `prediction_sets_feature_guard` blocks Original or KO saving below the browser service layer.
+- `leagues_create_feature_guard` and `league_members_join_feature_guard` block new leagues and joins.
+- `match_result_events_feature_guard` blocks manual browser result entry.
+- `admin_recalculate_match_points()` checks the explicit recalculation control.
+- service-role recovery remains available because the browser guards require an authenticated user claim.
 
-## Canonical results and scoring
+### Owner-only operations
 
-Current result fields remain on `public.matches`. Result revisions, point ledgers and separate competition totals continue to use the Stage 9 and Stage 10 trusted functions. League reads consume `prediction_totals`; they do not recalculate or mutate points.
+```text
+admin_apply_global_prediction_lock()
+admin_update_feature_control()
+admin_search_prediction_users()
+admin_grant_prediction_grace()
+admin_revoke_prediction_grace()
+```
+
+The global lock is monotonic and cannot be cleared. Grace remains scoped to one user, one competition and one unstarted match.
+
+### Read-only operational review
+
+```text
+admin_get_tournament_control_room()
+admin_list_prediction_grace()
+admin_list_operation_events()
+```
+
+The control room reports tournament health, knockout slot resolution and per-match joker lock/allocation counts. Results administrators may read this information but owner access is required for safety-control changes.
+
+## Stage 11 lint correction
+
+Migration 014 removes the redundant `attempt` declaration in `create_my_league()` and replaces volatile `clock_timestamp()` calls inside the stable shared-prediction builder with `statement_timestamp()`.
 
 ## Validation
 
@@ -85,6 +104,7 @@ npm run test:db:010:local
 npm run test:db:011:local
 npm run test:db:012:local
 npm run test:db:013:local
+npm run test:db:014:local
 ```
 
 `db reset` must remain local. Never add `--linked`.

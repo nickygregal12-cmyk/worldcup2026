@@ -257,3 +257,124 @@ export function normaliseScoringRuns(rows = []) {
     errorMessage: row.error_message ?? null,
   })))
 }
+
+export const ADMIN_FEATURE_LABELS = Object.freeze({
+  prediction_saving: 'Prediction saving',
+  ko_predictor: 'KO Predictor',
+  league_create_join: 'League creation and joining',
+  result_entry: 'Manual result entry',
+  scoring_recalculation: 'Scoring recalculation',
+})
+
+function freezeRows(rows, mapper) {
+  return Object.freeze((rows ?? []).map(row => Object.freeze(mapper(row))))
+}
+
+export function normaliseAdminControlRoom(value = {}) {
+  const lock = value.lock ?? {}
+  const health = value.health ?? {}
+  return Object.freeze({
+    tournamentId: value.tournament_id ?? null,
+    adminRole: value.admin_role ?? null,
+    lock: Object.freeze({
+      scheduledAt: normaliseTimestamp(lock.scheduled_at),
+      persistedAt: normaliseTimestamp(lock.persisted_at),
+      isEffective: Boolean(lock.is_effective),
+      isIrreversible: Boolean(lock.is_irreversible),
+    }),
+    features: freezeRows(value.features, row => ({
+      featureKey: row.feature_key,
+      label: ADMIN_FEATURE_LABELS[row.feature_key] ?? row.feature_key,
+      isEnabled: Boolean(row.is_enabled),
+      reason: row.reason ?? null,
+      revision: Number(row.revision ?? 0),
+      updatedAt: normaliseTimestamp(row.updated_at),
+    })),
+    health: Object.freeze({
+      totalMatches: Number(health.total_matches ?? 0),
+      unresolvedParticipantSlots: Number(health.unresolved_participant_slots ?? 0),
+      missingKickoffTimes: Number(health.missing_kickoff_times ?? 0),
+      liveOrPausedMatches: Number(health.live_or_paused_matches ?? 0),
+      confirmedResults: Number(health.confirmed_results ?? 0),
+      manualReviewResults: Number(health.manual_review_results ?? 0),
+      voidResults: Number(health.void_results ?? 0),
+      failedScoringRuns: Number(health.failed_scoring_runs ?? 0),
+      staleRunningScoringRuns: Number(health.stale_running_scoring_runs ?? 0),
+      activeGraceWindows: Number(health.active_grace_windows ?? 0),
+      expiredUnrevokedGraceWindows: Number(health.expired_unrevoked_grace_windows ?? 0),
+      disabledFeatures: Number(health.disabled_features ?? 0),
+    }),
+    knockoutAllocation: freezeRows(value.knockout_allocation, row => ({
+      matchId: row.match_id,
+      matchNumber: Number(row.match_number),
+      side: row.side,
+      sourceType: row.source_type,
+      sourcePosition: row.source_position === null || row.source_position === undefined ? null : Number(row.source_position),
+      ruleCode: row.rule_code ?? null,
+      isResolved: Boolean(row.is_resolved),
+      resolvedTournamentTeamId: row.resolved_tournament_team_id ?? null,
+      resolvedTeamLabel: row.resolved_team_label ?? 'TBC',
+    })),
+    jokerLocks: freezeRows(value.joker_locks, row => ({
+      matchId: row.match_id,
+      matchNumber: Number(row.match_number),
+      competitionKey: row.competition_key,
+      kickoffAt: normaliseTimestamp(row.kickoff_at),
+      matchStatus: row.match_status,
+      isLocked: Boolean(row.is_locked),
+      jokerAllocationCount: Number(row.joker_allocation_count ?? 0),
+    })),
+  })
+}
+
+export function normalisePredictionGrace(rows = []) {
+  return freezeRows(rows, row => ({
+    graceId: row.grace_id,
+    userId: row.user_id,
+    displayName: row.display_name,
+    matchId: row.match_id,
+    matchNumber: Number(row.match_number),
+    homeTeamLabel: row.home_team_label ?? 'TBC',
+    awayTeamLabel: row.away_team_label ?? 'TBC',
+    competitionKey: row.competition_key,
+    grantedAt: normaliseTimestamp(row.granted_at),
+    expiresAt: normaliseTimestamp(row.expires_at),
+    reason: row.reason ?? null,
+    revokedAt: normaliseTimestamp(row.revoked_at),
+    revocationReason: row.revocation_reason ?? null,
+    status: row.grace_status,
+  }))
+}
+
+export function normaliseAdminUserSearch(rows = []) {
+  return freezeRows(rows, row => ({
+    userId: row.user_id,
+    displayName: row.display_name,
+    hasOriginalPredictions: Boolean(row.has_original_predictions),
+    hasKoPredictions: Boolean(row.has_ko_predictions),
+  }))
+}
+
+export function normaliseAdminOperationEvents(rows = []) {
+  return freezeRows(rows, row => ({
+    eventId: row.event_id,
+    operationType: row.operation_type,
+    matchId: row.match_id ?? null,
+    matchNumber: row.match_number === null || row.match_number === undefined ? null : Number(row.match_number),
+    performedByUserId: row.performed_by_user_id ?? null,
+    performedByDisplayName: row.performed_by_display_name ?? 'System',
+    targetUserId: row.target_user_id ?? null,
+    targetDisplayName: row.target_display_name ?? null,
+    note: row.note,
+    payload: row.payload ?? {},
+    createdAt: normaliseTimestamp(row.created_at),
+  }))
+}
+
+export function validateAdminNote(value) {
+  const note = String(value ?? '').trim().replace(/\s+/g, ' ')
+  return Object.freeze({
+    note,
+    valid: note.length >= 5 && note.length <= 500,
+  })
+}

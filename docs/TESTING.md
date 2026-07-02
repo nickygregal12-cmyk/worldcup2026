@@ -6,30 +6,29 @@
 npm run check
 ```
 
-Stage 11 has **208 passing unit tests across 33 files** before the authoritative Docker-backed SQL run. The gate runs database safety, all Euro audits, lint, unit tests and a production build.
+The gate runs database safety, every Euro audit, lint, unit tests and a production build.
+
+The verified Stage 12 application gate passes 211 tests across 33 test files.
 
 ## Focused audits
 
 ```bash
-npm run audit:competition-split
-npm run audit:results-scoring
 npm run audit:admin-operations
 npm run audit:leagues
+npm run audit:control-room
 ```
 
-The Stage 11 audits verify:
+The Stage 12 audit verifies:
 
-- thirteen active migrations;
-- one private league membership list;
-- separate Original Predictor and KO Predictor league tables;
-- no combined competition total;
-- no direct browser league table writes;
-- member-only private standings;
-- clickable overall leaderboard comparisons through the same lock rules;
-- original prediction privacy before global lock;
-- rolling KO Predictor visibility after each match starts;
-- display-name-only shared identity;
-- all prior scoring and admin boundaries remain active.
+- fourteen active migrations;
+- owner-only irreversible lock control;
+- one-user/one-match grace grant and revocation;
+- database-enforced browser kill-switches;
+- no direct browser feature-control writes;
+- tournament health, joker-lock and knockout-allocation review;
+- one combined append-only admin timeline;
+- Stage 11 stable-function lint corrections;
+- no external result provider or WC26 dependency.
 
 ## Database tests
 
@@ -44,6 +43,7 @@ npm run test:db:010:local
 npm run test:db:011:local
 npm run test:db:012:local
 npm run test:db:013:local
+npm run test:db:014:local
 ```
 
 Against verified Euro staging:
@@ -57,9 +57,10 @@ npm run test:db:010:linked
 npm run test:db:011:linked
 npm run test:db:012:linked
 npm run test:db:013:linked
+npm run test:db:014:linked
 ```
 
-Expected established counts:
+Established counts before Stage 12:
 
 - Migration 005 storage: 31;
 - profiles/privileges: 39;
@@ -67,6 +68,7 @@ Expected established counts:
 - final-state atomic saving: 24;
 - Migration 010 competition split: 48;
 - Migration 011 results/scoring: 53;
-- Migration 012 admin operations: 55.
+- Migration 012 admin operations: 55;
+- Migration 013 leagues/sharing: 62.
 
-Migration 013 uses pgTAP `no_plan()` because it exercises private membership, separate tables, global-lock visibility and rolling KO match visibility in one transaction.
+Migration 014 uses pgTAP `no_plan()` because it exercises roles, kill-switches, grace, the irreversible lock, operational review and lint corrections in one transaction.

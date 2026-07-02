@@ -5,25 +5,23 @@ This branch is the isolated Euro 2028 rebuild. The inherited WC26 browser applic
 The verified build now includes:
 
 - the official 51-match tournament skeleton;
-- read-secured prediction storage and Euro authentication;
-- one canonical group, best-third and bracket resolver;
+- one canonical group, best-third and knockout resolver;
 - browser-only guest predictions;
-- trusted atomic prediction saving;
-- the original group-and-bracket prediction journey;
-- a separate real-match KO Predictor;
-- competition-scoped joker and grace controls;
-- revisioned canonical results;
-- idempotent scoring and separate leaderboards;
-- live group tables and a live knockout bracket;
-- secure manual result entry and tournament operations;
-- private leagues, an overall people/points table and lock-aware shared prediction comparisons.
+- Euro authentication and trusted atomic saving;
+- the Original Predictor and separate KO Predictor;
+- five group jokers, no original-bracket jokers and five KO jokers;
+- revisioned canonical results and replacement-based scoring;
+- separate overall and private-league standings;
+- secure manual result operations;
+- private leagues and lock-aware shared predictions;
+- an expanded admin control room for lock, grace, feature and tournament-health operations.
 
 The two competitions remain separate:
 
-- **Original Predictor:** 36 group score predictions, five group jokers and a winner-only pre-tournament knockout bracket with no jokers.
-- **KO Predictor:** 15 real knockout fixtures, 90-minute scores, advancing teams, decision methods, five separate jokers, separate points and a separate winner.
+- **Original Predictor:** 36 group scores, five group jokers and a winner-only pre-tournament knockout bracket.
+- **KO Predictor:** 15 real knockout matches, 90-minute scores, advancing teams, decision methods and five separate jokers.
 
-A private league uses one membership list but always shows two different standings tabs. KO Predictor points never combine with Original Predictor points.
+A league has one membership list but always shows two different standings tables. The two point totals never combine.
 
 ## Environment
 
@@ -47,8 +45,8 @@ Use only the Euro staging URL and publishable key in `.env.local`. Never expose 
 ## Main checks
 
 ```bash
+npm run audit:control-room
 npm run check
-npm run audit:leagues
 ```
 
 ## Database checks
@@ -63,12 +61,13 @@ npm run test:db:010:local
 npm run test:db:011:local
 npm run test:db:012:local
 npm run test:db:013:local
+npm run test:db:014:local
 ```
 
 Never run `npx supabase db reset --linked`.
 
 ## Current return point
 
-Stage 11 adds Migration 013. League creation, joining, membership, standings and shared prediction viewing all use controlled RPCs. Original predictions remain private until the global lock; KO Predictor picks appear only after each real fixture starts.
+Stage 12 adds Migration 014. Tournament owners can apply the irreversible global lock, manage one-user/one-match grace, use database-enforced browser kill-switches and review operational health, joker locks and knockout allocation. Results administrators retain their existing result controls but cannot change owner-only safety settings.
 
-The next controlled build expands the admin control room with lock, grace, joker-allocation and feature-control operations.
+The next controlled build is the shared design system and mobile-first page rebuild.

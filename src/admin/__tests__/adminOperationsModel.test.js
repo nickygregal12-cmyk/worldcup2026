@@ -3,7 +3,11 @@ import {
   buildAdminResultPayload,
   createAdminResultDraft,
   normaliseAdminAccess,
+  normaliseAdminControlRoom,
   normaliseAdminMatch,
+  normaliseAdminOperationEvents,
+  normalisePredictionGrace,
+  validateAdminNote,
   validateAdminResultDraft,
 } from '../adminOperationsModel.js'
 
@@ -122,6 +126,27 @@ describe('admin operations model', () => {
       normal_time_home_goals: null,
       winner_tournament_team_id: null,
     })
+  })
+
+
+  it('normalises Stage 12 control-room health, feature and lock data', () => {
+    const control = normaliseAdminControlRoom({
+      tournament_id: 't', admin_role: 'owner',
+      lock: { scheduled_at: '2028-06-09T12:00:00Z', is_effective: false, is_irreversible: false },
+      health: { total_matches: 51, disabled_features: 1 },
+      features: [{ feature_key: 'prediction_saving', is_enabled: false, revision: 2 }],
+      knockout_allocation: [{ match_id: 'm', match_number: 37, side: 'home', source_type: 'group_position', is_resolved: false }],
+      joker_locks: [{ match_id: 'm', match_number: 37, competition_key: 'ko_predictor', match_status: 'scheduled', is_locked: false, joker_allocation_count: 3 }],
+    })
+    expect(control.health).toMatchObject({ totalMatches: 51, disabledFeatures: 1 })
+    expect(control.features[0]).toMatchObject({ label: 'Prediction saving', revision: 2, isEnabled: false })
+    expect(control.jokerLocks[0].jokerAllocationCount).toBe(3)
+  })
+
+  it('normalises grace and combined operation rows', () => {
+    expect(normalisePredictionGrace([{ grace_id: 'g', user_id: 'u', display_name: 'Member', match_number: 4, grace_status: 'active' }])[0]).toMatchObject({ graceId: 'g', displayName: 'Member', matchNumber: 4, status: 'active' })
+    expect(normaliseAdminOperationEvents([{ event_id: 'e', operation_type: 'grace_granted', performed_by_display_name: 'Owner', note: 'Verified issue' }])[0]).toMatchObject({ eventId: 'e', operationType: 'grace_granted', performedByDisplayName: 'Owner' })
+    expect(validateAdminNote('  verified   issue  ')).toEqual({ note: 'verified issue', valid: true })
   })
 
   it('requires resolved participants and a meaningful audit note', () => {

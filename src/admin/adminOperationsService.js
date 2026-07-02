@@ -1,8 +1,12 @@
 import {
   buildAdminResultPayload,
   normaliseAdminAccess,
+  normaliseAdminControlRoom,
   normaliseAdminHistory,
   normaliseAdminMatch,
+  normaliseAdminOperationEvents,
+  normaliseAdminUserSearch,
+  normalisePredictionGrace,
   normaliseScoringRuns,
 } from './adminOperationsModel.js'
 
@@ -28,17 +32,26 @@ export async function loadAdminOperations(client, tournamentId) {
     return Object.freeze({ access, matches: [], scoringRuns: [] })
   }
 
-  const [matchesResponse, runsResponse] = await Promise.all([
+  const [matchesResponse, runsResponse, controlResponse, graceResponse, timelineResponse] = await Promise.all([
     client.rpc('admin_list_tournament_matches', { p_tournament_id: tournamentId }),
     client.rpc('admin_list_scoring_runs', { p_tournament_id: tournamentId, p_limit: 25 }),
+    client.rpc('admin_get_tournament_control_room', { p_tournament_id: tournamentId }),
+    client.rpc('admin_list_prediction_grace', { p_tournament_id: tournamentId }),
+    client.rpc('admin_list_operation_events', { p_tournament_id: tournamentId, p_limit: 50 }),
   ])
   throwForError('Admin match list failed', matchesResponse.error)
   throwForError('Admin scoring run list failed', runsResponse.error)
+  throwForError('Admin control room failed', controlResponse.error)
+  throwForError('Admin grace-window list failed', graceResponse.error)
+  throwForError('Admin operation timeline failed', timelineResponse.error)
 
   return Object.freeze({
     access,
     matches: Object.freeze((matchesResponse.data ?? []).map(normaliseAdminMatch)),
     scoringRuns: normaliseScoringRuns(runsResponse.data ?? []),
+    controlRoom: normaliseAdminControlRoom(controlResponse.data ?? {}),
+    graceWindows: normalisePredictionGrace(graceResponse.data ?? []),
+    operationEvents: normaliseAdminOperationEvents(timelineResponse.data ?? []),
   })
 }
 
@@ -84,5 +97,59 @@ export async function recalculateAdminMatchPoints(client, tournamentId, match, n
     p_note: note,
   })
   throwForError('Admin points recalculation failed', response.error)
+  return response.data
+}
+
+export async function applyGlobalPredictionLock(client, tournamentId, note) {
+  const response = await client.rpc('admin_apply_global_prediction_lock', {
+    p_tournament_id: tournamentId,
+    p_note: note,
+  })
+  throwForError('Global prediction lock failed', response.error)
+  return response.data
+}
+
+export async function updateTournamentFeature(client, tournamentId, feature, isEnabled, note) {
+  const response = await client.rpc('admin_update_feature_control', {
+    p_tournament_id: tournamentId,
+    p_feature_key: feature.featureKey,
+    p_expected_revision: feature.revision,
+    p_is_enabled: isEnabled,
+    p_note: note,
+  })
+  throwForError('Feature control update failed', response.error)
+  return response.data
+}
+
+export async function searchAdminPredictionUsers(client, tournamentId, query) {
+  const response = await client.rpc('admin_search_prediction_users', {
+    p_tournament_id: tournamentId,
+    p_query: query,
+    p_limit: 20,
+  })
+  throwForError('Predictor search failed', response.error)
+  return normaliseAdminUserSearch(response.data ?? [])
+}
+
+export async function grantAdminPredictionGrace(client, tournamentId, values) {
+  const response = await client.rpc('admin_grant_prediction_grace', {
+    p_tournament_id: tournamentId,
+    p_user_id: values.userId,
+    p_match_id: values.matchId,
+    p_competition_key: values.competitionKey,
+    p_expires_at: values.expiresAt,
+    p_reason: values.reason,
+  })
+  throwForError('Prediction grace grant failed', response.error)
+  return response.data
+}
+
+export async function revokeAdminPredictionGrace(client, tournamentId, graceId, reason) {
+  const response = await client.rpc('admin_revoke_prediction_grace', {
+    p_tournament_id: tournamentId,
+    p_grace_id: graceId,
+    p_reason: reason,
+  })
+  throwForError('Prediction grace revocation failed', response.error)
   return response.data
 }

@@ -6,6 +6,7 @@ import {
   createAdminResultDraft,
   validateAdminResultDraft,
 } from './adminOperationsModel.js'
+import AdminControlRoomSections from './AdminControlRoomSections.jsx'
 import {
   loadAdminMatchHistory,
   loadAdminOperations,
@@ -181,6 +182,9 @@ export default function AdminOperationsFoundation({ client, reference }) {
   const showExtraTime = selectedMatch?.matchNumber > 36 && ['extra_time', 'penalties'].includes(draft?.decisionMethod)
   const showPenalties = selectedMatch?.matchNumber > 36 && draft?.decisionMethod === 'penalties'
   const clearsScores = ['manual_review', 'void'].includes(draft?.resultStatus)
+  const features = state.data?.controlRoom?.features ?? []
+  const resultEntryEnabled = features.find(feature => feature.featureKey === 'result_entry')?.isEnabled ?? true
+  const scoringRecalculationEnabled = features.find(feature => feature.featureKey === 'scoring_recalculation')?.isEnabled ?? true
 
   const runAction = async (work, successMessage) => {
     setAction({ status: 'working', message: 'Applying the audited operation…' })
@@ -201,18 +205,18 @@ export default function AdminOperationsFoundation({ client, reference }) {
 
   if (state.status === 'loading') {
     return (
-      <section className="foundation-panel foundation-admin" aria-labelledby="stage10-admin-heading">
-        <span className="foundation-kicker">Stage 10 · Tournament operations</span>
-        <h2 id="stage10-admin-heading">Checking administrator access…</h2>
+      <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
+        <span className="foundation-kicker">Stage 12 · Tournament control room</span>
+        <h2 id="stage12-admin-heading">Checking administrator access…</h2>
       </section>
     )
   }
 
   if (state.status === 'error') {
     return (
-      <section className="foundation-panel foundation-panel--error foundation-admin" aria-labelledby="stage10-admin-heading">
-        <span className="foundation-kicker">Stage 10 · Tournament operations</span>
-        <h2 id="stage10-admin-heading">Admin operations could not load</h2>
+      <section className="foundation-panel foundation-panel--error foundation-admin" aria-labelledby="stage12-admin-heading">
+        <span className="foundation-kicker">Stage 12 · Tournament control room</span>
+        <h2 id="stage12-admin-heading">Admin operations could not load</h2>
         <p>{state.error}</p>
         <button type="button" onClick={load}>Try again</button>
       </section>
@@ -221,9 +225,9 @@ export default function AdminOperationsFoundation({ client, reference }) {
 
   if (!state.signedIn) {
     return (
-      <section className="foundation-panel foundation-admin" aria-labelledby="stage10-admin-heading">
-        <span className="foundation-kicker">Stage 10 · Tournament operations</span>
-        <h2 id="stage10-admin-heading">Secure admin controls</h2>
+      <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
+        <span className="foundation-kicker">Stage 12 · Tournament control room</span>
+        <h2 id="stage12-admin-heading">Secure admin controls</h2>
         <p>Sign in with an account that has been granted Euro staging administrator access.</p>
       </section>
     )
@@ -231,21 +235,21 @@ export default function AdminOperationsFoundation({ client, reference }) {
 
   if (!state.data?.access.isAdmin) {
     return (
-      <section className="foundation-panel foundation-admin" aria-labelledby="stage10-admin-heading">
-        <span className="foundation-kicker">Stage 10 · Tournament operations</span>
-        <h2 id="stage10-admin-heading">No administrator access</h2>
+      <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
+        <span className="foundation-kicker">Stage 12 · Tournament control room</span>
+        <h2 id="stage12-admin-heading">No administrator access</h2>
         <p>Your account is signed in but has not been granted tournament administration rights. Access cannot be self-assigned from the browser.</p>
       </section>
     )
   }
 
   return (
-    <section className="foundation-panel foundation-admin" aria-labelledby="stage10-admin-heading">
+    <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
       <div className="foundation-section-heading">
         <div>
-          <span className="foundation-kicker">Stage 10 · Tournament operations</span>
-          <h2 id="stage10-admin-heading">Manual results and operational safeguards</h2>
-          <p>Every action checks the loaded result revision, requires an audit note and writes through trusted RPCs.</p>
+          <span className="foundation-kicker">Stage 12 · Tournament control room</span>
+          <h2 id="stage12-admin-heading">Expanded tournament operations</h2>
+          <p>Locks, grace, feature controls, results and recovery actions all use trusted RPCs and append-only auditing.</p>
         </div>
         <button type="button" className="foundation-secondary-button" onClick={load}>Refresh control room</button>
       </div>
@@ -257,6 +261,14 @@ export default function AdminOperationsFoundation({ client, reference }) {
           {action.message}
         </p>
       )}
+
+      <AdminControlRoomSections
+        client={client}
+        tournamentId={reference.tournamentId}
+        data={state.data}
+        matches={matches}
+        runAction={runAction}
+      />
 
       <div className="foundation-admin-layout">
         <aside className="foundation-admin-match-list">
@@ -319,7 +331,7 @@ export default function AdminOperationsFoundation({ client, reference }) {
 
               <button
                 type="button"
-                disabled={!validation?.valid || action.status === 'working'}
+                disabled={!validation?.valid || !resultEntryEnabled || action.status === 'working'}
                 onClick={() => runAction(
                   () => saveAdminMatchResult(client, reference.tournamentId, selectedMatch, draft),
                   `Match ${selectedMatch.matchNumber} result saved and points recalculated.`,
@@ -346,7 +358,7 @@ export default function AdminOperationsFoundation({ client, reference }) {
               <h3>Recalculate this match</h3>
               <p>This replaces this match’s existing point rows. It never adds a duplicate score.</p>
               <label className="foundation-admin-note"><span>Audit note</span><textarea value={recalculationNote} maxLength="500" onChange={event => setRecalculationNote(event.target.value)} /></label>
-              <button type="button" disabled={selectedMatch.resultStatus !== 'confirmed' || recalculationNote.trim().length < 5 || action.status === 'working'} onClick={() => runAction(
+              <button type="button" disabled={!scoringRecalculationEnabled || selectedMatch.resultStatus !== 'confirmed' || recalculationNote.trim().length < 5 || action.status === 'working'} onClick={() => runAction(
                 () => recalculateAdminMatchPoints(client, reference.tournamentId, selectedMatch, recalculationNote),
                 `Match ${selectedMatch.matchNumber} points recalculated.`,
               )}>Recalculate points</button>

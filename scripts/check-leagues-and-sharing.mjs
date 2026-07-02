@@ -9,7 +9,7 @@ const migrationName = '202607010013_euro28_leagues_and_shared_predictions.sql'
 const migrationPath = path.join(root, 'supabase/migrations', migrationName)
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).sort()
 
-if (migrations.length !== 13) fail(`Stage 11 requires thirteen active migrations, found ${migrations.length}`)
+if (migrations.length !== 14) fail(`Stage 12 requires fourteen active migrations, found ${migrations.length}`)
 if (!fs.existsSync(migrationPath)) fail(`Migration 013 is missing: ${migrationName}`)
 else {
   const sql = fs.readFileSync(migrationPath, 'utf8').toLowerCase()
@@ -53,7 +53,7 @@ for (const file of [
 
 const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
 if (!app.includes('LeaguesFoundation')) fail('the active foundation does not expose Stage 11 leagues')
-if (!app.includes('Private leagues now sit above two separate competition standings')) fail('Stage 11 public branding is missing')
+if (!app.includes('The tournament control room now covers lock, grace, joker allocation and kill-switch controls')) fail('Stage 12 public branding is missing')
 
 const service = fs.existsSync(path.join(root, 'src/leagues/leagueService.js'))
   ? fs.readFileSync(path.join(root, 'src/leagues/leagueService.js'), 'utf8')
@@ -93,4 +93,4 @@ console.log('Standings: Original Predictor and KO Predictor remain separate')
 console.log('Original sharing: hidden until the global tournament lock')
 console.log('KO sharing: only fixtures that have individually started')
 console.log('Direct browser league table writes: none')
-console.log('Active migrations: 13')
+console.log('Active migrations: 14')

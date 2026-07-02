@@ -10,8 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint:foundation": "eslint src/App.jsx src/main.jsx src/config src/contracts src/foundation src/auth src/guest src/predictions src/journey src/koPredictor src/grace src/results src/admin src/leagues src/resolver src/lib/clock.js src/lib/tournamentDates.js src/lib/gamePhase.js src/lib/scoring.js src/lib/__tests__ netlify/functions/scheduled-score-sync.js scripts/check-database-safety.mjs scripts/check-legacy-boundary.mjs scripts/check-prediction-contracts.mjs scripts/check-prediction-database-design.mjs scripts/check-tournament-resolver.mjs scripts/check-guest-foundation.mjs scripts/check-auth-foundation.mjs scripts/check-scoring-ruleset-correction.mjs scripts/check-prediction-save.mjs scripts/check-prediction-journey.mjs scripts/check-competition-split.mjs scripts/check-results-scoring.mjs scripts/check-admin-operations.mjs scripts/check-leagues-and-sharing.mjs scripts/verify-euro28-knockout.mjs scripts/verify-euro28-foundation-page.mjs vite.config.js",
-    "check": "npm run db:safety && npm run audit:legacy && npm run audit:contracts && npm run audit:db-design && npm run audit:resolver && npm run audit:guest && npm run audit:auth && npm run audit:scoring-correction && npm run audit:prediction-save && npm run audit:journey && npm run audit:competition-split && npm run audit:results-scoring && npm run audit:admin-operations && npm run audit:leagues && npm run lint:foundation && npm test && npm run build",
+    "lint:foundation": "eslint src/App.jsx src/main.jsx src/config src/contracts src/foundation src/auth src/guest src/predictions src/journey src/koPredictor src/grace src/results src/admin src/leagues src/resolver src/lib/clock.js src/lib/tournamentDates.js src/lib/gamePhase.js src/lib/scoring.js src/lib/__tests__ netlify/functions/scheduled-score-sync.js scripts/check-database-safety.mjs scripts/check-legacy-boundary.mjs scripts/check-prediction-contracts.mjs scripts/check-prediction-database-design.mjs scripts/check-tournament-resolver.mjs scripts/check-guest-foundation.mjs scripts/check-auth-foundation.mjs scripts/check-scoring-ruleset-correction.mjs scripts/check-prediction-save.mjs scripts/check-prediction-journey.mjs scripts/check-competition-split.mjs scripts/check-results-scoring.mjs scripts/check-admin-operations.mjs scripts/check-leagues-and-sharing.mjs scripts/check-admin-control-room.mjs scripts/verify-euro28-knockout.mjs scripts/verify-euro28-foundation-page.mjs vite.config.js",
+    "check": "npm run db:safety && npm run audit:legacy && npm run audit:contracts && npm run audit:db-design && npm run audit:resolver && npm run audit:guest && npm run audit:auth && npm run audit:scoring-correction && npm run audit:prediction-save && npm run audit:journey && npm run audit:competition-split && npm run audit:results-scoring && npm run audit:admin-operations && npm run audit:leagues && npm run audit:control-room && npm run lint:foundation && npm test && npm run build",
     "db:safety": "node scripts/check-database-safety.mjs",
     "verify:knockout": "node scripts/verify-euro28-knockout.mjs",
     "audit:legacy": "node scripts/check-legacy-boundary.mjs",
@@ -43,7 +43,10 @@
     "test:db:012:linked": "npx supabase test db --linked supabase/tests/database/012_admin_results_operations.test.sql",
     "audit:leagues": "node scripts/check-leagues-and-sharing.mjs",
     "test:db:013:local": "npx supabase test db --local supabase/tests/database/013_leagues_and_shared_predictions.test.sql",
-    "test:db:013:linked": "npx supabase test db --linked supabase/tests/database/013_leagues_and_shared_predictions.test.sql"
+    "test:db:013:linked": "npx supabase test db --linked supabase/tests/database/013_leagues_and_shared_predictions.test.sql",
+    "audit:control-room": "node scripts/check-admin-control-room.mjs",
+    "test:db:014:local": "npx supabase test db --local supabase/tests/database/014_admin_control_room.test.sql",
+    "test:db:014:linked": "npx supabase test db --linked supabase/tests/database/014_admin_control_room.test.sql"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.2",

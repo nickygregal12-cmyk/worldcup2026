@@ -40,7 +40,7 @@ const source = files.map(file => fs.readFileSync(file,'utf8')).join('\n')
 for (const term of ['@supabase/supabase-js', '.insert(', '.update(', '.upsert(', '.delete(', 'fetch(', 'XMLHttpRequest']) if (source.includes(term)) fail(`guest foundation contains banned server behaviour: ${term}`)
 
 const migrations = fs.readdirSync(path.join(root,'supabase/migrations')).filter(name=>name.endsWith('.sql'))
-if (migrations.length !== 13) fail(`Stage 11 requires thirteen migrations, found ${migrations.length}`)
+if (migrations.length !== 14) fail(`Stage 12 requires fourteen migrations, found ${migrations.length}`)
 if (!migrations.some(name=>name.includes('0010_euro28_competition_split_and_jokers'))) fail('Migration 010 is missing')
 
 if (errors.length) { console.error('Euro guest/explore foundation audit failed:'); errors.forEach(error=>console.error(`- ${error}`)); process.exit(1) }
@@ -51,4 +51,4 @@ console.log('Storage: browser localStorage only; no guest server persistence')
 console.log('Original predictor rows: 36 group scores + 15 winner-only bracket picks')
 console.log('Separate KO Predictor is not blended into the guest original bundle')
 console.log('Account identity in exports: none')
-console.log('Active migrations: 13')
+console.log('Active migrations: 14')
