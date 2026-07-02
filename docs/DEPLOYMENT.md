@@ -55,7 +55,7 @@ npx supabase db lint --linked --schema public,private --level warning --fail-on 
 
 ## Administrator bootstrap
 
-Tournament admin access remains service-managed. The browser cannot grant owner or results-admin access. Use the reviewed service-side bootstrap process only.
+Tournament admin access remains service-managed. The browser cannot grant owner or results-admin access. Use the explicit Euro staging grant, verification and revocation procedure in `docs/STAGING-ADMIN-ACCESS.md`. Generate the SQL locally with `npm run admin:staging:sql -- ...`, review it, verify project ref `gcfdwobpnanjchcnvdco`, and run it only through the Euro staging SQL Editor.
 
 ## Auth redirects
 

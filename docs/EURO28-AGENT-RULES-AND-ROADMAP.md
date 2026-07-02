@@ -84,18 +84,18 @@ Blocked while `main` remains the repository default branch because GitHub only r
 
 Guarded Euro staging logical backup and destination-safe restore rehearsal. Run and verify a fresh labelled backup before every future hosted migration. The tool records roles, app schema, app data and migration history; Supabase-managed Auth/Storage internals remain outside its scope.
 
-### OB-3 — Staging admin access for Nicky
+### OB-3 — Staging admin access for Nicky — IMPLEMENTED AFTER 9232d57
 
-Document and execute an explicit service-side grant for Nicky's staging account before Stage 13 admin-screen acceptance.
+The reviewed SQL-generation and SQL Editor procedure grants, verifies and revokes explicit Euro staging administrator access without exposing a service-role key or adding a browser grant path. Product-owner testing uses `owner` because Stage 12 contains owner-only controls.
 
-Requirements:
+Requirements enforced:
 
 - verify Euro staging project before the operation;
-- name the account being granted;
-- require explicit authorisation;
+- name the account, role and audit note explicitly;
 - preserve browser self-grant blocking;
-- document grant, verification and revocation;
-- record the action in the audit path where supported;
+- generate SQL outside the repository;
+- use the existing audited `private.euro28_set_tournament_admin` function;
+- document grant, independent verification, app test and revocation;
 - never expose service-role credentials;
 - never grant an account silently.
 
@@ -247,7 +247,7 @@ Binding gates:
 
 ## Next single task
 
-Stage 13A v6 is complete at `505d31a`. OB-1 is blocked by the default-branch boundary. Complete and verify OB-2 backup/restore tooling, then OB-3 staging admin access before Stage 13B.
+Stage 13A v6 and OB-2 are complete through `9232d57`. OB-1 remains blocked by the default-branch boundary. Complete the explicit OB-3 staging owner grant and verification, then begin Stage 13B.
 
-**Starting commit:** `4e1ae38`
+**Starting commit for OB-3:** `9232d57`
 **Migration count:** `14`

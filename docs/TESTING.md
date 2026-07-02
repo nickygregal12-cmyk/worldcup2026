@@ -94,3 +94,8 @@ Run `npm run audit:package-lock`. It must confirm that every resolved package us
 ## Backup tooling tests
 
 `npm run check` includes `audit:backup` and the Vitest backup-helper suite. These verify the linked-project guard, safe output paths, five-file dump plan, metadata scope, restore documentation and absence of destructive database commands. A real backup still has to be created and verified from Nicky's machine before OB-2 is accepted.
+
+
+## Staging administrator access tests
+
+`npm run check` includes `audit:staging-admin` and the staging-admin SQL generator tests. They verify the fixed Euro staging/tournament guards, explicit target email and role, SQL escaping, grant/verify/revoke output, write-outside-repository rule, existing service-only database privilege boundary and absence of service-role secrets. The real grant is accepted only after the generated SQL is reviewed and run in the Euro staging SQL Editor, then the granted account signs back in and loads **More → Admin** as `owner`.

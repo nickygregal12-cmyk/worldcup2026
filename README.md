@@ -78,3 +78,5 @@ The next controlled build is Stage 13B: the mobile-first Groups predictor and re
 
 - Database backup and restore: `docs/DATABASE-BACKUP-AND-RESTORE.md`
 - Create a guarded Euro staging backup with `npm run db:backup -- --label <label>`.
+- Staging administrator access: `docs/STAGING-ADMIN-ACCESS.md`
+- Generate reviewed grant, verify or revoke SQL with `npm run admin:staging:sql -- ...`; the browser still cannot self-grant access.

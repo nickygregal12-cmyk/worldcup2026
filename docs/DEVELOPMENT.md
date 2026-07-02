@@ -39,7 +39,9 @@ Stage 13A establishes deterministic mobile, tablet, desktop and dark-mode screen
 
 - `owner`: may apply the irreversible global lock, manage grace and change feature controls.
 - `results_admin`: retains result entry, status and recalculation access, subject to the current feature controls.
-- admin access itself remains service-managed.
+- admin access itself remains service-managed;
+- product-owner staging access is granted only through the reviewed SQL Editor procedure in `docs/STAGING-ADMIN-ACCESS.md`;
+- generated grant/revoke SQL must remain outside the repository and requires an explicit target email, role and audit note.
 
 ### Kill-switch boundary
 

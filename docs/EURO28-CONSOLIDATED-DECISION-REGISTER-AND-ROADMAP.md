@@ -256,7 +256,7 @@ A documented, explicit service-side procedure will grant Nicky's staging account
 
 ### Roadmap placement
 
-Add **OB-3 — Staging admin test access** as an immediate operational task. The written procedure and explicit grant must be completed before Stage 13 admin-screen visual acceptance, so the product owner can exercise authorised controls as the Stage 13 batches land.
+**OB-3 — Staging admin test access** is implemented after `9232d57`. It provides a local SQL generator plus a reviewed Euro staging SQL Editor procedure for grant, read-only verification and revocation. The explicit `owner` grant must be applied and verified before Stage 13 admin-screen visual acceptance, so the product owner can exercise authorised controls as the Stage 13 batches land.
 
 ## 10. Optional Google sign-in — CONFIRMED ROADMAP ITEM
 
@@ -293,7 +293,7 @@ Roadmap placement: **Stage 18A — Optional Google sign-in**, before **Stage 18B
 
 - **OB-1 — blocked:** Dependabot cannot be activated without placing its configuration on the repository default branch (`main`), which is the protected WC26 branch. Revisit after repository/default-branch separation.
 - **OB-2 — implemented after `505d31a`:** guarded Euro staging logical backup, checksums and disposable-destination restore rehearsal. A fresh backup is mandatory before every future hosted migration. It covers roles, app schema/data and migration history, not Supabase-managed Auth/Storage internals.
-- **OB-3:** Explicit staging-admin grant and revoke procedure for product-owner testing.
+- **OB-3 — implemented after `9232d57`:** Explicit staging-admin grant, read-only verification, app acceptance and revoke procedure for product-owner testing. No service-role secret and no browser self-grant path.
 
 ### Stage 13 — Shared design system and mobile-first rebuild
 
@@ -327,7 +327,7 @@ Roadmap placement: **Stage 18A — Optional Google sign-in**, before **Stage 18B
 
 Do not install Stage 13A v4.
 
-Stage 13A v6 is complete at `505d31a`. OB-1 is blocked by the protected default branch. Complete and verify OB-2 backup/restore tooling, then complete OB-3 staging admin access before Stage 13B.
+Stage 13A v6 and OB-2 are complete through `9232d57`. OB-1 is blocked by the protected default branch. Apply and verify the explicit OB-3 staging owner grant, then begin Stage 13B.
 
 **Starting commit:** `4e1ae38`
 **Migration count:** `14`
