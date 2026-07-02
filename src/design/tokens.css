@@ -167,3 +167,27 @@
   --shadow-2: 0 18px 48px rgb(0 0 0 / 0.34);
   --shadow-3: 0 28px 76px rgb(0 0 0 / 0.46);
 }
+
+:root {
+  --score-surface: var(--surface-raised);
+  --score-border: var(--border-strong);
+  --score-active-border: var(--brand);
+  --score-readonly-surface: var(--surface-sunken);
+  --team-placeholder-surface: var(--surface-soft);
+  --team-placeholder-border: var(--border-strong);
+  --match-card-surface: var(--surface-raised);
+  --match-card-border: var(--border-default);
+  --match-card-complete-border: var(--state-success-border);
+}
+
+:root[data-theme='dark'] {
+  --score-surface: var(--surface-soft);
+  --score-border: var(--border-strong);
+  --score-active-border: var(--brand-strong);
+  --score-readonly-surface: var(--surface-sunken);
+  --team-placeholder-surface: var(--surface-soft);
+  --team-placeholder-border: var(--border-strong);
+  --match-card-surface: var(--surface-raised);
+  --match-card-border: var(--border-default);
+  --match-card-complete-border: var(--state-success-border);
+}

@@ -60,14 +60,21 @@ for (const text of [
   'groups_primary',
   'ko_early_access',
   'ko_primary',
+  'Predict all 36 scores',
+  'Review progress',
+  'Joker applied',
+  'Saved on this device',
+  'Provisional',
+  'euro28-prediction-journey-v3',
 ]) assert(bundle.includes(text), `The deployed Stage 13A bundle is missing: ${text}`)
 assert(!bundle.includes('WC26 Control Centre'), 'The inherited WC26 admin application is active.')
 
 console.log('Euro 2028 app-shell verification passed.')
 console.log(`Site: ${siteUrl}`)
-console.log('Public experience: Stage 13A v6 design system, readiness-driven navigation and Home dashboard')
+console.log('Public experience: Stage 13B Groups predictor, review flow and Stage 13A app shell')
 console.log('Themes: persisted light and dark appearance')
-console.log('Home states: guest, account, loading, partial failure and error')
+console.log('Groups: 36 mobile-first score cards with local flags, explicit states and five-joker controls')
+console.log('Review: saved predictions count whether submitted or not')
 console.log('Navigation: Groups stays primary until all group results and eight Round of 16 pairings are ready')
 console.log('Competition boundary: permanent original Bracket and separate KO Predictor')
 console.log('Admin controls: protected Stage 12 operations remain available')

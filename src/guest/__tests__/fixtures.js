@@ -1,6 +1,7 @@
 import { RESOLVER_CONTEXT } from '../../resolver/index.js'
 
 const GROUP_CODES = ['A', 'B', 'C', 'D', 'E', 'F']
+const FIXTURE_ISO_CODES = ['SCO','GER','ESP','CRO','ENG','ITA','DEN','SUI','FRA','NED','AUT','POL','POR','BEL','TUR','CZE','WAL','IRL','NOR','SWE','NIR','UKR','SRB','ROU']
 const PAIRINGS = [
   [1, 2],
   [3, 4],
@@ -21,6 +22,7 @@ export function buildGuestReference() {
       slotCode: `${code}${position}`,
       stableKey: `${code}${position}`,
       label: `Group ${code} slot ${position}`,
+      isoCode: FIXTURE_ISO_CODES[(groupIndex * 4) + position - 1],
       drawPosition: position,
       qualifierRank: (groupIndex * 4) + position,
       isProvisional: true,
@@ -89,7 +91,7 @@ export function buildRawReferenceRows() {
     slot_code: team.slotCode,
     display_order: team.qualifierRank,
     is_provisional: true,
-    metadata: { label: team.label },
+    metadata: { label: team.label, isoCode: team.isoCode ?? null },
   })))
   const groupMemberships = reference.groups.flatMap(group => group.teams.map(team => ({
     group_id: group.groupId,

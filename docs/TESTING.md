@@ -99,3 +99,9 @@ Run `npm run audit:package-lock`. It must confirm that every resolved package us
 ## Staging administrator access tests
 
 `npm run check` includes `audit:staging-admin` and the staging-admin SQL generator tests. They verify the fixed Euro staging/tournament guards, explicit target email and role, SQL escaping, grant/verify/revoke output, write-outside-repository rule, existing service-only database privilege boundary and absence of service-role secrets. The real grant is accepted only after the generated SQL is reviewed and run in the Euro staging SQL Editor, then the granted account signs back in and loads **More → Admin** as `owner`.
+
+## Stage 13B Groups predictor tests
+
+`npm run audit:groups-predictor` verifies all 36 group fixtures, the shared TeamLabel and ScoreInput boundaries, 55-code local flag registry, explicit prediction states, central joker configuration, profile-opening safety, six visual baselines and the absence of Migration 015.
+
+Vitest covers TeamLabel real/provisional/unresolved rendering, identity-only activation, mobile numeric score input, locked and grace presentation, group progress and save-state precedence.

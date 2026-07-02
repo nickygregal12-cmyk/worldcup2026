@@ -15,7 +15,8 @@ The verified build now includes:
 - secure manual result operations;
 - private leagues and lock-aware shared predictions;
 - an expanded admin control room for lock, grace, feature and tournament-health operations;
-- a shared light/dark design system, responsive app shell and account-aware Home dashboard.
+- a shared light/dark design system, responsive app shell and account-aware Home dashboard;
+- a mobile-first 36-match Groups predictor with shared team labels, local circle flags, score controls, jokers and review states.
 
 The two competitions remain separate:
 
@@ -48,6 +49,7 @@ Use only the Euro staging URL and publishable key in `.env.local`. Never expose 
 ```bash
 npm run audit:control-room
 npm run audit:design-tokens
+npm run audit:groups-predictor
 npm run check
 ```
 
@@ -70,9 +72,9 @@ Never run `npx supabase db reset --linked`.
 
 ## Current return point
 
-Stage 13A v6 adds the shared design system, persisted light/dark themes, responsive navigation and the new Home dashboard. Position 2 remains the original Bracket permanently. Position 1 stays Groups until all 36 group results and all eight Round of 16 pairings are ready, while complete KO fixtures become available earlier through More. It starts from `4e1ae38`, retains all Stage 12 controls and keeps the database unchanged at fourteen migrations.
+Stage 13B adds the mobile-first Groups predictor and review flow on top of the verified Stage 13A shell. All 36 group fixtures use shared team, score, state and joker components. Circle flags are bundled locally and selected from central ISO/association codes; unresolved slots remain visibly neutral. Existing autosave, global-lock, grace and competition boundaries are unchanged, and the database remains at fourteen migrations.
 
-The next controlled build is Stage 13B: the mobile-first Groups predictor and review flow.
+The next controlled build is Stage 13C: the permanent original bracket and separate KO Predictor match centre.
 
 ## Operational safety
 

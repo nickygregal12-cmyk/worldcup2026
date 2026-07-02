@@ -13,7 +13,7 @@ function browserStorage() {
 function visualThemeChoice() {
   if (typeof window === 'undefined') return null
   const params = new URLSearchParams(window.location.search)
-  if (params.get('visual') !== 'stage13a') return null
+  if (!['stage13a', 'stage13b'].includes(params.get('visual'))) return null
   const requested = params.get('theme')
   return requested === THEME_CHOICE.DARK || requested === THEME_CHOICE.LIGHT ? requested : null
 }

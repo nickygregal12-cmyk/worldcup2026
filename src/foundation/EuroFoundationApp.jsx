@@ -13,7 +13,7 @@ import { APP_ROUTE } from '../app/appRoutes.js'
 import { deriveNavigationLifecycle } from '../app/navigationLifecycle.js'
 import { useHashRoute } from '../app/useHashRoute.js'
 import { useTheme } from '../app/useTheme.js'
-import { VISUAL_FOUNDATION, VISUAL_HOME_DASHBOARD } from '../app/visualFixture.js'
+import { VISUAL_FOUNDATION, VISUAL_GROUP_DRAFT, VISUAL_HOME_DASHBOARD } from '../app/visualFixture.js'
 import { Badge, Button, Card } from '../design-system/index.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
@@ -21,7 +21,7 @@ import { createFoundationClient } from './supabaseClient.js'
 function isVisualFixture() {
   if (typeof window === 'undefined') return false
   if (window.__EURO28_VISUAL_FIXTURE__ === true) return true
-  const fixtureRequested = new URLSearchParams(window.location.search).get('visual') === 'stage13a'
+  const fixtureRequested = ['stage13a', 'stage13b'].includes(new URLSearchParams(window.location.search).get('visual'))
   return fixtureRequested && (import.meta.env.DEV || window.location.protocol === 'file:')
 }
 
@@ -106,9 +106,9 @@ export default function EuroFoundationApp() {
     content = <HomeDashboard client={clientState.client} foundation={foundation} sessionState={visualSession} fixture={visualFixture ? VISUAL_HOME_DASHBOARD : null} />
   } else if (route === APP_ROUTE.PREDICT) {
     content = (
-      <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Original Predictor" title="Build your tournament prediction" description="Predict all group scores and complete your winner-only pre-tournament bracket." badge={{ tone: foundation.tournament.prediction_locked_at ? 'warning' : 'safe', label: foundation.tournament.prediction_locked_at ? 'Locked' : 'Open' }} />
-        <PredictionJourneyFoundation key={`groups-${foundation.guestReference.referenceVersion}`} client={clientState.client} reference={foundation.guestReference} tournament={foundation.tournament} initialView="groups" />
+      <div className="content-stack groups-page">
+        <PageIntro eyebrow="Original Predictor" title="Predict the group stage" description="Enter all 36 group scores, place up to five jokers and review your progress at any time." badge={{ tone: foundation.tournament.prediction_locked_at ? 'warning' : 'safe', label: foundation.tournament.prediction_locked_at ? 'Locked' : 'Open' }} />
+        <PredictionJourneyFoundation key={`groups-${foundation.guestReference.referenceVersion}`} client={clientState.client} reference={foundation.guestReference} tournament={foundation.tournament} initialView="groups" fixtureDraft={visualFixture ? VISUAL_GROUP_DRAFT : null} />
       </div>
     )
   } else if (route === APP_ROUTE.BRACKET) {

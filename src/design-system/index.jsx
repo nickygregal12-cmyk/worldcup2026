@@ -1,3 +1,6 @@
+import TeamLabel from './TeamLabel.jsx'
+import ScoreInput from './ScoreInput.jsx'
+import PredictionStateBadge from './PredictionStateBadge.jsx'
 import { useEffect, useId, useRef } from 'react'
 import Icon from './Icon.jsx'
 
@@ -155,4 +158,4 @@ export function Dialog({ open, title, onClose, children, labelledBy, className =
   )
 }
 
-export { default as Icon } from './Icon.jsx'
+export { Icon, TeamLabel, ScoreInput, PredictionStateBadge }

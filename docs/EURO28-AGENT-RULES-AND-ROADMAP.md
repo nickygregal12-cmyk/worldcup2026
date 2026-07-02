@@ -140,13 +140,14 @@ Requirements:
   - permanent Group stage review after the switch.
 - No Migration 015 unless a genuinely missing server-side phase field is discovered and separately approved.
 
-### Stage 13B — Groups predictor and review flow
+### Stage 13B — Groups predictor and review flow — COMPLETE
 
-- Rebuild all 36 group match cards.
-- Implement the shared `<TeamLabel>` primitive with circular ISO-keyed flags and neutral unresolved-slot labels.
-- Implement the shared score input and visible saved, saving, submitted, locked and grace states.
-- Implement consistent joker controls and mobile interaction safety.
-- Preserve permanent Group stage review access after the navigation switch.
+- All 36 group match cards use one mobile-first anatomy.
+- Shared `<TeamLabel>` uses locally bundled ISO-keyed circle flags and neutral unresolved-slot labels.
+- Shared score and state components show saved, saving, submitted, locked, grace, conflict and error states.
+- Joker controls use the central cap and per-match start lock with reserved gold presentation.
+- Group stage review remains permanently reachable after the navigation switch.
+- No Migration 015; active migrations remain 14.
 
 ### Stage 13C — Original bracket and KO Predictor
 
@@ -247,7 +248,4 @@ Binding gates:
 
 ## Next single task
 
-Stage 13A v6 and OB-2 are complete through `9232d57`. OB-1 remains blocked by the default-branch boundary. Complete the explicit OB-3 staging owner grant and verification, then begin Stage 13B.
-
-**Starting commit for OB-3:** `9232d57`
-**Migration count:** `14`
+Stage 13B is complete after the verified Stage 13A, OB-2 and OB-3 checkpoints. Build Stage 13C: the permanent original pre-tournament bracket and the visibly separate real-fixture KO Predictor match centre.

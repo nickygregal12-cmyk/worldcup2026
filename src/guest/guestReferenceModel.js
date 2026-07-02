@@ -33,6 +33,7 @@ function normaliseTeam(tournamentTeam, membership) {
     slotCode: tournamentTeam.slot_code,
     stableKey: membership.position_code,
     label: tournamentTeam.metadata?.label ?? membership.position_code,
+    isoCode: tournamentTeam.metadata?.isoCode ?? tournamentTeam.metadata?.fifaCode ?? null,
     drawPosition: membership.draw_position,
     qualifierRank: tournamentTeam.display_order ?? null,
     isProvisional: Boolean(tournamentTeam.is_provisional),

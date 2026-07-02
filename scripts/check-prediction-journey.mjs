@@ -19,14 +19,15 @@ for (const file of [
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 8 file is missing: ${file}`)
 
 const original = read('src/journey/PredictionJourneyFoundation.jsx')
+const groups = read('src/journey/GroupsPredictor.jsx')
 const ko = read('src/koPredictor/KoPredictorFoundation.jsx')
 for (const required of [
   'Pre-tournament bracket — winner picks only',
   '0 bracket jokers',
-  'group jokers selected',
   'hasActivePredictionGrace',
   'isPredictionMatchStarted',
 ]) if (!original.includes(required)) fail(`original journey is missing: ${required}`)
+if (!groups.includes('group jokers selected')) fail('Groups predictor is missing: group jokers selected')
 for (const required of [
   'Separate competition · KO Predictor',
   'five separate KO Predictor jokers',

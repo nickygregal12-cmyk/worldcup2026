@@ -10,6 +10,7 @@ import './design/tokens.css'
 import './design/typography.css'
 import './styles/feature-compat.css'
 import './styles/app.css'
+import './styles/groups-predictor.css'
 
 async function retireInheritedServiceWorker() {
   if (!('serviceWorker' in navigator)) return

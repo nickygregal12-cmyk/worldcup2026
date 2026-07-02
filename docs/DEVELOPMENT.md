@@ -33,6 +33,25 @@ The dashboard composes existing trusted read services. Each section has its own 
 
 Stage 13A establishes deterministic mobile, tablet, desktop and dark-mode screenshot baselines.
 
+
+## Stage 13B Groups architecture
+
+### Team identity
+
+Every group fixture uses `<TeamLabel>`. Flags are bundled locally and selected by the central three-letter team code. Unresolved slots render a neutral placeholder. The future Team Profile Sheet may attach only to the TeamLabel identity button; score inputs, joker controls and surrounding cards cannot open it.
+
+### Prediction controls
+
+`<ScoreInput>` requests the numeric mobile keypad, provides desktop steppers and becomes an explicit read-only value under lock or review mode. `<PredictionStateBadge>` presents dirty, saving, saved, submitted, locked, grace, conflict and error states consistently.
+
+### Group flow
+
+All 36 cards share one anatomy and continue to use the existing atomic bundle save. Group progress, the five-joker cap and the multiplier come from central contracts/configuration. Stage 13B changes no server rule and adds no migration.
+
+### Visual QA
+
+The six Stage 13B references are under `docs/design-baselines/stage13b/`. The fixture nations are visibly provisional and exist only for layout testing.
+
 ## Stage 12 architecture
 
 ### Role boundary
@@ -65,7 +84,7 @@ Lock, grace and feature changes append to `admin_operation_events`. Existing res
 
 ## Deliberate exclusions
 
-Stage 13A does not implement an external result provider, public admin assignment, a global prediction unlock, league-specific scoring or any new database rule. The remaining predictor, bracket, league, results and admin page rebuilds continue in Stages 13B–13E.
+Stage 13A does not implement an external result provider, public admin assignment, a global prediction unlock, league-specific scoring or any new database rule. The bracket, KO Predictor, league, results and admin page rebuilds continue in Stages 13C–13E.
 
 ## Database backup safety
 

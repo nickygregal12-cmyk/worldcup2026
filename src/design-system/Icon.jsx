@@ -1,3 +1,4 @@
+import React from 'react' // eslint-disable-line no-unused-vars
 import {
   ChartNoAxesColumn,
   Check,
@@ -9,12 +10,15 @@ import {
   Home,
   Info,
   ListChecks,
+  LockKeyhole,
   LoaderCircle,
+  Save,
   Moon,
   RefreshCw,
   ShieldCheck,
   Sun,
   TriangleAlert,
+  UnlockKeyhole,
   Trophy,
   Users,
   X,
@@ -40,6 +44,9 @@ const ICONS = Object.freeze({
   check: Check,
   clock: Clock3,
   loader: LoaderCircle,
+  lock: LockKeyhole,
+  unlock: UnlockKeyhole,
+  save: Save,
 })
 
 export default function Icon({ name, size = 22, strokeWidth = 1.9, className = '' }) {

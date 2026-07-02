@@ -297,8 +297,8 @@ Roadmap placement: **Stage 18A — Optional Google sign-in**, before **Stage 18B
 
 ### Stage 13 — Shared design system and mobile-first rebuild
 
-- **13A v5:** Charter-compliant design system, app shell and Home; corrected Groups→KO switch with permanent Bracket destination.
-- **13B:** Groups predictor and review flow; shared `<TeamLabel>`, circular ISO-keyed flags, score inputs and clear save/lock/joker states.
+- **13A v6 — complete:** Charter-compliant design system, portable dependency lock, app shell and Home; corrected Groups→KO switch with permanent Bracket destination.
+- **13B — complete in this batch:** all 36 group fixtures, shared `<TeamLabel>`, locally bundled circular ISO-keyed flags, neutral unresolved slots, shared score input, clear save/lock/grace states, safe five-joker controls and the reversible review flow. No Migration 015.
 - **13C:** Original bracket and separate KO Predictor match centre.
 - **13D:** Leagues, results, shared predictions and responsive polish.
 - **13E:** Team Profile Sheet implemented through `<TeamLabel>` with the three-source data boundary and post-lock aggregate gate.
@@ -325,9 +325,7 @@ Roadmap placement: **Stage 18A — Optional Google sign-in**, before **Stage 18B
 
 ## 13. Exact next task
 
-Do not install Stage 13A v4.
+Stage 13A v6, OB-2 and OB-3 are complete through `29debb5`. Stage 13B is the current frontend-only batch and keeps the database at fourteen migrations. After its verified clean push, build Stage 13C: the permanent original bracket and separate KO Predictor match centre.
 
-Stage 13A v6 and OB-2 are complete through `9232d57`. OB-1 is blocked by the protected default branch. Apply and verify the explicit OB-3 staging owner grant, then begin Stage 13B.
-
-**Starting commit:** `4e1ae38`
+**Starting commit:** `29debb5`
 **Migration count:** `14`

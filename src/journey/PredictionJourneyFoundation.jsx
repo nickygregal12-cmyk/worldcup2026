@@ -18,6 +18,9 @@ import {
   loadMyPredictionGraceWindows,
   PREDICTION_COMPETITION_KEY,
 } from '../grace/index.js'
+import { PredictionStateBadge, TeamLabel } from '../design-system/index.jsx'
+import GroupsPredictor from './GroupsPredictor.jsx'
+import PredictionReview from './PredictionReview.jsx'
 import {
   EURO28_PREDICTION_JOURNEY_VERSION,
   PREDICTION_AUTOSAVE_DELAY_MS,
@@ -40,12 +43,6 @@ function browserStorage() {
   } catch {
     return null
   }
-}
-
-function parseScore(value) {
-  if (value === '') return null
-  const numeric = Number(value)
-  return Number.isInteger(numeric) && numeric >= 0 && numeric <= 99 ? numeric : null
 }
 
 function formatDate(dateValue) {
@@ -89,144 +86,33 @@ function writeGuestReview(reference, reviewMode) {
   }
 }
 
-function teamLabel(reference, teamId) {
-  if (!teamId) return 'To be determined'
-  return reference.teamsById?.[teamId]?.label ?? teamId
-}
-
-function ScoreInput({ value, label, disabled, onChange }) {
-  return (
-    <input
-      className="journey-score-input"
-      type="number"
-      min="0"
-      max="99"
-      inputMode="numeric"
-      aria-label={label}
-      value={value ?? ''}
-      disabled={disabled}
-      onChange={event => onChange(parseScore(event.target.value))}
-    />
-  )
-}
-
 function AutosaveBadge({ context, status, revision, savedAt }) {
   let label = 'Ready'
-  let tone = 'neutral'
-
   if (context === 'guest') {
     label = 'Saved in this browser'
-    tone = 'safe'
   } else if (status === PREDICTION_AUTOSAVE_STATE.SAVING) {
     label = 'Saving…'
-    tone = 'info'
   } else if (status === PREDICTION_AUTOSAVE_STATE.DIRTY) {
     label = 'Changes queued'
-    tone = 'warning'
   } else if (status === PREDICTION_AUTOSAVE_STATE.SAVED) {
     label = `Saved · revision ${revision}`
-    tone = 'safe'
   } else if (status === PREDICTION_AUTOSAVE_STATE.CONFLICT) {
     label = 'Reload required'
-    tone = 'danger'
   } else if (status === PREDICTION_AUTOSAVE_STATE.ERROR) {
     label = 'Save failed'
-    tone = 'danger'
   } else if (status === PREDICTION_AUTOSAVE_STATE.LOCKED) {
     label = 'Predictions locked'
-    tone = 'danger'
   } else if (revision > 0) {
     label = `Account revision ${revision}`
   }
 
+  const state = context === 'guest' ? 'local' : status === PREDICTION_AUTOSAVE_STATE.IDLE ? 'empty' : status
   return (
     <div className="journey-autosave" aria-live="polite">
-      <span className={`foundation-pill foundation-pill--${tone}`}>{label}</span>
+      <PredictionStateBadge state={state} label={label} />
       {savedAt && status === PREDICTION_AUTOSAVE_STATE.SAVED && (
         <small>{new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(savedAt)}</small>
       )}
-    </div>
-  )
-}
-
-function GroupEditor({ reference, draft, summary, scoreLocked, reviewMode, graceWindows, onChange }) {
-  return (
-    <div>
-      <div className="journey-joker-summary">
-        <div>
-          <strong>{summary.groupJokers}/{summary.groupJokerCap} group jokers selected</strong>
-          <span>Jokers double eligible group-match points. They do not apply to bracket picks.</span>
-        </div>
-        <span className="foundation-pill foundation-pill--safe">2× multiplier</span>
-      </div>
-      <div className="journey-group-grid">
-        {reference.groups.map(group => {
-          const matches = reference.groupMatches.filter(match => match.groupCode === group.code)
-          return (
-            <section className="journey-group-card" key={group.code}>
-              <div className="journey-group-card__heading">
-                <div>
-                  <span>Group {group.code}</span>
-                  <strong>{group.teams.map(team => team.label).join(' · ')}</strong>
-                </div>
-                <b>{matches.filter(match => {
-                  const row = draft.groupPredictions[String(match.matchNumber)]
-                  return row.homeScore != null && row.awayScore != null
-                }).length}/6</b>
-              </div>
-
-              <div className="journey-match-list">
-                {matches.map(match => {
-                  const row = draft.groupPredictions[String(match.matchNumber)]
-                  const capReached = summary.groupJokers >= summary.groupJokerCap && !row.jokerApplied
-                  const hasGrace = hasActivePredictionGrace(graceWindows, {
-                    competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
-                    matchId: match.matchId,
-                  })
-                  const scoreDisabled = reviewMode || (scoreLocked && !hasGrace)
-                  const jokerDisabled = reviewMode || isPredictionMatchStarted(match) || capReached
-                  return (
-                    <div className={`journey-match-row${row.jokerApplied ? ' journey-match-row--joker' : ''}`} key={match.matchId}>
-                      <div className="journey-match-meta">
-                        <span>Match {match.matchNumber}</span>
-                        <small>{formatDate(match.scheduledDate)}</small>
-                      </div>
-                      <div className="journey-team journey-team--home">
-                        <strong>{teamLabel(reference, match.homeTeamId)}</strong>
-                      </div>
-                      <ScoreInput
-                        value={row.homeScore}
-                        label={`Match ${match.matchNumber} home score`}
-                        disabled={scoreDisabled}
-                        onChange={homeScore => onChange(match, { homeScore })}
-                      />
-                      <span className="journey-score-separator">–</span>
-                      <ScoreInput
-                        value={row.awayScore}
-                        label={`Match ${match.matchNumber} away score`}
-                        disabled={scoreDisabled}
-                        onChange={awayScore => onChange(match, { awayScore })}
-                      />
-                      <div className="journey-team journey-team--away">
-                        <strong>{teamLabel(reference, match.awayTeamId)}</strong>
-                      </div>
-                      <button
-                        type="button"
-                        className={row.jokerApplied ? 'journey-joker-button journey-joker-button--active' : 'journey-joker-button'}
-                        disabled={jokerDisabled}
-                        aria-pressed={row.jokerApplied}
-                        onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })}
-                      >
-                        {row.jokerApplied ? 'Joker ✓' : 'Add joker'}
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          )
-        })}
-      </div>
     </div>
   )
 }
@@ -288,7 +174,7 @@ function BracketEditor({ reference, draft, preview, contentLocked, reviewMode, g
                             aria-pressed={row.advancingTeamId === teamId}
                             onClick={() => onChange(match, row.advancingTeamId === teamId ? null : teamId)}
                           >
-                            <span>{teamLabel(reference, teamId)}</span>
+                            <TeamLabel team={reference.teamsById?.[teamId]} compact />
                             <small>{row.advancingTeamId === teamId ? 'Selected to advance' : 'Pick to advance'}</small>
                           </button>
                         ))}
@@ -305,62 +191,7 @@ function BracketEditor({ reference, draft, preview, contentLocked, reviewMode, g
   )
 }
 
-function ReviewPanel({ reference, summary, context, reviewMode, locked, busy, onSubmit, onEdit }) {
-  const championId = summary.preview.resolution.knockout.championTeamId
-  return (
-    <div className="journey-review">
-      <div className="journey-review-grid">
-        <article>
-          <span>Group predictions</span>
-          <strong>{summary.groupComplete}/36 complete</strong>
-        </article>
-        <article>
-          <span>Bracket picks</span>
-          <strong>{summary.bracketComplete}/15 complete</strong>
-        </article>
-        <article>
-          <span>Predicted champion</span>
-          <strong>{championId ? teamLabel(reference, championId) : 'Not resolved'}</strong>
-        </article>
-        <article>
-          <span>Storage</span>
-          <strong>{context === 'account' ? 'Euro account' : 'This browser only'}</strong>
-        </article>
-      </div>
-
-      {summary.preview.diagnostics.length > 0 && (
-        <div className="journey-warning-box">
-          <strong>Some bracket selections became stale.</strong>
-          <p>Group or earlier bracket changes altered the predicted participants. Return to the bracket tab and update those matches.</p>
-        </div>
-      )}
-
-      {!summary.canSubmit && (
-        <div className="journey-warning-box">
-          <strong>{summary.remaining} predictions still need attention.</strong>
-          <p>Submit becomes available only when all 51 predictions form one valid canonical tournament path.</p>
-        </div>
-      )}
-
-      <div className="journey-review-actions">
-        {reviewMode ? (
-          <button type="button" onClick={onEdit} disabled={locked || busy}>
-            {busy ? 'Updating…' : 'Edit predictions'}
-          </button>
-        ) : (
-          <button type="button" onClick={onSubmit} disabled={!summary.canSubmit || locked || busy}>
-            {busy ? 'Submitting…' : 'Submit predictions for review'}
-          </button>
-        )}
-        <p>
-          Submit is a reversible personal review mode. Saved and unsubmitted predictions count exactly the same at the real tournament lock.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-export default function PredictionJourneyFoundation({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS }) {
+export default function PredictionJourneyFoundation({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, fixtureDraft = null }) {
   const guestStorage = useMemo(() => createGuestPredictionStorage({
     storage: browserStorage(),
     reference,
@@ -368,6 +199,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   const [session, setSession] = useState(null)
   const [sessionLoading, setSessionLoading] = useState(Boolean(client))
   const [guestDraft, setGuestDraft] = useState(() => {
+    if (fixtureDraft) return fixtureDraft
     const loaded = guestStorage.load()
     return loaded.status === 'ready' ? loaded.state : createGuestPredictionState(reference)
   })
@@ -383,6 +215,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   const [savedAt, setSavedAt] = useState(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState(null)
+  const [activeGroupMatchNumber, setActiveGroupMatchNumber] = useState(null)
   const savingRef = useRef(false)
 
   const signedIn = Boolean(session?.user)
@@ -542,6 +375,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
 
   function updateGroup(match, patch) {
     if (reviewMode) return
+    setActiveGroupMatchNumber(match.matchNumber)
     const hasGrace = hasActivePredictionGrace(graceWindows, {
       competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
       matchId: match.matchId,
@@ -741,14 +575,18 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
       ) : (
         <>
           {view === PREDICTION_JOURNEY_VIEW.GROUPS && (
-            <GroupEditor
+            <GroupsPredictor
               reference={reference}
               draft={draft}
               summary={summary}
               scoreLocked={locked}
               reviewMode={reviewMode}
               graceWindows={graceWindows}
+              autosaveStatus={autosaveStatus}
+              context={context}
+              activeMatchNumber={activeGroupMatchNumber}
               onChange={updateGroup}
+              onOpenReview={() => setView(PREDICTION_JOURNEY_VIEW.REVIEW)}
             />
           )}
 
@@ -782,8 +620,9 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
           )}
 
           {view === PREDICTION_JOURNEY_VIEW.REVIEW && (
-            <ReviewPanel
+            <PredictionReview
               reference={reference}
+              draft={draft}
               summary={summary}
               context={context}
               reviewMode={reviewMode}
@@ -791,6 +630,8 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
               busy={busy}
               onSubmit={submitReview}
               onEdit={editPredictions}
+              onOpenGroups={() => setView(PREDICTION_JOURNEY_VIEW.GROUPS)}
+              onOpenBracket={() => setView(PREDICTION_JOURNEY_VIEW.BRACKET)}
             />
           )}
         </>

@@ -92,3 +92,7 @@ npm run verify:foundation-page
 ```
 
 The deployed build must show the product-branded app shell and Home dashboard, retain all protected Stage 12 operations and contain no active WC26 bundle.
+
+## Stage 13B deployment note
+
+Stage 13B is frontend-only. Confirm `supabase/migrations` is unchanged, run `npm run audit:groups-predictor` and the full `npm run check`, then deploy through the existing `euro28-development` Netlify flow. No Supabase reset, dry run or push is required.

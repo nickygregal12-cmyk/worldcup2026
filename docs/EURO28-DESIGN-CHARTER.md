@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.4 — Blue identity and confirmed three-state navigation lifecycle
+### Version 1.5 — Blue identity and confirmed three-state navigation lifecycle
 
 > **Authority:** This document governs how the Euro 2028 Predictor looks and feels. The Consolidated Decision Register governs product rules. The Agent Rules govern build process. A visual deviation must be proposed here before it ships.
 
@@ -161,3 +161,5 @@ The staging preview remains the sign-off surface for future palette refinements.
 - **v1.1:** Blue direction confirmed; colours centralised and intentionally adjustable; app name confirmed; five-position navigation fixed; Lucide and typography confirmed.
 - **v1.3:** Made Bracket permanent and reversed the phase-aware destination so Groups becomes KO.
 - **v1.4:** Confirmed early KO access through More and the full Round of 16 readiness trigger; unresolved fixtures stay hidden.
+
+- v1.5 — Stage 13B implements the shared TeamLabel, local ISO-keyed circle flags, neutral unresolved slots, common score input, explicit prediction states and gold-only joker treatment.

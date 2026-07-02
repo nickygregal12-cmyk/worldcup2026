@@ -18,6 +18,7 @@ const requiredFiles = [
   'src/design/typography.css',
   'src/styles/app.css',
   'src/styles/feature-compat.css',
+  'src/styles/groups-predictor.css',
   'src/design-system/Icon.jsx',
   'src/app/EuroAppShell.jsx',
   'src/app/appRoutes.js',
@@ -43,6 +44,7 @@ for (const requiredImport of [
   './design/typography.css',
   './styles/feature-compat.css',
   './styles/app.css',
+  './styles/groups-predictor.css',
 ]) if (!main.includes(requiredImport)) fail(`Active entry point is missing: ${requiredImport}`)
 
 const packageJson = JSON.parse(read('package.json'))
@@ -62,7 +64,7 @@ for (const token of [
   '--radius-full', "[data-theme='dark']",
 ]) if (!tokenSource.includes(token)) fail(`Semantic token is missing: ${token}`)
 
-const activeStyleFiles = ['src/design/typography.css', 'src/styles/app.css', 'src/styles/feature-compat.css']
+const activeStyleFiles = ['src/design/typography.css', 'src/styles/app.css', 'src/styles/feature-compat.css', 'src/styles/groups-predictor.css']
 const rawColour = /#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)/i
 const namedColourDeclaration = /:\s*(?:white|black|red|blue|green|gold|gray|grey|orange|purple)(?:\s|;|!)/i
 for (const file of activeStyleFiles) {
