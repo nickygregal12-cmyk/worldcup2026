@@ -64,3 +64,7 @@ Lock, grace and feature changes append to `admin_operation_events`. Existing res
 ## Deliberate exclusions
 
 Stage 13A does not implement an external result provider, public admin assignment, a global prediction unlock, league-specific scoring or any new database rule. The remaining predictor, bracket, league, results and admin page rebuilds continue in Stages 13B–13E.
+
+## Database backup safety
+
+Use `npm run db:backup -- --label <operation>` before every hosted migration. The command verifies the Euro branch and linked staging ref, writes outside Git, uses pg_dump through Supabase CLI, and verifies SHA-256 checksums. See `docs/DATABASE-BACKUP-AND-RESTORE.md`.

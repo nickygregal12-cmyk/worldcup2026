@@ -90,3 +90,7 @@ Migration 014 uses pgTAP `no_plan()` because it exercises roles, kill-switches, 
 ## Package-lock portability
 
 Run `npm run audit:package-lock`. It must confirm that every resolved package uses the public npm registry and that no private build-environment URL is present.
+
+## Backup tooling tests
+
+`npm run check` includes `audit:backup` and the Vitest backup-helper suite. These verify the linked-project guard, safe output paths, five-file dump plan, metadata scope, restore documentation and absence of destructive database commands. A real backup still has to be created and verified from Nicky's machine before OB-2 is accepted.

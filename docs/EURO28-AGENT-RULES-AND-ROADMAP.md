@@ -76,13 +76,13 @@
 
 ## Immediate operational tasks
 
-### OB-1 — Dependabot
+### OB-1 — Dependabot — BLOCKED
 
-Add monthly grouped npm updates as a separate commit.
+Blocked while `main` remains the repository default branch because GitHub only reads Dependabot configuration from the default branch. Do not modify WC26 `main`. Revisit when Euro has its own repository or safely becomes the default branch.
 
-### OB-2 — Database backup and restore
+### OB-2 — Database backup and restore — IMPLEMENTED AT CHECKPOINT AFTER 505d31a
 
-Add a guarded Euro staging backup script and documented restore rehearsal. Run a fresh backup before every future hosted migration.
+Guarded Euro staging logical backup and destination-safe restore rehearsal. Run and verify a fresh labelled backup before every future hosted migration. The tool records roles, app schema, app data and migration history; Supabase-managed Auth/Storage internals remain outside its scope.
 
 ### OB-3 — Staging admin access for Nicky
 
@@ -247,7 +247,7 @@ Binding gates:
 
 ## Next single task
 
-Install and verify the exact Stage 13A **v5** package from `4e1ae38`. Do not install v4. Then complete OB-1, OB-2 and OB-3 as separate controlled tasks before Stage 13B.
+Stage 13A v6 is complete at `505d31a`. OB-1 is blocked by the default-branch boundary. Complete and verify OB-2 backup/restore tooling, then OB-3 staging admin access before Stage 13B.
 
 **Starting commit:** `4e1ae38`
 **Migration count:** `14`

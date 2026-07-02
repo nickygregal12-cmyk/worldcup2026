@@ -73,3 +73,8 @@ Never run `npx supabase db reset --linked`.
 Stage 13A v6 adds the shared design system, persisted light/dark themes, responsive navigation and the new Home dashboard. Position 2 remains the original Bracket permanently. Position 1 stays Groups until all 36 group results and all eight Round of 16 pairings are ready, while complete KO fixtures become available earlier through More. It starts from `4e1ae38`, retains all Stage 12 controls and keeps the database unchanged at fourteen migrations.
 
 The next controlled build is Stage 13B: the mobile-first Groups predictor and review flow.
+
+## Operational safety
+
+- Database backup and restore: `docs/DATABASE-BACKUP-AND-RESTORE.md`
+- Create a guarded Euro staging backup with `npm run db:backup -- --label <label>`.

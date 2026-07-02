@@ -291,8 +291,8 @@ Roadmap placement: **Stage 18A — Optional Google sign-in**, before **Stage 18B
 
 ### Immediate operational tasks
 
-- **OB-1:** Monthly grouped Dependabot updates.
-- **OB-2:** Euro staging backup script and documented restore procedure before future hosted migrations.
+- **OB-1 — blocked:** Dependabot cannot be activated without placing its configuration on the repository default branch (`main`), which is the protected WC26 branch. Revisit after repository/default-branch separation.
+- **OB-2 — implemented after `505d31a`:** guarded Euro staging logical backup, checksums and disposable-destination restore rehearsal. A fresh backup is mandatory before every future hosted migration. It covers roles, app schema/data and migration history, not Supabase-managed Auth/Storage internals.
 - **OB-3:** Explicit staging-admin grant and revoke procedure for product-owner testing.
 
 ### Stage 13 — Shared design system and mobile-first rebuild
@@ -327,7 +327,7 @@ Roadmap placement: **Stage 18A — Optional Google sign-in**, before **Stage 18B
 
 Do not install Stage 13A v4.
 
-Install and verify the exact **Stage 13A v6** package from clean commit `4e1ae38`. The complete local gate and migration-diff checks must pass before commit. After v6 is pushed cleanly, complete OB-1 Dependabot, OB-2 backup/restore tooling and OB-3 staging admin access as separate controlled tasks before Stage 13B.
+Stage 13A v6 is complete at `505d31a`. OB-1 is blocked by the protected default branch. Complete and verify OB-2 backup/restore tooling, then complete OB-3 staging admin access before Stage 13B.
 
 **Starting commit:** `4e1ae38`
 **Migration count:** `14`

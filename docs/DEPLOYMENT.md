@@ -1,5 +1,17 @@
 # Deployment
 
+
+## Required pre-migration backup
+
+Before every future hosted migration, create and verify a fresh Euro staging logical backup:
+
+```bash
+cd ~/Desktop/euro28predictor
+npm run db:backup -- --label pre-migration-<number>
+```
+
+Record the printed backup directory in the migration completion notes. The backup must complete before the remote dry run. Full instructions and the destination-guarded restore rehearsal are in `docs/DATABASE-BACKUP-AND-RESTORE.md`.
+
 ## Euro staging
 
 ```text

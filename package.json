@@ -10,8 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run --maxWorkers=4",
     "test:watch": "vitest",
-    "lint:foundation": "eslint src/App.jsx src/main.jsx src/config src/contracts src/foundation src/app src/design-system src/home src/tournament src/auth src/guest src/predictions src/journey src/koPredictor src/grace src/results src/admin src/leagues src/resolver src/lib/clock.js src/lib/tournamentDates.js src/lib/gamePhase.js src/lib/scoring.js src/lib/__tests__ netlify/functions/scheduled-score-sync.js scripts/check-database-safety.mjs scripts/check-legacy-boundary.mjs scripts/check-prediction-contracts.mjs scripts/check-prediction-database-design.mjs scripts/check-tournament-resolver.mjs scripts/check-guest-foundation.mjs scripts/check-auth-foundation.mjs scripts/check-scoring-ruleset-correction.mjs scripts/check-prediction-save.mjs scripts/check-prediction-journey.mjs scripts/check-competition-split.mjs scripts/check-results-scoring.mjs scripts/check-admin-operations.mjs scripts/check-leagues-and-sharing.mjs scripts/check-admin-control-room.mjs scripts/check-design-tokens.mjs scripts/verify-euro28-knockout.mjs scripts/verify-euro28-foundation-page.mjs vite.config.js",
-    "check": "npm run db:safety && npm run audit:package-lock && npm run audit:legacy && npm run audit:contracts && npm run audit:db-design && npm run audit:resolver && npm run audit:guest && npm run audit:auth && npm run audit:scoring-correction && npm run audit:prediction-save && npm run audit:journey && npm run audit:competition-split && npm run audit:results-scoring && npm run audit:admin-operations && npm run audit:leagues && npm run audit:control-room && npm run audit:design-tokens && npm run lint:foundation && npm test && npm run build",
+    "lint:foundation": "eslint src/App.jsx src/main.jsx src/config src/contracts src/foundation src/app src/design-system src/home src/tournament src/auth src/guest src/predictions src/journey src/koPredictor src/grace src/results src/admin src/leagues src/resolver src/lib/clock.js src/lib/tournamentDates.js src/lib/gamePhase.js src/lib/scoring.js src/lib/__tests__ netlify/functions/scheduled-score-sync.js scripts/check-database-safety.mjs scripts/check-database-backup.mjs scripts/backup-database.mjs scripts/verify-database-backup.mjs scripts/lib/databaseBackup.mjs scripts/__tests__/databaseBackup.test.js scripts/check-legacy-boundary.mjs scripts/check-prediction-contracts.mjs scripts/check-prediction-database-design.mjs scripts/check-tournament-resolver.mjs scripts/check-guest-foundation.mjs scripts/check-auth-foundation.mjs scripts/check-scoring-ruleset-correction.mjs scripts/check-prediction-save.mjs scripts/check-prediction-journey.mjs scripts/check-competition-split.mjs scripts/check-results-scoring.mjs scripts/check-admin-operations.mjs scripts/check-leagues-and-sharing.mjs scripts/check-admin-control-room.mjs scripts/check-design-tokens.mjs scripts/verify-euro28-knockout.mjs scripts/verify-euro28-foundation-page.mjs vite.config.js",
+    "check": "npm run db:safety && npm run audit:backup && npm run audit:package-lock && npm run audit:legacy && npm run audit:contracts && npm run audit:db-design && npm run audit:resolver && npm run audit:guest && npm run audit:auth && npm run audit:scoring-correction && npm run audit:prediction-save && npm run audit:journey && npm run audit:competition-split && npm run audit:results-scoring && npm run audit:admin-operations && npm run audit:leagues && npm run audit:control-room && npm run audit:design-tokens && npm run lint:foundation && npm test && npm run build",
     "db:safety": "node scripts/check-database-safety.mjs",
     "verify:knockout": "node scripts/verify-euro28-knockout.mjs",
     "audit:legacy": "node scripts/check-legacy-boundary.mjs",
@@ -48,7 +48,10 @@
     "test:db:014:local": "npx supabase test db --local supabase/tests/database/014_admin_control_room.test.sql",
     "test:db:014:linked": "npx supabase test db --linked supabase/tests/database/014_admin_control_room.test.sql",
     "audit:design-tokens": "node scripts/check-design-tokens.mjs",
-    "audit:package-lock": "node scripts/check-package-lock-portability.mjs"
+    "audit:package-lock": "node scripts/check-package-lock-portability.mjs",
+    "db:backup": "node scripts/backup-database.mjs",
+    "db:backup:verify": "node scripts/verify-database-backup.mjs",
+    "audit:backup": "node scripts/check-database-backup.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
