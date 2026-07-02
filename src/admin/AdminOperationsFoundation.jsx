@@ -7,6 +7,7 @@ import {
   validateAdminResultDraft,
 } from './adminOperationsModel.js'
 import AdminControlRoomSections from './AdminControlRoomSections.jsx'
+import AdminTeamProfiles from './AdminTeamProfiles.jsx'
 import {
   loadAdminMatchHistory,
   loadAdminOperations,
@@ -267,6 +268,14 @@ export default function AdminOperationsFoundation({ client, reference }) {
         tournamentId={reference.tournamentId}
         data={state.data}
         matches={matches}
+        runAction={runAction}
+      />
+
+      <AdminTeamProfiles
+        client={client}
+        tournamentId={reference.tournamentId}
+        profiles={state.data.teamProfiles ?? []}
+        adminRole={state.data.access.adminRole}
         runAction={runAction}
       />
 

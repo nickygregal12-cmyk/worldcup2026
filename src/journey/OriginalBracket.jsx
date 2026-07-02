@@ -101,17 +101,21 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
                           const selected = row.advancingTeamId === teamId && Boolean(teamId)
                           const team = teamFor(reference, teamId)
                           return (
-                            <button
-                              type="button"
+                            <div
                               key={side}
                               className={selected ? 'bracket-team-choice is-selected' : 'bracket-team-choice'}
-                              disabled={disabled || !teamId}
-                              aria-pressed={selected}
-                              onClick={() => onChange(match, selected ? null : teamId)}
                             >
                               <TeamLabel team={team} label={team?.label ?? describeBracketSlot(slot)} unresolved={!teamId} compact />
-                              <span className="bracket-team-choice__action">{selected ? 'Selected to advance' : teamId ? 'Pick to advance' : 'Not resolved'}</span>
-                            </button>
+                              <button
+                                type="button"
+                                className="bracket-team-choice__action"
+                                disabled={disabled || !teamId}
+                                aria-pressed={selected}
+                                onClick={() => onChange(match, selected ? null : teamId)}
+                              >
+                                {selected ? 'Selected to advance' : teamId ? 'Pick to advance' : 'Not resolved'}
+                              </button>
+                            </div>
                           )
                         })}
                       </div>

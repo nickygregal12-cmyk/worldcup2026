@@ -9,6 +9,9 @@ import {
   normalisePredictionGrace,
   validateAdminNote,
   validateAdminResultDraft,
+  normaliseAdminTeamProfiles,
+  createAdminTeamProfileDraft,
+  validateAdminTeamProfileDraft,
 } from '../adminOperationsModel.js'
 
 const groupMatch = Object.freeze({
@@ -147,6 +150,17 @@ describe('admin operations model', () => {
     expect(normalisePredictionGrace([{ grace_id: 'g', user_id: 'u', display_name: 'Member', match_number: 4, grace_status: 'active' }])[0]).toMatchObject({ graceId: 'g', displayName: 'Member', matchNumber: 4, status: 'active' })
     expect(normaliseAdminOperationEvents([{ event_id: 'e', operation_type: 'grace_granted', performed_by_display_name: 'Owner', note: 'Verified issue' }])[0]).toMatchObject({ eventId: 'e', operationType: 'grace_granted', performedByDisplayName: 'Owner' })
     expect(validateAdminNote('  verified   issue  ')).toEqual({ note: 'verified issue', valid: true })
+  })
+
+
+
+  it('normalises and validates owner-edited team profile content', () => {
+    const profile = normaliseAdminTeamProfiles([{ tournament_team_id: 'team-1', team_name: 'Scotland', ranking: 44, profile_revision: 2 }])[0]
+    const draft = { ...createAdminTeamProfileDraft(profile), qualifyingRoute: 'Host nation', bestEuroFinish: 'Group stage', editorialNote: 'A provisional editorial note for testing.', note: 'Update profile facts' }
+    const validation = validateAdminTeamProfileDraft(draft)
+    expect(profile).toMatchObject({ teamName: 'Scotland', ranking: '44', profileRevision: 2 })
+    expect(validation.valid).toBe(true)
+    expect(validation.payload.ranking).toBe(44)
   })
 
   it('requires resolved participants and a meaningful audit note', () => {

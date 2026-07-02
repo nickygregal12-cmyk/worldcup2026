@@ -378,3 +378,59 @@ export function validateAdminNote(value) {
     valid: note.length >= 5 && note.length <= 500,
   })
 }
+
+export function normaliseAdminTeamProfiles(rows = []) {
+  return freezeRows(rows, row => ({
+    tournamentTeamId: row.tournament_team_id,
+    teamName: row.team_name ?? row.slot_code ?? 'Team',
+    shortName: row.short_name ?? row.team_name ?? row.slot_code ?? 'Team',
+    isoCode: row.iso_code ?? null,
+    slotCode: row.slot_code ?? null,
+    groupCode: row.group_code ?? null,
+    isProvisional: Boolean(row.is_provisional),
+    ranking: row.ranking === null || row.ranking === undefined ? '' : String(row.ranking),
+    qualifyingRoute: row.qualifying_route ?? '',
+    bestEuroFinish: row.best_euro_finish ?? '',
+    editorialNote: row.editorial_note ?? '',
+    profileRevision: Number(row.profile_revision ?? 0),
+    updatedAt: normaliseTimestamp(row.updated_at),
+  }))
+}
+
+export function createAdminTeamProfileDraft(profile) {
+  return Object.freeze({
+    ranking: profile?.ranking ?? '',
+    qualifyingRoute: profile?.qualifyingRoute ?? '',
+    bestEuroFinish: profile?.bestEuroFinish ?? '',
+    editorialNote: profile?.editorialNote ?? '',
+    note: '',
+  })
+}
+
+export function validateAdminTeamProfileDraft(draft) {
+  const errors = []
+  const rankingText = String(draft?.ranking ?? '').trim()
+  const ranking = rankingText === '' ? null : Number(rankingText)
+  const qualifyingRoute = String(draft?.qualifyingRoute ?? '').trim().replace(/\s+/g, ' ')
+  const bestEuroFinish = String(draft?.bestEuroFinish ?? '').trim().replace(/\s+/g, ' ')
+  const editorialNote = String(draft?.editorialNote ?? '').trim().replace(/\s+/g, ' ')
+  const note = String(draft?.note ?? '').trim().replace(/\s+/g, ' ')
+
+  if (ranking !== null && (!Number.isInteger(ranking) || ranking < 1 || ranking > 300)) errors.push('Ranking must be a whole number from 1 to 300.')
+  if (qualifyingRoute && (qualifyingRoute.length < 2 || qualifyingRoute.length > 180)) errors.push('Qualifying route must be between 2 and 180 characters.')
+  if (bestEuroFinish && (bestEuroFinish.length < 2 || bestEuroFinish.length > 120)) errors.push('Best EURO finish must be between 2 and 120 characters.')
+  if (editorialNote && (editorialNote.length < 10 || editorialNote.length > 700)) errors.push('Editorial note must be between 10 and 700 characters.')
+  if (note.length < 5 || note.length > 500) errors.push('The audit note must be between 5 and 500 characters.')
+
+  return Object.freeze({
+    valid: errors.length === 0,
+    errors: Object.freeze(errors),
+    note,
+    payload: Object.freeze({
+      ranking,
+      qualifying_route: qualifyingRoute || null,
+      best_euro_finish: bestEuroFinish || null,
+      editorial_note: editorialNote || null,
+    }),
+  })
+}

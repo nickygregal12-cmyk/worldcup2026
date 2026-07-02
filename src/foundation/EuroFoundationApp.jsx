@@ -16,6 +16,7 @@ import { useTheme } from '../app/useTheme.js'
 import { VISUAL_BRACKET_DRAFT, VISUAL_FOUNDATION, VISUAL_GROUP_DRAFT, VISUAL_HOME_DASHBOARD, VISUAL_KO_BUNDLE, VISUAL_KO_REFERENCE, VISUAL_KO_STANDING } from '../app/visualFixture.js'
 import { createStage13dVisualClient, STAGE13D_VISUAL_SCENARIO, VISUAL_STAGE13D_FOUNDATION, VISUAL_STAGE13D_REFERENCE } from '../app/stage13dVisualFixture.js'
 import { Badge, Button, Card } from '../design-system/index.jsx'
+import TeamProfileProvider from '../teamProfile/TeamProfileProvider.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
@@ -23,14 +24,14 @@ function visualFixtureName() {
   if (typeof window === 'undefined') return null
   if (window.__EURO28_VISUAL_FIXTURE__ === true) return 'stage13a'
   const requested = new URLSearchParams(window.location.search).get('visual')
-  const supported = ['stage13a', 'stage13b', 'stage13c', 'stage13d']
+  const supported = ['stage13a', 'stage13b', 'stage13c', 'stage13d', 'stage13e']
   return supported.includes(requested) && (import.meta.env.DEV || window.location.protocol === 'file:')
     ? requested
     : null
 }
 
 function stage13dVisualScenario(fixtureName) {
-  if (fixtureName !== 'stage13d' || typeof window === 'undefined') return STAGE13D_VISUAL_SCENARIO.ACTIVE
+  if (!['stage13d', 'stage13e'].includes(fixtureName) || typeof window === 'undefined') return STAGE13D_VISUAL_SCENARIO.ACTIVE
   const requested = new URLSearchParams(window.location.search).get('scenario')
   return Object.values(STAGE13D_VISUAL_SCENARIO).includes(requested)
     ? requested
@@ -80,11 +81,11 @@ export default function EuroFoundationApp() {
   const route = useHashRoute()
   const theme = useTheme()
   const clientState = useMemo(() => createFoundationClient(), [])
-  const stage13dClient = useMemo(() => fixtureName === 'stage13d' ? createStage13dVisualClient({ scenario: fixtureScenario }) : null, [fixtureName, fixtureScenario])
+  const stage13dClient = useMemo(() => ['stage13d', 'stage13e'].includes(fixtureName) ? createStage13dVisualClient({ scenario: fixtureScenario }) : null, [fixtureName, fixtureScenario])
   const activeClient = stage13dClient ?? clientState.client
   const sessionState = useEuroSession(visualFixture ? null : activeClient)
   const [state, setState] = useState(() => visualFixture
-    ? { status: 'ready', data: fixtureName === 'stage13d' ? VISUAL_STAGE13D_FOUNDATION : VISUAL_FOUNDATION, error: null }
+    ? { status: 'ready', data: ['stage13d', 'stage13e'].includes(fixtureName) ? VISUAL_STAGE13D_FOUNDATION : VISUAL_FOUNDATION, error: null }
     : clientState.client
       ? { status: 'loading', data: null, error: null }
       : { status: 'error', data: null, error: clientState.error })
@@ -146,14 +147,14 @@ export default function EuroFoundationApp() {
     content = (
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Private competitions" title="Your leagues" description="One member list, with separate Original Predictor and KO Predictor tables." />
-        <LeaguesFoundation client={activeClient} tournamentId={foundation.tournament.id} reference={fixtureName === 'stage13d' ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference} />
+        <LeaguesFoundation client={activeClient} tournamentId={foundation.tournament.id} reference={['stage13d', 'stage13e'].includes(fixtureName) ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference} />
       </div>
     )
   } else if (route === APP_ROUTE.RESULTS) {
     content = (
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Live tournament" title="Results and leaderboards" description="Canonical scores, live tables and two fully separate competition standings." />
-        <ResultsAndLeaderboardsFoundation client={activeClient} reference={fixtureName === 'stage13d' ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference} />
+        <ResultsAndLeaderboardsFoundation client={activeClient} reference={['stage13d', 'stage13e'].includes(fixtureName) ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference} />
       </div>
     )
   } else if (route === APP_ROUTE.ACCOUNT) {
@@ -176,5 +177,14 @@ export default function EuroFoundationApp() {
     content = <HomeDashboard client={activeClient} foundation={foundation} sessionState={visualSession} fixture={visualFixture ? VISUAL_HOME_DASHBOARD : null} />
   }
 
-  return <EuroAppShell route={route} theme={theme} sessionState={visualSession} navigation={navigation}>{content}</EuroAppShell>
+  const teamProfileReference = ['stage13d', 'stage13e'].includes(fixtureName) ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference
+  const autoOpenTeam = fixtureName === 'stage13e'
+    ? Object.values(teamProfileReference.teamsById ?? {}).find(team => team.isoCode === 'SCO') ?? null
+    : null
+
+  return (
+    <TeamProfileProvider client={activeClient} reference={teamProfileReference} autoOpenTeam={autoOpenTeam}>
+      <EuroAppShell route={route} theme={theme} sessionState={visualSession} navigation={navigation}>{content}</EuroAppShell>
+    </TeamProfileProvider>
+  )
 }

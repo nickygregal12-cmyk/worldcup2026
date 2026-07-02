@@ -11,6 +11,7 @@ import {
   searchAdminPredictionUsers,
   updateAdminMatchStatus,
   updateTournamentFeature,
+  saveAdminTeamProfile,
 } from '../adminOperationsService.js'
 
 function clientWithRpc(handler) {
@@ -42,6 +43,7 @@ describe('admin operations service', () => {
       if (name === 'admin_get_tournament_control_room') return { data: { admin_role: 'owner', lock: {}, health: { total_matches: 51 }, features: [], knockout_allocation: [], joker_locks: [] }, error: null }
       if (name === 'admin_list_prediction_grace') return { data: [], error: null }
       if (name === 'admin_list_operation_events') return { data: [], error: null }
+      if (name === 'admin_list_team_profiles') return { data: [{ tournament_team_id: 'team-1', team_name: 'Scotland', profile_revision: 0 }], error: null }
       throw new Error(name)
     })
     const result = await loadAdminOperations(client, 't')
@@ -49,6 +51,7 @@ describe('admin operations service', () => {
     expect(result.matches[0].matchId).toBe('m')
     expect(result.scoringRuns[0].scoringRunId).toBe('r')
     expect(result.controlRoom.health.totalMatches).toBe(51)
+    expect(result.teamProfiles[0].teamName).toBe('Scotland')
   })
 
   it('normalises history rows', async () => {
@@ -105,6 +108,21 @@ describe('admin operations service', () => {
       'admin_grant_prediction_grace',
       'admin_revoke_prediction_grace',
     ])
+  })
+
+
+
+  it('saves an owner-curated team profile through the protected revision-safe RPC', async () => {
+    const client = clientWithRpc(async (name, args) => {
+      expect(name).toBe('admin_upsert_team_profile')
+      expect(args).toMatchObject({ p_tournament_team_id: 'team-1', p_expected_revision: 2 })
+      return { data: { profile_revision: 3 }, error: null }
+    })
+    const result = await saveAdminTeamProfile(client, 't', { tournamentTeamId: 'team-1', profileRevision: 2 }, {
+      note: 'Update official team profile',
+      payload: { ranking: 44, qualifying_route: 'Hosts', best_euro_finish: 'Group stage', editorial_note: 'A useful editorial profile note.' },
+    })
+    expect(result.profile_revision).toBe(3)
   })
 
   it('preserves database error codes for stale-write handling', async () => {

@@ -10,7 +10,7 @@ const migrationName = '202607010011_euro28_results_scoring_leaderboards.sql'
 const migrationPath = path.join(root, 'supabase/migrations', migrationName)
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).sort()
 
-if (migrations.length !== 14) fail(`Stage 12 requires fourteen active migrations, found ${migrations.length}`)
+if (migrations.length < 14) fail(`Stage 12 requires the original fourteen-migration baseline, found ${migrations.length}`)
 if (!fs.existsSync(migrationPath)) fail(`Migration 011 is missing: ${migrationName}`)
 else {
   const sql = fs.readFileSync(migrationPath, 'utf8').toLowerCase()
@@ -61,4 +61,4 @@ console.log('Canonical results: revisioned, audited and service-role controlled'
 console.log('Scoring: replacement-based and idempotent after corrections')
 console.log('Original predictor and KO Predictor: separate totals and leaderboards')
 console.log('Live tables and live bracket: canonical live resolver context only')
-console.log('Active migrations: 14')
+console.log(`Active migrations: ${migrations.length}`)

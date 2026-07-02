@@ -6,6 +6,7 @@ import {
   normaliseAdminMatch,
   normaliseAdminOperationEvents,
   normaliseAdminUserSearch,
+  normaliseAdminTeamProfiles,
   normalisePredictionGrace,
   normaliseScoringRuns,
 } from './adminOperationsModel.js'
@@ -32,18 +33,20 @@ export async function loadAdminOperations(client, tournamentId) {
     return Object.freeze({ access, matches: [], scoringRuns: [] })
   }
 
-  const [matchesResponse, runsResponse, controlResponse, graceResponse, timelineResponse] = await Promise.all([
+  const [matchesResponse, runsResponse, controlResponse, graceResponse, timelineResponse, teamProfilesResponse] = await Promise.all([
     client.rpc('admin_list_tournament_matches', { p_tournament_id: tournamentId }),
     client.rpc('admin_list_scoring_runs', { p_tournament_id: tournamentId, p_limit: 25 }),
     client.rpc('admin_get_tournament_control_room', { p_tournament_id: tournamentId }),
     client.rpc('admin_list_prediction_grace', { p_tournament_id: tournamentId }),
     client.rpc('admin_list_operation_events', { p_tournament_id: tournamentId, p_limit: 50 }),
+    client.rpc('admin_list_team_profiles', { p_tournament_id: tournamentId }),
   ])
   throwForError('Admin match list failed', matchesResponse.error)
   throwForError('Admin scoring run list failed', runsResponse.error)
   throwForError('Admin control room failed', controlResponse.error)
   throwForError('Admin grace-window list failed', graceResponse.error)
   throwForError('Admin operation timeline failed', timelineResponse.error)
+  throwForError('Admin team profile list failed', teamProfilesResponse.error)
 
   return Object.freeze({
     access,
@@ -52,6 +55,7 @@ export async function loadAdminOperations(client, tournamentId) {
     controlRoom: normaliseAdminControlRoom(controlResponse.data ?? {}),
     graceWindows: normalisePredictionGrace(graceResponse.data ?? []),
     operationEvents: normaliseAdminOperationEvents(timelineResponse.data ?? []),
+    teamProfiles: normaliseAdminTeamProfiles(teamProfilesResponse.data ?? []),
   })
 }
 
@@ -151,5 +155,19 @@ export async function revokeAdminPredictionGrace(client, tournamentId, graceId, 
     p_reason: reason,
   })
   throwForError('Prediction grace revocation failed', response.error)
+  return response.data
+}
+
+
+export async function saveAdminTeamProfile(client, tournamentId, profile, validation) {
+  const checked = validation ?? (() => { throw new Error('Team profile validation is required') })()
+  const response = await client.rpc('admin_upsert_team_profile', {
+    p_tournament_id: tournamentId,
+    p_tournament_team_id: profile.tournamentTeamId,
+    p_expected_revision: profile.profileRevision,
+    p_payload: checked.payload,
+    p_note: checked.note,
+  })
+  throwForError('Admin team profile save failed', response.error)
   return response.data
 }

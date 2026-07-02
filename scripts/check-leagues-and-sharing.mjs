@@ -9,7 +9,7 @@ const migrationName = '202607010013_euro28_leagues_and_shared_predictions.sql'
 const migrationPath = path.join(root, 'supabase/migrations', migrationName)
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).sort()
 
-if (migrations.length !== 14) fail(`Stage 12 requires fourteen active migrations, found ${migrations.length}`)
+if (migrations.length < 14) fail(`Stage 12 requires the original fourteen-migration baseline, found ${migrations.length}`)
 if (!fs.existsSync(migrationPath)) fail(`Migration 013 is missing: ${migrationName}`)
 else {
   const sql = fs.readFileSync(migrationPath, 'utf8').toLowerCase()
@@ -93,4 +93,4 @@ console.log('Standings: Original Predictor and KO Predictor remain separate')
 console.log('Original sharing: hidden until the global tournament lock')
 console.log('KO sharing: only fixtures that have individually started')
 console.log('Direct browser league table writes: none')
-console.log('Active migrations: 14')
+console.log(`Active migrations: ${migrations.length}`)

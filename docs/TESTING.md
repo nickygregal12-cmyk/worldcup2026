@@ -36,7 +36,7 @@ The Stage 12 audit verifies:
 
 The Stage 13A audit additionally verifies:
 
-- fourteen migrations remain active and Migration 015 does not exist;
+- the historical fourteen-migration baseline remains intact; Stage 13E adds the approved Team Profile Sheet Migration 015;
 - the adjustable blue semantic token system, self-hosted fonts and reusable UI primitives are present;
 - all nine app destinations remain routed, with Bracket permanent and Groups/KO changing only in Position 1;
 - the three navigation states, early KO visibility, full transition boundary, resolver fail-safe and TBC hiding are covered;
@@ -114,3 +114,10 @@ Vitest covers TeamLabel real/provisional/unresolved rendering, identity-only act
 `npm run audit:knockout-experiences` verifies the permanent predicted-context Original Bracket, winner-only controls, zero bracket jokers, separate real-fixture KO controls, 90-minute score semantics, advancing team, method, five KO jokers, separate points/rank service boundary, TBC hiding, responsive context styling, twelve visual baselines and the absence of Migration 015.
 
 Vitest covers bracket slot labels and progress, lock/grace presentation, predicted champion, KO method options, live/completed locking, round progress, real-fixture component controls, competition-specific saving, KO points and rank.
+
+
+## Stage 13E Team Profile Sheet
+
+`npm run audit:team-profile` verifies the shared TeamLabel trigger, bottom-sheet states, centrally stored curated facts, canonical tournament source, owner-only editing, pre-lock aggregate omission, Migration 015 and its database test.
+
+Run `npm run test:db:015:local` against a disposable local database before considering the migration accepted. Do not use the linked test casually because it exercises the tournament lock inside a rolled-back test transaction.

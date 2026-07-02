@@ -90,14 +90,26 @@ export default function KoPredictorMatchCentre({
                         <TeamLabel team={away} compact />
                       </div>
 
-                      <fieldset className="ko-choice-group" disabled={presentation.locked}>
+                      <fieldset className="ko-choice-group" aria-disabled={presentation.locked}>
                         <legend>Team to advance</legend>
                         <div>
-                          {[home, away].map(item => (
-                            <button type="button" key={item?.teamId} className={row.advancingTeamId === item?.teamId ? 'is-selected' : ''} aria-pressed={row.advancingTeamId === item?.teamId} onClick={() => onChange(match, { advancingTeamId: item?.teamId })}>
-                              <TeamLabel team={item} compact />
-                            </button>
-                          ))}
+                          {[home, away].map(item => {
+                            const selected = row.advancingTeamId === item?.teamId
+                            return (
+                              <div key={item?.teamId} className={selected ? 'ko-team-choice is-selected' : 'ko-team-choice'}>
+                                <TeamLabel team={item} compact />
+                                <button
+                                  type="button"
+                                  className="ko-team-choice__action"
+                                  disabled={presentation.locked}
+                                  aria-pressed={selected}
+                                  onClick={() => onChange(match, { advancingTeamId: item?.teamId })}
+                                >
+                                  {selected ? 'Selected to advance' : 'Pick to advance'}
+                                </button>
+                              </div>
+                            )
+                          })}
                         </div>
                       </fieldset>
 

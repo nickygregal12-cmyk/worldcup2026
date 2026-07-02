@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## AI Agent Working Rules and Updated Build Roadmap
-### Version 3.7 — Stage 13C bracket and KO Predictor presentation complete
+### Version 3.9 — Stage 13E Team Profile Sheet package prepared
 
 > **Authority:** The Consolidated Decision Register governs product rules. The Design Charter governs visual behaviour. This document governs working process and stage sequencing. Where they conflict, the register wins on product decisions and this document wins on process.
 
@@ -66,13 +66,13 @@
 
 ## Current state
 
-- Expected commit: `4e1ae38`.
-- Migration count: 14.
-- Stages 1–12 complete.
-- Stage 13A v1–v3 superseded and never installed.
-- Stage 13A v4 generated but never installed.
-- V4 is now superseded because its Bracket tab switches to KO while Groups remains fixed; Design Charter v1.4 requires the confirmed three-state lifecycle, with Groups switching to KO only at full Round of 16 readiness and Bracket remaining permanent.
-- No code is changed by this reconciliation batch.
+- Stage 13E starting checkpoint: latest commit subject `Harden Euro Stage 13D signed-in journeys`.
+- Parent checkpoint: `5a48b25 Add responsive Euro league and results fixtures`.
+- Migration count before Stage 13E: 14.
+- Migration count after this package: 15.
+- Stages 1–12 and Stages 13A–13D are implemented.
+- Real multi-account and tournament-clock acceptance for Stage 13D remains deliberately deferred to the seeded Stage 16 simulation.
+- Stage 13E adds the Team Profile Sheet without changing scoring, joker, competition or bracket rules.
 
 ## Immediate operational tasks
 
@@ -147,7 +147,7 @@ Requirements:
 - Shared score and state components show saved, saving, submitted, locked, grace, conflict and error states.
 - Joker controls use the central cap and per-match start lock with reserved gold presentation.
 - Group stage review remains permanently reachable after the navigation switch.
-- No Migration 015; active migrations remain 14.
+- Stage 13B itself introduced no migration; its checkpoint remained at 14 migrations.
 
 ### Stage 13C — Original bracket and KO Predictor — COMPLETE
 
@@ -159,19 +159,21 @@ Requirements:
 - Unresolved/TBC real fixtures remain hidden.
 - Separate KO progress, points and rank are displayed without Original Predictor totals.
 - Shared `<TeamLabel>`, score and state primitives are used.
-- No Migration 015; active migrations remain 14.
+- Stage 13C itself introduced no migration; its checkpoint remained at 14 migrations.
 
-### Stage 13D — Leagues, results, shared predictions and responsive polish
+### Stage 13D — Leagues, results, shared predictions and responsive integration — COMPLETE
 
-- Separate Original and KO standings.
-- Results and live tables.
-- Member comparison and shared predictions.
-- Final removal of development and inherited presentation language.
-- Share-card design mini-spec before implementation.
+- Separate Original and KO league standings, overall leaderboards and points breakdowns.
+- Server-authorised shared predictions and member comparison with explicit private states.
+- Canonical results, live group tables and a separate live bracket.
+- Responsive light/dark references at 380, 768 and 1200 pixels.
+- Stale-request and partial-failure hardening.
+- No migration was required; the checkpoint remained at 14 migrations.
+- Real multi-user and clock-driven staging acceptance is deferred to Stage 16 rather than forcing irreversible tournament state.
 
-### Stage 13E — Team Profile Sheet
+### Stage 13E — Team Profile Sheet — IMPLEMENTED IN THIS PACKAGE
 
-Implement once through `<TeamLabel>` and present as a bottom sheet.
+Implemented once through `<TeamLabel>` and presented as a responsive bottom sheet.
 
 Allowed sources only:
 
@@ -253,4 +255,4 @@ Binding gates:
 
 ## Next single task
 
-Stage 13C is complete after the verified Stage 13B checkpoint `78882dd`. Build Stage 13D: leagues, results, shared predictions and final responsive polish while preserving the two separate competition totals and the permanent Bracket destination.
+After Stage 13E is installed, locally database-tested, migrated to Euro staging and deployed, begin Stage 14: observability and resilience. Do not begin external result-provider work.

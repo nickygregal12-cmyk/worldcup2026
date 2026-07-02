@@ -322,6 +322,63 @@ function sharedBundleFor(userId, competitionKey, scenario) {
   return competitionKey === 'original' ? originalBundle(userId) : koBundle(userId)
 }
 
+
+function visualTeamProfile(teamId, scenario) {
+  const team = VISUAL_STAGE13D_REFERENCE.teamsById[teamId] ?? Object.values(VISUAL_STAGE13D_REFERENCE.teamsById)[0]
+  const aggregatesVisible = scenario !== STAGE13D_VISUAL_SCENARIO.PRIVACY
+  const isScotland = team?.isoCode === 'SCO'
+  const groupCode = VISUAL_STAGE13D_REFERENCE.groups.find(group => group.teams.some(candidate => candidate.teamId === team?.teamId))?.code ?? null
+  return Object.freeze({
+    team: Object.freeze({
+      tournament_team_id: team.teamId,
+      team_id: null,
+      name: team.label,
+      short_name: team.label,
+      iso_code: team.isoCode,
+      slot_code: team.slotCode,
+      group_code: groupCode,
+      qualification_status: 'provisional',
+      is_host: isScotland,
+      is_provisional: true,
+    }),
+    curated: Object.freeze(isScotland ? {
+      status: 'ready',
+      ranking: 44,
+      qualifying_route: 'Provisional host-nation place for interface testing',
+      best_euro_finish: 'Group stage',
+      editorial_note: 'A clearly labelled sample profile used to test the Euro 2028 team sheet before the official participants are confirmed.',
+      profile_revision: 1,
+      updated_at: '2026-07-02T12:00:00.000Z',
+    } : {
+      status: 'empty', ranking: null, qualifying_route: null, best_euro_finish: null,
+      editorial_note: null, profile_revision: 0, updated_at: null,
+    }),
+    predictions: Object.freeze({
+      aggregates_visible: aggregatesVisible,
+      visibility_reason: aggregatesVisible ? null : 'Community prediction percentages unlock after the global Original Predictor lock.',
+      eligible_prediction_count: aggregatesVisible ? 12 : null,
+      aggregates: aggregatesVisible ? Object.freeze({
+        group_winner_percentage: isScotland ? 41.7 : 16.7,
+        round_of_16_percentage: isScotland ? 66.7 : 33.3,
+        quarter_final_percentage: isScotland ? 33.3 : 16.7,
+        semi_final_percentage: isScotland ? 16.7 : 8.3,
+        final_percentage: isScotland ? 8.3 : 0,
+        champion_percentage: isScotland ? 8.3 : 0,
+      }) : null,
+      viewer_prediction: Object.freeze({
+        has_original_prediction_set: true,
+        bracket_pick_count: 15,
+        predicted_group_winner: isScotland,
+        predicted_round_of_16: isScotland,
+        predicted_quarter_final: isScotland,
+        predicted_semi_final: false,
+        predicted_final: false,
+        predicted_champion: false,
+      }),
+    }),
+  })
+}
+
 function normaliseScenario(value) {
   return Object.values(STAGE13D_VISUAL_SCENARIO).includes(value)
     ? value
@@ -348,6 +405,28 @@ export function createStage13dVisualClient({ scenario = STAGE13D_VISUAL_SCENARIO
       }
     },
     rpc: (name, args = {}) => {
+      if (name === 'get_team_profile_sheet') return response(visualTeamProfile(args.p_tournament_team_id, activeScenario))
+      if (name === 'admin_list_team_profiles') {
+        return response(Object.values(VISUAL_STAGE13D_REFERENCE.teamsById).map(team => {
+          const profile = visualTeamProfile(team.teamId, activeScenario)
+          return {
+            tournament_team_id: team.teamId,
+            team_name: team.label,
+            short_name: team.label,
+            iso_code: team.isoCode,
+            slot_code: team.slotCode,
+            group_code: team.stableKey?.[0] ?? null,
+            is_provisional: true,
+            ranking: profile.curated.ranking,
+            qualifying_route: profile.curated.qualifying_route,
+            best_euro_finish: profile.curated.best_euro_finish,
+            editorial_note: profile.curated.editorial_note,
+            profile_revision: profile.curated.profile_revision,
+            updated_at: profile.curated.updated_at,
+          }
+        }))
+      }
+      if (name === 'admin_upsert_team_profile') return response({ tournament_team_id: args.p_tournament_team_id, profile_revision: Number(args.p_expected_revision ?? 0) + 1 })
       if (name === 'get_my_leagues') return response(LEAGUES)
       if (name === 'get_league_standings') {
         if (activeScenario === STAGE13D_VISUAL_SCENARIO.PARTIAL && args.p_competition_key === 'ko_predictor') {

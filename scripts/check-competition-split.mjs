@@ -5,6 +5,7 @@ import { COMPETITION_SPLIT_SCOPE, KO_PREDICTOR_MODEL, ORIGINAL_PREDICTOR_MODEL, 
 import { EURO28_KO_PREDICTOR_RPC, EURO28_KO_PREDICTOR_VERSION, KO_PREDICTOR_JOKER_CAP } from '../src/koPredictor/koPredictorConfig.js'
 
 const root=process.cwd(); const errors=[]; const fail=m=>errors.push(m)
+const migrations=fs.readdirSync(path.join(root,'supabase/migrations')).filter(name=>name.endsWith('.sql'))
 const migrationPath=path.join(root,'supabase/migrations',COMPETITION_SPLIT_SCOPE.migrationFilename)
 if(!fs.existsSync(migrationPath)) fail('Migration 010 is missing')
 else {
@@ -27,4 +28,4 @@ console.log('Original predictor: group scores + winner-only pre-tournament brack
 console.log('Original jokers: five in groups, zero in the bracket')
 console.log('KO Predictor: real knockout fixtures, five jokers, separate points and winner')
 console.log('Storage, revision, grace and RPC boundaries: competition-specific')
-console.log('Active migrations: 14')
+console.log(`Active migrations: ${migrations.length}`)

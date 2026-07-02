@@ -9,7 +9,7 @@ const migrationName = '202607020014_euro28_admin_control_room.sql'
 const migrationPath = path.join(root, 'supabase/migrations', migrationName)
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).sort()
 
-if (migrations.length !== 14) fail(`Stage 12 requires fourteen active migrations, found ${migrations.length}`)
+if (migrations.length < 14) fail(`Stage 12 requires the original fourteen-migration baseline, found ${migrations.length}`)
 if (!fs.existsSync(migrationPath)) fail(`Migration 014 is missing: ${migrationName}`)
 else {
   const sql = fs.readFileSync(migrationPath, 'utf8').toLowerCase()
@@ -102,4 +102,4 @@ console.log('Feature controls: database-enforced browser kill-switches')
 console.log('Operations: health, joker locks and knockout allocation review')
 console.log('Stage 11 lint warnings: corrected in Migration 014')
 console.log('External result APIs: deferred')
-console.log('Active migrations: 14')
+console.log(`Active migrations: ${migrations.length}`)

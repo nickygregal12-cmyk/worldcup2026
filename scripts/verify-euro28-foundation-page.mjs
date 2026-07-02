@@ -85,19 +85,27 @@ for (const text of [
   'Live context · not your bracket',
   'Original Predictor breakdown',
   'KO Predictor breakdown',
+  'Community percentages are private',
+  'Tournament so far',
+  'Curated team facts',
+  'get_team_profile_sheet',
+  'admin_list_team_profiles',
+  'admin_upsert_team_profile',
 ]) assert(bundle.includes(text), `The deployed Stage 13D bundle is missing: ${text}`)
 assert(!bundle.includes('WC26 Control Centre'), 'The inherited WC26 admin application is active.')
 
 console.log('Euro 2028 app-shell verification passed.')
 console.log(`Site: ${siteUrl}`)
-console.log('Public experience: Stage 13D leagues, shared predictions, canonical results, live tables, live bracket and separate points journeys')
+console.log('Public experience: Stage 13E team profiles plus Stage 13D leagues, results, sharing and separate points journeys')
+console.log('Stage 13D leagues, shared predictions, canonical results and separate points remain active beneath Stage 13E')
 console.log('Themes: persisted light and dark appearance')
 console.log('Groups: 36 mobile-first score cards with local flags, explicit states and five-joker controls')
 console.log('Review: saved predictions count whether submitted or not')
 console.log('Knockout controls: 90-minute score, advancing team, method and five separate KO jokers')
 console.log('Navigation: Groups stays primary until all group results and eight Round of 16 pairings are ready')
 console.log('Competition boundary: Original and KO points remain separate; predicted and live brackets never blend')
-console.log('Admin controls: protected Stage 12 operations remain available')
+console.log('Admin controls: protected operations and revision-safe curated team profiles remain owner-controlled')
+console.log('Team profile sources: curated admin facts, app-owned tournament data and privacy-gated Original Predictor aggregates')
 console.log('External result APIs: deferred')
 console.log('Guest storage: browser-only and unscored')
 console.log('Inherited WC26 application bundle: inactive')

@@ -42,7 +42,7 @@ function skippedSection(data = null) {
   return Object.freeze({ status: 'skipped', data, error: null })
 }
 
-async function readCanonicalResults(client, reference) {
+export async function loadCanonicalTournamentSnapshot(client, reference) {
   const response = await client
     .from('matches')
     .select(RESULT_COLUMNS)
@@ -112,7 +112,7 @@ export async function loadResultsAndLeaderboards(client, reference) {
   if (!reference?.tournamentId) throw new Error('The Euro tournament reference is unavailable.')
 
   const [liveResult, sessionResult] = await Promise.allSettled([
-    readCanonicalResults(client, reference),
+    loadCanonicalTournamentSnapshot(client, reference),
     readSession(client),
   ])
 

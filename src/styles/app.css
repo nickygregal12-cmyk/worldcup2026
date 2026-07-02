@@ -1537,3 +1537,244 @@ a {
 @keyframes ui-spin {
   to { transform: rotate(360deg); }
 }
+
+/* Stage 13E — shared Team Profile Sheet */
+.team-profile-sheet {
+  width: min(42rem, 100%);
+}
+
+.team-profile-content,
+.team-profile-section,
+.team-profile-loading,
+.team-profile-error {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.team-profile-loading,
+.team-profile-error {
+  justify-items: start;
+  padding: var(--space-4) 0;
+}
+
+.team-profile-identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.team-profile-identity > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.team-profile-section {
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+}
+
+.team-profile-section h3,
+.team-profile-section p {
+  margin: 0;
+}
+
+.team-profile-facts,
+.team-profile-position {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.team-profile-position {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.team-profile-facts > div,
+.team-profile-position > div {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.team-profile-facts span,
+.team-profile-position span,
+.team-profile-next span,
+.team-profile-sample,
+.team-profile-note {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.team-profile-position strong {
+  font-size: var(--text-xl);
+  font-variant-numeric: tabular-nums;
+}
+
+.team-profile-editorial {
+  line-height: var(--leading-body);
+}
+
+.team-profile-fixtures {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.team-profile-fixtures article {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+}
+
+.team-profile-fixtures article > span {
+  min-width: 2.3rem;
+  color: var(--state-info);
+  font-weight: 800;
+  text-align: center;
+}
+
+.team-profile-fixtures article > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.team-profile-fixtures small {
+  color: var(--text-secondary);
+}
+
+.team-profile-next {
+  display: grid;
+  gap: var(--space-1);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-default);
+}
+
+.team-profile-own-prediction {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.team-profile-own-prediction > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.team-profile-own-prediction span {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.team-profile-own-prediction span.is-picked {
+  border-color: var(--state-success-border);
+  background: var(--state-success-soft);
+  color: var(--state-success);
+}
+
+.team-profile-lock-state,
+.team-profile-partial {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-3);
+  border: 1px solid var(--state-warning-border);
+  border-radius: var(--radius-md);
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
+}
+
+.team-profile-lock-state p,
+.team-profile-partial p {
+  margin: var(--space-1) 0 0;
+}
+
+.team-profile-aggregates {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.team-profile-aggregates > div {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.team-profile-aggregates > div > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.team-profile-aggregates strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.team-profile-meter {
+  height: 0.55rem;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--surface-sunken);
+}
+
+.team-profile-meter i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--gradient-accent);
+}
+
+.team-profile-empty {
+  border-style: dashed;
+}
+
+.admin-team-profiles {
+  margin-bottom: var(--space-6);
+}
+
+.admin-team-profile-grid {
+  display: grid;
+  grid-template-columns: 0.55fr 1.4fr 1fr;
+  gap: var(--space-3);
+}
+
+.admin-team-profile-grid label,
+.admin-team-profiles > label {
+  display: grid;
+  gap: var(--space-2);
+}
+
+@media (max-width: 760px) {
+  .team-profile-identity {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .team-profile-identity > div {
+    justify-content: flex-start;
+  }
+
+  .team-profile-facts,
+  .team-profile-position,
+  .admin-team-profile-grid {
+    grid-template-columns: 1fr;
+  }
+}

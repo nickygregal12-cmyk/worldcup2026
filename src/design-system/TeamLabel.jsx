@@ -1,5 +1,7 @@
 import React from 'react' // eslint-disable-line no-unused-vars
 import { flagAssetForTeamIso, normaliseTeamIsoCode } from './teamFlagRegistry.js'
+import { useTeamProfileActivation } from './teamProfileContext.js'
+import { resolveTeamProfileActivation } from './teamProfileActivation.js'
 
 function initials(label) {
   const words = String(label ?? '').trim().split(/\s+/).filter(Boolean)
@@ -15,18 +17,26 @@ export default function TeamLabel({
   compact = false,
   onActivate = null,
   className = '',
+  profileDisabled = false,
 }) {
+  const profileActivation = useTeamProfileActivation()
   const resolvedLabel = label ?? team?.label ?? 'To be confirmed'
   const resolvedIso = normaliseTeamIsoCode(isoCode ?? team?.isoCode ?? team?.fifaCode)
   const provisional = Boolean(isProvisional ?? team?.isProvisional)
   const flagUrl = !unresolved ? flagAssetForTeamIso(resolvedIso) : null
   const placeholder = unresolved || !flagUrl
+  const activation = profileDisabled ? null : resolveTeamProfileActivation({
+    unresolved,
+    team,
+    explicitHandler: onActivate,
+    contextHandler: profileActivation?.openTeamProfile,
+  })
   const classes = [
     'team-label',
     compact ? 'team-label--compact' : '',
     placeholder ? 'team-label--placeholder' : '',
     provisional ? 'team-label--provisional' : '',
-    onActivate ? 'team-label--interactive' : '',
+    activation ? 'team-label--interactive' : '',
     className,
   ].filter(Boolean).join(' ')
 
@@ -42,9 +52,15 @@ export default function TeamLabel({
     </>
   )
 
-  if (onActivate) {
+  if (activation) {
     return (
-      <button type="button" className={classes} onClick={onActivate} aria-label={`Open ${resolvedLabel} team profile`}>
+      <button
+        type="button"
+        className={classes}
+        onClick={activation}
+        aria-label={`Open ${resolvedLabel} team profile`}
+        data-team-profile-trigger="true"
+      >
         {content}
       </button>
     )
