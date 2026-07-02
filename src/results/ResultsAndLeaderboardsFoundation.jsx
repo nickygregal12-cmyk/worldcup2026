@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { loadResultsAndLeaderboards } from './resultService.js'
+import { loadOverallHeadToHead, loadResultsAndLeaderboards } from './resultService.js'
+import { RESULT_COMPETITION } from './resultModel.js'
 
 function teamLabel(reference, teamId) {
   if (!teamId) return 'TBC'
   return reference.teamsById?.[teamId]?.label ?? reference.teamsById?.[teamId]?.slotCode ?? 'TBC'
 }
 
-function Leaderboard({ title, rows, note }) {
+function Leaderboard({ title, rows, note, currentUserId, onCompare }) {
   return (
     <article className="foundation-results-card">
       <div className="foundation-results-card__heading">
@@ -23,11 +24,53 @@ function Leaderboard({ title, rows, note }) {
           {rows.slice(0, 8).map(row => (
             <li key={row.userId}>
               <b>{row.rank}</b>
-              <span>{row.displayName}</span>
+              {row.userId === currentUserId ? (
+                <span><strong>{row.displayName}</strong> (you)</span>
+              ) : (
+                <button type="button" className="foundation-member-link" onClick={() => onCompare(row)}>
+                  {row.displayName}
+                </button>
+              )}
               <strong>{row.totalPoints} pts</strong>
             </li>
           ))}
         </ol>
+      )}
+    </article>
+  )
+}
+
+
+function OverallComparison({ state, onClose }) {
+  if (!state) return null
+  return (
+    <article className="foundation-results-card foundation-results-card--wide foundation-overall-comparison">
+      <div className="foundation-section-heading">
+        <div>
+          <span className="foundation-kicker">Overall head to head</span>
+          <h3>You v {state.otherName}</h3>
+          <p>{state.competitionKey === RESULT_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'}</p>
+        </div>
+        <button type="button" className="foundation-secondary-button" onClick={onClose}>Close</button>
+      </div>
+      {state.status === 'loading' && <p className="foundation-empty-copy">Loading shared predictions…</p>}
+      {state.status === 'error' && <p className="foundation-warning-text">{state.error}</p>}
+      {state.status === 'ready' && !state.data.comparison.visible && (
+        <p className="foundation-empty-copy">{state.data.comparison.reason}</p>
+      )}
+      {state.status === 'ready' && state.data.comparison.visible && (
+        <div className="foundation-result-summary foundation-comparison-summary">
+          <div><strong>{state.data.comparison.comparedMatches}</strong><span>matches compared</span></div>
+          <div><strong>{state.data.comparison.exactScoreMatches}</strong><span>same exact score</span></div>
+          {state.competitionKey === RESULT_COMPETITION.ORIGINAL ? (
+            <div><strong>{state.data.comparison.bracketMatches}</strong><span>same bracket picks</span></div>
+          ) : (
+            <>
+              <div><strong>{state.data.comparison.advancingTeamMatches}</strong><span>same team through</span></div>
+              <div><strong>{state.data.comparison.methodMatches}</strong><span>same method</span></div>
+            </>
+          )}
+        </div>
       )}
     </article>
   )
@@ -81,6 +124,7 @@ function LiveBracket({ bracket, reference }) {
 
 export default function ResultsAndLeaderboardsFoundation({ client, reference }) {
   const [state, setState] = useState({ status: 'loading', data: null, error: null })
+  const [comparison, setComparison] = useState(null)
 
   const load = useCallback(async () => {
     setState(previous => ({ ...previous, status: 'loading', error: null }))
@@ -113,6 +157,34 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
 
   const summary = state.data?.live.summary
   const groups = useMemo(() => Object.entries(state.data?.live.groups ?? {}), [state.data])
+
+  const compareOverall = async (row, competitionKey) => {
+    if (!state.data?.currentUserId) return
+    setComparison({
+      status: 'loading',
+      otherName: row.displayName,
+      competitionKey,
+      data: null,
+      error: null,
+    })
+    try {
+      const data = await loadOverallHeadToHead(client, {
+        tournamentId: reference.tournamentId,
+        currentUserId: state.data.currentUserId,
+        otherUserId: row.userId,
+        competitionKey,
+      })
+      setComparison({ status: 'ready', otherName: row.displayName, competitionKey, data, error: null })
+    } catch (error) {
+      setComparison({
+        status: 'error',
+        otherName: row.displayName,
+        competitionKey,
+        data: null,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
 
   return (
     <section className="foundation-panel foundation-results" aria-labelledby="stage9-results-heading">
@@ -156,18 +228,25 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
           </div>
 
           {state.data.signedIn ? (
-            <div className="foundation-results-grid">
+            <>
+              <div className="foundation-results-grid">
               <Leaderboard
                 title="Original predictor"
                 rows={state.data.leaderboards.original}
                 note="Groups + original bracket"
+                currentUserId={state.data.currentUserId}
+                onCompare={row => compareOverall(row, RESULT_COMPETITION.ORIGINAL)}
               />
               <Leaderboard
                 title="KO Predictor"
                 rows={state.data.leaderboards.koPredictor}
                 note="Real knockout matches only"
+                currentUserId={state.data.currentUserId}
+                onCompare={row => compareOverall(row, RESULT_COMPETITION.KO_PREDICTOR)}
               />
-            </div>
+              </div>
+              <OverallComparison state={comparison} onClose={() => setComparison(null)} />
+            </>
           ) : (
             <p className="foundation-empty-copy">Sign in to view the two scored leaderboards. Guest predictions remain unscored.</p>
           )}

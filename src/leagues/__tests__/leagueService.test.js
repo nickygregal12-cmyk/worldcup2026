@@ -1,0 +1,87 @@
+import { describe, expect, it, vi } from 'vitest'
+import {
+  createLeague,
+  getLeagueStandings,
+  getMyLeagues,
+  joinLeague,
+  loadLeagueHeadToHead,
+} from '../leagueService.js'
+
+function rpcClient(responses) {
+  return {
+    rpc: vi.fn(async name => responses[name] ?? { data: null, error: null }),
+  }
+}
+
+describe('league service', () => {
+  it('loads and normalises member leagues', async () => {
+    const client = rpcClient({
+      get_my_leagues: {
+        data: [{
+          league_id: 'l1', league_name: 'Family', join_code: 'ABCDEF1234',
+          member_role: 'owner', member_count: 3, created_at: null,
+        }],
+        error: null,
+      },
+    })
+    const leagues = await getMyLeagues(client, 't1')
+    expect(leagues[0]).toMatchObject({ id: 'l1', memberCount: 3 })
+    expect(client.rpc).toHaveBeenCalledWith('get_my_leagues', { p_tournament_id: 't1' })
+  })
+
+  it('passes validated inputs to create and join RPCs', async () => {
+    const client = rpcClient({
+      create_my_league: { data: { league_id: 'l1' }, error: null },
+      join_league_by_code: { data: { league_id: 'l2' }, error: null },
+    })
+    await createLeague(client, { tournamentId: 't1', name: 'Friends' })
+    await joinLeague(client, { tournamentId: 't1', joinCode: 'ABCDEF1234' })
+    expect(client.rpc).toHaveBeenNthCalledWith(1, 'create_my_league', {
+      p_tournament_id: 't1', p_name: 'Friends',
+    })
+    expect(client.rpc).toHaveBeenNthCalledWith(2, 'join_league_by_code', {
+      p_tournament_id: 't1', p_join_code: 'ABCDEF1234',
+    })
+  })
+
+  it('keeps competition key explicit when reading standings', async () => {
+    const client = rpcClient({
+      get_league_standings: {
+        data: [{ rank: 1, user_id: 'u1', display_name: 'A', total_points: 5 }],
+        error: null,
+      },
+    })
+    const rows = await getLeagueStandings(client, { leagueId: 'l1', competitionKey: 'ko_predictor' })
+    expect(rows[0].totalPoints).toBe(5)
+    expect(client.rpc).toHaveBeenCalledWith('get_league_standings', {
+      p_league_id: 'l1', p_competition_key: 'ko_predictor',
+    })
+  })
+
+  it('loads two member bundles and creates a head-to-head comparison', async () => {
+    const client = {
+      rpc: vi.fn(async (_name, args) => ({
+        data: {
+          visible: true,
+          display_name: args.p_member_user_id,
+          match_predictions: [{ match_number: 1, home_score_90: 1, away_score_90: 0 }],
+          bracket_predictions: [],
+        },
+        error: null,
+      })),
+    }
+    const result = await loadLeagueHeadToHead(client, {
+      leagueId: 'l1', currentUserId: 'me', otherUserId: 'them', competitionKey: 'original',
+    })
+    expect(result.comparison.visible).toBe(true)
+    expect(result.comparison.exactScoreMatches).toBe(1)
+    expect(client.rpc).toHaveBeenCalledTimes(2)
+  })
+
+  it('surfaces RPC errors with context', async () => {
+    const client = rpcClient({
+      get_my_leagues: { data: null, error: { message: 'denied' } },
+    })
+    await expect(getMyLeagues(client, 't1')).rejects.toThrow('League list failed: denied')
+  })
+})

@@ -9,7 +9,7 @@ const migrationName = '202607010012_euro28_admin_results_operations.sql'
 const migrationPath = path.join(root, 'supabase/migrations', migrationName)
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).sort()
 
-if (migrations.length !== 12) fail(`Stage 10 requires twelve active migrations, found ${migrations.length}`)
+if (migrations.length !== 13) fail(`Stage 11 requires thirteen active migrations, found ${migrations.length}`)
 if (!fs.existsSync(migrationPath)) fail(`Migration 012 is missing: ${migrationName}`)
 else {
   const sql = fs.readFileSync(migrationPath, 'utf8').toLowerCase()
@@ -57,7 +57,7 @@ for (const file of [
 
 const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
 if (!app.includes('AdminOperationsFoundation')) fail('the active foundation does not expose Stage 10 admin operations')
-if (!app.includes('Secure manual result entry now sits above')) fail('Stage 10 public branding is missing')
+if (!app.includes('Private leagues now sit above two separate competition standings')) fail('Stage 11 public branding is missing')
 
 const service = fs.existsSync(path.join(root, 'src/admin/adminOperationsService.js'))
   ? fs.readFileSync(path.join(root, 'src/admin/adminOperationsService.js'), 'utf8')
@@ -84,4 +84,4 @@ console.log('Result writes: authenticated admin RPCs with optimistic revision ch
 console.log('Operations: status control, correction history and explicit recalculation')
 console.log('Audit: required notes and append-only operation events')
 console.log('External result APIs: deferred')
-console.log('Active migrations: 12')
+console.log('Active migrations: 13')

@@ -14,10 +14,11 @@
 10. `202607010010_euro28_competition_split_and_jokers.sql`
 11. `202607010011_euro28_results_scoring_leaderboards.sql`
 12. `202607010012_euro28_admin_results_operations.sql`
+13. `202607010013_euro28_leagues_and_shared_predictions.sql`
 
 ## Competition model
 
-### Original predictor
+### Original Predictor
 
 - 36 group score rows in `match_predictions`;
 - five group jokers;
@@ -35,40 +36,41 @@
 
 No database total combines the two competitions.
 
-## Canonical results
-
-Current result fields remain on `public.matches`. Migration 011 adds result status, revision and confirmation metadata. `match_result_events` is the append-only correction history.
-
-The canonical writers remain private and trusted:
+## Private league model
 
 ```text
-private.euro28_record_match_result()
-private.euro28_recalculate_points()
+leagues
+league_members
 ```
 
-Stage 10 browser administration calls public security-definer wrappers after checking `private.tournament_admins`. Admin assignment itself remains service-role only.
+One league membership list supports both competition tabs. `get_league_standings()` always receives either `original` or `ko_predictor`; there is no combined key or combined total.
 
-Only completed and confirmed results score. Void, pending and manual-review results do not score.
-
-## Scoring storage
+Browser league operations use:
 
 ```text
-scoring_runs
-prediction_match_points
-prediction_bracket_points
-prediction_totals
+create_my_league()
+join_league_by_code()
+leave_my_league()
+delete_my_league()
+get_my_leagues()
+get_league_standings()
+get_league_member_predictions()
+get_member_predictions_after_lock()
 ```
 
-Recalculation replaces point rows for the affected result revision and then rebuilds totals. It does not increment an existing total.
+RLS is enabled on both league tables. Authenticated browsers have no direct table read or write grants.
 
-Authenticated reads use:
+## Prediction visibility
 
-```text
-public.get_competition_leaderboard()
-public.get_my_competition_points()
-```
+- Original league comparisons require the persisted global `prediction_locked_at`.
+- KO Predictor comparisons return only matches whose kick-off has passed or whose canonical status shows they have started.
+- Users outside the league cannot read its private standings or league-member route.
+- Signed-in overall-leaderboard users may view another predictor only after the same lock rules pass.
+- Email addresses and auth metadata are never returned.
 
-Direct browser writes to result, scoring and admin tables remain unavailable. Every admin action writes an append-only `admin_operation_events` record.
+## Canonical results and scoring
+
+Current result fields remain on `public.matches`. Result revisions, point ledgers and separate competition totals continue to use the Stage 9 and Stage 10 trusted functions. League reads consume `prediction_totals`; they do not recalculate or mutate points.
 
 ## Validation
 
@@ -82,6 +84,7 @@ npm run test:db:009:local
 npm run test:db:010:local
 npm run test:db:011:local
 npm run test:db:012:local
+npm run test:db:013:local
 ```
 
 `db reset` must remain local. Never add `--linked`.

@@ -24,7 +24,15 @@ assert(scriptMatch, 'Could not locate the deployed Vite bundle.')
 const bundlePath = scriptMatch[1].startsWith('http') ? scriptMatch[1].replace(siteUrl, '') : scriptMatch[1]
 const bundle = await readText(bundlePath)
 for (const text of [
-  'Secure manual result entry now sits above revisioned results',
+  'Private leagues now sit above two separate competition standings',
+  'Stage 11 · Leagues and shared prediction viewing',
+  'Private leagues with two separate tables',
+  'get_my_leagues',
+  'get_league_standings',
+  'get_league_member_predictions',
+  'get_member_predictions_after_lock',
+  'create_my_league',
+  'join_league_by_code',
   'Stage 10 · Tournament operations',
   'Manual results and operational safeguards',
   'get_my_tournament_admin_access',
@@ -37,12 +45,14 @@ for (const text of [
   'save_my_prediction_bundle',
   'save_my_ko_prediction_bundle',
   'euro28-guest-prediction-bundle',
-]) assert(bundle.includes(text), `The deployed Stage 10 bundle is missing: ${text}`)
+]) assert(bundle.includes(text), `The deployed Stage 11 bundle is missing: ${text}`)
 assert(!bundle.includes('WC26 Control Centre'), 'The inherited WC26 admin application is active.')
 
 console.log('Euro 2028 foundation page verification passed.')
 console.log(`Site: ${siteUrl}`)
-console.log('Public branding: Stage 10 admin results and tournament operations')
+console.log('Public branding: Stage 11 leagues and controlled shared predictions')
+console.log('Leagues: one member list with separate Original and KO tables')
+console.log('Shared predictions: original after global lock; KO match by match after start')
 console.log('Admin access: service-managed and browser self-grant blocked')
 console.log('Result operations: revision-safe, noted and append-only audited')
 console.log('Scoring: explicit recalculation remains replacement-based')

@@ -10,7 +10,7 @@ const fail = message => errors.push(message)
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8')
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).sort()
 
-if (migrations.length !== 12) fail(`Stage 10 requires twelve active migrations, found ${migrations.length}`)
+if (migrations.length !== 13) fail(`Stage 11 requires thirteen active migrations, found ${migrations.length}`)
 if (!migrations.includes('202607010010_euro28_competition_split_and_jokers.sql')) fail('Migration 010 is missing')
 for (const file of [
   'src/journey/PredictionJourneyFoundation.jsx',
@@ -48,4 +48,4 @@ console.log('Original views: groups, winner-only bracket and review')
 console.log(`Account autosave: atomic RPC after ${PREDICTION_AUTOSAVE_DELAY_MS} ms`)
 console.log('Global lock: scores/bracket freeze; future group jokers remain movable until their match starts')
 console.log('KO Predictor: separate real-match workspace, points, five jokers and future leaderboard')
-console.log('Active migrations: 12')
+console.log('Active migrations: 13')

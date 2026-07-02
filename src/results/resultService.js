@@ -3,6 +3,7 @@ import {
   normaliseLeaderboard,
   RESULT_COMPETITION,
 } from './resultModel.js'
+import { compareSharedPredictionBundles } from '../leagues/leagueModel.js'
 
 const RESULT_COLUMNS = [
   'id',
@@ -42,6 +43,35 @@ async function readMyPoints(client, tournamentId, competitionKey) {
   return response.data ?? null
 }
 
+
+async function readSharedPredictionBundle(client, tournamentId, memberUserId, competitionKey) {
+  const response = await client.rpc('get_member_predictions_after_lock', {
+    p_tournament_id: tournamentId,
+    p_member_user_id: memberUserId,
+    p_competition_key: competitionKey,
+  })
+  throwForError(`${competitionKey} shared prediction read failed`, response.error)
+  return response.data
+}
+
+export async function loadOverallHeadToHead(client, {
+  tournamentId,
+  currentUserId,
+  otherUserId,
+  competitionKey,
+}) {
+  const [currentBundle, otherBundle] = await Promise.all([
+    readSharedPredictionBundle(client, tournamentId, currentUserId, competitionKey),
+    readSharedPredictionBundle(client, tournamentId, otherUserId, competitionKey),
+  ])
+
+  return Object.freeze({
+    currentBundle,
+    otherBundle,
+    comparison: compareSharedPredictionBundles(currentBundle, otherBundle, competitionKey),
+  })
+}
+
 export async function loadResultsAndLeaderboards(client, reference) {
   if (!client) throw new Error('The Euro staging database client is unavailable.')
   if (!reference?.tournamentId) throw new Error('The Euro tournament reference is unavailable.')
@@ -66,6 +96,7 @@ export async function loadResultsAndLeaderboards(client, reference) {
     return Object.freeze({
       live,
       signedIn: false,
+      currentUserId: null,
       leaderboards: Object.freeze({ original: [], koPredictor: [] }),
       myPoints: Object.freeze({ original: null, koPredictor: null }),
     })
@@ -81,6 +112,7 @@ export async function loadResultsAndLeaderboards(client, reference) {
   return Object.freeze({
     live,
     signedIn: true,
+    currentUserId: sessionResponse.data.session.user.id,
     leaderboards: Object.freeze({
       original: originalLeaderboard,
       koPredictor: koLeaderboard,

@@ -5,6 +5,7 @@ import PredictionJourneyFoundation from '../journey/PredictionJourneyFoundation.
 import KoPredictorFoundation from '../koPredictor/KoPredictorFoundation.jsx'
 import ResultsAndLeaderboardsFoundation from '../results/ResultsAndLeaderboardsFoundation.jsx'
 import AdminOperationsFoundation from '../admin/AdminOperationsFoundation.jsx'
+import LeaguesFoundation from '../leagues/LeaguesFoundation.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
@@ -111,20 +112,20 @@ export default function EuroFoundationApp() {
             <span className="foundation-brand__mark" aria-hidden="true">28</span>
             <span>
               <strong>Euro 2028 Predictor</strong>
-              <small>Secure tournament operations staging</small>
+              <small>Private leagues and shared predictions staging</small>
             </span>
           </a>
-          <StatusPill tone="safe">Audited admin operations · no browser table writes</StatusPill>
+          <StatusPill tone="safe">Private leagues · separate competition standings</StatusPill>
         </div>
       </header>
 
       <main className="foundation-main">
         <section className="foundation-hero">
           <div>
-            <StatusPill tone="info">Stage 10 · Admin results and tournament operations</StatusPill>
-            <h1>Secure manual result entry now sits above revisioned results, replacement scoring and two separate leaderboards.</h1>
+            <StatusPill tone="info">Stage 11 · Leagues and shared prediction viewing</StatusPill>
+            <h1>Private leagues now sit above two separate competition standings with lock-aware shared prediction viewing.</h1>
             <p>
-              Tournament admins use revision checks, required notes and append-only operation logs. External score APIs remain deferred, while original-predictor and KO Predictor totals stay completely separate.
+              One league membership list supports separate Original Predictor and KO Predictor tables. Original predictions remain private until the global lock, while KO Predictor picks appear only after each real match starts.
             </p>
           </div>
           <div className="foundation-environment" aria-label="Environment details">
@@ -212,6 +213,11 @@ export default function EuroFoundationApp() {
               reference={state.data.guestReference}
             />
 
+            <LeaguesFoundation
+              client={clientState.client}
+              tournamentId={state.data.tournament.id}
+            />
+
             <AdminOperationsFoundation
               client={clientState.client}
               reference={state.data.guestReference}
@@ -246,9 +252,9 @@ export default function EuroFoundationApp() {
                   These areas will return only after their Euro-specific database design, RLS and tests are approved.
                 </p>
                 <ul className="foundation-check-list">
-                  <li>Private leagues and league-specific membership</li>
-                  <li>Admin result-entry and correction controls</li>
-                  <li>Shared member prediction comparison and sharing</li>
+                  <li>Full lock, grace and joker allocation control room</li>
+                  <li>Operational feature kill-switches</li>
+                  <li>Full shared design-system page rebuild</li>
                   <li>Optional external results API syncing</li>
                 </ul>
               </article>
@@ -257,12 +263,12 @@ export default function EuroFoundationApp() {
             <section className="foundation-panel foundation-next-step">
               <div>
                 <span className="foundation-kicker">Next controlled batch</span>
-                <h2>Prepare league architecture and controlled shared views.</h2>
+                <h2>Expand the admin tournament control room.</h2>
                 <p>
-                  Stage 10 adds secure manual result entry, status controls, correction history and explicit recalculation above the Stage 9 canonical scoring layer. External score APIs and private leagues remain deferred.
+                  Stage 11 adds private leagues, two separate league standings and lock-aware member comparisons. The next controlled batch expands administration into lock, grace, joker-allocation and feature-control operations.
                 </p>
               </div>
-              <StatusPill tone="warning">Stage 10 active</StatusPill>
+              <StatusPill tone="warning">Stage 11 active</StatusPill>
             </section>
           </>
         )}

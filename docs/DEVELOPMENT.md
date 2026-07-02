@@ -11,28 +11,28 @@
 
 A batch is complete only when code and documentation agree, `npm run check` passes, local reset and pgTAP pass, the linked project is verified, only the intended migration appears in the dry run, hosted tests/lint pass, and the branch is pushed cleanly.
 
-## Stage 10 architecture
+## Stage 11 architecture
 
-### Service-managed admin access
+### Shared membership, separate competitions
 
-`private.tournament_admins` is not browser-readable or writable. Only service-role or trusted SQL may grant or revoke access.
+A league is not duplicated for the KO Predictor. One membership list is used, while each standings RPC requires an explicit competition key. No query adds Original Predictor and KO Predictor points together.
 
-### Safe result operations
+### Controlled writes
 
-Browser controls use authenticated security-definer RPCs. Result writes include an expected revision, require a note and fail rather than overwrite a newer correction.
+League creation, joining, leaving and deletion use security-definer RPCs. RLS remains enabled and browser roles receive no direct league-table writes.
 
-### Append-only audit
+### Controlled reads
 
-`admin_operation_events` records grants, revocations, result writes, status changes and manual recalculation. Rows cannot be updated or deleted.
+Private standings require current membership. The overall people/points table uses a separate post-lock RPC, while league viewing additionally verifies that both caller and target belong to the same league.
 
-### Status and recalculation
+### Lock-aware privacy
 
-Status-only changes preserve the result revision. Explicit recalculation is limited to confirmed results and uses the Stage 9 replacement-scoring function.
+Original predictions are hidden until the global tournament prediction lock. KO Predictor rows are revealed fixture by fixture only after canonical match start.
 
-### Canonical separation
+### Head to head
 
-Original predictor totals and KO Predictor totals remain separate. Guest, predicted and live resolver contexts remain separate.
+The client compares two controlled, read-only bundles. It does not create a merged prediction record or change scoring.
 
 ## Deliberate exclusions
 
-Stage 10 does not implement private leagues, shared member prediction viewing, automated result polling or an external result provider.
+Stage 11 does not implement league-specific scoring, public league directories, result-provider polling, lock/grace allocation controls or the full final design-system rebuild.

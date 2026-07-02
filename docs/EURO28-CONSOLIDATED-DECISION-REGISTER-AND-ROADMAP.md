@@ -1,42 +1,45 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 2.1 — Stage 10 admin results and tournament operations
+### Version 2.2 — Stage 11 leagues and shared predictions
 
 > **Current authority:** agreed roadmap for the Euro 2028 rebuild.
 
 ## Current return point
 
-- Migrations 001–012 are defined through the controlled Euro workflow.
+- Migrations 001–013 are defined through the controlled Euro workflow.
 - Canonical resolver, guest mode, authentication and atomic saving are complete.
-- Original predictor and KO Predictor are separate competitions.
+- Original Predictor and KO Predictor are separate competitions.
 - Joker limits are 5 group, 0 original bracket and 5 KO Predictor.
-- Stage 9 adds revisioned canonical results, correction audits, idempotent scoring, live tables, a live bracket and separate leaderboards.
-- Stage 10 adds service-managed administrator access, revision-safe manual result entry, status controls, correction history and explicit recalculation.
-- Direct browser writes to predictions, results and scoring tables remain unavailable.
+- Revisioned results, replacement scoring, live tables and separate leaderboards are complete.
+- Service-managed admin result operations are complete.
+- Stage 11 adds private leagues, an overall people/points table, two separate competition standings and lock-aware prediction comparison.
+- Direct browser table writes remain unavailable.
 - Guest predictions remain browser-only and unscored.
 
 ## Confirmed decisions
 
 | Subject | Agreed position |
 |---|---|
-| Original predictor | 36 group scores plus winner-only pre-tournament bracket |
+| Original Predictor | 36 group scores plus winner-only pre-tournament bracket |
 | KO Predictor | Separate real knockout-match competition and winner |
-| Points separation | Original and KO totals never combine |
+| Points separation | Original and KO totals never combine, including within leagues |
+| League membership | One private member list may view both separate competition tables |
+| Overall leaderboard | Universal signed-in people/points table with post-lock clickable prediction viewing |
+| Original prediction visibility | Private until the global prediction lock |
+| KO prediction visibility | Fixture by fixture after the real match starts |
 | Jokers | 5 group, 0 original bracket, 5 KO Predictor |
 | Score meaning | 90 minutes plus added time |
-| Advancement | Separate team field |
-| Method | Normal time, extra time or penalties |
 | Results | One canonical current record plus append-only revisions |
 | Scoring corrections | Replacement recalculation, never additive duplication |
 | Live vs predicted | Separate resolver contexts, never blended |
 | Guest mode | Browser-only and unscored |
 | Result writes | Authenticated admin RPCs after service-managed access checks |
-| Admin assignment | Service-role or trusted SQL only; never self-service in the browser |
-| Admin audit | Required notes and append-only operation events |
+| League writes | Authenticated controlled RPCs; no direct browser table writes |
+| Shared identity | Display name only; no email or auth metadata disclosure |
 
 ## Scoring model
 
-### Original predictor
+### Original Predictor
 
 - Exact group score: 30.
 - Correct group outcome: 10.
@@ -62,11 +65,12 @@
 7. Prediction journey — complete.
 8. Competition split, jokers and grace — complete.
 9. Results, scoring, live tables and separate leaderboards — complete.
-10. Admin result and tournament control room — current.
-11. Leagues and controlled shared prediction viewing.
-12. Shared design system and page rebuild.
-13. Seeded full-tournament test.
-14. Pre-tournament configuration and optional result-provider integration.
+10. Secure admin result operations — complete.
+11. Leagues and controlled shared prediction viewing — current.
+12. Expanded admin tournament control room: lock, grace, joker allocation and feature controls.
+13. Shared design system and page rebuild.
+14. Seeded full-tournament test.
+15. Pre-tournament configuration and optional result-provider integration.
 
 ## Open decisions
 

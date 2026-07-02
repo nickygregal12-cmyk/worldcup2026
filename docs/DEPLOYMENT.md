@@ -9,19 +9,19 @@ gcfdwobpnanjchcnvdco
 
 Never use the WC26 production Supabase project. Only the Euro URL and publishable key belong in browser variables.
 
-## Stage 10 database deployment
+## Stage 11 database deployment
 
-Verify that only Migration 012 is pending:
+Verify that only Migration 013 is pending:
 
 ```bash
 cat supabase/.temp/project-ref
-npx supabase db push --dry-run 2>&1 | tee /tmp/euro28-migration012-dry-run.txt
+npx supabase db push --dry-run 2>&1 | tee /tmp/euro28-migration013-dry-run.txt
 ```
 
 The dry run must list only:
 
 ```text
-202607010012_euro28_admin_results_operations.sql
+202607010013_euro28_leagues_and_shared_predictions.sql
 ```
 
 After push:
@@ -35,10 +35,9 @@ npm run test:db:009:linked
 npm run test:db:010:linked
 npm run test:db:011:linked
 npm run test:db:012:linked
+npm run test:db:013:linked
 npx supabase db lint --linked --schema public,private --level warning --fail-on error
 ```
-
-Administrator assignment is a separate trusted SQL step after Migration 012. Never put a service-role key in Netlify or browser environment variables.
 
 ## Auth redirects
 
@@ -58,4 +57,4 @@ http://localhost:5173/**
 npm run verify:foundation-page
 ```
 
-The deployed page must expose Stage 10 secure admin operations above canonical results and separate leaderboards, with no active WC26 application bundle.
+The deployed page must expose private leagues, separate Original and KO Predictor tables, and lock-aware member comparison with no active WC26 application bundle.

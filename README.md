@@ -15,14 +15,15 @@ The verified build now includes:
 - revisioned canonical results;
 - idempotent scoring and separate leaderboards;
 - live group tables and a live knockout bracket;
-- secure manual result entry and tournament operations.
+- secure manual result entry and tournament operations;
+- private leagues, an overall people/points table and lock-aware shared prediction comparisons.
 
 The two competitions remain separate:
 
-- **Original predictor:** 36 group score predictions, five group jokers and a winner-only pre-tournament knockout bracket with no jokers.
+- **Original Predictor:** 36 group score predictions, five group jokers and a winner-only pre-tournament knockout bracket with no jokers.
 - **KO Predictor:** 15 real knockout fixtures, 90-minute scores, advancing teams, decision methods, five separate jokers, separate points and a separate winner.
 
-KO Predictor points never combine with original-predictor points. Guest, predicted and live resolver contexts also remain separate.
+A private league uses one membership list but always shows two different standings tabs. KO Predictor points never combine with Original Predictor points.
 
 ## Environment
 
@@ -47,7 +48,7 @@ Use only the Euro staging URL and publishable key in `.env.local`. Never expose 
 
 ```bash
 npm run check
-npm run audit:admin-operations
+npm run audit:leagues
 ```
 
 ## Database checks
@@ -61,12 +62,13 @@ npm run test:db:009:local
 npm run test:db:010:local
 npm run test:db:011:local
 npm run test:db:012:local
+npm run test:db:013:local
 ```
 
 Never run `npx supabase db reset --linked`.
 
 ## Current return point
 
-Stage 10 adds Migration 012. Tournament administrators are service-managed, result writes use optimistic revision checks and required notes, and every browser operation is append-only audited.
+Stage 11 adds Migration 013. League creation, joining, membership, standings and shared prediction viewing all use controlled RPCs. Original predictions remain private until the global lock; KO Predictor picks appear only after each real fixture starts.
 
-Private leagues, member comparison and external result-provider integration remain deferred.
+The next controlled build expands the admin control room with lock, grace, joker-allocation and feature-control operations.

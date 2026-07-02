@@ -6,7 +6,7 @@
 npm run check
 ```
 
-Stage 10 has **196 passing unit tests across 31 files** before the authoritative Docker-backed SQL run. The gate also runs database safety, all Euro audits, lint and a production build.
+Stage 11 has **208 passing unit tests across 33 files** before the authoritative Docker-backed SQL run. The gate runs database safety, all Euro audits, lint, unit tests and a production build.
 
 ## Focused audits
 
@@ -14,21 +14,22 @@ Stage 10 has **196 passing unit tests across 31 files** before the authoritative
 npm run audit:competition-split
 npm run audit:results-scoring
 npm run audit:admin-operations
+npm run audit:leagues
 ```
 
-The Stage 10 audits verify:
+The Stage 11 audits verify:
 
-- twelve active migrations;
-- revisioned and audited canonical results;
-- service-role-only result writes and recalculation;
-- replacement-based scoring after corrections;
-- separate original and KO Predictor totals;
-- separate authenticated leaderboards;
-- live resolver context isolation;
-- no direct browser writes;
-- service-managed admin access with no browser self-grant;
-- revision-safe result writes and append-only operational auditing;
-- status-only controls and confirmed-result recalculation.
+- thirteen active migrations;
+- one private league membership list;
+- separate Original Predictor and KO Predictor league tables;
+- no combined competition total;
+- no direct browser league table writes;
+- member-only private standings;
+- clickable overall leaderboard comparisons through the same lock rules;
+- original prediction privacy before global lock;
+- rolling KO Predictor visibility after each match starts;
+- display-name-only shared identity;
+- all prior scoring and admin boundaries remain active.
 
 ## Database tests
 
@@ -42,6 +43,7 @@ npm run test:db:009:local
 npm run test:db:010:local
 npm run test:db:011:local
 npm run test:db:012:local
+npm run test:db:013:local
 ```
 
 Against verified Euro staging:
@@ -54,6 +56,7 @@ npm run test:db:009:linked
 npm run test:db:010:linked
 npm run test:db:011:linked
 npm run test:db:012:linked
+npm run test:db:013:linked
 ```
 
 Expected established counts:
@@ -62,6 +65,8 @@ Expected established counts:
 - profiles/privileges: 39;
 - Migration 008 correction: 7;
 - final-state atomic saving: 24;
-- Migration 010 competition split: 48.
+- Migration 010 competition split: 48;
+- Migration 011 results/scoring: 53;
+- Migration 012 admin operations: 55.
 
-Migrations 011 and 012 use pgTAP `no_plan()` because their integration suites exercise result revisions, corrections, scoring replacement, administrator access, stale-write rejection, status controls and recalculation in complete transactions.
+Migration 013 uses pgTAP `no_plan()` because it exercises private membership, separate tables, global-lock visibility and rolling KO match visibility in one transaction.

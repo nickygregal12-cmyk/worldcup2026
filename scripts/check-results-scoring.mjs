@@ -10,7 +10,7 @@ const migrationName = '202607010011_euro28_results_scoring_leaderboards.sql'
 const migrationPath = path.join(root, 'supabase/migrations', migrationName)
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).sort()
 
-if (migrations.length !== 12) fail(`Stage 10 requires twelve active migrations, found ${migrations.length}`)
+if (migrations.length !== 13) fail(`Stage 11 requires thirteen active migrations, found ${migrations.length}`)
 if (!fs.existsSync(migrationPath)) fail(`Migration 011 is missing: ${migrationName}`)
 else {
   const sql = fs.readFileSync(migrationPath, 'utf8').toLowerCase()
@@ -48,7 +48,7 @@ for (const file of [
 
 const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
 if (!app.includes('ResultsAndLeaderboardsFoundation')) fail('the active foundation does not expose Stage 9 results')
-if (!app.includes('Secure manual result entry now sits above')) fail('Stage 10 public branding is missing')
+if (!app.includes('Private leagues now sit above two separate competition standings')) fail('Stage 11 public branding is missing')
 
 if (errors.length) {
   console.error('Euro results and scoring audit failed:')
@@ -61,4 +61,4 @@ console.log('Canonical results: revisioned, audited and service-role controlled'
 console.log('Scoring: replacement-based and idempotent after corrections')
 console.log('Original predictor and KO Predictor: separate totals and leaderboards')
 console.log('Live tables and live bracket: canonical live resolver context only')
-console.log('Active migrations: 12')
+console.log('Active migrations: 13')
