@@ -49,6 +49,16 @@ function decisionMethodLabel(value) {
   return null
 }
 
+
+export function formatOrdinal(value) {
+  const rank = Number(value)
+  if (!Number.isInteger(rank) || rank < 1) return '—'
+  const lastTwo = rank % 100
+  if (lastTwo >= 11 && lastTwo <= 13) return `${rank}th`
+  const suffix = rank % 10 === 1 ? 'st' : rank % 10 === 2 ? 'nd' : rank % 10 === 3 ? 'rd' : 'th'
+  return `${rank}${suffix}`
+}
+
 export function validateLeagueName(value) {
   const normalised = String(value ?? '').trim().replace(/\s+/g, ' ')
   if (normalised.length < 3 || normalised.length > 40) {

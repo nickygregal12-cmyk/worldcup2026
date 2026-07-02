@@ -11,6 +11,7 @@ import {
 } from './leagueService.js'
 import {
   buildSharedPredictionJourney,
+  formatOrdinal,
   LEAGUE_COMPETITION,
   validateJoinCode,
   validateLeagueName,
@@ -62,6 +63,23 @@ function LeaguePicker({ leagues, selectedId, onSelect }) {
   )
 }
 
+
+function MemberPicker({ members, selectedId, onSelect }) {
+  const available = members.filter(member => !member.isCurrentUser)
+  if (available.length === 0) return null
+  return (
+    <label className="auth-field foundation-member-picker">
+      <span>Compare with member</span>
+      <select value={selectedId ?? ''} onChange={event => onSelect(event.target.value)}>
+        <option value="">Choose a member</option>
+        {available.map(member => (
+          <option key={member.userId} value={member.userId}>{member.displayName}</option>
+        ))}
+      </select>
+    </label>
+  )
+}
+
 function LeagueSummaryCard({ title, summary, section }) {
   if (!summary || section?.status === 'error') {
     return (
@@ -84,7 +102,7 @@ function LeagueSummaryCard({ title, summary, section }) {
   return (
     <article className="foundation-league-summary-card">
       <span className="foundation-kicker">{title}</span>
-      <strong>{summary.currentRank ? `${summary.currentRank}${summary.currentRank === 1 ? 'st' : summary.currentRank === 2 ? 'nd' : summary.currentRank === 3 ? 'rd' : 'th'}` : '—'}</strong>
+      <strong>{formatOrdinal(summary.currentRank)}</strong>
       <span>{summary.currentPoints} pts</span>
       <small>{stateCopy}</small>
     </article>
@@ -238,6 +256,7 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
   const [createName, setCreateName] = useState('')
   const [joinCode, setJoinCode] = useState('')
   const [comparison, setComparison] = useState(null)
+  const [comparisonMemberId, setComparisonMemberId] = useState('')
 
   const selectedLeague = useMemo(
     () => leagues.find(league => league.id === selectedLeagueId) ?? leagues[0] ?? null,
@@ -291,6 +310,7 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
         setSelectedLeagueId(null)
         setOverview({ status: 'idle', data: null, leagueId: null })
         setComparison(null)
+        setComparisonMemberId('')
       }
     })
 
@@ -395,6 +415,7 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
 
   const compareMember = async row => {
     if (!selectedLeague || !session?.user) return
+    setComparisonMemberId(row.userId)
     setComparison({ status: 'loading', otherName: row.displayName, data: null, error: null })
     try {
       const data = await loadLeagueHeadToHead(client, {
@@ -409,6 +430,7 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
     }
   }
 
+
   const overviewLoading = Boolean(selectedLeague?.id) && overview.leagueId !== selectedLeague.id
   const activeOverview = overviewLoading ? null : overview.data
   const activeSection = competitionKey === LEAGUE_COMPETITION.ORIGINAL
@@ -416,6 +438,26 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
     : activeOverview?.sections.koPredictor
   const standings = activeSection?.data ?? []
   const leagueListLoading = ['idle', 'loading'].includes(leagueListStatus)
+
+  const chooseComparisonMember = memberUserId => {
+    if (!memberUserId) {
+      setComparisonMemberId('')
+      setComparison(null)
+      return
+    }
+    const member = activeOverview?.members.find(candidate => candidate.userId === memberUserId)
+    if (member) compareMember(member)
+  }
+
+  const copyLeagueCode = async () => {
+    if (!selectedLeague?.joinCode) return
+    try {
+      await navigator.clipboard.writeText(selectedLeague.joinCode)
+      setNotice({ tone: 'safe', message: 'League code copied.' })
+    } catch {
+      setNotice({ tone: 'info', message: `League code: ${selectedLeague.joinCode}` })
+    }
+  }
 
   return (
     <section className="foundation-panel foundation-leagues" aria-labelledby="euro28-leagues-heading">
@@ -467,8 +509,8 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
           ) : selectedLeague && (
             <>
               <div className="foundation-league-toolbar">
-                <LeaguePicker leagues={leagues} selectedId={selectedLeague.id} onSelect={value => { setSelectedLeagueId(value); setComparison(null) }} />
-                <CompetitionTabs value={competitionKey} onChange={value => { setCompetitionKey(value); setComparison(null) }} />
+                <LeaguePicker leagues={leagues} selectedId={selectedLeague.id} onSelect={value => { setSelectedLeagueId(value); setComparison(null); setComparisonMemberId('') }} />
+                <CompetitionTabs value={competitionKey} onChange={value => { setCompetitionKey(value); setComparison(null); setComparisonMemberId('') }} />
               </div>
 
               <article className="foundation-league-card">
@@ -476,7 +518,7 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
                   <div>
                     <span className="foundation-kicker">{selectedLeague.memberCount} member{selectedLeague.memberCount === 1 ? '' : 's'}</span>
                     <h3>{selectedLeague.name}</h3>
-                    <p>League code: <strong>{selectedLeague.joinCode}</strong></p>
+                    <div className="foundation-league-code"><span>League code</span><strong>{selectedLeague.joinCode}</strong><button type="button" className="foundation-secondary-button" onClick={copyLeagueCode}>Copy</button></div>
                   </div>
                   <div className="foundation-inline-actions">
                     {selectedLeague.memberRole === 'owner' ? (
@@ -495,7 +537,10 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
                       <LeagueSummaryCard title="Original Predictor" summary={activeOverview.summaries.original} section={activeOverview.sections.original} />
                       <LeagueSummaryCard title="KO Predictor" summary={activeOverview.summaries.koPredictor} section={activeOverview.sections.koPredictor} />
                     </div>
-                    <p className="foundation-member-count">Shared member list: <strong>{activeOverview.members.length}</strong></p>
+                    <div className="foundation-shared-member-row">
+                      <p className="foundation-member-count">Shared member list: <strong>{activeOverview.members.length}</strong></p>
+                      <MemberPicker members={activeOverview.members} selectedId={comparisonMemberId} onSelect={chooseComparisonMember} />
+                    </div>
                   </>
                 )}
 
@@ -513,7 +558,7 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
                 {standings.length > 0 && <StandingsTable rows={standings} competitionKey={competitionKey} onCompare={compareMember} />}
               </article>
 
-              <HeadToHead state={comparison} competitionKey={competitionKey} reference={reference} onClose={() => setComparison(null)} />
+              <HeadToHead state={comparison} competitionKey={competitionKey} reference={reference} onClose={() => { setComparison(null); setComparisonMemberId('') }} />
             </>
           )}
         </>

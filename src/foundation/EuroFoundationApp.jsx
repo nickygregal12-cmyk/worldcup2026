@@ -14,16 +14,21 @@ import { deriveNavigationLifecycle } from '../app/navigationLifecycle.js'
 import { useHashRoute } from '../app/useHashRoute.js'
 import { useTheme } from '../app/useTheme.js'
 import { VISUAL_BRACKET_DRAFT, VISUAL_FOUNDATION, VISUAL_GROUP_DRAFT, VISUAL_HOME_DASHBOARD, VISUAL_KO_BUNDLE, VISUAL_KO_REFERENCE, VISUAL_KO_STANDING } from '../app/visualFixture.js'
+import { createStage13dVisualClient, VISUAL_STAGE13D_FOUNDATION, VISUAL_STAGE13D_REFERENCE } from '../app/stage13dVisualFixture.js'
 import { Badge, Button, Card } from '../design-system/index.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
-function isVisualFixture() {
-  if (typeof window === 'undefined') return false
-  if (window.__EURO28_VISUAL_FIXTURE__ === true) return true
-  const fixtureRequested = ['stage13a', 'stage13b', 'stage13c'].includes(new URLSearchParams(window.location.search).get('visual'))
-  return fixtureRequested && (import.meta.env.DEV || window.location.protocol === 'file:')
+function visualFixtureName() {
+  if (typeof window === 'undefined') return null
+  if (window.__EURO28_VISUAL_FIXTURE__ === true) return 'stage13a'
+  const requested = new URLSearchParams(window.location.search).get('visual')
+  const supported = ['stage13a', 'stage13b', 'stage13c', 'stage13d']
+  return supported.includes(requested) && (import.meta.env.DEV || window.location.protocol === 'file:')
+    ? requested
+    : null
 }
+
 
 function PageIntro({ eyebrow, title, description, badge = null }) {
   return (
@@ -61,13 +66,16 @@ function FoundationError({ message, onRetry }) {
 }
 
 export default function EuroFoundationApp() {
-  const visualFixture = useMemo(() => isVisualFixture(), [])
+  const fixtureName = useMemo(() => visualFixtureName(), [])
+  const visualFixture = Boolean(fixtureName)
   const route = useHashRoute()
   const theme = useTheme()
   const clientState = useMemo(() => createFoundationClient(), [])
-  const sessionState = useEuroSession(visualFixture ? null : clientState.client)
+  const stage13dClient = useMemo(() => fixtureName === 'stage13d' ? createStage13dVisualClient() : null, [fixtureName])
+  const activeClient = stage13dClient ?? clientState.client
+  const sessionState = useEuroSession(visualFixture ? null : activeClient)
   const [state, setState] = useState(() => visualFixture
-    ? { status: 'ready', data: VISUAL_FOUNDATION, error: null }
+    ? { status: 'ready', data: fixtureName === 'stage13d' ? VISUAL_STAGE13D_FOUNDATION : VISUAL_FOUNDATION, error: null }
     : clientState.client
       ? { status: 'loading', data: null, error: null }
       : { status: 'error', data: null, error: clientState.error })
@@ -103,47 +111,47 @@ export default function EuroFoundationApp() {
 
   let content
   if (route === APP_ROUTE.HOME) {
-    content = <HomeDashboard client={clientState.client} foundation={foundation} sessionState={visualSession} fixture={visualFixture ? VISUAL_HOME_DASHBOARD : null} />
+    content = <HomeDashboard client={activeClient} foundation={foundation} sessionState={visualSession} fixture={visualFixture ? VISUAL_HOME_DASHBOARD : null} />
   } else if (route === APP_ROUTE.PREDICT) {
     content = (
       <div className="content-stack groups-page">
         <PageIntro eyebrow="Original Predictor" title="Predict the group stage" description="Enter all 36 group scores, place up to five jokers and review your progress at any time." badge={{ tone: foundation.tournament.prediction_locked_at ? 'warning' : 'safe', label: foundation.tournament.prediction_locked_at ? 'Locked' : 'Open' }} />
-        <PredictionJourneyFoundation key={`groups-${foundation.guestReference.referenceVersion}`} client={clientState.client} reference={foundation.guestReference} tournament={foundation.tournament} initialView="groups" fixtureDraft={visualFixture ? VISUAL_GROUP_DRAFT : null} />
+        <PredictionJourneyFoundation key={`groups-${foundation.guestReference.referenceVersion}`} client={activeClient} reference={foundation.guestReference} tournament={foundation.tournament} initialView="groups" fixtureDraft={visualFixture ? VISUAL_GROUP_DRAFT : null} />
       </div>
     )
   } else if (route === APP_ROUTE.BRACKET) {
     content = (
       <div className="content-stack knockout-page">
         <PageIntro eyebrow="Original Predictor" title="Your pre-tournament bracket" description="Choose the team that advances from every predicted knockout match. Scores and jokers do not apply here." />
-        <PredictionJourneyFoundation key={`bracket-${foundation.guestReference.referenceVersion}`} client={clientState.client} reference={foundation.guestReference} tournament={foundation.tournament} initialView="bracket" fixtureDraft={visualFixture ? VISUAL_BRACKET_DRAFT : null} />
+        <PredictionJourneyFoundation key={`bracket-${foundation.guestReference.referenceVersion}`} client={activeClient} reference={foundation.guestReference} tournament={foundation.tournament} initialView="bracket" fixtureDraft={visualFixture ? VISUAL_BRACKET_DRAFT : null} />
       </div>
     )
   } else if (route === APP_ROUTE.KO_PREDICTOR) {
     content = (
       <div className="content-stack knockout-page">
         <PageIntro eyebrow="Separate competition" title="KO Predictor" description="Predict each real knockout fixture once its participants are confirmed." />
-        <KoPredictorFoundation client={clientState.client} reference={visualFixture ? VISUAL_KO_REFERENCE : foundation.guestReference} fixtureBundle={visualFixture ? VISUAL_KO_BUNDLE : undefined} fixtureStanding={visualFixture ? VISUAL_KO_STANDING : undefined} />
+        <KoPredictorFoundation client={activeClient} reference={visualFixture ? VISUAL_KO_REFERENCE : foundation.guestReference} fixtureBundle={visualFixture ? VISUAL_KO_BUNDLE : undefined} fixtureStanding={visualFixture ? VISUAL_KO_STANDING : undefined} />
       </div>
     )
   } else if (route === APP_ROUTE.LEAGUES) {
     content = (
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Private competitions" title="Your leagues" description="One member list, with separate Original Predictor and KO Predictor tables." />
-        <LeaguesFoundation client={clientState.client} tournamentId={foundation.tournament.id} reference={foundation.guestReference} />
+        <LeaguesFoundation client={activeClient} tournamentId={foundation.tournament.id} reference={fixtureName === 'stage13d' ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference} />
       </div>
     )
   } else if (route === APP_ROUTE.RESULTS) {
     content = (
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Live tournament" title="Results and leaderboards" description="Canonical scores, live tables and two fully separate competition standings." />
-        <ResultsAndLeaderboardsFoundation client={clientState.client} reference={foundation.guestReference} />
+        <ResultsAndLeaderboardsFoundation client={activeClient} reference={fixtureName === 'stage13d' ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference} />
       </div>
     )
   } else if (route === APP_ROUTE.ACCOUNT) {
     content = (
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Account" title={visualSession.session ? 'Profile and security' : 'Sign in or create an account'} description="Your browser guest draft remains separate and safe until you explicitly import it." />
-        <EuroAuthFoundation client={clientState.client} />
+        <EuroAuthFoundation client={activeClient} />
       </div>
     )
   } else if (route === APP_ROUTE.TOURNAMENT) {
@@ -152,11 +160,11 @@ export default function EuroFoundationApp() {
     content = (
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Restricted access" title="Tournament control room" description="Secure result operations, locks, grace windows and operational safeguards." />
-        <AdminOperationsFoundation client={clientState.client} reference={foundation.guestReference} />
+        <AdminOperationsFoundation client={activeClient} reference={foundation.guestReference} />
       </div>
     )
   } else {
-    content = <HomeDashboard client={clientState.client} foundation={foundation} sessionState={visualSession} fixture={visualFixture ? VISUAL_HOME_DASHBOARD : null} />
+    content = <HomeDashboard client={activeClient} foundation={foundation} sessionState={visualSession} fixture={visualFixture ? VISUAL_HOME_DASHBOARD : null} />
   }
 
   return <EuroAppShell route={route} theme={theme} sessionState={visualSession} navigation={navigation}>{content}</EuroAppShell>

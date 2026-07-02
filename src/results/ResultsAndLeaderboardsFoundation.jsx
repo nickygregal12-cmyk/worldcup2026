@@ -25,7 +25,7 @@ function Leaderboard({ title, section, note, currentUserId, onCompare }) {
           <span className="foundation-kicker">Separate competition</span>
           <h3>{title}</h3>
         </div>
-        <small>{note}</small>
+        <small>{note} · {rows.length} {rows.length === 1 ? 'entry' : 'entries'}</small>
       </div>
       <SectionError section={section} fallback={`${title} could not be loaded.`} />
       {section?.status === 'ready' && rows.length === 0 ? (
@@ -209,7 +209,7 @@ function ResultsFeed({ feed }) {
       <div className="foundation-result-feed">
         <ResultFeedSection title="Live now" rows={feed.sections.live} open empty="No matches are live." />
         <ResultFeedSection title="Needs confirmation or review" rows={feed.sections.review} open={feed.sections.review.length > 0} empty="No results need review." />
-        <ResultFeedSection title="Completed" rows={feed.sections.completed} open={feed.sections.completed.length > 0} empty="No confirmed results yet." />
+        <ResultFeedSection title="Completed" rows={feed.sections.completed} empty="No confirmed results yet." />
         <ResultFeedSection title="Upcoming" rows={feed.sections.upcoming} empty="No upcoming fixtures." />
       </div>
     </article>

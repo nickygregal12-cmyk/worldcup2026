@@ -78,18 +78,25 @@ for (const text of [
   'How the tie is decided',
   'Your KO points',
   'KO jokers',
-]) assert(bundle.includes(text), `The deployed Stage 13A bundle is missing: ${text}`)
+  'One member list, two separate competitions',
+  'Compare with member',
+  'Results, live tables and separate points',
+  'Canonical result records',
+  'Live context · not your bracket',
+  'Original Predictor breakdown',
+  'KO Predictor breakdown',
+]) assert(bundle.includes(text), `The deployed Stage 13D bundle is missing: ${text}`)
 assert(!bundle.includes('WC26 Control Centre'), 'The inherited WC26 admin application is active.')
 
 console.log('Euro 2028 app-shell verification passed.')
 console.log(`Site: ${siteUrl}`)
-console.log('Public experience: Stage 13C permanent predicted Bracket, separate KO match centre and Stage 13B Groups flow')
+console.log('Public experience: Stage 13D leagues, shared predictions, canonical results, live tables, live bracket and separate points journeys')
 console.log('Themes: persisted light and dark appearance')
 console.log('Groups: 36 mobile-first score cards with local flags, explicit states and five-joker controls')
 console.log('Review: saved predictions count whether submitted or not')
 console.log('Knockout controls: 90-minute score, advancing team, method and five separate KO jokers')
 console.log('Navigation: Groups stays primary until all group results and eight Round of 16 pairings are ready')
-console.log('Competition boundary: winner-only predicted Bracket and real-fixture KO Predictor remain separate')
+console.log('Competition boundary: Original and KO points remain separate; predicted and live brackets never blend')
 console.log('Admin controls: protected Stage 12 operations remain available')
 console.log('External result APIs: deferred')
 console.log('Guest storage: browser-only and unscored')

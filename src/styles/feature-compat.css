@@ -1918,7 +1918,7 @@ button {
   }
 
   .foundation-league-tabs button {
-    flex: 1 1 10rem;
+    flex: 1 1 0;
   }
 
   .foundation-comparison-list > div {
@@ -2103,6 +2103,50 @@ button {
   padding: 0 1rem 1rem;
 }
 
+
+.foundation-league-code {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.55rem;
+  color: var(--foundation-muted);
+}
+
+.foundation-league-code strong {
+  color: var(--foundation-text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+}
+
+.foundation-league-code button {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.foundation-shared-member-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(14rem, 20rem);
+  gap: 1rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.foundation-shared-member-row .foundation-member-count {
+  margin: 0;
+  align-self: center;
+}
+
+.foundation-member-picker select {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.75rem;
+  background: var(--foundation-surface);
+  color: inherit;
+  padding: 0 0.75rem;
+}
+
 .foundation-league-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2225,6 +2269,11 @@ button {
 
 .foundation-results-card--full {
   grid-column: 1 / -1;
+}
+
+.foundation-leaderboard-list {
+  max-height: 34rem;
+  overflow-y: auto;
 }
 
 .foundation-leaderboard-list li.is-current-user {
@@ -2394,9 +2443,15 @@ button {
 
 @media (max-width: 760px) {
   .foundation-league-summary-grid,
-  .foundation-member-prediction-columns {
+  .foundation-member-prediction-columns,
+  .foundation-shared-member-row {
     grid-template-columns: 1fr;
   }
+
+  .foundation-league-code {
+    align-items: flex-start;
+  }
+
 
   .foundation-competition-heading,
   .foundation-member-predictions > div:first-child {

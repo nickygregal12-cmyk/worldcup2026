@@ -6,6 +6,7 @@ import {
   buildSharedPredictionJourney,
   LEAGUE_COMPETITION,
   compareSharedPredictionBundles,
+  formatOrdinal,
   normaliseLeague,
   normaliseStanding,
   validateJoinCode,
@@ -20,6 +21,15 @@ describe('league model', () => {
       error: null,
     })
     expect(validateLeagueName('x').valid).toBe(false)
+  })
+
+  it('formats league ranks with correct British ordinal suffixes', () => {
+    expect(formatOrdinal(1)).toBe('1st')
+    expect(formatOrdinal(2)).toBe('2nd')
+    expect(formatOrdinal(3)).toBe('3rd')
+    expect(formatOrdinal(11)).toBe('11th')
+    expect(formatOrdinal(21)).toBe('21st')
+    expect(formatOrdinal(null)).toBe('—')
   })
 
   it('normalises join codes', () => {
