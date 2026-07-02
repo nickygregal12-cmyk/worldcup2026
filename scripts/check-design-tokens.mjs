@@ -1,0 +1,190 @@
+import fs from 'node:fs'
+import path from 'node:path'
+import process from 'node:process'
+
+const root = process.cwd()
+const errors = []
+const fail = message => errors.push(message)
+const exists = file => fs.existsSync(path.join(root, file))
+const read = file => fs.readFileSync(path.join(root, file), 'utf8')
+
+const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
+if (migrations.length !== 14) fail(`Stage 13A must keep fourteen active migrations, found ${migrations.length}`)
+if (migrations.some(name => name.includes('015'))) fail('Stage 13A must not add Migration 015')
+
+const requiredFiles = [
+  'docs/EURO28-DESIGN-CHARTER.md',
+  'src/design/tokens.css',
+  'src/design/typography.css',
+  'src/styles/app.css',
+  'src/styles/feature-compat.css',
+  'src/design-system/Icon.jsx',
+  'src/app/EuroAppShell.jsx',
+  'src/app/appRoutes.js',
+  'src/app/navigationLifecycle.js',
+  'src/app/__tests__/navigationLifecycle.test.js',
+  'docs/STAGE-13A-V6-DESIGN-SYSTEM-NAVIGATION-HOME.md',
+  'src/home/HomeDashboard.jsx',
+  'src/tournament/TournamentOverview.jsx',
+]
+for (const file of requiredFiles) if (!exists(file)) fail(`Required Stage 13A v6 file is missing: ${file}`)
+
+if (exists('src/foundation/foundation.css')) fail('The stopgap foundation stylesheet must be retired')
+if (exists('src/styles/tokens.css')) fail('There must be one token file only: src/design/tokens.css')
+
+const main = read('src/main.jsx')
+for (const forbiddenImport of ['./foundation/foundation.css', './styles/globals.css', './styles/tokens.css']) {
+  if (main.includes(forbiddenImport)) fail(`Active entry point imports retired styling: ${forbiddenImport}`)
+}
+for (const requiredImport of [
+  '@fontsource/inter/latin-400.css',
+  '@fontsource/space-grotesk/latin-600.css',
+  './design/tokens.css',
+  './design/typography.css',
+  './styles/feature-compat.css',
+  './styles/app.css',
+]) if (!main.includes(requiredImport)) fail(`Active entry point is missing: ${requiredImport}`)
+
+const packageJson = JSON.parse(read('package.json'))
+for (const dependency of ['lucide-react', '@fontsource/inter', '@fontsource/space-grotesk']) {
+  if (!packageJson.dependencies?.[dependency]) fail(`Required design dependency is missing: ${dependency}`)
+}
+if (packageJson.scripts?.['audit:design-tokens'] !== 'node scripts/check-design-tokens.mjs') {
+  fail('audit:design-tokens is not wired to the charter audit')
+}
+if (!packageJson.scripts?.check?.includes('audit:design-tokens')) fail('npm run check does not run audit:design-tokens')
+
+const tokenSource = read('src/design/tokens.css')
+for (const token of [
+  '--font-body', '--font-display', '--surface-page', '--surface-raised', '--text-primary',
+  '--brand', '--brand-strong', '--accent', '--state-live', '--state-success', '--state-danger',
+  '--joker', '--shadow-1', '--shadow-2', '--shadow-3', '--radius-sm', '--radius-md', '--radius-lg',
+  '--radius-full', "[data-theme='dark']",
+]) if (!tokenSource.includes(token)) fail(`Semantic token is missing: ${token}`)
+
+const activeStyleFiles = ['src/design/typography.css', 'src/styles/app.css', 'src/styles/feature-compat.css']
+const rawColour = /#[0-9a-f]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\)/i
+const namedColourDeclaration = /:\s*(?:white|black|red|blue|green|gold|gray|grey|orange|purple)(?:\s|;|!)/i
+for (const file of activeStyleFiles) {
+  const source = read(file)
+  source.split('\n').forEach((line, index) => {
+    if (rawColour.test(line)) fail(`${file}:${index + 1} contains a raw colour outside tokens.css`)
+    if (namedColourDeclaration.test(line)) fail(`${file}:${index + 1} contains a named colour outside tokens.css`)
+    if (file !== 'src/design/typography.css' && /font-family\s*:/.test(line)) fail(`${file}:${index + 1} declares a font family outside the approved typography file`)
+  })
+}
+
+const activeStyles = [tokenSource, ...activeStyleFiles.map(read)].join('\n')
+const definitions = new Set([...activeStyles.matchAll(/--([\w-]+)\s*:/g)].map(match => match[1]))
+const usages = new Set([...activeStyles.matchAll(/var\(--([\w-]+)/g)].map(match => match[1]))
+for (const name of usages) if (!definitions.has(name)) fail(`CSS variable is used but not defined: --${name}`)
+
+for (const retiredValue of ['#003087', '#00206b', '#005eb8', 'DM Sans', 'DM Mono']) {
+  if (activeStyles.toLowerCase().includes(retiredValue.toLowerCase())) fail(`Active design uses retired WC26 styling: ${retiredValue}`)
+}
+
+const iconSource = read('src/design-system/Icon.jsx')
+if (!iconSource.includes("from 'lucide-react'")) fail('Ordinary interface icons must come from Lucide')
+if (iconSource.includes('<svg') || iconSource.includes('<path')) fail('The ordinary icon wrapper must not maintain hand-written SVG paths')
+
+const shell = read('src/app/EuroAppShell.jsx')
+for (const marker of [
+  'primaryDestination', 'bracketDestination', 'navigationDestinations.phaseMoreDestinations',
+  'app-nav-link--home', 'data-navigation-phase', 'aria-expanded={moreOpen}', '<Dialog',
+]) if (!shell.includes(marker)) fail(`App shell is missing charter navigation behaviour: ${marker}`)
+if (shell.includes('knockoutOpen') || shell.includes('knockoutNavigationDestination')) {
+  fail('The superseded phase-aware Bracket/KO navigation remains in the app shell')
+}
+
+const routes = read('src/app/appRoutes.js')
+for (const marker of [
+  'BRACKET', "label: 'Groups'", "label: 'Bracket'", "label: 'KO Predictor'",
+  "icon: 'predict'", "icon: 'bracket'", "icon: 'trophy'", '/group-stage-review',
+]) if (!routes.includes(marker)) fail(`Route model is missing: ${marker}`)
+
+const navigationLifecycle = read('src/app/navigationLifecycle.js')
+for (const marker of [
+  'NAVIGATION_PHASE', 'KO_EARLY_ACCESS', 'KO_PRIMARY', 'groupMatches.length === 36',
+  "match.status === 'completed'", "match.resultStatus === 'confirmed'",
+  'ROUND_OF_16_MATCH_NUMBERS.length', 'showKoInMore', 'showGroupReviewInMore',
+  "label: 'Group stage review'", 'resolverHealthy', 'buildNavigationDestinations',
+]) if (!navigationLifecycle.includes(marker)) fail(`Navigation lifecycle is missing: ${marker}`)
+if (/new Date\s*\(|Date\.now\s*\(/.test(navigationLifecycle)) {
+  fail('Navigation lifecycle must not use a component-level calendar trigger')
+}
+
+const navigationTests = read('src/app/__tests__/navigationLifecycle.test.js')
+for (const marker of [
+  'before a complete pairing exists', 'first complete Round of 16 pairing',
+  'all eight pairings are resolved', 'final group result', 'fully ready transition',
+  'resolver is unhealthy', 'unresolved TBC fixtures', "label: 'Group stage review'",
+]) if (!navigationTests.includes(marker)) fail(`Navigation acceptance coverage is missing: ${marker}`)
+
+const foundationLoader = read('src/foundation/loadEuroFoundation.js')
+if (!foundationLoader.includes('result_status')) fail('Foundation loading must include authoritative result status for the navigation trigger')
+
+const appCss = read('src/styles/app.css')
+for (const marker of [
+  '@media (max-width: 56.25rem)', '@media (max-width: 40rem)',
+  'font-variant-numeric: tabular-nums', '.app-nav-link--home', 'prefers-reduced-motion',
+]) if (!appCss.includes(marker)) fail(`Charter CSS behaviour is missing: ${marker}`)
+
+for (const file of ['src/home/HomeDashboard.jsx', 'src/tournament/TournamentOverview.jsx']) {
+  const source = read(file)
+  if (!source.includes('EURO_SCORING_CONFIG')) fail(`${file} does not use central scoring configuration`)
+  for (const duplicate of ['30 pts', '10 pts', '5 jokers']) {
+    if (source.includes(duplicate)) fail(`${file} hard-codes a configurable rule: ${duplicate}`)
+  }
+}
+
+function pngDimensions(file) {
+  const buffer = fs.readFileSync(path.join(root, file))
+  if (buffer.length < 24 || buffer.toString('ascii', 1, 4) !== 'PNG') return null
+  return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) }
+}
+
+const baselineSizes = [
+  ['home-mobile-light-380x844.png', 380, 844],
+  ['home-mobile-dark-380x844.png', 380, 844],
+  ['home-tablet-light-768x1024.png', 768, 1024],
+  ['home-tablet-dark-768x1024.png', 768, 1024],
+  ['home-desktop-light-1200x1000.png', 1200, 1000],
+  ['home-desktop-dark-1200x1000.png', 1200, 1000],
+]
+for (const [name, width, height] of baselineSizes) {
+  const file = `docs/design-baselines/stage13a/${name}`
+  if (!exists(file)) {
+    fail(`Design baseline is missing: ${file}`)
+    continue
+  }
+  const dimensions = pngDimensions(file)
+  if (!dimensions || dimensions.width !== width || dimensions.height !== height) {
+    fail(`${file} must be ${width}×${height}`)
+  }
+}
+
+const charter = read('docs/EURO28-DESIGN-CHARTER.md')
+for (const decision of [
+  'Blue direction — CONFIRMED',
+  'Euro 2028 Predictor',
+  'Groups | Bracket | Home | Leagues | More',
+  'KO | Bracket | Home | Leagues | More',
+  'Group stage review',
+  'Lucide',
+  'src/design/tokens.css',
+  'src/design/typography.css',
+]) if (!charter.includes(decision)) fail(`Design Charter is missing the confirmed decision: ${decision}`)
+
+if (errors.length) {
+  console.error('Euro Stage 13A v6 design-token audit failed:')
+  errors.forEach(error => console.error(`- ${error}`))
+  process.exit(1)
+}
+
+console.log('Euro Stage 13A v6 design-token audit passed.')
+console.log('Identity: independent blue palette controlled from one semantic token file')
+console.log('Typography: self-hosted Space Grotesk and Inter')
+console.log('Icons: Lucide for ordinary interface actions')
+console.log('Navigation: Groups/KO · permanent Bracket · raised Home · Leagues · More')
+console.log('Themes: light and dark share the same semantic component rules')
+console.log('Database: unchanged at 14 migrations')

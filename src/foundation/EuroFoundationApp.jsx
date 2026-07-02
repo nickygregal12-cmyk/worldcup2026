@@ -1,282 +1,163 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ENVIRONMENT } from '../config/environment.js'
 import EuroAuthFoundation from '../auth/EuroAuthFoundation.jsx'
+import { useEuroSession } from '../auth/useEuroSession.js'
 import PredictionJourneyFoundation from '../journey/PredictionJourneyFoundation.jsx'
 import KoPredictorFoundation from '../koPredictor/KoPredictorFoundation.jsx'
 import ResultsAndLeaderboardsFoundation from '../results/ResultsAndLeaderboardsFoundation.jsx'
 import AdminOperationsFoundation from '../admin/AdminOperationsFoundation.jsx'
 import LeaguesFoundation from '../leagues/LeaguesFoundation.jsx'
+import HomeDashboard from '../home/HomeDashboard.jsx'
+import TournamentOverview from '../tournament/TournamentOverview.jsx'
+import EuroAppShell from '../app/EuroAppShell.jsx'
+import { APP_ROUTE } from '../app/appRoutes.js'
+import { deriveNavigationLifecycle } from '../app/navigationLifecycle.js'
+import { useHashRoute } from '../app/useHashRoute.js'
+import { useTheme } from '../app/useTheme.js'
+import { VISUAL_FOUNDATION, VISUAL_HOME_DASHBOARD } from '../app/visualFixture.js'
+import { Badge, Button, Card } from '../design-system/index.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
-const EXPECTED_TOTALS = Object.freeze({
-  stages: 5,
-  groups: 6,
-  tournamentSlots: 24,
-  confirmedVenues: 9,
-  matches: 51,
-  groupMatches: 36,
-  knockoutMatches: 15,
-  matchSlots: 102,
-  enteredKickoffTimes: 0,
-})
-
-function formatDate(dateValue) {
-  if (!dateValue) return 'Not set'
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(`${dateValue}T12:00:00Z`))
+function isVisualFixture() {
+  if (typeof window === 'undefined') return false
+  if (window.__EURO28_VISUAL_FIXTURE__ === true) return true
+  const fixtureRequested = new URLSearchParams(window.location.search).get('visual') === 'stage13a'
+  return fixtureRequested && (import.meta.env.DEV || window.location.protocol === 'file:')
 }
 
-function StatusPill({ children, tone = 'neutral' }) {
-  return <span className={`foundation-pill foundation-pill--${tone}`}>{children}</span>
-}
-
-function StatCard({ value, label, note, matchesExpected = true }) {
+function PageIntro({ eyebrow, title, description, badge = null }) {
   return (
-    <article className="foundation-stat">
-      <strong>{value}</strong>
-      <span>{label}</span>
-      <small className={matchesExpected ? '' : 'foundation-warning-text'}>{note}</small>
-    </article>
+    <section className="page-intro">
+      <div>
+        <span className="page-eyebrow">{eyebrow}</span>
+        <h1>{title}</h1>
+        <p>{description}</p>
+      </div>
+      {badge && <Badge tone={badge.tone}>{badge.label}</Badge>}
+    </section>
   )
 }
 
-function LoadingState() {
+function LoadingApplication() {
   return (
-    <div className="foundation-state" role="status" aria-live="polite">
-      <span className="foundation-spinner" aria-hidden="true" />
-      <strong>Reading the Euro staging tournament model…</strong>
+    <div className="bootstrap-screen" role="status" aria-live="polite">
+      <span className="app-brand__mark" aria-hidden="true">28</span>
+      <strong>Loading Euro 2028 Predictor…</strong>
+    </div>
+  )
+}
+
+function FoundationError({ message, onRetry }) {
+  return (
+    <div className="bootstrap-screen bootstrap-screen--error">
+      <Card>
+        <Badge tone="danger">Connection problem</Badge>
+        <h1>Euro 2028 Predictor could not load</h1>
+        <p>{message}</p>
+        <Button icon="refresh" onClick={onRetry}>Try again</Button>
+      </Card>
     </div>
   )
 }
 
 export default function EuroFoundationApp() {
+  const visualFixture = useMemo(() => isVisualFixture(), [])
+  const route = useHashRoute()
+  const theme = useTheme()
   const clientState = useMemo(() => createFoundationClient(), [])
-  const [state, setState] = useState(() => clientState.client
-    ? { status: 'loading', data: null, error: null }
-    : { status: 'error', data: null, error: clientState.error })
+  const sessionState = useEuroSession(visualFixture ? null : clientState.client)
+  const [state, setState] = useState(() => visualFixture
+    ? { status: 'ready', data: VISUAL_FOUNDATION, error: null }
+    : clientState.client
+      ? { status: 'loading', data: null, error: null }
+      : { status: 'error', data: null, error: clientState.error })
 
   const refresh = useCallback(async () => {
-    if (!clientState.client) return
-
+    if (visualFixture || !clientState.client) return
     setState(previous => ({ ...previous, status: 'loading', error: null }))
-
     try {
       const data = await loadEuroFoundation(clientState.client)
       setState({ status: 'ready', data, error: null })
     } catch (error) {
-      setState({
-        status: 'error',
-        data: null,
-        error: error instanceof Error ? error.message : String(error),
-      })
+      setState({ status: 'error', data: null, error: error instanceof Error ? error.message : String(error) })
     }
-  }, [clientState])
+  }, [clientState, visualFixture])
 
   useEffect(() => {
-    if (!clientState.client) return undefined
-
+    if (visualFixture || !clientState.client) return undefined
     let active = true
     loadEuroFoundation(clientState.client)
-      .then(data => {
-        if (active) setState({ status: 'ready', data, error: null })
-      })
-      .catch(error => {
-        if (!active) return
-        setState({
-          status: 'error',
-          data: null,
-          error: error instanceof Error ? error.message : String(error),
-        })
-      })
+      .then(data => { if (active) setState({ status: 'ready', data, error: null }) })
+      .catch(error => { if (active) setState({ status: 'error', data: null, error: error instanceof Error ? error.message : String(error) }) })
+    return () => { active = false }
+  }, [clientState, visualFixture])
 
-    return () => {
-      active = false
-    }
-  }, [clientState])
+  if (state.status === 'loading') return <LoadingApplication />
+  if (state.status === 'error' || !state.data) return <FoundationError message={state.error} onRetry={refresh} />
 
-  const totals = state.data?.totals
-  const expectedModel = totals
-    ? Object.entries(EXPECTED_TOTALS).every(([key, expected]) => totals[key] === expected)
-    : false
+  const foundation = state.data
+  const navigation = deriveNavigationLifecycle(foundation.guestReference)
+  const visualSession = visualFixture
+    ? { status: 'ready', session: { user: { id: 'visual-user', email: 'nicky@example.com' } }, profile: { display_name: 'Nicky' }, error: null }
+    : sessionState
 
-  return (
-    <div className="foundation-shell">
-      <header className="foundation-header">
-        <div className="foundation-header__inner">
-          <a className="foundation-brand" href="/" aria-label="Euro 2028 Predictor foundation home">
-            <span className="foundation-brand__mark" aria-hidden="true">28</span>
-            <span>
-              <strong>Euro 2028 Predictor</strong>
-              <small>Expanded admin control room staging</small>
-            </span>
-          </a>
-          <StatusPill tone="safe">Admin control room · protected operations</StatusPill>
-        </div>
-      </header>
+  let content
+  if (route === APP_ROUTE.HOME) {
+    content = <HomeDashboard client={clientState.client} foundation={foundation} sessionState={visualSession} fixture={visualFixture ? VISUAL_HOME_DASHBOARD : null} />
+  } else if (route === APP_ROUTE.PREDICT) {
+    content = (
+      <div className="content-stack legacy-page">
+        <PageIntro eyebrow="Original Predictor" title="Build your tournament prediction" description="Predict all group scores and complete your winner-only pre-tournament bracket." badge={{ tone: foundation.tournament.prediction_locked_at ? 'warning' : 'safe', label: foundation.tournament.prediction_locked_at ? 'Locked' : 'Open' }} />
+        <PredictionJourneyFoundation key={`groups-${foundation.guestReference.referenceVersion}`} client={clientState.client} reference={foundation.guestReference} tournament={foundation.tournament} initialView="groups" />
+      </div>
+    )
+  } else if (route === APP_ROUTE.BRACKET) {
+    content = (
+      <div className="content-stack legacy-page">
+        <PageIntro eyebrow="Original Predictor" title="Your pre-tournament bracket" description="Choose the team that advances from every predicted knockout match. Scores and jokers do not apply here." />
+        <PredictionJourneyFoundation key={`bracket-${foundation.guestReference.referenceVersion}`} client={clientState.client} reference={foundation.guestReference} tournament={foundation.tournament} initialView="bracket" />
+      </div>
+    )
+  } else if (route === APP_ROUTE.KO_PREDICTOR) {
+    content = (
+      <div className="content-stack legacy-page">
+        <PageIntro eyebrow="Separate competition" title="KO Predictor" description="Predict each real knockout fixture once its participants are confirmed." />
+        <KoPredictorFoundation client={clientState.client} reference={foundation.guestReference} />
+      </div>
+    )
+  } else if (route === APP_ROUTE.LEAGUES) {
+    content = (
+      <div className="content-stack legacy-page">
+        <PageIntro eyebrow="Private competitions" title="Your leagues" description="One member list, with separate Original Predictor and KO Predictor tables." />
+        <LeaguesFoundation client={clientState.client} tournamentId={foundation.tournament.id} />
+      </div>
+    )
+  } else if (route === APP_ROUTE.RESULTS) {
+    content = (
+      <div className="content-stack legacy-page">
+        <PageIntro eyebrow="Live tournament" title="Results and leaderboards" description="Canonical scores, live tables and two fully separate competition standings." />
+        <ResultsAndLeaderboardsFoundation client={clientState.client} reference={foundation.guestReference} />
+      </div>
+    )
+  } else if (route === APP_ROUTE.ACCOUNT) {
+    content = (
+      <div className="content-stack legacy-page">
+        <PageIntro eyebrow="Account" title={visualSession.session ? 'Profile and security' : 'Sign in or create an account'} description="Your browser guest draft remains separate and safe until you explicitly import it." />
+        <EuroAuthFoundation client={clientState.client} />
+      </div>
+    )
+  } else if (route === APP_ROUTE.TOURNAMENT) {
+    content = <TournamentOverview foundation={foundation} />
+  } else if (route === APP_ROUTE.ADMIN) {
+    content = (
+      <div className="content-stack legacy-page">
+        <PageIntro eyebrow="Restricted access" title="Tournament control room" description="Secure result operations, locks, grace windows and operational safeguards." />
+        <AdminOperationsFoundation client={clientState.client} reference={foundation.guestReference} />
+      </div>
+    )
+  } else {
+    content = <HomeDashboard client={clientState.client} foundation={foundation} sessionState={visualSession} fixture={visualFixture ? VISUAL_HOME_DASHBOARD : null} />
+  }
 
-      <main className="foundation-main">
-        <section className="foundation-hero">
-          <div>
-            <StatusPill tone="info">Stage 12 · Expanded tournament control room</StatusPill>
-            <h1>The tournament control room now covers lock, grace, joker allocation and kill-switch controls.</h1>
-            <p>
-              Owner-only controls now apply the irreversible global lock, manage one-match grace windows and pause browser features safely. Results, leagues and the two competition leaderboards remain separate and protected.
-            </p>
-          </div>
-          <div className="foundation-environment" aria-label="Environment details">
-            <span>Environment</span>
-            <strong>{ENVIRONMENT.appEnv}</strong>
-            <span>Tournament</span>
-            <strong>{ENVIRONMENT.tournamentShortName}</strong>
-          </div>
-        </section>
-
-        {state.status === 'loading' && <LoadingState />}
-
-        {state.status === 'error' && (
-          <section className="foundation-panel foundation-panel--error" role="alert">
-            <div>
-              <StatusPill tone="danger">Connection check failed</StatusPill>
-              <h2>The foundation screen could not read Euro staging.</h2>
-              <p>{state.error}</p>
-            </div>
-            <button type="button" onClick={refresh}>Try again</button>
-          </section>
-        )}
-
-        {state.status === 'ready' && state.data && (
-          <>
-            <section className="foundation-panel foundation-model-heading">
-              <div>
-                <StatusPill tone={expectedModel ? 'safe' : 'warning'}>
-                  {expectedModel ? 'Verified model loaded' : 'Model needs review'}
-                </StatusPill>
-                <h2>{state.data.tournament.name}</h2>
-                <p>
-                  {formatDate(state.data.tournament.starts_on)} to {formatDate(state.data.tournament.ends_on)}.
-                  Dates and venues are official; participant identities and match-specific kick-off times remain unresolved.
-                </p>
-              </div>
-              <button type="button" className="foundation-secondary-button" onClick={refresh}>
-                Refresh data
-              </button>
-            </section>
-
-            <section className="foundation-stat-grid" aria-label="Tournament model totals">
-              <StatCard
-                value={totals.matches}
-                label="official matches"
-                note="36 group · 15 knockout"
-                matchesExpected={totals.matches === EXPECTED_TOTALS.matches}
-              />
-              <StatCard
-                value={totals.tournamentSlots}
-                label="tournament slots"
-                note={`${totals.unresolvedTournamentSlots} real teams unresolved`}
-                matchesExpected={totals.tournamentSlots === EXPECTED_TOTALS.tournamentSlots}
-              />
-              <StatCard
-                value={totals.confirmedVenues}
-                label="confirmed venues"
-                note="All linked to the tournament"
-                matchesExpected={totals.confirmedVenues === EXPECTED_TOTALS.confirmedVenues}
-              />
-              <StatCard
-                value={totals.enteredKickoffTimes}
-                label="kick-off times entered"
-                note="Correct until UEFA confirms them"
-                matchesExpected={totals.enteredKickoffTimes === EXPECTED_TOTALS.enteredKickoffTimes}
-              />
-            </section>
-
-            <EuroAuthFoundation client={clientState.client} />
-
-            <PredictionJourneyFoundation
-              key={state.data.guestReference.referenceVersion}
-              client={clientState.client}
-              reference={state.data.guestReference}
-              tournament={state.data.tournament}
-            />
-
-            <KoPredictorFoundation
-              client={clientState.client}
-              reference={state.data.guestReference}
-            />
-
-            <ResultsAndLeaderboardsFoundation
-              client={clientState.client}
-              reference={state.data.guestReference}
-            />
-
-            <LeaguesFoundation
-              client={clientState.client}
-              tournamentId={state.data.tournament.id}
-            />
-
-            <AdminOperationsFoundation
-              client={clientState.client}
-              reference={state.data.guestReference}
-            />
-
-            <section className="foundation-two-column">
-              <article className="foundation-panel">
-                <div className="foundation-section-heading">
-                  <div>
-                    <span className="foundation-kicker">Tournament stages</span>
-                    <h2>Official match skeleton</h2>
-                  </div>
-                  <StatusPill tone="neutral">{totals.matchSlots} match slots</StatusPill>
-                </div>
-                <div className="foundation-stage-list">
-                  {state.data.stages.map(stage => (
-                    <div className="foundation-stage-row" key={stage.id}>
-                      <div>
-                        <strong>{stage.name}</strong>
-                        <span>{formatDate(stage.starts_on)} – {formatDate(stage.ends_on)}</span>
-                      </div>
-                      <b>{stage.expected_match_count} matches</b>
-                    </div>
-                  ))}
-                </div>
-              </article>
-
-              <article className="foundation-panel">
-                <span className="foundation-kicker">Safety boundary</span>
-                <h2>Deliberately unavailable</h2>
-                <p className="foundation-panel-copy">
-                  These areas will return only after their Euro-specific database design, RLS and tests are approved.
-                </p>
-                <ul className="foundation-check-list">
-                  <li>Shared design-system page rebuild</li>
-                  <li>Seeded full-tournament scenario testing</li>
-                  <li>Pre-tournament configuration review</li>
-                  <li>Optional external results API syncing</li>
-                </ul>
-              </article>
-            </section>
-
-            <section className="foundation-panel foundation-next-step">
-              <div>
-                <span className="foundation-kicker">Next controlled batch</span>
-                <h2>Build the shared design system and rebuild the main pages.</h2>
-                <p>
-                  Stage 12 completes the operational control room. The next controlled batch turns the current foundation screens into the final mobile-first Home, Groups, Knockout and Leagues experience.
-                </p>
-              </div>
-              <StatusPill tone="warning">Stage 12 active</StatusPill>
-            </section>
-          </>
-        )}
-      </main>
-
-      <footer className="foundation-footer">
-        Euro 2028 development environment · isolated from WC26 production
-      </footer>
-    </div>
-  )
+  return <EuroAppShell route={route} theme={theme} sessionState={visualSession} navigation={navigation}>{content}</EuroAppShell>
 }

@@ -1,15 +1,5 @@
-:root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #172033;
-  background: #edf2f7;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  --foundation-border: #d9e1ea;
-  --foundation-safe: #16825d;
-  --foundation-warning: #b97800;
-  --foundation-surface: #ffffff;
-  --foundation-surface-muted: #f8fafc;
-}
+/* Tokenised compatibility styles for the proven Stage 6–12 feature screens.
+   All colour decisions resolve through src/design/tokens.css. */
 
 * {
   box-sizing: border-box;
@@ -18,7 +8,7 @@
 html {
   min-width: 320px;
   min-height: 100%;
-  background: #edf2f7;
+  background: var(--surface-soft);
 }
 
 body {
@@ -26,8 +16,7 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at top left, rgba(0, 82, 155, 0.13), transparent 34rem),
-    #edf2f7;
+    var(--gradient-surface);
 }
 
 button,
@@ -46,8 +35,8 @@ button {
 }
 
 .foundation-header {
-  background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid #d9e1ea;
+  background: var(--surface-glass);
+  border-bottom: 1px solid var(--border-default);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -83,11 +72,11 @@ button {
   border-radius: 13px;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, #071f4b, #0068b5);
-  color: #fff;
+  background: var(--gradient-brand);
+  color: var(--text-on-brand);
   font-weight: 900;
   letter-spacing: -0.06em;
-  box-shadow: 0 8px 20px rgba(0, 60, 120, 0.2);
+  box-shadow: var(--shadow-2);
 }
 
 .foundation-brand strong,
@@ -102,7 +91,7 @@ button {
 
 .foundation-brand small {
   margin-top: 1px;
-  color: #657189;
+  color: var(--brand-strong);
   font-size: 12px;
   font-weight: 700;
 }
@@ -123,7 +112,7 @@ button {
 .foundation-hero h1 {
   margin: 18px 0 12px;
   max-width: 760px;
-  color: #071a38;
+  color: var(--brand-strong);
   font-size: clamp(34px, 5vw, 58px);
   line-height: 1.02;
   letter-spacing: -0.055em;
@@ -131,7 +120,7 @@ button {
 
 .foundation-hero p,
 .foundation-panel p {
-  color: #56647a;
+  color: var(--brand-strong);
   line-height: 1.65;
 }
 
@@ -146,14 +135,14 @@ button {
   grid-template-columns: 1fr auto;
   gap: 8px 14px;
   padding: 18px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid #d6e0eb;
+  background: var(--surface-glass);
+  border: 1px solid var(--border-default);
   border-radius: 18px;
-  box-shadow: 0 12px 34px rgba(32, 51, 77, 0.07);
+  box-shadow: var(--shadow-2);
 }
 
 .foundation-environment span {
-  color: #758197;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -161,7 +150,7 @@ button {
 }
 
 .foundation-environment strong {
-  color: #17335d;
+  color: var(--text-strong);
   font-size: 13px;
   text-align: right;
 }
@@ -181,46 +170,46 @@ button {
 }
 
 .foundation-pill--safe {
-  color: #12643e;
-  background: #ddf7e9;
-  border: 1px solid #bce8d1;
+  color: var(--state-success);
+  background: var(--state-success-soft);
+  border: 1px solid var(--state-success-border);
 }
 
 .foundation-pill--info {
-  color: #075c9a;
-  background: #dff2ff;
-  border: 1px solid #b8dcf5;
+  color: var(--brand-strong);
+  background: var(--state-info-soft);
+  border: 1px solid var(--state-info-border);
 }
 
 .foundation-pill--neutral {
-  color: #4b5d75;
-  background: #eef2f6;
-  border: 1px solid #dae1e9;
+  color: var(--text-secondary);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-default);
 }
 
 .foundation-pill--warning {
-  color: #8a4e00;
-  background: #fff0ce;
-  border: 1px solid #f0d596;
+  color: var(--state-warning);
+  background: var(--state-warning-soft);
+  border: 1px solid var(--state-warning-border);
 }
 
 .foundation-pill--danger {
-  color: #9a2f2f;
-  background: #ffe4e4;
-  border: 1px solid #f3bcbc;
+  color: var(--state-danger);
+  background: var(--state-danger-soft);
+  border: 1px solid var(--state-danger-border);
 }
 
 .foundation-panel {
   padding: 24px;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid #d9e1ea;
+  background: var(--surface-glass);
+  border: 1px solid var(--border-default);
   border-radius: 22px;
-  box-shadow: 0 14px 40px rgba(39, 58, 83, 0.07);
+  box-shadow: var(--shadow-2);
 }
 
 .foundation-panel h2 {
   margin: 10px 0 8px;
-  color: #122a4c;
+  color: var(--text-strong);
   font-size: 23px;
   line-height: 1.2;
   letter-spacing: -0.035em;
@@ -235,7 +224,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  border-color: #f0baba;
+  border-color: var(--state-danger-border);
 }
 
 .foundation-panel--error button,
@@ -247,15 +236,15 @@ button {
 }
 
 .foundation-panel--error button {
-  color: #fff;
-  background: #a43535;
+  color: var(--text-on-brand);
+  background: var(--state-danger);
   border: 0;
 }
 
 .foundation-secondary-button {
-  color: #075c9a;
-  background: #eff8ff;
-  border: 1px solid #bbd9ec;
+  color: var(--text-strong);
+  background: var(--surface-soft);
+  border: 1px solid var(--border-default);
 }
 
 .foundation-model-heading,
@@ -280,14 +269,14 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  background: #fff;
-  border: 1px solid #d9e1ea;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-default);
   border-radius: 20px;
-  box-shadow: 0 10px 28px rgba(39, 58, 83, 0.055);
+  box-shadow: var(--shadow-2);
 }
 
 .foundation-stat strong {
-  color: #005fa8;
+  color: var(--text-strong);
   font-size: 39px;
   line-height: 1;
   letter-spacing: -0.055em;
@@ -295,19 +284,19 @@ button {
 
 .foundation-stat span {
   margin-top: 9px;
-  color: #1a2d49;
+  color: var(--text-strong);
   font-weight: 850;
   letter-spacing: -0.02em;
 }
 
 .foundation-stat small {
   margin-top: 5px;
-  color: #768298;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
 .foundation-warning-text {
-  color: #9a5700 !important;
+  color: var(--state-warning) !important;
 }
 
 .foundation-two-column {
@@ -319,7 +308,7 @@ button {
 
 .foundation-kicker {
   display: block;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 850;
   letter-spacing: 0.085em;
@@ -328,7 +317,7 @@ button {
 
 .foundation-stage-list {
   margin-top: 18px;
-  border-top: 1px solid #e5eaf0;
+  border-top: 1px solid var(--border-default);
 }
 
 .foundation-stage-row {
@@ -337,7 +326,7 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  border-bottom: 1px solid #e5eaf0;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .foundation-stage-row:last-child {
@@ -350,18 +339,18 @@ button {
 }
 
 .foundation-stage-row strong {
-  color: #17304f;
+  color: var(--text-strong);
   font-size: 14px;
 }
 
 .foundation-stage-row span {
   margin-top: 2px;
-  color: #748197;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 
 .foundation-stage-row b {
-  color: #075c9a;
+  color: var(--text-strong);
   font-size: 13px;
   white-space: nowrap;
 }
@@ -380,8 +369,8 @@ button {
 .foundation-check-list li {
   position: relative;
   padding: 10px 0 10px 29px;
-  color: #30445f;
-  border-bottom: 1px solid #e8edf2;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-default);
   font-size: 14px;
   font-weight: 700;
 }
@@ -399,16 +388,16 @@ button {
   height: 18px;
   display: grid;
   place-items: center;
-  color: #8a4e00;
-  background: #fff0ce;
+  color: var(--text-secondary);
+  background: var(--surface-soft);
   border-radius: 50%;
   font-size: 12px;
   font-weight: 900;
 }
 
 .foundation-next-step {
-  border-color: #c7d9e8;
-  background: linear-gradient(135deg, #fff, #f3f9fd);
+  border-color: var(--border-default);
+  background: var(--gradient-surface);
 }
 
 .foundation-next-step p {
@@ -421,17 +410,17 @@ button {
   place-items: center;
   align-content: center;
   gap: 14px;
-  color: #40516a;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid #d9e1ea;
+  color: var(--text-secondary);
+  background: var(--surface-glass);
+  border: 1px solid var(--border-default);
   border-radius: 22px;
 }
 
 .foundation-spinner {
   width: 34px;
   height: 34px;
-  border: 4px solid #cbd9e7;
-  border-top-color: #0068b5;
+  border: 4px solid var(--border-default);
+  border-top-color: var(--border-default);
   border-radius: 50%;
   animation: foundation-spin 0.75s linear infinite;
 }
@@ -442,7 +431,7 @@ button {
 
 .foundation-footer {
   padding: 22px 0 28px;
-  color: #68768b;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
   text-align: center;
@@ -548,9 +537,9 @@ button {
 
 .guest-progress-card,
 .guest-data-card {
-  border: 1px solid #d9e1ea;
+  border: 1px solid var(--border-default);
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--surface-glass);
   padding: 1rem;
 }
 
@@ -564,7 +553,7 @@ button {
   justify-content: space-between;
   gap: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #d9e1ea;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .guest-progress-row:last-child {
@@ -581,7 +570,7 @@ button {
 .guest-progress-row span,
 .guest-data-card p,
 .guest-foundation__meta {
-  color: #667085;
+  color: var(--text-secondary);
 }
 
 .guest-progress-row__value {
@@ -622,7 +611,7 @@ button {
 .guest-clear-button {
   border: 0;
   background: transparent;
-  color: #667085;
+  color: var(--text-secondary);
   text-decoration: underline;
   text-underline-offset: 0.2rem;
   cursor: pointer;
@@ -643,15 +632,15 @@ button {
 }
 
 .guest-notice--safe {
-  background: rgba(52, 211, 153, 0.12);
+  background: var(--state-success);
 }
 
 .guest-notice--warning {
-  background: rgba(251, 191, 36, 0.12);
+  background: var(--state-warning);
 }
 
 .guest-notice--danger {
-  background: rgba(248, 113, 113, 0.12);
+  background: var(--state-danger);
 }
 
 @media (max-width: 760px) {
@@ -678,9 +667,9 @@ button {
   flex-wrap: wrap;
   gap: 0.5rem;
   padding: 0.35rem;
-  border: 1px solid #d9e1ea;
+  border: 1px solid var(--border-default);
   border-radius: 14px;
-  background: #f7f9fc;
+  background: var(--surface-soft);
 }
 
 .auth-mode-tabs button {
@@ -688,16 +677,16 @@ button {
   border-radius: 10px;
   padding: 0.7rem 0.9rem;
   background: transparent;
-  color: #526174;
+  color: var(--text-secondary);
   font: inherit;
   font-weight: 800;
   cursor: pointer;
 }
 
 .auth-mode-tabs button.is-active {
-  background: #fff;
-  color: #0068b5;
-  box-shadow: 0 1px 4px rgba(20, 42, 68, 0.12);
+  background: var(--brand);
+  color: var(--brand-strong);
+  box-shadow: var(--shadow-1);
 }
 
 .auth-form {
@@ -709,24 +698,24 @@ button {
 .auth-field {
   display: grid;
   gap: 0.4rem;
-  color: #334155;
+  color: var(--text-secondary);
   font-size: 0.86rem;
   font-weight: 800;
 }
 
 .auth-field input {
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 0.78rem 0.9rem;
-  background: #fff;
-  color: #0f172a;
+  background: var(--surface-raised);
+  color: var(--text-strong);
   font: inherit;
 }
 
 .auth-field input:focus {
-  outline: 3px solid rgba(0, 104, 181, 0.16);
-  border-color: #0068b5;
+  outline: 3px solid var(--border-default);
+  border-color: var(--border-default);
 }
 
 .auth-form > button {
@@ -734,8 +723,8 @@ button {
   border: 0;
   border-radius: 12px;
   padding: 0.78rem 1rem;
-  background: #0068b5;
-  color: #fff;
+  background: var(--surface-inverse);
+  color: var(--text-on-brand);
   font: inherit;
   font-weight: 900;
   cursor: pointer;
@@ -756,13 +745,13 @@ button {
 }
 
 .auth-notice--safe {
-  background: #ecfdf3;
-  color: #166534;
+  background: var(--state-success-soft);
+  color: var(--state-success);
 }
 
 .auth-notice--danger {
-  background: #fef2f2;
-  color: #991b1b;
+  background: var(--state-danger-soft);
+  color: var(--state-danger);
 }
 
 .auth-account-grid {
@@ -775,15 +764,15 @@ button {
   display: grid;
   align-content: start;
   gap: 0.35rem;
-  border: 1px solid #d9e1ea;
+  border: 1px solid var(--border-default);
   border-radius: 16px;
   padding: 1rem;
-  background: #f8fafc;
+  background: var(--surface-soft);
 }
 
 .auth-account-summary span {
   margin-top: 0.45rem;
-  color: #667085;
+  color: var(--text-secondary);
   font-size: 0.78rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -827,15 +816,15 @@ button {
   display: grid;
   align-content: start;
   gap: 0.35rem;
-  border: 1px solid #d9e1ea;
+  border: 1px solid var(--border-default);
   border-radius: 16px;
   padding: 1rem;
-  background: #f8fafc;
+  background: var(--surface-soft);
 }
 
 .prediction-save-card span {
   margin-top: 0.5rem;
-  color: #667085;
+  color: var(--text-secondary);
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -850,15 +839,15 @@ button {
   border: 0;
   border-radius: 12px;
   padding: 0.78rem 1rem;
-  background: #0068b5;
-  color: #fff;
+  background: var(--surface-inverse);
+  color: var(--text-on-brand);
   font: inherit;
   font-weight: 900;
   cursor: pointer;
 }
 
 .prediction-save-card button:disabled { opacity: 0.5; cursor: not-allowed; }
-.prediction-save-note { margin: 0; color: #526174; font-size: 0.9rem; }
+.prediction-save-note { margin: 0; color: var(--text-secondary); font-size: 0.9rem; }
 
 @media (max-width: 760px) {
   .prediction-save-foundation__grid { grid-template-columns: 1fr; }
@@ -881,7 +870,7 @@ button {
 }
 
 .journey-autosave small {
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 700;
 }
 
@@ -890,10 +879,10 @@ button {
   grid-template-columns: auto minmax(180px, 1fr) auto;
   gap: 1rem;
   align-items: center;
-  border: 1px solid #d9e1ea;
+  border: 1px solid var(--border-default);
   border-radius: 16px;
   padding: 0.9rem 1rem;
-  background: #f8fafc;
+  background: var(--surface-soft);
 }
 
 .journey-progress > div:first-child,
@@ -908,11 +897,11 @@ button {
 }
 
 .journey-progress strong {
-  color: #0f172a;
+  color: var(--text-strong);
 }
 
 .journey-progress span {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.82rem;
   font-weight: 800;
 }
@@ -921,7 +910,7 @@ button {
   height: 10px;
   overflow: hidden;
   border-radius: 999px;
-  background: #dbe5ef;
+  background: var(--surface-soft);
 }
 
 .journey-progress__bar span {
@@ -929,7 +918,7 @@ button {
   height: 100%;
   min-width: 0;
   border-radius: inherit;
-  background: #0068b5;
+  background: var(--surface-inverse);
   transition: width 180ms ease;
 }
 
@@ -941,7 +930,7 @@ button {
   justify-content: space-between;
   border-radius: 14px;
   padding: 0.85rem 1rem;
-  background: #eef7ff;
+  background: var(--surface-soft);
 }
 
 .journey-import-strip > div {
@@ -951,7 +940,7 @@ button {
 
 .journey-import-strip span,
 .journey-guest-tools > span {
-  color: #526174;
+  color: var(--text-secondary);
   font-size: 0.84rem;
 }
 
@@ -961,8 +950,8 @@ button {
   border: 0;
   border-radius: 12px;
   padding: 0.78rem 1rem;
-  background: #0068b5;
-  color: #fff;
+  background: var(--state-warning);
+  color: var(--text-on-brand);
   font: inherit;
   font-weight: 900;
   cursor: pointer;
@@ -984,10 +973,10 @@ button {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.45rem;
-  border: 1px solid #d9e1ea;
+  border: 1px solid var(--border-default);
   border-radius: 16px;
   padding: 0.4rem;
-  background: #f1f5f9;
+  background: var(--surface-soft);
 }
 
 .journey-tab {
@@ -997,21 +986,21 @@ button {
   border-radius: 12px;
   padding: 0.75rem 0.85rem;
   background: transparent;
-  color: #475569;
+  color: var(--text-secondary);
   font: inherit;
   font-weight: 900;
   cursor: pointer;
 }
 
 .journey-tab small {
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 700;
 }
 
 .journey-tab--active {
-  background: #fff;
-  color: #0068b5;
-  box-shadow: 0 1px 5px rgba(15, 23, 42, 0.12);
+  background: var(--brand);
+  color: var(--brand-strong);
+  box-shadow: var(--shadow-1);
 }
 
 .journey-group-grid {
@@ -1022,9 +1011,9 @@ button {
 
 .journey-group-card {
   overflow: hidden;
-  border: 1px solid #d9e1ea;
+  border: 1px solid var(--border-default);
   border-radius: 16px;
-  background: #fff;
+  background: var(--surface-raised);
 }
 
 .journey-group-card__heading {
@@ -1033,8 +1022,8 @@ button {
   gap: 1rem;
   align-items: flex-start;
   padding: 0.9rem 1rem;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--surface-soft);
+  border-bottom: 1px solid var(--border-default);
 }
 
 .journey-group-card__heading > div {
@@ -1043,7 +1032,7 @@ button {
 }
 
 .journey-group-card__heading span {
-  color: #0068b5;
+  color: var(--text-strong);
   font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.04em;
@@ -1051,7 +1040,7 @@ button {
 }
 
 .journey-group-card__heading strong {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.82rem;
   font-weight: 700;
 }
@@ -1059,8 +1048,8 @@ button {
 .journey-group-card__heading b {
   border-radius: 999px;
   padding: 0.3rem 0.55rem;
-  background: #e8f3fb;
-  color: #005a9d;
+  background: var(--surface-soft);
+  color: var(--text-strong);
   font-size: 0.78rem;
 }
 
@@ -1074,7 +1063,7 @@ button {
   gap: 0.45rem;
   align-items: center;
   padding: 0.75rem 0.85rem;
-  border-bottom: 1px solid #eef2f7;
+  border-bottom: 1px solid var(--border-default);
 }
 
 .journey-match-row:last-child {
@@ -1084,7 +1073,7 @@ button {
 .journey-match-meta {
   display: grid;
   gap: 0.12rem;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .journey-match-meta span {
@@ -1098,7 +1087,7 @@ button {
 
 .journey-team {
   min-width: 0;
-  color: #0f172a;
+  color: var(--text-strong);
   font-size: 0.83rem;
 }
 
@@ -1113,10 +1102,10 @@ button {
 .journey-score-input {
   width: 48px;
   height: 42px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-default);
   border-radius: 10px;
-  background: #fff;
-  color: #0f172a;
+  background: var(--surface-raised);
+  color: var(--text-strong);
   font: inherit;
   font-weight: 900;
   text-align: center;
@@ -1130,17 +1119,17 @@ button {
 }
 
 .journey-score-input:focus {
-  outline: 3px solid rgba(0, 104, 181, 0.15);
-  border-color: #0068b5;
+  outline: 3px solid var(--border-default);
+  border-color: var(--border-default);
 }
 
 .journey-score-input:disabled {
-  background: #eef2f7;
-  color: #64748b;
+  background: var(--surface-emphasis);
+  color: var(--state-locked);
 }
 
 .journey-score-separator {
-  color: #94a3b8;
+  color: var(--text-secondary);
   text-align: center;
   font-weight: 900;
 }
@@ -1167,7 +1156,7 @@ button {
 }
 
 .journey-round-heading span {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.82rem;
   font-weight: 800;
 }
@@ -1181,27 +1170,27 @@ button {
 .journey-knockout-card {
   display: grid;
   gap: 0.8rem;
-  border: 1px solid #d9e1ea;
+  border: 1px solid var(--border-default);
   border-radius: 16px;
   padding: 0.95rem;
-  background: #fff;
+  background: var(--surface-raised);
 }
 
 .journey-knockout-card--blocked {
   border-style: dashed;
-  background: #f8fafc;
+  background: var(--surface-emphasis);
 }
 
 .journey-knockout-card__meta {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.78rem;
 }
 
 .journey-knockout-card__meta strong {
-  color: #0068b5;
+  color: var(--text-strong);
 }
 
 .journey-knockout-score {
@@ -1229,39 +1218,39 @@ button {
 .journey-knockout-controls label {
   display: grid;
   gap: 0.35rem;
-  color: #475569;
+  color: var(--text-secondary);
   font-size: 0.78rem;
   font-weight: 800;
 }
 
 .journey-knockout-controls select {
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-default);
   border-radius: 10px;
   padding: 0.65rem 0.7rem;
-  background: #fff;
-  color: #0f172a;
+  background: var(--surface-raised);
+  color: var(--text-strong);
   font: inherit;
 }
 
 .journey-knockout-controls select:disabled {
-  background: #eef2f7;
-  color: #64748b;
+  background: var(--surface-emphasis);
+  color: var(--state-locked);
 }
 
 .journey-90-note,
 .journey-blocked-copy {
   margin: 0;
-  color: #64748b;
+  color: var(--state-locked);
   font-size: 0.76rem;
 }
 
 .journey-warning-box {
-  border: 1px solid #f3d58c;
+  border: 1px solid var(--state-warning-border);
   border-radius: 14px;
   padding: 0.85rem 1rem;
-  background: #fff8e7;
-  color: #6b4f12;
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
 }
 
 .journey-warning-box p {
@@ -1290,14 +1279,14 @@ button {
 .journey-review-grid article {
   display: grid;
   gap: 0.3rem;
-  border: 1px solid #d9e1ea;
+  border: 1px solid var(--border-default);
   border-radius: 14px;
   padding: 0.9rem;
-  background: #f8fafc;
+  background: var(--surface-soft);
 }
 
 .journey-review-grid span {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.76rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -1313,7 +1302,7 @@ button {
 .journey-review-actions p {
   max-width: 760px;
   margin: 0;
-  color: #526174;
+  color: var(--text-secondary);
   font-size: 0.88rem;
 }
 
@@ -1321,7 +1310,7 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem 1rem;
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 0.76rem;
   font-weight: 700;
 }
@@ -1495,9 +1484,9 @@ button {
   display: grid;
   gap: 3px;
   padding: 14px 16px;
-  border: 1px solid #dce5ef;
+  border: 1px solid var(--border-default);
   border-radius: 14px;
-  background: #f8fafc;
+  background: var(--surface-soft);
 }
 
 .foundation-result-summary strong {
@@ -1507,7 +1496,7 @@ button {
 .foundation-result-summary span,
 .foundation-results-card small,
 .foundation-live-bracket small {
-  color: #6c788c;
+  color: var(--state-live);
 }
 
 .foundation-results-grid {
@@ -1519,9 +1508,9 @@ button {
 .foundation-results-card {
   min-width: 0;
   padding: 18px;
-  border: 1px solid #dce5ef;
+  border: 1px solid var(--border-default);
   border-radius: 18px;
-  background: #fff;
+  background: var(--surface-raised);
 }
 
 .foundation-results-card--wide {
@@ -1544,7 +1533,7 @@ button {
 }
 
 .foundation-live-group {
-  border: 1px solid #e0e7ef;
+  border: 1px solid var(--state-info-border);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -1554,7 +1543,7 @@ button {
   justify-content: space-between;
   padding: 12px 14px;
   cursor: pointer;
-  background: #f7f9fc;
+  background: var(--state-danger-soft);
 }
 
 .foundation-table-wrap {
@@ -1569,7 +1558,7 @@ button {
 .foundation-table-wrap th,
 .foundation-table-wrap td {
   padding: 8px 10px;
-  border-top: 1px solid #edf1f5;
+  border-top: 1px solid var(--border-default);
   text-align: left;
   font-size: 13px;
 }
@@ -1581,13 +1570,13 @@ button {
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
-  border: 1px solid #e4eaf1;
+  border: 1px solid var(--state-info-border);
   border-radius: 12px;
 }
 
 .foundation-live-bracket span,
 .foundation-leaderboard-list b {
-  color: #6f7c90;
+  color: var(--state-live);
   font-size: 12px;
 }
 
@@ -1598,7 +1587,7 @@ button {
 
 .foundation-empty-copy {
   margin: 12px 0 0;
-  color: #718096;
+  color: var(--text-secondary);
 }
 
 @media (max-width: 760px) {
@@ -1621,9 +1610,9 @@ button {
 .foundation-admin-action-message {
   margin: 0;
   padding: 0.8rem 1rem;
-  border: 1px solid rgba(42, 142, 91, 0.25);
+  border: 1px solid var(--border-default);
   border-radius: 0.8rem;
-  background: rgba(42, 142, 91, 0.08);
+  background: var(--surface-soft);
   color: var(--foundation-text);
 }
 
@@ -1707,7 +1696,7 @@ button {
   margin: 0.8rem 0;
   padding: 0.8rem 1rem 0.8rem 2rem;
   border-radius: 0.75rem;
-  background: rgba(173, 70, 51, 0.09);
+  background: var(--surface-soft);
   color: var(--foundation-warning);
 }
 
@@ -1849,7 +1838,7 @@ button {
 
 .foundation-league-tabs button.is-active {
   background: var(--foundation-accent);
-  color: #fff;
+  color: var(--text-on-brand);
 }
 
 .foundation-league-table tr.is-current-user {
@@ -1887,10 +1876,10 @@ button {
 }
 
 .foundation-danger-button {
-  border: 1px solid #b42318;
+  border: 1px solid var(--state-danger-border);
   border-radius: 0.75rem;
   background: transparent;
-  color: #b42318;
+  color: var(--state-danger);
   padding: 0 0.9rem;
   font-weight: 800;
 }
@@ -2000,7 +1989,7 @@ button {
 }
 
 .foundation-feature-control--disabled {
-  border-color: color-mix(in srgb, #b91c1c 55%, var(--foundation-border));
+  border-color: color-mix(in srgb, var(--border-default) 55%, var(--foundation-border));
 }
 
 .foundation-feature-control__action {
@@ -2074,8 +2063,8 @@ button {
 }
 
 .foundation-danger-button {
-  background: #991b1b;
-  color: #fff;
+  background: var(--state-danger);
+  color: var(--text-on-brand);
 }
 
 @media (max-width: 720px) {

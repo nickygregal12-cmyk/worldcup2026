@@ -55,7 +55,7 @@ export async function loadEuroFoundation(client) {
       .order('position_code'),
     client
       .from('matches')
-      .select('id,stage_id,group_id,venue_id,match_number,fixture_code,scheduled_date,kickoff_at,status,schedule_status,participants_status')
+      .select('id,stage_id,group_id,venue_id,match_number,fixture_code,scheduled_date,kickoff_at,status,result_status,schedule_status,participants_status')
       .eq('tournament_id', tournament.id)
       .order('match_number'),
     client

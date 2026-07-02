@@ -65,8 +65,8 @@ for (const file of [
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 12 file is missing: ${file}`)
 
 const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
-if (!app.includes('Stage 12 · Expanded tournament control room')) fail('Stage 12 public branding is missing')
-if (!app.includes('lock, grace, joker allocation and kill-switch controls')) fail('Stage 12 control-room summary is missing')
+if (!app.includes('AdminOperationsFoundation')) fail('Stage 12 admin operations are no longer routed by the active Euro application')
+if (!app.includes('APP_ROUTE.ADMIN')) fail('The active Euro application is missing its protected Admin destination')
 
 const service = fs.readFileSync(path.join(root, 'src/admin/adminOperationsService.js'), 'utf8')
 for (const rpc of [

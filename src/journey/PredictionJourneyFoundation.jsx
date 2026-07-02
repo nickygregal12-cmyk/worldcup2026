@@ -360,7 +360,7 @@ function ReviewPanel({ reference, summary, context, reviewMode, locked, busy, on
   )
 }
 
-export default function PredictionJourneyFoundation({ client, reference, tournament }) {
+export default function PredictionJourneyFoundation({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS }) {
   const guestStorage = useMemo(() => createGuestPredictionStorage({
     storage: browserStorage(),
     reference,
@@ -376,7 +376,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   const [graceWindows, setGraceWindows] = useState([])
   const [accountDraft, setAccountDraft] = useState(() => createPredictionJourneyDraft(reference))
   const [accountLoading, setAccountLoading] = useState(false)
-  const [view, setView] = useState(PREDICTION_JOURNEY_VIEW.GROUPS)
+  const [view, setView] = useState(() => Object.values(PREDICTION_JOURNEY_VIEW).includes(initialView) ? initialView : PREDICTION_JOURNEY_VIEW.GROUPS)
   const [editVersion, setEditVersion] = useState(0)
   const [savedEditVersion, setSavedEditVersion] = useState(0)
   const [autosaveStatus, setAutosaveStatus] = useState(PREDICTION_AUTOSAVE_STATE.IDLE)
@@ -667,7 +667,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
     <section className="foundation-panel prediction-journey" aria-labelledby="prediction-journey-title">
       <div className="foundation-section-heading prediction-journey__heading">
         <div>
-          <span className="foundation-kicker">Stage 8 · Original predictor</span>
+          <span className="foundation-kicker">Original Predictor</span>
           <h2 id="prediction-journey-title">Predict the full Euro 2028 tournament</h2>
           <p className="foundation-panel-copy">
             Group scores drive one canonical winner-only bracket. This original competition is completely separate from the real-match KO Predictor and its points.

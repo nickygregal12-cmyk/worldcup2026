@@ -14,7 +14,8 @@ The verified build now includes:
 - separate overall and private-league standings;
 - secure manual result operations;
 - private leagues and lock-aware shared predictions;
-- an expanded admin control room for lock, grace, feature and tournament-health operations.
+- an expanded admin control room for lock, grace, feature and tournament-health operations;
+- a shared light/dark design system, responsive app shell and account-aware Home dashboard.
 
 The two competitions remain separate:
 
@@ -46,6 +47,7 @@ Use only the Euro staging URL and publishable key in `.env.local`. Never expose 
 
 ```bash
 npm run audit:control-room
+npm run audit:design-tokens
 npm run check
 ```
 
@@ -68,6 +70,6 @@ Never run `npx supabase db reset --linked`.
 
 ## Current return point
 
-Stage 12 adds Migration 014. Tournament owners can apply the irreversible global lock, manage one-user/one-match grace, use database-enforced browser kill-switches and review operational health, joker locks and knockout allocation. Results administrators retain their existing result controls but cannot change owner-only safety settings.
+Stage 13A v6 adds the shared design system, persisted light/dark themes, responsive navigation and the new Home dashboard. Position 2 remains the original Bracket permanently. Position 1 stays Groups until all 36 group results and all eight Round of 16 pairings are ready, while complete KO fixtures become available earlier through More. It starts from `4e1ae38`, retains all Stage 12 controls and keeps the database unchanged at fourteen migrations.
 
-The next controlled build is the shared design system and mobile-first page rebuild.
+The next controlled build is Stage 13B: the mobile-first Groups predictor and review flow.

@@ -343,7 +343,7 @@ export default function LeaguesFoundation({ client, tournamentId }) {
     <section className="foundation-panel foundation-leagues" aria-labelledby="stage11-leagues-heading">
       <div className="foundation-section-heading">
         <div>
-          <span className="foundation-kicker">Stage 11 · Leagues and shared predictions</span>
+          <span className="foundation-kicker">Leagues and shared predictions</span>
           <h2 id="stage11-leagues-heading">Private leagues with two separate tables</h2>
           <p>One member list, but Original Predictor and KO Predictor points are never combined.</p>
         </div>

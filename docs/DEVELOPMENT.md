@@ -9,7 +9,29 @@
 
 ## Definition of done
 
-A batch is complete only when code and documentation agree, `npm run check` passes, local reset and pgTAP pass, the linked project is verified, only the intended migration appears in the dry run, hosted tests/lint pass, and the branch is pushed cleanly.
+A batch is complete only when code and documentation agree, `npm run check` passes and the branch is pushed cleanly. Database batches additionally require local reset, pgTAP, linked-project verification, a one-migration dry run and hosted database lint. Frontend-only batches must prove that no migration changed and must not run a database push.
+
+## Stage 13A frontend architecture
+
+### Application shell
+
+The active Euro entrypoint uses deterministic hash destinations so Netlify needs no new rewrite rules. Desktop navigation, mobile bottom navigation and the More dialog all use the same destination register. A central navigation lifecycle derives readiness from authoritative group-match status and resolved Round of 16 slots: KO appears in More after the first complete pairing, but Position 1 changes from Groups to KO only after all 36 group matches and all eight Round of 16 pairings are ready. Bracket remains permanent.
+
+### Design-system boundary
+
+New shared tokens and primitives live outside the inherited foundation stylesheet. Existing Stage 12 feature modules remain intact behind routed destinations while later Stage 13 batches progressively rebuild their presentation.
+
+### Theme boundary
+
+Light and dark appearance is stored only on the current device. A blocked storage API falls back safely to the system preference.
+
+### Home data boundary
+
+The dashboard composes existing trusted read services. Each section has its own availability state so a failed request cannot masquerade as zero points or zero predictions.
+
+### Visual QA
+
+Stage 13A establishes deterministic mobile, tablet, desktop and dark-mode screenshot baselines.
 
 ## Stage 12 architecture
 
@@ -41,4 +63,4 @@ Lock, grace and feature changes append to `admin_operation_events`. Existing res
 
 ## Deliberate exclusions
 
-Stage 12 does not implement an external result provider, public admin assignment, a global prediction unlock, league-specific scoring or the final design-system rebuild.
+Stage 13A does not implement an external result provider, public admin assignment, a global prediction unlock, league-specific scoring or any new database rule. The remaining predictor, bracket, league, results and admin page rebuilds continue in Stages 13B–13E.

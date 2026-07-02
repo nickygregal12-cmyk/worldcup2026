@@ -1,0 +1,232 @@
+import { useCallback, useEffect, useState } from 'react'
+import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
+import { GUEST_STATE_UPDATED_EVENT } from '../predictions/predictionSaveConfig.js'
+import { Badge, Button, Card, Icon, LinkButton, ProgressBar, StatusBar } from '../design-system/index.jsx'
+import { loadHomeDashboard } from './homeDashboardService.js'
+
+function formatDate(value, fallback = 'To be confirmed') {
+  if (!value) return fallback
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${value}T12:00:00Z`))
+}
+
+function formatRank(rank) {
+  return rank ? `#${rank}` : '—'
+}
+
+function Stat({ label, value, note }) {
+  return (
+    <Card className="home-stat" as="article">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{note}</small>
+    </Card>
+  )
+}
+
+function CompetitionCard({ title, eyebrow, description, href, progress, secondaryProgress, points, rank, badge, cta, unavailable = false }) {
+  return (
+    <Card className="home-competition" as="article">
+      <div className="home-competition__heading">
+        <div>
+          <span className="page-eyebrow">{eyebrow}</span>
+          <h2>{title}</h2>
+        </div>
+        <Badge tone={badge.tone}>{badge.label}</Badge>
+      </div>
+      <p>{description}</p>
+      {unavailable ? (
+        <StatusBar tone="warning" title="Progress temporarily unavailable">Your saved predictions have not been replaced or counted as zero.</StatusBar>
+      ) : (
+        <div className="home-competition__progress">
+          <div><span>{progress.label}</span><ProgressBar value={progress.value} max={progress.max} label={`${title}: ${progress.label}`} /></div>
+          {secondaryProgress && <div><span>{secondaryProgress.label}</span><ProgressBar value={secondaryProgress.value} max={secondaryProgress.max} label={`${title}: ${secondaryProgress.label}`} /></div>}
+        </div>
+      )}
+      <div className="home-competition__footer">
+        <div className="home-score-pair">
+          <span><strong>{points ?? '—'}</strong><small>points</small></span>
+          <span><strong>{formatRank(rank)}</strong><small>rank</small></span>
+        </div>
+        <LinkButton href={href} variant="secondary" size="small">{cta}<Icon name="chevron" size={16} /></LinkButton>
+      </div>
+    </Card>
+  )
+}
+
+function LoadingDashboard() {
+  return (
+    <div className="home-dashboard home-dashboard--loading" aria-busy="true" aria-live="polite">
+      <div className="home-skeleton home-skeleton--hero" />
+      <div className="home-stat-grid">{[1, 2, 3].map(item => <div className="home-skeleton home-skeleton--stat" key={item} />)}</div>
+      <div className="home-competition-grid">{[1, 2].map(item => <div className="home-skeleton home-skeleton--card" key={item} />)}</div>
+      <span className="sr-only">Loading your Euro dashboard…</span>
+    </div>
+  )
+}
+
+export default function HomeDashboard({ client, foundation, sessionState, fixture = null }) {
+  const [state, setState] = useState(() => fixture
+    ? { status: 'ready', data: fixture, error: null }
+    : { status: 'loading', data: null, error: null })
+
+  const load = useCallback(async () => {
+    if (fixture) {
+      setState({ status: 'ready', data: fixture, error: null })
+      return
+    }
+    setState(previous => ({ ...previous, status: 'loading', error: null }))
+    try {
+      const data = await loadHomeDashboard({
+        client,
+        tournament: foundation.tournament,
+        reference: foundation.guestReference,
+        session: sessionState.session,
+        profile: sessionState.profile,
+      })
+      setState({ status: 'ready', data, error: null })
+    } catch (error) {
+      setState({ status: 'error', data: null, error: error instanceof Error ? error.message : String(error) })
+    }
+  }, [client, foundation, sessionState.session, sessionState.profile, fixture])
+
+  useEffect(() => {
+    if (!fixture && sessionState.status !== 'loading') void Promise.resolve().then(load)
+  }, [fixture, load, sessionState.status])
+
+  useEffect(() => {
+    if (fixture) return undefined
+    const refreshGuest = () => {
+      if (!sessionState.session?.user) void load()
+    }
+    globalThis.addEventListener?.(GUEST_STATE_UPDATED_EVENT, refreshGuest)
+    globalThis.addEventListener?.('storage', refreshGuest)
+    return () => {
+      globalThis.removeEventListener?.(GUEST_STATE_UPDATED_EVENT, refreshGuest)
+      globalThis.removeEventListener?.('storage', refreshGuest)
+    }
+  }, [fixture, load, sessionState.session])
+
+  if (!fixture && sessionState.status === 'loading') return <LoadingDashboard />
+  if (state.status === 'loading') return <LoadingDashboard />
+  if (state.status === 'error') {
+    return (
+      <div className="home-dashboard">
+        <StatusBar tone="danger" title="Your dashboard could not load" action={<Button variant="secondary" size="small" icon="refresh" onClick={load}>Try again</Button>}>
+          {state.error}
+        </StatusBar>
+      </div>
+    )
+  }
+
+  const dashboard = state.data
+  const firstName = dashboard.displayName?.split(' ')[0]
+  const originalLocked = Boolean(dashboard.tournament.predictionLockedAt)
+  const koOpen = dashboard.koPredictor.available > 0
+  const next = dashboard.live.nextMatch
+
+  return (
+    <div className="home-dashboard">
+      <section className="home-hero">
+        <div className="home-hero__content">
+          <Badge tone={originalLocked ? 'warning' : 'safe'}>{originalLocked ? 'Original Predictor locked' : 'Predictions open'}</Badge>
+          <h1>{dashboard.signedIn ? `Welcome back, ${firstName}` : 'Make every Euro 2028 match matter.'}</h1>
+          <p>
+            {dashboard.signedIn
+              ? 'Your Original Predictor and KO Predictor are tracked separately, with their own points, jokers and leaderboards.'
+              : 'Build your full pre-tournament prediction in this browser, then create an account when you are ready to save it online.'}
+          </p>
+          <div className="home-hero__actions">
+            <LinkButton href="#/predict" icon="predict">{dashboard.original.totalComplete > 0 ? 'Continue predicting' : 'Start predicting'}</LinkButton>
+            <LinkButton href={dashboard.signedIn ? '#/leagues' : '#/account'} variant="secondary" icon={dashboard.signedIn ? 'leagues' : 'account'}>
+              {dashboard.signedIn ? 'View leagues' : 'Create an account'}
+            </LinkButton>
+          </div>
+        </div>
+        <Card className="home-tournament-card" as="aside">
+          <span className="page-eyebrow">Tournament</span>
+          <strong>{formatDate(dashboard.tournament.startsOn)} – {formatDate(dashboard.tournament.endsOn)}</strong>
+          <div><span>{dashboard.tournament.totalMatches}</span><small>matches</small></div>
+          <div><span>{dashboard.tournament.totalTeams}</span><small>team slots</small></div>
+          <p>{dashboard.tournament.unresolvedTeams > 0 ? `${dashboard.tournament.unresolvedTeams} team identities still await qualification and the final draw.` : 'All tournament teams are confirmed.'}</p>
+        </Card>
+      </section>
+
+      {dashboard.hasPartialFailure && (
+        <StatusBar tone="warning" title="Some live account data is temporarily unavailable" action={<Button variant="ghost" size="small" icon="refresh" onClick={load}>Refresh</Button>}>
+          Your saved predictions remain safe. Unavailable cards are shown with a dash rather than a false zero.
+        </StatusBar>
+      )}
+
+      <section className="home-stat-grid" aria-label="Your predictor summary">
+        <Stat label="Original Predictor" value={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.original.points : '—'} note={dashboard.signedIn ? `${formatRank(dashboard.original.rank)} overall` : 'Guest drafts are unscored'} />
+        <Stat label="KO Predictor" value={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.koPredictor.points : '—'} note={koOpen ? `${formatRank(dashboard.koPredictor.rank)} overall` : 'Opens as real knockout fixtures are known'} />
+        <Stat label="Private leagues" value={dashboard.signedIn && !dashboard.sectionErrors.leagues ? dashboard.leagues.count : '—'} note={dashboard.signedIn ? `${dashboard.leagues.members} combined members` : 'Sign in to create or join'} />
+      </section>
+
+      <section className="home-competition-grid" aria-label="Competition progress">
+        <CompetitionCard
+          title="Original Predictor"
+          eyebrow="Pre-tournament competition"
+          description="Predict all 36 group scores, then choose the winner of every match in your pre-tournament bracket."
+          href="#/predict"
+          progress={{ label: 'Group matches', value: dashboard.original.groupComplete, max: dashboard.original.groupTotal }}
+          secondaryProgress={{ label: 'Bracket picks', value: dashboard.original.bracketComplete, max: dashboard.original.bracketTotal }}
+          points={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.original.points : null}
+          rank={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.original.rank : null}
+          badge={dashboard.original.dataAvailable
+            ? { tone: originalLocked ? 'warning' : 'safe', label: originalLocked ? 'Locked' : `${dashboard.original.jokerCount}/${dashboard.original.jokerCap} jokers` }
+            : { tone: 'warning', label: 'Unavailable' }}
+          unavailable={!dashboard.original.dataAvailable}
+          cta="Open predictor"
+        />
+        <CompetitionCard
+          title="KO Predictor"
+          eyebrow="Separate knockout competition"
+          description="Once each real knockout fixture is known, predict its 90-minute score, advancing team and decision method."
+          href="#/ko-predictor"
+          progress={{ label: 'Available fixtures predicted', value: dashboard.koPredictor.complete, max: dashboard.koPredictor.available }}
+          points={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.koPredictor.points : null}
+          rank={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.koPredictor.rank : null}
+          badge={dashboard.koPredictor.dataAvailable
+            ? { tone: koOpen ? 'info' : 'neutral', label: koOpen ? `${dashboard.koPredictor.jokerCount}/${dashboard.koPredictor.jokerCap} jokers` : 'Not open yet' }
+            : { tone: 'warning', label: 'Unavailable' }}
+          unavailable={!dashboard.koPredictor.dataAvailable}
+          cta="Open KO Predictor"
+        />
+      </section>
+
+      <section className="home-lower-grid">
+        <Card className="home-live" as="article">
+          <div className="home-section-heading">
+            <div><span className="page-eyebrow">Tournament pulse</span><h2>{dashboard.live.liveMatches > 0 ? `${dashboard.live.liveMatches} match${dashboard.live.liveMatches === 1 ? '' : 'es'} live` : 'Waiting for kick-off'}</h2></div>
+            <Badge tone={dashboard.live.liveMatches > 0 ? 'danger' : 'neutral'}>{dashboard.live.confirmedMatches}/{dashboard.live.totalMatches} final</Badge>
+          </div>
+          {!dashboard.live.dataAvailable ? (
+            <StatusBar tone="warning" title="Live tournament data unavailable">No result has been shown as zero or final.</StatusBar>
+          ) : next ? (
+            <div className="home-next-match">
+              <Icon name="clock" />
+              <div><strong>Match {next.matchNumber}</strong><span>{next.displayStatus === 'live' ? 'Live now' : formatDate(next.scheduledDate)}</span></div>
+              <LinkButton href="#/results" variant="ghost" size="small">Results<Icon name="chevron" size={16} /></LinkButton>
+            </div>
+          ) : <p>All tournament matches are complete.</p>}
+        </Card>
+
+        <Card className="home-rules" as="article">
+          <div className="home-section-heading"><div><span className="page-eyebrow">Scoring at a glance</span><h2>One ruleset everywhere</h2></div><LinkButton href="#/tournament" variant="ghost" size="small">Full rules</LinkButton></div>
+          <div className="home-rules__grid">
+            <div><strong>{EURO_SCORING_CONFIG.match.EXACT_SCORE}</strong><span>Exact score</span></div>
+            <div><strong>{EURO_SCORING_CONFIG.match.CORRECT_OUTCOME}</strong><span>Correct outcome</span></div>
+            <div><strong>{EURO_SCORING_CONFIG.joker.MULTIPLIER}×</strong><span>Joker multiplier</span></div>
+          </div>
+          <small>Original and KO Predictor totals are never combined.</small>
+        </Card>
+      </section>
+    </div>
+  )
+}

@@ -20,7 +20,7 @@ if(EURO28_KO_PREDICTOR_VERSION!=='euro28-ko-predictor-v1'||EURO28_KO_PREDICTOR_R
 const app=fs.readFileSync(path.join(root,'src/foundation/EuroFoundationApp.jsx'),'utf8')
 if(!app.includes('KoPredictorFoundation')) fail('active application does not expose the separate KO Predictor')
 const journey=fs.readFileSync(path.join(root,'src/journey/PredictionJourneyFoundation.jsx'),'utf8')
-if(!journey.includes('Original predictor')) fail('original prediction journey is not labelled clearly')
+if(!journey.includes('Original Predictor')) fail('original prediction journey is not labelled clearly')
 if(errors.length){console.error('Euro competition split audit failed:');errors.forEach(error=>console.error(`- ${error}`));process.exit(1)}
 console.log('Euro competition split audit passed.')
 console.log('Original predictor: group scores + winner-only pre-tournament bracket')

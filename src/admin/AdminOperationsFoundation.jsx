@@ -206,7 +206,7 @@ export default function AdminOperationsFoundation({ client, reference }) {
   if (state.status === 'loading') {
     return (
       <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
-        <span className="foundation-kicker">Stage 12 · Tournament control room</span>
+        <span className="foundation-kicker">Tournament control room</span>
         <h2 id="stage12-admin-heading">Checking administrator access…</h2>
       </section>
     )
@@ -215,7 +215,7 @@ export default function AdminOperationsFoundation({ client, reference }) {
   if (state.status === 'error') {
     return (
       <section className="foundation-panel foundation-panel--error foundation-admin" aria-labelledby="stage12-admin-heading">
-        <span className="foundation-kicker">Stage 12 · Tournament control room</span>
+        <span className="foundation-kicker">Tournament control room</span>
         <h2 id="stage12-admin-heading">Admin operations could not load</h2>
         <p>{state.error}</p>
         <button type="button" onClick={load}>Try again</button>
@@ -226,9 +226,9 @@ export default function AdminOperationsFoundation({ client, reference }) {
   if (!state.signedIn) {
     return (
       <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
-        <span className="foundation-kicker">Stage 12 · Tournament control room</span>
+        <span className="foundation-kicker">Tournament control room</span>
         <h2 id="stage12-admin-heading">Secure admin controls</h2>
-        <p>Sign in with an account that has been granted Euro staging administrator access.</p>
+        <p>Sign in with an account that has been granted Euro tournament administrator access.</p>
       </section>
     )
   }
@@ -236,7 +236,7 @@ export default function AdminOperationsFoundation({ client, reference }) {
   if (!state.data?.access.isAdmin) {
     return (
       <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
-        <span className="foundation-kicker">Stage 12 · Tournament control room</span>
+        <span className="foundation-kicker">Tournament control room</span>
         <h2 id="stage12-admin-heading">No administrator access</h2>
         <p>Your account is signed in but has not been granted tournament administration rights. Access cannot be self-assigned from the browser.</p>
       </section>
@@ -247,7 +247,7 @@ export default function AdminOperationsFoundation({ client, reference }) {
     <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
       <div className="foundation-section-heading">
         <div>
-          <span className="foundation-kicker">Stage 12 · Tournament control room</span>
+          <span className="foundation-kicker">Tournament control room</span>
           <h2 id="stage12-admin-heading">Expanded tournament operations</h2>
           <p>Locks, grace, feature controls, results and recovery actions all use trusted RPCs and append-only auditing.</p>
         </div>

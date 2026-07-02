@@ -8,7 +8,7 @@ npm run check
 
 The gate runs database safety, every Euro audit, lint, unit tests and a production build.
 
-The verified Stage 12 application gate passes 211 tests across 33 test files.
+The verified Stage 13A application gate passes 229 tests across 38 test files, including route, theme and Home-dashboard model coverage.
 
 ## Focused audits
 
@@ -16,6 +16,7 @@ The verified Stage 12 application gate passes 211 tests across 33 test files.
 npm run audit:admin-operations
 npm run audit:leagues
 npm run audit:control-room
+npm run audit:design-tokens
 ```
 
 The Stage 12 audit verifies:
@@ -29,6 +30,19 @@ The Stage 12 audit verifies:
 - one combined append-only admin timeline;
 - Stage 11 stable-function lint corrections;
 - no external result provider or WC26 dependency.
+
+
+The Stage 13A audit additionally verifies:
+
+- fourteen migrations remain active and Migration 015 does not exist;
+- the adjustable blue semantic token system, self-hosted fonts and reusable UI primitives are present;
+- all nine app destinations remain routed, with Bracket permanent and Groups/KO changing only in Position 1;
+- the three navigation states, early KO visibility, full transition boundary, resolver fail-safe and TBC hiding are covered;
+- the More dialog handles Escape, focus trapping and focus restoration;
+- Home and Tournament copy use central tournament/scoring data;
+- partial failures cannot be displayed as genuine zeroes;
+- the six light/dark visual baseline dimensions are present;
+- public product branding is updated while staging remains `noindex`.
 
 ## Database tests
 
@@ -72,3 +86,7 @@ Established counts before Stage 12:
 - Migration 013 leagues/sharing: 62.
 
 Migration 014 uses pgTAP `no_plan()` because it exercises roles, kill-switches, grace, the irreversible lock, operational review and lint corrections in one transaction.
+
+## Package-lock portability
+
+Run `npm run audit:package-lock`. It must confirm that every resolved package uses the public npm registry and that no private build-environment URL is present.

@@ -53,7 +53,7 @@ for (const file of [
 
 const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
 if (!app.includes('LeaguesFoundation')) fail('the active foundation does not expose Stage 11 leagues')
-if (!app.includes('The tournament control room now covers lock, grace, joker allocation and kill-switch controls')) fail('Stage 12 public branding is missing')
+if (!app.includes('APP_ROUTE.LEAGUES')) fail('the active app shell no longer routes this feature')
 
 const service = fs.existsSync(path.join(root, 'src/leagues/leagueService.js'))
   ? fs.readFileSync(path.join(root, 'src/leagues/leagueService.js'), 'utf8')

@@ -48,7 +48,7 @@ for (const file of [
 
 const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
 if (!app.includes('ResultsAndLeaderboardsFoundation')) fail('the active foundation does not expose Stage 9 results')
-if (!app.includes('The tournament control room now covers lock, grace, joker allocation and kill-switch controls')) fail('Stage 12 public branding is missing')
+if (!app.includes('APP_ROUTE.RESULTS')) fail('the active app shell no longer routes this feature')
 
 if (errors.length) {
   console.error('Euro results and scoring audit failed:')

@@ -190,7 +190,7 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
     <section className="foundation-panel foundation-results" aria-labelledby="stage9-results-heading">
       <div className="foundation-section-heading">
         <div>
-          <span className="foundation-kicker">Stage 9 · Results and scoring</span>
+          <span className="foundation-kicker">Results and scoring</span>
           <h2 id="stage9-results-heading">Live tournament and separate leaderboards</h2>
           <p>Confirmed corrections replace prior points. Original and KO Predictor totals never combine.</p>
         </div>

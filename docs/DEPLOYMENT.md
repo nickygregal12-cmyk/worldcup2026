@@ -63,4 +63,20 @@ http://localhost:5173/**
 npm run verify:foundation-page
 ```
 
-The deployed page must expose the Stage 12 protected control room, keep Original and KO points separate and contain no active WC26 application bundle.
+The deployed page must expose the current product-branded app shell, retain the protected control room, keep Original and KO points separate and contain no active WC26 application bundle.
+## Stage 13A frontend deployment
+
+Stage 13A v6 contains no database migration. Confirm both commands print nothing:
+
+```bash
+git status --short -- supabase/migrations
+git diff --name-only -- supabase/migrations
+```
+
+Do not run `npx supabase db push` for this batch. After Netlify deploys the committed branch, run:
+
+```bash
+npm run verify:foundation-page
+```
+
+The deployed build must show the product-branded app shell and Home dashboard, retain all protected Stage 12 operations and contain no active WC26 bundle.

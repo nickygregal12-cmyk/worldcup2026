@@ -234,10 +234,10 @@ export default function EuroAuthFoundation({ client }) {
       <section className="foundation-panel auth-foundation">
         <div className="foundation-section-heading auth-foundation__heading">
           <div>
-            <span className="foundation-kicker">Stage 6 · Authentication retained</span>
+            <span className="foundation-kicker">Euro account</span>
             <h2>Signed in as {profile?.display_name || emailAddress}</h2>
             <p className="foundation-panel-copy">
-              Account identity is live. The trusted Stage 6 save route is available below; the complete editor remains deferred to Stage 7.
+              Manage the display name used on leaderboards and shared predictions. Your email remains private.
             </p>
           </div>
           <button className="foundation-secondary-button" type="button" onClick={handleSignOut} disabled={busy}>
@@ -261,7 +261,7 @@ export default function EuroAuthFoundation({ client }) {
             <span>Email</span>
             <strong>{emailAddress}</strong>
             <span>Profile privacy</span>
-            <strong>Owner-only during this stage</strong>
+            <strong>Private to your account</strong>
           </div>
         </div>
         <AuthNotice notice={notice} />
@@ -273,7 +273,7 @@ export default function EuroAuthFoundation({ client }) {
     <section className="foundation-panel auth-foundation">
       <div className="foundation-section-heading auth-foundation__heading">
         <div>
-          <span className="foundation-kicker">Stage 6 · Authentication retained</span>
+          <span className="foundation-kicker">Euro account</span>
           <h2>{isRecovery ? 'Choose a new password' : 'Create or access your Euro account'}</h2>
           <p className="foundation-panel-copy">
             Your guest draft remains browser-only. Signing in does not upload, replace or clear it.
