@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildSharedPredictionJourney, LEAGUE_COMPETITION } from '../leagues/leagueModel.js'
 import { loadOverallHeadToHead, loadResultsAndLeaderboards } from './resultService.js'
 import {
@@ -6,6 +6,7 @@ import {
   buildLiveBracketRounds,
   RESULT_COMPETITION,
 } from './resultModel.js'
+import { createLatestRequestGuard } from '../lib/latestRequest.js'
 
 function competitionName(key) {
   return key === RESULT_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
@@ -104,8 +105,12 @@ function OverallComparison({ state, reference, onClose }) {
           </div>
         </>
       )}
-      {state.status === 'ready' && otherJourney && otherJourney.privateMatchCount > 0 && (
-        <p className="foundation-empty-copy">{otherJourney.privateMatchCount} future or locked selection{otherJourney.privateMatchCount === 1 ? ' remains' : 's remain'} private.</p>
+      {state.status === 'ready' && otherJourney && otherJourney.privateSelectionCount > 0 && (
+        <div className="foundation-privacy-state" role="status">
+          <strong>Some selections remain private</strong>
+          <p>{otherJourney.reason ?? 'Future KO selections are released fixture by fixture after kick-off.'}</p>
+          <small>{otherJourney.privateSelectionCount} of {otherJourney.totalSelectionCount} selections remain protected.</small>
+        </div>
       )}
     </article>
   )
@@ -284,27 +289,32 @@ function PointsBreakdown({ title, section, competitionKey }) {
 export default function ResultsAndLeaderboardsFoundation({ client, reference }) {
   const [state, setState] = useState({ status: 'loading', data: null, error: null })
   const [comparison, setComparison] = useState(null)
+  const loadRequests = useRef(createLatestRequestGuard())
+  const comparisonRequests = useRef(createLatestRequestGuard())
 
   const load = useCallback(async () => {
+    const requestToken = loadRequests.current.begin()
     setState(previous => ({ ...previous, status: 'loading', error: null }))
     try {
       const data = await loadResultsAndLeaderboards(client, reference)
+      if (!loadRequests.current.isCurrent(requestToken)) return
       setState({ status: data.status, data, error: null })
     } catch (error) {
-      setState({ status: 'error', data: null, error: error instanceof Error ? error.message : String(error) })
+      if (!loadRequests.current.isCurrent(requestToken)) return
+      const message = error instanceof Error ? error.message : String(error)
+      setState(previous => ({
+        status: previous.data ? 'partial' : 'error',
+        data: previous.data,
+        error: message,
+      }))
     }
   }, [client, reference])
 
   useEffect(() => {
-    let active = true
-    loadResultsAndLeaderboards(client, reference)
-      .then(data => { if (active) setState({ status: data.status, data, error: null }) })
-      .catch(error => {
-        if (!active) return
-        setState({ status: 'error', data: null, error: error instanceof Error ? error.message : String(error) })
-      })
-    return () => { active = false }
-  }, [client, reference])
+    const requestGuard = loadRequests.current
+    void load()
+    return () => { requestGuard.cancel() }
+  }, [load])
 
   const summary = state.data?.live?.summary ?? null
   const groups = useMemo(() => Object.entries(state.data?.live?.groups ?? {}), [state.data])
@@ -313,7 +323,15 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
 
   const compareOverall = async (row, competitionKey) => {
     if (!state.data?.currentUserId) return
-    setComparison({ status: 'loading', otherName: row.displayName, competitionKey, data: null, error: null })
+    const requestToken = comparisonRequests.current.begin()
+    setComparison({
+      status: 'loading',
+      otherName: row.displayName,
+      otherUserId: row.userId,
+      competitionKey,
+      data: null,
+      error: null,
+    })
     try {
       const data = await loadOverallHeadToHead(client, {
         tournamentId: reference.tournamentId,
@@ -321,16 +339,22 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
         otherUserId: row.userId,
         competitionKey,
       })
-      setComparison({ status: 'ready', otherName: row.displayName, competitionKey, data, error: null })
+      if (!comparisonRequests.current.isCurrent(requestToken)) return
+      setComparison(previous => ({ ...previous, status: 'ready', data, error: null }))
     } catch (error) {
-      setComparison({
+      if (!comparisonRequests.current.isCurrent(requestToken)) return
+      setComparison(previous => ({
+        ...previous,
         status: 'error',
-        otherName: row.displayName,
-        competitionKey,
         data: null,
         error: error instanceof Error ? error.message : String(error),
-      })
+      }))
     }
+  }
+
+  const closeComparison = () => {
+    comparisonRequests.current.cancel()
+    setComparison(null)
   }
 
   return (
@@ -341,12 +365,14 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
           <h2 id="euro28-results-heading">Results, live tables and separate points</h2>
           <p>Canonical live data never blends with predicted brackets. Original and KO Predictor totals never combine.</p>
         </div>
-        <button type="button" className="foundation-secondary-button" onClick={load}>Refresh</button>
+        <button type="button" className="foundation-secondary-button" onClick={() => { void load() }} disabled={state.status === 'loading'}>{state.status === 'loading' ? 'Refreshing…' : 'Refresh'}</button>
       </div>
 
       {state.status === 'loading' && !state.data && <p className="foundation-empty-copy">Loading canonical results and competition tables…</p>}
       {state.status === 'error' && !state.data && <p className="foundation-warning-text">{state.error}</p>}
-      {state.status === 'partial' && <p className="foundation-warning-text">Some sections could not be refreshed. Available live data and competition tables remain visible below.</p>}
+      {state.status === 'loading' && state.data && <p className="foundation-empty-copy">Refreshing available live and competition sections…</p>}
+      {state.error && state.data && <p className="foundation-warning-text">Refresh failed. The last available data remains visible: {state.error}</p>}
+      {state.status === 'partial' && !state.error && <p className="foundation-warning-text">Some sections could not be refreshed. Available live data and competition tables remain visible below.</p>}
 
       {state.data && (
         <>
@@ -407,7 +433,7 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
                 <PointsBreakdown title="Original Predictor breakdown" section={state.data.sections.originalPoints} competitionKey={RESULT_COMPETITION.ORIGINAL} />
                 <PointsBreakdown title="KO Predictor breakdown" section={state.data.sections.koPoints} competitionKey={RESULT_COMPETITION.KO_PREDICTOR} />
               </div>
-              <OverallComparison state={comparison} reference={reference} onClose={() => setComparison(null)} />
+              <OverallComparison state={comparison} reference={reference} onClose={closeComparison} />
             </>
           ) : state.data.sections.session.status === 'error' ? (
             <p className="foundation-warning-text">Live results are available, but your signed-in competition data could not be checked: {state.data.sections.session.error}</p>

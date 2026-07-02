@@ -2,6 +2,12 @@ import { RESOLVER_CONTEXT, resolveEuro28Tournament } from '../resolver/index.js'
 import { VISUAL_FOUNDATION, VISUAL_GROUP_REFERENCE } from './visualFixture.js'
 
 const CURRENT_USER_ID = 'visual-user'
+export const STAGE13D_VISUAL_SCENARIO = Object.freeze({
+  ACTIVE: 'active',
+  PRIVACY: 'privacy',
+  PARTIAL: 'partial',
+})
+
 const MEMBER_NAMES = Object.freeze([
   [CURRENT_USER_ID, 'Nicky'],
   ['visual-member-2', 'Amy'],
@@ -298,11 +304,32 @@ function response(data, error = null) {
   return Promise.resolve({ data, error })
 }
 
-function sharedBundleFor(userId, competitionKey) {
+function privateOriginalBundle(userId) {
+  const displayName = MEMBER_NAMES.find(([candidate]) => candidate === userId)?.[1] ?? 'Member'
+  return Object.freeze({
+    visible: false,
+    reason: 'Original predictions remain private until the global tournament lock.',
+    display_name: displayName,
+    match_predictions: Object.freeze([]),
+    bracket_predictions: Object.freeze([]),
+  })
+}
+
+function sharedBundleFor(userId, competitionKey, scenario) {
+  if (competitionKey === 'original' && scenario === STAGE13D_VISUAL_SCENARIO.PRIVACY) {
+    return privateOriginalBundle(userId)
+  }
   return competitionKey === 'original' ? originalBundle(userId) : koBundle(userId)
 }
 
-export function createStage13dVisualClient() {
+function normaliseScenario(value) {
+  return Object.values(STAGE13D_VISUAL_SCENARIO).includes(value)
+    ? value
+    : STAGE13D_VISUAL_SCENARIO.ACTIVE
+}
+
+export function createStage13dVisualClient({ scenario = STAGE13D_VISUAL_SCENARIO.ACTIVE } = {}) {
+  const activeScenario = normaliseScenario(scenario)
   return Object.freeze({
     auth: Object.freeze({
       getSession: () => response({ session: { user: { id: CURRENT_USER_ID, email: 'nicky@example.com' } } }),
@@ -323,16 +350,25 @@ export function createStage13dVisualClient() {
     rpc: (name, args = {}) => {
       if (name === 'get_my_leagues') return response(LEAGUES)
       if (name === 'get_league_standings') {
+        if (activeScenario === STAGE13D_VISUAL_SCENARIO.PARTIAL && args.p_competition_key === 'ko_predictor') {
+          return response(null, { message: 'Visual partial fixture: KO league standings unavailable.' })
+        }
         return response(args.p_competition_key === 'original' ? ORIGINAL_STANDINGS : KO_STANDINGS)
       }
       if (name === 'get_league_member_predictions' || name === 'get_member_predictions_after_lock') {
         const userId = args.p_member_user_id ?? CURRENT_USER_ID
-        return response(sharedBundleFor(userId, args.p_competition_key))
+        return response(sharedBundleFor(userId, args.p_competition_key, activeScenario))
       }
       if (name === 'get_competition_leaderboard') {
+        if (activeScenario === STAGE13D_VISUAL_SCENARIO.PARTIAL && args.p_competition_key === 'ko_predictor') {
+          return response(null, { message: 'Visual partial fixture: KO overall leaderboard unavailable.' })
+        }
         return response(args.p_competition_key === 'original' ? ORIGINAL_STANDINGS : KO_STANDINGS)
       }
       if (name === 'get_my_competition_points') {
+        if (activeScenario === STAGE13D_VISUAL_SCENARIO.PARTIAL && args.p_competition_key === 'original') {
+          return response(null, { message: 'Visual partial fixture: Original points unavailable.' })
+        }
         return response(args.p_competition_key === 'original' ? ORIGINAL_POINTS : KO_POINTS)
       }
       if (name === 'create_my_league') return response({ league_id: 'visual-created', name: args.p_name })

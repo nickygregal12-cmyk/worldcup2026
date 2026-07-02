@@ -4,6 +4,7 @@ import {
   buildLeagueCompetitionSummary,
   buildSharedLeagueMemberList,
   buildSharedPredictionJourney,
+  buildStandingComparison,
   LEAGUE_COMPETITION,
   compareSharedPredictionBundles,
   formatOrdinal,
@@ -74,6 +75,17 @@ describe('league model', () => {
     expect(() => buildLeagueCompetitionSummary([], 'combined')).toThrow('Unsupported league competition')
   })
 
+  it('builds a competition-scoped head-to-head standing summary', () => {
+    const rows = [
+      { userId: 'me', displayName: 'Nicky', rank: 3, totalPoints: 40, matchPoints: 30, bracketPoints: 10, scoredMatchCount: 4, isCurrentUser: true },
+      { userId: 'them', displayName: 'Amy', rank: 1, totalPoints: 55, matchPoints: 45, bracketPoints: 10, scoredMatchCount: 4, isCurrentUser: false },
+    ]
+    const summary = buildStandingComparison(rows, 'them')
+    expect(summary.current).toMatchObject({ userId: 'me', rank: 3, totalPoints: 40 })
+    expect(summary.other).toMatchObject({ userId: 'them', rank: 1, totalPoints: 55 })
+    expect(summary).not.toHaveProperty('combinedPoints')
+  })
+
   it('creates one shared member list from either competition table', () => {
     const members = buildSharedLeagueMemberList([
       { userId: 'b', displayName: 'Zara', memberRole: 'member', isCurrentUser: false },
@@ -95,6 +107,9 @@ describe('league model', () => {
     expect(journey.matches).toHaveLength(36)
     expect(journey.bracket).toHaveLength(15)
     expect(journey.matches.every(row => row.visibility === 'private')).toBe(true)
+    expect(journey.visibleSelectionCount).toBe(0)
+    expect(journey.privateSelectionCount).toBe(51)
+    expect(journey.totalSelectionCount).toBe(51)
     expect(journey.matches[0].score).toBeNull()
   })
 
@@ -120,6 +135,9 @@ describe('league model', () => {
     })
     expect(journey.matches[0]).toMatchObject({ visibility: 'visible', score: '1–1', jokerApplied: true })
     expect(journey.matches[1].visibility).toBe('private')
+    expect(journey.visibleSelectionCount).toBe(1)
+    expect(journey.privateSelectionCount).toBe(14)
+    expect(journey.totalSelectionCount).toBe(15)
   })
 
   it('does not compare hidden bundles', () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   createLeague,
   deleteLeague,
@@ -11,11 +11,13 @@ import {
 } from './leagueService.js'
 import {
   buildSharedPredictionJourney,
+  buildStandingComparison,
   formatOrdinal,
   LEAGUE_COMPETITION,
   validateJoinCode,
   validateLeagueName,
 } from './leagueModel.js'
+import { createLatestRequestGuard } from '../lib/latestRequest.js'
 
 function messageForError(error) {
   const message = error instanceof Error ? error.message : String(error)
@@ -150,44 +152,54 @@ function StandingsTable({ rows, competitionKey, onCompare }) {
 }
 
 function PredictionRows({ journey, heading }) {
-  const visibleRows = [...journey.matches, ...journey.bracket]
+  const rows = [...journey.matches, ...journey.bracket]
+  const entirelyPrivate = journey.privateSelectionCount === journey.totalSelectionCount
   return (
     <section className="foundation-member-predictions">
       <div>
         <h4>{heading}</h4>
-        <small>{journey.visibleMatchCount} visible · {journey.privateMatchCount} private</small>
+        <small>{journey.visibleSelectionCount} visible · {journey.privateSelectionCount} private · {journey.notSavedSelectionCount} not saved</small>
       </div>
-      <div className="foundation-member-prediction-list">
-        {visibleRows.map(row => (
-          <article key={`${row.kind}-${row.matchNumber}`} className={`foundation-member-prediction is-${row.visibility}`}>
-            <div>
-              <span>{row.stageLabel} · Match {row.matchNumber}</span>
-              <strong>{row.homeLabel} v {row.awayLabel}</strong>
-            </div>
-            {row.visibility === 'visible' && row.kind === 'match' && (
-              <div className="foundation-member-prediction__pick">
-                <strong>{row.score}</strong>
-                {row.advancingTeamLabel && <small>{row.advancingTeamLabel} through</small>}
-                {row.decisionMethodLabel && <small>{row.decisionMethodLabel}</small>}
-                {row.jokerApplied && <small>Joker applied</small>}
+      {entirelyPrivate ? (
+        <div className="foundation-privacy-state" role="status">
+          <strong>Selections remain private</strong>
+          <p>{journey.reason ?? rows[0]?.message ?? 'These selections have not been released by the server yet.'}</p>
+          <small>{journey.totalSelectionCount} selections protected by the competition privacy rules.</small>
+        </div>
+      ) : (
+        <div className="foundation-member-prediction-list">
+          {rows.map(row => (
+            <article key={`${row.kind}-${row.matchNumber}`} className={`foundation-member-prediction is-${row.visibility}`}>
+              <div>
+                <span>{row.stageLabel} · Match {row.matchNumber}</span>
+                <strong>{row.homeLabel} v {row.awayLabel}</strong>
               </div>
-            )}
-            {row.visibility === 'visible' && row.kind === 'bracket' && (
-              <div className="foundation-member-prediction__pick">
-                <strong>{row.advancingTeamLabel ?? 'No selection'}</strong>
-                <small>Advancing team</small>
-              </div>
-            )}
-            {row.visibility !== 'visible' && <p>{row.message}</p>}
-          </article>
-        ))}
-      </div>
+              {row.visibility === 'visible' && row.kind === 'match' && (
+                <div className="foundation-member-prediction__pick">
+                  <strong>{row.score}</strong>
+                  {row.advancingTeamLabel && <small>{row.advancingTeamLabel} through</small>}
+                  {row.decisionMethodLabel && <small>{row.decisionMethodLabel}</small>}
+                  {row.jokerApplied && <small>Joker applied</small>}
+                </div>
+              )}
+              {row.visibility === 'visible' && row.kind === 'bracket' && (
+                <div className="foundation-member-prediction__pick">
+                  <strong>{row.advancingTeamLabel ?? 'No selection'}</strong>
+                  <small>Advancing team</small>
+                </div>
+              )}
+              {row.visibility !== 'visible' && <p>{row.message}</p>}
+            </article>
+          ))}
+        </div>
+      )}
     </section>
   )
 }
 
-function HeadToHead({ state, competitionKey, reference, onClose }) {
+function HeadToHead({ state, reference, onClose }) {
   if (!state) return null
+  const competitionKey = state.competitionKey
   let currentJourney = null
   let otherJourney = null
   if (state.status === 'ready') {
@@ -213,6 +225,21 @@ function HeadToHead({ state, competitionKey, reference, onClose }) {
         </div>
         <button type="button" className="foundation-secondary-button" onClick={onClose}>Close</button>
       </div>
+
+      {state.standings && (
+        <div className="foundation-head-to-head-points" aria-label={`${competitionName(competitionKey)} league positions`}>
+          <div>
+            <span>You</span>
+            <strong>{formatOrdinal(state.standings.current?.rank)}</strong>
+            <small>{state.standings.current ? `${state.standings.current.totalPoints} pts` : 'Position unavailable'}</small>
+          </div>
+          <div>
+            <span>{state.otherName}</span>
+            <strong>{formatOrdinal(state.standings.other?.rank)}</strong>
+            <small>{state.standings.other ? `${state.standings.other.totalPoints} pts` : 'Position unavailable'}</small>
+          </div>
+        </div>
+      )}
 
       {state.status === 'loading' && <p className="foundation-empty-copy">Loading authorised shared predictions…</p>}
       {state.status === 'error' && <p className="foundation-warning-text">{state.error}</p>}
@@ -257,6 +284,9 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
   const [joinCode, setJoinCode] = useState('')
   const [comparison, setComparison] = useState(null)
   const [comparisonMemberId, setComparisonMemberId] = useState('')
+  const [pendingLeagueAction, setPendingLeagueAction] = useState(null)
+  const overviewRequests = useRef(createLatestRequestGuard())
+  const comparisonRequests = useRef(createLatestRequestGuard())
 
   const selectedLeague = useMemo(
     () => leagues.find(league => league.id === selectedLeagueId) ?? leagues[0] ?? null,
@@ -266,24 +296,43 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
   const refreshLeagues = useCallback(async preferredId => {
     if (!client || !session?.user || !tournamentId) return []
     setLeagueListStatus('loading')
-    const nextLeagues = await getMyLeagues(client, tournamentId)
-    setLeagues(nextLeagues)
-    setSelectedLeagueId(previous => {
-      if (preferredId && nextLeagues.some(league => league.id === preferredId)) return preferredId
-      return nextLeagues.some(league => league.id === previous) ? previous : nextLeagues[0]?.id ?? null
-    })
-    setLeagueListStatus('ready')
-    return nextLeagues
+    try {
+      const nextLeagues = await getMyLeagues(client, tournamentId)
+      setLeagues(nextLeagues)
+      setSelectedLeagueId(previous => {
+        if (preferredId && nextLeagues.some(league => league.id === preferredId)) return preferredId
+        return nextLeagues.some(league => league.id === previous) ? previous : nextLeagues[0]?.id ?? null
+      })
+      setLeagueListStatus('ready')
+      return nextLeagues
+    } catch (error) {
+      setLeagueListStatus('error')
+      throw error
+    }
   }, [client, session, tournamentId])
 
   const refreshOverview = useCallback(async () => {
     if (!client || !selectedLeague?.id) {
+      overviewRequests.current.cancel()
       setOverview({ status: 'idle', data: null, leagueId: null })
       return
     }
-    setOverview(previous => ({ ...previous, status: 'loading', leagueId: selectedLeague.id }))
-    const data = await loadLeagueOverview(client, selectedLeague.id)
-    setOverview({ status: data.status, data, leagueId: selectedLeague.id })
+    const leagueId = selectedLeague.id
+    const requestToken = overviewRequests.current.begin()
+    setOverview(previous => ({ ...previous, status: 'loading', leagueId }))
+    try {
+      const data = await loadLeagueOverview(client, leagueId)
+      if (!overviewRequests.current.isCurrent(requestToken)) return
+      setOverview({ status: data.status, data, leagueId })
+    } catch (error) {
+      if (!overviewRequests.current.isCurrent(requestToken)) return
+      setOverview(previous => ({
+        status: previous.data ? 'partial' : 'error',
+        data: previous.data,
+        leagueId,
+      }))
+      setNotice({ tone: 'danger', message: messageForError(error) })
+    }
   }, [client, selectedLeague])
 
   useEffect(() => {
@@ -309,8 +358,11 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
         setLeagues([])
         setSelectedLeagueId(null)
         setOverview({ status: 'idle', data: null, leagueId: null })
+        comparisonRequests.current.cancel()
+        overviewRequests.current.cancel()
         setComparison(null)
         setComparisonMemberId('')
+        setPendingLeagueAction(null)
       }
     })
 
@@ -342,16 +394,10 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
 
   useEffect(() => {
     if (!client || !selectedLeague?.id) return undefined
-    let active = true
-    loadLeagueOverview(client, selectedLeague.id)
-      .then(data => { if (active) setOverview({ status: data.status, data, leagueId: selectedLeague.id }) })
-      .catch(error => {
-        if (!active) return
-        setOverview({ status: 'error', data: null, leagueId: selectedLeague.id })
-        setNotice({ tone: 'danger', message: messageForError(error) })
-      })
-    return () => { active = false }
-  }, [client, selectedLeague])
+    const requestGuard = overviewRequests.current
+    void refreshOverview()
+    return () => { requestGuard.cancel() }
+  }, [client, refreshOverview, selectedLeague])
 
   const run = async action => {
     setNotice(null)
@@ -359,9 +405,11 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
     try {
       await action()
       setActionStatus('ready')
+      return true
     } catch (error) {
       setActionStatus('error')
       setNotice({ tone: 'danger', message: messageForError(error) })
+      return false
     }
   }
 
@@ -395,40 +443,66 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
     })
   }
 
-  const handleLeave = () => {
-    if (!selectedLeague) return
-    run(async () => {
-      await leaveLeague(client, selectedLeague.id)
+  const confirmLeagueAction = async () => {
+    if (!selectedLeague || !pendingLeagueAction) return
+    const leagueName = selectedLeague.name
+    const action = pendingLeagueAction
+    const succeeded = await run(async () => {
+      if (action === 'delete') await deleteLeague(client, selectedLeague.id)
+      else await leaveLeague(client, selectedLeague.id)
+      clearComparison()
       await refreshLeagues()
-      setNotice({ tone: 'safe', message: `You left ${selectedLeague.name}.` })
+    })
+    if (!succeeded) return
+    setPendingLeagueAction(null)
+    setNotice({
+      tone: 'safe',
+      message: action === 'delete' ? `${leagueName} was deleted.` : `You left ${leagueName}.`,
     })
   }
 
-  const handleDelete = () => {
-    if (!selectedLeague) return
-    run(async () => {
-      await deleteLeague(client, selectedLeague.id)
-      await refreshLeagues()
-      setNotice({ tone: 'safe', message: `${selectedLeague.name} was deleted.` })
-    })
+
+  const clearComparison = () => {
+    comparisonRequests.current.cancel()
+    setComparison(null)
+    setComparisonMemberId('')
   }
 
-  const compareMember = async row => {
+  const compareMember = async (row, requestedCompetitionKey = competitionKey) => {
     if (!selectedLeague || !session?.user) return
+    const requestToken = comparisonRequests.current.begin()
+    const leagueId = selectedLeague.id
+    const section = requestedCompetitionKey === LEAGUE_COMPETITION.ORIGINAL
+      ? overview.data?.sections.original
+      : overview.data?.sections.koPredictor
+    const standings = buildStandingComparison(section?.data ?? [], row.userId)
+
     setComparisonMemberId(row.userId)
-    setComparison({ status: 'loading', otherName: row.displayName, data: null, error: null })
+    setComparison({
+      status: 'loading',
+      otherName: row.displayName,
+      otherUserId: row.userId,
+      competitionKey: requestedCompetitionKey,
+      leagueId,
+      standings,
+      data: null,
+      error: null,
+    })
     try {
       const data = await loadLeagueHeadToHead(client, {
-        leagueId: selectedLeague.id,
+        leagueId,
         currentUserId: session.user.id,
         otherUserId: row.userId,
-        competitionKey,
+        competitionKey: requestedCompetitionKey,
       })
-      setComparison({ status: 'ready', otherName: row.displayName, data, error: null })
+      if (!comparisonRequests.current.isCurrent(requestToken)) return
+      setComparison(previous => ({ ...previous, status: 'ready', data, error: null }))
     } catch (error) {
-      setComparison({ status: 'error', otherName: row.displayName, data: null, error: messageForError(error) })
+      if (!comparisonRequests.current.isCurrent(requestToken)) return
+      setComparison(previous => ({ ...previous, status: 'error', data: null, error: messageForError(error) }))
     }
   }
+
 
 
   const overviewLoading = Boolean(selectedLeague?.id) && overview.leagueId !== selectedLeague.id
@@ -441,8 +515,7 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
 
   const chooseComparisonMember = memberUserId => {
     if (!memberUserId) {
-      setComparisonMemberId('')
-      setComparison(null)
+      clearComparison()
       return
     }
     const member = activeOverview?.members.find(candidate => candidate.userId === memberUserId)
@@ -467,7 +540,7 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
           <h2 id="euro28-leagues-heading">One member list, two separate competitions</h2>
           <p>Original Predictor and KO Predictor ranks and points are always shown separately.</p>
         </div>
-        {session?.user && <button type="button" className="foundation-secondary-button" onClick={refreshOverview}>Refresh league</button>}
+        {session?.user && <button type="button" className="foundation-secondary-button" onClick={() => { void refreshOverview() }} disabled={overview.status === 'loading'}>{overview.status === 'loading' ? 'Refreshing…' : 'Refresh league'}</button>}
       </div>
 
       {notice && <p className={`auth-notice auth-notice--${notice.tone}`}>{notice.message}</p>}
@@ -509,8 +582,8 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
           ) : selectedLeague && (
             <>
               <div className="foundation-league-toolbar">
-                <LeaguePicker leagues={leagues} selectedId={selectedLeague.id} onSelect={value => { setSelectedLeagueId(value); setComparison(null); setComparisonMemberId('') }} />
-                <CompetitionTabs value={competitionKey} onChange={value => { setCompetitionKey(value); setComparison(null); setComparisonMemberId('') }} />
+                <LeaguePicker leagues={leagues} selectedId={selectedLeague.id} onSelect={value => { overviewRequests.current.cancel(); setSelectedLeagueId(value); clearComparison(); setPendingLeagueAction(null) }} />
+                <CompetitionTabs value={competitionKey} onChange={value => { setCompetitionKey(value); clearComparison() }} />
               </div>
 
               <article className="foundation-league-card">
@@ -522,12 +595,25 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
                   </div>
                   <div className="foundation-inline-actions">
                     {selectedLeague.memberRole === 'owner' ? (
-                      <button type="button" className="foundation-danger-button" onClick={handleDelete}>Delete league</button>
+                      <button type="button" className="foundation-danger-button" onClick={() => setPendingLeagueAction('delete')} disabled={actionStatus === 'loading'}>Delete league</button>
                     ) : (
-                      <button type="button" className="foundation-secondary-button" onClick={handleLeave}>Leave league</button>
+                      <button type="button" className="foundation-secondary-button" onClick={() => setPendingLeagueAction('leave')} disabled={actionStatus === 'loading'}>Leave league</button>
                     )}
                   </div>
                 </div>
+
+                {pendingLeagueAction && (
+                  <div className="foundation-destructive-confirmation" role="alert">
+                    <div>
+                      <strong>{pendingLeagueAction === 'delete' ? `Delete ${selectedLeague.name}?` : `Leave ${selectedLeague.name}?`}</strong>
+                      <p>{pendingLeagueAction === 'delete' ? 'This removes the private league for every member. Prediction and scoring records remain separate.' : 'You will lose access to this league and its member comparisons.'}</p>
+                    </div>
+                    <div className="foundation-inline-actions">
+                      <button type="button" className="foundation-danger-button" onClick={() => { void confirmLeagueAction() }} disabled={actionStatus === 'loading'}>{actionStatus === 'loading' ? 'Working…' : pendingLeagueAction === 'delete' ? 'Confirm delete' : 'Confirm leave'}</button>
+                      <button type="button" className="foundation-secondary-button" onClick={() => setPendingLeagueAction(null)} disabled={actionStatus === 'loading'}>Cancel</button>
+                    </div>
+                  </div>
+                )}
 
                 {(overview.status === 'loading' || overviewLoading) && !overview.data && <p className="foundation-empty-copy">Loading both competition tables…</p>}
                 {activeOverview && (
@@ -558,7 +644,7 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
                 {standings.length > 0 && <StandingsTable rows={standings} competitionKey={competitionKey} onCompare={compareMember} />}
               </article>
 
-              <HeadToHead state={comparison} competitionKey={competitionKey} reference={reference} onClose={() => { setComparison(null); setComparisonMemberId('') }} />
+              <HeadToHead state={comparison} reference={reference} onClose={clearComparison} />
             </>
           )}
         </>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { buildLiveTournamentSnapshot } from '../../results/resultModel.js'
 import {
   createStage13dVisualClient,
+  STAGE13D_VISUAL_SCENARIO,
   VISUAL_STAGE13D_EXPECTATIONS,
   VISUAL_STAGE13D_REFERENCE,
   VISUAL_STAGE13D_RESULT_ROWS,
@@ -55,4 +56,29 @@ describe('Stage 13D signed-in visual fixture', () => {
     expect(response.data.match_predictions.every(row => startedNumbers.has(row.match_number))).toBe(true)
     expect(response.data.match_predictions).toHaveLength(startedNumbers.size)
   })
+  it('provides an Original privacy scenario without returning hidden selections', async () => {
+    const client = createStage13dVisualClient({ scenario: STAGE13D_VISUAL_SCENARIO.PRIVACY })
+    const response = await client.rpc('get_member_predictions_after_lock', {
+      p_member_user_id: VISUAL_STAGE13D_EXPECTATIONS.currentUserId,
+      p_competition_key: 'original',
+    })
+
+    expect(response.error).toBeNull()
+    expect(response.data.visible).toBe(false)
+    expect(response.data.match_predictions).toEqual([])
+    expect(response.data.bracket_predictions).toEqual([])
+  })
+
+  it('provides deterministic partial failures without weakening available sections', async () => {
+    const client = createStage13dVisualClient({ scenario: STAGE13D_VISUAL_SCENARIO.PARTIAL })
+    const original = await client.rpc('get_league_standings', { p_competition_key: 'original' })
+    const ko = await client.rpc('get_league_standings', { p_competition_key: 'ko_predictor' })
+    const koPoints = await client.rpc('get_my_competition_points', { p_competition_key: 'ko_predictor' })
+
+    expect(original.error).toBeNull()
+    expect(original.data).toHaveLength(VISUAL_STAGE13D_EXPECTATIONS.memberCount)
+    expect(ko.error?.message).toContain('KO league standings unavailable')
+    expect(koPoints.error).toBeNull()
+  })
+
 })

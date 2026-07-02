@@ -125,6 +125,28 @@ export function buildLeagueCompetitionSummary(rows, competitionKey) {
   })
 }
 
+
+export function buildStandingComparison(rows, otherUserId) {
+  const standings = Array.isArray(rows) ? rows : []
+  const current = standings.find(row => row.isCurrentUser) ?? null
+  const other = standings.find(row => row.userId === otherUserId) ?? null
+
+  const normalise = row => row ? Object.freeze({
+    userId: row.userId,
+    displayName: row.displayName,
+    rank: row.rank,
+    totalPoints: row.totalPoints,
+    matchPoints: row.matchPoints,
+    bracketPoints: row.bracketPoints,
+    scoredMatchCount: row.scoredMatchCount,
+  }) : null
+
+  return Object.freeze({
+    current: normalise(current),
+    other: normalise(other),
+  })
+}
+
 export function buildSharedLeagueMemberList(originalRows, koRows) {
   const members = new Map()
   for (const row of [...(originalRows ?? []), ...(koRows ?? [])]) {
@@ -212,6 +234,7 @@ export function buildSharedPredictionJourney({ bundle, reference, competitionKey
       return buildBracketJourneyRow({ match, prediction, visibility, message, reference })
     })
 
+    const selections = [...matches, ...bracket]
     return Object.freeze({
       competitionKey,
       displayName: bundle?.display_name ?? 'Member',
@@ -219,6 +242,10 @@ export function buildSharedPredictionJourney({ bundle, reference, competitionKey
       reason: bundle?.reason ?? null,
       visibleMatchCount: matches.filter(row => row.visibility === 'visible').length,
       privateMatchCount: matches.filter(row => row.visibility === 'private').length,
+      visibleSelectionCount: selections.filter(row => row.visibility === 'visible').length,
+      privateSelectionCount: selections.filter(row => row.visibility === 'private').length,
+      notSavedSelectionCount: selections.filter(row => row.visibility === 'not_saved').length,
+      totalSelectionCount: selections.length,
       matches: freezeRows(matches),
       bracket: freezeRows(bracket),
     })
@@ -243,6 +270,10 @@ export function buildSharedPredictionJourney({ bundle, reference, competitionKey
     reason: bundle?.reason ?? null,
     visibleMatchCount: matches.filter(row => row.visibility === 'visible').length,
     privateMatchCount: matches.filter(row => row.visibility === 'private').length,
+    visibleSelectionCount: matches.filter(row => row.visibility === 'visible').length,
+    privateSelectionCount: matches.filter(row => row.visibility === 'private').length,
+    notSavedSelectionCount: matches.filter(row => row.visibility === 'not_saved').length,
+    totalSelectionCount: matches.length,
     matches: freezeRows(matches),
     bracket: Object.freeze([]),
   })

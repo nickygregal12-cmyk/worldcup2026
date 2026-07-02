@@ -2517,3 +2517,74 @@ button {
     justify-self: start;
   }
 }
+
+/* Stage 13D Batch 3 — privacy, comparison and recovery hardening */
+.foundation-head-to-head-points {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.foundation-head-to-head-points > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.85rem;
+  border: 1px solid var(--foundation-border);
+  border-radius: 0.8rem;
+  background: var(--foundation-surface-soft);
+}
+
+.foundation-head-to-head-points span,
+.foundation-head-to-head-points small {
+  color: var(--foundation-muted);
+}
+
+.foundation-head-to-head-points strong {
+  font-size: 1.45rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.foundation-privacy-state {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+  padding: 0.9rem;
+  border: 1px dashed var(--foundation-border);
+  border-radius: 0.8rem;
+  background: var(--foundation-surface-soft);
+}
+
+.foundation-privacy-state p,
+.foundation-destructive-confirmation p {
+  margin: 0;
+  color: var(--foundation-muted);
+}
+
+.foundation-destructive-confirmation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 0.9rem;
+  border: 1px solid var(--state-danger-border);
+  border-radius: 0.8rem;
+  background: var(--state-danger-soft);
+}
+
+.foundation-destructive-confirmation > div:first-child {
+  display: grid;
+  gap: 0.25rem;
+}
+
+@media (max-width: 760px) {
+  .foundation-head-to-head-points {
+    grid-template-columns: 1fr;
+  }
+
+  .foundation-destructive-confirmation {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

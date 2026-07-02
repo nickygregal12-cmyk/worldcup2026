@@ -14,7 +14,7 @@ import { deriveNavigationLifecycle } from '../app/navigationLifecycle.js'
 import { useHashRoute } from '../app/useHashRoute.js'
 import { useTheme } from '../app/useTheme.js'
 import { VISUAL_BRACKET_DRAFT, VISUAL_FOUNDATION, VISUAL_GROUP_DRAFT, VISUAL_HOME_DASHBOARD, VISUAL_KO_BUNDLE, VISUAL_KO_REFERENCE, VISUAL_KO_STANDING } from '../app/visualFixture.js'
-import { createStage13dVisualClient, VISUAL_STAGE13D_FOUNDATION, VISUAL_STAGE13D_REFERENCE } from '../app/stage13dVisualFixture.js'
+import { createStage13dVisualClient, STAGE13D_VISUAL_SCENARIO, VISUAL_STAGE13D_FOUNDATION, VISUAL_STAGE13D_REFERENCE } from '../app/stage13dVisualFixture.js'
 import { Badge, Button, Card } from '../design-system/index.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
@@ -27,6 +27,14 @@ function visualFixtureName() {
   return supported.includes(requested) && (import.meta.env.DEV || window.location.protocol === 'file:')
     ? requested
     : null
+}
+
+function stage13dVisualScenario(fixtureName) {
+  if (fixtureName !== 'stage13d' || typeof window === 'undefined') return STAGE13D_VISUAL_SCENARIO.ACTIVE
+  const requested = new URLSearchParams(window.location.search).get('scenario')
+  return Object.values(STAGE13D_VISUAL_SCENARIO).includes(requested)
+    ? requested
+    : STAGE13D_VISUAL_SCENARIO.ACTIVE
 }
 
 
@@ -68,10 +76,11 @@ function FoundationError({ message, onRetry }) {
 export default function EuroFoundationApp() {
   const fixtureName = useMemo(() => visualFixtureName(), [])
   const visualFixture = Boolean(fixtureName)
+  const fixtureScenario = useMemo(() => stage13dVisualScenario(fixtureName), [fixtureName])
   const route = useHashRoute()
   const theme = useTheme()
   const clientState = useMemo(() => createFoundationClient(), [])
-  const stage13dClient = useMemo(() => fixtureName === 'stage13d' ? createStage13dVisualClient() : null, [fixtureName])
+  const stage13dClient = useMemo(() => fixtureName === 'stage13d' ? createStage13dVisualClient({ scenario: fixtureScenario }) : null, [fixtureName, fixtureScenario])
   const activeClient = stage13dClient ?? clientState.client
   const sessionState = useEuroSession(visualFixture ? null : activeClient)
   const [state, setState] = useState(() => visualFixture
