@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## AI Agent Working Rules and Updated Build Roadmap
-### Version 3.6 — Stage 13A v6 replaces non-portable v5 package; awaiting local verification
+### Version 3.7 — Stage 13C bracket and KO Predictor presentation complete
 
 > **Authority:** The Consolidated Decision Register governs product rules. The Design Charter governs visual behaviour. This document governs working process and stage sequencing. Where they conflict, the register wins on product decisions and this document wins on process.
 
@@ -149,12 +149,17 @@ Requirements:
 - Group stage review remains permanently reachable after the navigation switch.
 - No Migration 015; active migrations remain 14.
 
-### Stage 13C — Original bracket and KO Predictor
+### Stage 13C — Original bracket and KO Predictor — COMPLETE
 
 - Original bracket remains a permanent destination throughout every phase.
-- Real KO Predictor remains a separate competition and visual context.
-- Use the shared `<TeamLabel>` and flag assets.
-- Never blend predicted and live participants or points.
+- Original bracket is winner-only: no score, method or joker inputs.
+- The predicted resolver, lock, review and grace contracts remain authoritative.
+- Real KO Predictor remains a separate competition and explicit real-fixture context.
+- KO Predictor captures 90-minute score, advancing team, method and five separate jokers.
+- Unresolved/TBC real fixtures remain hidden.
+- Separate KO progress, points and rank are displayed without Original Predictor totals.
+- Shared `<TeamLabel>`, score and state primitives are used.
+- No Migration 015; active migrations remain 14.
 
 ### Stage 13D — Leagues, results, shared predictions and responsive polish
 
@@ -248,4 +253,4 @@ Binding gates:
 
 ## Next single task
 
-Stage 13B is complete after the verified Stage 13A, OB-2 and OB-3 checkpoints. Build Stage 13C: the permanent original pre-tournament bracket and the visibly separate real-fixture KO Predictor match centre.
+Stage 13C is complete after the verified Stage 13B checkpoint `78882dd`. Build Stage 13D: leagues, results, shared predictions and final responsive polish while preserving the two separate competition totals and the permanent Bracket destination.

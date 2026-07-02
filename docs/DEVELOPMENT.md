@@ -52,6 +52,21 @@ All 36 cards share one anatomy and continue to use the existing atomic bundle sa
 
 The six Stage 13B references are under `docs/design-baselines/stage13b/`. The fixture nations are visibly provisional and exist only for layout testing.
 
+
+## Stage 13C knockout architecture
+
+### Permanent predicted bracket
+
+`OriginalBracket` consumes the canonical predicted preview and the Original Predictor draft. It records only the advancing team for each of the fifteen matches. Scores, decision methods and jokers are deliberately absent. Predicted participants, champion and progression never read from the live resolver.
+
+### Separate real-fixture match centre
+
+`KoPredictorMatchCentre` renders only `participantsResolved` fixtures from the real knockout reference. It captures the 90-minute score, advancing team, decision method and KO joker through the existing competition-specific draft and atomic save RPC. KO points and rank are loaded from the KO competition key only.
+
+### Context boundary
+
+Predicted and real-fixture experiences use separate semantic context tokens and explicit banners. Shared TeamLabel, ScoreInput and state badges provide consistency without merging data, points or save actions. Twelve Stage 13C visual references are stored in `docs/design-baselines/stage13c/`.
+
 ## Stage 12 architecture
 
 ### Role boundary
@@ -84,7 +99,7 @@ Lock, grace and feature changes append to `admin_operation_events`. Existing res
 
 ## Deliberate exclusions
 
-Stage 13A does not implement an external result provider, public admin assignment, a global prediction unlock, league-specific scoring or any new database rule. The bracket, KO Predictor, league, results and admin page rebuilds continue in Stages 13C–13E.
+Stage 13A does not implement an external result provider, public admin assignment, a global prediction unlock, league-specific scoring or any new database rule. The league, results, shared-prediction and remaining admin presentation rebuilds continue in Stages 13D–13E.
 
 ## Database backup safety
 

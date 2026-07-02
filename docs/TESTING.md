@@ -8,7 +8,7 @@ npm run check
 
 The gate runs database safety, every Euro audit, lint, unit tests and a production build.
 
-The verified Stage 13A application gate passes 229 tests across 38 test files, including route, theme and Home-dashboard model coverage.
+The Stage 13C application gate includes the established Stage 13A/13B coverage plus separate bracket and KO presentation-model, component and service tests.
 
 ## Focused audits
 
@@ -17,6 +17,8 @@ npm run audit:admin-operations
 npm run audit:leagues
 npm run audit:control-room
 npm run audit:design-tokens
+npm run audit:groups-predictor
+npm run audit:knockout-experiences
 ```
 
 The Stage 12 audit verifies:
@@ -105,3 +107,10 @@ Run `npm run audit:package-lock`. It must confirm that every resolved package us
 `npm run audit:groups-predictor` verifies all 36 group fixtures, the shared TeamLabel and ScoreInput boundaries, 55-code local flag registry, explicit prediction states, central joker configuration, profile-opening safety, six visual baselines and the absence of Migration 015.
 
 Vitest covers TeamLabel real/provisional/unresolved rendering, identity-only activation, mobile numeric score input, locked and grace presentation, group progress and save-state precedence.
+
+
+## Stage 13C knockout experience tests
+
+`npm run audit:knockout-experiences` verifies the permanent predicted-context Original Bracket, winner-only controls, zero bracket jokers, separate real-fixture KO controls, 90-minute score semantics, advancing team, method, five KO jokers, separate points/rank service boundary, TBC hiding, responsive context styling, twelve visual baselines and the absence of Migration 015.
+
+Vitest covers bracket slot labels and progress, lock/grace presentation, predicted champion, KO method options, live/completed locking, round progress, real-fixture component controls, competition-specific saving, KO points and rank.

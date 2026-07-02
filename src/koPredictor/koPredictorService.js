@@ -19,6 +19,27 @@ export async function loadMyKoPredictionBundle(client, tournamentId, userId) {
   return { revision: Number(setResult.data.revision), predictions: rowsResult.data ?? [] }
 }
 
+export async function loadMyKoPredictorStanding(client, tournamentId, userId) {
+  if (!client || !tournamentId || !userId) return Object.freeze({ points: 0, rank: null })
+  const [pointsResponse, leaderboardResponse] = await Promise.all([
+    client.rpc('get_my_competition_points', {
+      p_tournament_id: tournamentId,
+      p_competition_key: KO_PREDICTOR_COMPETITION_KEY,
+    }),
+    client.rpc('get_competition_leaderboard', {
+      p_tournament_id: tournamentId,
+      p_competition_key: KO_PREDICTOR_COMPETITION_KEY,
+    }),
+  ])
+  if (pointsResponse.error) throw pointsResponse.error
+  if (leaderboardResponse.error) throw leaderboardResponse.error
+  const rankRow = (leaderboardResponse.data ?? []).find(row => row.user_id === userId)
+  return Object.freeze({
+    points: Number(pointsResponse.data?.total_points ?? 0),
+    rank: rankRow ? Number(rankRow.rank) : null,
+  })
+}
+
 export async function saveMyKoPredictionBundle(client, { tournamentId, expectedRevision, predictions }) {
   const { data, error } = await client.rpc(EURO28_KO_PREDICTOR_RPC, {
     p_tournament_id: tournamentId,

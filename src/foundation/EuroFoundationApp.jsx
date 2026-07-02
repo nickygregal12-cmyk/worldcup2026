@@ -13,7 +13,7 @@ import { APP_ROUTE } from '../app/appRoutes.js'
 import { deriveNavigationLifecycle } from '../app/navigationLifecycle.js'
 import { useHashRoute } from '../app/useHashRoute.js'
 import { useTheme } from '../app/useTheme.js'
-import { VISUAL_FOUNDATION, VISUAL_GROUP_DRAFT, VISUAL_HOME_DASHBOARD } from '../app/visualFixture.js'
+import { VISUAL_BRACKET_DRAFT, VISUAL_FOUNDATION, VISUAL_GROUP_DRAFT, VISUAL_HOME_DASHBOARD, VISUAL_KO_BUNDLE, VISUAL_KO_REFERENCE, VISUAL_KO_STANDING } from '../app/visualFixture.js'
 import { Badge, Button, Card } from '../design-system/index.jsx'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
@@ -21,7 +21,7 @@ import { createFoundationClient } from './supabaseClient.js'
 function isVisualFixture() {
   if (typeof window === 'undefined') return false
   if (window.__EURO28_VISUAL_FIXTURE__ === true) return true
-  const fixtureRequested = ['stage13a', 'stage13b'].includes(new URLSearchParams(window.location.search).get('visual'))
+  const fixtureRequested = ['stage13a', 'stage13b', 'stage13c'].includes(new URLSearchParams(window.location.search).get('visual'))
   return fixtureRequested && (import.meta.env.DEV || window.location.protocol === 'file:')
 }
 
@@ -113,16 +113,16 @@ export default function EuroFoundationApp() {
     )
   } else if (route === APP_ROUTE.BRACKET) {
     content = (
-      <div className="content-stack legacy-page">
+      <div className="content-stack knockout-page">
         <PageIntro eyebrow="Original Predictor" title="Your pre-tournament bracket" description="Choose the team that advances from every predicted knockout match. Scores and jokers do not apply here." />
-        <PredictionJourneyFoundation key={`bracket-${foundation.guestReference.referenceVersion}`} client={clientState.client} reference={foundation.guestReference} tournament={foundation.tournament} initialView="bracket" />
+        <PredictionJourneyFoundation key={`bracket-${foundation.guestReference.referenceVersion}`} client={clientState.client} reference={foundation.guestReference} tournament={foundation.tournament} initialView="bracket" fixtureDraft={visualFixture ? VISUAL_BRACKET_DRAFT : null} />
       </div>
     )
   } else if (route === APP_ROUTE.KO_PREDICTOR) {
     content = (
-      <div className="content-stack legacy-page">
+      <div className="content-stack knockout-page">
         <PageIntro eyebrow="Separate competition" title="KO Predictor" description="Predict each real knockout fixture once its participants are confirmed." />
-        <KoPredictorFoundation client={clientState.client} reference={foundation.guestReference} />
+        <KoPredictorFoundation client={clientState.client} reference={visualFixture ? VISUAL_KO_REFERENCE : foundation.guestReference} fixtureBundle={visualFixture ? VISUAL_KO_BUNDLE : undefined} fixtureStanding={visualFixture ? VISUAL_KO_STANDING : undefined} />
       </div>
     )
   } else if (route === APP_ROUTE.LEAGUES) {

@@ -14,26 +14,30 @@ if (migrations.length !== 14) fail(`Stage 12 requires fourteen active migrations
 if (!migrations.includes('202607010010_euro28_competition_split_and_jokers.sql')) fail('Migration 010 is missing')
 for (const file of [
   'src/journey/PredictionJourneyFoundation.jsx',
+  'src/journey/OriginalBracket.jsx',
   'src/koPredictor/KoPredictorFoundation.jsx',
+  'src/koPredictor/KoPredictorMatchCentre.jsx',
   'src/grace/predictionGraceService.js',
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 8 file is missing: ${file}`)
 
 const original = read('src/journey/PredictionJourneyFoundation.jsx')
 const groups = read('src/journey/GroupsPredictor.jsx')
+const bracket = read('src/journey/OriginalBracket.jsx')
 const ko = read('src/koPredictor/KoPredictorFoundation.jsx')
-for (const required of [
-  'Pre-tournament bracket — winner picks only',
-  '0 bracket jokers',
-  'hasActivePredictionGrace',
-  'isPredictionMatchStarted',
-]) if (!original.includes(required)) fail(`original journey is missing: ${required}`)
+const koCentre = read('src/koPredictor/KoPredictorMatchCentre.jsx')
+for (const required of ['hasActivePredictionGrace', 'isPredictionMatchStarted', '<OriginalBracket']) {
+  if (!original.includes(required)) fail(`original journey is missing: ${required}`)
+}
+for (const required of ['Your permanent pre-tournament bracket', 'Pick only who advances', '0 bracket jokers']) {
+  if (!bracket.includes(required)) fail(`original bracket is missing: ${required}`)
+}
 if (!groups.includes('group jokers selected')) fail('Groups predictor is missing: group jokers selected')
-for (const required of [
-  'Separate competition · KO Predictor',
-  'five separate KO Predictor jokers',
-  'No original-predictor points included',
-  'saveMyKoPredictionBundle',
-]) if (!ko.includes(required)) fail(`KO Predictor is missing: ${required}`)
+for (const required of ['saveMyKoPredictionBundle', '<KoPredictorMatchCentre']) {
+  if (!ko.includes(required)) fail(`KO Predictor controller is missing: ${required}`)
+}
+for (const required of ['Real fixture context', 'KO jokers', 'Your KO points', '90-minute score']) {
+  if (!koCentre.includes(required)) fail(`KO Predictor match centre is missing: ${required}`)
+}
 
 if (PREDICTION_AUTOSAVE_DELAY_MS !== 800) fail('account autosave must remain 800 ms')
 if (!EURO28_PREDICTION_JOURNEY_VERSION) fail('prediction journey version is missing')
@@ -48,5 +52,5 @@ console.log(`Journey: ${EURO28_PREDICTION_JOURNEY_VERSION}`)
 console.log('Original views: groups, winner-only bracket and review')
 console.log(`Account autosave: atomic RPC after ${PREDICTION_AUTOSAVE_DELAY_MS} ms`)
 console.log('Global lock: scores/bracket freeze; future group jokers remain movable until their match starts')
-console.log('KO Predictor: separate real-match workspace, points, five jokers and future leaderboard')
+console.log('KO Predictor: separate real-match workspace, points, rank, method and five jokers')
 console.log('Active migrations: 14')

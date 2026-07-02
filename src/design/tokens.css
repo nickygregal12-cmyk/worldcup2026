@@ -191,3 +191,14 @@
   --match-card-border: var(--border-default);
   --match-card-complete-border: var(--state-success-border);
 }
+
+:root {
+  --predicted-context-surface: var(--state-info-soft);
+  --predicted-context-border: var(--state-info-border);
+  --predicted-context-text: var(--state-info);
+  --real-context-surface: var(--state-warning-soft);
+  --real-context-border: var(--state-warning-border);
+  --real-context-text: var(--state-warning);
+  --knockout-selected-surface: var(--brand-soft);
+  --knockout-selected-border: var(--brand);
+}

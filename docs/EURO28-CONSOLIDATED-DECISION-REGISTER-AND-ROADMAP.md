@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 2.8 — Stage 13A v6 portability correction with unchanged navigation lifecycle
+### Version 2.9 — Stage 13C permanent bracket and separate KO match centre
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
@@ -299,7 +299,7 @@ Roadmap placement: **Stage 18A — Optional Google sign-in**, before **Stage 18B
 
 - **13A v6 — complete:** Charter-compliant design system, portable dependency lock, app shell and Home; corrected Groups→KO switch with permanent Bracket destination.
 - **13B — complete in this batch:** all 36 group fixtures, shared `<TeamLabel>`, locally bundled circular ISO-keyed flags, neutral unresolved slots, shared score input, clear save/lock/grace states, safe five-joker controls and the reversible review flow. No Migration 015.
-- **13C:** Original bracket and separate KO Predictor match centre.
+- **13C — complete:** permanent winner-only predicted bracket; separate real-fixture KO match centre with 90-minute score, advancing team, method, five KO jokers, separate points/rank and hidden unresolved fixtures. No Migration 015.
 - **13D:** Leagues, results, shared predictions and responsive polish.
 - **13E:** Team Profile Sheet implemented through `<TeamLabel>` with the three-source data boundary and post-lock aggregate gate.
 
@@ -325,7 +325,7 @@ Roadmap placement: **Stage 18A — Optional Google sign-in**, before **Stage 18B
 
 ## 13. Exact next task
 
-Stage 13A v6, OB-2 and OB-3 are complete through `29debb5`. Stage 13B is the current frontend-only batch and keeps the database at fourteen migrations. After its verified clean push, build Stage 13C: the permanent original bracket and separate KO Predictor match centre.
+Stage 13C is the current frontend-only batch built from verified Stage 13B commit `78882dd`. It keeps the database at fourteen migrations and preserves all scoring, lock, grace and resolver contracts. After its verified clean push, build Stage 13D: leagues, results, shared predictions and responsive polish.
 
-**Starting commit:** `29debb5`
+**Starting commit:** `78882dd`
 **Migration count:** `14`

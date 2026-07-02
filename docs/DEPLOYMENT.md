@@ -96,3 +96,8 @@ The deployed build must show the product-branded app shell and Home dashboard, r
 ## Stage 13B deployment note
 
 Stage 13B is frontend-only. Confirm `supabase/migrations` is unchanged, run `npm run audit:groups-predictor` and the full `npm run check`, then deploy through the existing `euro28-development` Netlify flow. No Supabase reset, dry run or push is required.
+
+
+## Stage 13C deployment note
+
+Stage 13C is frontend-only. Confirm `supabase/migrations` is unchanged, run `npm run audit:knockout-experiences` and the full `npm run check`, then deploy through the existing `euro28-development` Netlify flow. No Supabase reset, dry run or push is required. After deployment, `npm run verify:foundation-page` must confirm the permanent predicted Bracket and separate real-fixture KO Predictor match centre.

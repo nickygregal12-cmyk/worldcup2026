@@ -18,7 +18,8 @@ import {
   loadMyPredictionGraceWindows,
   PREDICTION_COMPETITION_KEY,
 } from '../grace/index.js'
-import { PredictionStateBadge, TeamLabel } from '../design-system/index.jsx'
+import { PredictionStateBadge } from '../design-system/index.jsx'
+import OriginalBracket from './OriginalBracket.jsx'
 import GroupsPredictor from './GroupsPredictor.jsx'
 import PredictionReview from './PredictionReview.jsx'
 import {
@@ -45,15 +46,6 @@ function browserStorage() {
   }
 }
 
-function formatDate(dateValue) {
-  if (!dateValue) return 'Date to be confirmed'
-  return new Intl.DateTimeFormat('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'UTC',
-  }).format(new Date(`${dateValue}T12:00:00Z`))
-}
 
 function messageForError(error) {
   const message = error?.message ?? String(error)
@@ -113,80 +105,6 @@ function AutosaveBadge({ context, status, revision, savedAt }) {
       {savedAt && status === PREDICTION_AUTOSAVE_STATE.SAVED && (
         <small>{new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' }).format(savedAt)}</small>
       )}
-    </div>
-  )
-}
-
-const ROUND_LABELS = Object.freeze({
-  round_of_16: 'Round of 16',
-  quarter_final: 'Quarter-finals',
-  semi_final: 'Semi-finals',
-  final: 'Final',
-})
-
-function BracketEditor({ reference, draft, preview, contentLocked, reviewMode, graceWindows, onChange }) {
-  const rounds = ['round_of_16', 'quarter_final', 'semi_final', 'final']
-
-  return (
-    <div className="journey-bracket-rounds">
-      <div className="journey-joker-summary journey-joker-summary--neutral">
-        <div>
-          <strong>Pre-tournament bracket — winner picks only</strong>
-          <span>No scores, decision methods or jokers are attached to this bracket. The separate KO Predictor opens for real knockout fixtures.</span>
-        </div>
-        <span className="foundation-pill">0 bracket jokers</span>
-      </div>
-      {rounds.map(round => {
-        const matches = preview.resolution.knockout.matches.filter(match => match.stage === round)
-        return (
-          <section className="journey-knockout-round" key={round}>
-            <div className="journey-round-heading">
-              <h3>{ROUND_LABELS[round]}</h3>
-              <span>{matches.filter(match => match.decisionResolved).length}/{matches.length} progressing</span>
-            </div>
-
-            <div className="journey-knockout-grid">
-              {matches.map(match => {
-                const row = draft.bracketPredictions[String(match.matchNumber)]
-                const referenceMatch = reference.knockoutMatches.find(item => item.matchNumber === match.matchNumber)
-                const hasGrace = hasActivePredictionGrace(graceWindows, {
-                  competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
-                  matchId: referenceMatch?.matchId,
-                })
-                const matchDisabled = reviewMode || (contentLocked && !hasGrace) || !match.participantsResolved
-                return (
-                  <article className={`journey-knockout-card${match.participantsResolved ? '' : ' journey-knockout-card--blocked'}`} key={match.matchNumber}>
-                    <div className="journey-knockout-card__meta">
-                      <strong>Match {match.matchNumber}</strong>
-                      <span>{formatDate(referenceMatch?.scheduledDate)}</span>
-                    </div>
-
-                    {!match.participantsResolved ? (
-                      <p className="journey-blocked-copy">Complete the earlier predictions that feed this match.</p>
-                    ) : (
-                      <div className="journey-bracket-pick-row">
-                        {[match.homeTeamId, match.awayTeamId].map(teamId => (
-                          <button
-                            type="button"
-                            key={teamId}
-                            className={row.advancingTeamId === teamId ? 'journey-bracket-team journey-bracket-team--selected' : 'journey-bracket-team'}
-                            disabled={matchDisabled}
-                            aria-pressed={row.advancingTeamId === teamId}
-                            onClick={() => onChange(match, row.advancingTeamId === teamId ? null : teamId)}
-                          >
-                            <TeamLabel team={reference.teamsById?.[teamId]} compact />
-                            <small>{row.advancingTeamId === teamId ? 'Selected to advance' : 'Pick to advance'}</small>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </article>
-                )
-              })}
-            </div>
-          </section>
-        )
-      })}
     </div>
   )
 }
@@ -607,7 +525,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
                   <button type="button" onClick={clearStale} disabled={readOnly}>Clear stale picks</button>
                 </div>
               )}
-              <BracketEditor
+              <OriginalBracket
                 reference={reference}
                 draft={draft}
                 preview={summary.preview}

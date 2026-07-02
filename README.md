@@ -16,7 +16,9 @@ The verified build now includes:
 - private leagues and lock-aware shared predictions;
 - an expanded admin control room for lock, grace, feature and tournament-health operations;
 - a shared light/dark design system, responsive app shell and account-aware Home dashboard;
-- a mobile-first 36-match Groups predictor with shared team labels, local circle flags, score controls, jokers and review states.
+- a mobile-first 36-match Groups predictor with shared team labels, local circle flags, score controls, jokers and review states;
+- a permanent winner-only Original Predictor bracket in an explicit predicted context;
+- a separate real-fixture KO Predictor match centre with 90-minute scores, advancing team, method, five KO jokers, points and rank.
 
 The two competitions remain separate:
 
@@ -50,6 +52,7 @@ Use only the Euro staging URL and publishable key in `.env.local`. Never expose 
 npm run audit:control-room
 npm run audit:design-tokens
 npm run audit:groups-predictor
+npm run audit:knockout-experiences
 npm run check
 ```
 
@@ -72,9 +75,9 @@ Never run `npx supabase db reset --linked`.
 
 ## Current return point
 
-Stage 13B adds the mobile-first Groups predictor and review flow on top of the verified Stage 13A shell. All 36 group fixtures use shared team, score, state and joker components. Circle flags are bundled locally and selected from central ISO/association codes; unresolved slots remain visibly neutral. Existing autosave, global-lock, grace and competition boundaries are unchanged, and the database remains at fourteen migrations.
+Stage 13C adds two visibly and architecturally separate knockout experiences on top of the verified Groups flow. The permanent Original Predictor bracket is winner-only and uses the predicted resolver; the KO Predictor shows only confirmed real fixtures and separately captures the 90-minute score, advancing team, method and five KO jokers. Existing save, lock, grace and scoring boundaries remain unchanged, and the database remains at fourteen migrations.
 
-The next controlled build is Stage 13C: the permanent original bracket and separate KO Predictor match centre.
+The next controlled build is Stage 13D: leagues, results, shared predictions and responsive polish.
 
 ## Operational safety
 

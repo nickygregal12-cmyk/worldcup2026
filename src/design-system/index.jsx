@@ -1,3 +1,4 @@
+import React from 'react' // eslint-disable-line no-unused-vars
 import TeamLabel from './TeamLabel.jsx'
 import ScoreInput from './ScoreInput.jsx'
 import PredictionStateBadge from './PredictionStateBadge.jsx'

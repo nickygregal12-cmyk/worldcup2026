@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { loadMyKoPredictionBundle, saveMyKoPredictionBundle } from '../koPredictorService.js'
+import { loadMyKoPredictionBundle, loadMyKoPredictorStanding, saveMyKoPredictionBundle } from '../koPredictorService.js'
 
 describe('KO Predictor service', () => {
   it('uses the separate KO Predictor RPC', async () => {
@@ -20,6 +20,20 @@ describe('KO Predictor service', () => {
     expect(result).toEqual({
       predictionSetId: 'ko-set', competitionKey: 'ko_predictor', revision: 2,
       savedPredictionCount: 3, jokerCount: 1,
+    })
+  })
+
+
+  it('loads KO points and rank without touching Original Predictor totals', async () => {
+    const rpc = vi.fn()
+      .mockResolvedValueOnce({ data: { total_points: 85 }, error: null })
+      .mockResolvedValueOnce({ data: [{ user_id: 'u1', rank: 4 }], error: null })
+    await expect(loadMyKoPredictorStanding({ rpc }, 't1', 'u1')).resolves.toEqual({ points: 85, rank: 4 })
+    expect(rpc).toHaveBeenNthCalledWith(1, 'get_my_competition_points', {
+      p_tournament_id: 't1', p_competition_key: 'ko_predictor',
+    })
+    expect(rpc).toHaveBeenNthCalledWith(2, 'get_competition_leaderboard', {
+      p_tournament_id: 't1', p_competition_key: 'ko_predictor',
     })
   })
 

@@ -1,5 +1,6 @@
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
 import { GUEST_PREDICTION_CONTEXT, GUEST_PREDICTION_STATE_VERSION, GUEST_RESOLVER_VERSION } from '../guest/guestPredictionConfig.js'
+import { resolveGuestTournamentPreview, updateGuestBracketPrediction } from '../guest/index.js'
 
 export const VISUAL_HOME_DASHBOARD = Object.freeze({
   signedIn: true,
@@ -136,3 +137,69 @@ export const VISUAL_FOUNDATION = Object.freeze({
   stages: Object.freeze([]),
   guestReference: VISUAL_GROUP_REFERENCE,
 })
+
+
+function buildVisualBracketDraft() {
+  let state = {
+    ...VISUAL_GROUP_DRAFT,
+    groupPredictions: Object.freeze(Object.fromEntries(VISUAL_GROUP_REFERENCE.groupMatches.map(match => [String(match.matchNumber), Object.freeze({
+      matchNumber: match.matchNumber,
+      homeScore: (match.matchNumber % 3) + 1,
+      awayScore: match.matchNumber % 2,
+      jokerApplied: [2, 8, 15, 22, 29].includes(match.matchNumber),
+      updatedAt: '2026-07-02T12:00:00.000Z',
+    })]))),
+  }
+  for (let matchNumber = 37; matchNumber <= 51; matchNumber += 1) {
+    const preview = resolveGuestTournamentPreview(VISUAL_GROUP_REFERENCE, state)
+    const match = preview.resolution.knockout.byMatchNumber[matchNumber]
+    if (!match?.homeTeamId) break
+    state = updateGuestBracketPrediction(state, { matchNumber, advancingTeamId: match.homeTeamId }, { now: '2026-07-02T12:00:00.000Z' })
+  }
+  return Object.freeze(state)
+}
+
+export const VISUAL_BRACKET_DRAFT = buildVisualBracketDraft()
+
+const VISUAL_KO_MATCH_TEAMS = Object.freeze([
+  ['visual-team-1', 'visual-team-2'], ['visual-team-3', 'visual-team-4'],
+  ['visual-team-5', 'visual-team-6'], ['visual-team-7', 'visual-team-8'],
+  ['visual-team-9', 'visual-team-10'], ['visual-team-11', 'visual-team-12'],
+  ['visual-team-13', 'visual-team-14'], ['visual-team-15', 'visual-team-16'],
+])
+
+export const VISUAL_KO_REFERENCE = Object.freeze({
+  ...VISUAL_GROUP_REFERENCE,
+  referenceVersion: 'visual-stage13c-ko',
+  knockoutMatches: Object.freeze(Array.from({ length: 15 }, (_, index) => {
+    const matchNumber = 37 + index
+    const pairing = VISUAL_KO_MATCH_TEAMS[index] ?? [null, null]
+    return Object.freeze({
+      matchId: `visual-match-${matchNumber}`,
+      matchNumber,
+      fixtureCode: `VISUAL-KO-${matchNumber}`,
+      scheduledDate: `2028-06-${String(23 + Math.min(index, 6)).padStart(2, '0')}`,
+      kickoffAt: null,
+      status: index === 0 ? 'live' : index === 1 ? 'completed' : 'scheduled',
+      resultStatus: index === 1 ? 'confirmed' : 'pending',
+      homeTeamId: pairing[0],
+      awayTeamId: pairing[1],
+      participantsResolved: Boolean(pairing[0] && pairing[1]),
+    })
+  })),
+})
+
+export const VISUAL_KO_BUNDLE = Object.freeze({
+  revision: 3,
+  predictions: Object.freeze(VISUAL_KO_REFERENCE.knockoutMatches.slice(0, 5).map((match, index) => Object.freeze({
+    match_id: match.matchId,
+    home_score_90: index === 0 ? 1 : index % 2,
+    away_score_90: index === 0 ? 1 : (index + 1) % 2,
+    advancing_tournament_team_id: index === 0 ? match.homeTeamId : (index % 2 ? match.awayTeamId : match.homeTeamId),
+    decision_method: index === 0 ? 'penalties' : 'normal_time',
+    joker_applied: index === 2,
+    updated_at: '2026-07-02T12:00:00.000Z',
+  }))),
+})
+
+export const VISUAL_KO_STANDING = Object.freeze({ points: 85, rank: 4 })
