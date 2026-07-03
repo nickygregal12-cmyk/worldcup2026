@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.17 — Stage 13F-K Admin operations scope and server contract
+### Version 1.18 — Stage 13F-K1 Admin database operations contract
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -71,11 +71,11 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Staging Time & Phase controls | ✅ FUNCTIONAL | Owner-only audited shared clock, preset phases, custom time and site-wide warning accepted with approved Migration 016 | — |
 | Profile curation | ✅ FUNCTIONAL | Stage 13E owner editing | — |
 | Stage 13F-K operation inventory | ✅ FUNCTIONAL | Existing operations, genuine fixture/reconciliation/readiness gaps, exclusions and four-batch sequence approved in Stage 13F-K0 | — |
-| Migration 018 server contract | ✅ FUNCTIONAL | Approved fixture revision, venue/match reads, owner-only fixture update, owner-only complete reconciliation, readiness output, permissions and two event types; not yet created/applied | — |
-| Fixture schedule operations | 🕓 SCHEDULED | Owner-only date, kick-off, venue and schedule-status editing with optimistic revision and append-only before/after audit | 13F-K1/K2 |
-| Tournament-wide scoring reconciliation | 🕓 SCHEDULED | Owner-only note-gated all-match replacement recalculation through the existing canonical scoring path | 13F-K1/K2 |
+| Migration 018 server/database contract | ✅ FUNCTIONAL | Migration, pgTAP suite and repository audit implement fixture revision, protected reads, owner-only fixture update, complete reconciliation, readiness output and append-only audit; hosted acceptance required before commit | — |
+| Fixture schedule operations | 🟠 PARTIAL | Migration 018 provides owner-only revision-safe date, kick-off, venue and schedule-status editing with before/after audit; control-room UI remains Stage 13F-K2 | 13F-K2 |
+| Tournament-wide scoring reconciliation | 🟠 PARTIAL | Migration 018 provides owner-only note-gated all-match replacement recalculation through the canonical scoring path; control-room UI remains Stage 13F-K2 | 13F-K2 |
 | Tournament-pick Admin readiness home | 🕓 SCHEDULED | One control-room section renders the approved contract and Stage 17A dependency without fake outcome controls | 13F-K2 |
-| Operational readiness summary | 🕓 SCHEDULED | Read-only fixture, participant, result, scoring, content, safeguard, health and tournament-pick readiness | 13F-K1/K2 |
+| Operational readiness summary | 🟠 PARTIAL | Migration 018 exposes read-only fixture, participant, result, scoring, Team Profile, safeguard and Tournament Picks dependency evidence; presentation remains Stage 13F-K2 | 13F-K2 |
 | Admin audit filters and detail | 🕓 SCHEDULED | Read-only category filters and expandable append-only event payloads, up to the existing server maximum | 13F-K2 |
 | Complete Admin operations backbone | 🕓 SCHEDULED | K1 database, K2 control room and K3 staging evidence must close; tournament-pick executable outcomes remain Stage 17A | 13F-K3 |
 
@@ -130,6 +130,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Whole-app new-player walk-through | 🕓 SCHEDULED | Owner acceptance after navigating every direct and contextual journey as a casual first-time player | 13G-D |
 
 ## Change log
+
+- **v1.18:** Implements Stage 13F-K1 from `b6c7ddc`: Migration 018, fixture revision and protected reads, owner-only fixture update, owner-only complete reconciliation, readiness output, restored `team_profile_updated` audit value, pgTAP suite and repository audit. Database-complete/UI-pending rows move to partial; Stage 13F-K2 remains next.
 
 - **v1.17:** Approves Stage 13F-K0 from `efce59f`: complete Admin operation inventory, owner-only fixture schedule editing, owner-only whole-tournament replacement reconciliation, Migration 018 server contract, operational-readiness/audit presentation and the Stage 17A tournament-pick hand-off. No migration or product code is added; fixture/reconciliation/UI rows remain scheduled.
 

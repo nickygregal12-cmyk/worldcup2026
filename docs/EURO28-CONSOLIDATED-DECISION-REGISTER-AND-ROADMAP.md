@@ -1,18 +1,18 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 3.5 — Stage 13F-K complete Admin operations contract
+### Version 3.6 — Stage 13F-K1 database operations contract
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
 ## 1. Current return point
 
-- Expected Git commit: `efce59f` — **Define Euro information architecture plan**.
+- Expected Git commit: `b6c7ddc` — **Define Euro admin operations contract**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
-- Active migration count: **17**. Migration 017 is applied to Euro staging and is the accepted read-only player-insight contract.
+- Active migration count before Stage 13F-K1 installation: **17**. Migration 018 is the package under acceptance; repository and Euro staging become 18 only after the guarded database gate.
 - Stages 1–12, 13A–13E, 14, 14B, Stage 13F-0 through Stage 13F-J and Stage 13G-0 are accepted.
-- The exact current package is Stage 13F-K0, a documents-only Admin operation inventory and Migration 018 server contract from `efce59f`.
-- Migration 018 is approved but does not exist or apply until Stage 13F-K1 acceptance.
-- Stage 13F-K1 is the next implementation task. Stage 13G-A starts only after Stage 13F-K3 acceptance.
+- The exact current package is Stage 13F-K1, the Migration 018 database operations contract from `b6c7ddc`.
+- Migration 018 adds fixture revision/editing, protected venue and match reads, complete reconciliation, readiness evidence and the two approved new event types. It also restores `team_profile_updated`, which Migration 016 accidentally omitted from the event constraint.
+- Stage 13F-K1 is the current implementation package. Stage 13F-K2 follows after linked database acceptance; Stage 13G-A starts only after Stage 13F-K3 acceptance.
 - Original and KO Predictor totals remain permanently separate.
 
 ## 2. Existing confirmed product decisions
@@ -391,14 +391,15 @@ Confirmed decisions:
 2. Participant identities, group membership, match numbering, fixture code, resolver slots and knockout allocation remain outside browser editing.
 3. Complete tournament points reconciliation is owner-only, note-gated, feature-controlled and replacement-based through the existing canonical scoring function with a null match scope.
 4. Results admins retain result entry/correction, match status and one-match recalculation but cannot edit fixture scheduling or reconcile the entire tournament.
-5. Migration 018 adds `fixture_revision`, protected tournament-venue reads, expanded match reads, the two owner RPCs, readiness output and exactly two operation-event values.
-6. Migration 018 adds no tournament-pick storage, official players, participant assignment, scoring values, manual point edits, resolver change, external provider or new Admin role.
-7. Tournament Picks receives one Admin readiness home in Stage 13F-K2. Stage 17A retains persistence, official player references, executable outcome entry, scoring and player-facing use.
-8. Operational readiness is a read model, not a mutable approval table. It summarises fixtures, participants, results, scoring runs, Team Profiles, safeguards, health and the Stage 17A tournament-pick dependency.
-9. Existing append-only Admin events remain authoritative. Stage 13F-K2 adds category filters and expandable detail without event mutation or deletion.
-10. Stage 13F-K is delivered as K0 documents, K1 database, K2 frontend and K3 staging acceptance. Stage 13G-A may not begin before K3 closes.
+5. Migration 018 adds `fixture_revision`, protected tournament-venue reads, expanded match reads, the two owner RPCs, readiness output and exactly two new operation-event values: `fixture_schedule_updated` and `tournament_points_reconciled`.
+6. Migration 018 preserves all accepted event values, including `team_profile_updated`, `time_control_updated` and `time_control_reset`; restoring the profile value corrects Migration 016 drift and is not extra product scope.
+7. Migration 018 adds no tournament-pick storage, official players, participant assignment, scoring values, manual point edits, resolver change, external provider or new Admin role.
+8. Tournament Picks receives one Admin readiness home in Stage 13F-K2. Stage 17A retains persistence, official player references, executable outcome entry, scoring and player-facing use.
+9. Operational readiness is a read model, not a mutable approval table. It summarises fixtures, participants, results, scoring runs, Team Profiles, safeguards, health and the Stage 17A tournament-pick dependency.
+10. Existing append-only Admin events remain authoritative. Stage 13F-K2 adds category filters and expandable detail without event mutation or deletion.
+11. Stage 13F-K is delivered as K0 documents, K1 database, K2 frontend and K3 staging acceptance. Stage 13G-A may not begin before K3 closes.
 
-The exact contract lives in `docs/STAGE-13F-K0-ADMIN-OPERATIONS-SCOPE-AND-SERVER-CONTRACT.md`.
+The approved scope lives in `docs/STAGE-13F-K0-ADMIN-OPERATIONS-SCOPE-AND-SERVER-CONTRACT.md`; the implemented database contract lives in `docs/STAGE-13F-K1-DATABASE-OPERATIONS-CONTRACT.md`.
 
 ## 11. Updated build roadmap
 
@@ -456,9 +457,9 @@ The exact contract lives in `docs/STAGE-13F-K0-ADMIN-OPERATIONS-SCOPE-AND-SERVER
 
 ## 13. Exact next task
 
-Stage 13F-K0 is the current documents-only package built from verified checkpoint `efce59f`. It records the complete Admin operation inventory, Migration 018 contract, permissions, acceptance matrix and Stage 17A tournament-pick hand-off.
+Stage 13F-K1 is the current database package built from verified checkpoint `b6c7ddc`. It implements the accepted Migration 018 contract, transactional pgTAP acceptance, repository audit wiring and the partial ledger movement for database-complete/UI-pending operations.
 
-After its verified clean push, build **Stage 13F-K1 — Database operations contract**. Stage 13F-K2 and K3 follow before Stage 13G-A. Stage 16A execution and Stage 13P-A remain later.
+After backup, guarded Euro-staging application, linked pgTAP, database lint, clean commit and push, build **Stage 13F-K2 — Euro control-room implementation**. Stage 13F-K3 follows before Stage 13G-A. Stage 16A execution and Stage 13P-A remain later.
 
-**Starting commit:** `efce59f`
-**Migration count before and after Stage 13F-K0:** `17`
+**Starting commit:** `b6c7ddc`
+**Migration count:** `17` before Stage 13F-K1; `18` after accepted hosted application

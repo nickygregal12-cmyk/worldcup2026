@@ -127,8 +127,8 @@ if (packageJson.scripts?.['test:db:017:local'] !== 'npx supabase test db --local
 if (packageJson.scripts?.['test:db:017:linked'] !== 'npx supabase test db --linked supabase/tests/database/017_player_insight.test.sql') fail('linked Migration 017 test command is missing')
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
-if (migrations.length !== 17) fail(`Stage 13F-J requires exactly 17 active migrations, found ${migrations.length}`)
-if (migrations.at(-1) !== '202607030017_euro28_player_insight.sql') fail('Migration 017 is not the latest active migration')
+if (migrations.length < 17) fail(`Stage 13F-J requires the accepted seventeen-migration baseline, found ${migrations.length}`)
+if (!migrations.includes('202607030017_euro28_player_insight.sql')) fail('Migration 017 is missing from the active migration history')
 
 if (errors.length) {
   console.error('Euro Stage 13F-J player insight audit failed:')
@@ -141,4 +141,4 @@ console.log('Story: canonical source totals, rank gaps, matchday/round evidence,
 console.log('Privacy: self detail plus existing Original global-lock and KO fixture-release boundaries for other players')
 console.log('Separation: Original and KO Predictor totals remain independent; no group-position category')
 console.log('Stage 16A: provisional teams, nineteen deterministic personas, scenario oracle, leagues and marker-safe teardown recorded as later staging work')
-console.log(`Database: ${migrations.length} active migrations; Migration 017 is read-only`)
+console.log(`Database: ${migrations.length} active migrations; Migration 017 remains read-only`)

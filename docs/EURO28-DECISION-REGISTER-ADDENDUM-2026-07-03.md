@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Decision Register Addendum — 3 July 2026
-### Reconciled for Stage 13F-K0 Admin operations approval
+### Reconciled for Stage 13F-K1 Admin database operations
 
 ## Confirmed decisions
 
@@ -36,8 +36,11 @@
 30. Migration 018 is approved for Stage 13F-K1 only. It may add fixture revision/read/write contracts, full reconciliation, readiness output and two append-only event values. It adds no tournament-pick storage, official players, participant assignment, scoring values, manual point edits, resolver change, external provider or new Admin role.
 31. Stage 13F-K2 creates the single Tournament Picks Admin readiness home. Executable outcome entry, persistence, official player references, scoring and player-facing consumption remain Stage 17A.
 32. Stage 13F-K is delivered as K0 documents, K1 database, K2 frontend and K3 staging acceptance. Stage 13G-A cannot begin before K3 closes.
+33. Migration 018 implements the accepted K1 contract from `b6c7ddc`: optimistic fixture revision, protected venue/match reads, owner-only fixture scheduling, owner-only full reconciliation and readiness evidence.
+34. The only new event values are `fixture_schedule_updated` and `tournament_points_reconciled`. Migration 018 also restores the already accepted `team_profile_updated` value accidentally omitted by Migration 016 while preserving both Time & Phase values.
+35. Stage 13F-K1 changes no frontend, participant assignment, resolver rule, scoring value, tournament-pick persistence, manual point edit, provider integration or Admin role.
 
 ## Pending approvals
 
 - Whether a portable advanced guest-backup tool is retained outside the normal journey.
-- Tournament-pick persistence/outcome design remains Stage 17A. Migration 018 is settled only for Stage 13F-K fixture/reconciliation/readiness operations. Managed participants, Stage 13G-C invite-safe/synthetic reads and Stage 16 staging-effective time still require their own exact scopes, tests and migration decisions.
+- Tournament-pick persistence/outcome design remains Stage 17A. Migration 018 is implemented only for Stage 13F-K fixture/reconciliation/readiness operations and preserves the accepted Team Profile and Time & Phase audit values. Managed participants, Stage 13G-C invite-safe/synthetic reads and Stage 16 staging-effective time still require their own exact scopes, tests and migration decisions.

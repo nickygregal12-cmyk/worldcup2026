@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.16 — Stage 13F-K0 Admin operations scope and server contract
+### Version 4.17 — Stage 13F-K1 Admin database operations contract
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -17,7 +17,7 @@
 - Do not claim acceptance without Nicky's Terminal evidence.
 - Original and KO Predictor points never combine.
 - Predicted and live brackets never blend.
-- Migration 017 is the active read-only player-insight contract. Migration 018 is approved in Stage 13F-K0 but is not created or applied until the separately accepted Stage 13F-K1 database package.
+- Migration 018 is the current Admin database-operations contract. The repository moves to 18 migration files in Stage 13F-K1 and Euro staging moves to 18 only after explicit backup, owner application and linked pgTAP acceptance.
 - Every batch updates the Functional Completion Ledger in the same commit.
 
 ## 2. Completion rule
@@ -262,7 +262,7 @@ The Stage 13F-J audit, frontend tests, Migration 017 database test, full reposit
 
 Stage 13F-K closes the remaining Euro-native launch/live operations before Stage 13G begins. Existing result entry, corrections, match status, one-match recalculation, global lock, feature controls, grace, Time & Phase, Team Profile curation and audit history remain authoritative.
 
-### Stage 13F-K0 — Scope and server contract — CURRENT PLANNING PACKAGE FROM `efce59f`
+### Stage 13F-K0 — Scope and server contract — ACCEPTED AT `b6c7ddc`
 
 - approve fixture date/time/venue/schedule-status editing as owner-only;
 - approve owner-only replacement reconciliation across the complete tournament;
@@ -272,12 +272,12 @@ Stage 13F-K closes the remaining Euro-native launch/live operations before Stage
 - approve the operational-readiness and audit-presentation contract;
 - keep active migrations at 17.
 
-### Stage 13F-K1 — Database operations contract
+### Stage 13F-K1 — Database operations contract — CURRENT PACKAGE FROM `b6c7ddc`
 
 - add `202607030018_euro28_complete_admin_operations.sql`;
 - add optimistic `fixture_revision` and protected venue/fixture read contracts;
 - add owner-only fixture update and whole-tournament reconciliation RPCs;
-- extend readiness output and append-only event types;
+- extend readiness output and append-only event types, while restoring the accepted `team_profile_updated` value omitted by Migration 016;
 - prove permissions, conflicts, validation, replacement scoring and Original/KO separation through database tests;
 - move to 18 active migrations only after owner-linked staging acceptance.
 
@@ -500,7 +500,7 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-From verified checkpoint `efce59f`, install and accept the documents-only Stage 13F-K0 scope and server-contract package. After its clean acceptance, build Stage 13F-K1 — Database operations contract. Stage 13G-A, Stage 16A execution and Stage 13P-A must not begin early.
+From verified checkpoint `b6c7ddc`, install and accept Stage 13F-K1 — Database operations contract. Create and verify a Euro staging backup before Migration 018, apply it only to `gcfdwobpnanjchcnvdco`, pass linked pgTAP and database lint, then close at 18 aligned migrations. Stage 13F-K2 follows; Stage 13G-A, Stage 16A execution and Stage 13P-A must not begin early.
 
 ### Stage 13F-H acceptance
 
