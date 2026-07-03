@@ -14,12 +14,21 @@ function validTimestamp(value) {
   return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
 
+function hasExplicitTime(value) {
+  return typeof value === 'string' && /T\d{2}:\d{2}/.test(value)
+}
+
+function validStartTimestamp(tournament) {
+  if (hasExplicitTime(tournament?.starts_on)) return validTimestamp(tournament.starts_on)
+  return validTimestamp(TOURNAMENT_CONFIG.dates.tournamentStartAt) ?? validTimestamp(tournament?.starts_on)
+}
+
 export function resolveTournamentLifecycle(tournament = {}, now = getNow()) {
   const lockedAt = validTimestamp(tournament.prediction_locked_at)
   const databaseLockAt = validTimestamp(tournament.prediction_lock_at)
   const configuredLockAt = validTimestamp(TOURNAMENT_CONFIG.dates.predictionLockAt)
-  const databaseStartAt = validTimestamp(tournament.starts_on)
   const configuredStartAt = validTimestamp(TOURNAMENT_CONFIG.dates.tournamentStartAt)
+  const databaseStartAt = validStartTimestamp(tournament)
   const predictionLockAt = lockedAt ?? databaseLockAt ?? configuredLockAt
   const tournamentStartAt = databaseStartAt ?? configuredStartAt
   const source = lockedAt

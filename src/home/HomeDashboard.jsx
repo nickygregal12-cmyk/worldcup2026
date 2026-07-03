@@ -4,15 +4,34 @@ import { GUEST_STATE_UPDATED_EVENT } from '../predictions/predictionSaveConfig.j
 import { Badge, Button, Card, Icon, LinkButton, ProgressBar, StatusBar } from '../design-system/index.jsx'
 import { loadHomeDashboard } from './homeDashboardService.js'
 import styles from './HomeAccess.module.css'
+import homeStyles from './HomeDashboard.module.css'
+
+function dateFromValue(value) {
+  if (!value) return null
+  return new Date(String(value).includes('T') ? value : `${value}T12:00:00Z`)
+}
 
 function formatDate(value, fallback = 'To be confirmed') {
-  if (!value) return fallback
+  const date = dateFromValue(value)
+  if (!date || Number.isNaN(date.getTime())) return fallback
   return new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
-  }).format(new Date(`${value}T12:00:00Z`))
+  }).format(date)
+}
+
+function formatDateTime(value, fallback = 'To be confirmed') {
+  const date = dateFromValue(value)
+  if (!date || Number.isNaN(date.getTime())) return fallback
+  return new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/London',
+  }).format(date)
 }
 
 function formatRank(rank) {
@@ -137,21 +156,29 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
 
   const dashboard = state.data
   const firstName = dashboard.displayName?.split(' ')[0]
-  const originalLocked = Boolean(dashboard.tournament.predictionLockedAt)
-  const koOpen = dashboard.koPredictor.available > 0
+  const originalLocked = dashboard.lifecycle.phase !== 'build'
+  const koOpen = dashboard.koReadiness.open
   const next = dashboard.live.nextMatch
+  const heroPrompt = dashboard.signedIn
+    ? 'Your Original Predictor and KO Predictor are tracked separately, with their own points, jokers and leaderboards.'
+    : dashboard.original.totalComplete > 0
+      ? 'Your browser draft is underway. Create an account when you are ready to protect it and join leagues.'
+      : 'Start as a guest, build the full predictor, then create an account when you are ready to save it online.'
 
   return (
     <div className="home-dashboard">
       <section className="home-hero">
         <div className="home-hero__content">
-          <Badge tone={originalLocked ? 'warning' : 'safe'}>{originalLocked ? 'Original Predictor locked' : 'Predictions open'}</Badge>
+          <Badge tone={dashboard.lifecycle.phaseTone}>{dashboard.lifecycle.phaseLabel}</Badge>
           <h1>{dashboard.signedIn ? `Welcome back, ${firstName}` : 'Make every Euro 2028 match matter.'}</h1>
           <p>
-            {dashboard.signedIn
-              ? 'Your Original Predictor and KO Predictor are tracked separately, with their own points, jokers and leaderboards.'
-              : 'Build your full pre-tournament prediction in this browser, then create an account when you are ready to save it online.'}
+            {heroPrompt}
           </p>
+          <div className={homeStyles.lifecycleStrip} aria-label="Euro 2028 lifecycle">
+            <div><span>Prediction lock</span><strong>{dashboard.lifecycle.predictionLockCountdown}</strong><small>{formatDateTime(dashboard.lifecycle.predictionLockAt)}</small></div>
+            <div><span>Tournament starts</span><strong>{dashboard.lifecycle.tournamentStartCountdown}</strong><small>{formatDateTime(dashboard.lifecycle.tournamentStartAt)}</small></div>
+            <div><span>KO Predictor</span><strong>{dashboard.koReadiness.open ? `${dashboard.koReadiness.available} ready` : 'Later'}</strong><small>{dashboard.koReadiness.label}</small></div>
+          </div>
           <div className="home-hero__actions">
             <LinkButton href="#/predict" icon="predict">{dashboard.original.totalComplete > 0 ? 'Continue predicting' : 'Start predicting'}</LinkButton>
             <LinkButton href={dashboard.signedIn ? '#/leagues' : '#/account'} variant="secondary" icon={dashboard.signedIn ? 'leagues' : 'account'}>
@@ -161,10 +188,12 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
           </div>
         </div>
         <Card className="home-tournament-card" as="aside">
-          <span className="page-eyebrow">Tournament</span>
+          <span className="page-eyebrow">Tournament timeline</span>
           <strong>{formatDate(dashboard.tournament.startsOn)} – {formatDate(dashboard.tournament.endsOn)}</strong>
           <div><span>{dashboard.tournament.totalMatches}</span><small>matches</small></div>
           <div><span>{dashboard.tournament.totalTeams}</span><small>team slots</small></div>
+          <div><span>{dashboard.lifecycle.predictionLockCountdown}</span><small>until lock</small></div>
+          <div><span>{dashboard.lifecycle.tournamentStartCountdown}</span><small>until kick-off</small></div>
           <p>{dashboard.tournament.unresolvedTeams > 0 ? `${dashboard.tournament.unresolvedTeams} team identities still await qualification and the final draw.` : 'All tournament teams are confirmed.'}</p>
         </Card>
       </section>
@@ -216,7 +245,7 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
       <section className="home-lower-grid">
         <Card className="home-live" as="article">
           <div className="home-section-heading">
-            <div><span className="page-eyebrow">Tournament pulse</span><h2>{dashboard.live.liveMatches > 0 ? `${dashboard.live.liveMatches} match${dashboard.live.liveMatches === 1 ? '' : 'es'} live` : 'Waiting for kick-off'}</h2></div>
+            <div><span className="page-eyebrow">Today’s match hub</span><h2>{dashboard.live.liveMatches > 0 ? `${dashboard.live.liveMatches} match${dashboard.live.liveMatches === 1 ? '' : 'es'} live` : next ? 'Next match to watch' : 'Waiting for kick-off'}</h2></div>
             <Badge tone={dashboard.live.liveMatches > 0 ? 'danger' : 'neutral'}>{dashboard.live.confirmedMatches}/{dashboard.live.totalMatches} final</Badge>
           </div>
           {!dashboard.live.dataAvailable ? (
@@ -224,7 +253,7 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
           ) : next ? (
             <div className="home-next-match">
               <Icon name="clock" />
-              <div><strong>Match {next.matchNumber}</strong><span>{next.displayStatus === 'live' ? 'Live now' : formatDate(next.scheduledDate)}</span></div>
+              <div><strong>Match {next.matchNumber}</strong><span>{next.displayStatus === 'live' ? 'Live now' : formatDate(next.scheduledDate)}</span><small className={homeStyles.nextMatchHint}>Open the Match Centre for live context, prediction impact and league swings.</small></div>
               <LinkButton href={`#/match-centre?match=${next.matchNumber}`} variant="ghost" size="small">Match Centre<Icon name="chevron" size={16} /></LinkButton>
             </div>
           ) : <p>All tournament matches are complete.</p>}

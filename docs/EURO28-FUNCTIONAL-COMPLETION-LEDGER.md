@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.24 — Stage 13G-A interaction enforcement close-out
+### Version 1.25 — Stage 13G-B Home lifecycle alignment
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -119,12 +119,12 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Native-control removal | 🟠 PARTIAL | Shared `SelectField` exists and League/member pickers use it. Admin/match native selectors remain scheduled for incremental replacement. | 13G-A/13G-E |
 | Central refresh policy | 🟠 PARTIAL | `REFRESH_POLICY` establishes no-manual-refresh defaults and mutation invalidation intent. Surface adoption remains incremental. | 13G-A/13G-E |
 | Informative empty-state standard | 🟠 PARTIAL | Useful examples exist, but the whole product has no enforced empty/error/recovery standard. | 13G-E |
-| Home first-visit conversion hook | ❌ MISSING | Approved signed-out/guest acquisition and returning-progress states are not implemented. | 13G-B |
-| Tournament-start and prediction-lock countdowns | ❌ MISSING | Required central-config countdown surfaces do not exist. | 13G-B |
-| In-tournament today's-matches hub | ❌ MISSING | Home does not yet own the approved live-day action hub. | 13G-B |
+| Home first-visit conversion hook | ✅ FUNCTIONAL | Home now distinguishes new guests, returning browser drafts and signed-in users with account-conversion copy while keeping guest drafts browser-only until explicit save. | — |
+| Tournament-start and prediction-lock countdowns | ✅ FUNCTIONAL | Home displays prediction-lock and tournament-start countdowns from `resolveTournamentLifecycle`; date-only staging starts no longer override the central precise tournament-start timestamp. | — |
+| In-tournament today's-matches hub | ✅ FUNCTIONAL | Home now owns a Today’s match hub that promotes live or next fixture context into Match Centre without presenting missing results as final. | — |
 | Predicted group standings | ❌ MISSING | Complete shared predicted tables are not available in the approved Groups journey. | 13G-C |
 | Shared third-place table | ❌ MISSING | One canonical predicted/live third-place presentation is not used wherever standings appear. | 13G-C |
-| Central KO-readiness signal | 🟠 PARTIAL | Similar readiness is derived in multiple places; nav, Home and Leagues must consume one signal. | 13G-B |
+| Central KO-readiness signal | 🟠 PARTIAL | Home now exposes a single KO readiness model for its own surface. Navigation and Leagues still need to consume the same signal in a later Stage 13G-B/C slice. | 13G-B |
 | PlayerIdentity whole-product coverage | 🟠 PARTIAL | Shared identity exists but not every rendered player name uses it. | 13G-D |
 | PlayerInsight as sole detailed-points surface | 🟠 PARTIAL | The shared model exists, but duplicate/local detail surfaces remain to be retired. | 13G-D |
 | Auth-provider-agnostic account creation | 🟠 PARTIAL | Current persistence is adaptable, but the active flow and assumptions are email/password-specific. | 13G-D |
@@ -159,6 +159,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 - **v1.20:** Closes Stage 13F-K3 from `c4342f1` after three-role deployed acceptance, same-value transactional fixture proof with exact rollback, one real owner complete reconciliation, read-only event/run/separate-total verification, linked database gates and final deployed verification. No product code or Migration 019 is added; Stage 13G-A becomes next.
 
+- **v1.25:** Stage 13G-B Home lifecycle slice from `08524b6` adds Home first-visit/returning-guest conversion copy, central-config prediction-lock and tournament-start countdowns, Today’s match hub entry to Match Centre, a Home KO-readiness signal and `audit:home-lifecycle` in `npm run check`. It fixes date-only staging tournament starts so they cannot override the central precise tournament-start timestamp. No database change and no Migration 019.
 - **v1.24:** Stage 13G-A interaction-enforcement slice from `b38ec64` replaces remaining active-surface native selectors with `SelectField`, routes high-impact Admin operations through `ConfirmDialog`, removes manual refresh controls outside retry/error states, adds `audit:interaction-enforcement` to `npm run check` and sets the active `foundation-*` ratchet at 245 with current use below the cap. No database change and no Migration 019.
 
 - **v1.23:** Stage 13G-A central-configuration/shared-primitives slice from `c8a5cf3` adds central provisional tournament-start and prediction-lock values, a lifecycle resolver consumed by the Original Predictor account autosave path, shared `ConfirmDialog`, shared `SelectField`, first sign-out and League-picker adoptions, refresh-policy groundwork and `audit:shared-primitives` in `npm run check`. No database change and no Migration 019.
@@ -167,7 +168,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 - **v1.21:** Stage 13G-R0 corrects the false Stage 13F-F navigation claim, downgrades Admin UI/coherent operations truthfully, consolidates the 3 July amendments into the canonical Register, approves C1 Option A and the Original-bracket invalidation contract, records offline players as decision pending, rebuilds accepted-commit chronology through `b7f50de`, and makes same-commit Ledger updates mandatory for every future batch. Documentation only; no product code, database action or Migration 019.
 
-- **Accepted-commit chronology:** 13F-E `8349e83`; 13F-F `369ddfc` (retrospectively corrected by v1.21); 13F-G `7324d43`; 13F-H `74c8dd3`; 13F-I `63d7acb`; 13F-J `f7f2fb5`; 13G-0 `efce59f`; 13F-K0 `b6c7ddc`; 13F-K1 `0e4d5b7`; 13F-K2 `c4342f1`; 13F-K3 `b7f50de`; 13G-R0 `586c6a1`; Stage 13G test-strategy amendment `3c41628`; Stage 13G-A route-integrity `c8a5cf3`; Stage 13G-A central configuration/shared primitives `b38ec64`; Stage 13G-A interaction enforcement next accepted commit.
+- **Accepted-commit chronology:** 13F-E `8349e83`; 13F-F `369ddfc` (retrospectively corrected by v1.21); 13F-G `7324d43`; 13F-H `74c8dd3`; 13F-I `63d7acb`; 13F-J `f7f2fb5`; 13G-0 `efce59f`; 13F-K0 `b6c7ddc`; 13F-K1 `0e4d5b7`; 13F-K2 `c4342f1`; 13F-K3 `b7f50de`; 13G-R0 `586c6a1`; Stage 13G test-strategy amendment `3c41628`; Stage 13G-A route-integrity `c8a5cf3`; Stage 13G-A central configuration/shared primitives `b38ec64`; Stage 13G-A interaction enforcement `08524b6`; Stage 13G-B Home lifecycle next accepted commit.
 
 - **v1.19:** Implements Stage 13F-K2 from `0e4d5b7`: split control-room components, owner-only fixture and complete-reconciliation actions, consolidated readiness, Stage 17A Tournament Picks hand-off, filtered expandable append-only audit detail, role/timezone tests and six responsive light/dark structural baselines. No Migration 019; Stage 13F-K3 remains the final deployed role acceptance.
 

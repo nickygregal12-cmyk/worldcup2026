@@ -1,0 +1,39 @@
+.lifecycleStrip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.lifecycleStrip > div {
+  display: grid;
+  gap: 0.18rem;
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--text-on-brand) 16%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--text-on-brand) 8%, transparent);
+}
+
+.lifecycleStrip span,
+.lifecycleStrip small {
+  color: var(--surface-inverse-soft);
+  font-size: 0.72rem;
+}
+
+.lifecycleStrip strong {
+  color: var(--text-on-brand);
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.nextMatchHint {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 40rem) {
+  .lifecycleStrip {
+    grid-template-columns: 1fr;
+  }
+}

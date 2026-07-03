@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.20 — Stage 13G-R0 canonical reconciliation and revised execution sequence
+### Version 4.21 — Stage 13G-B Home lifecycle alignment
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -336,6 +336,8 @@ No migration is expected.
 
 ### Stage 13G-B — Tournament comprehension and match organisation
 
+Accepted Home/lifecycle slice from `08524b6` adds first-visit/returning guest copy, central-config countdowns, a Today’s match hub, Home KO-readiness signal and a build audit. Remaining Stage 13G-B work stays scoped to match organisation and tournament comprehension.
+
 - real-time chronological match ordering;
 - By group and By date group-stage views using shared match components;
 - By group default before the opening match and By date default once play starts, while respecting manual choice;
@@ -559,3 +561,7 @@ From checkpoint `b38ec64`, install the final Stage 13G-A enforcement slice. It m
 - no database change and no Migration 019.
 
 After this slice, Stage 13G-A is ready to close and Stage 13G-B may begin with Home, lifecycle countdowns, today's-match hub and KO prominence.
+
+### Stage 13G-B Home lifecycle alignment
+
+From checkpoint `08524b6`, install the first Stage 13G-B slice. It must keep database migrations at 18 and must not create Migration 019. It aligns Home with the central lifecycle resolver, displays prediction-lock and tournament-start countdowns from central configuration, adds first-visit/returning-guest conversion copy, promotes live/next fixture context into the Today’s match hub and records the remaining KO-readiness adoption work for nav/leagues. Acceptance requires `audit:home-lifecycle`, focused Home/config tests and the full `npm run check`.

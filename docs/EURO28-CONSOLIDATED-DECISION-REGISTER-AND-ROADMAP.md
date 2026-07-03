@@ -546,3 +546,8 @@ Decision pending. Stage 16 synthetic seeding may reuse service-role-only partici
 - Shared `ConfirmDialog`, `SelectField` and `REFRESH_POLICY` primitives are approved for incremental adoption.
 - Remaining destructive actions, native selectors and refresh consumers stay ledger-tracked until fully migrated.
 - No database change or Migration 019 belongs to this slice.
+
+
+## Stage 13G-B Home lifecycle amendment
+
+The first Stage 13G-B implementation slice starts from `08524b6` and is limited to Home lifecycle alignment. Home must render first-visit and returning-guest conversion copy, prediction-lock and tournament-start countdowns from central lifecycle configuration, a Today’s match hub linking into Match Centre, and a Home-owned KO readiness signal. Date-only staging tournament starts must not override the central precise tournament-start timestamp. No database change or Migration 019 is permitted.

@@ -33,6 +33,7 @@ function makeDashboard(overrides = {}) {
     results: null,
     leagues: [],
     sectionErrors: {},
+    now: new Date('2026-07-03T12:00:00Z'),
     ...overrides,
   })
 }
@@ -104,4 +105,43 @@ describe('Home dashboard model', () => {
     expect(dashboard.koPredictor.dataAvailable).toBe(false)
     expect(dashboard.live.dataAvailable).toBe(false)
   })
+
+  it('drives Home countdowns from the central lifecycle configuration', () => {
+    const dashboard = makeDashboard()
+
+    expect(dashboard.lifecycle.phase).toBe('build')
+    expect(dashboard.lifecycle.predictionLockAt).toBe('2028-06-09T19:00:00.000Z')
+    expect(dashboard.lifecycle.tournamentStartAt).toBe('2028-06-09T20:00:00.000Z')
+    expect(dashboard.lifecycle.predictionLockCountdown).toContain('707 days')
+    expect(dashboard.lifecycle.tournamentStartCountdown).toContain('707 days')
+  })
+
+  it('surfaces a central KO readiness signal for Home instead of re-deriving copy locally', () => {
+    const dashboard = makeDashboard()
+
+    expect(dashboard.koReadiness).toEqual({
+      open: true,
+      available: 3,
+      label: '3 real knockout fixtures ready',
+      tone: 'info',
+    })
+    expect(dashboard.koPredictor.available).toBe(3)
+  })
+
+  it('marks Home as live and promotes the active match during tournament play', () => {
+    const dashboard = makeDashboard({
+      now: new Date('2028-06-10T19:30:00Z'),
+      results: {
+        live: {
+          summary: { liveMatches: 1, confirmedMatches: 0 },
+          results: [{ matchNumber: 2, status: 'live' }],
+        },
+      },
+    })
+
+    expect(dashboard.lifecycle.phase).toBe('live')
+    expect(dashboard.live.nextMatch.matchNumber).toBe(2)
+    expect(dashboard.live.nextMatch.displayStatus).toBe('live')
+  })
+
 })

@@ -1,4 +1,6 @@
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
+import { resolveTournamentLifecycle } from '../config/tournamentLifecycle.js'
+import { getNow } from '../lib/clock.js'
 
 function completedOriginalRows(bundle) {
   const rows = bundle?.predictions ?? []
@@ -42,6 +44,45 @@ function leaderboardStory(results, competitionKey, userId) {
   })
 }
 
+
+function countdownLabel(targetIso, now) {
+  if (!targetIso) return 'Date to be confirmed'
+  const target = new Date(targetIso)
+  const current = now instanceof Date ? now : new Date(now)
+  const diffMs = target.getTime() - current.getTime()
+  if (!Number.isFinite(diffMs)) return 'Date to be confirmed'
+  if (diffMs <= 0) return 'Now'
+  const totalHours = Math.ceil(diffMs / (1000 * 60 * 60))
+  const days = Math.floor(totalHours / 24)
+  const hours = totalHours % 24
+  if (days >= 2) return `${days} days${hours ? ` ${hours} hours` : ''}`
+  if (days === 1) return `1 day${hours ? ` ${hours} hours` : ''}`
+  return `${Math.max(1, totalHours)} hour${totalHours === 1 ? '' : 's'}`
+}
+
+function lifecyclePhase(lifecycle, now) {
+  const current = now instanceof Date ? now : new Date(now)
+  const start = lifecycle.tournamentStartAt ? new Date(lifecycle.tournamentStartAt) : null
+  if (start && current >= start) {
+    return { key: 'live', label: 'Tournament live', tone: 'danger' }
+  }
+  if (lifecycle.predictionLockedAt) {
+    return { key: 'locked', label: 'Predictions locked', tone: 'warning' }
+  }
+  if (lifecycle.predictionLockAt && current >= new Date(lifecycle.predictionLockAt)) {
+    return { key: 'locked', label: 'Predictions locked', tone: 'warning' }
+  }
+  return { key: 'build', label: 'Build your predictor', tone: 'safe' }
+}
+
+function koReadiness(reference) {
+  const available = reference.knockoutMatches.filter(match => match.participantsResolved).length
+  if (available > 0) {
+    return Object.freeze({ open: true, available, label: `${available} real knockout fixture${available === 1 ? '' : 's'} ready`, tone: 'info' })
+  }
+  return Object.freeze({ open: false, available: 0, label: 'KO Predictor opens when real fixtures are known', tone: 'neutral' })
+}
+
 function nextMatch(reference, live) {
   const resultByMatch = new Map((live?.results ?? []).map(result => [result.matchNumber, result]))
   const matches = [...reference.groupMatches, ...reference.knockoutMatches]
@@ -63,6 +104,7 @@ export function buildHomeDashboard({
   results,
   leagues,
   sectionErrors = {},
+  now = getNow(),
 }) {
   const userId = session?.user?.id ?? null
   const signedIn = Boolean(userId)
@@ -72,7 +114,9 @@ export function buildHomeDashboard({
         groups: guestSummary?.groupComplete ?? 0,
         bracket: guestSummary?.bracketComplete ?? 0,
       }
-  const availableKoMatches = reference.knockoutMatches.filter(match => match.participantsResolved).length
+  const lifecycle = resolveTournamentLifecycle(tournament, now)
+  const phase = lifecyclePhase(lifecycle, now)
+  const ko = koReadiness(reference)
   const originalStory = leaderboardStory(results, 'original', userId)
   const koStory = leaderboardStory(results, 'koPredictor', userId)
   const live = results?.live ?? null
@@ -84,8 +128,8 @@ export function buildHomeDashboard({
       name: tournament.name,
       startsOn: tournament.starts_on,
       endsOn: tournament.ends_on,
-      predictionLockAt: tournament.prediction_lock_at,
-      predictionLockedAt: tournament.prediction_locked_at,
+      predictionLockAt: lifecycle.predictionLockAt,
+      predictionLockedAt: lifecycle.predictionLockedAt,
       unresolvedTeams: Object.values(reference.teamsById).filter(team => team.isProvisional || !team.actualTeamId).length,
       totalTeams: Object.keys(reference.teamsById).length,
       totalMatches: reference.groupMatches.length + reference.knockoutMatches.length,
@@ -110,8 +154,20 @@ export function buildHomeDashboard({
       jokerCap: EURO_SCORING_CONFIG.joker.GROUP_STAGE_CAP,
       dataAvailable: signedIn ? !sectionErrors.original : !sectionErrors.guest,
     }),
+    lifecycle: Object.freeze({
+      phase: phase.key,
+      phaseLabel: phase.label,
+      phaseTone: phase.tone,
+      predictionLockAt: lifecycle.predictionLockAt,
+      predictionLockCountdown: countdownLabel(lifecycle.predictionLockAt, now),
+      tournamentStartAt: lifecycle.tournamentStartAt,
+      tournamentStartCountdown: countdownLabel(lifecycle.tournamentStartAt, now),
+      source: lifecycle.source,
+      provisional: lifecycle.provisional,
+    }),
+    koReadiness: ko,
     koPredictor: Object.freeze({
-      available: availableKoMatches,
+      available: ko.available,
       complete: signedIn ? completedKoRows(koBundle) : 0,
       total: reference.knockoutMatches.length,
       points: signedIn ? pointsValue(results, 'koPredictor') : null,

@@ -1,0 +1,40 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
+const root = process.cwd()
+const read = file => fs.readFileSync(path.join(root, file), 'utf8')
+const fail = message => { console.error(message); process.exit(1) }
+
+const model = read('src/home/homeDashboardModel.js')
+const view = read('src/home/HomeDashboard.jsx')
+const lifecycle = read('src/config/tournamentLifecycle.js')
+const lifecycleTest = read('src/config/__tests__/tournamentLifecycle.test.js')
+const homeTest = read('src/home/__tests__/homeDashboardModel.test.js')
+const styles = read('src/home/HomeDashboard.module.css')
+const packageJson = JSON.parse(read('package.json'))
+const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
+
+if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
+if (migrations.some(file => file.includes('019'))) fail('Migration 019 must not exist in this Stage 13G-B Home slice')
+if (!lifecycle.includes('validStartTimestamp') || !lifecycle.includes('hasExplicitTime')) fail('Lifecycle resolver must keep date-only tournament starts from overriding central precise start config')
+if (!lifecycleTest.includes("starts_on: '2028-06-09'") || !lifecycleTest.includes("2028-06-09T20:00:00.000Z")) fail('Config-to-surface lifecycle test for central tournament start is missing')
+if (!model.includes('resolveTournamentLifecycle(tournament, now)')) fail('Home model must derive lifecycle from the central resolver')
+if (!model.includes('predictionLockCountdown') || !model.includes('tournamentStartCountdown')) fail('Home model must expose prediction-lock and tournament-start countdowns')
+if (!model.includes('function koReadiness') || !model.includes('koReadiness: ko')) fail('Home model must expose a central KO readiness signal')
+if (!homeTest.includes('drives Home countdowns from the central lifecycle configuration')) fail('Home countdown contract test is missing')
+if (!homeTest.includes('surfaces a central KO readiness signal')) fail('Home KO readiness contract test is missing')
+if (!homeTest.includes('marks Home as live and promotes the active match')) fail('Home today/live match hub test is missing')
+if (!view.includes('homeStyles.lifecycleStrip')) fail('Home lifecycle countdown strip is missing')
+if (!view.includes('Today’s match hub')) fail('Home today match hub copy is missing')
+if (!view.includes('heroPrompt')) fail('Home first-visit/returning guest conversion prompt is missing')
+if (!styles.includes('lifecycleStrip') || !styles.includes('nextMatchHint')) fail('Stage 13G-B Home lifecycle styles are missing')
+if (!packageJson.scripts['audit:home-lifecycle']) fail('audit:home-lifecycle script is not registered')
+if (!packageJson.scripts.check.includes('npm run audit:home-lifecycle')) fail('npm run check must include the Home lifecycle audit')
+
+console.log('Stage 13G-B Home lifecycle audit passed.')
+console.log('Home countdowns: central prediction lock and tournament start')
+console.log('Home conversion: first-visit and returning guest prompts')
+console.log('Today hub: live/next match centre entry')
+console.log('KO readiness: central Home signal')
+console.log(`Active migrations: ${migrations.length}`)
+console.log(`Latest migration: ${migrations.at(-1)}`)
