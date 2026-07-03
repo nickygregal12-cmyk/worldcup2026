@@ -1,20 +1,18 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 3.0 — Stage 13F-B completion and converging-bracket decision addendum
+### Version 3.1 — Stage 13F-I tournament-pick contract and roadmap reconciliation
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
 ## 1. Current return point
 
-- Expected Git commit: `4e1ae38` — **Add expanded Euro admin control room**.
-- Active migration count: **14**.
-- Stages 1–12 are complete and verified at that checkpoint.
-- Stage 13A v1, v2 and v3 were superseded and never installed.
-- Stage 13A v4 was generated but never installed.
-- Stage 13A v4 is now **superseded** because its navigation implements the reversed phase-switch rule described in Section 5.
-- No Stage 13 code or documentation from any generated package has been installed into the repository.
-- Stage 13A v5 was never committed and is superseded because its generated lockfile contained private build-environment registry URLs.
-- Stage 13A v6 preserves the confirmed v5 product scope, uses public npm registry URLs only and adds a permanent package-lock portability audit. It remains unverified until the complete gate passes in Nicky's terminal and the branch is committed cleanly.
+- Expected Git commit: `74c8dd3` — **Retire Euro foundation runtime and legacy handlers**.
+- Active branch: `euro28-development`; `main` remains protected WC26.
+- Active migration count: **16**; Migration 016 is the approved staging Time & Phase control.
+- Stages 1–12, 13A–13E, 14, 14B and Stage 13F-0 through Stage 13F-H are accepted.
+- The exact next package is Stage 13F-I from `74c8dd3`.
+- Stage 13F-I is contract-only: no persistence, UI or migration is claimed complete.
+- Original and KO Predictor totals remain permanently separate.
 
 ## 2. Existing confirmed product decisions
 
@@ -47,6 +45,7 @@
 | Direct writes | No direct browser writes to protected tables |
 | External results API | Deferred; manual operation remains authoritative and the fallback |
 | App name | **Euro 2028 Predictor** |
+| Extra tournament picks | Original Predictor only: total tournament goals, top scorer and highest-scoring team; 20 points each; global lock; no joker; no KO points; nearest-total ties and official joint winners receive full points |
 
 ## 3. Scoring model
 
@@ -66,6 +65,15 @@
 - KO joker: provisional 2×.
 
 All provisional values remain central and versioned. They must not be duplicated into page components.
+
+### Extra tournament picks
+
+- Total tournament goals: 20 points to every equally nearest prediction.
+- Top scorer: 20 points when the selected player is among the official joint winners.
+- Highest-scoring team: 20 points when the selected team is among the joint highest scorers.
+- All three belong to the Original Predictor, lock globally, use no joker and never enter KO Predictor totals.
+- None acts as the final leaderboard tiebreaker.
+- The official player selector activates only in Stage 17A.
 
 ## 4. Confirmed five-position mobile navigation
 
@@ -320,7 +328,7 @@ The Share Card decision is settled: the Share Card is the user’s completed bra
 - **13C — complete:** permanent winner-only predicted bracket; separate real-fixture KO match centre with 90-minute score, advancing team, method, five KO jokers, separate points/rank and hidden unresolved fixtures. No Migration 015.
 - **13D:** Leagues, results, shared predictions and responsive polish.
 - **13E:** Team Profile Sheet implemented through `<TeamLabel>` with the three-source data boundary and post-lock aggregate gate.
-- **13F:** Functional-completion sequence remains 13F-0, 13F-A through 13F-J. Stage 13F-C owns the Euro Match Centre; Stage 13F-D owns bracket health; Stage 13F-J owns player insight and points storytelling.
+- **13F:** Functional-completion sequence is 13F-0, 13F-A through 13F-K. Stage 13F-I owns the tournament-pick contract; Stage 13F-J owns player insight and points storytelling; Stage 13F-K owns the complete Admin operations backbone.
 - **13P-A:** First post-13F polish batch: presentation-only converging predicted/live bracket layouts at `≥900px`, with the completed converging bracket rendered as the cross-device Share Card image.
 
 ### Later stages
@@ -340,20 +348,13 @@ The Share Card decision is settled: the Share Card is the user’s completed bra
 - Final qualified teams, draw positions and kick-off times.
 - Whether Google sign-in is enabled after its optional stage is completed.
 - Results-provider selection in 2027.
-- Awards categories.
 - Final leaderboard tie-break policy beyond shared rank on equal points.
 
 ## 13. Exact next task
 
-Stage 13C is the current frontend-only batch built from verified Stage 13B commit `78882dd`. It keeps the database at fourteen migrations and preserves all scoring, lock, grace and resolver contracts. After its verified clean push, build Stage 13D: leagues, results, shared predictions and responsive polish.
+Stage 13F-I is the current contract package built from verified checkpoint `74c8dd3`. It approves the final Original Predictor tournament-pick list, values, tie rules and delivery boundaries, adds a versioned contract with deterministic tests, reconciles the roadmap and keeps the database at sixteen migrations.
 
-**Starting commit:** `78882dd`
-**Migration count:** `14`
+After its verified clean push, build **Stage 13F-J — Player insight and points storytelling**, then **Stage 13F-K — Complete Admin Operations Backbone**. Only after every Stage 13F row is accepted may Stage 13P-A begin.
 
-### Stage 13F-D clarification — Original bracket comparison
-
-The user’s saved Original bracket is immutable after lock. Canonical live results may be displayed beside it for comparison but may never rewrite, advance or replace the saved prediction. Once both real participants in a knockout fixture are known, that real fixture becomes the comparison context and receives Match Centre access; until then, the user’s original predicted matchup remains visible. Original and live brackets remain independently resolved data contexts, even when presented together.
-
-### Stage 13F-E decision — admin invisibility
-
-Admin is a verified-role destination, not an ordinary product destination. Navigation and route content remain absent until the existing server-authorised access RPC confirms the user. Authorised admins retain the complete control room; this decision does not remove or weaken admin operations.
+**Starting commit:** `74c8dd3`
+**Migration count:** `16`

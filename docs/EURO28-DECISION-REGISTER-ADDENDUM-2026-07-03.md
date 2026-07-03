@@ -1,12 +1,12 @@
 # EURO 2028 PREDICTOR
 ## Decision Register Addendum — 3 July 2026
-### Reconciled at `d522210`
+### Reconciled for Stage 13F-I from `74c8dd3`
 
 ## Confirmed decisions
 
 1. One global Original Predictor lock. Per-league lock modes and prediction snapshots are rejected.
 2. Daily Questions are rejected.
-3. Extra tournament picks belong inside the Original Predictor, lock globally, score through the central versioned ruleset and never affect KO Predictor points. The exact list and values remain to be approved.
+3. Extra tournament picks belong inside the Original Predictor, lock globally, use no joker, score through the central versioned ruleset and never affect KO Predictor points. The final list is total tournament goals, top scorer and highest-scoring team. Each is worth 20 points. Total goals awards full points to every equally nearest prediction; official joint winners are accepted for the scorer and team picks. None is a tournament tiebreaker. The player selector activates only when the official player pool exists in Stage 17A.
 4. Share Card is deferred to the end of the product/design roadmap. It is built only if final design identifies a natural location and genuine value.
 5. PWA and push notifications are carried as one Euro-native feature in Stage 18C. They ship only if installation, service-worker lifecycle, consent, preferences, unsubscribe and delivery are demonstrably functional.
 6. Offline players are carried as managed private-league participants with secure account claim in Stage 16E.
@@ -19,6 +19,5 @@
 
 ## Pending approvals
 
-- Final extra-pick list, values and tie rules.
 - Whether a portable advanced guest-backup tool is retained outside the normal journey.
-- Any future database design for Match Centre bulk reads, Time & Phase controls, tournament picks or managed participants.
+- Any future database design for Match Centre bulk reads, Time & Phase controls, tournament-pick persistence/operations or managed participants.

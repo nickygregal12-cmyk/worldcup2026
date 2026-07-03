@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.11 — Stage 13F-H product-root and runtime coherence from `7324d43`
+### Version 4.12 — Stage 13F-I tournament-pick contract from `74c8dd3`
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -44,6 +44,13 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 14B Batch 3: contrast completion accepted at `7261888`; all 58 registered token pairs pass with zero exceptions and 59 test files / 321 tests passed.
 - Stage 13F-0: site-wide information architecture and direct leaderboard access accepted at `51696c3`.
 - Stage 13F-A: guest Original/KO persistence, safe account transfer, signup prompts and Lucky Dip accepted at `2e2b9a8`; 63 test files and 333 tests passed.
+- Stage 13F-B: shared player identity and complete Original/KO H2H accepted at `4b81fb1`.
+- Stage 13F-C: Euro Match Centre accepted at `b1b9879`.
+- Stage 13F-D: immutable Original Bracket Health accepted at `4532b99`.
+- Stage 13F-E: Admin invisibility accepted at `8349e83`.
+- Stage 13F-F: Admin Control Room visual rebuild accepted at `369ddfc`.
+- Stage 13F-G: audited staging Time & Phase accepted at `7324d43`; Migration 016 applied.
+- Stage 13F-H: product-root and runtime coherence accepted at `74c8dd3`; 70 test files and 352 tests passed.
 
 # Delivery sequence
 
@@ -204,24 +211,28 @@ Any server/data contract requires separate approval.
 - remove incoherent manifest/push remnants pending Stage 18C;
 - retire active transitional global styles except the final frozen WC26 bridge.
 
-## Stage 13F-I — Tournament-pick contract
+Stage 13F-I — Tournament-pick contract.
 
-Confirmed direction:
+## Stage 13F-I — Tournament-pick contract — CURRENT PACKAGE FROM `74c8dd3`
+
+Approved contract:
 
 - Original Predictor only;
-- global lock;
+- one global tournament lock;
 - no joker;
-- central versioned ruleset;
-- Home live-race card;
-- no standalone Awards page.
+- central versioned scoring contract;
+- no standalone Awards page;
+- Home live-race presentation and points breakdown integration are implementation work, not part of this contract-only batch;
+- total tournament goals: 20 points to every equally nearest prediction;
+- top scorer: 20 points when the selected player is among the official joint winners;
+- highest-scoring team: 20 points when the selected team is among the joint highest scorers;
+- no extra-pick value acts as a tournament tiebreaker;
+- the real player selector activates only in Stage 17A when official player data exists;
+- no database migration in Stage 13F-I.
 
-Recommended list awaiting approval:
+### Completion gate
 
-- total tournament goals;
-- top scorer;
-- highest-scoring team.
-
-The real player selector activates only in Stage 17A when official player data exists.
+The versioned contract, deterministic scoring helpers, tests, decision register, ledger and roadmap must agree exactly. Database and UI implementation remain scheduled work and must not be claimed functional here.
 
 ## Stage 13F-J — Player insight and points storytelling
 
@@ -232,6 +243,18 @@ The real player selector activates only in Stage 17A when official player data e
 - reuse Stage 13F-B player identity and H2H primitives;
 - never combine Original and KO Predictor totals;
 - no independent component scoring calculations.
+
+## Stage 13F-K — Complete Admin Operations Backbone
+
+- inventory every authorised tournament operation required before launch;
+- provide one server-authorised home for fixture setup, official results, corrections, scoring runs, tournament-pick outcomes, content curation and operational audit visibility;
+- remove reliance on hidden inherited WC26 admin routes or direct table editing for normal operations;
+- preserve fail-closed access, audit logging and correction-safe recalculation;
+- approve any new server or database contract separately before implementation.
+
+### Completion gate
+
+The owner can perform every approved launch and live-tournament operation through the Euro control room without exposing Admin to ordinary users or relying on inherited WC26 tooling.
 
 ## Stage 13P-A — Converging wall-chart bracket and Share Image
 
@@ -321,8 +344,8 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-Stage 13F-I — Tournament-pick contract. Confirm the final Original Predictor pick list, scoring values, lock behaviour and Home presentation before any database or UI implementation.
+Stage 13F-I — Tournament-pick contract from checkpoint `74c8dd3`. Approve and enforce the final Original Predictor list, values, tie rules and implementation boundaries before Stage 13F-J.
 
 ### Stage 13F-H acceptance
 
-Accepted scope at checkpoint `7324d43`: product root inversion, active Foundation naming retirement, visual-fixture isolation, Euro-only Netlify deploy input, deferred PWA/push remnant removal and rejected snapshot-function removal. No migration or product-rule change.
+Accepted scope at checkpoint `74c8dd3`: product root inversion, active Foundation naming retirement, visual-fixture isolation, Euro-only Netlify deploy input, deferred PWA/push remnant removal and rejected snapshot-function removal. No migration or product-rule change.

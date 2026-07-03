@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.12 — Stage 13F-H product-root and runtime coherence from checkpoint `7324d43`
+### Version 1.13 — Stage 13F-I tournament-pick contract from checkpoint `74c8dd3`
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -34,7 +34,8 @@
 | Tappable player identity | ✅ FUNCTIONAL | One accessible `PlayerIdentity` primitive is used by league standings, overall leaderboards and comparison headers; self identity remains non-interactive | — |
 | Match Centre/per-match stats | ✅ FUNCTIONAL | Dedicated fixture route, previous/next navigation, canonical state, Home/Results entry, separate Original/KO views, Overall/private-league scopes, community distribution and points-on-the-line rows accepted in Stage 13F-C | — |
 | Bracket Health | ✅ FUNCTIONAL | Immutable Original bracket compared with canonical known fixtures, round health, route conflicts, secured/remaining points, unresolved-original fallback and Match Centre links accepted in Stage 13F-D | — |
-| Extra tournament picks | 🕓 SCHEDULED | Original Predictor feature; final list/values still require approval | 13F-I/17A |
+| Tournament-pick contract | ✅ FUNCTIONAL | Approved Original-only set: total tournament goals, top scorer and highest-scoring team; 20 points each; nearest-total ties and official joint winners receive full points; one global lock; no joker; no KO points; player selector waits for Stage 17A | — |
+| Tournament-pick persistence and player-facing UI | 🕓 SCHEDULED | Canonical storage, save/review, Home live-race, points breakdown and H2H consumption must implement the approved contract without a standalone Awards route | 17A |
 | Player insight and points storytelling | 🕓 SCHEDULED | Canonical points-source breakdown, performance statistics and expandable comparisons; Original and KO totals remain separate and Stage 13F-B identity/H2H primitives are reused | 13F-J |
 | Converging wall-chart bracket layout (≥900px) + share-card image rendering | 🕓 SCHEDULED | Presentation-only second layout of the existing predicted and live bracket destinations. At ≥900px, Round of 16 ties sit on the outer left and right, with quarter-finals and semi-finals converging towards the centred final. Phones retain the current vertical bracket. Both layouts use the same canonical resolver, slot references, shared `<TeamLabel>` primitive and dashed unresolved-slot chips. Predicted and live contexts remain separately bannered and never blend. The share asset is this wall-chart layout rendered as a shareable/downloadable image. No new logic, data model, migration or invariant change. | 13P-A |
 
@@ -61,6 +62,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Admin UI fit for purpose | ✅ FUNCTIONAL | Authorised operations are grouped into overview, safeguards, team content, match operations and scoring activity with scoped responsive presentation; existing powers and permissions are unchanged | — |
 | Staging Time & Phase controls | ✅ FUNCTIONAL | Owner-only audited shared clock, preset phases, custom time and site-wide warning accepted with approved Migration 016 | — |
 | Profile curation | ✅ FUNCTIONAL | Stage 13E owner editing | — |
+| Complete Admin operations backbone | 🕓 SCHEDULED | One authorised Euro-native home for fixture setup, results/corrections, scoring runs, tournament-pick outcomes, content curation and audit visibility; no inherited WC26 admin dependency | 13F-K |
 
 ## Section D — Architecture and enforcement
 
@@ -100,6 +102,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Hosted simulation project | 🔒 DECISION PENDING | Free tier already occupied; initial Stage 16 is local-only | 16 |
 
 ## Change log
+
+- **v1.13:** Stage 13F-I approves the versioned Original Predictor tournament-pick contract from `74c8dd3`: total goals, top scorer and highest-scoring team are worth 20 points each; nearest-total ties and official joint winners receive full points; one global lock, no joker, no KO points, no migration, and the player selector waits for Stage 17A. Stage 13F-K is recorded as the complete Admin operations backbone before polish.
 
 - **v1.6:** Stage 13F-B replaces ad hoc player-name buttons with one shared identity primitive, completes aligned league and overall H2H for both competitions, and schedules the presentation-only converging bracket/share-image batch at Stage 13P-A.
 - v1.5 — Stage 13F-A records separate KO guest persistence, seamless browser-draft continuation and transfer, progress-aware signup prompts, removal of normal JSON controls and Euro-native Lucky Dip.
