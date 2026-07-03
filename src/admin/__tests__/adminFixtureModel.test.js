@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  adminFixtureDraftHasChanges,
   buildAdminFixturePayload,
   createAdminFixtureDraft,
   fixtureEditBlockReason,
@@ -46,6 +47,14 @@ describe('admin fixture model', () => {
       venueId: 'venue-1',
       scheduleStatus: 'official_datetime',
     })
+  })
+
+
+  it('blocks no-change fixture saves while ignoring the audit note', () => {
+    const draft = { ...createAdminFixtureDraft(match, venues), note: 'Schedule reviewed' }
+    expect(adminFixtureDraftHasChanges(match, draft, venues)).toBe(false)
+    expect(adminFixtureDraftHasChanges(match, { ...draft, kickoffLocal: '2028-06-09T20:30' }, venues)).toBe(true)
+    expect(adminFixtureDraftHasChanges(match, { ...draft, scheduleStatus: 'provisional' }, venues)).toBe(true)
   })
 
   it('rejects a venue-local date mismatch and an incomplete audit note', () => {

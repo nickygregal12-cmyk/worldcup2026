@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  adminResultDraftHasChanges,
   buildAdminResultPayload,
   createAdminResultDraft,
   normaliseAdminAccess,
@@ -65,6 +66,23 @@ describe('admin operations model', () => {
       homeScore90: 1,
       homePenalties: 5,
     })
+  })
+
+
+  it('blocks no-change result corrections while ignoring the audit note', () => {
+    const completed = {
+      ...groupMatch,
+      matchStatus: 'completed',
+      resultStatus: 'confirmed',
+      resultRevision: 2,
+      resultMethod: 'regulation',
+      homeScore90: 2,
+      awayScore90: 1,
+    }
+    const draft = { ...createAdminResultDraft(completed), note: 'Testing' }
+    expect(adminResultDraftHasChanges(completed, draft)).toBe(false)
+    expect(adminResultDraftHasChanges(completed, { ...draft, homeScore90: '3' })).toBe(true)
+    expect(adminResultDraftHasChanges(completed, { ...draft, resultStatus: 'manual_review' })).toBe(true)
   })
 
   it('builds a valid group result and derives its winner', () => {

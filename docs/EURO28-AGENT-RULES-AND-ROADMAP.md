@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.18 — Stage 13F-K2 Euro control-room implementation
+### Version 4.19 — Stage 13F-K3 staging acceptance and Admin close-out
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -17,7 +17,7 @@
 - Do not claim acceptance without Nicky's Terminal evidence.
 - Original and KO Predictor points never combine.
 - Predicted and live brackets never blend.
-- Migration 018 is applied and aligned locally and on Euro staging. Stage 13F-K2 is frontend-only and must retain exactly 18 migrations.
+- Migration 018 is applied and aligned locally and on Euro staging. Stage 13F-K3 is acceptance/tooling only and must retain exactly 18 migrations with no Migration 019.
 - Every batch updates the Functional Completion Ledger in the same commit.
 
 ## 2. Completion rule
@@ -54,6 +54,7 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 13F-I: Original-only tournament-pick contract accepted at `63d7acb`.
 - Stage 13F-J: player insight and points storytelling accepted at `f7f2fb5`; Migration 017 applied; 74 test files and 363 tests passed.
 - Stage 13F-K0/K1: Admin scope and Migration 018 database contract accepted through `0e4d5b7`; 18 migrations are aligned and 50 local plus 50 linked pgTAP tests passed.
+- Stage 13F-K2: Euro control-room implementation accepted at `c4342f1`; 78 test files and 376 tests passed, all six responsive theme baselines were accepted and deployed verification passed.
 
 # Delivery sequence
 
@@ -282,7 +283,7 @@ Stage 13F-K closes the remaining Euro-native launch/live operations before Stage
 - prove permissions, conflicts, validation, replacement scoring and Original/KO separation through database tests;
 - move to 18 active migrations only after owner-linked staging acceptance.
 
-### Stage 13F-K2 — Euro control-room implementation — CURRENT PACKAGE FROM `0e4d5b7`
+### Stage 13F-K2 — Euro control-room implementation — ACCEPTED AT `c4342f1`
 
 - fixture operations UI;
 - whole-tournament scoring recovery UI;
@@ -292,7 +293,7 @@ Stage 13F-K closes the remaining Euro-native launch/live operations before Stage
 - split Admin components within standing architecture limits;
 - responsive light/dark tests and baselines.
 
-### Stage 13F-K3 — Staging acceptance and close-out
+### Stage 13F-K3 — Staging acceptance and close-out — CURRENT PACKAGE FROM `c4342f1`
 
 - owner/results-admin permission walkthroughs;
 - deployed Admin invisibility and operation verification;
@@ -501,7 +502,7 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-From verified checkpoint `0e4d5b7`, install and accept Stage 13F-K2 — Euro control-room implementation. Retain exactly 18 migrations, pass the dedicated control-room/architecture/full repository gates, commit and deploy the frontend package, then proceed to Stage 13F-K3 role walkthrough and close-out. Stage 13G-A, Stage 16A execution and Stage 13P-A must not begin early.
+From verified checkpoint `c4342f1`, install and accept Stage 13F-K3 — staging acceptance and complete Admin operations close-out. Retain exactly 18 migrations, run the guarded owner/results-admin/member rollback proof, complete the deployed role walkthroughs, perform and verify one real owner reconciliation, pass the linked/full/deployed gates, then close Stage 13F-K. Stage 13G-A is next; Stage 16A, Stage 17A and Stage 13P-A must not begin early.
 
 ### Stage 13F-H acceptance
 

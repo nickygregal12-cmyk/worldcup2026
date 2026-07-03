@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.19 — Stage 13F-K2 Euro control-room implementation
+### Version 1.20 — Stage 13F-K3 staging acceptance and Admin close-out
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -71,13 +71,13 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Staging Time & Phase controls | ✅ FUNCTIONAL | Owner-only audited shared clock, preset phases, custom time and site-wide warning accepted with approved Migration 016 | — |
 | Profile curation | ✅ FUNCTIONAL | Stage 13E owner editing | — |
 | Stage 13F-K operation inventory | ✅ FUNCTIONAL | Existing operations, genuine fixture/reconciliation/readiness gaps, exclusions and four-batch sequence approved in Stage 13F-K0 | — |
-| Migration 018 server/database contract | ✅ FUNCTIONAL | Migration, pgTAP suite and repository audit implement fixture revision, protected reads, owner-only fixture update, complete reconciliation, readiness output and append-only audit; hosted acceptance required before commit | — |
+| Migration 018 server/database contract | ✅ FUNCTIONAL | Migration, 50 local plus 50 linked pgTAP tests and repository audit prove fixture revision, protected reads, owner-only fixture update, complete reconciliation, readiness output and append-only audit on Euro staging | — |
 | Fixture schedule operations | ✅ FUNCTIONAL | Owner-only revision-safe date, venue, venue-local kick-off and schedule-status controls are connected to Migration 018; results administrators remain read-only and participants/resolver slots remain outside scope | — |
 | Tournament-wide scoring reconciliation | ✅ FUNCTIONAL | Owner-only note/confirmation-gated whole-tournament replacement recovery is connected to the canonical scorer and preserves separate Original/KO totals | — |
 | Tournament-pick Admin readiness home | ✅ FUNCTIONAL | One control-room section renders total goals, top scorer and highest-scoring team plus the Stage 17A dependency, with no fake outcome controls | — |
 | Operational readiness summary | ✅ FUNCTIONAL | One read-only presentation groups fixture, participant, result, scoring, Team Profile and safeguard evidence from Migration 018 | — |
 | Admin audit filters and detail | ✅ FUNCTIONAL | Read-only category filters expose up to 200 append-only events with actor, target, match, before/after and scoring-run detail | — |
-| Complete Admin operations backbone | 🕓 SCHEDULED | K1 database, K2 control room and K3 staging evidence must close; tournament-pick executable outcomes remain Stage 17A | 13F-K3 |
+| Complete Admin operations backbone | ✅ FUNCTIONAL | K0 scope, K1 database, K2 control room and K3 owner/results-admin/member staging evidence close the approved launch/live operations; Tournament Picks executable outcomes remain Stage 17A | — |
 
 ## Section D — Architecture and enforcement
 
@@ -130,6 +130,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Whole-app new-player walk-through | 🕓 SCHEDULED | Owner acceptance after navigating every direct and contextual journey as a casual first-time player | 13G-D |
 
 ## Change log
+
+- **v1.20:** Closes Stage 13F-K3 from `c4342f1` after three-role deployed acceptance, same-value transactional fixture proof with exact rollback, one real owner complete reconciliation, read-only event/run/separate-total verification, linked database gates and final deployed verification. No product code or Migration 019 is added; Stage 13G-A becomes next.
 
 - **v1.19:** Implements Stage 13F-K2 from `0e4d5b7`: split control-room components, owner-only fixture and complete-reconciliation actions, consolidated readiness, Stage 17A Tournament Picks hand-off, filtered expandable append-only audit detail, role/timezone tests and six responsive light/dark structural baselines. No Migration 019; Stage 13F-K3 remains the final deployed role acceptance.
 

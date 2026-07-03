@@ -4,9 +4,13 @@ import { saveAdminTeamProfile } from './adminOperationsService.js'
 
 function AdminTeamProfileEditor({ client, tournamentId, profile, adminRole, runAction }) {
   const [draft, setDraft] = useState(() => createAdminTeamProfileDraft(profile))
+  const [dirty, setDirty] = useState(false)
   const validation = validateAdminTeamProfileDraft(draft)
   const canEdit = adminRole === 'owner'
-  const update = (key, value) => setDraft(previous => ({ ...previous, [key]: value }))
+  const update = (key, value) => {
+    setDirty(true)
+    setDraft(previous => ({ ...previous, [key]: value }))
+  }
 
   return (
     <>
@@ -22,10 +26,11 @@ function AdminTeamProfileEditor({ client, tournamentId, profile, adminRole, runA
       <label className="foundation-admin-note"><span>Audit note</span><textarea maxLength="500" value={draft.note} onChange={event => update('note', event.target.value)} disabled={!canEdit} placeholder="Explain the source or reason for this profile update." /></label>
 
       {!canEdit && <p className="foundation-empty-copy">Results administrators may inspect profile content, but only the tournament owner can edit it.</p>}
-      {!validation.valid && canEdit && <ul className="foundation-admin-validation">{validation.errors.map(error => <li key={error}>{error}</li>)}</ul>}
+      {dirty && !validation.valid && canEdit && <ul className="foundation-admin-validation">{validation.errors.map(error => <li key={error}>{error}</li>)}</ul>}
 
       <button
         type="button"
+        className="ui-button ui-button--primary"
         disabled={!canEdit || !validation.valid}
         onClick={() => runAction(
           () => saveAdminTeamProfile(client, tournamentId, profile, validation),

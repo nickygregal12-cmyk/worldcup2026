@@ -20,7 +20,7 @@ function AccessState({ title, description, error = false, onRetry = null }) {
       <span className="foundation-kicker">Tournament control room</span>
       <h2 id="stage13fk2-admin-heading">{title}</h2>
       <p>{description}</p>
-      {onRetry && <button type="button" onClick={onRetry}>Try again</button>}
+      {onRetry && <button type="button" className="ui-button ui-button--secondary" onClick={onRetry}>Try again</button>}
     </section>
   )
 }
@@ -137,12 +137,12 @@ export default function AdminOperations({ client, reference }) {
 
       <section className={`${styles.section} ${styles.matchArea}`} id="admin-fixture-operations" aria-labelledby="admin-fixture-operations-heading">
         <div className={styles.sectionHeader}><div><h3 id="admin-fixture-operations-heading">Fixture schedule operations</h3><p>Review every fixture. Owners can update only date, venue, venue-local kick-off and schedule status.</p></div></div>
-        <AdminFixtureOperations key={matches.map(match => match.fixtureRevision).join('-')} client={client} tournamentId={reference.tournamentId} matches={matches} venues={data.venues ?? []} adminRole={data.access.adminRole} actionStatus={action.status} runAction={runAction} />
+        <AdminFixtureOperations client={client} tournamentId={reference.tournamentId} matches={matches} venues={data.venues ?? []} adminRole={data.access.adminRole} actionStatus={action.status} runAction={runAction} />
       </section>
 
       <section className={`${styles.section} ${styles.matchArea}`} id="admin-match-operations" aria-labelledby="admin-match-operations-heading">
         <div className={styles.sectionHeader}><div><h3 id="admin-match-operations-heading">Result operations</h3><p>Record canonical results, update match state and run explicit single-match recovery.</p></div></div>
-        <AdminMatchOperations key={matches.map(match => match.resultRevision).join('-')} client={client} tournamentId={reference.tournamentId} matches={matches} features={features} actionStatus={action.status} runAction={runAction} />
+        <AdminMatchOperations client={client} tournamentId={reference.tournamentId} matches={matches} features={features} actionStatus={action.status} runAction={runAction} />
       </section>
 
       <section className={styles.section} id="admin-scoring-activity" aria-labelledby="admin-scoring-activity-heading">

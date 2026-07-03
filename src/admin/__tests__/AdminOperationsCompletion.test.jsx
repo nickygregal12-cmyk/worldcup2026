@@ -1,4 +1,5 @@
 import React from 'react' // eslint-disable-line no-unused-vars
+import { readFileSync } from 'node:fs'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import AdminAuditTimeline from '../AdminAuditTimeline.jsx'
@@ -33,8 +34,18 @@ describe('Stage 13F-K2 control-room surfaces', () => {
     const resultsAdmin = renderToStaticMarkup(<AdminFixtureOperations client={{}} tournamentId="t" matches={[match]} venues={[venue]} adminRole="results_admin" actionStatus="idle" runAction={() => {}} />)
     expect(owner).toContain('Save fixture schedule')
     expect(owner).toContain('Venue-local kick-off')
+    expect(owner).toContain('ui-button ui-button--primary')
+    expect(owner).not.toContain('The audit note must be between 5 and 500 characters.')
     expect(resultsAdmin).toContain('only the tournament owner')
     expect(resultsAdmin).not.toContain('Save fixture schedule')
+  })
+
+  it('keeps result validation neutral after refresh and uses the primary action style', () => {
+    const source = readFileSync(new URL('../AdminMatchOperations.jsx', import.meta.url), 'utf8')
+    expect(source).toContain('resultDirty && validation && !validation.valid')
+    expect(source).toContain('!resultDirty && selectedMatch.resultRevision > 0')
+    expect(source).toContain('ui-button ui-button--primary')
+    expect(source).toContain('No canonical result changes detected.')
   })
 
   it('shows complete reconciliation only to the owner and preserves separate competition language', () => {

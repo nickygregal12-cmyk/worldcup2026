@@ -81,6 +81,7 @@ function FeatureControls({ client, tournamentId, features, isOwner, runAction })
                 />
                 <button
                   type="button"
+                  className="ui-button ui-button--secondary ui-button--small"
                   disabled={(notes[feature.featureKey] ?? '').trim().length < 5}
                   onClick={() => runAction(
                     () => updateTournamentFeature(
@@ -153,7 +154,7 @@ function GraceManagement({ client, tournamentId, matches, graceWindows, isOwner,
         <div className="foundation-grace-builder">
           <div className="foundation-grace-search">
             <label><span>Find predictor</span><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Display name" /></label>
-            <button type="button" disabled={query.trim().length < 2} onClick={search}>Search</button>
+            <button type="button" className="ui-button ui-button--secondary" disabled={query.trim().length < 2} onClick={search}>Search</button>
           </div>
           {searchMessage && <small>{searchMessage}</small>}
           {results.length > 0 && (
@@ -181,6 +182,7 @@ function GraceManagement({ client, tournamentId, matches, graceWindows, isOwner,
           <label className="foundation-admin-note"><span>Reason</span><textarea value={draft.reason} maxLength="500" onChange={event => setDraft(previous => ({ ...previous, reason: event.target.value }))} /></label>
           <button
             type="button"
+            className="ui-button ui-button--primary"
             disabled={!draft.userId || !draft.matchId || draft.reason.trim().length < 5 || !draft.expiresAt}
             onClick={() => runAction(
               () => grantAdminPredictionGrace(client, tournamentId, { ...draft, expiresAt: new Date(draft.expiresAt).toISOString() }),
@@ -205,6 +207,7 @@ function GraceManagement({ client, tournamentId, matches, graceWindows, isOwner,
                 <input value={revokeNotes[grace.graceId] ?? ''} placeholder="Revocation reason" onChange={event => setRevokeNotes(previous => ({ ...previous, [grace.graceId]: event.target.value }))} />
                 <button
                   type="button"
+                  className="ui-button ui-button--danger ui-button--small"
                   disabled={(revokeNotes[grace.graceId] ?? '').trim().length < 5}
                   onClick={() => runAction(
                     () => revokeAdminPredictionGrace(client, tournamentId, grace.graceId, revokeNotes[grace.graceId]),

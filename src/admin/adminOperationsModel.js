@@ -112,6 +112,31 @@ export function createAdminResultDraft(match) {
   }
 }
 
+
+function comparableAdminScore(value) {
+  if (value === '' || value === null || value === undefined) return null
+  const number = Number(value)
+  return Number.isInteger(number) ? number : String(value)
+}
+
+export function adminResultDraftHasChanges(match, draft) {
+  if (!match || !draft) return false
+  const baseline = createAdminResultDraft(match)
+  const clearsScores = ['manual_review', 'void'].includes(draft.resultStatus)
+  const normalise = value => ({
+    matchStatus: value.matchStatus,
+    resultStatus: value.resultStatus,
+    decisionMethod: value.decisionMethod,
+    homeScore90: clearsScores ? null : comparableAdminScore(value.homeScore90),
+    awayScore90: clearsScores ? null : comparableAdminScore(value.awayScore90),
+    homeScoreAet: clearsScores ? null : comparableAdminScore(value.homeScoreAet),
+    awayScoreAet: clearsScores ? null : comparableAdminScore(value.awayScoreAet),
+    homePenalties: clearsScores ? null : comparableAdminScore(value.homePenalties),
+    awayPenalties: clearsScores ? null : comparableAdminScore(value.awayPenalties),
+  })
+  return JSON.stringify(normalise(draft)) !== JSON.stringify(normalise(baseline))
+}
+
 function deriveConfirmedWinner(match, draft, scores) {
   if (match.matchNumber <= 36) {
     if (scores.home90 === scores.away90) return null

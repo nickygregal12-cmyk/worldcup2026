@@ -35,7 +35,7 @@ export default function AdminScoringRecovery({
               <input type="checkbox" checked={confirmed} onChange={event => setConfirmed(event.target.checked)} />
               <span>I understand this creates a new scoring run and replaces canonical point rows.</span>
             </label>
-            <button type="button" disabled={!scoringEnabled || !confirmed || !noteValidation.valid || working} onClick={() => runAction(
+            <button type="button" className="ui-button ui-button--danger" disabled={!scoringEnabled || !confirmed || !noteValidation.valid || working} onClick={() => runAction(
               () => reconcileAdminTournamentPoints(client, tournamentId, noteValidation.note),
               'Complete tournament points reconciliation finished.',
             )}>Reconcile all points</button>

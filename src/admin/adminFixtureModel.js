@@ -85,6 +85,21 @@ export function createAdminFixtureDraft(match, venues = []) {
   }
 }
 
+
+export function adminFixtureDraftHasChanges(match, draft, venues = []) {
+  if (!match || !draft) return false
+  const venue = venues.find(candidate => candidate.venueId === (String(draft.venueId ?? '').trim() || null)) ?? null
+  const kickoffAt = draft.kickoffLocal && venue?.venueTimezone
+    ? venueLocalInputToIso(String(draft.kickoffLocal).trim(), venue.venueTimezone)
+    : null
+  return (
+    (String(draft.scheduledDate ?? '').trim() || null) !== (match.scheduledDate ?? null)
+    || (String(draft.venueId ?? '').trim() || null) !== (match.venueId ?? null)
+    || String(draft.scheduleStatus ?? '') !== String(match.scheduleStatus ?? 'provisional')
+    || kickoffAt !== (match.kickoffAt ?? null)
+  )
+}
+
 export function fixtureEditBlockReason(match) {
   if (!match) return 'Choose a fixture before editing.'
   if (!['scheduled', 'postponed'].includes(match.matchStatus)) {

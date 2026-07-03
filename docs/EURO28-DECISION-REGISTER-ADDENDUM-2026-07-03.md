@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Decision Register Addendum — 3 July 2026
-### Reconciled for Stage 13F-K2 Euro control-room implementation
+### Reconciled for Stage 13F-K3 staging acceptance and Admin close-out
 
 ## Confirmed decisions
 
@@ -45,6 +45,11 @@
 38. Fixture kick-off input is interpreted in the selected venue timezone, not the browser timezone, and every write retains optimistic `fixture_revision` conflict handling.
 39. The Tournament Picks section is a dependency/readiness hand-off only. It contains no fake outcome controls before Stage 17A.
 40. Audit filters and expandable detail are read-only views over append-only events; they cannot mutate or delete evidence.
+41. Stage 13F-K3 adds no product UI, runtime capability, database object or migration. It is the staging evidence and governing-document close-out for the accepted K1/K2 contracts.
+42. K3 fixture evidence must reuse one fixture's exact persisted date, kick-off, venue and schedule status inside a transaction, prove optimistic revision and append-only audit behaviour, then rollback and verify the exact original state. No invented shared-staging kick-off may be saved.
+43. K3 uses three distinct real staging accounts: owner, results administrator and ordinary member. Ordinary users remain unaware of Admin; results administrators retain result operations but no fixture or whole-tournament reconciliation action.
+44. The irreversible real global lock is prohibited during K3. Complete reconciliation is accepted through one explicit owner UI run with an exact note, completed scoring run and separate Original/KO totals.
+45. Stage 13F-K closes only after linked database gates, role walkthroughs, reconciliation verification, full repository/deployed gates and clean alignment. Stage 13G-A is next.
 
 ## Pending approvals
 

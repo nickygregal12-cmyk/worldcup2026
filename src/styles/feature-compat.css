@@ -1688,7 +1688,7 @@ button {
   margin-top: 0.9rem;
 }
 
-.foundation-admin-note {
+.foundation-admin-note, .foundation-admin .foundation-results-card > .ui-button {
   margin-top: 0.9rem;
 }
 
