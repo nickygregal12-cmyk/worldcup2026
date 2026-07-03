@@ -114,7 +114,7 @@ for (const marker of [
   'staging-effective database time',
 ]) if (!register.includes(marker)) fail(`Decision Register Stage 16A alignment is missing: ${marker}`)
 for (const marker of [
-  '| Player insight and points storytelling | ✅ FUNCTIONAL |',
+  '| Player insight engine and points storytelling | 🟠 PARTIAL |',
   '| Provisional team seeding and zero-code-change rehearsal | 🕓 SCHEDULED |',
   '| 16A |',
 ]) if (!ledger.includes(marker)) fail(`Functional ledger alignment is missing: ${marker}`)
@@ -136,9 +136,10 @@ if (errors.length) {
   process.exit(1)
 }
 
-console.log('Euro Stage 13F-J player insight audit passed.')
-console.log('Story: canonical source totals, rank gaps, matchday/round evidence, streaks, best calls and corrections')
+console.log('Euro Stage 13F-J player insight engine audit passed.')
+console.log('Story engine: canonical source totals, rank gaps, matchday/round evidence, streaks, best calls and corrections')
 console.log('Privacy: self detail plus existing Original global-lock and KO fixture-release boundaries for other players')
+console.log('Ledger: engine remains accepted; dedicated player view, H2H and points-breakdown destinations are partial/scheduled')
 console.log('Separation: Original and KO Predictor totals remain independent; no group-position category')
 console.log('Stage 16A: provisional teams, nineteen deterministic personas, scenario oracle, leagues and marker-safe teardown recorded as later staging work')
 console.log(`Database: ${migrations.length} active migrations; Migration 017 remains read-only`)

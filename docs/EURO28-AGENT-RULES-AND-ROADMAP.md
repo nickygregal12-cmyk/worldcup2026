@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.23 — Stage 13G-B KO-readiness signal close-out
+### Version 4.24 — Stage 13G-H0 housekeeping and record corrections
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -587,3 +587,32 @@ The Results, Leaderboards and Match Centre surfaces must consume central tournam
 ## Stage 13G-B KO-readiness signal close-out
 
 From checkpoint `659809c`, Home, Navigation and Leagues consume one shared KO-readiness model derived from canonical fixture readiness rather than separate surface-local checks. Position 1 still remains Groups until all group results and all eight Round of 16 pairings satisfy the approved readiness boundary; early KO access stays in More only. League KO summaries, tabs and lifecycle copy now respect the same real-fixture readiness signal before showing KO standings context. The slice adds `audit:ko-readiness`, updates docs/register/ledger in the same package, keeps active migrations at 18 and adds no Migration 019.
+
+## Stage 13G-H0 housekeeping and record corrections
+
+From checkpoint `5c9f415`, update the governing documents before the next product build. This is docs-only and creates no database migration.
+
+### Corrected recorded state
+
+- Constitution principle 14 records slick and frictionless as the product sensibility: the app opens into what matters now, hides machinery, remembers the player's context, removes before rearranging and favours fewer elements and fewer taps. The access principle remains active as principle 15.
+- Tournament Picks contract and Admin readiness are functional, but the ordinary player-facing entry surface is partial/missing. The audit verified the contract, not the ability for users to enter picks.
+- Player Insight and H2H engines are useful, but the accepted product shape is a dedicated player view with dedicated H2H and points-breakdown destinations, not the current inline strip.
+- Guest signup import is now a dominant one-tap confirmation immediately after signup/sign-in: “Import predictions to my account” or “Start fresh”. Signed-in users must never see “browser draft” language.
+- The user-facing FAQ must not include result-correction mechanics.
+
+### Bypass-class sweep to include in the next housekeeping/tooling batch
+
+1. Default `.env.example` time travel to false and document staging-only enablement.
+2. Add Vitest coverage thresholds based on current actual live `src/` coverage, excluding legacy and fixtures, plus a no-decrease ratchet.
+3. Add eslint-disable governance: every disable needs a reason comment and the total count ratchets downward.
+4. Strengthen the frozen bridge melt rule: screen rework must migrate that screen's compat styles to modules and stage ratchets must fall.
+5. Prove visual fixture production gating and align it with the Stage14ErrorFixture standard.
+6. Clarify size governance: 200/250 review guidance, 400/400 enforced cap, ledgered allowlist and hard cap applied to test fixtures.
+
+### Product items requiring sign-off before build
+
+- Tournament Picks player entry moving earlier than Stage 17A is a schedule change.
+- Dedicated player, H2H and points-breakdown routes are a route/deep-link contract change.
+- Joker design, bracket long-name resilience and shared Tabs/switcher treatment belong to the 13G-C prediction-surface quality work.
+- FAQ/how-to-play belongs to 13G-B/C and must render rule values from central contracts/configuration.
+- The converging wall-chart bracket/share image remains scheduled for Stage 13P-A and must not be left as unowned backlog.

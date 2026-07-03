@@ -573,3 +573,29 @@ From checkpoint `a651d33`, Player Insight and Team Profile are aligned with cent
 ## Stage 13G-B KO-readiness signal close-out
 
 From checkpoint `659809c`, the KO-readiness decision is centralised for Home, Navigation and Leagues. The shared readiness model counts only real knockout fixtures whose participant slots are resolved. Navigation keeps the five-position contract: Groups remains primary until the full approved readiness boundary is met, early KO access appears in More only, and Group review moves to More only after KO becomes primary. Leagues consume the same readiness signal before presenting KO league context. No database change or Migration 019 is created.
+
+## Stage 13G-H0 housekeeping and corrected records
+
+This amendment is read with the Stage 13G master prompt and corrects records before the next build.
+
+### Recorded-equals-real corrections
+
+- Constitution principle 14: Slick and frictionless is the product sensibility. Prefer restraint, opinionated defaults, fewer taps, hidden machinery and opening into what matters now. The existing access principle remains active as principle 15.
+- Tournament Picks: the Original-only contract is accepted, but the player-facing feature is partial until ordinary users can enter total goals, top scorer and highest-scoring team. The audit verified contract boundaries and Admin readiness only.
+- Player Insight/H2H: existing engines are not the final product shape. The accepted target is a dedicated player view with sections for overview, group predictions, predicted bracket/tables, KO evidence, dedicated H2H and dedicated points breakdown.
+- Guest import: after signup/sign-in with a valid local draft, show one dominant prompt. Primary: “Import predictions to my account.” Secondary: “Start fresh.” After this point, signed-in copy must never say “browser draft”.
+- FAQ: do not include result-correction mechanics as a user-facing FAQ question.
+
+### Contract or schedule changes that need explicit acceptance before build
+
+- Moving Tournament Picks player entry from Stage 17A into 13G-C is a schedule change.
+- Dedicated `#/player/:userId`, H2H and points-breakdown routes are a route/deep-link contract change.
+- Coverage, eslint-disable, fixture-gating and frozen-bridge ratchets are tooling/architecture gates, not scoring or database changes.
+
+### Placement
+
+- Stage 13G-H1: bypass-class tooling sweep.
+- Stage 13G-C: guest import flow, signed-in copy sweep, joker control, bracket overlap, shared tabs, Tournament Picks player entry if schedule change is accepted.
+- Stage 13G-C/D: dedicated player view, H2H and points-breakdown destinations.
+- Stage 13G-B/C: how-to-play and FAQ guide.
+- Stage 13P-A: converging wall-chart bracket and share image.

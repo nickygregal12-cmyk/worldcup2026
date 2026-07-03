@@ -176,3 +176,7 @@ Stage 13G audits must fail if:
 - upcoming/completed match order ignores chronology;
 - a visible binding rule or score value is duplicated outside its central contract;
 - unknown routes silently pretend to be Home.
+
+## Stage 13G-H0 player destination correction
+
+The intended player-name activation destination is a dedicated Player Overview, not an inline H2H strip. Dedicated H2H and points-breakdown pages are route/deep-link contract changes requiring explicit acceptance before build.

@@ -181,7 +181,18 @@ charter; the principles below never change:
     feature in plain clothes outranks a polished fragment. Polish never
     precedes function, and no new work begins while the current batch's
     scope is half-wired.
-14. **Access is part of functionality.** Every major capability has one
+14. **Slick and frictionless is the product sensibility.** The reference
+    points are Apple over Samsung, Netflix over Disney+: restraint over
+    abundance, opinionated defaults over settings, and the shortest
+    possible path between opening the app and the thing the player came
+    for. In practice: the app opens into what matters now, never a menu;
+    it remembers where the player was; machinery (refreshing, syncing,
+    drafts, versions) is never the player's job to see or operate; when
+    a screen feels busy, remove before rearranging; a feature is not
+    done while its seams show. Where two designs are otherwise equal,
+    choose the one with fewer elements and fewer taps.
+
+15. **Access is part of functionality.** Every major capability has one
     intentional primary entry and useful contextual entries. A feature is
     not complete if it can only be found by scrolling through an unrelated
     page, guessing a route, or knowing that hidden code exists. Mobile and

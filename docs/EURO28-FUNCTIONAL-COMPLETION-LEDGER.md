@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.29 — Stage 13G-B Player Insight and Team Profile lifecycle alignment
+### Version 1.31 — Stage 13G-H0 housekeeping and record corrections
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -34,9 +34,9 @@
 | Tappable player identity | ✅ FUNCTIONAL | One accessible `PlayerIdentity` primitive is used by league standings, overall leaderboards and comparison headers; self identity remains non-interactive | — |
 | Match Centre/per-match stats | ✅ FUNCTIONAL | Dedicated fixture route, previous/next navigation, canonical state, Home/Results entry, separate Original/KO views, Overall/private-league scopes, community distribution and points-on-the-line rows accepted in Stage 13F-C | — |
 | Bracket Health | ✅ FUNCTIONAL | Immutable Original bracket compared with canonical known fixtures, round health, route conflicts, secured/remaining points, unresolved-original fallback and Match Centre links accepted in Stage 13F-D | — |
-| Tournament-pick contract | ✅ FUNCTIONAL | Approved Original-only set: total tournament goals, top scorer and highest-scoring team; 20 points each; nearest-total ties and official joint winners receive full points; one global lock; no joker; no KO points; player selector waits for Stage 17A | — |
-| Tournament-pick persistence and player-facing UI | 🕓 SCHEDULED | Canonical storage, save/review, Home live-race, points breakdown and H2H consumption must implement the approved contract without a standalone Awards route | 17A |
-| Player insight and points storytelling | ✅ FUNCTIONAL | Shared insight model and presentation use canonical awarded rows for rank gaps, source breakdown, matchday/round evidence, best period/call, streaks and corrections; authorised other-player reads reuse Original/KO privacy through Migration 017; H2H survives isolated insight failure; Original and KO totals never combine | — |
+| Tournament-pick contract | ✅ FUNCTIONAL | Contract only: approved Original-only set is total tournament goals, top scorer and highest-scoring team; 20 points each; nearest-total ties and official joint winners receive full points; one global lock; no joker; no KO points. The audit proves this contract and Admin readiness, not a player-facing entry surface. | — |
+| Tournament-pick persistence and player-facing UI | 🟠 PARTIAL | Admin readiness and the contract exist, but ordinary players cannot yet enter total goals, top scorer or highest-scoring team. Build the player surface inside the Original Predictor journey, lock it at the global lock, score via the central ruleset and show the live race on Home during the tournament. Moving this earlier than Stage 17A requires explicit schedule acceptance. | 13G-C / 17A re-approval |
+| Player insight engine and points storytelling | 🟠 PARTIAL | Canonical insight data, lifecycle copy and H2H engines exist, but the accepted product shape is not the current inline strip. Player-name activation must open a dedicated player view with overview, predictions, bracket/tables, dedicated H2H and dedicated points-breakdown destinations, plus informative pre-lock placeholders. | 13G-C |
 | Provisional team seeding and zero-code-change rehearsal | 🕓 SCHEDULED | Guarded 24-team staging seed, replace/confirm mode and Stage 17 zero-code-change rehearsal | 16A |
 | Synthetic identities and deterministic persona catalogue | 🕓 SCHEDULED | Nineteen approved personas, dual identity markers and local-only Admin API credentials | 16A |
 | Synthetic prediction and scenario oracle | 🕓 SCHEDULED | Independent precomputed points at every Time & Phase preset, including correction replacement | 16A |
@@ -56,7 +56,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Guest resolver | ✅ FUNCTIONAL | Same canonical slot-reference resolver | — |
 | Guest Groups/Original browser persistence | ✅ FUNCTIONAL | Local browser storage exists and survives signup on the same browser/domain | — |
 | Guest KO access and persistence | ✅ FUNCTIONAL | Available real KO fixtures save in separate browser storage; sign-in preserves the local draft and confirmed account transfer never affects Original Predictor data | — |
-| Guest-to-account transfer | ✅ FUNCTIONAL | Signed-in users continue unfinished browser drafts; eligible Original and KO entries transfer through existing controlled RPCs, never overwrite account entries and clear only after confirmed save | — |
+| Guest-to-account transfer | 🟠 PARTIAL | The import engine exists, but the accepted flow is now a dominant one-tap signup prompt using `importGuestPredictionBundle()`: primary action imports predictions to the account and secondary action starts fresh. Signed-in users must never see “browser draft” language. | 13G-C |
 | Signup encouragement | ✅ FUNCTIONAL | Progress-aware account prompts appear in Original and KO guest journeys; Account detects saved browser predictions and offers the safe transfer action | — |
 | Manual JSON file controls | 🚫 REJECTED | Removed from the live journey; dormant recovery components were deleted in Stage 13F-H | — |
 | Lucky Dip | ✅ FUNCTIONAL | Groups-only local weighted score generation; fill-empty and confirmed replace-all modes preserve jokers and clear stale bracket picks | — |
@@ -119,7 +119,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Native-control removal | 🟠 PARTIAL | Shared `SelectField` exists and League/member pickers use it. Admin/match native selectors remain scheduled for incremental replacement. | 13G-A/13G-E |
 | Central refresh policy | 🟠 PARTIAL | `REFRESH_POLICY` establishes no-manual-refresh defaults and mutation invalidation intent. Surface adoption remains incremental. | 13G-A/13G-E |
 | Informative empty-state standard | 🟠 PARTIAL | Useful examples exist, but the whole product has no enforced empty/error/recovery standard. | 13G-E |
-| Home first-visit conversion hook | ✅ FUNCTIONAL | Home now distinguishes new guests, returning browser drafts and signed-in users with account-conversion copy while keeping guest drafts browser-only until explicit save. | — |
+| Home first-visit conversion hook | 🟠 PARTIAL | Home distinguishes guest states, but signed-in users must be swept so no account experience says “browser draft”. The accepted signup import flow is a dominant one-tap confirmation, not a buried manual import step. | 13G-C |
 | Tournament-start and prediction-lock countdowns | ✅ FUNCTIONAL | Home displays prediction-lock and tournament-start countdowns from `resolveTournamentLifecycle`; date-only staging starts no longer override the central precise tournament-start timestamp. | — |
 | In-tournament today's-matches hub | ✅ FUNCTIONAL | Home now owns a Today’s match hub that promotes live or next fixture context into Match Centre without presenting missing results as final. | — |
 | Predicted group standings | ❌ MISSING | Complete shared predicted tables are not available in the approved Groups journey. | 13G-C |
@@ -157,8 +157,32 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Stage 13G-D seeded whole-surface coherence | 🕓 SCHEDULED | Stage 16 cast, Scotland reference profile, all-screen re-baseline and charter review | 13G-D |
 | Whole-app new-player walk-through | 🕓 SCHEDULED | Owner acceptance after navigating every direct and contextual journey as a casual first-time player | 13G-D |
 
+## Section H — Housekeeping, bypass-class controls and clarified product records
+
+| Item | Status | Evidence / notes | Owner |
+|---|---|---|---|
+| Stage 13G-H0 record corrections | ✅ FUNCTIONAL | Ledger now distinguishes Tournament Picks contract readiness from missing player-facing entry, and distinguishes Player Insight/H2H engines from the intended dedicated player-view product shape. | — |
+| Constitution principle 14 — slick and frictionless | ✅ FUNCTIONAL | Section 5 now records the product sensibility: open into what matters now, remember where the player was, hide machinery, remove before rearranging and choose fewer elements/fewer taps where designs are otherwise equal. The existing access principle remains active as principle 15. | — |
+| `.env.example` time-travel default | 🕓 SCHEDULED | Template must default `VITE_ENABLE_TIME_TRAVEL=false`; staging-only enablement requires explicit local owner configuration. | 13G-H1 |
+| Coverage threshold and no-decrease ratchet | 🕓 SCHEDULED | Add Vitest coverage thresholds based on current live `src/` actuals, excluding legacy and fixtures; wire no-decrease ratchet into `npm run check`. | 13G-H1 |
+| `eslint-disable` governance | 🕓 SCHEDULED | Current live-code disables need reason comments and a downward ratchet from the measured baseline. | 13G-H1 |
+| Frozen bridge melt schedule | 🕓 SCHEDULED | Compat stylesheets have stayed frozen but have not reduced; any screen rework must migrate that screen's compat styles to modules and stage ratchets must fall. | 13G-H1 / per screen |
+| Visual fixture production gating | 🕓 SCHEDULED | Prove whether fixture modes are reachable in the deployed bundle and gate to the Stage14ErrorFixture standard. | 13G-H1 |
+| Size governance clarification | 🕓 SCHEDULED | Record 200/250 as review guidance and 400/400 as enforced cap; over-cap allowlist must be ledgered and ratcheted; hard cap extends to test fixtures. | 13G-H1 |
+| Bottom nav alignment wording | ✅ FUNCTIONAL | Charter clarifies that the centred Home circle overlaps slightly above the bar top line while all five icons and labels remain vertically aligned. | — |
+| Home theme compliance sweep | 🕓 SCHEDULED | Audit every Home element in light and dark themes and fix through semantic tokens. | 13G-E |
+| Debug/developer strip removal | 🕓 SCHEDULED | Version strings, row counters and lock mechanics such as account autosave/debug strips must not be user-facing copy. | 13G-H1 |
+| Signed-in copy and signup import flow | 🕓 SCHEDULED | Signed-in users never see “browser draft”; signup shows one dominant import prompt with Import to account / Start fresh choices. | 13G-C |
+| Joker design-system element | 🕓 SCHEDULED | Replace hard-coded `J` circle with a gold design-system special-action/multiplier joker element using central scoring values and accessible states. | 13G-C |
+| Bracket slot long-name resilience | 🕓 SCHEDULED | Fix advance/selected controls overlapping team names inside the slot primitive and add long-name baselines. | 13G-C |
+| Shared Tabs/switcher pattern | 🕓 SCHEDULED | Use one design-system Tabs pattern for group/KO round switches and By group/By date views. | 13G-B/C |
+| FAQ/how-to-play section | 🕓 SCHEDULED | Add user-facing FAQ generated from central rules/config; exclude correction-mechanics question from ordinary user copy. | 13G-B/C |
+| Converging wall-chart bracket/share image | 🕓 SCHEDULED | Scheduled for Stage 13P-A; desktop bracket must not ship as an unscaled mobile layout. | 13P-A |
+
+
 ## Change log
 
+- **v1.31:** Stage 13G-H0 housekeeping and record corrections from `5c9f415` update governing documents only: Tournament Picks is corrected to contract-functional but player-surface partial, Player Insight/H2H is corrected to engine-partial pending dedicated destinations, guest signup import flow is confirmed as a dominant one-tap prompt, bypass-class sweep items are recorded, the FAQ list removes result-correction mechanics, bottom-nav alignment wording is clarified, Constitution principle 14 records the slick/frictionless product sensibility, and active migrations remain 18 with no Migration 019.
 - **v1.30:** Stage 13G-B KO-readiness signal close-out from `659809c` centralises KO readiness for Home, Navigation and Leagues, preserves the five-position navigation trigger, keeps early KO access in More, gates league KO context by real fixture readiness, adds `audit:ko-readiness` to `npm run check`, and keeps active migrations at 18 with no Migration 019.
 - **v1.29:** Stage 13G-B Player Insight and Team Profile lifecycle alignment from `aa76fbe` adds central lifecycle copy to Player Insight and Team Profile, preserves the canonical server privacy phrase, keeps Team Profile aggregates Original-only, excludes KO Predictor data from Team Profile percentages, adds `audit:player-team-lifecycle` to `npm run check`, and keeps active migrations at 18 with no Migration 019.
 - **v1.28:** Stage 13G-B League lifecycle alignment slice from `a651d33` adds central lifecycle input to private leagues, competition-scoped Original/KO release copy, member-comparison release copy and `audit:league-lifecycle` in `npm run check`. No database change and no Migration 019.
@@ -178,7 +202,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 - **v1.21:** Stage 13G-R0 corrects the false Stage 13F-F navigation claim, downgrades Admin UI/coherent operations truthfully, consolidates the 3 July amendments into the canonical Register, approves C1 Option A and the Original-bracket invalidation contract, records offline players as decision pending, rebuilds accepted-commit chronology through `b7f50de`, and makes same-commit Ledger updates mandatory for every future batch. Documentation only; no product code, database action or Migration 019.
 
-- **Accepted-commit chronology:** 13F-E `8349e83`; 13F-F `369ddfc` (retrospectively corrected by v1.21); 13F-G `7324d43`; 13F-H `74c8dd3`; 13F-I `63d7acb`; 13F-J `f7f2fb5`; 13G-0 `efce59f`; 13F-K0 `b6c7ddc`; 13F-K1 `0e4d5b7`; 13F-K2 `c4342f1`; 13F-K3 `b7f50de`; 13G-R0 `586c6a1`; Stage 13G test-strategy amendment `3c41628`; Stage 13G-A route-integrity `c8a5cf3`; Stage 13G-A central configuration/shared primitives `b38ec64`; Stage 13G-A interaction enforcement `08524b6`; Stage 13G-B Home lifecycle `1dda826`; prediction lifecycle `177605b`; results lifecycle `03bc447`; league lifecycle `a651d33`; player/team lifecycle `aa76fbe`.
+- **Accepted-commit chronology:** 13F-E `8349e83`; 13F-F `369ddfc` (retrospectively corrected by v1.21); 13F-G `7324d43`; 13F-H `74c8dd3`; 13F-I `63d7acb`; 13F-J `f7f2fb5`; 13G-0 `efce59f`; 13F-K0 `b6c7ddc`; 13F-K1 `0e4d5b7`; 13F-K2 `c4342f1`; 13F-K3 `b7f50de`; 13G-R0 `586c6a1`; Stage 13G test-strategy amendment `3c41628`; Stage 13G-A route-integrity `c8a5cf3`; Stage 13G-A central configuration/shared primitives `b38ec64`; Stage 13G-A interaction enforcement `08524b6`; Stage 13G-B Home lifecycle `1dda826`; prediction lifecycle `177605b`; results lifecycle `03bc447`; league lifecycle `a651d33`; player/team lifecycle `aa76fbe`; KO-readiness close-out `5c9f415`; Stage 13G-H0 records/docs correction pending from `5c9f415`.
 
 - **v1.19:** Implements Stage 13F-K2 from `0e4d5b7`: split control-room components, owner-only fixture and complete-reconciliation actions, consolidated readiness, Stage 17A Tournament Picks hand-off, filtered expandable append-only audit detail, role/timezone tests and six responsive light/dark structural baselines. No Migration 019; Stage 13F-K3 remains the final deployed role acceptance.
 

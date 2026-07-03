@@ -289,3 +289,7 @@ The staging preview remains the sign-off surface for future palette refinements.
 - **v1.6:** Stage 13C separates the predicted Original Bracket from the real-fixture KO Predictor.
 - **v1.7:** Restored frontend architecture enforcement omitted during Stage 13A reconciliation; added scoped styling, size limits, dependency direction, fixture isolation, WCAG contrast checks and explicit implementation-versus-acceptance terminology.
 - **v1.8:** Settled the Share Card as the completed converging wall-chart bracket rendered to an image and scheduled the presentation-only layout for Stage 13P-A.
+
+## Bottom navigation Home-circle alignment clarification
+
+The centred Home circle sits slightly above the bar's top line, but all five items' icons and labels remain vertically aligned with each other. The circle overlaps the line; the Home button does not float above its siblings.
