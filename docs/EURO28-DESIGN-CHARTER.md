@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.6 — Stage 13C predicted and real-fixture knockout contexts
+### Version 1.7 — frontend architecture and enforcement restored
 
 > **Authority:** This document governs how the Euro 2028 Predictor looks and feels. The Consolidated Decision Register governs product rules. The Agent Rules govern build process. A visual deviation must be proposed here before it ships.
 
@@ -138,7 +138,100 @@ Every shared component supports both themes and its loading, empty, error, disab
 - Predicted and live bracket screens carry different context banners.
 - Original Predictor and KO Predictor leaderboards remain visual siblings but never display a combined score.
 
-## 11. Visual verification — CONFIRMED
+## 11. Frontend architecture and enforcement — CONFIRMED
+
+This section restores the confirmed architecture rules lost during the uncommitted Stage 13A v5 to committed v6 reconciliation. It may not be removed, weakened or replaced without Nicky's explicit approval, a Charter version change and a change-log entry.
+
+### 11.1 Component ownership
+
+Each new or materially reworked interface component lives in an identifiable component or feature folder with its component, scoped stylesheet and tests where applicable. Large pages compose smaller feature components rather than retaining every state, action and layout in one file.
+
+### 11.2 Scoped styling
+
+CSS Modules are the default and required styling mechanism for all new components and all materially reworked components.
+
+Permanent global CSS is limited to:
+
+- semantic tokens;
+- approved typography declarations;
+- browser reset and genuinely application-wide base behaviour.
+
+Page, feature and component selectors are not permitted in new permanent global stylesheets.
+
+### 11.3 Transitional global-style bridge
+
+The following exact ceilings are temporary compatibility debt, not budgets:
+
+- `src/styles/feature-compat.css`: 2,590 lines;
+- `src/styles/app.css`: 1,906 lines;
+- `src/styles/groups-predictor.css`: 605 lines;
+- `src/styles/knockout-experiences.css`: 463 lines.
+
+They must not grow. New feature selectors are forbidden. When a file shrinks, its audited cap shrinks in the same commit. A cap increase or a new exception requires explicit approval. The allowlist must eventually become empty.
+
+### 11.4 File-size boundaries
+
+For React interface components:
+
+- approximately 200 lines is the review target;
+- 400 lines is the hard limit.
+
+For scoped stylesheets:
+
+- approximately 250 lines is the review target;
+- 400 lines is the hard limit.
+
+The architecture audit fails on a breach. Temporary exact caps may exist only for named transitional files and may ratchet down only.
+
+### 11.5 Dependency direction
+
+Dependencies must flow in one direction:
+
+1. application composition and routing;
+2. feature public entry points;
+3. feature interface components;
+4. feature models and service contracts;
+5. shared pure utilities and the design system.
+
+The design system may not import application routes, feature components, Supabase clients or feature services. Models and services may not import React components or CSS. Features may not reach into another feature's internal files where a public entry point is required. Active Euro code may never import quarantined WC26 pages, components, stores, hooks or global styles.
+
+### 11.6 Development and test isolation
+
+Development and automated-test fixtures must not be statically imported by the production application root. Production builds must contain no activation query, sample account or fixture dataset capable of changing ordinary application behaviour.
+
+The two current visual-fixture imports are recorded temporary debt. They may not increase and must be removed from the production graph before Stage 15 is accepted.
+
+### 11.7 WCAG contrast enforcement
+
+Every approved foreground/background token pairing is registered for light and dark themes.
+
+The design-token audit checks:
+
+- normal text at 4.5:1;
+- large text at 3:1;
+- meaningful controls, boundaries and focus indicators at 3:1;
+- status, joker, link, predicted-context, real-context and action pairs.
+
+Known failures at checkpoint `d522210` are explicit ratcheted exceptions. They may not worsen and must be removed before Stage 14B is complete. A new token or pairing is incomplete until its contrast test is registered.
+
+### 11.8 Architecture audit
+
+`npm run check` includes an architecture audit covering:
+
+- component and stylesheet sizes;
+- exact transitional caps;
+- scoped-style ownership;
+- dependency direction;
+- the WC26 quarantine boundary;
+- production fixture imports;
+- preservation of this Charter section;
+- WCAG token-pair verification in both themes.
+
+### 11.9 Completion terminology
+
+A stage is **implemented** when its code and automated gates exist. It is **accepted** only when every required owner-side and deployed check has evidence. A deferred acceptance item must name its later owning stage. A stage with required but unevidenced acceptance must not be recorded simply as complete.
+
+## 12. Visual verification — CONFIRMED
 
 Each Stage 13 batch stores baselines in `docs/design-baselines/` at:
 
@@ -148,12 +241,11 @@ Each Stage 13 batch stores baselines in `docs/design-baselines/` at:
 
 The staging preview remains the sign-off surface for future palette refinements. A palette change is a token edit plus charter version bump, not a component rewrite.
 
-## 12. Deferred design decisions
+## 13. Deferred design decisions
 
 - Final app mark or wordmark treatment beyond the confirmed name.
-- Circle-flag artwork and `<TeamLabel>` implementation in Stage 13B.
-- Share-card mini-spec before Stage 13D.
 - Exact future blue values if the staging preview is refined before 2028.
+- Share-card location and value after final product design is signed off.
 
 ## Change log
 
@@ -161,5 +253,6 @@ The staging preview remains the sign-off surface for future palette refinements.
 - **v1.1:** Blue direction confirmed; colours centralised and intentionally adjustable; app name confirmed; five-position navigation fixed; Lucide and typography confirmed.
 - **v1.3:** Made Bracket permanent and reversed the phase-aware destination so Groups becomes KO.
 - **v1.4:** Confirmed early KO access through More and the full Round of 16 readiness trigger; unresolved fixtures stay hidden.
-
-- v1.5 — Stage 13B implements the shared TeamLabel, local ISO-keyed circle flags, neutral unresolved slots, common score input, explicit prediction states and gold-only joker treatment.
+- **v1.5:** Stage 13B implements shared TeamLabel, local flags, unresolved slots, score input, prediction states and gold-only joker treatment.
+- **v1.6:** Stage 13C separates the predicted Original Bracket from the real-fixture KO Predictor.
+- **v1.7:** Restored frontend architecture enforcement omitted during Stage 13A reconciliation; added scoped styling, size limits, dependency direction, fixture isolation, WCAG contrast checks and explicit implementation-versus-acceptance terminology.

@@ -1,6 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { CONTRAST_PAIRS, TEMPORARY_CONTRAST_EXCEPTIONS } from './architecture-policy.mjs'
+import { auditContrast } from './lib/frontendArchitectureAudit.mjs'
 
 const root = process.cwd()
 const errors = []
@@ -58,6 +60,12 @@ if (packageJson.scripts?.['audit:design-tokens'] !== 'node scripts/check-design-
 if (!packageJson.scripts?.check?.includes('audit:design-tokens')) fail('npm run check does not run audit:design-tokens')
 
 const tokenSource = read('src/design/tokens.css')
+const contrastAudit = auditContrast({
+  tokenSource,
+  pairs: CONTRAST_PAIRS,
+  exceptions: TEMPORARY_CONTRAST_EXCEPTIONS,
+})
+for (const failure of contrastAudit.failures) fail(`WCAG token contrast: ${failure}`)
 for (const token of [
   '--font-body', '--font-display', '--surface-page', '--surface-raised', '--text-primary',
   '--brand', '--brand-strong', '--accent', '--state-live', '--state-success', '--state-danger',
@@ -192,4 +200,5 @@ console.log('Typography: self-hosted Space Grotesk and Inter')
 console.log('Icons: Lucide for ordinary interface actions')
 console.log('Navigation: Groups/KO · permanent Bracket · raised Home · Leagues · More')
 console.log('Themes: light and dark share the same semantic component rules')
+console.log(`Contrast: ${CONTRAST_PAIRS.length * 2} light/dark token pairs checked; ${contrastAudit.acceptedExceptions.length} ratcheted Stage 14B exceptions remain`)
 console.log(`Database: original 14-migration baseline preserved; ${migrations.length} active migrations detected`)
