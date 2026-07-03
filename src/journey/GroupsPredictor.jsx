@@ -1,4 +1,4 @@
-import React from 'react' // eslint-disable-line no-unused-vars
+import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { useMemo, useState } from 'react'
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
 import { ScoreInput, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar } from '../design-system/index.jsx'

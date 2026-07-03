@@ -152,7 +152,7 @@ export default function AdminDashboard({ admin }) {
 
   useEffect(() => {
     runDiagnostics()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- diagnostics intentionally rerun only when aggregate inputs change
   }, [matches?.length, health?.completedMatches])
 
   const metrics = useMemo(() => {

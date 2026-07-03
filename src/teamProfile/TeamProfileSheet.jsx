@@ -1,4 +1,4 @@
-import React from 'react' // eslint-disable-line no-unused-vars
+import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { Badge, Button, Dialog, Icon, TeamLabel } from '../design-system/index.jsx'
 import { buildTeamProfileLifecycle, TEAM_PROFILE_MILESTONES } from './teamProfileModel.js'
 

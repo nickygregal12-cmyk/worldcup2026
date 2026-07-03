@@ -163,12 +163,12 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 |---|---|---|---|
 | Stage 13G-H0 record corrections | ✅ FUNCTIONAL | Ledger now distinguishes Tournament Picks contract readiness from missing player-facing entry, and distinguishes Player Insight/H2H engines from the intended dedicated player-view product shape. | — |
 | Constitution principle 14 — slick and frictionless | ✅ FUNCTIONAL | Section 5 now records the product sensibility: open into what matters now, remember where the player was, hide machinery, remove before rearranging and choose fewer elements/fewer taps where designs are otherwise equal. The existing access principle remains active as principle 15. | — |
-| `.env.example` time-travel default | 🕓 SCHEDULED | Template must default `VITE_ENABLE_TIME_TRAVEL=false`; staging-only enablement requires explicit local owner configuration. | 13G-H1 |
-| Coverage threshold and no-decrease ratchet | 🕓 SCHEDULED | Add Vitest coverage thresholds based on current live `src/` actuals, excluding legacy and fixtures; wire no-decrease ratchet into `npm run check`. | 13G-H1 |
-| `eslint-disable` governance | 🕓 SCHEDULED | Current live-code disables need reason comments and a downward ratchet from the measured baseline. | 13G-H1 |
-| Frozen bridge melt schedule | 🕓 SCHEDULED | Compat stylesheets have stayed frozen but have not reduced; any screen rework must migrate that screen's compat styles to modules and stage ratchets must fall. | 13G-H1 / per screen |
-| Visual fixture production gating | 🕓 SCHEDULED | Prove whether fixture modes are reachable in the deployed bundle and gate to the Stage14ErrorFixture standard. | 13G-H1 |
-| Size governance clarification | 🕓 SCHEDULED | Record 200/250 as review guidance and 400/400 as enforced cap; over-cap allowlist must be ledgered and ratcheted; hard cap extends to test fixtures. | 13G-H1 |
+| `.env.example` time-travel default | ✅ FUNCTIONAL | Template defaults `VITE_ENABLE_TIME_TRAVEL=false`; staging-only enablement now requires explicit local owner configuration. | — |
+| Coverage threshold and no-decrease ratchet | ✅ FUNCTIONAL | Vitest coverage is wired into `npm run check` using current live `src/` actuals as floors: lines/statements 57.7, functions 78.53 and branches 68.48. Legacy pages/components, store, assets and fixtures are excluded. | — |
+| `eslint-disable` governance | ✅ FUNCTIONAL | Every eslint-disable now needs a reason after `--`; total disables are capped at 38 and live non-test disables at 23, with cap reductions required when counts fall. | — |
+| Frozen bridge melt schedule | ✅ FUNCTIONAL | Compat stylesheets stay frozen at exact caps and any screen rework touching compat-styled screens must migrate styles to modules and lower the relevant cap when lines are removed. | per screen |
+| Visual fixture production gating | ✅ FUNCTIONAL | Deterministic visual fixtures remain outside the production graph; the only root-mounted fixture is `Stage14ErrorFixture`, gated to `import.meta.env.DEV` and not deployable by VITE flags. | — |
+| Size governance clarification | ✅ FUNCTIONAL | The Charter records 200/250 as review guidance and 400/400 as enforced hard caps. Test fixtures now share the hard cap, with the one current over-cap fixture ledgered and ratcheted. | — |
 | Bottom nav alignment wording | ✅ FUNCTIONAL | Charter clarifies that the centred Home circle overlaps slightly above the bar top line while all five icons and labels remain vertically aligned. | — |
 | Home theme compliance sweep | 🕓 SCHEDULED | Audit every Home element in light and dark themes and fix through semantic tokens. | 13G-E |
 | Debug/developer strip removal | 🕓 SCHEDULED | Version strings, row counters and lock mechanics such as account autosave/debug strips must not be user-facing copy. | 13G-H1 |
@@ -181,6 +181,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 
 ## Change log
+
+- **v1.32:** Stage 13G-H1 bypass-class tooling sweep from `dbdcc7d` enforces false-by-default time travel, coverage no-decrease floors, eslint-disable reason/cap governance, DEV-only fixture gating, test-fixture size ratchets and frozen bridge melt rules. No database change and no Migration 019.
 
 - **v1.31:** Stage 13G-H0 housekeeping and record corrections from `5c9f415` update governing documents only: Tournament Picks is corrected to contract-functional but player-surface partial, Player Insight/H2H is corrected to engine-partial pending dedicated destinations, guest signup import flow is confirmed as a dominant one-tap prompt, bypass-class sweep items are recorded, the FAQ list removes result-correction mechanics, bottom-nav alignment wording is clarified, Constitution principle 14 records the slick/frictionless product sensibility, and active migrations remain 18 with no Migration 019.
 - **v1.30:** Stage 13G-B KO-readiness signal close-out from `659809c` centralises KO readiness for Home, Navigation and Leagues, preserves the five-position navigation trigger, keeps early KO access in More, gates league KO context by real fixture readiness, adds `audit:ko-readiness` to `npm run check`, and keeps active migrations at 18 with no Migration 019.

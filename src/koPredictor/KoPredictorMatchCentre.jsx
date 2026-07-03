@@ -1,4 +1,4 @@
-import React from 'react' // eslint-disable-line no-unused-vars
+import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import lifecycleStyles from './KoPredictorLifecycle.module.css'
 import { Badge, Button, Icon, PredictionStateBadge, ProgressBar, ScoreInput, TeamLabel } from '../design-system/index.jsx'
 import { buildKoRoundProgress, deriveKoMatchPresentation, koMethodOptions, KO_PREDICTOR_ROUNDS } from './koPredictorPresentationModel.js'

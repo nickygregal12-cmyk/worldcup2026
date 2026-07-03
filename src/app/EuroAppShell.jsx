@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react' // eslint-disable-line no-unused-vars
+import React, { useEffect, useMemo, useState } from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { APP_ROUTE, destinationForRoute } from './appRoutes.js'
 import { buildNavigationDestinations } from './navigationLifecycle.js'
 import { Dialog, Icon } from '../design-system/index.jsx'

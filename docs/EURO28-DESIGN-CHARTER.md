@@ -212,7 +212,7 @@ For scoped stylesheets:
 - approximately 250 lines is the review target;
 - 400 lines is the hard limit.
 
-The architecture audit fails on a breach. Temporary exact caps may exist only for named transitional files and may ratchet down only.
+The architecture audit fails on a breach. Temporary exact caps may exist only for named transitional files and may ratchet down only. The hard cap also applies to test fixtures; any over-cap fixture must be named, capped exactly and reduced when touched.
 
 ### 11.5 Dependency direction
 
@@ -228,7 +228,7 @@ The design system may not import application routes, feature components, Supabas
 
 ### 11.6 Development and test isolation
 
-Development and automated-test fixtures must not be statically imported by the production application root. Production builds must contain no activation query, sample account or fixture dataset capable of changing ordinary application behaviour.
+Development and automated-test fixtures must not be statically imported by the production application root. Production builds must contain no activation query, sample account or fixture dataset capable of changing ordinary application behaviour. Stage14ErrorFixture is the only root-mounted error-boundary fixture and must be gated to `import.meta.env.DEV`, not to deployable VITE flags.
 
 The two current visual-fixture imports are recorded temporary debt. They may not increase and must be removed from the production graph before Stage 15 is accepted.
 

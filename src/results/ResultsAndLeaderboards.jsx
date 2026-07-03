@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react' // eslint-disable-line no-unused-vars
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { LinkButton, StatusBar, Tabs } from '../design-system/index.jsx'
 import { LEADERBOARD_COMPETITION } from '../app/appRoutes.js'
 import { loadOverallHeadToHead, loadResultsAndLeaderboards } from './resultService.js'

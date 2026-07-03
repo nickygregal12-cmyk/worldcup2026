@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react' // eslint-disable-line no-unused-vars
+import React, { useMemo } from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { PlayerIdentity, TeamLabel } from '../design-system/index.jsx'
 import { formatOrdinal, LEAGUE_COMPETITION } from '../leagues/leagueModel.js'
 import { buildAlignedPlayerComparison, PLAYER_COMPARISON_CONTEXT } from './playerComparisonModel.js'

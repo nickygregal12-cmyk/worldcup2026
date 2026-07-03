@@ -1,3 +1,5 @@
+export const FRONTEND_COMPONENT_REVIEW_TARGET = 200
+export const FRONTEND_STYLESHEET_REVIEW_TARGET = 250
 export const FRONTEND_COMPONENT_HARD_CAP = 400
 export const FRONTEND_STYLESHEET_HARD_CAP = 400
 export const FOUNDATION_CLASS_RATCHET_CAP = 245
@@ -35,6 +37,11 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   'src/styles/app.css': 1903,
   'src/styles/groups-predictor.css': 605,
   'src/styles/knockout-experiences.css': 463,
+})
+
+// Test fixtures share the hard cap. Exact temporary caps must ratchet down when a fixture shrinks.
+export const TEMPORARY_TEST_FIXTURE_CAPS = Object.freeze({
+  'src/testFixtures/stage13dVisualFixture.js': 468,
 })
 
 // Production code must not import deterministic visual fixtures.

@@ -8,6 +8,7 @@ import {
   GLOBAL_STYLESHEET_CAPS,
   TEMPORARY_COMPONENT_CAPS,
   TEMPORARY_FIXTURE_IMPORTS,
+  TEMPORARY_TEST_FIXTURE_CAPS,
 } from './architecture-policy.mjs'
 import { countLines, extractImports, walkFiles } from './lib/frontendArchitectureAudit.mjs'
 
@@ -63,6 +64,21 @@ for (const file of Object.keys(GLOBAL_STYLESHEET_CAPS)) {
   if (!cssFiles.includes(file)) fail(`Global stylesheet cap is stale or missing: ${file}`)
 }
 
+const testFixtureFiles = walkFiles(root, 'src/testFixtures').filter(file => /\.(?:js|jsx)$/.test(file))
+for (const file of testFixtureFiles) {
+  const lines = countLines(read(file))
+  const temporaryCap = TEMPORARY_TEST_FIXTURE_CAPS[file]
+  if (temporaryCap !== undefined) {
+    if (lines > temporaryCap) fail(`${file} grew to ${lines} lines above its frozen ${temporaryCap}-line fixture cap`)
+    if (lines < temporaryCap) fail(`${file} shrank to ${lines} lines; lower its fixture cap from ${temporaryCap} in the same commit`)
+  } else if (lines > FRONTEND_COMPONENT_HARD_CAP) {
+    fail(`${file} is ${lines} lines; test fixtures share the ${FRONTEND_COMPONENT_HARD_CAP}-line hard cap`)
+  }
+}
+for (const file of Object.keys(TEMPORARY_TEST_FIXTURE_CAPS)) {
+  if (!testFixtureFiles.includes(file)) fail(`Temporary test-fixture cap is stale or missing: ${file}`)
+}
+
 const legacySegments = ['/pages/', '/components/', '/store/', '/hooks/']
 for (const file of activeFiles.filter(candidate => /\.[cm]?[jt]sx?$/.test(candidate))) {
   const source = read(file)
@@ -111,5 +127,6 @@ if (errors.length) {
 
 console.log('Euro frontend architecture audit passed.')
 console.log(`Components: ${jsxFiles.length} active JSX files checked; ${Object.keys(TEMPORARY_COMPONENT_CAPS).length} exact temporary caps`)
+console.log(`Test fixtures: ${testFixtureFiles.length} files checked; ${Object.keys(TEMPORARY_TEST_FIXTURE_CAPS).length} exact temporary caps`)
 console.log(`Styles: ${cssFiles.length} active stylesheets checked; global compatibility ceilings cannot grow`)
 console.log('Dependencies: design-system, model/service, WC26 quarantine and fixture-import boundaries checked')

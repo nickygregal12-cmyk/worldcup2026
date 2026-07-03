@@ -1,4 +1,4 @@
-import React from 'react' // eslint-disable-line no-unused-vars
+import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppErrorBoundary from '../AppErrorBoundary.jsx'

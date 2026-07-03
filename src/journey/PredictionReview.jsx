@@ -1,4 +1,4 @@
-import React from 'react' // eslint-disable-line no-unused-vars
+import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { Button, Card, PredictionStateBadge, TeamLabel } from '../design-system/index.jsx'
 import { buildGroupProgress } from './groupsPresentationModel.js'
 

@@ -1,4 +1,4 @@
-import React, { Component } from 'react' // eslint-disable-line no-unused-vars
+import React, { Component } from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { Button } from '../design-system/index.jsx'
 import { captureException, getObservabilityState } from './observability.js'
 import { clearStage14ErrorFlag } from './stage14ErrorFlag.js'

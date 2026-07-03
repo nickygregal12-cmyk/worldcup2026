@@ -616,3 +616,12 @@ From checkpoint `5c9f415`, update the governing documents before the next produc
 - Joker design, bracket long-name resilience and shared Tabs/switcher treatment belong to the 13G-C prediction-surface quality work.
 - FAQ/how-to-play belongs to 13G-B/C and must render rule values from central contracts/configuration.
 - The converging wall-chart bracket/share image remains scheduled for Stage 13P-A and must not be left as unowned backlog.
+
+
+### Stage 13G-H1 bypass-class tooling sweep — ACCEPTED
+- Time travel defaults false in `.env.example`.
+- Coverage floors use current live `src/` actuals and are wired into `npm run check`.
+- `eslint-disable` use has reason comments and exact cap ratchets.
+- Visual fixtures stay outside the production graph; `Stage14ErrorFixture` is DEV-only.
+- Size governance clarifies 200/250 review guidance, 400/400 hard caps and test-fixture ratchets.
+- No database change and no Migration 019.

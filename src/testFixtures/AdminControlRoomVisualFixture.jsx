@@ -1,4 +1,4 @@
-import React from 'react' // eslint-disable-line no-unused-vars
+import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import AdminAuditTimeline from '../admin/AdminAuditTimeline.jsx'
 import AdminFixtureOperations from '../admin/AdminFixtureOperations.jsx'
 import AdminReadiness from '../admin/AdminReadiness.jsx'

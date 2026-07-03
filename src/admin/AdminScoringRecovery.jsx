@@ -1,4 +1,4 @@
-import React, { useState } from 'react' // eslint-disable-line no-unused-vars
+import React, { useState } from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import styles from './AdminOperationsCompletion.module.css'
 import { validateAdminNote } from './adminOperationsModel.js'
 import { reconcileAdminTournamentPoints } from './adminOperationsService.js'

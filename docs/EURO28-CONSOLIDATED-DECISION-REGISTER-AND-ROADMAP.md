@@ -599,3 +599,12 @@ This amendment is read with the Stage 13G master prompt and corrects records bef
 - Stage 13G-C/D: dedicated player view, H2H and points-breakdown destinations.
 - Stage 13G-B/C: how-to-play and FAQ guide.
 - Stage 13P-A: converging wall-chart bracket and share image.
+
+
+### Stage 13G-H1 bypass-class tooling sweep — ACCEPTED
+- Time travel defaults false in `.env.example`.
+- Coverage floors use current live `src/` actuals and are wired into `npm run check`.
+- `eslint-disable` use has reason comments and exact cap ratchets.
+- Visual fixtures stay outside the production graph; `Stage14ErrorFixture` is DEV-only.
+- Size governance clarifies 200/250 review guidance, 400/400 hard caps and test-fixture ratchets.
+- No database change and no Migration 019.
