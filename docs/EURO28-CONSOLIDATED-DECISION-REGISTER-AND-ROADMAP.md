@@ -1,17 +1,17 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 3.1 — Stage 13F-I tournament-pick contract and roadmap reconciliation
+### Version 3.3 — Stage 13F-J insight contract and expanded Stage 16A acceptance plan
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
 ## 1. Current return point
 
-- Expected Git commit: `74c8dd3` — **Retire Euro foundation runtime and legacy handlers**.
+- Expected Git commit: `63d7acb` — **Define Euro tournament pick contract**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
-- Active migration count: **16**; Migration 016 is the approved staging Time & Phase control.
-- Stages 1–12, 13A–13E, 14, 14B and Stage 13F-0 through Stage 13F-H are accepted.
-- The exact next package is Stage 13F-I from `74c8dd3`.
-- Stage 13F-I is contract-only: no persistence, UI or migration is claimed complete.
+- Active migration count before Stage 13F-J: **16**. Migration 017 is the approved read-only player-insight contract for this package.
+- Stages 1–12, 13A–13E, 14, 14B and Stage 13F-0 through Stage 13F-I are accepted.
+- The exact current package is Stage 13F-J from `63d7acb`.
+- Stage 13F-J adds one authorised read RPC and player-facing insight; it changes no scoring rule, prediction contract or admin power.
 - Original and KO Predictor totals remain permanently separate.
 
 ## 2. Existing confirmed product decisions
@@ -235,18 +235,78 @@ A dedicated **Stage 13E — Team Profile Sheet** is added immediately after Stag
 - In-tournament form is derived only from app-owned results.
 - Loading, empty, error and partial-failure states are required.
 - The profile uses charter tokens, works in both themes and belongs to the shared design system.
-- One clearly labelled provisional sample team is sufficient for development tests until real teams are confirmed.
+- One clearly labelled provisional sample team remains sufficient for early component tests only; Stage 16A replaces that narrow fixture with the full guarded 24-team provisional dataset.
 
-## 8. Provisional test-nation dataset — CONFIRMED
+## 8. Stage 16A seeded acceptance cast — CONFIRMED
 
-This is part of **Stage 16 — Seeded full-tournament test**.
+Stage 16 opens with **Stage 16A — Provisional teams, synthetic users and deterministic scenario seeding** against Euro staging project `gcfdwobpnanjchcnvdco` only. The blocked WC26 production project `ouhxawizadnwrhrjppld` must always fail closed.
 
-- Staging will use realistic sample nations, including relevant host nations such as Scotland, to make groups, standings, brackets, scoring and team profiles easy to follow by normal football understanding.
-- Every sample nation is marked provisional in the stored dataset.
-- Every screen that presents sample tournament data displays a clear **Sample data** or **Provisional** treatment so it cannot be mistaken for the official draw.
-- Tests must confirm that provisional markings survive group tables, fixtures, bracket slots and team profiles.
-- Replacement with confirmed teams during Stage 17 is a data-only operation using slot references and ISO codes.
-- The Stage 17 acceptance gate must prove that replacing the sample nations requires zero component or resolver code changes.
+### 8.1 Provisional teams
+
+- `data/provisional-teams.json` contains exactly 24 teams: five hosts and nineteen likely qualifiers.
+- Every row stores name, ISO code, group letter and `provisional: true`.
+- `scripts/seed-provisional-teams.mjs` is guarded, idempotent and staging-only.
+- Replace/confirm mode later applies the real 24 with `provisional: false`.
+- Existing `TeamLabel` data-flag presentation remains the only provisional-team treatment.
+- Stage 17 fails acceptance if confirmed-team replacement requires component or resolver changes.
+
+### 8.2 Approved synthetic persona catalogue
+
+| Key | Display name | Deterministic purpose |
+|---|---|---|
+| `exact_score_heavy` | Ada Exact | Exact on a fixed majority; correct-outcome non-exacts elsewhere. |
+| `outcome_only` | Owen Outcome | Correct outcome on every eligible match, never exact. |
+| `all_wrong` | Willa Wrong | Reverses every non-draw and converts every draw to a non-draw. |
+| `partial_predictions` | Priya Partial | Fixed incomplete Original bracket/group and KO subsets. |
+| `no_predictions` | Noah Empty | Valid account and profile with no prediction set. |
+| `submitted_complete` | Sam Submitted | Complete deterministic baseline with submitted state. |
+| `unsubmitted_identical` | Dana Draft | Byte-identical predictions to Sam, unsubmitted, and must score identically. |
+| `joker_cap_reached` | Max Jokers | Exactly five group and five KO jokers; no sixth joker. |
+| `zero_jokers` | Zoe Zero | Same control predictions as Max with no jokers. |
+| `engineered_tie_a` | Taylor Tie | Fixed source mix engineered to the approved tie total. |
+| `engineered_tie_b` | Morgan Tie | Different source mix reaching the same tie total. |
+| `bracket_survives_deep` | Bea Bracket | Original bracket path survives to late milestones. |
+| `bracket_dead_early` | Drew Deadend | Key Original bracket selections fail at the earliest stages. |
+| `ko_only` | Kai Knockout | Complete KO entry and no Original entry. |
+| `original_only` | Olivia Original | Complete Original entry and no KO entry. |
+| `ko_advancing_only` | Alex Advance | Wrong 90-minute score, correct advancing team, wrong method. |
+| `ko_method_variant` | Maya Method | Wrong 90-minute score, correct advancing team and method. |
+| `ko_joker_variant` | Jules Double | KO control predictions with exactly five valid KO jokers. |
+| `correction_sensitive` | Casey Correction | Known pre/post-correction totals proving replacement scoring. |
+
+### 8.3 Synthetic identity, predictions and leagues
+
+- `data/synthetic-personas.json` stores each persona's name, purpose and deterministic rules.
+- Users are created through the Supabase Admin API using a local service credential that is never committed or printed.
+- Every synthetic account requires both an `@synthetic.euro28.test` address and `synthetic_euro28: true` metadata.
+- Expected points are precomputed independently for every Time & Phase preset and compared with canonical database output.
+- The oracle must not import frontend scoring helpers or database scoring functions.
+- Seed one large league of approximately fourteen members, one tiny league of two or three, one user in multiple leagues and at least one user in none.
+- Membership supports both competition standings while Original and KO totals remain separate.
+
+### 8.4 Exact teardown
+
+- `scripts/remove-synthetic-data.mjs` deletes exactly and only accounts carrying both reserved markers.
+- Cascaded predictions, scores and memberships are removed; provisional-team removal is optional.
+- Real accounts, real administrators, tournament configuration and staging controls remain untouched.
+- Seed → teardown → zero-residue assertion → reseed must be clean and repeatable.
+
+### 8.5 Approved preconditions
+
+Two genuine gaps are approved for separate guarded packages before Stage 16A execution:
+
+1. privacy-safe synthetic identity plumbing: authorised reads expose only `is_synthetic`, and the shared identity primitive renders a subtle badge;
+2. staging-effective database time: provisional Euro staging may exercise privacy/lock phases without mutating the irreversible real global lock.
+
+Neither precondition may expose email/raw auth metadata, change scoring, alter the resolver or affect production/non-provisional tournament time.
+
+### 8.6 Acceptance
+
+- The full app is populated end to end across leaderboards, leagues, H2H, Match Centre, Bracket Health, profiles and player insight.
+- Persona expected-points assertions pass at every phase, including post-correction recalculation.
+- Deferred Stage 13D multi-user acceptance rows move only with recorded evidence.
+- Teardown and clean reseed are demonstrated.
+- The real irreversible global lock is never triggered on shared staging.
 
 ## 9. Staging admin access for product-owner testing — CONFIRMED
 
@@ -335,8 +395,9 @@ The Share Card decision is settled: the Share Card is the user’s completed bra
 
 - **Stage 14:** Observability and resilience—Sentry, scheduled-function heartbeat and Zod validation for external boundaries.
 - **Stage 15:** Critical-path Playwright end-to-end testing in GitHub Actions.
-- **Stage 16:** Seeded full-tournament test with phase controls, realistic provisional nations and all 15 best-third combinations.
-- **Stage 17:** Real teams and tournament data; data-only replacement of provisional nations; official times, venues and tie-break rules; final scoring-ruleset lock.
+- **Stage 16A:** Staging-only provisional teams, nineteen deterministic synthetic personas, prediction/scenario oracle, multi-league cast, correction rehearsal, exact teardown and zero-residue reseed. No resolver or scoring change; any genuine read/time-contract migration is separately packaged.
+- **Stage 16 later batches:** Extend the accepted seeded cast through every best-third combination, load/performance exercises and any remaining tournament lifecycle rehearsals.
+- **Stage 17:** Real teams and tournament data; use the rehearsed Stage 16A replace/confirm path with zero component/resolver changes; official times, venues and tie-break rules; final scoring-ruleset lock.
 - **Stage 18A:** Optional Google sign-in via Supabase OAuth, with existing-account regression protection.
 - **Stage 18B:** Optional results-provider integration; manual results remain authoritative and the fallback.
 - **Stage 19:** Go-live hardening, runbook, monitoring, dress rehearsal, load review and environment lockdown.
@@ -352,9 +413,10 @@ The Share Card decision is settled: the Share Card is the user’s completed bra
 
 ## 13. Exact next task
 
-Stage 13F-I is the current contract package built from verified checkpoint `74c8dd3`. It approves the final Original Predictor tournament-pick list, values, tie rules and delivery boundaries, adds a versioned contract with deterministic tests, reconciles the roadmap and keeps the database at sixteen migrations.
+Stage 13F-J is the current package built from verified checkpoint `63d7acb`. It adds canonical player insight, privacy-authorised other-player point evidence and read-only Migration 017.
 
-After its verified clean push, build **Stage 13F-J — Player insight and points storytelling**, then **Stage 13F-K — Complete Admin Operations Backbone**. Only after every Stage 13F row is accepted may Stage 13P-A begin.
+After its verified clean push, build **Stage 13F-K — Complete Admin Operations Backbone**. Only after every Stage 13F row is accepted may Stage 13P-A begin; Stage 16A remains later.
 
-**Starting commit:** `74c8dd3`
-**Migration count:** `16`
+**Starting commit:** `63d7acb`
+**Migration count before installation:** `16`
+**Migration count after accepted Migration 017:** `17`

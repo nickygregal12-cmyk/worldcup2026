@@ -92,6 +92,10 @@ for (const text of [
   'Live context · not your bracket',
   'Original Predictor breakdown',
   'KO Predictor breakdown',
+  'Points story',
+  'How the total was earned',
+  'Canonical scoring rows only',
+  'get_player_competition_points',
   'Community percentages are private',
   'Tournament so far',
   'Curated team facts',
@@ -107,8 +111,9 @@ assert(!bundle.includes('WC26 Control Centre'), 'The inherited WC26 admin applic
 
 console.log('Euro 2028 app-shell verification passed.')
 console.log(`Site: ${siteUrl}`)
-console.log('Public experience: Stage 14 observability and resilience plus Stage 13E team profiles and Stage 13D journeys')
+console.log('Public experience: Stage 13F-J player insight plus Stage 14 observability, Stage 13E team profiles and Stage 13D journeys')
 console.log('Stage 13D leagues, shared predictions, canonical results and separate points remain active beneath Stage 14')
+console.log('Player insight: canonical point sources, rank gaps and privacy-safe Original/KO evidence')
 console.log('Runtime health: read-only Netlify endpoint and hourly validated heartbeat')
 console.log('Error recovery: root boundary and optional Sentry-compatible browser/function reporting')
 console.log('Validation: active Euro Supabase, RPC and health boundaries use Zod-backed parsing')
@@ -121,6 +126,6 @@ console.log('Competition boundary: Original and KO points remain separate; predi
 console.log('Admin controls: protected operations and revision-safe curated team profiles remain owner-controlled')
 console.log('Team profile sources: curated admin facts, app-owned tournament data and privacy-gated Original Predictor aggregates')
 console.log('External result APIs: deferred')
-console.log('Database migrations: 16, including approved staging Time & Phase Migration 016')
+console.log('Database migrations: 17, including read-only player-insight Migration 017')
 console.log('Guest storage: browser-only and unscored')
 console.log('Inherited WC26 application bundle: inactive')

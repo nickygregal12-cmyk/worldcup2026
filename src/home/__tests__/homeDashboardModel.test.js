@@ -65,10 +65,10 @@ describe('Home dashboard model', () => {
         ],
       },
       results: {
-        myPoints: { original: { total_points: 40 }, koPredictor: { total_points: 15 } },
+        myPoints: { original: { totalPoints: 40 }, koPredictor: { totalPoints: 15 } },
         leaderboards: {
-          original: [{ userId: 'user-1', rank: 2 }],
-          koPredictor: [{ userId: 'user-1', rank: 4 }],
+          original: [{ userId: 'leader', rank: 1, totalPoints: 55 }, { userId: 'user-1', rank: 2, totalPoints: 40 }],
+          koPredictor: [{ userId: 'leader', rank: 1, totalPoints: 25 }, { userId: 'user-1', rank: 4, totalPoints: 15 }],
         },
       },
       leagues: [{ memberCount: 6 }, { memberCount: 4 }],
@@ -78,10 +78,13 @@ describe('Home dashboard model', () => {
     expect(dashboard.original.totalComplete).toBe(2)
     expect(dashboard.original.points).toBe(40)
     expect(dashboard.original.rank).toBe(2)
+    expect(dashboard.original.pointsBehindLeader).toBe(15)
+    expect(dashboard.original.pointsToNextScore).toBe(15)
     expect(dashboard.original.jokerCount).toBe(1)
     expect(dashboard.koPredictor.complete).toBe(1)
     expect(dashboard.koPredictor.points).toBe(15)
     expect(dashboard.koPredictor.rank).toBe(4)
+    expect(dashboard.koPredictor.pointsBehindLeader).toBe(10)
     expect(dashboard.koPredictor.jokerCount).toBe(1)
     expect(dashboard.leagues).toEqual({ count: 2, members: 10 })
   })

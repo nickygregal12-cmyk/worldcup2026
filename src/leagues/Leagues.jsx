@@ -207,7 +207,6 @@ export default function Leagues({ client, tournamentId, reference }) {
     })
   }
 
-
   const clearComparison = () => {
     comparisonRequests.current.cancel()
     setComparison(null)
@@ -222,7 +221,6 @@ export default function Leagues({ client, tournamentId, reference }) {
       ? overview.data?.sections.original
       : overview.data?.sections.koPredictor
     const standings = buildStandingComparison(section?.data ?? [], row.userId)
-
     setComparisonMemberId(row.userId)
     setComparison({
       status: 'loading',
@@ -231,6 +229,7 @@ export default function Leagues({ client, tournamentId, reference }) {
       competitionKey: requestedCompetitionKey,
       leagueId,
       standings,
+      standingsRows: (section?.data ?? []).map(candidate => ({ ...candidate, isCurrentUser: candidate.userId === session.user.id })),
       data: null,
       error: null,
     })
@@ -240,6 +239,8 @@ export default function Leagues({ client, tournamentId, reference }) {
         currentUserId: session.user.id,
         otherUserId: row.userId,
         competitionKey: requestedCompetitionKey,
+        tournamentId,
+        reference,
       })
       if (!comparisonRequests.current.isCurrent(requestToken)) return
       setComparison(previous => ({ ...previous, status: 'ready', data, error: null }))
@@ -248,7 +249,6 @@ export default function Leagues({ client, tournamentId, reference }) {
       setComparison(previous => ({ ...previous, status: 'error', data: null, error: messageForError(error) }))
     }
   }
-
   const overviewLoading = Boolean(selectedLeague?.id) && overview.leagueId !== selectedLeague.id
   const activeOverview = overviewLoading ? null : overview.data
   const activeSection = competitionKey === LEAGUE_COMPETITION.ORIGINAL

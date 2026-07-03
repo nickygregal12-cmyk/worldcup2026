@@ -76,24 +76,44 @@ describe('league service', () => {
     expect(overview.members).toHaveLength(1)
   })
 
-  it('loads two member bundles and creates a head-to-head comparison', async () => {
+  it('loads two member bundles and isolated canonical insight for a head-to-head comparison', async () => {
     const client = {
-      rpc: vi.fn(async (_name, args) => ({
-        data: {
-          visible: true,
-          display_name: args.p_member_user_id,
-          match_predictions: [{ match_number: 1, home_score_90: 1, away_score_90: 0 }],
-          bracket_predictions: [],
-        },
-        error: null,
-      })),
+      rpc: vi.fn(async (name, args) => {
+        if (name === 'get_player_competition_points') {
+          return {
+            data: {
+              visible: true,
+              competition_key: args.p_competition_key,
+              member_user_id: args.p_member_user_id,
+              display_name: args.p_member_user_id,
+              state: 'unscored',
+              total_points: 0,
+              match_breakdown: [],
+              bracket_breakdown: [],
+              reason: null,
+            },
+            error: null,
+          }
+        }
+        return {
+          data: {
+            visible: true,
+            display_name: args.p_member_user_id,
+            match_predictions: [{ match_number: 1, home_score_90: 1, away_score_90: 0 }],
+            bracket_predictions: [],
+          },
+          error: null,
+        }
+      }),
     }
     const result = await loadLeagueHeadToHead(client, {
       leagueId: 'l1', currentUserId: 'me', otherUserId: 'them', competitionKey: 'original',
+      tournamentId: 't1', reference: { tournamentId: 't1', groupMatches: [], knockoutMatches: [], teamsById: {} },
     })
     expect(result.comparison.visible).toBe(true)
     expect(result.comparison.exactScoreMatches).toBe(1)
-    expect(client.rpc).toHaveBeenCalledTimes(2)
+    expect(result.insights.current.status).toBe('ready')
+    expect(client.rpc).toHaveBeenCalledTimes(4)
   })
 
   it('surfaces RPC errors with context', async () => {

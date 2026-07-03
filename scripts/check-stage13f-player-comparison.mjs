@@ -71,7 +71,7 @@ const roadmap = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
 for (const marker of [
   '## Stage 13F-B — Player identity and complete H2H',
   '## Stage 13P-A — Converging wall-chart bracket and Share Image',
-  'Stage 13F-I — Tournament-pick contract.',
+  '## Stage 13F-I — Tournament-pick contract',
 ]) if (!roadmap.includes(marker)) fail(`Roadmap is missing: ${marker}`)
 
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
@@ -102,7 +102,7 @@ if (!packageJson.scripts?.check?.includes('audit:player-comparison')) fail('npm 
 if (!packageJson.scripts?.['lint:foundation']?.includes('src/player')) fail('the player feature root is not included in lint:foundation')
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 16) fail(`Stage 13F-B must preserve the approved 16-migration baseline, found ${migrations.length}`)
+if (migrations.length < 16) fail(`Stage 13F-B must retain Migration 016 and later approved migrations, found ${migrations.length}`)
 if (!migrations.some(name => name.includes('016_euro28_staging_time_phase_controls'))) fail('Approved staging Time & Phase Migration 016 is missing')
 
 if (errors.length) {
@@ -115,4 +115,4 @@ console.log('Euro Stage 13F-B player identity and H2H audit passed.')
 console.log('Identity: one shared accessible player primitive in league and overall tables')
 console.log('Comparison: one aligned Original/KO surface with competition-scoped ranks and points')
 console.log('Privacy: existing server-authorised release rules remain unchanged')
-console.log(`Database: ${migrations.length} active migrations; approved staging Time & Phase Migration 016 present`)
+console.log(`Database: ${migrations.length} active migrations; staging Time & Phase Migration 016 retained`)

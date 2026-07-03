@@ -57,8 +57,8 @@ Desktop primary navigation remains:
 - full Original Predictor overall table;
 - full KO Predictor overall table;
 - competition selector;
-- matching personal points breakdown;
-- player comparison entry points.
+- matching personal player-insight story with canonical point evidence;
+- player comparison entry points with privacy-authorised points stories.
 
 Original and KO standings remain separate. There is no combined view or total.
 
@@ -71,11 +71,24 @@ Home links directly to the relevant competition through:
 
 These do not become unrelated permanent navigation items:
 
-- player identity and H2H open from player names in league and overall tables;
+- player identity, H2H and authorised points stories open from player names in league and overall tables;
 - Match Centre opens from a fixture, result, points row or comparison row and receives a bookmarkable match route in Stage 13F-C;
 - Bracket Health opens from the Original Bracket and relevant Home status;
 - guest conversion belongs to Account and signup completion;
 - staging Time & Phase belongs only inside the authorised Admin control room.
+
+
+## 5A. Player insight access
+
+Stage 13F-J does not add a standalone profile route or permanent navigation item.
+
+- Home shows concise, competition-specific rank and leader-gap context and links to the matching Leaderboards competition.
+- Leaderboards is the full signed-in player-insight destination.
+- Overall and private-league player identity opens the existing H2H surface, which now includes isolated canonical points stories for both players when authorised.
+- Match evidence deep-links to `#/match-centre?match=<number>&competition=<key>`.
+- Original bracket evidence links back to `#/bracket` for the full bracket context.
+- Protected point detail remains protected even when the public standings row is visible.
+- Tournament-pick point presentation remains absent until Stage 17A.
 
 ## 6. Access-state requirements
 

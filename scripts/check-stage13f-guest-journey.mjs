@@ -80,7 +80,7 @@ if (packageJson.scripts?.['audit:guest-journey'] !== 'node scripts/check-stage13
 if (!packageJson.scripts?.check?.includes('audit:guest-journey')) fail('npm run check does not include audit:guest-journey')
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 16) fail(`Stage 13F-A must preserve the approved 16-migration baseline, found ${migrations.length}`)
+if (migrations.length < 16) fail(`Stage 13F-A must retain Migration 016 and later approved migrations, found ${migrations.length}`)
 if (!migrations.some(name => name.includes('016_euro28_staging_time_phase_controls'))) fail('Approved staging Time & Phase Migration 016 is missing')
 
 if (errors.length) {

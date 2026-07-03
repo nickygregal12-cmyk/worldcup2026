@@ -1,2 +1,5 @@
 export { default as PlayerHeadToHead } from './PlayerHeadToHead.jsx'
 export { buildAlignedPlayerComparison, PLAYER_COMPARISON_CONTEXT } from './playerComparisonModel.js'
+export { default as PlayerInsight } from './PlayerInsight.jsx'
+export { buildPlayerInsight } from './playerInsightModel.js'
+export { loadPlayerInsightPair, readPlayerCompetitionPoints } from './playerInsightService.js'

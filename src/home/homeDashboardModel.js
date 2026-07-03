@@ -17,15 +17,29 @@ function completedKoRows(bundle) {
   )).length
 }
 
-function leaderboardRank(results, competitionKey, userId) {
-  if (!userId) return null
-  const row = results?.leaderboards?.[competitionKey]?.find(entry => entry.userId === userId)
-  return row?.rank ?? null
-}
-
 function pointsValue(results, competitionKey) {
   const key = competitionKey === 'koPredictor' ? 'koPredictor' : 'original'
-  return Number(results?.myPoints?.[key]?.total_points ?? 0)
+  const points = results?.myPoints?.[key]
+  return Number(points?.totalPoints ?? points?.total_points ?? 0)
+}
+
+function leaderboardStory(results, competitionKey, userId) {
+  const rows = results?.leaderboards?.[competitionKey] ?? []
+  const standing = rows.find(entry => entry.userId === userId) ?? null
+  const currentPoints = pointsValue(results, competitionKey)
+  const totals = rows
+    .map(entry => Number(entry.totalPoints ?? entry.total_points))
+    .filter(Number.isFinite)
+  const leaderPoints = totals.length > 0 ? Math.max(...totals) : currentPoints
+  const higherTotals = [...new Set(totals.filter(total => total > currentPoints))].sort((left, right) => left - right)
+  const nextHigherPoints = higherTotals[0] ?? null
+
+  return Object.freeze({
+    rank: standing?.rank ?? null,
+    pointsBehindLeader: Math.max(0, leaderPoints - currentPoints),
+    pointsToNextScore: nextHigherPoints == null ? 0 : nextHigherPoints - currentPoints,
+    isLeader: rows.length > 0 && currentPoints === leaderPoints,
+  })
 }
 
 function nextMatch(reference, live) {
@@ -59,6 +73,8 @@ export function buildHomeDashboard({
         bracket: guestSummary?.bracketComplete ?? 0,
       }
   const availableKoMatches = reference.knockoutMatches.filter(match => match.participantsResolved).length
+  const originalStory = leaderboardStory(results, 'original', userId)
+  const koStory = leaderboardStory(results, 'koPredictor', userId)
   const live = results?.live ?? null
 
   return Object.freeze({
@@ -84,7 +100,10 @@ export function buildHomeDashboard({
       submittedAt: originalBundle?.submittedAt ?? null,
       revision: Number(originalBundle?.revision ?? 0),
       points: signedIn ? pointsValue(results, 'original') : null,
-      rank: signedIn ? leaderboardRank(results, 'original', userId) : null,
+      rank: signedIn ? originalStory.rank : null,
+      pointsBehindLeader: signedIn ? originalStory.pointsBehindLeader : null,
+      pointsToNextScore: signedIn ? originalStory.pointsToNextScore : null,
+      isLeader: signedIn ? originalStory.isLeader : false,
       jokerCount: signedIn
         ? (originalBundle?.predictions ?? []).filter(row => row.prediction_kind === 'group_score' && row.joker_applied).length
         : guestSummary?.groupJokers ?? 0,
@@ -96,7 +115,10 @@ export function buildHomeDashboard({
       complete: signedIn ? completedKoRows(koBundle) : 0,
       total: reference.knockoutMatches.length,
       points: signedIn ? pointsValue(results, 'koPredictor') : null,
-      rank: signedIn ? leaderboardRank(results, 'koPredictor', userId) : null,
+      rank: signedIn ? koStory.rank : null,
+      pointsBehindLeader: signedIn ? koStory.pointsBehindLeader : null,
+      pointsToNextScore: signedIn ? koStory.pointsToNextScore : null,
+      isLeader: signedIn ? koStory.isLeader : false,
       jokerCount: signedIn ? (koBundle?.predictions ?? []).filter(row => row.joker_applied).length : 0,
       jokerCap: EURO_SCORING_CONFIG.joker.KO_PREDICTOR_CAP,
       dataAvailable: signedIn ? !sectionErrors.koPredictor : true,

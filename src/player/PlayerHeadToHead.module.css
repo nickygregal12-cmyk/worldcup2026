@@ -79,6 +79,13 @@
   color: var(--text-strong);
 }
 
+
+.insightGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
 .summary {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -176,6 +183,22 @@
   color: var(--state-warning);
 }
 
+
+.teamMatchup,
+.advancing {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.teamMatchup :global(.team-label),
+.advancing :global(.team-label) {
+  min-width: 0;
+}
+
 .selection {
   min-width: 0;
   display: grid;
@@ -219,6 +242,10 @@
 
   .close {
     width: 100%;
+  }
+
+  .insightGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .summary {

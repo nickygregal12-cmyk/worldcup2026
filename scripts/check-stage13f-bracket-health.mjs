@@ -23,10 +23,10 @@ for (const phrase of ['Your saved bracket never changes', 'Known real fixture', 
 }
 if (!journey.includes('<OriginalBracketHealth')) throw new Error('Original bracket does not render the bracket-health comparison')
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql'))
-if (migrations.length !== 16) throw new Error(`Expected 16 migrations; found ${migrations.length}`)
+if (migrations.length < 16) throw new Error(`Expected Migration 016 and later approved migrations; found ${migrations.length}`)
 if (!migrations.some(file => file.includes('016_euro28_staging_time_phase_controls'))) throw new Error('Approved staging Time & Phase Migration 016 is missing')
 console.log('Euro Stage 13F-D Original Bracket Health audit passed.')
 console.log('Prediction: immutable saved bracket remains the source of the original pick')
 console.log('Comparison: known real fixtures supply live context; unresolved fixtures retain the predicted matchup')
 console.log('Access: every known knockout fixture links to the existing Match Centre')
-console.log('Database: 16 active migrations; approved staging Time & Phase Migration 016 present')
+console.log(`Database: ${migrations.length} active migrations; approved staging Time & Phase Migration 016 present`)

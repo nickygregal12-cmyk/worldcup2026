@@ -7,6 +7,7 @@ import {
   normaliseStanding,
 } from './leagueModel.js'
 import { parseExternal } from '../contracts/externalValidation.js'
+import { loadPlayerInsightPair } from '../player/playerInsightService.js'
 import { leagueRowsSchema, leagueStandingRowsSchema, mutationResultSchema, sharedPredictionBundleSchema } from '../contracts/externalSchemas.js'
 
 function throwForError(label, error) {
@@ -123,8 +124,10 @@ export async function loadLeagueHeadToHead(client, {
   currentUserId,
   otherUserId,
   competitionKey,
+  tournamentId,
+  reference,
 }) {
-  const [currentBundle, otherBundle] = await Promise.all([
+  const [currentBundle, otherBundle, insights] = await Promise.all([
     getLeagueMemberPredictions(client, {
       leagueId,
       memberUserId: currentUserId,
@@ -135,11 +138,19 @@ export async function loadLeagueHeadToHead(client, {
       memberUserId: otherUserId,
       competitionKey,
     }),
+    loadPlayerInsightPair(client, {
+      tournamentId,
+      currentUserId,
+      otherUserId,
+      competitionKey,
+      reference,
+    }),
   ])
 
   return Object.freeze({
     currentBundle,
     otherBundle,
+    insights,
     comparison: compareSharedPredictionBundles(currentBundle, otherBundle, competitionKey),
   })
 }

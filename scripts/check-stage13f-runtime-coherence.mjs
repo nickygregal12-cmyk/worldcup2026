@@ -57,7 +57,7 @@ if (read('netlify.toml').includes('/sw.js')) fail('Netlify still publishes servi
 if (exists('netlify/functions/snapshot-league-predictions.cjs')) fail('rejected per-league snapshot function still deploys')
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).length
-if (migrations !== 16) fail(`expected 16 active migrations, found ${migrations}`)
+if (migrations < 16) fail(`expected at least 16 active migrations, found ${migrations}`)
 
 if (errors.length) {
   console.error('Euro Stage 13F-H runtime coherence audit failed:')

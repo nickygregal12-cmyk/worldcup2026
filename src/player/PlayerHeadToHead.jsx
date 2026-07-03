@@ -1,11 +1,24 @@
 import React, { useMemo } from 'react' // eslint-disable-line no-unused-vars
-import { PlayerIdentity } from '../design-system/index.jsx'
+import { PlayerIdentity, TeamLabel } from '../design-system/index.jsx'
 import { formatOrdinal, LEAGUE_COMPETITION } from '../leagues/leagueModel.js'
 import { buildAlignedPlayerComparison, PLAYER_COMPARISON_CONTEXT } from './playerComparisonModel.js'
+import PlayerInsight from './PlayerInsight.jsx'
 import styles from './PlayerHeadToHead.module.css'
 
 function competitionName(competitionKey) {
   return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
+}
+
+
+function TeamMatchup({ homeTeam, awayTeam, fallback }) {
+  if (!homeTeam && !awayTeam) return <small>{fallback}</small>
+  return (
+    <span className={styles.teamMatchup}>
+      <TeamLabel team={homeTeam} label={homeTeam?.label ?? 'TBC'} unresolved={!homeTeam} compact />
+      <span>v</span>
+      <TeamLabel team={awayTeam} label={awayTeam?.label ?? 'TBC'} unresolved={!awayTeam} compact />
+    </span>
+  )
 }
 
 function Selection({ label, selection, kind }) {
@@ -25,15 +38,15 @@ function Selection({ label, selection, kind }) {
         </>
       ) : kind === 'bracket' ? (
         <>
-          <small>{selection.matchup}</small>
-          <strong>{selection.advancingTeamLabel}</strong>
+          <TeamMatchup homeTeam={selection.homeTeam} awayTeam={selection.awayTeam} fallback={selection.matchup} />
+          <TeamLabel team={selection.advancingTeam} label={selection.advancingTeamLabel} compact />
           <small>Advancing team</small>
         </>
       ) : (
         <>
-          <small>{selection.matchup}</small>
+          <TeamMatchup homeTeam={selection.homeTeam} awayTeam={selection.awayTeam} fallback={selection.matchup} />
           <strong>{selection.score}</strong>
-          {selection.advancingTeamLabel && <small>{selection.advancingTeamLabel} through</small>}
+          {selection.advancingTeamLabel && <span className={styles.advancing}><TeamLabel team={selection.advancingTeam} label={selection.advancingTeamLabel} compact /> through</span>}
           {selection.decisionMethodLabel && <small>{selection.decisionMethodLabel}</small>}
           {selection.jokerApplied && <small className={styles.joker}>Joker applied</small>}
         </>
@@ -91,10 +104,10 @@ export default function PlayerHeadToHead({ state, reference, onClose, context = 
   const contextName = context === PLAYER_COMPARISON_CONTEXT.OVERALL ? 'Overall head to head' : 'League head to head'
   const currentPlayer = state.standings?.current
     ? { ...state.standings.current, displayName: state.standings.current.displayName || 'You' }
-    : { displayName: 'You', rank: null, totalPoints: 0 }
+    : { userId: state.data?.insights?.current?.data?.memberUserId ?? null, displayName: 'You', rank: null, totalPoints: 0 }
   const otherPlayer = state.standings?.other
     ? { ...state.standings.other, displayName: state.otherName }
-    : { displayName: state.otherName, rank: null, totalPoints: 0 }
+    : { userId: state.otherUserId ?? state.data?.insights?.other?.data?.memberUserId ?? null, displayName: state.otherName, rank: null, totalPoints: 0 }
 
   return (
     <article className={styles.panel} aria-label={`${contextName}: You versus ${state.otherName}`}>
@@ -114,6 +127,26 @@ export default function PlayerHeadToHead({ state, reference, onClose, context = 
 
       {state.status === 'loading' && <p className={styles.state}>Loading authorised shared predictions…</p>}
       {state.status === 'error' && <p className={`${styles.state} ${styles.stateError}`.trim()} role="alert">{state.error}</p>}
+      {state.status === 'ready' && state.data?.insights && (
+        <div className={styles.insightGrid} aria-label="Player points stories">
+          <PlayerInsight
+            title="Your points story"
+            section={state.data.insights.current}
+            leaderboardRows={state.standingsRows ?? []}
+            player={{ ...currentPlayer, isCurrentUser: true }}
+            competitionKey={state.competitionKey}
+            compact
+          />
+          <PlayerInsight
+            title={`${state.otherName}'s points story`}
+            section={state.data.insights.other}
+            leaderboardRows={state.standingsRows ?? []}
+            player={otherPlayer}
+            competitionKey={state.competitionKey}
+            compact
+          />
+        </div>
+      )}
       {comparison && <Summary comparison={comparison} />}
 
       {comparison && comparison.rows.length === 0 && <p className={styles.state}>No comparison positions are available.</p>}
@@ -127,7 +160,7 @@ export default function PlayerHeadToHead({ state, reference, onClose, context = 
                   <article key={row.key} className={styles.row}>
                     <div className={styles.rowContext}>
                       <span>{row.stageLabel} · Match {row.matchNumber}</span>
-                      <strong>{row.fixtureLabel}</strong>
+                      <TeamMatchup homeTeam={row.homeTeam} awayTeam={row.awayTeam} fallback={row.fixtureLabel} />
                       <span className={`${styles.matchState} ${row.comparison.comparable ? row.comparison.same ? styles.same : styles.different : ''}`.trim()}>
                         {row.comparison.comparable ? row.comparison.same ? 'Same selection' : 'Different selection' : 'Comparison protected'}
                       </span>

@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.13 — Stage 13F-I tournament-pick contract from checkpoint `74c8dd3`
+### Version 1.15 — Stage 13F-J close-out and expanded Stage 16A acceptance plan
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -36,7 +36,15 @@
 | Bracket Health | ✅ FUNCTIONAL | Immutable Original bracket compared with canonical known fixtures, round health, route conflicts, secured/remaining points, unresolved-original fallback and Match Centre links accepted in Stage 13F-D | — |
 | Tournament-pick contract | ✅ FUNCTIONAL | Approved Original-only set: total tournament goals, top scorer and highest-scoring team; 20 points each; nearest-total ties and official joint winners receive full points; one global lock; no joker; no KO points; player selector waits for Stage 17A | — |
 | Tournament-pick persistence and player-facing UI | 🕓 SCHEDULED | Canonical storage, save/review, Home live-race, points breakdown and H2H consumption must implement the approved contract without a standalone Awards route | 17A |
-| Player insight and points storytelling | 🕓 SCHEDULED | Canonical points-source breakdown, performance statistics and expandable comparisons; Original and KO totals remain separate and Stage 13F-B identity/H2H primitives are reused | 13F-J |
+| Player insight and points storytelling | ✅ FUNCTIONAL | Shared insight model and presentation use canonical awarded rows for rank gaps, source breakdown, matchday/round evidence, best period/call, streaks and corrections; authorised other-player reads reuse Original/KO privacy through Migration 017; H2H survives isolated insight failure; Original and KO totals never combine | — |
+| Provisional team seeding and zero-code-change rehearsal | 🕓 SCHEDULED | Guarded 24-team staging seed, replace/confirm mode and Stage 17 zero-code-change rehearsal | 16A |
+| Synthetic identities and deterministic persona catalogue | 🕓 SCHEDULED | Nineteen approved personas, dual identity markers and local-only Admin API credentials | 16A |
+| Synthetic prediction and scenario oracle | 🕓 SCHEDULED | Independent precomputed points at every Time & Phase preset, including correction replacement | 16A |
+| Synthetic league population | 🕓 SCHEDULED | Large and tiny leagues, multi-league member and no-league member across both standings | 16A |
+| Marker-safe teardown and reseed | 🕓 SCHEDULED | Delete only dual-marker synthetic data; prove zero residue and repeatable reseed | 16A |
+| Real multi-user RLS/RPC/persistence acceptance | 🟠 PARTIAL | Existing contracts implemented; Stage 16A seeded cast must exercise deferred multi-user evidence | 16A |
+| Time & Phase lifecycle acceptance across browser and database contracts | 🟠 PARTIAL | Frontend presets exist; staging-effective database-time precondition is required without applying the irreversible real lock | 16A |
+| Result correction and replacement-scoring multi-user acceptance | 🟠 PARTIAL | Canonical correction path exists; Stage 16A must prove persona totals before and after replacement recalculation | 16A |
 | Converging wall-chart bracket layout (≥900px) + share-card image rendering | 🕓 SCHEDULED | Presentation-only second layout of the existing predicted and live bracket destinations. At ≥900px, Round of 16 ties sit on the outer left and right, with quarter-finals and semi-finals converging towards the centred final. Phones retain the current vertical bracket. Both layouts use the same canonical resolver, slot references, shared `<TeamLabel>` primitive and dashed unresolved-slot chips. Predicted and live contexts remain separately bannered and never blend. The share asset is this wall-chart layout rendered as a shareable/downloadable image. No new logic, data model, migration or invariant change. | 13P-A |
 
 ## Section B — Guest mode
@@ -99,9 +107,13 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Health endpoint and heartbeat | ✅ FUNCTIONAL | Stage 14 deployed verification accepted | — |
 | Sentry reporting | 🟠 PARTIAL | Integration exists without credentials; activation gate at Stage 16 | 16 |
 | Dependency updates | 🟠 PARTIAL | Monthly manual review until default-branch decision after WC26 | OB-1 |
-| Hosted simulation project | 🔒 DECISION PENDING | Free tier already occupied; initial Stage 16 is local-only | 16 |
+| Hosted Euro staging simulation | 🕓 SCHEDULED | Existing guarded Euro staging project is approved for Stage 16A; WC26 production remains blocked | 16A |
 
 ## Change log
+
+- **v1.15:** Expanded the scheduled Stage 16A opening batch to include 24 provisional teams, nineteen deterministic synthetic personas, independent phase/correction points assertions, large/tiny/multiple/no-league membership, marker-safe teardown and hosted Euro staging simulation. Added partial acceptance rows for real multi-user persistence, database-aware Time & Phase behaviour and correction recalculation. No Stage 13F-K, Stage 13P-A or Stage 17A row moves.
+
+- **v1.14:** Stage 13F-J from `63d7acb` adds the read-only Migration 017 player-insight contract, canonical Original/KO points storytelling, Home rank-gap context, privacy-safe H2H insight and provisional `TeamLabel` treatment on the modified player surfaces. The player-insight row moves to functional after owner acceptance. A new Stage 16A provisional-team seeding rehearsal row is added as scheduled; no later-stage row moves.
 
 - **v1.13:** Stage 13F-I approves the versioned Original Predictor tournament-pick contract from `74c8dd3`: total goals, top scorer and highest-scoring team are worth 20 points each; nearest-total ties and official joint winners receive full points; one global lock, no joker, no KO points, no migration, and the player selector waits for Stage 17A. Stage 13F-K is recorded as the complete Admin operations backbone before polish.
 

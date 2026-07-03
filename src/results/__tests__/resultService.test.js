@@ -36,7 +36,20 @@ describe('Stage 13D result service', () => {
         if (name === 'get_competition_leaderboard') {
           return { data: [{ rank: 1, user_id: 'user-1', display_name: args.p_competition_key, total_points: 10 }], error: null }
         }
-        return { data: { competition_key: args.p_competition_key, total_points: 10 }, error: null }
+        return {
+          data: {
+            visible: true,
+            competition_key: args.p_competition_key,
+            member_user_id: args.p_member_user_id,
+            display_name: 'Nicky',
+            state: 'scored',
+            total_points: 10,
+            match_breakdown: [],
+            bracket_breakdown: [],
+            reason: null,
+          },
+          error: null,
+        }
       }),
     }
     const data = await loadResultsAndLeaderboards(client, reference())
@@ -81,35 +94,57 @@ describe('Stage 13D result service', () => {
     expect(data.sections.originalLeaderboard.status).toBe('ready')
   })
 
-  it('loads overall head-to-head bundles through the public post-lock RPC', async () => {
+  it('loads overall head-to-head bundles and isolated player insight through public read RPCs', async () => {
     const client = {
-      rpc: vi.fn(async (_name, args) => ({
-        data: {
-          visible: true,
-          match_predictions: [{
-            match_number: 1,
-            home_score_90: args.p_member_user_id === 'me' ? 2 : 1,
-            away_score_90: 0,
-          }],
-          bracket_predictions: [],
-        },
-        error: null,
-      })),
+      rpc: vi.fn(async (name, args) => {
+        if (name === 'get_player_competition_points') {
+          return {
+            data: {
+              visible: true,
+              competition_key: args.p_competition_key,
+              member_user_id: args.p_member_user_id,
+              display_name: args.p_member_user_id,
+              state: 'unscored',
+              total_points: 0,
+              match_breakdown: [],
+              bracket_breakdown: [],
+              reason: null,
+            },
+            error: null,
+          }
+        }
+        return {
+          data: {
+            visible: true,
+            match_predictions: [{
+              match_number: 1,
+              home_score_90: args.p_member_user_id === 'me' ? 2 : 1,
+              away_score_90: 0,
+            }],
+            bracket_predictions: [],
+          },
+          error: null,
+        }
+      }),
     }
     const data = await loadOverallHeadToHead(client, {
       tournamentId: 't1',
       currentUserId: 'me',
       otherUserId: 'them',
       competitionKey: 'original',
+      reference: reference(),
     })
     expect(data.comparison.visible).toBe(true)
     expect(data.comparison.comparedMatches).toBe(1)
     expect(data.comparison.exactScoreMatches).toBe(0)
+    expect(data.insights.current.status).toBe('ready')
+    expect(data.insights.other.status).toBe('ready')
     expect(client.rpc).toHaveBeenCalledWith('get_member_predictions_after_lock', {
       p_tournament_id: 't1',
       p_member_user_id: 'me',
       p_competition_key: 'original',
     })
+    expect(client.rpc).toHaveBeenCalledTimes(4)
   })
 
   it('rejects an unavailable client before any data read', async () => {

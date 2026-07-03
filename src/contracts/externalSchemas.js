@@ -81,6 +81,18 @@ export const pointsBreakdownSchema = z.object({
   total_points: numeric,
 }).passthrough().nullable()
 
+export const playerCompetitionPointsSchema = z.object({
+  visible: z.boolean(),
+  competition_key: z.enum(['original', 'ko_predictor']),
+  member_user_id: id,
+  display_name: z.string().min(1),
+  state: z.enum(['protected', 'unscored', 'scored']),
+  total_points: numeric,
+  match_breakdown: z.array(z.record(z.string(), z.unknown())),
+  bracket_breakdown: z.array(z.record(z.string(), z.unknown())),
+  reason: nullableString,
+}).passthrough()
+
 export const leagueRowsSchema = z.array(z.object({
   league_id: id,
   league_name: z.string().min(1),

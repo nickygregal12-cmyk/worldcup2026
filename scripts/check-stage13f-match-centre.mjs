@@ -29,10 +29,10 @@ const checks = [
 ]
 for (const [ok, label] of checks) if (!ok) throw new Error(`Stage 13F-C audit failed: ${label}`)
 const migrationFiles = fs.readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
-if (migrationFiles.length !== 16) throw new Error(`Expected 16 migrations, found ${migrationFiles.length}`)
+if (migrationFiles.length < 16) throw new Error(`Expected Migration 016 and later approved migrations, found ${migrationFiles.length}`)
 if (!migrationFiles.some(name => name.includes('016_euro28_staging_time_phase_controls'))) throw new Error('Approved staging Time & Phase Migration 016 is missing')
 console.log('Euro Stage 13F-C Match Centre audit passed.')
 console.log('Fixture: previous/next navigation, canonical state and direct Home/Results entry')
 console.log('Impact: Overall/private league scopes with released predictions and maximum points')
 console.log('Privacy: existing server-authorised Original and KO release rules remain unchanged')
-console.log('Database: 16 active migrations; approved staging Time & Phase Migration 016 present')
+console.log(`Database: ${migrationFiles.length} active migrations; approved staging Time & Phase Migration 016 present`)

@@ -15,9 +15,9 @@ const assertions = [
 ]
 for (const [passed, message] of assertions) if (!passed) throw new Error(message)
 const migrations = fs.readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
-if (migrations.length !== 16 || !migrations.some(name => name.includes('016_euro28_staging_time_phase_controls'))) throw new Error('Migration baseline changed')
+if (migrations.length < 16 || !migrations.some(name => name.includes('016_euro28_staging_time_phase_controls'))) throw new Error('Migration 016 baseline is missing')
 console.log('Euro Stage 13F-E admin invisibility audit passed.')
 console.log('Navigation: Admin appears only after server-authorised access verification')
 console.log('Route: signed-out, denied and verification-error states fail closed without exposing the control-room shell')
 console.log('Authorised admins: direct control-room access and all existing operations remain available')
-console.log('Database: 16 active migrations; approved staging Time & Phase Migration 016 present')
+console.log(`Database: ${migrations.length} active migrations; approved staging Time & Phase Migration 016 present`)

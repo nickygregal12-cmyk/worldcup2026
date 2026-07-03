@@ -326,8 +326,11 @@ export function normalisePointsBreakdown(raw, competitionKey, reference) {
 
     return {
       matchId: row.match_id,
-      matchNumber: match?.matchNumber ?? null,
-      stageLabel: match?.groupCode ? `Group ${match.groupCode}` : stageLabelFromNumber(match?.matchNumber ?? 51),
+      matchNumber: Number(row.match_number ?? match?.matchNumber ?? 0) || null,
+      matchday: Number(row.matchday ?? 0) || null,
+      scheduledDate: row.scheduled_date ?? match?.scheduledDate ?? null,
+      stageCode: row.stage_code ?? null,
+      stageLabel: match?.groupCode ? `Group ${match.groupCode}` : stageLabelFromNumber(Number(row.match_number ?? match?.matchNumber ?? 51)),
       exactScorePoints,
       correctOutcomePoints,
       advancingTeamPoints,
@@ -345,16 +348,31 @@ export function normalisePointsBreakdown(raw, competitionKey, reference) {
     milestone: row.milestone,
     tournamentTeamId: row.tournament_team_id,
     teamLabel: teamLabel(reference, row.tournament_team_id),
+    team: reference?.teamsById?.[row.tournament_team_id] ?? null,
     points: numberOrZero(row.points),
   }))
 
+  const visible = source.visible !== false
+  const state = source.state === 'protected'
+    ? 'protected'
+    : source.state === 'unscored'
+      ? 'unscored'
+      : raw
+        ? 'scored'
+        : 'unscored'
+
   return Object.freeze({
     competitionKey,
+    memberUserId: source.member_user_id ?? null,
+    displayName: source.display_name ?? null,
+    visible,
+    visibilityScope: source.visibility_scope ?? null,
+    reason: source.reason ?? null,
     matchPoints: numberOrZero(source.match_points),
     bracketPoints: numberOrZero(source.bracket_points),
     totalPoints: numberOrZero(source.total_points),
     scoredMatchCount: numberOrZero(source.scored_match_count),
-    state: raw ? 'scored' : 'unscored',
+    state,
     correctedMatchCount: matchRows.filter(row => row.corrected).length,
     matchBreakdown: freezeRows(matchRows),
     bracketBreakdown: freezeRows(bracketRows),

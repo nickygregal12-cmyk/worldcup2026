@@ -4,9 +4,9 @@ import { LEADERBOARD_COMPETITION } from '../app/appRoutes.js'
 import { loadOverallHeadToHead, loadResultsAndLeaderboards } from './resultService.js'
 import { buildCanonicalResultFeed, buildLiveBracketRounds, RESULT_COMPETITION } from './resultModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { GroupTable, Leaderboard, LiveBracket, PointsBreakdown, ResultsFeed, SectionError } from './ResultsPresentation.jsx'
+import { GroupTable, Leaderboard, LiveBracket, ResultsFeed, SectionError } from './ResultsPresentation.jsx'
 import { buildStandingComparison } from '../leagues/leagueModel.js'
-import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
+import { PlayerHeadToHead, PlayerInsight, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
 import { RESULTS_PAGE_VIEW } from './resultsAccess.js'
 import styles from './ResultsAccess.module.css'
 
@@ -73,6 +73,7 @@ export default function ResultsAndLeaderboards({ client, reference, view = RESUL
       otherUserId: row.userId,
       competitionKey: requestedCompetitionKey,
       standings: buildStandingComparison(rowsWithCurrentUser, row.userId),
+      standingsRows: rowsWithCurrentUser,
       data: null,
       error: null,
     })
@@ -82,6 +83,7 @@ export default function ResultsAndLeaderboards({ client, reference, view = RESUL
         currentUserId: state.data.currentUserId,
         otherUserId: row.userId,
         competitionKey: requestedCompetitionKey,
+        reference,
       })
       if (!comparisonRequests.current.isCurrent(requestToken)) return
       setComparison(previous => ({ ...previous, status: 'ready', data, error: null }))
@@ -113,6 +115,13 @@ export default function ResultsAndLeaderboards({ client, reference, view = RESUL
   const selectedLeaderboard = selectedIsOriginal ? state.data?.sections.originalLeaderboard : state.data?.sections.koLeaderboard
   const selectedPoints = selectedIsOriginal ? state.data?.sections.originalPoints : state.data?.sections.koPoints
   const resultCompetitionKey = selectedIsOriginal ? RESULT_COMPETITION.ORIGINAL : RESULT_COMPETITION.KO_PREDICTOR
+  const selectedLeaderboardRows = selectedLeaderboard?.data ?? []
+  const selectedCurrentPlayer = selectedLeaderboardRows.find(row => row.userId === state.data?.currentUserId) ?? {
+    userId: state.data?.currentUserId ?? null,
+    displayName: selectedPoints?.data?.displayName ?? 'You',
+    rank: null,
+    totalPoints: selectedPoints?.data?.totalPoints ?? 0,
+  }
   const title = isLeaderboards ? 'Full competition leaderboards' : 'Results, live tables and live bracket'
 
   return (
@@ -189,9 +198,11 @@ export default function ResultsAndLeaderboards({ client, reference, view = RESUL
               currentUserId={state.data.currentUserId}
               onCompare={row => compareOverall(row, resultCompetitionKey)}
             />
-            <PointsBreakdown
-              title={selectedIsOriginal ? 'Original Predictor breakdown' : 'KO Predictor breakdown'}
+            <PlayerInsight
+              title="Your points story"
               section={selectedPoints}
+              leaderboardRows={selectedLeaderboardRows}
+              player={{ ...selectedCurrentPlayer, isCurrentUser: true }}
               competitionKey={resultCompetitionKey}
             />
           </div>

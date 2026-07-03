@@ -19,6 +19,12 @@ function formatRank(rank) {
   return rank ? `#${rank}` : '—'
 }
 
+function pointsStoryNote(competition, fallback) {
+  if (!competition.rank) return fallback
+  if (competition.isLeader) return `${formatRank(competition.rank)} overall · leading`
+  return `${formatRank(competition.rank)} overall · ${competition.pointsBehindLeader} pts behind leader`
+}
+
 function Stat({ label, value, note, href = null }) {
   return (
     <Card
@@ -170,8 +176,8 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
       )}
 
       <section className="home-stat-grid" aria-label="Your predictor summary">
-        <Stat label="Original Predictor" value={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.original.points : '—'} note={dashboard.signedIn ? `${formatRank(dashboard.original.rank)} overall` : 'Guest drafts are unscored'} href={dashboard.signedIn ? '#/leaderboards?competition=original' : null} />
-        <Stat label="KO Predictor" value={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.koPredictor.points : '—'} note={koOpen ? `${formatRank(dashboard.koPredictor.rank)} overall` : 'Opens as real knockout fixtures are known'} href={dashboard.signedIn ? '#/leaderboards?competition=koPredictor' : null} />
+        <Stat label="Original Predictor" value={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.original.points : '—'} note={dashboard.signedIn ? pointsStoryNote(dashboard.original, 'Not ranked yet') : 'Guest drafts are unscored'} href={dashboard.signedIn ? '#/leaderboards?competition=original' : null} />
+        <Stat label="KO Predictor" value={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.koPredictor.points : '—'} note={koOpen ? pointsStoryNote(dashboard.koPredictor, 'Not ranked yet') : 'Opens as real knockout fixtures are known'} href={dashboard.signedIn ? '#/leaderboards?competition=koPredictor' : null} />
         <Stat label="Private leagues" value={dashboard.signedIn && !dashboard.sectionErrors.leagues ? dashboard.leagues.count : '—'} note={dashboard.signedIn ? `${dashboard.leagues.members} combined members` : 'Sign in to create or join'} />
       </section>
 

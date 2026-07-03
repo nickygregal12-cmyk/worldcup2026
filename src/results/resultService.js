@@ -5,11 +5,11 @@ import {
   RESULT_COMPETITION,
 } from './resultModel.js'
 import { compareSharedPredictionBundles } from '../leagues/leagueModel.js'
+import { loadPlayerInsightPair, readPlayerCompetitionPoints } from '../player/playerInsightService.js'
 import { parseExternal } from '../contracts/externalValidation.js'
 import {
   canonicalResultRowsSchema,
   leaderboardRowsSchema,
-  pointsBreakdownSchema,
   sharedPredictionBundleSchema,
 } from '../contracts/externalSchemas.js'
 
@@ -78,16 +78,6 @@ async function readLeaderboard(client, tournamentId, competitionKey) {
   return normaliseLeaderboard(rows, competitionKey)
 }
 
-async function readMyPoints(client, tournamentId, competitionKey, reference) {
-  const response = await client.rpc('get_my_competition_points', {
-    p_tournament_id: tournamentId,
-    p_competition_key: competitionKey,
-  })
-  throwForError(`${competitionKey} points read failed`, response.error)
-  const breakdown = parseExternal(pointsBreakdownSchema, response.data ?? null, `${competitionKey} points response`)
-  return normalisePointsBreakdown(breakdown, competitionKey, reference)
-}
-
 async function readSharedPredictionBundle(client, tournamentId, memberUserId, competitionKey) {
   const response = await client.rpc('get_member_predictions_after_lock', {
     p_tournament_id: tournamentId,
@@ -103,15 +93,24 @@ export async function loadOverallHeadToHead(client, {
   currentUserId,
   otherUserId,
   competitionKey,
+  reference,
 }) {
-  const [currentBundle, otherBundle] = await Promise.all([
+  const [currentBundle, otherBundle, insights] = await Promise.all([
     readSharedPredictionBundle(client, tournamentId, currentUserId, competitionKey),
     readSharedPredictionBundle(client, tournamentId, otherUserId, competitionKey),
+    loadPlayerInsightPair(client, {
+      tournamentId,
+      currentUserId,
+      otherUserId,
+      competitionKey,
+      reference,
+    }),
   ])
 
   return Object.freeze({
     currentBundle,
     otherBundle,
+    insights,
     comparison: compareSharedPredictionBundles(currentBundle, otherBundle, competitionKey),
   })
 }
@@ -143,8 +142,18 @@ export async function loadResultsAndLeaderboards(client, reference) {
     const settled = await Promise.allSettled([
       readLeaderboard(client, reference.tournamentId, RESULT_COMPETITION.ORIGINAL),
       readLeaderboard(client, reference.tournamentId, RESULT_COMPETITION.KO_PREDICTOR),
-      readMyPoints(client, reference.tournamentId, RESULT_COMPETITION.ORIGINAL, reference),
-      readMyPoints(client, reference.tournamentId, RESULT_COMPETITION.KO_PREDICTOR, reference),
+      readPlayerCompetitionPoints(client, {
+        tournamentId: reference.tournamentId,
+        memberUserId: session.user.id,
+        competitionKey: RESULT_COMPETITION.ORIGINAL,
+        reference,
+      }),
+      readPlayerCompetitionPoints(client, {
+        tournamentId: reference.tournamentId,
+        memberUserId: session.user.id,
+        competitionKey: RESULT_COMPETITION.KO_PREDICTOR,
+        reference,
+      }),
     ])
 
     originalLeaderboard = settled[0].status === 'fulfilled'

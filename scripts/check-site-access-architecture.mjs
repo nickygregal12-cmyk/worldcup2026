@@ -103,7 +103,7 @@ for (const marker of [
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 16) fail(`Stage 13F-0 plus approved Stage 13F-G must preserve exactly 16 migrations, found ${migrations.length}`)
+if (migrations.length < 16) fail(`Stage 13F-0 must retain Migration 016 and later approved migrations, found ${migrations.length}`)
 if (!migrations.some(name => name.includes('016_euro28_staging_time_phase_controls'))) fail('Approved staging Time & Phase Migration 016 is missing')
 
 const packageJson = JSON.parse(read('package.json'))

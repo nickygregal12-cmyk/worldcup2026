@@ -25,6 +25,10 @@ function teamLabel(reference, teamId, fallback = 'TBC') {
     ?? fallback
 }
 
+function team(reference, teamId) {
+  return teamId ? reference?.teamsById?.[teamId] ?? null : null
+}
+
 function scoreLabel(row) {
   return `${numberOrZero(row.home_score_90)}–${numberOrZero(row.away_score_90)}`
 }
@@ -175,6 +179,8 @@ function buildMatchJourneyRow({ match, prediction, visibility, message, referenc
     awayTeamId,
     homeLabel: teamLabel(reference, homeTeamId),
     awayLabel: teamLabel(reference, awayTeamId),
+    homeTeam: team(reference, homeTeamId),
+    awayTeam: team(reference, awayTeamId),
     visibility,
     message,
     score: prediction ? scoreLabel(prediction) : null,
@@ -182,6 +188,7 @@ function buildMatchJourneyRow({ match, prediction, visibility, message, referenc
     advancingTeamLabel: prediction?.advancing_tournament_team_id
       ? teamLabel(reference, prediction.advancing_tournament_team_id)
       : null,
+    advancingTeam: team(reference, prediction?.advancing_tournament_team_id),
     decisionMethod: prediction?.decision_method ?? null,
     decisionMethodLabel: decisionMethodLabel(prediction?.decision_method),
     jokerApplied: Boolean(prediction?.joker_applied),
@@ -203,8 +210,11 @@ function buildBracketJourneyRow({ match, prediction, visibility, message, refere
     awayTeamId,
     homeLabel: teamLabel(reference, homeTeamId),
     awayLabel: teamLabel(reference, awayTeamId),
+    homeTeam: team(reference, homeTeamId),
+    awayTeam: team(reference, awayTeamId),
     advancingTeamId,
     advancingTeamLabel: advancingTeamId ? teamLabel(reference, advancingTeamId) : null,
+    advancingTeam: team(reference, advancingTeamId),
     visibility,
     message,
   }

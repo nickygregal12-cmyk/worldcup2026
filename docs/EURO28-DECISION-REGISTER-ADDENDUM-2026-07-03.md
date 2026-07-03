@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Decision Register Addendum — 3 July 2026
-### Reconciled for Stage 13F-I from `74c8dd3`
+### Reconciled for Stage 13F-J close-out and expanded Stage 16A approval
 
 ## Confirmed decisions
 
@@ -16,8 +16,15 @@
 10. Normal users do not need JSON file import/export controls. A portable recovery tool may exist only if separately justified and kept outside the main onboarding journey.
 11. Admin remains server-authorised and must also be invisible in presentation to non-admins.
 12. Full-site information architecture is an explicit product requirement. Every approved capability must have a clear primary entry point, contextual entry points and direct/deep-link behaviour where appropriate.
+13. Player insight reads canonical awarded point rows only. Original and KO stories stay separate. There is no separate group-position category, subjective toughest-call score or historical-rank claim without a canonical contract. Authorised other-player detail reuses the existing Original global-lock and KO fixture-release privacy boundaries through read-only Migration 017.
+14. Stage 16 opens with Stage 16A provisional teams, synthetic users and deterministic scenario seeding against Euro staging only. The batch includes exactly 24 provisional teams, nineteen approved deterministic personas, populated Original/KO journeys, large/tiny/multiple/no-league cases, an independent expected-points oracle and exact marker-safe teardown.
+15. Synthetic accounts require both the reserved `@synthetic.euro28.test` domain and `synthetic_euro28: true` auth metadata. Service-role credentials and shared passwords remain local and uncommitted.
+16. Submitted and unsubmitted users with identical predictions must score identically. Original and KO Predictor points remain separate in every scenario. Joker caps, engineered ties, partial/no-entry states, bracket survival/death and KO advancing/method variants are mandatory.
+17. Seed → validate → teardown → zero residue → reseed is a non-negotiable acceptance path. Real users, administrators, tournament configuration and staging controls must remain untouched.
+18. The real irreversible global lock must never be triggered during shared-staging simulation. A separately packaged staging-effective database-time contract is approved in principle, provided it fails closed outside the provisional Euro staging tournament and changes no scoring or resolver rule.
+19. A separately packaged privacy-safe synthetic badge contract is approved in principle. Authorised reads may expose only `is_synthetic`; another user's email and raw auth metadata must never be exposed.
 
 ## Pending approvals
 
 - Whether a portable advanced guest-backup tool is retained outside the normal journey.
-- Any future database design for Match Centre bulk reads, Time & Phase controls, tournament-pick persistence/operations or managed participants.
+- Any future database design for tournament-pick persistence/operations or managed participants. Match Centre and player-insight read contracts are settled. Stage 16 synthetic-marker and staging-effective-time preconditions require their own exact scope, tests and migration decision before implementation.
