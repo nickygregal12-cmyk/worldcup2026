@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.16 — Stage 13G information architecture and coherent UI plan
+### Version 1.17 — Stage 13F-K Admin operations scope and server contract
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -70,7 +70,14 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Admin UI fit for purpose | ✅ FUNCTIONAL | Authorised operations are grouped into overview, safeguards, team content, match operations and scoring activity with scoped responsive presentation; existing powers and permissions are unchanged | — |
 | Staging Time & Phase controls | ✅ FUNCTIONAL | Owner-only audited shared clock, preset phases, custom time and site-wide warning accepted with approved Migration 016 | — |
 | Profile curation | ✅ FUNCTIONAL | Stage 13E owner editing | — |
-| Complete Admin operations backbone | 🕓 SCHEDULED | One authorised Euro-native home for fixture setup, results/corrections, scoring runs, tournament-pick outcomes, content curation and audit visibility; no inherited WC26 admin dependency | 13F-K |
+| Stage 13F-K operation inventory | ✅ FUNCTIONAL | Existing operations, genuine fixture/reconciliation/readiness gaps, exclusions and four-batch sequence approved in Stage 13F-K0 | — |
+| Migration 018 server contract | ✅ FUNCTIONAL | Approved fixture revision, venue/match reads, owner-only fixture update, owner-only complete reconciliation, readiness output, permissions and two event types; not yet created/applied | — |
+| Fixture schedule operations | 🕓 SCHEDULED | Owner-only date, kick-off, venue and schedule-status editing with optimistic revision and append-only before/after audit | 13F-K1/K2 |
+| Tournament-wide scoring reconciliation | 🕓 SCHEDULED | Owner-only note-gated all-match replacement recalculation through the existing canonical scoring path | 13F-K1/K2 |
+| Tournament-pick Admin readiness home | 🕓 SCHEDULED | One control-room section renders the approved contract and Stage 17A dependency without fake outcome controls | 13F-K2 |
+| Operational readiness summary | 🕓 SCHEDULED | Read-only fixture, participant, result, scoring, content, safeguard, health and tournament-pick readiness | 13F-K1/K2 |
+| Admin audit filters and detail | 🕓 SCHEDULED | Read-only category filters and expandable append-only event payloads, up to the existing server maximum | 13F-K2 |
+| Complete Admin operations backbone | 🕓 SCHEDULED | K1 database, K2 control room and K3 staging evidence must close; tournament-pick executable outcomes remain Stage 17A | 13F-K3 |
 
 ## Section D — Architecture and enforcement
 
@@ -123,6 +130,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Whole-app new-player walk-through | 🕓 SCHEDULED | Owner acceptance after navigating every direct and contextual journey as a casual first-time player | 13G-D |
 
 ## Change log
+
+- **v1.17:** Approves Stage 13F-K0 from `efce59f`: complete Admin operation inventory, owner-only fixture schedule editing, owner-only whole-tournament replacement reconciliation, Migration 018 server contract, operational-readiness/audit presentation and the Stage 17A tournament-pick hand-off. No migration or product code is added; fixture/reconciliation/UI rows remain scheduled.
 
 - **v1.16:** Records the accepted Stage 13G-0 IA map, More strategy and hardwired-data inventory as functional planning contracts. Schedules Stage 13G-A through 13G-D after Stage 13F-K, with Stage 16A seeding interleaved before the final coherence proof. No Stage 13F-K implementation, Stage 16A acceptance or Stage 13P-A row moves.
 

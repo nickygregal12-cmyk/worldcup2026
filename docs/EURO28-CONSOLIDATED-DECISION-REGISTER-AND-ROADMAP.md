@@ -1,17 +1,18 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 3.4 — Stage 13G information architecture and coherent UI plan
+### Version 3.5 — Stage 13F-K complete Admin operations contract
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
 ## 1. Current return point
 
-- Expected Git commit: `f7f2fb5` — **Fix Euro deployed verification**.
+- Expected Git commit: `efce59f` — **Define Euro information architecture plan**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
 - Active migration count: **17**. Migration 017 is applied to Euro staging and is the accepted read-only player-insight contract.
-- Stages 1–12, 13A–13E, 14, 14B and Stage 13F-0 through Stage 13F-J are accepted.
-- The exact current package is Stage 13G-0, a planning-only IA/coherent UI scope contract from `f7f2fb5`, plus one audit-only correction for stale Stage 13D verifier wording.
-- Stage 13F-K remains the next implementation task. Stage 13G-A starts only after Stage 13F-K acceptance.
+- Stages 1–12, 13A–13E, 14, 14B, Stage 13F-0 through Stage 13F-J and Stage 13G-0 are accepted.
+- The exact current package is Stage 13F-K0, a documents-only Admin operation inventory and Migration 018 server contract from `efce59f`.
+- Migration 018 is approved but does not exist or apply until Stage 13F-K1 acceptance.
+- Stage 13F-K1 is the next implementation task. Stage 13G-A starts only after Stage 13F-K3 acceptance.
 - Original and KO Predictor totals remain permanently separate.
 
 ## 2. Existing confirmed product decisions
@@ -380,6 +381,25 @@ Confirmed decisions:
 
 The full IA map, More ordering, hardwired-data evidence and batch contract live in `docs/STAGE-13G-0-INFORMATION-ARCHITECTURE-AND-COHERENT-UI-SCOPE.md`.
 
+## 10C. Stage 13F-K complete Admin operations backbone — CONFIRMED
+
+Stage 13F-K completes the remaining normal launch/live operations through the existing Euro control room. It extends the secure Admin foundation; it does not duplicate already accepted result, safeguard, Time & Phase or content-correction behaviour.
+
+Confirmed decisions:
+
+1. Fixture date, kick-off, venue and schedule status become owner-only Admin operations with optimistic fixture revision and append-only before/after audit evidence.
+2. Participant identities, group membership, match numbering, fixture code, resolver slots and knockout allocation remain outside browser editing.
+3. Complete tournament points reconciliation is owner-only, note-gated, feature-controlled and replacement-based through the existing canonical scoring function with a null match scope.
+4. Results admins retain result entry/correction, match status and one-match recalculation but cannot edit fixture scheduling or reconcile the entire tournament.
+5. Migration 018 adds `fixture_revision`, protected tournament-venue reads, expanded match reads, the two owner RPCs, readiness output and exactly two operation-event values.
+6. Migration 018 adds no tournament-pick storage, official players, participant assignment, scoring values, manual point edits, resolver change, external provider or new Admin role.
+7. Tournament Picks receives one Admin readiness home in Stage 13F-K2. Stage 17A retains persistence, official player references, executable outcome entry, scoring and player-facing use.
+8. Operational readiness is a read model, not a mutable approval table. It summarises fixtures, participants, results, scoring runs, Team Profiles, safeguards, health and the Stage 17A tournament-pick dependency.
+9. Existing append-only Admin events remain authoritative. Stage 13F-K2 adds category filters and expandable detail without event mutation or deletion.
+10. Stage 13F-K is delivered as K0 documents, K1 database, K2 frontend and K3 staging acceptance. Stage 13G-A may not begin before K3 closes.
+
+The exact contract lives in `docs/STAGE-13F-K0-ADMIN-OPERATIONS-SCOPE-AND-SERVER-CONTRACT.md`.
+
 ## 11. Updated build roadmap
 
 ### Completed
@@ -410,7 +430,7 @@ The full IA map, More ordering, hardwired-data evidence and batch contract live 
 - **13C — complete:** permanent winner-only predicted bracket; separate real-fixture KO match centre with 90-minute score, advancing team, method, five KO jokers, separate points/rank and hidden unresolved fixtures. No Migration 015.
 - **13D:** Leagues, results, shared predictions and responsive polish.
 - **13E:** Team Profile Sheet implemented through `<TeamLabel>` with the three-source data boundary and post-lock aggregate gate.
-- **13F:** Functional-completion sequence is 13F-0, 13F-A through 13F-K. Stage 13F-I owns the tournament-pick contract; Stage 13F-J owns player insight and points storytelling; Stage 13F-K owns the complete Admin operations backbone.
+- **13F:** Functional-completion sequence is 13F-0, 13F-A through 13F-K. Stage 13F-I owns the tournament-pick contract; Stage 13F-J owns player insight and points storytelling; Stage 13F-K0/K1/K2/K3 complete the Admin operations backbone before Stage 13G-A.
 - **13G:** Holistic information architecture and coherent UI pass: 13G-0 scope, 13G-A destinations, 13G-B tournament comprehension/chronology, 13G-C people/profiles/sharing and 13G-D seeded coherence.
 - **13P-A:** First specialised presentation batch after Stage 13G: converging predicted/live bracket layouts at `≥900px`, with the completed converging bracket rendered as the cross-device Share Card image.
 
@@ -436,9 +456,9 @@ The full IA map, More ordering, hardwired-data evidence and batch contract live 
 
 ## 13. Exact next task
 
-Stage 13G-0 is the current planning package built from verified checkpoint `f7f2fb5`; it also repairs one stale audit assertion introduced by the accepted deployed-verifier wording. It records the approved IA map, More strategy, hardwired-data inventory, build batches and Stage 16 interleaving.
+Stage 13F-K0 is the current documents-only package built from verified checkpoint `efce59f`. It records the complete Admin operation inventory, Migration 018 contract, permissions, acceptance matrix and Stage 17A tournament-pick hand-off.
 
-After its verified clean push, build **Stage 13F-K — Complete Admin Operations Backbone**. Then build Stage 13G-A through 13G-C, interleave Stage 16A seeding, and close Stage 13G-D/Stage 16A with seeded evidence. Stage 13P-A remains later.
+After its verified clean push, build **Stage 13F-K1 — Database operations contract**. Stage 13F-K2 and K3 follow before Stage 13G-A. Stage 16A execution and Stage 13P-A remain later.
 
-**Starting commit:** `f7f2fb5`
-**Migration count before and after Stage 13G-0:** `17`
+**Starting commit:** `efce59f`
+**Migration count before and after Stage 13F-K0:** `17`

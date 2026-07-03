@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.15 — Stage 13G-0 information architecture and coherent UI scope
+### Version 4.16 — Stage 13F-K0 Admin operations scope and server contract
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -17,7 +17,7 @@
 - Do not claim acceptance without Nicky's Terminal evidence.
 - Original and KO Predictor points never combine.
 - Predicted and live brackets never blend.
-- Migration 017 is the approved read-only player-insight contract. No later migration may be added without a separately approved server/data defect or feature design.
+- Migration 017 is the active read-only player-insight contract. Migration 018 is approved in Stage 13F-K0 but is not created or applied until the separately accepted Stage 13F-K1 database package.
 - Every batch updates the Functional Completion Ledger in the same commit.
 
 ## 2. Completion rule
@@ -260,21 +260,58 @@ The Stage 13F-J audit, frontend tests, Migration 017 database test, full reposit
 
 ## Stage 13F-K — Complete Admin Operations Backbone
 
-- inventory every authorised tournament operation required before launch;
-- provide one server-authorised home for fixture setup, official results, corrections, scoring runs, tournament-pick outcomes, content curation and operational audit visibility;
-- remove reliance on hidden inherited WC26 admin routes or direct table editing for normal operations;
-- preserve fail-closed access, audit logging and correction-safe recalculation;
-- approve any new server or database contract separately before implementation.
+Stage 13F-K closes the remaining Euro-native launch/live operations before Stage 13G begins. Existing result entry, corrections, match status, one-match recalculation, global lock, feature controls, grace, Time & Phase, Team Profile curation and audit history remain authoritative.
+
+### Stage 13F-K0 — Scope and server contract — CURRENT PLANNING PACKAGE FROM `efce59f`
+
+- approve fixture date/time/venue/schedule-status editing as owner-only;
+- approve owner-only replacement reconciliation across the complete tournament;
+- approve Migration 018 without creating or applying it in this documents-only batch;
+- keep participants, resolver slots, scoring values and manual points outside scope;
+- provide one Tournament Picks Admin home now while executable outcomes remain Stage 17A;
+- approve the operational-readiness and audit-presentation contract;
+- keep active migrations at 17.
+
+### Stage 13F-K1 — Database operations contract
+
+- add `202607030018_euro28_complete_admin_operations.sql`;
+- add optimistic `fixture_revision` and protected venue/fixture read contracts;
+- add owner-only fixture update and whole-tournament reconciliation RPCs;
+- extend readiness output and append-only event types;
+- prove permissions, conflicts, validation, replacement scoring and Original/KO separation through database tests;
+- move to 18 active migrations only after owner-linked staging acceptance.
+
+### Stage 13F-K2 — Euro control-room implementation
+
+- fixture operations UI;
+- whole-tournament scoring recovery UI;
+- Tournament Picks readiness section;
+- consolidated readiness presentation;
+- filtered expandable audit presentation;
+- split Admin components within standing architecture limits;
+- responsive light/dark tests and baselines.
+
+### Stage 13F-K3 — Staging acceptance and close-out
+
+- owner/results-admin permission walkthroughs;
+- deployed Admin invisibility and operation verification;
+- no real global lock and no invented shared-staging kick-off time;
+- full repository and linked-database gates;
+- ledger/roadmap close-out before Stage 13G-A.
+
+### Binding server boundary
+
+Migration 018 may add only fixture revision/editing, tournament-venue reads, complete scoring reconciliation, readiness output and two append-only event values. It adds no tournament-pick persistence, official player data, participant assignment, resolver change, scoring-value change, manual point edit, external result API or new Admin role.
 
 ### Completion gate
 
-The owner can perform every approved launch and live-tournament operation through the Euro control room without exposing Admin to ordinary users or relying on inherited WC26 tooling.
+The owner can perform every approved launch and live-tournament operation through the Euro control room without exposing Admin to ordinary users, bypassing audit history, relying on direct table editing or invoking inherited WC26 tooling. Tournament-pick outcome entry remains explicitly scheduled for Stage 17A.
 
 ## Stage 13G — Information architecture and coherent UI pass
 
 Stage 13G is one holistic post-functional-completion pass. It is governed by the Project Constitution, Design Charter, Decision Register, Site Access Map and Functional Completion Ledger. Batches are organised by information-architecture area rather than page.
 
-### Stage 13G-0 — IA and scope contract — CURRENT PLANNING PACKAGE FROM `f7f2fb5`
+### Stage 13G-0 — IA and scope contract — ACCEPTED AT `efce59f`
 
 - approve the full destination map and ownership of direct/contextual journeys;
 - approve the lifecycle-specific More strategy and pre-readiness KO teaser;
@@ -463,7 +500,7 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-From verified checkpoint `f7f2fb5`, install and accept the Stage 13G-0 planning scope package. The next implementation task remains Stage 13F-K — Complete Admin Operations Backbone. Stage 13G-A, Stage 16A seeding and Stage 13P-A must not begin early.
+From verified checkpoint `efce59f`, install and accept the documents-only Stage 13F-K0 scope and server-contract package. After its clean acceptance, build Stage 13F-K1 — Database operations contract. Stage 13G-A, Stage 16A execution and Stage 13P-A must not begin early.
 
 ### Stage 13F-H acceptance
 

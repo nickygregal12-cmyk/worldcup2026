@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Decision Register Addendum — 3 July 2026
-### Reconciled for Stage 13G-0 information architecture approval
+### Reconciled for Stage 13F-K0 Admin operations approval
 
 ## Confirmed decisions
 
@@ -30,8 +30,14 @@
 24. Any player name opens one shared authorised player overview. Any team name uses `TeamLabel`. Existing privacy rules apply independently to each overview section.
 25. League invites use one-tap copy and rich previews. Static Euro metadata is mandatory; dynamic per-league title/description with a static Euro image is approved. Member names, standings, owner email and predictions are never preview metadata.
 26. Stage 13G follows Stage 13F-K. Stage 16A seeding interleaves after Stage 13G-C, and Stage 13G-D uses that cast for whole-app coherence and Scotland profile proof. Stage 13P-A begins only after Stage 13G acceptance.
+27. Fixture schedule editing is owner-only and covers scheduled date, kick-off, venue and schedule status. It never edits participant identity, group membership, match numbering, fixture code, resolver slots or knockout allocation.
+28. Fixture writes require a persisted optimistic `fixture_revision`, valid venue membership, pending/unscored result state, permitted match status, date/time consistency and a non-empty audit note.
+29. Whole-tournament scoring reconciliation is owner-only, note-gated, feature-controlled and replacement-based. It calls the existing canonical recalculation path with all matches, preserves run history and never merges Original/KO totals.
+30. Migration 018 is approved for Stage 13F-K1 only. It may add fixture revision/read/write contracts, full reconciliation, readiness output and two append-only event values. It adds no tournament-pick storage, official players, participant assignment, scoring values, manual point edits, resolver change, external provider or new Admin role.
+31. Stage 13F-K2 creates the single Tournament Picks Admin readiness home. Executable outcome entry, persistence, official player references, scoring and player-facing consumption remain Stage 17A.
+32. Stage 13F-K is delivered as K0 documents, K1 database, K2 frontend and K3 staging acceptance. Stage 13G-A cannot begin before K3 closes.
 
 ## Pending approvals
 
 - Whether a portable advanced guest-backup tool is retained outside the normal journey.
-- Any future database design for tournament-pick persistence/operations or managed participants. Match Centre and player-insight read contracts are settled. Stage 13G-C must inspect invite-safe metadata and synthetic-marker reads before proposing any narrow migration. Stage 16 staging-effective-time still requires its own exact scope, tests and migration decision.
+- Tournament-pick persistence/outcome design remains Stage 17A. Migration 018 is settled only for Stage 13F-K fixture/reconciliation/readiness operations. Managed participants, Stage 13G-C invite-safe/synthetic reads and Stage 16 staging-effective time still require their own exact scopes, tests and migration decisions.
