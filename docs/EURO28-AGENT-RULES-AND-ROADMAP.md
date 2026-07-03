@@ -319,3 +319,7 @@ Staging owner access remains restricted and documented.
 ## Next single task
 
 Install and accept Stage 13F-D, then begin Stage 13F-E Admin invisibility.
+
+### Stage 13F-E — Admin invisibility
+
+Accepted scope: hide every Admin discovery path from non-admin users, fail closed on direct route access, and retain all existing control-room capability for server-verified administrators. No migration. The next functional-completion batch is Stage 13F-F.

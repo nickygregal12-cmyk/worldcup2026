@@ -6,6 +6,9 @@ import KoPredictorFoundation from '../koPredictor/KoPredictorFoundation.jsx'
 import ResultsAndLeaderboardsFoundation from '../results/ResultsAndLeaderboardsFoundation.jsx'
 import MatchCentreFoundation from '../matchCentre/MatchCentreFoundation.jsx'
 import AdminOperationsFoundation from '../admin/AdminOperationsFoundation.jsx'
+import AdminRouteGate from '../admin/AdminRouteGate.jsx'
+import { ADMIN_VISIBILITY_STATUS } from '../admin/adminVisibilityModel.js'
+import { useAdminVisibility } from '../admin/useAdminVisibility.js'
 import LeaguesFoundation from '../leagues/LeaguesFoundation.jsx'
 import HomeDashboard from '../home/HomeDashboard.jsx'
 import TournamentOverview from '../tournament/TournamentOverview.jsx'
@@ -112,14 +115,21 @@ export default function EuroFoundationApp() {
     return () => { active = false }
   }, [clientState, visualFixture])
 
+  const visualSession = visualFixture
+    ? { status: 'ready', session: { user: { id: 'visual-user', email: 'nicky@example.com' } }, profile: { display_name: 'Nicky' }, error: null }
+    : sessionState
+  const adminVisibility = useAdminVisibility({
+    client: activeClient,
+    tournamentId: state.data?.tournament?.id ?? null,
+    sessionState: visualSession,
+    fixtureAccess: visualFixture ? { isAdmin: true, adminRole: 'owner' } : null,
+  })
+
   if (state.status === 'loading') return <LoadingApplication />
   if (state.status === 'error' || !state.data) return <FoundationError message={state.error} onRetry={refresh} />
 
   const foundation = state.data
   const navigation = deriveNavigationLifecycle(foundation.guestReference)
-  const visualSession = visualFixture
-    ? { status: 'ready', session: { user: { id: 'visual-user', email: 'nicky@example.com' } }, profile: { display_name: 'Nicky' }, error: null }
-    : sessionState
 
   let content
   if (route === APP_ROUTE.HOME) {
@@ -196,10 +206,12 @@ export default function EuroFoundationApp() {
     content = <TournamentOverview foundation={foundation} />
   } else if (route === APP_ROUTE.ADMIN) {
     content = (
-      <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Restricted access" title="Tournament control room" description="Secure result operations, locks, grace windows and operational safeguards." />
-        <AdminOperationsFoundation client={activeClient} reference={foundation.guestReference} />
-      </div>
+      <AdminRouteGate visibility={adminVisibility}>
+        <div className="content-stack legacy-page">
+          <PageIntro eyebrow="Restricted access" title="Tournament control room" description="Secure result operations, locks, grace windows and operational safeguards." />
+          <AdminOperationsFoundation client={activeClient} reference={foundation.guestReference} />
+        </div>
+      </AdminRouteGate>
     )
   } else {
     content = <HomeDashboard client={activeClient} foundation={foundation} sessionState={visualSession} fixture={visualFixture ? VISUAL_HOME_DASHBOARD : null} />
@@ -212,7 +224,13 @@ export default function EuroFoundationApp() {
 
   return (
     <TeamProfileProvider client={activeClient} reference={teamProfileReference} autoOpenTeam={autoOpenTeam}>
-      <EuroAppShell route={route} theme={theme} sessionState={visualSession} navigation={navigation}>{content}</EuroAppShell>
+      <EuroAppShell
+        route={route === APP_ROUTE.ADMIN && adminVisibility.status !== ADMIN_VISIBILITY_STATUS.ALLOWED ? APP_ROUTE.HOME : route}
+        theme={theme}
+        sessionState={visualSession}
+        navigation={navigation}
+        adminVisibility={adminVisibility}
+      >{content}</EuroAppShell>
     </TeamProfileProvider>
   )
 }

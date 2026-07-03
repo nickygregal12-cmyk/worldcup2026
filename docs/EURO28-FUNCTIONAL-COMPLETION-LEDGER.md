@@ -113,3 +113,9 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 - **v1.7:** Stage 13F-C adds the dedicated Euro Match Centre and closes the per-match information gap without a migration or privacy change.
 - **v1.8:** Stage 13F-D adds immutable Original Bracket Health comparison against canonical known fixtures, with unresolved-original fallback and Match Centre access, without a migration or scoring change.
+
+### Stage 13F-E acceptance
+
+| Capability | Status | Evidence | Owner |
+| --- | --- | --- | --- |
+| Admin invisibility and fail-closed route access | FUNCTIONAL | Admin navigation is emitted only for server-verified administrators; signed-out, denied and verification-error direct-route states remain neutral; verified admins retain the full control room. | 13F-E |

@@ -37,7 +37,7 @@ function describeMoreDestination(destination) {
   return ''
 }
 
-export default function EuroAppShell({ route, theme, sessionState, navigation, children }) {
+export default function EuroAppShell({ route, theme, sessionState, navigation, adminVisibility, children }) {
   const [moreOpen, setMoreOpen] = useState(false)
   const destination = destinationForRoute(route)
   const homeDestination = destinationForRoute(APP_ROUTE.HOME)
@@ -56,14 +56,17 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, c
     resultsDestination,
   ], [homeDestination, primaryDestination, bracketDestination, leaguesDestination, resultsDestination])
 
-  const moreDestinations = useMemo(() => [
-    resultsDestination,
-    leaderboardsDestination,
-    ...navigationDestinations.phaseMoreDestinations,
-    destinationForRoute(APP_ROUTE.ACCOUNT),
-    destinationForRoute(APP_ROUTE.TOURNAMENT),
-    destinationForRoute(APP_ROUTE.ADMIN),
-  ], [resultsDestination, leaderboardsDestination, navigationDestinations])
+  const moreDestinations = useMemo(() => {
+    const destinations = [
+      resultsDestination,
+      leaderboardsDestination,
+      ...navigationDestinations.phaseMoreDestinations,
+      destinationForRoute(APP_ROUTE.ACCOUNT),
+      destinationForRoute(APP_ROUTE.TOURNAMENT),
+    ]
+    if (adminVisibility?.isAdmin) destinations.push(destinationForRoute(APP_ROUTE.ADMIN))
+    return destinations
+  }, [resultsDestination, leaderboardsDestination, navigationDestinations, adminVisibility?.isAdmin])
 
   const visibleMobileRoutes = new Set([
     APP_ROUTE.HOME,
