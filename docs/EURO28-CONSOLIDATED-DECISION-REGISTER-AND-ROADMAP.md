@@ -565,3 +565,7 @@ From checkpoint `177605b`, the next Stage 13G-B slice aligns Results, Leaderboar
 ## Stage 13G-B League Lifecycle Update
 
 - Stage 13G-B League lifecycle alignment is complete at the package level: Leagues and member comparisons now receive central lifecycle context and state Original release as global-lock based while KO release remains fixture-by-fixture. No database change and no Migration 019.
+
+## Stage 13G-B Player Insight and Team Profile lifecycle alignment
+
+From checkpoint `a651d33`, Player Insight and Team Profile are aligned with central lifecycle context without changing server privacy, scoring, database policy or migrations. Player Insight displays lifecycle copy for Original global-lock evidence and KO fixture-by-fixture evidence, while the canonical authorised-read phrase remains active. Team Profile displays lifecycle copy for Original-only community bracket aggregates, keeps KO Predictor data excluded and repeats that no Original/KO points are combined. `audit:player-team-lifecycle` is included in `npm run check`; active migrations remain 18 and no Migration 019 is created.

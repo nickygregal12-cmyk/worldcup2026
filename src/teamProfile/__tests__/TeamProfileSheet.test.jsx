@@ -73,7 +73,7 @@ function readyState({ aggregatesVisible = false, partial = false, tournamentErro
 describe('TeamProfileSheet', () => {
   it('shows curated facts, app-owned tournament form and private Original Predictor aggregates before lock', () => {
     const html = renderToStaticMarkup(
-      <TeamProfileSheet open state={readyState()} onClose={() => {}} onRetry={() => {}} />,
+      <TeamProfileSheet open state={readyState()} lifecycle={{ locked: false }} onClose={() => {}} onRetry={() => {}} />,
     )
 
     expect(html).toContain('Scotland profile')
@@ -81,16 +81,18 @@ describe('TeamProfileSheet', () => {
     expect(html).toContain('Tournament so far')
     expect(html).toContain('Your prediction')
     expect(html).toContain('Community percentages are private')
-    expect(html).not.toContain('KO Predictor')
+    expect(html).toContain('Original Predictor privacy')
+    expect(html).toContain('KO Predictor data is not included')
     expect(html).not.toContain('25%')
   })
 
   it('shows aggregate percentages only when the protected payload says they are visible', () => {
     const html = renderToStaticMarkup(
-      <TeamProfileSheet open state={readyState({ aggregatesVisible: true })} onClose={() => {}} onRetry={() => {}} />,
+      <TeamProfileSheet open state={readyState({ aggregatesVisible: true })} lifecycle={{ locked: true }} onClose={() => {}} onRetry={() => {}} />,
     )
 
     expect(html).toContain('Based on 12 complete Original Predictor brackets')
+    expect(html).toContain('Original Predictor aggregates')
     expect(html).toContain('25%')
     expect(html).toContain('Win EURO 2028')
     expect(html).not.toContain('Community percentages are private')

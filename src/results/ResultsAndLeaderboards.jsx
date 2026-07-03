@@ -212,9 +212,10 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
               leaderboardRows={selectedLeaderboardRows}
               player={{ ...selectedCurrentPlayer, isCurrentUser: true }}
               competitionKey={resultCompetitionKey}
+              lifecycle={lifecycle}
             />
           </div>
-          <PlayerHeadToHead state={comparison} reference={reference} onClose={closeComparison} context={PLAYER_COMPARISON_CONTEXT.OVERALL} />
+          <PlayerHeadToHead state={comparison} reference={reference} lifecycle={lifecycle} onClose={closeComparison} context={PLAYER_COMPARISON_CONTEXT.OVERALL} />
         </>
       )}
 

@@ -201,7 +201,7 @@ export default function App() {
   const teamProfileReference = appData.guestReference
 
   return (
-    <TeamProfileProvider client={activeClient} reference={teamProfileReference}>
+    <TeamProfileProvider client={activeClient} reference={teamProfileReference} lifecycle={lifecycle}>
       <StagingTimeBanner state={timeState} />
       <EuroAppShell
         route={route === APP_ROUTE.ADMIN && adminVisibility.status !== ADMIN_VISIBILITY_STATUS.ALLOWED ? APP_ROUTE.HOME : route}

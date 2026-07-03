@@ -389,7 +389,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle }) 
                 {standings.length > 0 && <StandingsTable rows={standings} competitionKey={competitionKey} onCompare={compareMember} />}
               </article>
 
-              <PlayerHeadToHead state={comparison} reference={reference} onClose={clearComparison} context={PLAYER_COMPARISON_CONTEXT.LEAGUE} />
+              <PlayerHeadToHead state={comparison} reference={reference} lifecycle={lifecycle} onClose={clearComparison} context={PLAYER_COMPARISON_CONTEXT.LEAGUE} />
             </>
           )}
         </>

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react' // eslint-disable-line no-unused-vars
 import { PlayerIdentity, TeamLabel } from '../design-system/index.jsx'
-import { buildPlayerInsight } from './playerInsightModel.js'
+import { buildPlayerInsight, buildPlayerInsightLifecycle } from './playerInsightModel.js'
 import styles from './PlayerInsight.module.css'
 
 function competitionName(competitionKey) {
@@ -136,6 +136,7 @@ export default function PlayerInsight({
   title = 'Points story',
   showIdentity = true,
   compact = false,
+  lifecycle = null,
 }) {
   const points = section?.data ?? null
   const insight = useMemo(() => buildPlayerInsight({
@@ -144,6 +145,11 @@ export default function PlayerInsight({
     memberUserId: player?.userId ?? points?.memberUserId ?? null,
     competitionKey,
   }), [competitionKey, leaderboardRows, player?.userId, points])
+  const lifecycleNote = useMemo(() => buildPlayerInsightLifecycle({
+    competitionKey,
+    lifecycle,
+    insightState: insight.state,
+  }), [competitionKey, insight.state, lifecycle])
 
   return (
     <article className={`${styles.card} ${compact ? styles.compact : ''}`.trim()}>
@@ -154,6 +160,8 @@ export default function PlayerInsight({
         </div>
         {showIdentity && <PlayerIdentity player={player ?? { displayName: points?.displayName ?? 'Player' }} isCurrentUser={Boolean(player?.isCurrentUser)} />}
       </header>
+
+      {section?.status !== 'loading' && <p className={styles.lifecycleNote}><strong>{lifecycleNote.label}</strong><span>{lifecycleNote.copy}</span></p>}
 
       {section?.status === 'loading' && <p className={styles.state}>Loading canonical point evidence…</p>}
       {section?.status === 'error' && <p className={`${styles.state} ${styles.error}`.trim()} role="alert">{section.error}</p>}

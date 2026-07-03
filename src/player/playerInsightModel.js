@@ -76,6 +76,48 @@ function rankStory(rows, memberUserId, fallbackTotal) {
   })
 }
 
+
+export function buildPlayerInsightLifecycle({ competitionKey, lifecycle, insightState } = {}) {
+  if (!SUPPORTED_COMPETITIONS.has(competitionKey)) throw new TypeError('Unsupported player insight competition')
+
+  const locked = Boolean(lifecycle?.locked)
+  const tournamentStarted = Boolean(lifecycle?.tournamentStarted)
+  const scored = insightState === 'scored'
+
+  if (competitionKey === 'original') {
+    if (!locked) {
+      return Object.freeze({
+        state: 'original_private_until_lock',
+        label: 'Original Predictor privacy',
+        copy: 'Original Predictor point evidence follows the global prediction lock. Only selections released by the existing server privacy rules are shown.',
+      })
+    }
+    return Object.freeze({
+      state: scored ? 'original_scoring' : 'original_released_waiting_results',
+      label: scored ? 'Original points only' : 'Released after global lock',
+      copy: scored
+        ? 'Original Predictor points come from the 36 group scores and the winner-only pre-tournament bracket. KO Predictor points never combine here.'
+        : 'Original Predictor selections are released after the global lock; canonical point evidence appears once results are scored.',
+    })
+  }
+
+  if (!tournamentStarted) {
+    return Object.freeze({
+      state: 'ko_waiting_for_fixture_release',
+      label: 'KO Predictor fixture release',
+      copy: 'KO Predictor point evidence stays separate and releases fixture by fixture after each real knockout match starts. Future fixtures remain protected by server privacy rules.',
+    })
+  }
+
+  return Object.freeze({
+    state: scored ? 'ko_scoring' : 'ko_fixture_release',
+    label: scored ? 'KO points only' : 'Fixture-by-fixture release',
+    copy: scored
+      ? 'KO Predictor points come from real knockout fixtures only. Original Predictor points never combine here.'
+      : 'KO Predictor point evidence releases only for real knockout fixtures that have individually started.',
+  })
+}
+
 export function buildPlayerInsight({
   points,
   leaderboardRows = [],

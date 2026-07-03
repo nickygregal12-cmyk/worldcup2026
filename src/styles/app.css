@@ -1687,7 +1687,6 @@ a {
   background: var(--state-success-soft);
   color: var(--state-success);
 }
-
 .team-profile-lock-state,
 .team-profile-partial {
   display: grid;

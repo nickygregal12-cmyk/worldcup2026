@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.25 — Stage 13G-B Home lifecycle alignment
+### Version 1.29 — Stage 13G-B Player Insight and Team Profile lifecycle alignment
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -126,6 +126,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Shared third-place table | ❌ MISSING | One canonical predicted/live third-place presentation is not used wherever standings appear. | 13G-C |
 | Results, leaderboards and Match Centre lifecycle alignment | ✅ FUNCTIONAL | Results, Leaderboards and Match Centre now consume central lifecycle state plus canonical result/fixture state through `audit:results-lifecycle`; no competitions are combined. | — |
 | Central KO-readiness signal | 🟠 PARTIAL | Home now exposes a single KO readiness model for its own surface. Navigation and Leagues still need to consume the same signal in a later Stage 13G-B/C slice. | 13G-B |
+| Player Insight and Team Profile lifecycle alignment | ✅ FUNCTIONAL | Player Insight and Team Profile now consume central lifecycle context for phase copy while preserving server-authorised privacy gates, Original-only Team Profile aggregates, KO exclusion and separate Original/KO point boundaries through `audit:player-team-lifecycle`. No database change and no Migration 019. | — |
 | PlayerIdentity whole-product coverage | 🟠 PARTIAL | Shared identity exists but not every rendered player name uses it. | 13G-D |
 | PlayerInsight as sole detailed-points surface | 🟠 PARTIAL | The shared model exists, but duplicate/local detail surfaces remain to be retired. | 13G-D |
 | Auth-provider-agnostic account creation | 🟠 PARTIAL | Current persistence is adaptable, but the active flow and assumptions are email/password-specific. | 13G-D |
@@ -158,6 +159,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 ## Change log
 
+- **v1.29:** Stage 13G-B Player Insight and Team Profile lifecycle alignment from `a651d33` adds central lifecycle copy to Player Insight and Team Profile, preserves the canonical server privacy phrase, keeps Team Profile aggregates Original-only, excludes KO Predictor data from Team Profile percentages, adds `audit:player-team-lifecycle` to `npm run check`, and keeps active migrations at 18 with no Migration 019.
 - **v1.28:** Stage 13G-B League lifecycle alignment slice from `03bc447` adds central lifecycle input to private leagues, competition-scoped Original/KO release copy, member-comparison release copy and `audit:league-lifecycle` in `npm run check`. No database change and no Migration 019.
 - **v1.27:** Stage 13G-B Results lifecycle alignment slice from `177605b` adds central lifecycle banners to Results, competition-scoped lifecycle copy to Leaderboards, fixture-level lifecycle copy to Match Centre and `audit:results-lifecycle` in `npm run check`. No database change and no Migration 019.
 

@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.21 — Stage 13G-B Home lifecycle alignment
+### Version 4.22 — Stage 13G-B Player Insight and Team Profile lifecycle alignment
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -579,3 +579,7 @@ The Results, Leaderboards and Match Centre surfaces must consume central tournam
 ## Stage 13G-B League Lifecycle Update
 
 - Stage 13G-B League lifecycle alignment is complete at the package level: Leagues and member comparisons now receive central lifecycle context and state Original release as global-lock based while KO release remains fixture-by-fixture. No database change and no Migration 019.
+
+## Stage 13G-B Player Insight and Team Profile lifecycle alignment
+
+- From checkpoint `a651d33`, Player Insight and Team Profile consume central lifecycle context for user-facing phase copy while preserving existing server-authorised privacy gates. Player Insight keeps Original point evidence scoped to group scores plus the winner-only pre-tournament bracket, keeps KO evidence scoped to real knockout fixtures only, and preserves the canonical server privacy phrase. Team Profile keeps prediction aggregates Original-only, excludes KO Predictor data and states that no Original/KO points are combined. The slice adds `audit:player-team-lifecycle`, updates docs/register/ledger in the same package, keeps active migrations at 18 and adds no Migration 019.

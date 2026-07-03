@@ -3,7 +3,7 @@ import { TeamProfileContext } from '../design-system/teamProfileContext.js'
 import TeamProfileSheet from './TeamProfileSheet.jsx'
 import { loadTeamProfileSheet } from './teamProfileService.js'
 
-export default function TeamProfileProvider({ client, reference, autoOpenTeam = null, children }) {
+export default function TeamProfileProvider({ client, reference, lifecycle = null, autoOpenTeam = null, children }) {
   const requestRef = useRef(0)
   const [state, setState] = useState({ open: false, status: 'idle', team: null, data: null, error: null })
 
@@ -41,7 +41,7 @@ export default function TeamProfileProvider({ client, reference, autoOpenTeam = 
   return (
     <TeamProfileContext.Provider value={value}>
       {children}
-      <TeamProfileSheet open={state.open} state={state} onClose={close} onRetry={retry} />
+      <TeamProfileSheet open={state.open} state={state} lifecycle={lifecycle} onClose={close} onRetry={retry} />
     </TeamProfileContext.Provider>
   )
 }

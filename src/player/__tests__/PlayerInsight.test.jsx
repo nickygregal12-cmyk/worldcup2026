@@ -27,10 +27,12 @@ describe('PlayerInsight', () => {
         leaderboardRows={[{ userId: 'me', rank: 2, totalPoints: 50 }, { userId: 'leader', rank: 1, totalPoints: 60 }]}
         player={{ userId: 'me', displayName: 'Nicky', isCurrentUser: true }}
         competitionKey="original"
+        lifecycle={{ locked: true, tournamentStarted: true }}
       />,
     )
 
     expect(html).toContain('How the total was earned')
+    expect(html).toContain('Original points only')
     expect(html).toContain('10 pts')
     expect(html).toContain('Corrected result revision 2')
     expect(html).toContain('Scotland')
@@ -46,9 +48,11 @@ describe('PlayerInsight', () => {
         leaderboardRows={[]}
         player={{ userId: 'other', displayName: 'Amy' }}
         competitionKey="original"
+        lifecycle={{ locked: false, tournamentStarted: false }}
       />,
     )
     expect(html).toContain('Private until lock.')
+    expect(html).toContain('Only selections released by the existing server privacy rules are shown')
     expect(html).not.toContain('How the total was earned')
   })
 })

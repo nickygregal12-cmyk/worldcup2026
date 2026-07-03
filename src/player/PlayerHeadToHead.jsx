@@ -89,7 +89,7 @@ function Summary({ comparison }) {
   )
 }
 
-export default function PlayerHeadToHead({ state, reference, onClose, context = PLAYER_COMPARISON_CONTEXT.LEAGUE }) {
+export default function PlayerHeadToHead({ state, reference, lifecycle = null, onClose, context = PLAYER_COMPARISON_CONTEXT.LEAGUE }) {
   const comparison = useMemo(() => {
     if (state?.status !== 'ready') return null
     return buildAlignedPlayerComparison({
@@ -135,6 +135,7 @@ export default function PlayerHeadToHead({ state, reference, onClose, context = 
             leaderboardRows={state.standingsRows ?? []}
             player={{ ...currentPlayer, isCurrentUser: true }}
             competitionKey={state.competitionKey}
+            lifecycle={lifecycle}
             compact
           />
           <PlayerInsight
@@ -143,6 +144,7 @@ export default function PlayerHeadToHead({ state, reference, onClose, context = 
             leaderboardRows={state.standingsRows ?? []}
             player={otherPlayer}
             competitionKey={state.competitionKey}
+            lifecycle={lifecycle}
             compact
           />
         </div>

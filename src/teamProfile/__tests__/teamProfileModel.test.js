@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { VISUAL_STAGE13D_REFERENCE, VISUAL_STAGE13D_RESULT_ROWS } from '../../testFixtures/stage13dVisualFixture.js'
 import { buildLiveTournamentSnapshot } from '../../results/resultModel.js'
-import { buildTeamTournamentSummary, mergeTeamProfileSections, normaliseTeamProfilePayload } from '../teamProfileModel.js'
+import { buildTeamProfileLifecycle, buildTeamTournamentSummary, mergeTeamProfileSections, normaliseTeamProfilePayload } from '../teamProfileModel.js'
 
 describe('teamProfileModel', () => {
   it('normalises curated, aggregate and viewer data without combining competitions', () => {
@@ -49,4 +49,21 @@ describe('teamProfileModel', () => {
     expect(merged.profile.team.name).toBe('Scotland')
     expect(merged.tournament.status).toBe('error')
   })
+
+  it('derives Team Profile lifecycle copy from central lock state and keeps KO excluded', () => {
+    const preLock = buildTeamProfileLifecycle({
+      lifecycle: { locked: false },
+      predictions: { aggregatesVisible: false },
+    })
+    const released = buildTeamProfileLifecycle({
+      lifecycle: { locked: true },
+      predictions: { aggregatesVisible: true },
+    })
+
+    expect(preLock.copy).toContain('global Original Predictor lock')
+    expect(preLock.copy).toContain('KO Predictor data is not included')
+    expect(released.copy).toContain('complete Original Predictor brackets only')
+    expect(released.copy).toContain('no Original/KO points are combined')
+  })
+
 })

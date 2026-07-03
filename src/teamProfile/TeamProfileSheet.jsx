@@ -1,6 +1,6 @@
 import React from 'react' // eslint-disable-line no-unused-vars
 import { Badge, Button, Dialog, Icon, TeamLabel } from '../design-system/index.jsx'
-import { TEAM_PROFILE_MILESTONES } from './teamProfileModel.js'
+import { buildTeamProfileLifecycle, TEAM_PROFILE_MILESTONES } from './teamProfileModel.js'
 
 function formatDate(value) {
   if (!value) return 'Date to be confirmed'
@@ -94,10 +94,12 @@ function ViewerPrediction({ viewer }) {
   )
 }
 
-function PredictionSection({ predictions }) {
+function PredictionSection({ predictions, lifecycle }) {
+  const lifecycleNote = buildTeamProfileLifecycle({ lifecycle, predictions })
   return (
     <section className="team-profile-section">
       <span className="foundation-kicker">Prediction outlook</span>
+      <div className="team-profile-lifecycle-note"><strong>{lifecycleNote.label}</strong><p>{lifecycleNote.copy}</p></div>
       <ViewerPrediction viewer={predictions.viewerPrediction} />
       {!predictions.aggregatesVisible ? (
         <div className="team-profile-lock-state">
@@ -126,7 +128,7 @@ function PredictionSection({ predictions }) {
   )
 }
 
-export default function TeamProfileSheet({ open, state, onClose, onRetry }) {
+export default function TeamProfileSheet({ open, state, lifecycle = null, onClose, onRetry }) {
   const team = state.team
   const data = state.data
   const title = team?.label ? `${team.label} profile` : 'Team profile'
@@ -162,7 +164,7 @@ export default function TeamProfileSheet({ open, state, onClose, onRetry }) {
           {data.tournament.status === 'error'
             ? <section className="team-profile-section team-profile-empty"><h3>Tournament data unavailable</h3><p>Canonical results and the current group position could not be loaded.</p></section>
             : <TournamentForm tournament={data.tournament} />}
-          <PredictionSection predictions={data.profile.predictions} />
+          <PredictionSection predictions={data.profile.predictions} lifecycle={lifecycle} />
         </div>
       )}
     </Dialog>

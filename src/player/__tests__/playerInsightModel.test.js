@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildPlayerInsight } from '../playerInsightModel.js'
+import { buildPlayerInsight, buildPlayerInsightLifecycle } from '../playerInsightModel.js'
 
 function points(overrides = {}) {
   return {
@@ -112,4 +112,23 @@ describe('player insight model', () => {
     expect(insight.rank.totalPoints).toBe(40)
     expect(insight.matchRows).toEqual([])
   })
+
+  it('builds lifecycle copy from central lock state without combining competitions', () => {
+    const original = buildPlayerInsightLifecycle({
+      competitionKey: 'original',
+      lifecycle: { locked: false, tournamentStarted: false },
+      insightState: 'protected',
+    })
+    const ko = buildPlayerInsightLifecycle({
+      competitionKey: 'ko_predictor',
+      lifecycle: { locked: true, tournamentStarted: true },
+      insightState: 'scored',
+    })
+
+    expect(original.copy).toContain('global prediction lock')
+    expect(original.copy).toContain('Only selections released by the existing server privacy rules are shown')
+    expect(ko.copy).toContain('real knockout fixtures only')
+    expect(ko.copy).toContain('Original Predictor points never combine')
+  })
+
 })

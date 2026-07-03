@@ -135,6 +135,34 @@ export function mergeTeamProfileSections({ contentResult, tournamentResult, fall
   })
 }
 
+
+export function buildTeamProfileLifecycle({ lifecycle, predictions } = {}) {
+  const locked = Boolean(lifecycle?.locked)
+  const aggregatesVisible = Boolean(predictions?.aggregatesVisible)
+
+  if (!locked && !aggregatesVisible) {
+    return Object.freeze({
+      state: 'original_aggregates_private_until_lock',
+      label: 'Original Predictor privacy',
+      copy: 'Community prediction percentages unlock after the global Original Predictor lock. The Team Profile uses Original Predictor bracket aggregates only; KO Predictor data is not included and no Original/KO points are combined.',
+    })
+  }
+
+  if (aggregatesVisible) {
+    return Object.freeze({
+      state: 'original_aggregates_released',
+      label: 'Original Predictor aggregates',
+      copy: 'Community percentages use complete Original Predictor brackets only. The KO Predictor is not included and no Original/KO points are combined.',
+    })
+  }
+
+  return Object.freeze({
+    state: 'original_aggregates_server_protected',
+    label: 'Server privacy gate',
+    copy: 'Community prediction percentages remain hidden until the authorised read model releases them. The KO Predictor is not included and no Original/KO points are combined.',
+  })
+}
+
 export const TEAM_PROFILE_MILESTONES = Object.freeze([
   ['groupWinnerPercentage', 'Win group'],
   ['roundOf16Percentage', 'Reach Round of 16'],
