@@ -80,8 +80,8 @@ if (packageJson.scripts?.['audit:guest-journey'] !== 'node scripts/check-stage13
 if (!packageJson.scripts?.check?.includes('audit:guest-journey')) fail('npm run check does not include audit:guest-journey')
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 15) fail(`Stage 13F-A must preserve 15 migrations, found ${migrations.length}`)
-if (migrations.some(name => name.includes('0016'))) fail('Stage 13F-A must not add Migration 016')
+if (migrations.length !== 16) fail(`Stage 13F-A must preserve the approved 16-migration baseline, found ${migrations.length}`)
+if (!migrations.some(name => name.includes('016_euro28_staging_time_phase_controls'))) fail('Approved staging Time & Phase Migration 016 is missing')
 
 if (errors.length) {
   console.error('Euro Stage 13F-A guest-journey audit failed:')
@@ -94,4 +94,4 @@ console.log('Original guest draft: remains editable after sign-in until a confir
 console.log('KO guest draft: browser-persisted and transferable without combining competitions')
 console.log('Signup conversion: no ordinary JSON file controls and no development-stage copy')
 console.log('Lucky Dip: local score generation, no odds, no automatic jokers and stale bracket clearing')
-console.log(`Database: ${migrations.length} active migrations; no Migration 016`)
+console.log(`Database: ${migrations.length} active migrations; approved staging Time & Phase Migration 016 present`)

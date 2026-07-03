@@ -11,6 +11,7 @@ import AdminTeamProfiles from './AdminTeamProfiles.jsx'
 import styles from './AdminControlRoom.module.css'
 import { AdminSummary, ResultHistory, ScoringRuns } from './AdminControlRoomStatus.jsx'
 import { RuntimeHealthPanel } from '../observability/index.js'
+import { AdminTimePhaseSection, useTournamentTimeControl } from '../timePhase/index.js'
 import {
   loadAdminMatchHistory,
   loadAdminOperations,
@@ -18,7 +19,6 @@ import {
   saveAdminMatchResult,
   updateAdminMatchStatus,
 } from './adminOperationsService.js'
-
 function formatTimestamp(value) {
   if (!value) return 'Not recorded'
   return new Intl.DateTimeFormat('en-GB', {
@@ -26,11 +26,9 @@ function formatTimestamp(value) {
     timeStyle: 'short',
   }).format(new Date(value))
 }
-
 function humanise(value) {
   return String(value ?? '').replaceAll('_', ' ').replace(/^./, character => character.toUpperCase())
 }
-
 function ScoreInput({ label, value, onChange, disabled = false }) {
   return (
     <label className="foundation-admin-score-field">
@@ -47,7 +45,6 @@ function ScoreInput({ label, value, onChange, disabled = false }) {
     </label>
   )
 }
-
 export default function AdminOperationsFoundation({ client, reference }) {
   const [state, setState] = useState({ status: 'loading', signedIn: false, data: null, error: null })
   const [selectedMatchId, setSelectedMatchId] = useState('')
@@ -58,7 +55,7 @@ export default function AdminOperationsFoundation({ client, reference }) {
   const [statusNote, setStatusNote] = useState('')
   const [recalculationNote, setRecalculationNote] = useState('')
   const [action, setAction] = useState({ status: 'idle', message: '' })
-
+  const timeState = useTournamentTimeControl({ client, tournamentId: reference.tournamentId })
   const load = useCallback(async () => {
     try {
       const sessionResponse = await client.auth.getSession()
@@ -67,16 +64,13 @@ export default function AdminOperationsFoundation({ client, reference }) {
         setState({ status: 'ready', signedIn: false, data: null, error: null })
         return
       }
-
       const data = await loadAdminOperations(client, reference.tournamentId)
       setState({ status: 'ready', signedIn: true, data, error: null })
-
       const nextMatchId = data.matches.some(match => match.matchId === selectedMatchIdRef.current)
         ? selectedMatchIdRef.current
         : data.matches[0]?.matchId ?? ''
       selectedMatchIdRef.current = nextMatchId
       setSelectedMatchId(nextMatchId)
-
       const nextMatch = data.matches.find(match => match.matchId === nextMatchId) ?? null
       setDraft(nextMatch ? createAdminResultDraft(nextMatch) : null)
       setStatusDraft(nextMatch?.matchStatus ?? 'scheduled')
@@ -202,7 +196,7 @@ export default function AdminOperationsFoundation({ client, reference }) {
           <div className={styles.heroMeta}>
             <span className={styles.metaChip}>Role: {humanise(state.data.access.adminRole)}</span>
             <span className={styles.metaChip}>Environment: development</span>
-            <span className={styles.metaChip}>15 active migrations</span>
+            <span className={styles.metaChip}>16 active migrations</span>
           </div>
         </div>
         <button type="button" className="foundation-secondary-button" onClick={load}>Refresh control room</button>
@@ -211,6 +205,7 @@ export default function AdminOperationsFoundation({ client, reference }) {
       <nav className={styles.navigation} aria-label="Admin control-room sections">
         <a href="#admin-overview">Overview</a>
         <a href="#admin-safeguards">Safeguards</a>
+        <a href="#admin-time-phase">Time &amp; Phase</a>
         <a href="#admin-team-content">Team content</a>
         <a href="#admin-match-operations">Match operations</a>
         <a href="#admin-scoring-activity">Scoring activity</a>
@@ -249,6 +244,16 @@ export default function AdminOperationsFoundation({ client, reference }) {
           runAction={runAction}
         />
       </section>
+
+      <AdminTimePhaseSection
+        client={client}
+        tournamentId={reference.tournamentId}
+        adminRole={state.data.access.adminRole}
+        timeState={timeState}
+        onChanged={timeState.refresh}
+        sectionClass={styles.section}
+        headerClass={styles.sectionHeader}
+      />
 
       <section className={styles.section} id="admin-team-content" aria-labelledby="admin-team-content-heading">
         <div className={styles.sectionHeader}>

@@ -24,8 +24,8 @@ if (failures.length) {
 }
 
 const migrations = fs.readdirSync('supabase/migrations').filter(file => file.endsWith('.sql'))
-if (migrations.length !== 15 || migrations.some(file => file.includes('016'))) {
-  console.error('Stage 13F-F must retain 15 migrations and no Migration 016')
+if (migrations.length !== 16 || !migrations.some(file => file.includes('016_euro28_staging_time_phase_controls'))) {
+  console.error('Stage 13F-F plus approved Stage 13F-G must retain 16 migrations including staging Time & Phase Migration 016')
   process.exit(1)
 }
 
@@ -33,4 +33,4 @@ console.log('Euro Stage 13F-F admin control-room audit passed.')
 console.log('Presentation: authorised operations are grouped into overview, safeguards, content, match and scoring sections')
 console.log('Safety: existing RPC permissions, note gates and append-only audit behaviour remain unchanged')
 console.log('Responsive design: scoped semantic-token styles cover desktop, tablet and phone layouts')
-console.log('Database: 15 active migrations; no Migration 016')
+console.log('Database: 16 active migrations; approved staging Time & Phase Migration 016 present')

@@ -102,8 +102,8 @@ if (!packageJson.scripts?.check?.includes('audit:player-comparison')) fail('npm 
 if (!packageJson.scripts?.['lint:foundation']?.includes('src/player')) fail('the player feature root is not included in lint:foundation')
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 15) fail(`Stage 13F-B must preserve 15 migrations, found ${migrations.length}`)
-if (migrations.some(name => name.includes('0016'))) fail('Stage 13F-B must not add Migration 016')
+if (migrations.length !== 16) fail(`Stage 13F-B must preserve the approved 16-migration baseline, found ${migrations.length}`)
+if (!migrations.some(name => name.includes('016_euro28_staging_time_phase_controls'))) fail('Approved staging Time & Phase Migration 016 is missing')
 
 if (errors.length) {
   console.error('Euro Stage 13F-B player identity and H2H audit failed:')
@@ -115,4 +115,4 @@ console.log('Euro Stage 13F-B player identity and H2H audit passed.')
 console.log('Identity: one shared accessible player primitive in league and overall tables')
 console.log('Comparison: one aligned Original/KO surface with competition-scoped ranks and points')
 console.log('Privacy: existing server-authorised release rules remain unchanged')
-console.log(`Database: ${migrations.length} active migrations; no Migration 016`)
+console.log(`Database: ${migrations.length} active migrations; approved staging Time & Phase Migration 016 present`)

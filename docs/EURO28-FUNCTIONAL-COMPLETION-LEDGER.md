@@ -121,3 +121,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Admin invisibility and fail-closed route access | FUNCTIONAL | Admin navigation is emitted only for server-verified administrators; signed-out, denied and verification-error direct-route states remain neutral; verified admins retain the full control room. | 13F-E |
 
 - **v1.10:** Stage 13F-F rebuilds the authorised Admin control room presentation without adding powers, changing permissions or creating a migration.
+
+
+## Stage 13F-G — Staging Time & Phase
+
+Accepted scope: one owner-only audited staging clock, scenario presets, real-time reset, permanent warning, and fail-closed environment safeguards. Migration 016 is approved solely for persistent audited time-control state.

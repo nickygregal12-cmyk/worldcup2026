@@ -1,0 +1,11 @@
+begin;
+select plan(7);
+select has_table('public', 'tournament_time_controls', 'time control table exists');
+select has_function('public', 'get_tournament_time_control', array['uuid'], 'public time-control reader exists');
+select has_function('public', 'admin_set_tournament_time_control', array['uuid','bigint','timestamp with time zone','text','text'], 'owner setter exists');
+select has_function('public', 'admin_reset_tournament_time_control', array['uuid','bigint','text'], 'owner reset exists');
+select col_is_pk('public', 'tournament_time_controls', 'tournament_id', 'one control row per tournament');
+select ok((select count(*) = 1 from public.tournament_time_controls where tournament_id = 'e0280000-0000-4000-8000-000000000001'), 'staging tournament is initialised');
+select ok((select is_enabled = false and simulated_at is null from public.tournament_time_controls where tournament_id = 'e0280000-0000-4000-8000-000000000001'), 'real time is the safe default');
+select * from finish();
+rollback;

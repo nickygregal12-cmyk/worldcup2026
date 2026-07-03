@@ -21,6 +21,7 @@ import { VISUAL_BRACKET_DRAFT, VISUAL_FOUNDATION, VISUAL_GROUP_DRAFT, VISUAL_HOM
 import { createStage13dVisualClient, STAGE13D_VISUAL_SCENARIO, VISUAL_STAGE13D_FOUNDATION, VISUAL_STAGE13D_REFERENCE } from '../app/stage13dVisualFixture.js'
 import { Badge, Button, Card } from '../design-system/index.jsx'
 import TeamProfileProvider from '../teamProfile/TeamProfileProvider.jsx'
+import { StagingTimeBanner, useTournamentTimeControl } from '../timePhase/index.js'
 import { loadEuroFoundation } from './loadEuroFoundation.js'
 import { createFoundationClient } from './supabaseClient.js'
 
@@ -118,6 +119,11 @@ export default function EuroFoundationApp() {
   const visualSession = visualFixture
     ? { status: 'ready', session: { user: { id: 'visual-user', email: 'nicky@example.com' } }, profile: { display_name: 'Nicky' }, error: null }
     : sessionState
+  const timeState = useTournamentTimeControl({
+    client: activeClient,
+    tournamentId: state.data?.tournament?.id ?? null,
+    disabled: visualFixture,
+  })
   const adminVisibility = useAdminVisibility({
     client: activeClient,
     tournamentId: state.data?.tournament?.id ?? null,
@@ -224,6 +230,7 @@ export default function EuroFoundationApp() {
 
   return (
     <TeamProfileProvider client={activeClient} reference={teamProfileReference} autoOpenTeam={autoOpenTeam}>
+      <StagingTimeBanner state={timeState} />
       <EuroAppShell
         route={route === APP_ROUTE.ADMIN && adminVisibility.status !== ADMIN_VISIBILITY_STATUS.ALLOWED ? APP_ROUTE.HOME : route}
         theme={theme}

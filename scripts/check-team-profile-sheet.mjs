@@ -89,7 +89,7 @@ for (const [name, width, height] of [
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 15) fail(`Stage 13E requires exactly fifteen migrations, found ${migrations.length}`)
+if (migrations.length !== 16) fail(`Stage 13E requires exactly sixteen migrations, found ${migrations.length}`)
 
 const packageJson = JSON.parse(read('package.json'))
 if (packageJson.scripts?.['audit:team-profile'] !== 'node scripts/check-team-profile-sheet.mjs') fail('audit:team-profile is not wired correctly')

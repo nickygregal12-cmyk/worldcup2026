@@ -103,8 +103,8 @@ for (const marker of [
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 15) fail(`Stage 13F-0 must preserve exactly 15 migrations, found ${migrations.length}`)
-if (migrations.some(name => name.includes('016'))) fail('Stage 13F-0 must not add Migration 016')
+if (migrations.length !== 16) fail(`Stage 13F-0 plus approved Stage 13F-G must preserve exactly 16 migrations, found ${migrations.length}`)
+if (!migrations.some(name => name.includes('016_euro28_staging_time_phase_controls'))) fail('Approved staging Time & Phase Migration 016 is missing')
 
 const packageJson = JSON.parse(read('package.json'))
 if (packageJson.scripts?.['audit:access'] !== 'node scripts/check-site-access-architecture.mjs') {
@@ -127,4 +127,4 @@ console.log('Euro site-access architecture audit passed.')
 console.log('Results: fixtures, live tables and live bracket have a dedicated destination')
 console.log('Leaderboards: full Original and KO tables have a dedicated route and Home deep links')
 console.log('Navigation: the five-position mobile lifecycle remains unchanged')
-console.log(`Database: ${migrations.length} active migrations; no Migration 016`)
+console.log(`Database: ${migrations.length} active migrations; approved staging Time & Phase Migration 016 present`)
