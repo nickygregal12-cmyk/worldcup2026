@@ -22,7 +22,7 @@ for (const marker of ['begin()', 'cancel()', 'isCurrent(token)']) {
   if (!latestRequest.includes(marker)) fail(`Latest-request guard is missing: ${marker}`)
 }
 
-const leagues = read('src/leagues/LeaguesFoundation.jsx')
+const leagues = [read('src/leagues/LeaguesFoundation.jsx'), read('src/leagues/LeaguePresentation.jsx')].join('\n')
 for (const marker of [
   'createLatestRequestGuard',
   'competitionKey: requestedCompetitionKey',
@@ -37,7 +37,7 @@ if (leagues.includes('<HeadToHead state={comparison} competitionKey={competition
   fail('League comparison must use the competition captured by the authorised request')
 }
 
-const results = read('src/results/ResultsAndLeaderboardsFoundation.jsx')
+const results = [read('src/results/ResultsAndLeaderboardsFoundation.jsx'), read('src/results/ResultsPresentation.jsx')].join('\n')
 for (const marker of [
   'createLatestRequestGuard',
   "status: previous.data ? 'partial' : 'error'",

@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.0 — reconciled 3 July 2026 at `d522210`
+### Version 4.1 — Stage 14B structural compliance from `66adb1f`
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -39,12 +39,13 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 13D: implementation complete; coherent H2H and real multi-user/clock acceptance incomplete.
 - Stage 13E: Team Profile Sheet accepted.
 - Stage 14: observability and resilience accepted at `d522210`, 15 migrations.
+- Stage 14B Batch 1: architecture governance gates accepted at `66adb1f`; 59 test files and 321 tests passed.
 
 # Delivery sequence
 
 ## Stage 14B — Architecture enforcement
 
-### Batch 1 — governance and ratcheted audits
+### Batch 1 — governance and ratcheted audits — ACCEPTED AT `66adb1f`
 
 - restore Charter Section 11;
 - introduce exact component/global-style caps;
@@ -56,12 +57,13 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 
 ### Batch 2 — structural compliance
 
-- split `LeaguesFoundation.jsx`;
-- split `PredictionJourneyFoundation.jsx`;
-- split `ResultsAndLeaderboardsFoundation.jsx`;
-- reduce/remove their temporary caps;
-- introduce scoped component styles where files are materially reworked;
-- preserve behaviour and visuals.
+- split `LeaguesFoundation.jsx` into a 399-line controller and 245-line presentation module;
+- split `PredictionJourneyFoundation.jsx` into a 327-line controller, 208-line view and 41-line runtime helper;
+- split `ResultsAndLeaderboardsFoundation.jsx` into a 165-line controller and 280-line presentation module;
+- remove all three temporary component caps;
+- update feature audits to inspect the complete split feature rather than one historical file;
+- preserve existing class names, styling, behaviour and visual baselines;
+- defer style ownership migration because no styling was materially changed and all global compatibility ceilings remain frozen.
 
 ### Batch 3 — contrast completion
 

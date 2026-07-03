@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.1 — reconciled 3 July 2026 at commit `d522210`
+### Version 1.2 — reconciled for Stage 14B Batch 2 from commit `66adb1f`
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -25,7 +25,7 @@
 | Groups predictor | ✅ FUNCTIONAL | 36 matches, five jokers and review accepted in Stage 13B | — |
 | Original Bracket | ✅ FUNCTIONAL | Winner-only journey accepted in Stage 13C | — |
 | KO Predictor | ✅ FUNCTIONAL | Separate real-fixture competition accepted in Stage 13C | — |
-| Private leagues | ✅ FUNCTIONAL | Both standings exist; current root screen is 654 lines | 14B split |
+| Private leagues | ✅ FUNCTIONAL | Both standings exist; controller reduced to 399 lines with presentation extracted and unchanged | — |
 | Results and leaderboards data | ✅ FUNCTIONAL | Both complete overall tables are returned and rendered for signed-in users | — |
 | Results and leaderboards access | 🟠 PARTIAL | Reachable at `#/results`; desktop top nav, mobile More. Leaderboards are buried below results/live tables with no dedicated destination or deep link | 13F-0 |
 | Site-wide information architecture | 🟠 PARTIAL | No authoritative route-to-feature access map; combined screens hide major journeys and role-aware access is incomplete | 13F-0 |
@@ -66,9 +66,9 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Item | Status | Evidence / notes | Owner |
 |---|---|---|---|
 | Token architecture and raw-colour audit | ✅ FUNCTIONAL | Central semantic tokens and active colour audit | — |
-| Charter architecture section | ⚠️ INCOHERENT | Lost during uncommitted Stage 13A v5-to-v6 reconciliation | 14B |
-| File-size/structure audit | ❌ MISSING | Three active JSX roots exceed 400 lines | 14B |
-| WCAG token contrast audit | ❌ MISSING | Four confirmed light-theme pair failures require ratcheted remediation | 14B |
+| Charter architecture section | ✅ FUNCTIONAL | Restored in Charter v1.7 and enforced by `audit:architecture` | — |
+| File-size/structure audit | ✅ FUNCTIONAL | 31 active JSX files checked; all are within the 400-line hard cap and temporary component caps are empty | — |
+| WCAG token contrast audit | 🟠 PARTIAL | 58 light/dark token pairs are automated; four exact light-theme exceptions remain for Batch 3 | 14B Batch 3 |
 | Mount inversion | ❌ MISSING | Development-era root owns the real application | 13F-H |
 | Foundation naming retired | ❌ MISSING | Seven active Foundation components plus helpers | 13F-H |
 | Visual fixtures isolated | ⚠️ INCOHERENT | Not normally activatable on HTTPS staging, but fixture code/data ship in production bundle | 13F-H/15A |
@@ -102,3 +102,4 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 - **v1.0:** Independent audit draft.
 - **v1.1:** Corrected H2H/player identity to partial, separated guest storage from dormant file tools, corrected guest account-import terminology, recorded three over-cap screens, recorded actual fixture and Netlify deployment state, and added site-wide information architecture/access.
+- **v1.2:** Recorded accepted architecture governance, split all three oversized live screens, removed every temporary component cap, and moved contrast automation to partial pending four explicit Batch 3 corrections.

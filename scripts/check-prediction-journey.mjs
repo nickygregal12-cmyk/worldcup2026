@@ -20,7 +20,10 @@ for (const file of [
   'src/grace/predictionGraceService.js',
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 8 file is missing: ${file}`)
 
-const original = read('src/journey/PredictionJourneyFoundation.jsx')
+const original = [
+  read('src/journey/PredictionJourneyFoundation.jsx'),
+  read('src/journey/PredictionJourneyView.jsx'),
+].join('\n')
 const groups = read('src/journey/GroupsPredictor.jsx')
 const bracket = read('src/journey/OriginalBracket.jsx')
 const ko = read('src/koPredictor/KoPredictorFoundation.jsx')

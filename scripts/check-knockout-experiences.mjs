@@ -43,7 +43,10 @@ for (const marker of ['ORIGINAL_BRACKET_ROUNDS', 'deriveOriginalBracketMatchStat
   if (!bracketModel.includes(marker)) fail(`Original bracket presentation model is missing: ${marker}`)
 }
 
-const journey = read('src/journey/PredictionJourneyFoundation.jsx')
+const journey = [
+  read('src/journey/PredictionJourneyFoundation.jsx'),
+  read('src/journey/PredictionJourneyView.jsx'),
+].join('\n')
 if (!journey.includes("import OriginalBracket from './OriginalBracket.jsx'")) fail('Prediction journey does not use the shared OriginalBracket component')
 if (!journey.includes('<OriginalBracket')) fail('Prediction journey does not render the shared OriginalBracket component')
 

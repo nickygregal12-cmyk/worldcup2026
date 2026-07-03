@@ -72,7 +72,10 @@ const resultService = fs.readFileSync(path.join(root, 'src/results/resultService
 if (!resultService.includes('get_member_predictions_after_lock')) {
   fail('overall leaderboard sharing is missing the controlled post-lock RPC')
 }
-const resultsView = fs.readFileSync(path.join(root, 'src/results/ResultsAndLeaderboardsFoundation.jsx'), 'utf8')
+const resultsView = [
+  fs.readFileSync(path.join(root, 'src/results/ResultsAndLeaderboardsFoundation.jsx'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src/results/ResultsPresentation.jsx'), 'utf8'),
+].join('\n')
 if (!resultsView.includes('Overall head to head')) fail('overall leaderboard names are not clickable comparison entry points')
 
 const model = fs.existsSync(path.join(root, 'src/leagues/leagueModel.js'))

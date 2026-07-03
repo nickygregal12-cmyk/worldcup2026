@@ -21,11 +21,7 @@ export const ACTIVE_UI_ROOTS = Object.freeze([
 ])
 
 // Temporary caps are exact ceilings. If a file shrinks, this policy must shrink in the same commit.
-export const TEMPORARY_COMPONENT_CAPS = Object.freeze({
-  'src/leagues/LeaguesFoundation.jsx': 654,
-  'src/journey/PredictionJourneyFoundation.jsx': 581,
-  'src/results/ResultsAndLeaderboardsFoundation.jsx': 447,
-})
+export const TEMPORARY_COMPONENT_CAPS = Object.freeze({})
 
 // Permanent global CSS is limited to tokens and typography. The four compatibility files are frozen debt.
 export const GLOBAL_STYLESHEET_CAPS = Object.freeze({

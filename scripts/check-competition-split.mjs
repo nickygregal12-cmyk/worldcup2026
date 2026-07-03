@@ -20,7 +20,10 @@ if(!KO_PREDICTOR_MODEL.pointsSeparateFromOriginal||!KO_PREDICTOR_MODEL.leaderboa
 if(EURO28_KO_PREDICTOR_VERSION!=='euro28-ko-predictor-v1'||EURO28_KO_PREDICTOR_RPC!=='save_my_ko_prediction_bundle'||KO_PREDICTOR_JOKER_CAP!==5) fail('KO Predictor client contract is incorrect')
 const app=fs.readFileSync(path.join(root,'src/foundation/EuroFoundationApp.jsx'),'utf8')
 if(!app.includes('KoPredictorFoundation')) fail('active application does not expose the separate KO Predictor')
-const journey=fs.readFileSync(path.join(root,'src/journey/PredictionJourneyFoundation.jsx'),'utf8')
+const journey=[
+  fs.readFileSync(path.join(root,'src/journey/PredictionJourneyFoundation.jsx'),'utf8'),
+  fs.readFileSync(path.join(root,'src/journey/PredictionJourneyView.jsx'),'utf8'),
+].join('\n')
 if(!journey.includes('Original Predictor')) fail('original prediction journey is not labelled clearly')
 if(errors.length){console.error('Euro competition split audit failed:');errors.forEach(error=>console.error(`- ${error}`));process.exit(1)}
 console.log('Euro competition split audit passed.')

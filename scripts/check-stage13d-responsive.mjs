@@ -56,7 +56,7 @@ for (const marker of [
 const theme = read('src/app/useTheme.js')
 if (!theme.includes("'stage13d'")) fail('Stage 13D visual captures cannot force light and dark themes')
 
-const leagues = read('src/leagues/LeaguesFoundation.jsx')
+const leagues = [read('src/leagues/LeaguesFoundation.jsx'), read('src/leagues/LeaguePresentation.jsx')].join('\n')
 for (const marker of [
   'Compare with member',
   'Shared member list:',
@@ -66,7 +66,7 @@ for (const marker of [
   if (!leagues.includes(marker)) fail(`League usability journey is missing: ${marker}`)
 }
 
-const results = read('src/results/ResultsAndLeaderboardsFoundation.jsx')
+const results = [read('src/results/ResultsAndLeaderboardsFoundation.jsx'), read('src/results/ResultsPresentation.jsx')].join('\n')
 if (results.includes('title="Completed" rows={feed.sections.completed} open=')) fail('Completed results must not expand the full feed by default')
 if (!results.includes("rows.length === 1 ? 'entry' : 'entries'")) fail('Leaderboard entry counts are missing')
 

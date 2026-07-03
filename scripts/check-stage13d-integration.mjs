@@ -10,10 +10,10 @@ const assert = (condition, message) => {
 
 const leagueModel = read('src/leagues/leagueModel.js')
 const leagueService = read('src/leagues/leagueService.js')
-const leaguesPage = read('src/leagues/LeaguesFoundation.jsx')
+const leaguesPage = [read('src/leagues/LeaguesFoundation.jsx'), read('src/leagues/LeaguePresentation.jsx')].join('\n')
 const resultModel = read('src/results/resultModel.js')
 const resultService = read('src/results/resultService.js')
-const resultsPage = read('src/results/ResultsAndLeaderboardsFoundation.jsx')
+const resultsPage = [read('src/results/ResultsAndLeaderboardsFoundation.jsx'), read('src/results/ResultsPresentation.jsx')].join('\n')
 const foundationApp = read('src/foundation/EuroFoundationApp.jsx')
 const packageJson = JSON.parse(read('package.json'))
 

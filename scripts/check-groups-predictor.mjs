@@ -73,7 +73,10 @@ for (const marker of ['Saved predictions count whether submitted or not', 'Group
   if (!review.includes(marker)) fail(`Prediction review is missing: ${marker}`)
 }
 
-const journey = read('src/journey/PredictionJourneyFoundation.jsx')
+const journey = [
+  read('src/journey/PredictionJourneyFoundation.jsx'),
+  read('src/journey/PredictionJourneyView.jsx'),
+].join('\n')
 for (const marker of ['<GroupsPredictor', '<PredictionReview', 'activeGroupMatchNumber', 'fixtureDraft']) {
   if (!journey.includes(marker)) fail(`Prediction journey integration is missing: ${marker}`)
 }
