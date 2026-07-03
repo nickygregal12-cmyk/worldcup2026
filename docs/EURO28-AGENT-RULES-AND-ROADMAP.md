@@ -367,6 +367,19 @@ Any narrow read-contract migration for `is_synthetic` or invite-safe metadata mu
 
 Stage 13G-D and Stage 16A close in the same evidence window but move their ledger rows independently.
 
+
+### Stage 13G test strategy extension — APPROVED AFTER R0
+
+This extension is a binding roadmap amendment. It is recorded before Stage 13G-A product work so the Stage 13F-F failure class cannot recur. Implement it incrementally, not as test gold-plating.
+
+1. **Route-render integration tests — Stage 13G-A and then every destination batch.** Render the real shell at each route and section hash with Vitest and Testing Library and assert the rendered content, not only the URL. Cover every current destination, including every Admin section. Every new destination must ship with one route-render test. Add a dead-destination audit so every internal link target resolves against the route table and fails the build when it does not.
+2. **Permission matrix pgTAP suite — next database/protected-operation batch.** Add one systematic allow/deny matrix for every RPC and protected table across anonymous, authenticated non-owner, owner and admin roles. New database objects must add their matrix rows and the suite must fail on unmapped objects.
+3. **Invariant tests — Stage 13G-C and scoring/resolver batches.** Prove scoring recalculation idempotence, where identical input produces identical stored results when run twice. Add resolver property tests so random valid group results always produce a lawful bracket with all slots filled, thirds drawn only from their qualified combination and no duplicate teams.
+4. **Lock-boundary suite — Stage 13G-A/B/C as lock and countdown surfaces land.** Use the shared clock utility to assert behaviour at the exact global lock instant, joker kick-off second and grace-expiry mid-operation, checking both sides of each boundary.
+5. **Config-to-surface contract tests — Stage 13G-B/C.** Assert displayed scoring values equal the central ruleset, countdowns equal central configuration and Home, leagues and navigation all derive KO readiness from the one central signal.
+
+Explicitly out of scope for this roadmap extension: mutation testing, broad visual regression and multi-browser matrices. These are rejected for now to prevent test gold-plating.
+
 ### Stage 13G completion gate
 
 Every destination has an intentional home, all shared identities and match anatomies are coherent, no active hardwired presentation value can drift from its canonical source, seeded multi-user journeys pass, and the owner accepts the app while walking it as a new casual player.

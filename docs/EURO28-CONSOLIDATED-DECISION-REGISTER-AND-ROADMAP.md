@@ -492,6 +492,19 @@ This contract applies only to the Original Predictor. It never modifies or combi
 7. **13G-E:** whole-surface hardwired/native/refresh/empty-state/identity/theme/route acceptance.
 8. **15E:** WC26 legacy retirement after 13G-E and before 13P-A, with `legacy-wc26-final` created immediately before exact-path deletion.
 
+
+### Test strategy extension — approved after R0
+
+This extension is binding for Stage 13G and later acceptance gates. It addresses the Stage 13F-F failure class by requiring rendered-route and link-target proof rather than source-string audits alone.
+
+1. **Route-render integration tests:** implement first in Stage 13G-A, then require for every new destination. Render the real shell at each route and section hash, assert rendered content, cover every Admin section and add a dead-destination audit that fails when an internal link target does not resolve against the route table.
+2. **Permission matrix pgTAP suite:** implement in the next database/protected-operation batches. Assert allow/deny for every RPC and protected table across anonymous, authenticated non-owner, owner and admin roles. New database objects must add matrix rows and unmapped objects fail the suite.
+3. **Invariant tests:** implement with Stage 13G-C and scoring/resolver stages. Recalculation must be idempotent on identical input and resolver property tests must produce lawful brackets with all slots filled, valid third-place combinations and no duplicates.
+4. **Lock-boundary suite:** implement as lock, countdown and grace surfaces land. Use the shared clock utility to test exact lock instant, joker kick-off second and grace expiry mid-operation on both sides of each boundary.
+5. **Config-to-surface contract tests:** implement with Stage 13G-B/C. Displayed scoring values must equal the central ruleset, countdowns must equal central configuration and KO readiness must come from one central signal on Home, leagues and navigation.
+
+Rejected for now to prevent test gold-plating: mutation testing, broad visual regression and multi-browser matrices.
+
 ### Offline players / claim-account
 
 Decision pending. Stage 16 synthetic seeding may reuse service-role-only participant creation, deterministic naming, prediction seeding, league membership, auditing and marker-safe teardown. It must not decide the production identity model. Any managed/offline participant feature requires a separately approved application participant identity, nullable auth link, ownership/privacy rules, one-time opaque claim token, atomic server claim and rollback contract.
