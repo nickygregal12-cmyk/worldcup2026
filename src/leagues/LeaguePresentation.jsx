@@ -1,8 +1,31 @@
 import { PlayerIdentity, SelectField } from '../design-system/index.jsx'
-import { formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
+import { buildLeagueCompetitionLifecycleCopy, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
 
 function competitionName(competitionKey) {
   return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
+}
+
+
+export function LeagueLifecycleBanner({ lifecycleState }) {
+  if (!lifecycleState) return null
+  return (
+    <aside className="foundation-lifecycle-card" aria-label="League lifecycle">
+      <span className="foundation-kicker">League lifecycle</span>
+      <strong>{lifecycleState.headline}</strong>
+      <p>{lifecycleState.originalCopy}</p>
+      <p>{lifecycleState.koCopy}</p>
+    </aside>
+  )
+}
+
+export function CompetitionLifecycleNote({ competitionKey, lifecycle, summary }) {
+  const copy = buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle, summary })
+  return (
+    <aside className="foundation-lifecycle-note" aria-label={`${competitionName(competitionKey)} lifecycle`}>
+      <span>{copy.label}</span>
+      <small>{copy.copy}</small>
+    </aside>
+  )
 }
 
 export function CompetitionTabs({ value, onChange }) {

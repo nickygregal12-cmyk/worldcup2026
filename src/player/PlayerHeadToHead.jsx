@@ -115,7 +115,7 @@ export default function PlayerHeadToHead({ state, reference, onClose, context = 
         <div>
           <span className={styles.kicker}>{contextName} · {competitionName(state.competitionKey)}</span>
           <h3>You v {state.otherName}</h3>
-          <p>Original and KO Predictor comparisons stay separate. Only selections released by the existing server privacy rules are shown.</p>
+          <p>Original and KO Predictor comparisons stay separate. Original picks release after the global lock; KO picks release fixture by fixture after each real knockout match starts. Only selections released by the existing server privacy rules are shown.</p>
         </div>
         <button type="button" className={styles.close} onClick={onClose}>Close comparison</button>
       </header>
@@ -147,6 +147,7 @@ export default function PlayerHeadToHead({ state, reference, onClose, context = 
           />
         </div>
       )}
+      {comparison && <p className={styles.state}>{comparison.release.copy}</p>}
       {comparison && <Summary comparison={comparison} />}
 
       {comparison && comparison.rows.length === 0 && <p className={styles.state}>No comparison positions are available.</p>}

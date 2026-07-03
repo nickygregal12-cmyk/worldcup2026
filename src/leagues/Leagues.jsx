@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueHeadToHead, loadLeagueOverview, readLeagueSession } from './leagueService.js'
-import { buildStandingComparison, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
+import { buildLeagueLifecycleState, buildStandingComparison, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { CompetitionTabs, LeaguePicker, LeagueSummaryCard, MemberPicker, StandingsTable } from './LeaguePresentation.jsx'
+import { CompetitionLifecycleNote, CompetitionTabs, LeagueLifecycleBanner, LeaguePicker, LeagueSummaryCard, MemberPicker, StandingsTable } from './LeaguePresentation.jsx'
 import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
 
 function competitionName(competitionKey) {
@@ -16,7 +16,7 @@ function messageForError(error) {
   return message
 }
 
-export default function Leagues({ client, tournamentId, reference }) {
+export default function Leagues({ client, tournamentId, reference, lifecycle }) {
   const [session, setSession] = useState(null)
   const [loadingSession, setLoadingSession] = useState(Boolean(client))
   const [leagues, setLeagues] = useState([])
@@ -251,10 +251,12 @@ export default function Leagues({ client, tournamentId, reference }) {
   }
   const overviewLoading = Boolean(selectedLeague?.id) && overview.leagueId !== selectedLeague.id
   const activeOverview = overviewLoading ? null : overview.data
-  const activeSection = competitionKey === LEAGUE_COMPETITION.ORIGINAL
-    ? activeOverview?.sections.original
-    : activeOverview?.sections.koPredictor
+  const activeSection = competitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.sections.original : activeOverview?.sections.koPredictor
   const standings = activeSection?.data ?? []
+  const leagueLifecycle = activeOverview
+    ? buildLeagueLifecycleState({ lifecycle, originalSummary: activeOverview.summaries.original, koSummary: activeOverview.summaries.koPredictor })
+    : buildLeagueLifecycleState({ lifecycle })
+  const activeSummary = competitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.summaries.original : activeOverview?.summaries.koPredictor
   const leagueListLoading = ['idle', 'loading'].includes(leagueListStatus)
 
   const chooseComparisonMember = memberUserId => {
@@ -282,9 +284,11 @@ export default function Leagues({ client, tournamentId, reference }) {
         <div>
           <span className="foundation-kicker">Private leagues</span>
           <h2 id="euro28-leagues-heading">One member list, two separate competitions</h2>
-          <p>Original Predictor and KO Predictor ranks and points are always shown separately.</p>
+          <p>Original Predictor and KO Predictor ranks and points are always shown separately. Original Predictor and KO Predictor ranks, comparisons and release rules stay separate at every lifecycle phase.</p>
         </div>
       </div>
+
+      <LeagueLifecycleBanner lifecycleState={leagueLifecycle} />
 
       {notice && <p className={`auth-notice auth-notice--${notice.tone}`}>{notice.message}</p>}
       {loadingSession && <p className="foundation-empty-copy">Checking your league access…</p>}
@@ -374,12 +378,10 @@ export default function Leagues({ client, tournamentId, reference }) {
                 )}
 
                 <div className="foundation-competition-heading">
-                  <div>
-                    <span className="foundation-kicker">Separate standings</span>
-                    <h3>{competitionName(competitionKey)}</h3>
-                  </div>
+                  <div><span className="foundation-kicker">Separate standings</span><h3>{competitionName(competitionKey)}</h3></div>
                   <small>{competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Group matches and original bracket only' : 'Real knockout fixtures only'}</small>
                 </div>
+                <CompetitionLifecycleNote competitionKey={competitionKey} lifecycle={lifecycle} summary={activeSummary} />
 
                 {activeSection?.status === 'error' && <p className="foundation-warning-text">{activeSection.error}</p>}
                 {(overview.status === 'loading' || overviewLoading) && <p className="foundation-empty-copy">Refreshing standings…</p>}

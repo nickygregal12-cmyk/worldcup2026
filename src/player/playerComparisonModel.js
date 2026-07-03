@@ -132,6 +132,13 @@ export function buildAlignedPlayerComparison({ currentBundle, otherBundle, refer
     otherName: otherJourney.displayName,
     rows: freezeRows(rows),
     sections: Object.freeze(sections.map(section => Object.freeze({ label: section.label, rows: freezeRows(section.rows) }))),
+    release: Object.freeze({
+      currentState: currentJourney.releaseState,
+      otherState: otherJourney.releaseState,
+      copy: competitionKey === LEAGUE_COMPETITION.ORIGINAL
+        ? 'Original comparisons release all saved selections only after the global lock.'
+        : 'KO comparisons release only the real fixtures that have individually started.',
+    }),
     summary: Object.freeze({
       comparedSelections: comparableRows.length,
       comparedMatches: matchRows.length,

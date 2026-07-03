@@ -25,6 +25,7 @@ describe('aligned player comparison', () => {
     expect(model.summary.exactScoreMatches).toBe(1)
     expect(model.summary.bracketMatches).toBe(0)
     expect(model.competitionKey).toBe('original')
+    expect(model.release.copy).toContain('global lock')
   })
 
   it('keeps pre-lock Original selections private in both aligned columns', () => {
@@ -61,5 +62,6 @@ describe('aligned player comparison', () => {
     expect(model.summary.advancingTeamMatches).toBe(1)
     expect(model.summary.methodMatches).toBe(1)
     expect(model.rows[1].other.visibility).toBe('private')
+    expect(model.release.copy).toContain('fixture')
   })
 })

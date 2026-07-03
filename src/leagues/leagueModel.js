@@ -129,6 +129,82 @@ export function buildLeagueCompetitionSummary(rows, competitionKey) {
   })
 }
 
+export function buildLeagueLifecycleState({ lifecycle, originalSummary, koSummary } = {}) {
+  const originalActive = originalSummary?.state === 'active'
+  const koActive = koSummary?.state === 'active'
+  const locked = Boolean(lifecycle?.locked)
+  const tournamentStarted = Boolean(lifecycle?.tournamentStarted)
+
+  const originalState = !locked
+    ? 'pre_lock'
+    : originalActive
+      ? 'scoring'
+      : 'released'
+
+  const koState = !tournamentStarted
+    ? 'waiting_for_knockout_fixtures'
+    : koActive
+      ? 'scoring'
+      : 'fixture_release'
+
+  return Object.freeze({
+    locked,
+    tournamentStarted,
+    originalState,
+    koState,
+    headline: locked ? 'League tables are open under privacy rules' : 'League tables are warming up',
+    originalCopy: originalState === 'pre_lock'
+      ? 'Original Predictor tables stay private until the global prediction lock. Member comparisons will not expose scores or bracket picks early.'
+      : originalState === 'scoring'
+        ? 'Original Predictor standings are scoring from group and pre-tournament bracket selections only.'
+        : 'Original Predictor selections are released, but points appear only after results are scored.',
+    koCopy: koState === 'waiting_for_knockout_fixtures'
+      ? 'KO Predictor tables remain separate and only reveal real knockout fixtures after each fixture starts.'
+      : koState === 'scoring'
+        ? 'KO Predictor standings are scoring real knockout fixtures only.'
+        : 'KO Predictor comparisons unlock fixture by fixture after each real knockout match starts.',
+  })
+}
+
+export function buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle, summary } = {}) {
+  if (!Object.values(LEAGUE_COMPETITION).includes(competitionKey)) {
+    throw new TypeError('Unsupported league competition')
+  }
+
+  if (competitionKey === LEAGUE_COMPETITION.ORIGINAL) {
+    if (!lifecycle?.locked) {
+      return Object.freeze({
+        state: 'private_until_lock',
+        label: 'Private until global lock',
+        copy: 'Standings and comparisons remain hidden until the Original Predictor lock releases saved selections.',
+      })
+    }
+    return Object.freeze({
+      state: summary?.state === 'active' ? 'scoring' : 'released_waiting_results',
+      label: summary?.state === 'active' ? 'Scoring live' : 'Released, waiting results',
+      copy: summary?.state === 'active'
+        ? 'Original points are from group predictions and the pre-tournament bracket only.'
+        : 'Original selections are visible, but standings will move once canonical results are scored.',
+    })
+  }
+
+  if (!lifecycle?.tournamentStarted) {
+    return Object.freeze({
+      state: 'waiting_for_knockout_fixtures',
+      label: 'Waiting for real KO fixtures',
+      copy: 'KO Predictor rows stay separate and hidden until each real knockout fixture starts.',
+    })
+  }
+
+  return Object.freeze({
+    state: summary?.state === 'active' ? 'scoring' : 'fixture_release',
+    label: summary?.state === 'active' ? 'KO scoring live' : 'Fixture-by-fixture release',
+    copy: summary?.state === 'active'
+      ? 'KO points are from real knockout fixtures only and never combine with Original Predictor totals.'
+      : 'KO selections release only for fixtures that have individually started.',
+  })
+}
+
 
 export function buildStandingComparison(rows, otherUserId) {
   const standings = Array.isArray(rows) ? rows : []
@@ -250,6 +326,10 @@ export function buildSharedPredictionJourney({ bundle, reference, competitionKey
       displayName: bundle?.display_name ?? 'Member',
       visible: Boolean(bundle?.visible),
       reason: bundle?.reason ?? null,
+      releaseState: bundle?.visible ? 'released_after_global_lock' : 'private_until_global_lock',
+      releaseCopy: bundle?.visible
+        ? 'Original Predictor selections are released together after the global lock.'
+        : 'Original Predictor selections stay private until the global prediction lock.',
       visibleMatchCount: matches.filter(row => row.visibility === 'visible').length,
       privateMatchCount: matches.filter(row => row.visibility === 'private').length,
       visibleSelectionCount: selections.filter(row => row.visibility === 'visible').length,
@@ -278,6 +358,8 @@ export function buildSharedPredictionJourney({ bundle, reference, competitionKey
     displayName: bundle?.display_name ?? 'Member',
     visible: matches.some(row => row.visibility === 'visible'),
     reason: bundle?.reason ?? null,
+    releaseState: matches.some(row => row.visibility === 'visible') ? 'fixture_release_started' : 'fixture_release_waiting',
+    releaseCopy: 'KO Predictor selections release fixture by fixture after each real knockout match starts.',
     visibleMatchCount: matches.filter(row => row.visibility === 'visible').length,
     privateMatchCount: matches.filter(row => row.visibility === 'private').length,
     visibleSelectionCount: matches.filter(row => row.visibility === 'visible').length,

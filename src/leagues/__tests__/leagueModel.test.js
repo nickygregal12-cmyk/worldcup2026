@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { buildGuestReference } from '../../guest/__tests__/fixtures.js'
 import {
+  buildLeagueCompetitionLifecycleCopy,
   buildLeagueCompetitionSummary,
+  buildLeagueLifecycleState,
   buildSharedLeagueMemberList,
   buildSharedPredictionJourney,
   buildStandingComparison,
@@ -75,6 +77,33 @@ describe('league model', () => {
     expect(() => buildLeagueCompetitionSummary([], 'combined')).toThrow('Unsupported league competition')
   })
 
+
+  it('builds league lifecycle copy without combining Original and KO states', () => {
+    const state = buildLeagueLifecycleState({
+      lifecycle: { locked: false, tournamentStarted: false },
+      originalSummary: { state: 'pre_competition' },
+      koSummary: { state: 'pre_competition' },
+    })
+    expect(state.originalState).toBe('pre_lock')
+    expect(state.koState).toBe('waiting_for_knockout_fixtures')
+    expect(state.originalCopy).toContain('global prediction lock')
+    expect(state.koCopy).toContain('fixture starts')
+  })
+
+  it('describes competition-scoped league release rules', () => {
+    expect(buildLeagueCompetitionLifecycleCopy({
+      competitionKey: LEAGUE_COMPETITION.ORIGINAL,
+      lifecycle: { locked: false },
+      summary: { state: 'pre_competition' },
+    })).toMatchObject({ state: 'private_until_lock', label: 'Private until global lock' })
+
+    expect(buildLeagueCompetitionLifecycleCopy({
+      competitionKey: LEAGUE_COMPETITION.KO_PREDICTOR,
+      lifecycle: { tournamentStarted: true },
+      summary: { state: 'pre_competition' },
+    })).toMatchObject({ state: 'fixture_release', label: 'Fixture-by-fixture release' })
+  })
+
   it('builds a competition-scoped head-to-head standing summary', () => {
     const rows = [
       { userId: 'me', displayName: 'Nicky', rank: 3, totalPoints: 40, matchPoints: 30, bracketPoints: 10, scoredMatchCount: 4, isCurrentUser: true },
@@ -108,6 +137,8 @@ describe('league model', () => {
     expect(journey.bracket).toHaveLength(15)
     expect(journey.matches.every(row => row.visibility === 'private')).toBe(true)
     expect(journey.visibleSelectionCount).toBe(0)
+    expect(journey.releaseState).toBe('private_until_global_lock')
+    expect(journey.releaseCopy).toContain('global prediction lock')
     expect(journey.privateSelectionCount).toBe(51)
     expect(journey.totalSelectionCount).toBe(51)
     expect(journey.matches[0].score).toBeNull()
@@ -136,6 +167,8 @@ describe('league model', () => {
     expect(journey.matches[0]).toMatchObject({ visibility: 'visible', score: '1–1', jokerApplied: true })
     expect(journey.matches[1].visibility).toBe('private')
     expect(journey.visibleSelectionCount).toBe(1)
+    expect(journey.releaseState).toBe('fixture_release_started')
+    expect(journey.releaseCopy).toContain('fixture by fixture')
     expect(journey.privateSelectionCount).toBe(14)
     expect(journey.totalSelectionCount).toBe(15)
   })

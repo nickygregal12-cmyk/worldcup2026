@@ -561,3 +561,7 @@ From checkpoint `1dda826`, the second Stage 13G-B slice aligns the active predic
 ### Stage 13G-B Results lifecycle alignment
 
 From checkpoint `177605b`, the next Stage 13G-B slice aligns Results, Leaderboards and Match Centre with the central lifecycle model. Results now distinguish pre-tournament, live, review, quiet and completed canonical-result states. Leaderboards now show competition-scoped lifecycle copy for Original Predictor and KO Predictor. Match Centre now shows fixture-level lifecycle copy for live, review, completed, scheduled and unresolved knockout contexts. The slice adds `audit:results-lifecycle` to `npm run check`, keeps active migrations at 18 and adds no Migration 019.
+
+## Stage 13G-B League Lifecycle Update
+
+- Stage 13G-B League lifecycle alignment is complete at the package level: Leagues and member comparisons now receive central lifecycle context and state Original release as global-lock based while KO release remains fixture-by-fixture. No database change and no Migration 019.

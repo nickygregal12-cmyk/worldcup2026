@@ -158,6 +158,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 ## Change log
 
+- **v1.28:** Stage 13G-B League lifecycle alignment slice from `03bc447` adds central lifecycle input to private leagues, competition-scoped Original/KO release copy, member-comparison release copy and `audit:league-lifecycle` in `npm run check`. No database change and no Migration 019.
 - **v1.27:** Stage 13G-B Results lifecycle alignment slice from `177605b` adds central lifecycle banners to Results, competition-scoped lifecycle copy to Leaderboards, fixture-level lifecycle copy to Match Centre and `audit:results-lifecycle` in `npm run check`. No database change and no Migration 019.
 
 
