@@ -141,6 +141,6 @@ console.log('Competition boundary: Original and KO points remain separate; predi
 console.log('Admin controls: protected operations and revision-safe curated team profiles remain owner-controlled')
 console.log('Team profile sources: curated admin facts, app-owned tournament data and privacy-gated Original Predictor aggregates')
 console.log('External result APIs: deferred')
-console.log('Database migrations: 17, including read-only player-insight Migration 017')
+console.log('Database migrations: 18, including Admin operations Migration 018 and read-only player-insight Migration 017')
 console.log('Guest storage: browser-only and unscored')
 console.log('Inherited WC26 application bundle: inactive')
