@@ -177,6 +177,9 @@ Prediction immutability, real-fixture comparison, unresolved-original fallback, 
 
 ## Stage 13F-F — Admin Control Room
 
+**Accepted scope:** responsive visual and operational-layout rebuild only. Preserve all existing server-authorised operations; add no new powers or migration.
+
+
 - sectioned, phone-usable design-system presentation;
 - results, corrections, scoring, controls, grace, profiles, health and audit history;
 - presentation only; no RPC or authorisation changes.
@@ -323,3 +326,7 @@ Install and accept Stage 13F-D, then begin Stage 13F-E Admin invisibility.
 ### Stage 13F-E — Admin invisibility
 
 Accepted scope: hide every Admin discovery path from non-admin users, fail closed on direct route access, and retain all existing control-room capability for server-verified administrators. No migration. The next functional-completion batch is Stage 13F-F.
+
+### Stage 13F-F acceptance
+
+Accepted at package checkpoint `8349e83`: authorised Admin presentation grouped into overview, safeguards, team content, match operations and scoring activity. Stage 13F-G remains the owner of staging Time & Phase controls; Stage 13F-K remains the owner of the complete operations backbone.

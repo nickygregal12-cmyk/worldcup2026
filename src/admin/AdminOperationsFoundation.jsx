@@ -8,6 +8,8 @@ import {
 } from './adminOperationsModel.js'
 import AdminControlRoomSections from './AdminControlRoomSections.jsx'
 import AdminTeamProfiles from './AdminTeamProfiles.jsx'
+import styles from './AdminControlRoom.module.css'
+import { AdminSummary, ResultHistory, ScoringRuns } from './AdminControlRoomStatus.jsx'
 import { RuntimeHealthPanel } from '../observability/index.js'
 import {
   loadAdminMatchHistory,
@@ -43,61 +45,6 @@ function ScoreInput({ label, value, onChange, disabled = false }) {
         onChange={event => onChange(event.target.value)}
       />
     </label>
-  )
-}
-
-function AdminSummary({ matches, role }) {
-  const summary = useMemo(() => ({
-    live: matches.filter(match => match.matchStatus === 'live').length,
-    confirmed: matches.filter(match => match.resultStatus === 'confirmed').length,
-    review: matches.filter(match => match.resultStatus === 'manual_review').length,
-    unresolved: matches.filter(match => !match.homeTeamId || !match.awayTeamId).length,
-  }), [matches])
-
-  return (
-    <div className="foundation-result-summary">
-      <div><strong>{humanise(role)}</strong><span>admin role</span></div>
-      <div><strong>{summary.live}</strong><span>live matches</span></div>
-      <div><strong>{summary.confirmed}</strong><span>confirmed results</span></div>
-      <div><strong>{summary.review}</strong><span>manual review</span></div>
-      <div><strong>{summary.unresolved}</strong><span>fixtures unresolved</span></div>
-    </div>
-  )
-}
-
-function ResultHistory({ history }) {
-  if (history.length === 0) {
-    return <p className="foundation-empty-copy">No result revisions have been recorded for this match.</p>
-  }
-
-  return (
-    <ol className="foundation-admin-history">
-      {history.map(event => (
-        <li key={event.eventId}>
-          <div>
-            <strong>Revision {event.resultRevision} · {humanise(event.eventType)}</strong>
-            <span>{formatTimestamp(event.createdAt)}</span>
-          </div>
-          <p>{event.adminNote ?? 'Recorded outside the browser admin control room.'}</p>
-          <small>{event.recordedByDisplayName} · {humanise(event.resultSource)}</small>
-        </li>
-      ))}
-    </ol>
-  )
-}
-
-function ScoringRuns({ runs }) {
-  if (runs.length === 0) return <p className="foundation-empty-copy">No scoring runs have been recorded.</p>
-  return (
-    <div className="foundation-admin-runs">
-      {runs.slice(0, 8).map(run => (
-        <div key={run.scoringRunId}>
-          <strong>{run.triggerMatchNumber ? `Match ${run.triggerMatchNumber}` : 'Full tournament'} · {humanise(run.status)}</strong>
-          <span>{formatTimestamp(run.startedAt)}</span>
-          {run.errorMessage && <small>{run.errorMessage}</small>}
-        </div>
-      ))}
-    </div>
   )
 }
 
@@ -246,149 +193,201 @@ export default function AdminOperationsFoundation({ client, reference }) {
   }
 
   return (
-    <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
-      <div className="foundation-section-heading">
-        <div>
+    <section className={`foundation-panel foundation-admin ${styles.page}`} aria-labelledby="stage12-admin-heading">
+      <header className={styles.hero}>
+        <div className={styles.heroCopy}>
           <span className="foundation-kicker">Tournament control room</span>
-          <h2 id="stage12-admin-heading">Expanded tournament operations</h2>
-          <p>Locks, grace, feature controls, results and recovery actions all use trusted RPCs and append-only auditing.</p>
+          <h2 id="stage12-admin-heading">Euro 2028 operations</h2>
+          <p>One authorised workspace for tournament safeguards, official results, recovery, editorial content and audit evidence.</p>
+          <div className={styles.heroMeta}>
+            <span className={styles.metaChip}>Role: {humanise(state.data.access.adminRole)}</span>
+            <span className={styles.metaChip}>Environment: development</span>
+            <span className={styles.metaChip}>15 active migrations</span>
+          </div>
         </div>
         <button type="button" className="foundation-secondary-button" onClick={load}>Refresh control room</button>
-      </div>
+      </header>
 
-      <AdminSummary matches={matches} role={state.data.access.adminRole} />
-      <RuntimeHealthPanel />
+      <nav className={styles.navigation} aria-label="Admin control-room sections">
+        <a href="#admin-overview">Overview</a>
+        <a href="#admin-safeguards">Safeguards</a>
+        <a href="#admin-team-content">Team content</a>
+        <a href="#admin-match-operations">Match operations</a>
+        <a href="#admin-scoring-activity">Scoring activity</a>
+      </nav>
+
+      <section className={styles.section} id="admin-overview" aria-labelledby="admin-overview-heading">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 id="admin-overview-heading">Operational overview</h3>
+            <p>Check live risk, unresolved fixtures and recent system health before changing tournament state.</p>
+          </div>
+        </div>
+        <AdminSummary matches={matches} role={state.data.access.adminRole} />
+        <RuntimeHealthPanel />
+      </section>
 
       {action.message && (
-        <p className={action.status === 'error' ? 'foundation-warning-text' : 'foundation-admin-action-message'} role="status">
+        <p className={styles.actionMessage} data-state={action.status} role="status" aria-live="polite">
           {action.message}
         </p>
       )}
 
-      <AdminControlRoomSections
-        client={client}
-        tournamentId={reference.tournamentId}
-        data={state.data}
-        matches={matches}
-        runAction={runAction}
-      />
+      <section className={styles.section} id="admin-safeguards" aria-labelledby="admin-safeguards-heading">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 id="admin-safeguards-heading">Tournament safeguards</h3>
+            <p>Global lock, feature controls, grace windows, allocation review and the append-only operations timeline.</p>
+          </div>
+        </div>
+        <p className={styles.safetyNote}>Irreversible and high-impact actions remain server-authorised, note-gated and audited.</p>
+        <AdminControlRoomSections
+          client={client}
+          tournamentId={reference.tournamentId}
+          data={state.data}
+          matches={matches}
+          runAction={runAction}
+        />
+      </section>
 
-      <AdminTeamProfiles
-        client={client}
-        tournamentId={reference.tournamentId}
-        profiles={state.data.teamProfiles ?? []}
-        adminRole={state.data.access.adminRole}
-        runAction={runAction}
-      />
+      <section className={styles.section} id="admin-team-content" aria-labelledby="admin-team-content-heading">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 id="admin-team-content-heading">Team content</h3>
+            <p>Review and maintain the curated tournament profile content available to users.</p>
+          </div>
+        </div>
+        <AdminTeamProfiles
+          client={client}
+          tournamentId={reference.tournamentId}
+          profiles={state.data.teamProfiles ?? []}
+          adminRole={state.data.access.adminRole}
+          runAction={runAction}
+        />
+      </section>
 
-      <div className="foundation-admin-layout">
-        <aside className="foundation-admin-match-list">
-          <label>
-            <span>Choose match</span>
-            <select value={selectedMatchId} onChange={event => chooseMatch(event.target.value)}>
-              {matches.map(match => (
-                <option key={match.matchId} value={match.matchId}>
-                  {match.matchNumber}. {match.homeTeamLabel} v {match.awayTeamLabel} · {humanise(match.resultStatus)}
-                </option>
-              ))}
-            </select>
-          </label>
+      <section className={`${styles.section} ${styles.matchArea}`} id="admin-match-operations" aria-labelledby="admin-match-operations-heading">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 id="admin-match-operations-heading">Match operations</h3>
+            <p>Select one fixture, review its current revision, then record a result, update status or run an explicit recalculation.</p>
+          </div>
+        </div>
+        <div className="foundation-admin-layout">
+          <aside className="foundation-admin-match-list">
+            <label>
+              <span>Choose match</span>
+              <select value={selectedMatchId} onChange={event => chooseMatch(event.target.value)}>
+                {matches.map(match => (
+                  <option key={match.matchId} value={match.matchId}>
+                    {match.matchNumber}. {match.homeTeamLabel} v {match.awayTeamLabel} · {humanise(match.resultStatus)}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-          {selectedMatch && (
-            <div className="foundation-admin-match-summary">
-              <span>{selectedMatch.stageName}{selectedMatch.groupCode ? ` · Group ${selectedMatch.groupCode}` : ''}</span>
-              <strong>{selectedMatch.homeTeamLabel} v {selectedMatch.awayTeamLabel}</strong>
-              <small>Result revision {selectedMatch.resultRevision} · Updated {formatTimestamp(selectedMatch.updatedAt)}</small>
+            {selectedMatch && (
+              <div className="foundation-admin-match-summary">
+                <span>{selectedMatch.stageName}{selectedMatch.groupCode ? ` · Group ${selectedMatch.groupCode}` : ''}</span>
+                <strong>{selectedMatch.homeTeamLabel} v {selectedMatch.awayTeamLabel}</strong>
+                <small>Result revision {selectedMatch.resultRevision} · Updated {formatTimestamp(selectedMatch.updatedAt)}</small>
+              </div>
+            )}
+          </aside>
+
+          {selectedMatch && draft && (
+            <div className="foundation-admin-workspace">
+              <article className="foundation-results-card foundation-results-card--wide">
+                <div className="foundation-results-card__heading">
+                  <div>
+                    <span className="foundation-kicker">Canonical result</span>
+                    <h3>Record or correct result</h3>
+                  </div>
+                  <small>Expected revision {selectedMatch.resultRevision}</small>
+                </div>
+
+                <div className="foundation-admin-form-grid">
+                  <label><span>Match status</span><select value={draft.matchStatus} onChange={event => updateDraft('matchStatus', event.target.value)}>{ADMIN_MATCH_STATUS.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
+                  <label><span>Result status</span><select value={draft.resultStatus} onChange={event => updateDraft('resultStatus', event.target.value)}>{ADMIN_RESULT_STATUS.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
+                  <label><span>Decision method</span><select disabled={clearsScores || selectedMatch.matchNumber <= 36} value={draft.decisionMethod} onChange={event => updateDraft('decisionMethod', event.target.value)}>{ADMIN_DECISION_METHOD.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
+                </div>
+
+                <div className="foundation-admin-score-grid">
+                  <ScoreInput label={`${selectedMatch.homeTeamLabel} after 90 min`} value={draft.homeScore90} disabled={clearsScores} onChange={value => updateDraft('homeScore90', value)} />
+                  <ScoreInput label={`${selectedMatch.awayTeamLabel} after 90 min`} value={draft.awayScore90} disabled={clearsScores} onChange={value => updateDraft('awayScore90', value)} />
+                  {showExtraTime && <ScoreInput label={`${selectedMatch.homeTeamLabel} after extra time`} value={draft.homeScoreAet} disabled={clearsScores} onChange={value => updateDraft('homeScoreAet', value)} />}
+                  {showExtraTime && <ScoreInput label={`${selectedMatch.awayTeamLabel} after extra time`} value={draft.awayScoreAet} disabled={clearsScores} onChange={value => updateDraft('awayScoreAet', value)} />}
+                  {showPenalties && <ScoreInput label={`${selectedMatch.homeTeamLabel} penalties`} value={draft.homePenalties} disabled={clearsScores} onChange={value => updateDraft('homePenalties', value)} />}
+                  {showPenalties && <ScoreInput label={`${selectedMatch.awayTeamLabel} penalties`} value={draft.awayPenalties} disabled={clearsScores} onChange={value => updateDraft('awayPenalties', value)} />}
+                </div>
+
+                <label className="foundation-admin-note">
+                  <span>Audit note</span>
+                  <textarea value={draft.note} maxLength="500" onChange={event => updateDraft('note', event.target.value)} placeholder="State the official source or reason for this change." />
+                </label>
+
+                {validation && !validation.valid && (
+                  <ul className="foundation-admin-validation">
+                    {validation.errors.map(error => <li key={error}>{error}</li>)}
+                  </ul>
+                )}
+
+                <button
+                  type="button"
+                  disabled={!validation?.valid || !resultEntryEnabled || action.status === 'working'}
+                  onClick={() => runAction(
+                    () => saveAdminMatchResult(client, reference.tournamentId, selectedMatch, draft),
+                    `Match ${selectedMatch.matchNumber} result saved and points recalculated.`,
+                  )}
+                >
+                  {selectedMatch.resultRevision > 0 ? 'Save corrected result' : 'Record result'}
+                </button>
+              </article>
+
+              <article className="foundation-results-card">
+                <span className="foundation-kicker">Status only</span>
+                <h3>Update match state</h3>
+                <p>Use this for live, paused or postponed status changes without rewriting the result revision.</p>
+                <label><span>New status</span><select value={statusDraft} onChange={event => setStatusDraft(event.target.value)}>{ADMIN_MATCH_STATUS.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
+                <label className="foundation-admin-note"><span>Audit note</span><textarea value={statusNote} maxLength="500" onChange={event => setStatusNote(event.target.value)} /></label>
+                <button type="button" disabled={statusNote.trim().length < 5 || action.status === 'working'} onClick={() => runAction(
+                  () => updateAdminMatchStatus(client, reference.tournamentId, selectedMatch, statusDraft, statusNote),
+                  `Match ${selectedMatch.matchNumber} status updated.`,
+                )}>Update status</button>
+              </article>
+
+              <article className="foundation-results-card">
+                <span className="foundation-kicker">Recovery control</span>
+                <h3>Recalculate this match</h3>
+                <p>This replaces this match’s existing point rows. It never adds a duplicate score.</p>
+                <label className="foundation-admin-note"><span>Audit note</span><textarea value={recalculationNote} maxLength="500" onChange={event => setRecalculationNote(event.target.value)} /></label>
+                <button type="button" disabled={!scoringRecalculationEnabled || selectedMatch.resultStatus !== 'confirmed' || recalculationNote.trim().length < 5 || action.status === 'working'} onClick={() => runAction(
+                  () => recalculateAdminMatchPoints(client, reference.tournamentId, selectedMatch, recalculationNote),
+                  `Match ${selectedMatch.matchNumber} points recalculated.`,
+                )}>Recalculate points</button>
+              </article>
+
+              <article className="foundation-results-card foundation-results-card--wide">
+                <span className="foundation-kicker">Append-only audit</span>
+                <h3>Result revision history</h3>
+                <ResultHistory history={history} />
+              </article>
             </div>
           )}
-        </aside>
+        </div>
+      </section>
 
-        {selectedMatch && draft && (
-          <div className="foundation-admin-workspace">
-            <article className="foundation-results-card foundation-results-card--wide">
-              <div className="foundation-results-card__heading">
-                <div>
-                  <span className="foundation-kicker">Canonical result</span>
-                  <h3>Record or correct result</h3>
-                </div>
-                <small>Expected revision {selectedMatch.resultRevision}</small>
-              </div>
-
-              <div className="foundation-admin-form-grid">
-                <label><span>Match status</span><select value={draft.matchStatus} onChange={event => updateDraft('matchStatus', event.target.value)}>{ADMIN_MATCH_STATUS.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
-                <label><span>Result status</span><select value={draft.resultStatus} onChange={event => updateDraft('resultStatus', event.target.value)}>{ADMIN_RESULT_STATUS.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
-                <label><span>Decision method</span><select disabled={clearsScores || selectedMatch.matchNumber <= 36} value={draft.decisionMethod} onChange={event => updateDraft('decisionMethod', event.target.value)}>{ADMIN_DECISION_METHOD.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
-              </div>
-
-              <div className="foundation-admin-score-grid">
-                <ScoreInput label={`${selectedMatch.homeTeamLabel} after 90 min`} value={draft.homeScore90} disabled={clearsScores} onChange={value => updateDraft('homeScore90', value)} />
-                <ScoreInput label={`${selectedMatch.awayTeamLabel} after 90 min`} value={draft.awayScore90} disabled={clearsScores} onChange={value => updateDraft('awayScore90', value)} />
-                {showExtraTime && <ScoreInput label={`${selectedMatch.homeTeamLabel} after extra time`} value={draft.homeScoreAet} disabled={clearsScores} onChange={value => updateDraft('homeScoreAet', value)} />}
-                {showExtraTime && <ScoreInput label={`${selectedMatch.awayTeamLabel} after extra time`} value={draft.awayScoreAet} disabled={clearsScores} onChange={value => updateDraft('awayScoreAet', value)} />}
-                {showPenalties && <ScoreInput label={`${selectedMatch.homeTeamLabel} penalties`} value={draft.homePenalties} disabled={clearsScores} onChange={value => updateDraft('homePenalties', value)} />}
-                {showPenalties && <ScoreInput label={`${selectedMatch.awayTeamLabel} penalties`} value={draft.awayPenalties} disabled={clearsScores} onChange={value => updateDraft('awayPenalties', value)} />}
-              </div>
-
-              <label className="foundation-admin-note">
-                <span>Audit note</span>
-                <textarea value={draft.note} maxLength="500" onChange={event => updateDraft('note', event.target.value)} placeholder="State the official source or reason for this change." />
-              </label>
-
-              {validation && !validation.valid && (
-                <ul className="foundation-admin-validation">
-                  {validation.errors.map(error => <li key={error}>{error}</li>)}
-                </ul>
-              )}
-
-              <button
-                type="button"
-                disabled={!validation?.valid || !resultEntryEnabled || action.status === 'working'}
-                onClick={() => runAction(
-                  () => saveAdminMatchResult(client, reference.tournamentId, selectedMatch, draft),
-                  `Match ${selectedMatch.matchNumber} result saved and points recalculated.`,
-                )}
-              >
-                {selectedMatch.resultRevision > 0 ? 'Save corrected result' : 'Record result'}
-              </button>
-            </article>
-
-            <article className="foundation-results-card">
-              <span className="foundation-kicker">Status only</span>
-              <h3>Update match state</h3>
-              <p>Use this for live, paused or postponed status changes without rewriting the result revision.</p>
-              <label><span>New status</span><select value={statusDraft} onChange={event => setStatusDraft(event.target.value)}>{ADMIN_MATCH_STATUS.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
-              <label className="foundation-admin-note"><span>Audit note</span><textarea value={statusNote} maxLength="500" onChange={event => setStatusNote(event.target.value)} /></label>
-              <button type="button" disabled={statusNote.trim().length < 5 || action.status === 'working'} onClick={() => runAction(
-                () => updateAdminMatchStatus(client, reference.tournamentId, selectedMatch, statusDraft, statusNote),
-                `Match ${selectedMatch.matchNumber} status updated.`,
-              )}>Update status</button>
-            </article>
-
-            <article className="foundation-results-card">
-              <span className="foundation-kicker">Recovery control</span>
-              <h3>Recalculate this match</h3>
-              <p>This replaces this match’s existing point rows. It never adds a duplicate score.</p>
-              <label className="foundation-admin-note"><span>Audit note</span><textarea value={recalculationNote} maxLength="500" onChange={event => setRecalculationNote(event.target.value)} /></label>
-              <button type="button" disabled={!scoringRecalculationEnabled || selectedMatch.resultStatus !== 'confirmed' || recalculationNote.trim().length < 5 || action.status === 'working'} onClick={() => runAction(
-                () => recalculateAdminMatchPoints(client, reference.tournamentId, selectedMatch, recalculationNote),
-                `Match ${selectedMatch.matchNumber} points recalculated.`,
-              )}>Recalculate points</button>
-            </article>
-
-            <article className="foundation-results-card foundation-results-card--wide">
-              <span className="foundation-kicker">Append-only audit</span>
-              <h3>Result revision history</h3>
-              <ResultHistory history={history} />
-            </article>
+      <section className={styles.section} id="admin-scoring-activity" aria-labelledby="admin-scoring-activity-heading">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h3 id="admin-scoring-activity-heading">Scoring activity</h3>
+            <p>Review the latest replacement-based scoring runs and any recorded failure message.</p>
           </div>
-        )}
-      </div>
-
-      <article className="foundation-results-card foundation-results-card--wide">
-        <span className="foundation-kicker">Latest scoring activity</span>
-        <h3>Scoring runs</h3>
-        <ScoringRuns runs={state.data.scoringRuns} />
-      </article>
+        </div>
+        <article className="foundation-results-card foundation-results-card--wide">
+          <ScoringRuns runs={state.data.scoringRuns} />
+        </article>
+      </section>
     </section>
   )
 }

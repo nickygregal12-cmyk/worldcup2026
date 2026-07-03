@@ -58,7 +58,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 |---|---|---|---|
 | Server result entry/corrections/recalculation | ✅ FUNCTIONAL | Revision-safe and audit-logged | — |
 | Admin invisible to non-admins | ❌ MISSING | Universal route and More entry expose the destination | 13F-E |
-| Admin UI fit for purpose | ❌ MISSING | One stacked legacy control page; not phone-ready | 13F-F |
+| Admin UI fit for purpose | ✅ FUNCTIONAL | Authorised operations are grouped into overview, safeguards, team content, match operations and scoring activity with scoped responsive presentation; existing powers and permissions are unchanged | — |
 | Staging Time & Phase controls | ❌ MISSING | Client clock cannot drive database lock/privacy rules | 13F-G/16 |
 | Profile curation | ✅ FUNCTIONAL | Stage 13E owner editing | — |
 
@@ -119,3 +119,5 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Capability | Status | Evidence | Owner |
 | --- | --- | --- | --- |
 | Admin invisibility and fail-closed route access | FUNCTIONAL | Admin navigation is emitted only for server-verified administrators; signed-out, denied and verification-error direct-route states remain neutral; verified admins retain the full control room. | 13F-E |
+
+- **v1.10:** Stage 13F-F rebuilds the authorised Admin control room presentation without adding powers, changing permissions or creating a migration.
