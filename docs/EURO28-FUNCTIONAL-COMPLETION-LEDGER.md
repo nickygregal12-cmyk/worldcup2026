@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.5 — Stage 13F-A guest journey and Lucky Dip from commit `51696c3`
+### Version 1.6 — Stage 13F-B player identity and complete H2H from commit `2e2b9a8`
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -25,17 +25,17 @@
 | Groups predictor | ✅ FUNCTIONAL | 36 matches, five jokers and review accepted in Stage 13B | — |
 | Original Bracket | ✅ FUNCTIONAL | Winner-only journey accepted in Stage 13C | — |
 | KO Predictor | ✅ FUNCTIONAL | Separate real-fixture competition accepted in Stage 13C | — |
-| Private leagues | ✅ FUNCTIONAL | Both standings exist; controller reduced to 399 lines with presentation extracted and unchanged | — |
+| Private leagues | ✅ FUNCTIONAL | Both standings exist; controller remains within the enforced hard cap with presentation extracted | — |
 | Results and leaderboards data | ✅ FUNCTIONAL | Both complete overall tables are returned and rendered for signed-in users | — |
 | Results and leaderboards access | ✅ FUNCTIONAL | `#/results` owns live tournament content; `#/leaderboards` owns the full competition tables and points, with More and competition-specific Home links | — |
 | Core player information architecture | ✅ FUNCTIONAL | Authoritative site-access map, direct destinations and contextual entry rules are enforced by `audit:access`; restricted Admin visibility remains its own Stage 13F-E row | — |
 | Team Profile Sheet | ✅ FUNCTIONAL | Accepted in Stage 13E | — |
-| Head-to-head comparison | 🟠 PARTIAL | Secure league comparison exists; overall and match-aligned presentation are incomplete | 13F-B |
-| Tappable player identity | 🟠 PARTIAL | Some names are clickable; no shared player primitive or universal behaviour | 13F-B |
+| Head-to-head comparison | ✅ FUNCTIONAL | League and overall tables open one shared, competition-scoped surface aligning all 51 Original positions or all 15 KO fixtures with same/different/private/not-saved states | — |
+| Tappable player identity | ✅ FUNCTIONAL | One accessible `PlayerIdentity` primitive is used by league standings, overall leaderboards and comparison headers; self identity remains non-interactive | — |
 | Match Centre/per-match stats | ❌ MISSING | No live Euro per-match drill-in | 13F-C |
 | Bracket Health | ❌ MISSING | No alive/dead path and remaining-points view | 13F-D |
 | Extra tournament picks | 🕓 SCHEDULED | Original Predictor feature; final list/values still require approval | 13F-I/17A |
-| Share Card | 🕓 SCHEDULED | Reconsider only after final design and location are approved | Post-design |
+| Converging wall-chart bracket layout (≥900px) + share-card image rendering | 🕓 SCHEDULED | Presentation-only second layout of the existing predicted and live bracket destinations. At ≥900px, Round of 16 ties sit on the outer left and right, with quarter-finals and semi-finals converging towards the centred final. Phones retain the current vertical bracket. Both layouts use the same canonical resolver, slot references, shared `<TeamLabel>` primitive and dashed unresolved-slot chips. Predicted and live contexts remain separately bannered and never blend. The share asset is this wall-chart layout rendered as a shareable/downloadable image. No new logic, data model, migration or invariant change. | 13P-A |
 
 ## Section B — Guest mode
 
@@ -100,6 +100,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 ## Change log
 
+- **v1.6:** Stage 13F-B replaces ad hoc player-name buttons with one shared identity primitive, completes aligned league and overall H2H for both competitions, and schedules the presentation-only converging bracket/share-image batch at Stage 13P-A.
 - v1.5 — Stage 13F-A records separate KO guest persistence, seamless browser-draft continuation and transfer, progress-aware signup prompts, removal of normal JSON controls and Euro-native Lucky Dip.
 
 

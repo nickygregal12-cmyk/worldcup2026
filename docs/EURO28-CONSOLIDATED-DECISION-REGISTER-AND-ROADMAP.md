@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 2.9 — Stage 13C permanent bracket and separate KO match centre
+### Version 3.0 — Stage 13F-B completion and converging-bracket decision addendum
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
@@ -272,6 +272,24 @@ Google sign-in is an optional late-stage addition through Supabase OAuth.
 
 Roadmap placement: **Stage 18A — Optional Google sign-in**, before **Stage 18B — Optional results-provider integration**.
 
+
+## 10A. 3 July 2026 functional-completion addendum
+
+### Confirmed Decision 13 — Classic converging bracket and Share Card
+
+The Original predicted bracket and the live bracket will each receive a classic converging wall-chart presentation: Round of 16 ties on the outer left and right, quarter-finals and semi-finals converging inward, and the final centred.
+
+Binding constraints:
+
+1. The feature is presentation-only. It is a second layout of the existing bracket destinations and must use the existing canonical resolver, existing slot references, the shared `<TeamLabel>` primitive in every team position and dashed placeholder chips for unresolved slots. It introduces no new bracket logic, data model, migration or change to any product invariant.
+2. The converging layout applies only at the desktop/tablet breakpoint of `≥900px`. Phones retain the current vertical bracket using the same components and data in a different arrangement. The converging form must not be compressed onto phone widths.
+3. The Original predicted bracket and the live bracket each receive the layout inside their own clearly bannered context. Predicted and live brackets remain separate and must never blend.
+4. Implementation must follow all standing construction principles: shared primitives, semantic tokens only, enforced file-size limits, complete loading/empty/error/partial states, both themes and accessibility.
+
+The Share Card decision is settled: the Share Card is the user’s completed bracket rendered from this converging wall-chart layout in the Euro 2028 Predictor identity as a shareable/downloadable image. It must work on every device, including phones, and is not a separate visual design or separate bracket implementation.
+
+**Roadmap owner:** Stage 13P-A, the first polish batch after every Stage 13F functional-completion batch has been accepted. No current Stage 13F scope or sequence changes.
+
 ## 11. Updated build roadmap
 
 ### Completed
@@ -302,6 +320,8 @@ Roadmap placement: **Stage 18A — Optional Google sign-in**, before **Stage 18B
 - **13C — complete:** permanent winner-only predicted bracket; separate real-fixture KO match centre with 90-minute score, advancing team, method, five KO jokers, separate points/rank and hidden unresolved fixtures. No Migration 015.
 - **13D:** Leagues, results, shared predictions and responsive polish.
 - **13E:** Team Profile Sheet implemented through `<TeamLabel>` with the three-source data boundary and post-lock aggregate gate.
+- **13F:** Functional-completion sequence remains 13F-0, 13F-A through 13F-I.
+- **13P-A:** First post-13F polish batch: presentation-only converging predicted/live bracket layouts at `≥900px`, with the completed converging bracket rendered as the cross-device Share Card image.
 
 ### Later stages
 

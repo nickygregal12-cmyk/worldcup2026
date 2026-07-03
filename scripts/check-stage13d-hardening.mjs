@@ -22,14 +22,15 @@ for (const marker of ['begin()', 'cancel()', 'isCurrent(token)']) {
   if (!latestRequest.includes(marker)) fail(`Latest-request guard is missing: ${marker}`)
 }
 
-const leagues = [read('src/leagues/LeaguesFoundation.jsx'), read('src/leagues/LeaguePresentation.jsx')].join('\n')
+const sharedComparison = [read('src/player/PlayerHeadToHead.jsx'), read('src/player/playerComparisonModel.js')].join('\n')
+const leagues = [read('src/leagues/LeaguesFoundation.jsx'), read('src/leagues/LeaguePresentation.jsx'), sharedComparison].join('\n')
 for (const marker of [
   'createLatestRequestGuard',
   'competitionKey: requestedCompetitionKey',
   'buildStandingComparison',
   'foundation-destructive-confirmation',
   'Confirm delete',
-  'privateSelectionCount',
+  'privateSelections',
 ]) {
   if (!leagues.includes(marker)) fail(`League hardening is missing: ${marker}`)
 }
@@ -37,13 +38,13 @@ if (leagues.includes('<HeadToHead state={comparison} competitionKey={competition
   fail('League comparison must use the competition captured by the authorised request')
 }
 
-const results = [read('src/results/ResultsAndLeaderboardsFoundation.jsx'), read('src/results/ResultsPresentation.jsx')].join('\n')
+const results = [read('src/results/ResultsAndLeaderboardsFoundation.jsx'), read('src/results/ResultsPresentation.jsx'), sharedComparison].join('\n')
 for (const marker of [
   'createLatestRequestGuard',
   "status: previous.data ? 'partial' : 'error'",
   'The last available data remains visible',
   'comparisonRequests.current.isCurrent',
-  'privateSelectionCount',
+  'privateSelections',
 ]) {
   if (!results.includes(marker)) fail(`Results hardening is missing: ${marker}`)
 }

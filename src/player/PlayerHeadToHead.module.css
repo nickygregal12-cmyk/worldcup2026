@@ -1,0 +1,285 @@
+.panel {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+  padding: var(--space-6);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.header h3,
+.header p {
+  margin: 0;
+}
+
+.header p {
+  margin-top: var(--space-1);
+  color: var(--text-secondary);
+}
+
+.kicker {
+  color: var(--text-link);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.close {
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  color: var(--text-strong);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.close:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.players {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.playerCard {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.playerStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.playerStats strong {
+  color: var(--text-strong);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.summary div {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.summary strong {
+  color: var(--text-strong);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+}
+
+.summary span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.state {
+  margin: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--state-info-border);
+  border-radius: var(--radius-md);
+  background: var(--state-info-soft);
+  color: var(--state-info);
+}
+
+.stateError {
+  border-color: var(--state-danger-border);
+  background: var(--state-danger-soft);
+  color: var(--state-danger);
+}
+
+.rows {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(8.5rem, 0.8fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.rowContext {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+}
+
+.rowContext span,
+.selection small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+
+.rowContext strong,
+.selection strong {
+  color: var(--text-strong);
+}
+
+.matchState {
+  width: fit-content;
+  padding: 0.15rem var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--surface-emphasis);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 750;
+}
+
+.same {
+  background: var(--state-success-soft);
+  color: var(--state-success);
+}
+
+.different {
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
+}
+
+.selection {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.2rem;
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.selectionPrivate {
+  border-style: dashed;
+  background: var(--surface-sunken);
+}
+
+.selectionMissing {
+  border-style: dashed;
+}
+
+.selectionLabel {
+  color: var(--text-link);
+  font-size: var(--text-xs);
+  font-weight: 800;
+}
+
+.joker {
+  color: var(--joker);
+  font-weight: 750;
+}
+
+@media (max-width: 760px) {
+  .panel {
+    padding: var(--space-4);
+  }
+
+  .header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .close {
+    width: 100%;
+  }
+
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rowContext {
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border-default);
+  }
+}
+
+@media (max-width: 460px) {
+  .players,
+  .summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.sections {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.section {
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.section > summary {
+  min-height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-strong);
+  cursor: pointer;
+}
+
+.section > summary:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: -3px;
+}
+
+.section > summary span {
+  min-width: 1.75rem;
+  padding: 0.1rem var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--surface-emphasis);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.section .rows {
+  padding: 0 var(--space-3) var(--space-3);
+}

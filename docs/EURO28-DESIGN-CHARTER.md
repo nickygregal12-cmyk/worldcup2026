@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.7 — frontend architecture and enforcement restored
+### Version 1.8 — converging bracket and share-image decision recorded
 
 > **Authority:** This document governs how the Euro 2028 Predictor looks and feels. The Consolidated Decision Register governs product rules. The Agent Rules govern build process. A visual deviation must be proposed here before it ships.
 
@@ -245,7 +245,7 @@ The staging preview remains the sign-off surface for future palette refinements.
 
 - Final app mark or wordmark treatment beyond the confirmed name.
 - Exact future blue values if the staging preview is refined before 2028.
-- Share-card location and value after final product design is signed off.
+- **DECIDED — Share Card:** the Share Card is the user’s completed bracket rendered from the Stage 13P-A converging wall-chart layout in the Euro 2028 Predictor identity as a shareable/downloadable image. It is not a separate design or bracket implementation; only its scheduled implementation remains deferred.
 
 ## Change log
 
@@ -256,3 +256,4 @@ The staging preview remains the sign-off surface for future palette refinements.
 - **v1.5:** Stage 13B implements shared TeamLabel, local flags, unresolved slots, score input, prediction states and gold-only joker treatment.
 - **v1.6:** Stage 13C separates the predicted Original Bracket from the real-fixture KO Predictor.
 - **v1.7:** Restored frontend architecture enforcement omitted during Stage 13A reconciliation; added scoped styling, size limits, dependency direction, fixture isolation, WCAG contrast checks and explicit implementation-versus-acceptance terminology.
+- **v1.8:** Settled the Share Card as the completed converging wall-chart bracket rendered to an image and scheduled the presentation-only layout for Stage 13P-A.

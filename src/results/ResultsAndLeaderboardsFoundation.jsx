@@ -4,7 +4,9 @@ import { LEADERBOARD_COMPETITION } from '../app/appRoutes.js'
 import { loadOverallHeadToHead, loadResultsAndLeaderboards } from './resultService.js'
 import { buildCanonicalResultFeed, buildLiveBracketRounds, RESULT_COMPETITION } from './resultModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { GroupTable, Leaderboard, LiveBracket, OverallComparison, PointsBreakdown, ResultsFeed, SectionError } from './ResultsPresentation.jsx'
+import { GroupTable, Leaderboard, LiveBracket, PointsBreakdown, ResultsFeed, SectionError } from './ResultsPresentation.jsx'
+import { buildStandingComparison } from '../leagues/leagueModel.js'
+import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
 import { RESULTS_PAGE_VIEW } from './resultsAccess.js'
 import styles from './ResultsAccess.module.css'
 
@@ -58,11 +60,19 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference, vi
   const compareOverall = async (row, requestedCompetitionKey) => {
     if (!state.data?.currentUserId) return
     const requestToken = comparisonRequests.current.begin()
+    const leaderboardRows = requestedCompetitionKey === RESULT_COMPETITION.ORIGINAL
+      ? state.data.sections.originalLeaderboard.data
+      : state.data.sections.koLeaderboard.data
+    const rowsWithCurrentUser = leaderboardRows.map(candidate => ({
+      ...candidate,
+      isCurrentUser: candidate.userId === state.data.currentUserId,
+    }))
     setComparison({
       status: 'loading',
       otherName: row.displayName,
       otherUserId: row.userId,
       competitionKey: requestedCompetitionKey,
+      standings: buildStandingComparison(rowsWithCurrentUser, row.userId),
       data: null,
       error: null,
     })
@@ -185,7 +195,7 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference, vi
               competitionKey={resultCompetitionKey}
             />
           </div>
-          <OverallComparison state={comparison} reference={reference} onClose={closeComparison} />
+          <PlayerHeadToHead state={comparison} reference={reference} onClose={closeComparison} context={PLAYER_COMPARISON_CONTEXT.OVERALL} />
         </>
       )}
 

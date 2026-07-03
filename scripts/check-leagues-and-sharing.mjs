@@ -75,6 +75,7 @@ if (!resultService.includes('get_member_predictions_after_lock')) {
 const resultsView = [
   fs.readFileSync(path.join(root, 'src/results/ResultsAndLeaderboardsFoundation.jsx'), 'utf8'),
   fs.readFileSync(path.join(root, 'src/results/ResultsPresentation.jsx'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src/player/PlayerHeadToHead.jsx'), 'utf8'),
 ].join('\n')
 if (!resultsView.includes('Overall head to head')) fail('overall leaderboard names are not clickable comparison entry points')
 

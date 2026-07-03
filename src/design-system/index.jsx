@@ -4,6 +4,7 @@ import ScoreInput from './ScoreInput.jsx'
 import PredictionStateBadge from './PredictionStateBadge.jsx'
 import { useEffect, useId, useRef } from 'react'
 import Icon from './Icon.jsx'
+import PlayerIdentity from './PlayerIdentity.jsx'
 
 export function Button({ children, variant = 'primary', size = 'medium', icon = null, loading = false, className = '', disabled, ...props }) {
   return (
@@ -159,4 +160,4 @@ export function Dialog({ open, title, onClose, children, labelledBy, className =
   )
 }
 
-export { Icon, TeamLabel, ScoreInput, PredictionStateBadge }
+export { Icon, PlayerIdentity, TeamLabel, ScoreInput, PredictionStateBadge }

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueHeadToHead, loadLeagueOverview, readLeagueSession } from './leagueService.js'
 import { buildStandingComparison, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { CompetitionTabs, HeadToHead, LeaguePicker, LeagueSummaryCard, MemberPicker, StandingsTable } from './LeaguePresentation.jsx'
+import { CompetitionTabs, LeaguePicker, LeagueSummaryCard, MemberPicker, StandingsTable } from './LeaguePresentation.jsx'
+import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
 
 function competitionName(competitionKey) {
   return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
@@ -248,8 +249,6 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
     }
   }
 
-
-
   const overviewLoading = Boolean(selectedLeague?.id) && overview.leagueId !== selectedLeague.id
   const activeOverview = overviewLoading ? null : overview.data
   const activeSection = competitionKey === LEAGUE_COMPETITION.ORIGINAL
@@ -389,7 +388,7 @@ export default function LeaguesFoundation({ client, tournamentId, reference }) {
                 {standings.length > 0 && <StandingsTable rows={standings} competitionKey={competitionKey} onCompare={compareMember} />}
               </article>
 
-              <HeadToHead state={comparison} reference={reference} onClose={clearComparison} />
+              <PlayerHeadToHead state={comparison} reference={reference} onClose={clearComparison} context={PLAYER_COMPARISON_CONTEXT.LEAGUE} />
             </>
           )}
         </>

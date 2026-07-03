@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.4 — Stage 13F-A guest journey from `51696c3`
+### Version 4.5 — Stage 13F-B player identity and complete H2H from `2e2b9a8`
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -42,6 +42,8 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 14B Batch 1: architecture governance gates accepted at `66adb1f`; 59 test files and 321 tests passed.
 - Stage 14B Batch 2: structural compliance accepted at `8e11edd`; all active JSX files are within the 400-line hard cap and 59 test files / 321 tests passed.
 - Stage 14B Batch 3: contrast completion accepted at `7261888`; all 58 registered token pairs pass with zero exceptions and 59 test files / 321 tests passed.
+- Stage 13F-0: site-wide information architecture and direct leaderboard access accepted at `51696c3`.
+- Stage 13F-A: guest Original/KO persistence, safe account transfer, signup prompts and Lucky Dip accepted at `2e2b9a8`; 63 test files and 333 tests passed.
 
 # Delivery sequence
 
@@ -92,7 +94,7 @@ Stage 14B ends with no oversized active UI component and no contrast exception.
 
 Admin invisibility remains Stage 13F-E and is explicitly not claimed complete here. Future H2H, Match Centre and Bracket Health entry rules are recorded now and implemented in their owning stages.
 
-## Stage 13F-A — Guest journey and Lucky Dip
+## Stage 13F-A — Guest journey and Lucky Dip — ACCEPTED AT `2e2b9a8`
 
 ### Implementation scope
 
@@ -114,11 +116,20 @@ All five guest ledger rows move together: KO persistence, transfer, signup encou
 
 ## Stage 13F-B — Player identity and complete H2H
 
-- one reusable player identity primitive;
-- league and overall usage;
-- aligned match-by-match Original and KO comparison;
-- current privacy rules preserved;
-- competition totals remain separate.
+- add one reusable `PlayerIdentity` primitive to the shared design system;
+- replace ad hoc league and overall player-name buttons with that primitive;
+- use one shared H2H surface from both league and overall entry points;
+- show selected-competition rank and points for both players;
+- align all 36 Original group matches and all 15 Original bracket positions;
+- align all 15 KO Predictor real-fixture positions;
+- render same, different, protected and not-saved states side by side;
+- preserve the existing Original global-lock and KO fixture-start privacy rules;
+- keep Original and KO Predictor totals separate;
+- add no database change or Migration 016.
+
+### Completion gate
+
+Both ledger rows move together: player identity and H2H comparison. Stage 13F-B is not complete if league and overall use different interaction or presentation paths, if either competition is only partially aligned, or if privacy is inferred client-side.
 
 ## Stage 13F-C — Euro Match Centre
 
@@ -190,9 +201,18 @@ Recommended list awaiting approval:
 
 The real player selector activates only in Stage 17A when official player data exists.
 
-## Post-design optional enhancement — Share Card
+## Stage 13P-A — Converging wall-chart bracket and Share Image
 
-Reconsider only after all functional stages and final design sign-off. Add only if a natural location and real player value are demonstrated.
+This is the first polish batch after every Stage 13F functional-completion batch has been accepted. No incomplete Stage 13F work may be deferred into this batch.
+
+- Add a classic converging wall-chart layout to the existing Original predicted bracket and live bracket destinations.
+- At widths of `≥900px`, place Round of 16 ties on the outer left and right, quarter-finals and semi-finals converging inward, and the final in the centre.
+- Below `900px`, retain the current vertical bracket. Do not compress the converging layout onto phone widths.
+- Treat the feature as presentation-only: use the existing canonical resolver, slot references, shared `<TeamLabel>` primitive and dashed unresolved-slot chips.
+- Keep the predicted and live brackets in separately bannered contexts; they must never blend.
+- Render the user's completed converging bracket as the Share Card: a shareable/downloadable image in the Euro 2028 Predictor identity that works on every device, including phones.
+- Use shared primitives and semantic tokens only, remain within enforced component and stylesheet size limits, and support loading, empty, error and partial states, both themes, keyboard access, adequate touch targets and reduced motion.
+- Add no new bracket logic, data model, migration, scoring rule, lock rule or change to any product invariant.
 
 ## Stage 15 — Chromium Playwright assurance
 
@@ -269,4 +289,4 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-Install and accept Stage 13F-A, then begin Stage 13F-B shared player identity and complete H2H.
+Install and accept Stage 13F-B, then begin Stage 13F-C Euro Match Centre.
