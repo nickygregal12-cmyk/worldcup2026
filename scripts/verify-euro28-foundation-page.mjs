@@ -13,23 +13,38 @@ async function readJson(pathname) {
   return response.json()
 }
 
-const [html, manifestText, worker, robots, health] = await Promise.all([
-  readText('/'), readText('/manifest.json'), readText('/sw.js'), readText('/robots.txt'), readJson('/.netlify/functions/health'),
+const [html, robots, health] = await Promise.all([
+  readText('/'),
+  readText('/robots.txt'),
+  readJson('/.netlify/functions/health'),
 ])
 assert(html.includes('<title>Euro 2028 Predictor</title>'), 'The deployed HTML title is not the Euro product title.')
 assert(html.includes('noindex, nofollow, noarchive'), 'The staging HTML is missing the no-index directive.')
 assert(!html.includes('WC26 Predictor') && !html.includes('wc26predictor1.netlify.app'), 'The deployed HTML still contains WC26 references.')
-const manifest = JSON.parse(manifestText)
-assert(manifest.name === 'Euro 2028 Predictor', 'The deployed manifest is incorrect.')
-assert(manifest.display === 'browser', 'The staging build must not silently change its install mode.')
-assert(worker.includes('registration.unregister()'), 'The retirement worker does not unregister itself.')
+assert(!html.includes('rel="manifest"'), 'The deployed HTML still references the deferred web manifest.')
 assert(robots.includes('Disallow: /'), 'The staging site is not blocked from indexing.')
 assert(health.service === 'euro28-predictor' && health.status === 'ok', 'The deployed Stage 14 health endpoint is not healthy.')
 assert(health.checks?.application?.status === 'ok' && health.checks?.database?.status === 'ok', 'The deployed Stage 14 health checks are incomplete.')
-const scriptMatch = html.match(/<script[^>]+src="([^"]*\/assets\/index-[^"]+\.js)"/)
-assert(scriptMatch, 'Could not locate the deployed Vite bundle.')
-const bundlePath = scriptMatch[1].startsWith('http') ? scriptMatch[1].replace(siteUrl, '') : scriptMatch[1]
-const bundle = await readText(bundlePath)
+const assetPaths = [...new Set(
+  [...html.matchAll(/(?:src|href)="([^"]*\/assets\/[^"]+\.js)"/g)]
+    .map(match => match[1])
+    .map(assetPath => (
+      assetPath.startsWith('http')
+        ? assetPath.replace(siteUrl, '')
+        : assetPath
+    )),
+)]
+
+assert(assetPaths.length > 0, 'Could not locate the deployed Vite JavaScript assets.')
+
+const deployedBundles = await Promise.all(assetPaths.map(readText))
+const deployedJavaScript = deployedBundles.join('\n')
+
+assert(
+  !deployedJavaScript.includes('serviceWorker.register'),
+  'The deployed bundle still registers the deferred service worker.',
+)
+
 for (const text of [
   'Make every Euro 2028 match matter.',
   'Your Original Predictor and KO Predictor are tracked separately',
@@ -60,7 +75,7 @@ for (const text of [
   'get_competition_leaderboard',
   'save_my_prediction_bundle',
   'save_my_ko_prediction_bundle',
-  'euro28-guest-prediction-bundle',
+  'euro28-guest-state-v2',
   'euro28:theme',
   'Group stage review',
   'Only confirmed real knockout fixtures are shown',
@@ -87,11 +102,11 @@ for (const text of [
   'KO jokers',
   'One member list, two separate competitions',
   'Compare with member',
-  'Results, live tables and separate points',
+  'Fixtures and results',
   'Canonical result records',
   'Live context · not your bracket',
-  'Original Predictor breakdown',
-  'KO Predictor breakdown',
+  'Original bracket progression',
+  'Advancing teams',
   'Points story',
   'How the total was earned',
   'Canonical scoring rows only',
@@ -106,8 +121,8 @@ for (const text of [
   'Runtime heartbeat',
   'Runtime health response',
   'Send Sentry test event',
-]) assert(bundle.includes(text), `The deployed Euro bundle is missing: ${text}`)
-assert(!bundle.includes('WC26 Control Centre'), 'The inherited WC26 admin application is active.')
+]) assert(deployedJavaScript.includes(text), `The deployed Euro JavaScript is missing: ${text}`)
+assert(!deployedJavaScript.includes('WC26 Control Centre'), 'The inherited WC26 admin application is active.')
 
 console.log('Euro 2028 app-shell verification passed.')
 console.log(`Site: ${siteUrl}`)
