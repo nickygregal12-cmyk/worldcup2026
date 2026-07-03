@@ -73,13 +73,11 @@ for (const prohibited of [
 const roadmap = fs.readFileSync('docs/EURO28-AGENT-RULES-AND-ROADMAP.md', 'utf8')
 const register = fs.readFileSync('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md', 'utf8')
 const ledger = fs.readFileSync('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', 'utf8')
-const addendum = fs.readFileSync('docs/EURO28-DECISION-REGISTER-ADDENDUM-2026-07-03.md', 'utf8')
 
 for (const [name, content, tokens] of [
-  ['roadmap', roadmap, ['Stage 13F-K3', 'c4342f1', 'Stage 13G-A']],
-  ['register', register, ['Stage 13F-K3', 'c4342f1', 'Stage 13G-A']],
-  ['ledger', ledger, ['Complete Admin operations backbone', '✅ FUNCTIONAL', 'Stage 13F-K3']],
-  ['addendum', addendum, ['Stage 13F-K3', 'rollback', 'Stage 13G-A']],
+  ['roadmap', roadmap, ['Stage 13F-K3', 'c4342f1', 'b7f50de', 'Stage 13G-R0']],
+  ['register', register, ['Stage 13F-K3', 'c4342f1', 'b7f50de', 'Stage 13G-R0', 'Stage 13G-A']],
+  ['ledger', ledger, ['Complete Admin operations backbone', '🟠 PARTIAL', 'Admin UI fit for purpose', '⚠️ INCOHERENT', 'Stage 13F-K3']],
 ]) {
   for (const token of tokens) {
     if (!content.includes(token)) throw new Error(`Stage 13F-K3 ${name} update missing: ${token}`)

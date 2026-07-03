@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.19 — Stage 13F-K3 staging acceptance and Admin close-out
+### Version 4.20 — Stage 13G-R0 canonical reconciliation and revised execution sequence
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -48,7 +48,7 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 13F-C: Euro Match Centre accepted at `b1b9879`.
 - Stage 13F-D: immutable Original Bracket Health accepted at `4532b99`.
 - Stage 13F-E: Admin invisibility accepted at `8349e83`.
-- Stage 13F-F: Admin Control Room visual rebuild accepted at `369ddfc`.
+- Stage 13F-F: presentation accepted at `369ddfc`, but its section-navigation claim is retrospectively corrected by Stage 13G-R0 because the audit did not render or click destinations.
 - Stage 13F-G: audited staging Time & Phase accepted at `7324d43`; Migration 016 applied.
 - Stage 13F-H: product-root and runtime coherence accepted at `74c8dd3`; 70 test files and 352 tests passed.
 - Stage 13F-I: Original-only tournament-pick contract accepted at `63d7acb`.
@@ -502,8 +502,23 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-From verified checkpoint `c4342f1`, install and accept Stage 13F-K3 — staging acceptance and complete Admin operations close-out. Retain exactly 18 migrations, run the guarded owner/results-admin/member rollback proof, complete the deployed role walkthroughs, perform and verify one real owner reconciliation, pass the linked/full/deployed gates, then close Stage 13F-K. Stage 13G-A is next; Stage 16A, Stage 17A and Stage 13P-A must not begin early.
+From verified archive checkpoint `b7f50de`, install and accept **Stage 13G-R0 — Canonical Documentation Reconciliation and Truthful Ledger v1.21**. This batch changes governing documentation only, removes the superseded standalone 3 July addendum, retains exactly 18 migrations and creates no Migration 019. After owner acceptance and commit/push, Stage 13G-A is next. No product code, database role change, synthetic seeding, Stage 17A or Stage 13P-A work may begin inside R0.
 
-### Stage 13F-H acceptance
+### Approved Stage 13G sequence
 
-Accepted scope at checkpoint `74c8dd3`: product root inversion, active Foundation naming retirement, visual-fixture isolation, Euro-only Netlify deploy input, deferred PWA/push remnant removal and rejected snapshot-function removal. No migration or product-rule change.
+- 13G-R0 — canonical reconciliation and contracts.
+- 13G-A — Admin route integrity, central configuration and shared interaction primitives.
+- 13G-B — Home, lifecycle and KO prominence.
+- 13G-C — Groups, standings, bracket coherence and guide.
+- 13G-D — People, leagues and sharing.
+- 16A — seeded staging cast after identity/sharing contracts stabilise.
+- 13G-E — whole-surface coherence.
+- 15E — WC26 legacy retirement after tag `legacy-wc26-final`, before 13P-A.
+
+### R0 prohibitions
+
+- no product code;
+- no database or staging role change;
+- no Migration 019;
+- no Results Admin revocation inside the package;
+- no change to Original/KO competition separation.

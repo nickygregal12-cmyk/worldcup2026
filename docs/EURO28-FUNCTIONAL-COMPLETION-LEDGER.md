@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.20 — Stage 13F-K3 staging acceptance and Admin close-out
+### Version 1.21 — Stage 13G-R0 canonical reconciliation and truthful status correction
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -67,7 +67,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 |---|---|---|---|
 | Server result entry/corrections/recalculation | ✅ FUNCTIONAL | Revision-safe and audit-logged | — |
 | Admin invisible to non-admins | ✅ FUNCTIONAL | Server-authorised discovery and direct-route gate accepted in Stage 13F-E | — |
-| Admin UI fit for purpose | ✅ FUNCTIONAL | Authorised operations are grouped into overview, safeguards, team content, match operations and scoring activity with scoped responsive presentation; existing powers and permissions are unchanged | — |
+| Admin UI fit for purpose | ⚠️ INCOHERENT | Stage 13F-F created section-looking controls, but their `#admin-*` hashes are consumed as application routes and unknown routes fall through to Home. The control room remains one long list without a functional section destination model. | 13G-A |
+| Admin section destinations and deep links | ❌ MISSING | No canonical Admin section registry, query-addressed destination, refresh/back-forward preservation or protected invalid-section recovery exists. | 13G-A |
 | Staging Time & Phase controls | ✅ FUNCTIONAL | Owner-only audited shared clock, preset phases, custom time and site-wide warning accepted with approved Migration 016 | — |
 | Profile curation | ✅ FUNCTIONAL | Stage 13E owner editing | — |
 | Stage 13F-K operation inventory | ✅ FUNCTIONAL | Existing operations, genuine fixture/reconciliation/readiness gaps, exclusions and four-batch sequence approved in Stage 13F-K0 | — |
@@ -77,7 +78,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Tournament-pick Admin readiness home | ✅ FUNCTIONAL | One control-room section renders total goals, top scorer and highest-scoring team plus the Stage 17A dependency, with no fake outcome controls | — |
 | Operational readiness summary | ✅ FUNCTIONAL | One read-only presentation groups fixture, participant, result, scoring, Team Profile and safeguard evidence from Migration 018 | — |
 | Admin audit filters and detail | ✅ FUNCTIONAL | Read-only category filters expose up to 200 append-only events with actor, target, match, before/after and scoring-run detail | — |
-| Complete Admin operations backbone | ✅ FUNCTIONAL | K0 scope, K1 database, K2 control room and K3 owner/results-admin/member staging evidence close the approved launch/live operations; Tournament Picks executable outcomes remain Stage 17A | — |
+| Complete Admin operations backbone | 🟠 PARTIAL | K0/K1 operations and K3 role boundaries are proven, but the authorised control room lacks coherent functional section destinations. Tournament Picks executable outcomes remain Stage 17A. | 13G-A |
 
 ## Section D — Architecture and enforcement
 
@@ -90,7 +91,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Mount inversion | ✅ FUNCTIONAL | `src/App.jsx` now owns bootstrap, loading, routing and the product shell directly | — |
 | Foundation naming retired | ✅ FUNCTIONAL | Active UI controllers and runtime helpers use product names; the retired `src/foundation` root is absent | — |
 | Visual fixtures isolated | ✅ FUNCTIONAL | Deterministic fixtures live under `src/testFixtures` and are absent from the production import graph | — |
-| WC26 inherited source deleted | 🕓 SCHEDULED | Delete after Playwright coverage; never touch `main` | 15E |
+| WC26 inherited source deleted | 🕓 SCHEDULED | Dedicated Stage 15E only, after Stage 13G-E and before Stage 13P-A; tag `legacy-wc26-final` immediately before the approved exact-path deletion. Never touch `main`. | 15E |
 | Netlify Functions hygiene | ✅ FUNCTIONAL | Deploy input contains only health, scheduled heartbeat and shared observability support | — |
 
 ## Section E — Orphaned features
@@ -100,10 +101,34 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Per-league locks/snapshots | 🚫 REJECTED | One global lock; inherited snapshot function removed from Euro deploy input in Stage 13F-H | — |
 | Daily Questions | 🚫 REJECTED | Delete inherited implementation | 15E |
 | PWA and push notifications | 🕓 SCHEDULED | Carry only as a coherent, tested Euro-native feature | 18C |
-| Offline players | 🕓 SCHEDULED | Carry as managed private-league participants and secure account claim | 16E |
+| Offline players / claim-account model | 🔒 DECISION PENDING | Do not implement or migrate until an application-level participant identity, ownership, privacy, one-time claim and rollback contract is approved. Stage 16 synthetic seeding may share service-role tooling but must not pre-decide the production identity model. | Decision paper |
 | Odds | 🚫 REJECTED | Reconsider only with separately approved free/licensed provider | 18B gate |
 | Weather | 🚫 REJECTED | Not core Match Centre content | — |
 | Trustworthy live minute | 🕓 SCHEDULED | UI slot in Match Centre; automatic source only if Stage 18B is approved | 13F-C/18B |
+
+## Section E2 — Stage 13G reconciliation backlog
+
+| Item | Status | Evidence / notes | Owner |
+|---|---|---|---|
+| Ledger and change-log integrity | ⚠️ INCOHERENT | Pre-R0 chronology omitted versions, mixed starting and accepted checkpoints, and failed to downgrade the broken Admin section claim. R0 establishes accepted-commit chronology and same-commit updates. | 13G-R0 |
+| Canonical governing-document consolidation | 🟠 PARTIAL | The standalone 3 July addendum is retired as a separate authority by R0; final consolidation becomes functional only when the R0 package is installed and accepted. | 13G-R0 |
+| Provisional tournament start and prediction-lock configuration | ❌ MISSING | Shared staging has no approved populated provisional lock timestamp; no real global lock may be triggered during acceptance. | 13G-A |
+| Account autosave against configured lock | 🟠 PARTIAL | Save contracts exist but the account journey remains blocked when the central lock value is absent. | 13G-A |
+| Original bracket coherence after group-score edits | ❌ MISSING | Approved invalidation contract requires deterministic standings/slot recalculation, preserved invalid picks, cascade review and scoring exclusion. | 13G-C |
+| Shared destructive-confirmation primitive | ❌ MISSING | Sign-out and destructive actions do not use one accessible design-system confirmation contract. | 13G-A |
+| Native-control removal | ⚠️ INCOHERENT | Native selectors remain on active League/Admin/match surfaces despite design-system direction. | 13G-A/13G-E |
+| Central refresh policy | ❌ MISSING | Manual refresh controls and local refetch behaviour remain distributed rather than owned by one query policy. | 13G-A |
+| Informative empty-state standard | 🟠 PARTIAL | Useful examples exist, but the whole product has no enforced empty/error/recovery standard. | 13G-E |
+| Home first-visit conversion hook | ❌ MISSING | Approved signed-out/guest acquisition and returning-progress states are not implemented. | 13G-B |
+| Tournament-start and prediction-lock countdowns | ❌ MISSING | Required central-config countdown surfaces do not exist. | 13G-B |
+| In-tournament today's-matches hub | ❌ MISSING | Home does not yet own the approved live-day action hub. | 13G-B |
+| Predicted group standings | ❌ MISSING | Complete shared predicted tables are not available in the approved Groups journey. | 13G-C |
+| Shared third-place table | ❌ MISSING | One canonical predicted/live third-place presentation is not used wherever standings appear. | 13G-C |
+| Central KO-readiness signal | 🟠 PARTIAL | Similar readiness is derived in multiple places; nav, Home and Leagues must consume one signal. | 13G-B |
+| PlayerIdentity whole-product coverage | 🟠 PARTIAL | Shared identity exists but not every rendered player name uses it. | 13G-D |
+| PlayerInsight as sole detailed-points surface | 🟠 PARTIAL | The shared model exists, but duplicate/local detail surfaces remain to be retired. | 13G-D |
+| Auth-provider-agnostic account creation | 🟠 PARTIAL | Current persistence is adaptable, but the active flow and assumptions are email/password-specific. | 13G-D |
+| WC26 legacy-retirement safety tag | 🕓 SCHEDULED | Create and record `legacy-wc26-final` immediately before Stage 15E deletion. | 15E |
 
 ## Section F — Operations
 
@@ -132,6 +157,10 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 ## Change log
 
 - **v1.20:** Closes Stage 13F-K3 from `c4342f1` after three-role deployed acceptance, same-value transactional fixture proof with exact rollback, one real owner complete reconciliation, read-only event/run/separate-total verification, linked database gates and final deployed verification. No product code or Migration 019 is added; Stage 13G-A becomes next.
+
+- **v1.21:** Stage 13G-R0 corrects the false Stage 13F-F navigation claim, downgrades Admin UI/coherent operations truthfully, consolidates the 3 July amendments into the canonical Register, approves C1 Option A and the Original-bracket invalidation contract, records offline players as decision pending, rebuilds accepted-commit chronology through `b7f50de`, and makes same-commit Ledger updates mandatory for every future batch. Documentation only; no product code, database action or Migration 019.
+
+- **Accepted-commit chronology:** 13F-E `8349e83`; 13F-F `369ddfc` (retrospectively corrected by v1.21); 13F-G `7324d43`; 13F-H `74c8dd3`; 13F-I `63d7acb`; 13F-J `f7f2fb5`; 13G-0 `efce59f`; 13F-K0 `b6c7ddc`; 13F-K1 `0e4d5b7`; 13F-K2 `c4342f1`; 13F-K3 `b7f50de`; 13G-R0 next accepted commit.
 
 - **v1.19:** Implements Stage 13F-K2 from `0e4d5b7`: split control-room components, owner-only fixture and complete-reconciliation actions, consolidated readiness, Stage 17A Tournament Picks hand-off, filtered expandable append-only audit detail, role/timezone tests and six responsive light/dark structural baselines. No Migration 019; Stage 13F-K3 remains the final deployed role acceptance.
 

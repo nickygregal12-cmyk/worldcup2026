@@ -1,16 +1,16 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 3.8 — Stage 13F-K3 staging acceptance and Admin close-out
+### Version 3.9 — Stage 13G-R0 canonical reconciliation and approved Stage 13G contract
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
 ## 1. Current return point
 
-- Expected Git commit: `c4342f1` — **Complete Euro admin control room**.
+- Expected Git commit: `b7f50de` — **Complete Euro admin staging acceptance**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
 - Active migration count: **18**, aligned locally and on Euro staging. Stage 13F-K3 adds no migration.
 - Stages 1–12, 13A–13E, 14, 14B, Stage 13F-0 through Stage 13F-J and Stage 13G-0 are accepted.
-- The exact current package is Stage 13F-K3, the staging role acceptance and Admin close-out from `c4342f1`.
+- Stage 13F-K3 is accepted at `b7f50de`. The next single package is Stage 13G-R0, documentation and reconciliation only.
 - Migration 018 adds fixture revision/editing, protected venue and match reads, complete reconciliation, readiness evidence and the two approved new event types. It also restores `team_profile_updated`, which Migration 016 accidentally omitted from the event constraint.
 - The Stage 13F-K1 database operations contract and Stage 13F-K2 control-room implementation are accepted. Stage 13F-K3 now proves deployed owner/results-admin/member behaviour, rollback-safe fixture operation and one real complete reconciliation before Stage 13G-A.
 - Original and KO Predictor totals remain permanently separate.
@@ -463,3 +463,43 @@ After the linked database gates, deployed role walkthroughs, reconciliation veri
 
 **Starting commit:** `c4342f1`
 **Migration count:** `18`; no Migration 019 in Stage 13F-K3
+
+
+## 10D. Stage 13G-R0 canonical reconciliation — APPROVED
+
+The standalone `EURO28-DECISION-REGISTER-ADDENDUM-2026-07-03.md` is superseded and removed as a separate governing authority when this batch is accepted. Its still-valid decisions are consolidated here. Where earlier wording conflicts with this section, this section governs.
+
+### Truthful Admin correction
+
+Stage 13F-F did not establish functional section navigation. Its audit proved only source strings, IDs and presentation markers. `AdminOperations.jsx` emits `#admin-*` links while `routeFromHash()` treats the hash as the application route; only `/admin` is registered and unknown routes fall through to Home. Therefore Admin fail-closed access remains functional, Admin section destinations are missing, Admin UI fit is incoherent and the complete operations backbone is partial until Stage 13G-A.
+
+### C1 navigation — Option A approved
+
+Retain the accepted five-position mobile navigation: `Groups | Bracket | Home | Leagues | More`, with Groups changing to KO only at the existing readiness boundary. Remove the duplicate persistent Groups/Bracket page switcher and use contextual previous/next actions where useful. No sixth destination and no `Original` merge.
+
+### Original-bracket invalidation contract — approved
+
+This contract applies only to the Original Predictor. It never modifies or combines the separate KO Predictor. It triggers when at least one Original Bracket pick exists and a group-score edit changes predicted group order, third-place order, best-third combination or a knockout slot occupant. The first affected edit per browser session shows the approved design-system warning with Cancel and `Update groups and review bracket`. Cancel saves nothing. Confirmation recalculates group tables, third-place order, best-third combination and all knockout occupants, then revalidates picks. A pick remains valid only when the selected team remains in the same tie and reachable through the same path. Invalid picks remain visibly preserved, are marked for review, do not count as complete, are not scored, are never silently dropped/transferred/replaced and cascade downstream where the old path is unreachable. Groups, Bracket and Review show one amber count/banner linked to the earliest affected tie. Submission cannot be complete until repaired. No Migration 019 is assumed; a schema/read-contract gap must be separately proved.
+
+### Stage 13G approved sequence
+
+1. **13G-R0:** canonical documents, truthful Ledger v1.21, fragment consolidation and contracts only.
+2. **13G-A:** Admin route integrity, central tournament/lock configuration, autosave unblock, shared confirmations/selectors/refresh policy and naming ratchet.
+3. **13G-B:** Home lifecycle, countdowns, today hub and one KO-readiness signal.
+4. **13G-C:** group/date views, predicted standings, shared third-place table, bracket coherence and contract-derived tournament guide.
+5. **13G-D:** PlayerIdentity/PlayerInsight coherence, league action hierarchy, sharing/OG architecture and auth-provider readiness or explicit deferral.
+6. **16A:** seeded staging cast after identity/sharing contracts stabilise.
+7. **13G-E:** whole-surface hardwired/native/refresh/empty-state/identity/theme/route acceptance.
+8. **15E:** WC26 legacy retirement after 13G-E and before 13P-A, with `legacy-wc26-final` created immediately before exact-path deletion.
+
+### Offline players / claim-account
+
+Decision pending. Stage 16 synthetic seeding may reuse service-role-only participant creation, deterministic naming, prediction seeding, league membership, auditing and marker-safe teardown. It must not decide the production identity model. Any managed/offline participant feature requires a separately approved application participant identity, nullable auth link, ownership/privacy rules, one-time opaque claim token, atomic server claim and rollback contract.
+
+### Other carried decisions
+
+- PWA and push remain **DECIDED — CARRY** for Stage 18C only.
+- Lucky Dip remains functional.
+- The converging wall-chart bracket/share image remains scheduled for Stage 13P-A.
+- Static Euro Open Graph identity is mandatory; dynamic per-league previews require a server-visible invite route and may expose only invite-safe metadata.
+- The Functional Completion Ledger must update in the same commit as every future batch, including micro-fixes.

@@ -109,7 +109,6 @@ if (!packageJson.scripts?.['lint:foundation']?.includes('scripts/check-stage13fk
 const roadmap = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
-const addendum = read('docs/EURO28-DECISION-REGISTER-ADDENDUM-2026-07-03.md')
 for (const marker of [
   'Stage 13F-K1 — Database operations contract',
   'Migration 018',
@@ -131,7 +130,8 @@ for (const marker of [
   'Migration 018',
   'team_profile_updated',
   'Stage 13F-K2',
-]) if (!addendum.includes(marker)) fail(`Decision addendum alignment is missing: ${marker}`)
+  'Stage 13G-R0',
+]) if (!register.includes(marker)) fail(`Consolidated Decision Register alignment is missing: ${marker}`)
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations'))
   .filter(file => file.endsWith('.sql'))
