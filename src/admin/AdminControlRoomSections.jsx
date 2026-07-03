@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { SelectField } from '../design-system/index.jsx'
 import {
   applyGlobalPredictionLock,
   grantAdminPredictionGrace,
@@ -45,6 +46,12 @@ function GlobalLockControl({ client, tournamentId, controlRoom, isOwner, runActi
             onClick={() => runAction(
               () => applyGlobalPredictionLock(client, tournamentId, note),
               'The global Original Predictor lock is now irreversible.',
+              {
+                title: 'Apply irreversible Original Predictor lock?',
+                message: 'This will freeze the Original Predictor for every player and cannot be undone from the browser.',
+                confirmLabel: 'Apply irreversible lock',
+                tone: 'danger',
+              },
             )}
           >Apply irreversible lock</button>
         </>
@@ -92,6 +99,12 @@ function FeatureControls({ client, tournamentId, features, isOwner, runAction })
                       notes[feature.featureKey],
                     ),
                     `${feature.label} ${feature.isEnabled ? 'disabled' : 'enabled'}.`,
+                    {
+                      title: `${feature.isEnabled ? 'Disable' : 'Enable'} ${feature.label}?`,
+                      message: 'This changes a shared database-enforced feature control and will be recorded in the admin audit.',
+                      confirmLabel: feature.isEnabled ? 'Disable feature' : 'Enable feature',
+                      tone: feature.isEnabled ? 'danger' : 'warning',
+                    },
                   )}
                 >{feature.isEnabled ? 'Disable' : 'Enable'}</button>
               </div>
@@ -175,8 +188,8 @@ function GraceManagement({ client, tournamentId, matches, graceWindows, isOwner,
 
           <div className="foundation-admin-form-grid">
             <label><span>Selected predictor</span><input value={draft.displayName} readOnly placeholder="Choose a search result" /></label>
-            <label><span>Competition</span><select value={draft.competitionKey} onChange={event => chooseCompetition(event.target.value)}><option value="original">Original Predictor</option><option value="ko_predictor">KO Predictor</option></select></label>
-            <label><span>Unstarted match</span><select value={draft.matchId} onChange={event => setDraft(previous => ({ ...previous, matchId: event.target.value }))}>{eligibleMatches.map(match => <option key={match.matchId} value={match.matchId}>{match.matchNumber}. {match.homeTeamLabel} v {match.awayTeamLabel}</option>)}</select></label>
+            <SelectField label="Competition" value={draft.competitionKey} onChange={chooseCompetition} options={[{ value: 'original', label: 'Original Predictor' }, { value: 'ko_predictor', label: 'KO Predictor' }]} />
+            <SelectField label="Unstarted match" value={draft.matchId} onChange={matchId => setDraft(previous => ({ ...previous, matchId }))} options={eligibleMatches.map(match => ({ value: match.matchId, label: `${match.matchNumber}. ${match.homeTeamLabel} v ${match.awayTeamLabel}` }))} />
             <label><span>Expires</span><input type="datetime-local" value={draft.expiresAt} onChange={event => setDraft(previous => ({ ...previous, expiresAt: event.target.value }))} /></label>
           </div>
           <label className="foundation-admin-note"><span>Reason</span><textarea value={draft.reason} maxLength="500" onChange={event => setDraft(previous => ({ ...previous, reason: event.target.value }))} /></label>
@@ -212,6 +225,12 @@ function GraceManagement({ client, tournamentId, matches, graceWindows, isOwner,
                   onClick={() => runAction(
                     () => revokeAdminPredictionGrace(client, tournamentId, grace.graceId, revokeNotes[grace.graceId]),
                     `Grace for ${grace.displayName} revoked.`,
+                    {
+                      title: `Revoke grace for ${grace.displayName}?`,
+                      message: 'This removes the active one-match exception and records an audited revocation event.',
+                      confirmLabel: 'Revoke grace',
+                      tone: 'danger',
+                    },
                   )}
                 >Revoke</button>
               </div>

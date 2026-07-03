@@ -1,5 +1,6 @@
 export const FRONTEND_COMPONENT_HARD_CAP = 400
 export const FRONTEND_STYLESHEET_HARD_CAP = 400
+export const FOUNDATION_CLASS_RATCHET_CAP = 245
 
 export const ACTIVE_UI_ROOTS = Object.freeze([
   'src/app',

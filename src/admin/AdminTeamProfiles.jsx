@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { createAdminTeamProfileDraft, validateAdminTeamProfileDraft } from './adminOperationsModel.js'
 import { saveAdminTeamProfile } from './adminOperationsService.js'
+import { SelectField } from '../design-system/index.jsx'
 
 function AdminTeamProfileEditor({ client, tournamentId, profile, adminRole, runAction }) {
   const [draft, setDraft] = useState(() => createAdminTeamProfileDraft(profile))
@@ -61,12 +62,15 @@ export default function AdminTeamProfiles({ client, tournamentId, profiles, admi
         <small>Owner-edited · revision {selected.profileRevision}</small>
       </div>
 
-      <label>
-        <span>Choose tournament team</span>
-        <select value={selected.tournamentTeamId} onChange={event => setSelectedId(event.target.value)}>
-          {profiles.map(profile => <option key={profile.tournamentTeamId} value={profile.tournamentTeamId}>{profile.teamName} · {profile.groupCode ? `Group ${profile.groupCode}` : profile.slotCode}</option>)}
-        </select>
-      </label>
+      <SelectField
+        label="Choose tournament team"
+        value={selected.tournamentTeamId}
+        onChange={setSelectedId}
+        options={profiles.map(profile => ({
+          value: profile.tournamentTeamId,
+          label: `${profile.teamName} · ${profile.groupCode ? `Group ${profile.groupCode}` : profile.slotCode}`,
+        }))}
+      />
 
       <AdminTeamProfileEditor
         key={`${selected.tournamentTeamId}:${selected.profileRevision}`}

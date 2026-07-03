@@ -133,12 +133,11 @@ export default function ResultsAndLeaderboards({ client, reference, view = RESUL
           <h2 id="euro28-results-heading">{title}</h2>
           <p>{isLeaderboards ? 'View every ranked player and your points breakdown. Original and KO Predictor totals never combine.' : 'Canonical live data never blends with predicted brackets.'}</p>
         </div>
-        <button type="button" className="foundation-secondary-button" onClick={() => { void load() }} disabled={state.status === 'loading'}>{state.status === 'loading' ? 'Refreshing…' : 'Refresh'}</button>
       </div>
 
       {state.status === 'loading' && !state.data && <p className="foundation-empty-copy">Loading {isLeaderboards ? 'competition tables' : 'canonical results'}…</p>}
       {state.status === 'error' && !state.data && <p className="foundation-warning-text">{state.error}</p>}
-      {state.status === 'loading' && state.data && <p className="foundation-empty-copy">Refreshing available sections…</p>}
+      {state.status === 'loading' && state.data && <p className="foundation-empty-copy">Updating available sections…</p>}
       {state.error && state.data && <p className="foundation-warning-text">Refresh failed. The last available data remains visible: {state.error}</p>}
       {state.status === 'partial' && !state.error && <p className="foundation-warning-text">Some sections could not be refreshed. Available data remains visible below.</p>}
 

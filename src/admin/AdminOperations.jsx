@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { ConfirmDialog } from '../design-system/index.jsx'
 import AdminAuditTimeline from './AdminAuditTimeline.jsx'
 import AdminControlRoomSections from './AdminControlRoomSections.jsx'
 import AdminFixtureOperations from './AdminFixtureOperations.jsx'
@@ -29,6 +30,7 @@ function AccessState({ title, description, error = false, onRetry = null }) {
 export default function AdminOperations({ client, reference, hash = '#/admin' }) {
   const [state, setState] = useState({ status: 'loading', signedIn: false, data: null, error: null })
   const [action, setAction] = useState({ status: 'idle', message: '' })
+  const [pendingConfirmation, setPendingConfirmation] = useState(null)
   const timeState = useTournamentTimeControl({ client, tournamentId: reference.tournamentId })
 
   const load = useCallback(async () => {
@@ -52,7 +54,7 @@ export default function AdminOperations({ client, reference, hash = '#/admin' })
     return () => subscription.data.subscription.unsubscribe()
   }, [client, load])
 
-  const runAction = async (work, successMessage) => {
+  const executeAction = async (work, successMessage) => {
     setAction({ status: 'working', message: 'Applying the audited operation…' })
     try {
       await work()
@@ -65,11 +67,26 @@ export default function AdminOperations({ client, reference, hash = '#/admin' })
         status: 'error',
         message: stale
           ? message.includes('Fixture')
-            ? 'The fixture changed after this screen loaded. Refresh and review the latest fixture revision before trying again.'
-            : 'The result changed after this screen loaded. Refresh and review the latest result revision before trying again.'
+            ? 'The fixture changed after this screen loaded. Retry after reviewing the latest fixture revision.'
+            : 'The result changed after this screen loaded. Retry after reviewing the latest result revision.'
           : message,
       })
     }
+  }
+
+  const runAction = async (work, successMessage, confirmation = null) => {
+    if (confirmation) {
+      setPendingConfirmation({ work, successMessage, ...confirmation })
+      return
+    }
+    await executeAction(work, successMessage)
+  }
+
+  const confirmPendingAction = async () => {
+    const pending = pendingConfirmation
+    if (!pending) return
+    setPendingConfirmation(null)
+    await executeAction(pending.work, pending.successMessage)
   }
 
   if (state.status === 'loading') return <AccessState title="Checking administrator access…" description="Verifying the protected Euro staging role." />
@@ -189,7 +206,6 @@ export default function AdminOperations({ client, reference, hash = '#/admin' })
             <span className={styles.metaChip}>Section: {activeDestination.label}</span>
           </div>
         </div>
-        <button type="button" className="foundation-secondary-button" onClick={load}>Refresh control room</button>
       </header>
 
       <nav className={styles.navigation} aria-label="Admin control-room sections">
@@ -208,6 +224,17 @@ export default function AdminOperations({ client, reference, hash = '#/admin' })
       )}
 
       {action.message && <p className={styles.actionMessage} data-state={action.status} role="status" aria-live="polite">{action.message}</p>}
+
+      <ConfirmDialog
+        open={Boolean(pendingConfirmation)}
+        title={pendingConfirmation?.title ?? 'Confirm audited operation'}
+        tone={pendingConfirmation?.tone ?? 'warning'}
+        confirmLabel={pendingConfirmation?.confirmLabel ?? 'Confirm'}
+        onCancel={() => setPendingConfirmation(null)}
+        onConfirm={confirmPendingAction}
+      >
+        <p>{pendingConfirmation?.message ?? 'This audited operation will change shared tournament state.'}</p>
+      </ConfirmDialog>
 
       {renderSection()}
     </section>

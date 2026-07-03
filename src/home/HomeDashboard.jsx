@@ -170,8 +170,8 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
       </section>
 
       {dashboard.hasPartialFailure && (
-        <StatusBar tone="warning" title="Some live account data is temporarily unavailable" action={<Button variant="ghost" size="small" icon="refresh" onClick={load}>Refresh</Button>}>
-          Your saved predictions remain safe. Unavailable cards are shown with a dash rather than a false zero.
+        <StatusBar tone="warning" title="Some live account data is temporarily unavailable">
+          Your saved predictions remain safe. Unavailable cards are shown with a dash rather than a false zero and will refresh on the next lifecycle update.
         </StatusBar>
       )}
 

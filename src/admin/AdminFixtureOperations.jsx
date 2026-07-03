@@ -13,6 +13,7 @@ import {
   humaniseAdminValue,
 } from './adminPresentation.js'
 import { updateAdminMatchFixture } from './adminOperationsService.js'
+import { SelectField } from '../design-system/index.jsx'
 
 function FixtureFacts({ match }) {
   return (
@@ -70,22 +71,21 @@ export default function AdminFixtureOperations({
   return (
     <div className={styles.fixtureWorkspace}>
       <aside className={styles.fixtureSelector}>
-        <label>
-          <span>Choose fixture</span>
-          <select value={selectedMatch.matchId} onChange={event => {
-            const next = matches.find(match => match.matchId === event.target.value) ?? null
+        <SelectField
+          label="Choose fixture"
+          value={selectedMatch.matchId}
+          onChange={matchId => {
+            const next = matches.find(match => match.matchId === matchId) ?? null
             selectedFixtureRevisionRef.current = next?.fixtureRevision ?? null
-            setSelectedMatchId(event.target.value)
+            setSelectedMatchId(matchId)
             setDraft(createAdminFixtureDraft(next, venues))
             setFixtureDirty(false)
-          }}>
-            {matches.map(match => (
-              <option key={match.matchId} value={match.matchId}>
-                {match.matchNumber}. {match.homeTeamLabel} v {match.awayTeamLabel} · {humaniseAdminValue(match.scheduleStatus)}
-              </option>
-            ))}
-          </select>
-        </label>
+          }}
+          options={matches.map(match => ({
+            value: match.matchId,
+            label: `${match.matchNumber}. ${match.homeTeamLabel} v ${match.awayTeamLabel} · ${humaniseAdminValue(match.scheduleStatus)}`,
+          }))}
+        />
         <div className={styles.fixtureIdentity}>
           <span>{selectedMatch.stageName}{selectedMatch.groupCode ? ` · Group ${selectedMatch.groupCode}` : ''}</span>
           <strong>{selectedMatch.homeTeamLabel} v {selectedMatch.awayTeamLabel}</strong>
@@ -108,9 +108,9 @@ export default function AdminFixtureOperations({
         {isOwner && (
           <>
             <div className={styles.fixtureFormGrid}>
-              <label><span>Schedule status</span><select value={draft.scheduleStatus} onChange={event => updateDraft('scheduleStatus', event.target.value)}>{ADMIN_SCHEDULE_STATUS.map(value => <option key={value} value={value}>{humaniseAdminValue(value)}</option>)}</select></label>
+              <SelectField label="Schedule status" value={draft.scheduleStatus} onChange={value => updateDraft('scheduleStatus', value)} options={ADMIN_SCHEDULE_STATUS.map(value => ({ value, label: humaniseAdminValue(value) }))} />
               <label><span>Scheduled date</span><input type="date" value={draft.scheduledDate} onChange={event => updateDraft('scheduledDate', event.target.value)} /></label>
-              <label><span>Tournament venue</span><select value={draft.venueId} onChange={event => updateDraft('venueId', event.target.value)}><option value="">Not assigned</option>{venues.map(venue => <option key={venue.venueId} value={venue.venueId}>{venue.venueName} · {venue.venueCity}</option>)}</select></label>
+              <SelectField label="Tournament venue" value={draft.venueId} onChange={value => updateDraft('venueId', value)} placeholder="Not assigned" options={venues.map(venue => ({ value: venue.venueId, label: `${venue.venueName} · ${venue.venueCity}` }))} />
               <label><span>Venue-local kick-off</span><input type="datetime-local" value={draft.kickoffLocal} onChange={event => updateDraft('kickoffLocal', event.target.value)} /></label>
             </div>
             <p className={styles.fieldHelp}>Kick-off is interpreted in {selectedVenue?.venueTimezone ?? 'the selected venue timezone'}. Fixture scheduling does not edit participants, match number, group or knockout source rules.</p>

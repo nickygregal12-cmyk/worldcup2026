@@ -516,6 +516,16 @@ The route-integrity audit scans active source links for unresolved app hashes an
 
 This slice does not implement the rest of Stage 13G-A. Central tournament/lock configuration, account-autosave unblocking, shared destructive confirmation, design-system selector replacement, refresh policy and `foundation-*` ratchet remain scheduled. No database change and no Migration 019.
 
+
+### Stage 13G-A interaction enforcement amendment
+
+- The shared `ConfirmDialog` is now the required active-surface confirmation route for high-impact or destructive browser actions. Native `window.confirm` and bare `confirm()` are rejected in active Euro UI roots.
+- Active-surface selectors must use `SelectField`; native `<select>` is permitted only inside the design-system primitive and its tests.
+- Manual refresh buttons are not allowed as ordinary product controls. Retry actions may remain in load/error states, but normal data refresh should follow the central refresh policy and mutation invalidation pattern.
+- The `foundation-*` class ratchet is recorded in `architecture-policy.mjs`; the cap may only reduce or remain stable unless the Charter is explicitly amended.
+- `audit:interaction-enforcement` is included in `npm run check`.
+- This closes Stage 13G-A's shared-interaction enforcement slice without a database change or Migration 019.
+
 ### Offline players / claim-account
 
 Decision pending. Stage 16 synthetic seeding may reuse service-role-only participant creation, deterministic naming, prediction seeding, league membership, auditing and marker-safe teardown. It must not decide the production identity model. Any managed/offline participant feature requires a separately approved application participant identity, nullable auth link, ownership/privacy rules, one-time opaque claim token, atomic server claim and rollback contract.

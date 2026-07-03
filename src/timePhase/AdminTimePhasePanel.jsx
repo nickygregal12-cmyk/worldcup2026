@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ENVIRONMENT } from '../config/environment.js'
 import { TIME_PHASE_PRESETS } from './timePhaseModel.js'
 import { resetTournamentTimeControl, setTournamentTimeControl } from './timePhaseService.js'
+import { SelectField } from '../design-system/index.jsx'
 import styles from './TimePhase.module.css'
 
 function localValue(iso) {
@@ -49,7 +50,7 @@ export default function AdminTimePhasePanel({ client, tournamentId, adminRole, t
         <small>Revision {timeState.control.revision}</small>
       </div>
       <div className={styles.formGrid}>
-        <label><span>Scenario</span><select value={phaseKey} onChange={event => choose(event.target.value)}>{TIME_PHASE_PRESETS.map(item => <option key={item.key} value={item.key}>{item.label}</option>)}</select></label>
+        <SelectField label="Scenario" value={phaseKey} onChange={choose} options={TIME_PHASE_PRESETS.map(item => ({ value: item.key, label: item.label }))} />
         <label><span>Simulated date and time</span><input type="datetime-local" value={customAt} onChange={event => { setCustomAt(event.target.value); setPhaseKey('custom') }} /></label>
       </div>
       <label className="foundation-admin-note"><span>Audit note</span><textarea value={note} maxLength="500" onChange={event => setNote(event.target.value)} placeholder="Explain the test scenario or why real time is being restored." /></label>

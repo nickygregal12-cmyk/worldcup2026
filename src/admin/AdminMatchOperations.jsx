@@ -9,6 +9,7 @@ import {
 } from './adminOperationsModel.js'
 import { humaniseAdminValue, formatAdminTimestamp } from './adminPresentation.js'
 import { ResultHistory } from './AdminControlRoomStatus.jsx'
+import { SelectField } from '../design-system/index.jsx'
 import {
   loadAdminMatchHistory,
   recalculateAdminMatchPoints,
@@ -116,16 +117,15 @@ export default function AdminMatchOperations({
   return (
     <div className="foundation-admin-layout">
       <aside className="foundation-admin-match-list">
-        <label>
-          <span>Choose match</span>
-          <select value={selectedMatchId} onChange={event => chooseMatch(event.target.value)}>
-            {matches.map(match => (
-              <option key={match.matchId} value={match.matchId}>
-                {match.matchNumber}. {match.homeTeamLabel} v {match.awayTeamLabel} · {humaniseAdminValue(match.resultStatus)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <SelectField
+          label="Choose match"
+          value={selectedMatchId}
+          onChange={chooseMatch}
+          options={matches.map(match => ({
+            value: match.matchId,
+            label: `${match.matchNumber}. ${match.homeTeamLabel} v ${match.awayTeamLabel} · ${humaniseAdminValue(match.resultStatus)}`,
+          }))}
+        />
         {selectedMatch && (
           <div className="foundation-admin-match-summary">
             <span>{selectedMatch.stageName}{selectedMatch.groupCode ? ` · Group ${selectedMatch.groupCode}` : ''}</span>
@@ -143,9 +143,9 @@ export default function AdminMatchOperations({
               <small>Expected revision {selectedMatch.resultRevision}</small>
             </div>
             <div className="foundation-admin-form-grid">
-              <label><span>Match status</span><select value={draft.matchStatus} onChange={event => updateDraft('matchStatus', event.target.value)}>{ADMIN_MATCH_STATUS.map(value => <option key={value} value={value}>{humaniseAdminValue(value)}</option>)}</select></label>
-              <label><span>Result status</span><select value={draft.resultStatus} onChange={event => updateDraft('resultStatus', event.target.value)}>{ADMIN_RESULT_STATUS.map(value => <option key={value} value={value}>{humaniseAdminValue(value)}</option>)}</select></label>
-              <label><span>Decision method</span><select disabled={clearsScores || selectedMatch.matchNumber <= 36} value={draft.decisionMethod} onChange={event => updateDraft('decisionMethod', event.target.value)}>{ADMIN_DECISION_METHOD.map(value => <option key={value} value={value}>{humaniseAdminValue(value)}</option>)}</select></label>
+              <SelectField label="Match status" value={draft.matchStatus} onChange={value => updateDraft('matchStatus', value)} options={ADMIN_MATCH_STATUS.map(value => ({ value, label: humaniseAdminValue(value) }))} />
+              <SelectField label="Result status" value={draft.resultStatus} onChange={value => updateDraft('resultStatus', value)} options={ADMIN_RESULT_STATUS.map(value => ({ value, label: humaniseAdminValue(value) }))} />
+              <SelectField label="Decision method" disabled={clearsScores || selectedMatch.matchNumber <= 36} value={draft.decisionMethod} onChange={value => updateDraft('decisionMethod', value)} options={ADMIN_DECISION_METHOD.map(value => ({ value, label: humaniseAdminValue(value) }))} />
             </div>
             <div className="foundation-admin-score-grid">
               <ScoreInput label={`${selectedMatch.homeTeamLabel} after 90 min`} value={draft.homeScore90} disabled={clearsScores} onChange={value => updateDraft('homeScore90', value)} />
@@ -168,7 +168,7 @@ export default function AdminMatchOperations({
           <article className="foundation-results-card">
             <span className="foundation-kicker">Status only</span><h3>Update match state</h3>
             <p>Use this for live, paused or postponed status changes without rewriting the result revision.</p>
-            <label><span>New status</span><select value={statusDraft} onChange={event => setStatusDraft(event.target.value)}>{ADMIN_MATCH_STATUS.map(value => <option key={value} value={value}>{humaniseAdminValue(value)}</option>)}</select></label>
+            <SelectField label="New status" value={statusDraft} onChange={setStatusDraft} options={ADMIN_MATCH_STATUS.map(value => ({ value, label: humaniseAdminValue(value) }))} />
             <label className="foundation-admin-note"><span>Audit note</span><textarea value={statusNote} maxLength="500" onChange={event => setStatusNote(event.target.value)} /></label>
             <button type="button" className="ui-button ui-button--secondary" disabled={statusNote.trim().length < 5 || working} onClick={() => runAction(
               () => updateAdminMatchStatus(client, tournamentId, selectedMatch, statusDraft, statusNote),

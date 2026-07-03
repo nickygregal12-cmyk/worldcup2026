@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.23 — Stage 13G-A central configuration and shared primitive groundwork
+### Version 1.24 — Stage 13G-A interaction enforcement close-out
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -149,7 +149,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | More lifecycle strategy | ✅ FUNCTIONAL | Approved phase-specific ordering, authorised Admin separation and pre-readiness KO explainer contract | — |
 | Hardwired-data inventory | ✅ FUNCTIONAL | Active production evidence recorded for chronology, stage inference, totals, rules prose, stale Admin values, dates, metadata and primitive bypasses | — |
 | Stage 13G-A route integrity and Admin sections | ✅ FUNCTIONAL | Canonical Admin section registry, query-addressed section destinations, invalid-section recovery, route-render tests and dead-destination audit | — |
-| Stage 13G-A central configuration and shared primitives | 🟠 PARTIAL | Central provisional lifecycle config and account autosave unblock are functional; shared confirmation, selector and refresh primitives exist with first consuming surfaces. Remaining surface migration continues incrementally. | 13G-A/13G-E |
+| Stage 13G-A central configuration and shared primitives | ✅ FUNCTIONAL | Central provisional lifecycle config, account autosave unblock, shared confirmation, design-system selector adoption across active surfaces, refresh-policy enforcement and foundation-class ratchet groundwork are proven by audits. | — |
 | Stage 13G-B tournament comprehension and chronology | 🕓 SCHEDULED | Real-time ordering, By group/By date, canonical rules guide, hardwired-data removal and Euro share assets | 13G-B |
 | Stage 13G-C people, profiles and sharing | 🕓 SCHEDULED | Shared player overview, one-tap invites, static/dynamic previews and synthetic identity preparation | 13G-C |
 | Stage 13G-D seeded whole-surface coherence | 🕓 SCHEDULED | Stage 16 cast, Scotland reference profile, all-screen re-baseline and charter review | 13G-D |
@@ -159,13 +159,15 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 - **v1.20:** Closes Stage 13F-K3 from `c4342f1` after three-role deployed acceptance, same-value transactional fixture proof with exact rollback, one real owner complete reconciliation, read-only event/run/separate-total verification, linked database gates and final deployed verification. No product code or Migration 019 is added; Stage 13G-A becomes next.
 
+- **v1.24:** Stage 13G-A interaction-enforcement slice from `b38ec64` replaces remaining active-surface native selectors with `SelectField`, routes high-impact Admin operations through `ConfirmDialog`, removes manual refresh controls outside retry/error states, adds `audit:interaction-enforcement` to `npm run check` and sets the active `foundation-*` ratchet at 245 with current use below the cap. No database change and no Migration 019.
+
 - **v1.23:** Stage 13G-A central-configuration/shared-primitives slice from `c8a5cf3` adds central provisional tournament-start and prediction-lock values, a lifecycle resolver consumed by the Original Predictor account autosave path, shared `ConfirmDialog`, shared `SelectField`, first sign-out and League-picker adoptions, refresh-policy groundwork and `audit:shared-primitives` in `npm run check`. No database change and no Migration 019.
 
 - **v1.22:** Stage 13G-A route-integrity slice from `3c41628` adds canonical Admin section destinations, replaces legacy `#admin-*` links with protected `#/admin?section=...` hashes, adds invalid-section recovery, route-render integration tests and a dead-destination audit in `npm run check`. No database change and no Migration 019.
 
 - **v1.21:** Stage 13G-R0 corrects the false Stage 13F-F navigation claim, downgrades Admin UI/coherent operations truthfully, consolidates the 3 July amendments into the canonical Register, approves C1 Option A and the Original-bracket invalidation contract, records offline players as decision pending, rebuilds accepted-commit chronology through `b7f50de`, and makes same-commit Ledger updates mandatory for every future batch. Documentation only; no product code, database action or Migration 019.
 
-- **Accepted-commit chronology:** 13F-E `8349e83`; 13F-F `369ddfc` (retrospectively corrected by v1.21); 13F-G `7324d43`; 13F-H `74c8dd3`; 13F-I `63d7acb`; 13F-J `f7f2fb5`; 13G-0 `efce59f`; 13F-K0 `b6c7ddc`; 13F-K1 `0e4d5b7`; 13F-K2 `c4342f1`; 13F-K3 `b7f50de`; 13G-R0 `586c6a1`; Stage 13G test-strategy amendment `3c41628`; Stage 13G-A route-integrity `c8a5cf3`; Stage 13G-A central configuration/shared primitives next accepted commit.
+- **Accepted-commit chronology:** 13F-E `8349e83`; 13F-F `369ddfc` (retrospectively corrected by v1.21); 13F-G `7324d43`; 13F-H `74c8dd3`; 13F-I `63d7acb`; 13F-J `f7f2fb5`; 13G-0 `efce59f`; 13F-K0 `b6c7ddc`; 13F-K1 `0e4d5b7`; 13F-K2 `c4342f1`; 13F-K3 `b7f50de`; 13G-R0 `586c6a1`; Stage 13G test-strategy amendment `3c41628`; Stage 13G-A route-integrity `c8a5cf3`; Stage 13G-A central configuration/shared primitives `b38ec64`; Stage 13G-A interaction enforcement next accepted commit.
 
 - **v1.19:** Implements Stage 13F-K2 from `0e4d5b7`: split control-room components, owner-only fixture and complete-reconciliation actions, consolidated readiness, Stage 17A Tournament Picks hand-off, filtered expandable append-only audit detail, role/timezone tests and six responsive light/dark structural baselines. No Migration 019; Stage 13F-K3 remains the final deployed role acceptance.
 

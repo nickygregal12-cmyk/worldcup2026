@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Badge, Button, Card, LinkButton, PlayerIdentity, StatusBar, Tabs, TeamLabel } from '../design-system/index.jsx'
+import { Badge, Button, Card, LinkButton, PlayerIdentity, SelectField, StatusBar, Tabs, TeamLabel } from '../design-system/index.jsx'
 import { RESULT_COMPETITION } from '../results/resultModel.js'
 import { loadMatchCentre } from './matchCentreService.js'
 import styles from './MatchCentre.module.css'
@@ -121,7 +121,7 @@ export default function MatchCentre({ client, reference, requestedMatchNumber = 
       <Card className={styles.controls} as="section">
         <Tabs label="Match Centre competition" value={competitionKey} options={COMPETITION_OPTIONS} onChange={value => { setCompetitionKey(value); setLeagueId('overall') }} />
         {data.signedIn && scopeOptions.length > 0 && (
-          <label><span>Viewing</span><select value={data.selectedScope} onChange={event => setLeagueId(event.target.value)}>{scopeOptions.map(scope => <option key={scope.id} value={scope.id}>{scope.label}</option>)}</select></label>
+          <SelectField label="Viewing" value={data.selectedScope} onChange={setLeagueId} options={scopeOptions.map(scope => ({ value: scope.id, label: scope.label }))} />
         )}
         <small>Original and KO Predictor information remain separate. This screen never combines their points.</small>
       </Card>

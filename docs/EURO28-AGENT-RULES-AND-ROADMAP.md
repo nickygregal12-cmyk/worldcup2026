@@ -544,3 +544,18 @@ From checkpoint `3c41628`, following accepted Stage 13F-K3 commit `b7f50de` and 
 - Shared `ConfirmDialog`, `SelectField` and `REFRESH_POLICY` primitives are approved for incremental adoption.
 - Remaining destructive actions, native selectors and refresh consumers stay ledger-tracked until fully migrated.
 - No database change or Migration 019 belongs to this slice.
+
+
+### Stage 13G-A interaction enforcement close-out
+
+From checkpoint `b38ec64`, install the final Stage 13G-A enforcement slice. It must prove the shared interaction rules in the build, not only in documentation:
+
+- no native active-surface selectors outside `SelectField`;
+- no native confirmation calls outside `ConfirmDialog`;
+- high-impact Admin lock, feature-control, grace-revocation and whole-tournament reconciliation actions require the shared confirmation dialog;
+- manual refresh buttons are removed outside retry/error states;
+- `foundation-*` use is capped by `FOUNDATION_CLASS_RATCHET_CAP`;
+- `audit:interaction-enforcement` runs inside `npm run check`;
+- no database change and no Migration 019.
+
+After this slice, Stage 13G-A is ready to close and Stage 13G-B may begin with Home, lifecycle countdowns, today's-match hub and KO prominence.

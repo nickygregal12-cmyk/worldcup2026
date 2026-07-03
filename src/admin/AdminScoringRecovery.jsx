@@ -38,6 +38,12 @@ export default function AdminScoringRecovery({
             <button type="button" className="ui-button ui-button--danger" disabled={!scoringEnabled || !confirmed || !noteValidation.valid || working} onClick={() => runAction(
               () => reconcileAdminTournamentPoints(client, tournamentId, noteValidation.note),
               'Complete tournament points reconciliation finished.',
+              {
+                title: 'Reconcile all tournament points?',
+                message: 'This creates a new replacement scoring run across every confirmed result. Existing point rows are replaced, not duplicated.',
+                confirmLabel: 'Reconcile all points',
+                tone: 'danger',
+              },
             )}>Reconcile all points</button>
           </>
         )}

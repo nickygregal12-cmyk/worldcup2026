@@ -284,7 +284,6 @@ export default function Leagues({ client, tournamentId, reference }) {
           <h2 id="euro28-leagues-heading">One member list, two separate competitions</h2>
           <p>Original Predictor and KO Predictor ranks and points are always shown separately.</p>
         </div>
-        {session?.user && <button type="button" className="foundation-secondary-button" onClick={() => { void refreshOverview() }} disabled={overview.status === 'loading'}>{overview.status === 'loading' ? 'Refreshing…' : 'Refresh league'}</button>}
       </div>
 
       {notice && <p className={`auth-notice auth-notice--${notice.tone}`}>{notice.message}</p>}
