@@ -20,7 +20,7 @@ function browserStorage() {
   }
 }
 
-export default function KoPredictorFoundation({ client, reference, fixtureBundle, fixtureStanding }) {
+export default function KoPredictor({ client, reference, fixtureBundle, fixtureStanding }) {
   const fixtureMode = fixtureBundle !== undefined
   const guestStorage = useMemo(() => createGuestKoPredictionStorage({ storage: browserStorage(), reference }), [reference])
   const [session, setSession] = useState(() => fixtureMode ? { user: { id: 'visual-user' } } : null)

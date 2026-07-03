@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { summariseFoundationData } from '../foundationModel.js'
+import { summariseFoundationData } from '../appModel.js'
 
 const tournament = { id: 't1', name: 'UEFA EURO 2028' }
 const stages = [

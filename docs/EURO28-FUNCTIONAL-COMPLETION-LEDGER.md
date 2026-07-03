@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.6 — Stage 13F-B player identity and complete H2H from commit `2e2b9a8`
+### Version 1.12 — Stage 13F-H product-root and runtime coherence from checkpoint `7324d43`
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -49,7 +49,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Guest KO access and persistence | ✅ FUNCTIONAL | Available real KO fixtures save in separate browser storage; sign-in preserves the local draft and confirmed account transfer never affects Original Predictor data | — |
 | Guest-to-account transfer | ✅ FUNCTIONAL | Signed-in users continue unfinished browser drafts; eligible Original and KO entries transfer through existing controlled RPCs, never overwrite account entries and clear only after confirmed save | — |
 | Signup encouragement | ✅ FUNCTIONAL | Progress-aware account prompts appear in Original and KO guest journeys; Account detects saved browser predictions and offers the safe transfer action | — |
-| Manual JSON file controls | 🚫 REJECTED | Removed from the live prediction journey; dormant recovery modules remain quarantined for Stage 13F-H cleanup unless separately approved | 13F-H |
+| Manual JSON file controls | 🚫 REJECTED | Removed from the live journey; dormant recovery components were deleted in Stage 13F-H | — |
 | Lucky Dip | ✅ FUNCTIONAL | Groups-only local weighted score generation; fill-empty and confirmed replace-all modes preserve jokers and clear stale bracket picks | — |
 
 ## Section C — Admin
@@ -57,9 +57,9 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Item | Status | Evidence / notes | Owner |
 |---|---|---|---|
 | Server result entry/corrections/recalculation | ✅ FUNCTIONAL | Revision-safe and audit-logged | — |
-| Admin invisible to non-admins | ❌ MISSING | Universal route and More entry expose the destination | 13F-E |
+| Admin invisible to non-admins | ✅ FUNCTIONAL | Server-authorised discovery and direct-route gate accepted in Stage 13F-E | — |
 | Admin UI fit for purpose | ✅ FUNCTIONAL | Authorised operations are grouped into overview, safeguards, team content, match operations and scoring activity with scoped responsive presentation; existing powers and permissions are unchanged | — |
-| Staging Time & Phase controls | ❌ MISSING | Client clock cannot drive database lock/privacy rules | 13F-G/16 |
+| Staging Time & Phase controls | ✅ FUNCTIONAL | Owner-only audited shared clock, preset phases, custom time and site-wide warning accepted with approved Migration 016 | — |
 | Profile curation | ✅ FUNCTIONAL | Stage 13E owner editing | — |
 
 ## Section D — Architecture and enforcement
@@ -68,19 +68,19 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 |---|---|---|---|
 | Token architecture and raw-colour audit | ✅ FUNCTIONAL | Central semantic tokens and active colour audit | — |
 | Charter architecture section | ✅ FUNCTIONAL | Restored in Charter v1.7 and enforced by `audit:architecture` | — |
-| File-size/structure audit | ✅ FUNCTIONAL | 31 active JSX files checked; all are within the 400-line hard cap and temporary component caps are empty | — |
+| File-size/structure audit | ✅ FUNCTIONAL | Active product roots remain within the 400-line hard cap and temporary component caps are empty | — |
 | WCAG token contrast audit | ✅ FUNCTIONAL | All 58 registered light/dark token pairs pass; muted text and joker light-theme tokens were minimally corrected and the exception allowlist is empty | — |
-| Mount inversion | ❌ MISSING | Development-era root owns the real application | 13F-H |
-| Foundation naming retired | ❌ MISSING | Seven active Foundation components plus helpers | 13F-H |
-| Visual fixtures isolated | ⚠️ INCOHERENT | Not normally activatable on HTTPS staging, but fixture code/data ship in production bundle | 13F-H/15A |
+| Mount inversion | ✅ FUNCTIONAL | `src/App.jsx` now owns bootstrap, loading, routing and the product shell directly | — |
+| Foundation naming retired | ✅ FUNCTIONAL | Active UI controllers and runtime helpers use product names; the retired `src/foundation` root is absent | — |
+| Visual fixtures isolated | ✅ FUNCTIONAL | Deterministic fixtures live under `src/testFixtures` and are absent from the production import graph | — |
 | WC26 inherited source deleted | 🕓 SCHEDULED | Delete after Playwright coverage; never touch `main` | 15E |
-| Netlify Functions hygiene | ⚠️ INCOHERENT | Only health/heartbeat/observability are Euro-active; inherited handlers enter deploy input | 13F-H |
+| Netlify Functions hygiene | ✅ FUNCTIONAL | Deploy input contains only health, scheduled heartbeat and shared observability support | — |
 
 ## Section E — Orphaned features
 
 | Item | Status | Evidence / notes | Owner |
 |---|---|---|---|
-| Per-league locks/snapshots | 🚫 REJECTED | One global lock; delete snapshot function | 13F-H/15E |
+| Per-league locks/snapshots | 🚫 REJECTED | One global lock; inherited snapshot function removed from Euro deploy input in Stage 13F-H | — |
 | Daily Questions | 🚫 REJECTED | Delete inherited implementation | 15E |
 | PWA and push notifications | 🕓 SCHEDULED | Carry only as a coherent, tested Euro-native feature | 18C |
 | Offline players | 🕓 SCHEDULED | Carry as managed private-league participants and secure account claim | 16E |

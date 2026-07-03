@@ -2,7 +2,7 @@ import fs from 'node:fs'
 
 const read = path => fs.readFileSync(path, 'utf8')
 const shell = read('src/app/EuroAppShell.jsx')
-const foundation = read('src/foundation/EuroFoundationApp.jsx')
+const foundation = read('src/App.jsx')
 const gate = read('src/admin/AdminRouteGate.jsx')
 const visibility = read('src/admin/adminVisibilityModel.js')
 

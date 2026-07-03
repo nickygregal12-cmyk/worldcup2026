@@ -45,7 +45,7 @@ function ScoreInput({ label, value, onChange, disabled = false }) {
     </label>
   )
 }
-export default function AdminOperationsFoundation({ client, reference }) {
+export default function AdminOperations({ client, reference }) {
   const [state, setState] = useState({ status: 'loading', signedIn: false, data: null, error: null })
   const [selectedMatchId, setSelectedMatchId] = useState('')
   const selectedMatchIdRef = useRef('')

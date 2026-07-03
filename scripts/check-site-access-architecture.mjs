@@ -15,7 +15,7 @@ for (const file of [
   'src/app/appRoutes.js',
   'src/app/EuroAppShell.jsx',
   'src/home/HomeDashboard.jsx',
-  'src/results/ResultsAndLeaderboardsFoundation.jsx',
+  'src/results/ResultsAndLeaderboards.jsx',
   'src/results/ResultsAccess.module.css',
 ]) {
   if (!exists(file)) fail(`Site-access file is missing: ${file}`)
@@ -42,7 +42,7 @@ for (const marker of [
   if (!shell.includes(marker)) fail(`Leaderboards access is missing from More: ${marker}`)
 }
 
-const app = read('src/foundation/EuroFoundationApp.jsx')
+const app = read('src/App.jsx')
 for (const marker of [
   'route === APP_ROUTE.LEADERBOARDS',
   'view="results"',
@@ -62,7 +62,7 @@ for (const marker of [
   if (!home.includes(marker)) fail(`Home leaderboard access is missing: ${marker}`)
 }
 
-const results = read('src/results/ResultsAndLeaderboardsFoundation.jsx')
+const results = read('src/results/ResultsAndLeaderboards.jsx')
 for (const marker of [
   'RESULTS_PAGE_VIEW',
   'AccessSwitcher',

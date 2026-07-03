@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createStage13dVisualClient, STAGE13D_VISUAL_SCENARIO, VISUAL_STAGE13D_REFERENCE } from '../../app/stage13dVisualFixture.js'
+import { createStage13dVisualClient, STAGE13D_VISUAL_SCENARIO, VISUAL_STAGE13D_REFERENCE } from '../../testFixtures/stage13dVisualFixture.js'
 import { loadTeamProfileSheet } from '../teamProfileService.js'
 
 describe('teamProfileService', () => {

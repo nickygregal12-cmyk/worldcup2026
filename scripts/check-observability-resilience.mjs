@@ -38,7 +38,7 @@ assert(vite.includes("sourcemap: sentryUploadEnabled ? 'hidden' : false"), 'Sour
 assert(uploader.includes('SENTRY_AUTH_TOKEN') && uploader.includes('SENTRY_RELEASE') && uploader.includes('await rm(mapPath)'), 'The guarded source-map release upload is incomplete.')
 
 const validatedServices = [
-  'src/foundation/loadEuroFoundation.js',
+  'src/runtime/loadEuroApp.js',
   'src/auth/euroAuthService.js',
   'src/predictions/predictionSaveService.js',
   'src/koPredictor/koPredictorService.js',

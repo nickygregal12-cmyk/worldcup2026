@@ -24,7 +24,7 @@ const requiredFiles = [
 ]
 for (const file of requiredFiles) if (!exists(file)) fail(`Stage 13F-A file is missing: ${file}`)
 
-const journeyController = read('src/journey/PredictionJourneyFoundation.jsx')
+const journeyController = read('src/journey/PredictionJourney.jsx')
 for (const marker of [
   'guestTransferMode',
   'applyEuroLuckyDip',
@@ -44,13 +44,13 @@ for (const forbidden of ['Export JSON', 'Import JSON', 'guest-import-button']) {
   if (journeyView.includes(forbidden)) fail(`Live prediction journey still exposes development file UX: ${forbidden}`)
 }
 
-const auth = read('src/auth/EuroAuthFoundation.jsx')
+const auth = read('src/auth/AccountAccess.jsx')
 for (const marker of ['GuestAccountTransfer', 'Any saved browser predictions are ready to add to this account']) {
   if (!auth.includes(marker)) fail(`Account conversion journey is missing: ${marker}`)
 }
 if (auth.includes('through Stage 6')) fail('Account copy still exposes Stage 6 development wording')
 
-const koFoundation = read('src/koPredictor/KoPredictorFoundation.jsx')
+const koFoundation = read('src/koPredictor/KoPredictor.jsx')
 for (const marker of [
   'createGuestKoPredictionStorage',
   'updateGuestKoPredictionState',

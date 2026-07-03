@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.5 — Stage 13F-B player identity and complete H2H from `2e2b9a8`
+### Version 4.11 — Stage 13F-H product-root and runtime coherence from `7324d43`
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -17,7 +17,7 @@
 - Do not claim acceptance without Nicky's Terminal evidence.
 - Original and KO Predictor points never combine.
 - Predicted and live brackets never blend.
-- No Migration 016 without a separately approved server/data defect or feature design.
+- Migration 016 is approved for staging Time & Phase. No later migration may be added without a separately approved server/data defect or feature design.
 - Every batch updates the Functional Completion Ledger in the same commit.
 
 ## 2. Completion rule
@@ -321,12 +321,8 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-Install and accept Stage 13F-D, then begin Stage 13F-E Admin invisibility.
+Stage 13F-I — Tournament-pick contract. Confirm the final Original Predictor pick list, scoring values, lock behaviour and Home presentation before any database or UI implementation.
 
-### Stage 13F-E — Admin invisibility
+### Stage 13F-H acceptance
 
-Accepted scope: hide every Admin discovery path from non-admin users, fail closed on direct route access, and retain all existing control-room capability for server-verified administrators. No migration. The next functional-completion batch is Stage 13F-F.
-
-### Stage 13F-F acceptance
-
-Accepted at package checkpoint `8349e83`: authorised Admin presentation grouped into overview, safeguards, team content, match operations and scoring activity. Stage 13F-G remains the owner of staging Time & Phase controls; Stage 13F-K remains the owner of the complete operations backbone.
+Accepted scope at checkpoint `7324d43`: product root inversion, active Foundation naming retirement, visual-fixture isolation, Euro-only Netlify deploy input, deferred PWA/push remnant removal and rejected snapshot-function removal. No migration or product-rule change.

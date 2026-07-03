@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { ENVIRONMENT, validateClientEnvironment } from '../config/environment.js'
 
-export function createFoundationClient() {
+export function createAppClient() {
   const environmentCheck = validateClientEnvironment()
 
   if (!environmentCheck.valid) {

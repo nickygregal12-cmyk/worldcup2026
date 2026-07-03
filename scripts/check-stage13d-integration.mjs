@@ -11,11 +11,11 @@ const assert = (condition, message) => {
 const leagueModel = read('src/leagues/leagueModel.js')
 const leagueService = read('src/leagues/leagueService.js')
 const playerComparison = [read('src/player/PlayerHeadToHead.jsx'), read('src/player/playerComparisonModel.js')].join('\n')
-const leaguesPage = [read('src/leagues/LeaguesFoundation.jsx'), read('src/leagues/LeaguePresentation.jsx'), playerComparison].join('\n')
+const leaguesPage = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresentation.jsx'), playerComparison].join('\n')
 const resultModel = read('src/results/resultModel.js')
 const resultService = read('src/results/resultService.js')
-const resultsPage = [read('src/results/ResultsAndLeaderboardsFoundation.jsx'), read('src/results/ResultsPresentation.jsx'), playerComparison].join('\n')
-const foundationApp = read('src/foundation/EuroFoundationApp.jsx')
+const resultsPage = [read('src/results/ResultsAndLeaderboards.jsx'), read('src/results/ResultsPresentation.jsx'), playerComparison].join('\n')
+const productApp = read('src/App.jsx')
 const packageJson = JSON.parse(read('package.json'))
 
 for (const required of [
@@ -29,7 +29,7 @@ assert(leagueService.includes('LEAGUE_COMPETITION.ORIGINAL'), 'League overview m
 assert(leagueService.includes('LEAGUE_COMPETITION.KO_PREDICTOR'), 'League overview must request KO standings explicitly')
 assert(leaguesPage.includes('Original Predictor and KO Predictor ranks and points are always shown separately.'), 'League page must state the competition boundary')
 assert(leaguesPage.includes('Only selections released by the existing server privacy rules are shown.'), 'Member comparison must explain server-authorised visibility')
-assert(foundationApp.includes('reference={foundation.guestReference}'), 'League journey must receive the canonical public reference')
+assert(productApp.includes('reference={appData.guestReference}'), 'League journey must receive the canonical public reference')
 
 for (const required of [
   'buildCanonicalResultFeed',

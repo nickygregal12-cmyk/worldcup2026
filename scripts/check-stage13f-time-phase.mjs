@@ -10,9 +10,9 @@ const migration = fs.readFileSync(required[0], 'utf8')
 for (const token of ['tournament_time_controls', 'time_control_updated', 'time_control_reset', 'is_provisional = true', 'admin_set_tournament_time_control', 'admin_reset_tournament_time_control']) {
   if (!migration.includes(token)) throw new Error(`Stage 13F-G migration missing ${token}`)
 }
-const app = fs.readFileSync('src/foundation/EuroFoundationApp.jsx', 'utf8')
+const app = fs.readFileSync('src/App.jsx', 'utf8')
 if (!app.includes('StagingTimeBanner') || !app.includes('useTournamentTimeControl')) throw new Error('Global staging clock is not wired')
-const admin = fs.readFileSync('src/admin/AdminOperationsFoundation.jsx', 'utf8')
+const admin = fs.readFileSync('src/admin/AdminOperations.jsx', 'utf8')
 if (!admin.includes('AdminTimePhaseSection')) throw new Error('Admin Time & Phase section is not wired')
 console.log('Euro Stage 13F-G staging Time & Phase audit passed.')
 console.log('Clock: one shared application override with a permanent active-warning banner')

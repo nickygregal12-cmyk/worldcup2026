@@ -20,7 +20,7 @@ export const ACTIVE_UI_ROOTS = Object.freeze([
   'src/observability',
   'src/admin',
   'src/leagues',
-  'src/foundation',
+  'src/runtime',
 ])
 
 // Temporary caps are exact ceilings. If a file shrinks, this policy must shrink in the same commit.
@@ -36,17 +36,8 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   'src/styles/knockout-experiences.css': 463,
 })
 
-// These existing production imports are temporary and must be removed by Stage 13F-H.
-export const TEMPORARY_FIXTURE_IMPORTS = Object.freeze([
-  Object.freeze({
-    importer: 'src/foundation/EuroFoundationApp.jsx',
-    specifier: '../app/visualFixture.js',
-  }),
-  Object.freeze({
-    importer: 'src/foundation/EuroFoundationApp.jsx',
-    specifier: '../app/stage13dVisualFixture.js',
-  }),
-])
+// Production code must not import deterministic visual fixtures.
+export const TEMPORARY_FIXTURE_IMPORTS = Object.freeze([])
 
 export const CONTRAST_PAIRS = Object.freeze([
   ['text-primary', 'surface-page', 4.5, 'normal text'],

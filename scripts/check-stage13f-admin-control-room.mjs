@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 
-const operations = fs.readFileSync('src/admin/AdminOperationsFoundation.jsx', 'utf8')
+const operations = fs.readFileSync('src/admin/AdminOperations.jsx', 'utf8')
 const status = fs.readFileSync('src/admin/AdminControlRoomStatus.jsx', 'utf8')
 const styles = fs.readFileSync('src/admin/AdminControlRoom.module.css', 'utf8')
 

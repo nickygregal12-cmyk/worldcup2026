@@ -86,7 +86,6 @@ for (const filePath of activeFiles) {
 
 const publicBrandFiles = [
   'index.html',
-  'public/manifest.json',
   'public/offline.html',
   'public/robots.txt',
   'public/sitemap.xml',
@@ -111,16 +110,11 @@ for (const rel of publicBrandFiles) {
 }
 
 const appContent = fs.readFileSync(path.join(srcRoot, 'App.jsx'), 'utf8')
-if (!appContent.includes("./foundation/EuroFoundationApp.jsx")) {
-  errors.push('src/App.jsx is not pointing at the isolated Euro foundation application.')
+if (!appContent.includes('export default function App()')) {
+  errors.push('src/App.jsx must own the Euro product root.')
 }
-
-const retirementWorker = fs.readFileSync(path.join(root, 'public/sw.js'), 'utf8')
-if (!retirementWorker.includes('registration.unregister()')) {
-  errors.push('public/sw.js must retire the inherited service worker registration.')
-}
-if (!retirementWorker.includes("startsWith('wc26-')")) {
-  errors.push('public/sw.js must remove inherited WC26 cache names.')
+if (fs.existsSync(path.join(root, 'public/sw.js'))) {
+  errors.push('public/sw.js must remain absent until the approved Stage 18C PWA build.')
 }
 
 const allSourceFiles = []

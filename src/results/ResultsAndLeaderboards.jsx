@@ -19,7 +19,7 @@ function AccessSwitcher({ view }) {
   )
 }
 
-export default function ResultsAndLeaderboardsFoundation({ client, reference, view = RESULTS_PAGE_VIEW.RESULTS, initialCompetition = LEADERBOARD_COMPETITION.ORIGINAL }) {
+export default function ResultsAndLeaderboards({ client, reference, view = RESULTS_PAGE_VIEW.RESULTS, initialCompetition = LEADERBOARD_COMPETITION.ORIGINAL }) {
   const [state, setState] = useState({ status: 'loading', data: null, error: null })
   const [comparison, setComparison] = useState(null)
   const [competitionKey, setCompetitionKey] = useState(initialCompetition)

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { VISUAL_STAGE13D_REFERENCE, VISUAL_STAGE13D_RESULT_ROWS } from '../../app/stage13dVisualFixture.js'
+import { VISUAL_STAGE13D_REFERENCE, VISUAL_STAGE13D_RESULT_ROWS } from '../../testFixtures/stage13dVisualFixture.js'
 import { buildLiveTournamentSnapshot } from '../../results/resultModel.js'
 import { buildTeamTournamentSummary, mergeTeamProfileSections, normaliseTeamProfilePayload } from '../teamProfileModel.js'
 

@@ -18,10 +18,10 @@ if(ORIGINAL_PREDICTOR_MODEL.bracketStoresScores||ORIGINAL_PREDICTOR_MODEL.bracke
 if(KO_PREDICTOR_MODEL.competitionKey!==PREDICTION_COMPETITION.KO_PREDICTOR||KO_PREDICTOR_MODEL.jokerCap!==5) fail('KO Predictor configuration is incorrect')
 if(!KO_PREDICTOR_MODEL.pointsSeparateFromOriginal||!KO_PREDICTOR_MODEL.leaderboardSeparateFromOriginal) fail('KO Predictor competition separation is incomplete')
 if(EURO28_KO_PREDICTOR_VERSION!=='euro28-ko-predictor-v1'||EURO28_KO_PREDICTOR_RPC!=='save_my_ko_prediction_bundle'||KO_PREDICTOR_JOKER_CAP!==5) fail('KO Predictor client contract is incorrect')
-const app=fs.readFileSync(path.join(root,'src/foundation/EuroFoundationApp.jsx'),'utf8')
-if(!app.includes('KoPredictorFoundation')) fail('active application does not expose the separate KO Predictor')
+const app=fs.readFileSync(path.join(root,'src/App.jsx'),'utf8')
+if(!app.includes('KoPredictor')) fail('active application does not expose the separate KO Predictor')
 const journey=[
-  fs.readFileSync(path.join(root,'src/journey/PredictionJourneyFoundation.jsx'),'utf8'),
+  fs.readFileSync(path.join(root,'src/journey/PredictionJourney.jsx'),'utf8'),
   fs.readFileSync(path.join(root,'src/journey/PredictionJourneyView.jsx'),'utf8'),
 ].join('\n')
 if(!journey.includes('Original Predictor')) fail('original prediction journey is not labelled clearly')

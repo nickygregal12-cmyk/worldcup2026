@@ -55,7 +55,7 @@ else {
 
 for (const file of [
   'src/admin/AdminControlRoomSections.jsx',
-  'src/admin/AdminOperationsFoundation.jsx',
+  'src/admin/AdminOperations.jsx',
   'src/admin/adminOperationsModel.js',
   'src/admin/adminOperationsService.js',
   'src/admin/__tests__/adminOperationsModel.test.js',
@@ -64,8 +64,8 @@ for (const file of [
   'supabase/tests/database/014_admin_control_room.test.sql',
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 12 file is missing: ${file}`)
 
-const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
-if (!app.includes('AdminOperationsFoundation')) fail('Stage 12 admin operations are no longer routed by the active Euro application')
+const app = fs.readFileSync(path.join(root, 'src/App.jsx'), 'utf8')
+if (!app.includes('AdminOperations')) fail('Stage 12 admin operations are no longer routed by the active Euro application')
 if (!app.includes('APP_ROUTE.ADMIN')) fail('The active Euro application is missing its protected Admin destination')
 
 const service = fs.readFileSync(path.join(root, 'src/admin/adminOperationsService.js'), 'utf8')

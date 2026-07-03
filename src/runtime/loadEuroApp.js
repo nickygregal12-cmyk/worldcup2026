@@ -1,5 +1,5 @@
 import { buildGuestReferenceModel } from '../guest/guestReferenceModel.js'
-import { EURO_TOURNAMENT_CODE, summariseFoundationData } from './foundationModel.js'
+import { EURO_TOURNAMENT_CODE, summariseFoundationData } from './appModel.js'
 import { parseExternal } from '../contracts/externalValidation.js'
 import {
   foundationGroupRowsSchema,
@@ -18,7 +18,7 @@ function throwForError(label, error) {
   }
 }
 
-export async function loadEuroFoundation(client) {
+export async function loadEuroApp(client) {
   if (!client) throw new Error('The Euro staging database client is unavailable.')
 
   const tournamentResult = await client

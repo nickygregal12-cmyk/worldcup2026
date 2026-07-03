@@ -44,15 +44,15 @@ else {
 for (const file of [
   'src/leagues/leagueModel.js',
   'src/leagues/leagueService.js',
-  'src/leagues/LeaguesFoundation.jsx',
+  'src/leagues/Leagues.jsx',
   'src/leagues/__tests__/leagueModel.test.js',
   'src/leagues/__tests__/leagueService.test.js',
   'docs/STAGE-11-LEAGUES-AND-SHARED-PREDICTIONS.md',
   'supabase/tests/database/013_leagues_and_shared_predictions.test.sql',
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 11 file is missing: ${file}`)
 
-const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
-if (!app.includes('LeaguesFoundation')) fail('the active foundation does not expose Stage 11 leagues')
+const app = fs.readFileSync(path.join(root, 'src/App.jsx'), 'utf8')
+if (!app.includes('Leagues')) fail('the active foundation does not expose Stage 11 leagues')
 if (!app.includes('APP_ROUTE.LEAGUES')) fail('the active app shell no longer routes this feature')
 
 const service = fs.existsSync(path.join(root, 'src/leagues/leagueService.js'))
@@ -73,7 +73,7 @@ if (!resultService.includes('get_member_predictions_after_lock')) {
   fail('overall leaderboard sharing is missing the controlled post-lock RPC')
 }
 const resultsView = [
-  fs.readFileSync(path.join(root, 'src/results/ResultsAndLeaderboardsFoundation.jsx'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src/results/ResultsAndLeaderboards.jsx'), 'utf8'),
   fs.readFileSync(path.join(root, 'src/results/ResultsPresentation.jsx'), 'utf8'),
   fs.readFileSync(path.join(root, 'src/player/PlayerHeadToHead.jsx'), 'utf8'),
 ].join('\n')

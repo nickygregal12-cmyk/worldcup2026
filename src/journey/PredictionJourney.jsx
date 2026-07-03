@@ -10,7 +10,7 @@ import PredictionJourneyView from './PredictionJourneyView.jsx'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { browserStorage, messageForError, readGuestReview, writeGuestReview } from './predictionJourneyRuntime.js'
 
-export default function PredictionJourneyFoundation({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, fixtureDraft = null }) {
+export default function PredictionJourney({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, fixtureDraft = null }) {
   const guestStorage = useMemo(() => createGuestPredictionStorage({
     storage: browserStorage(),
     reference,

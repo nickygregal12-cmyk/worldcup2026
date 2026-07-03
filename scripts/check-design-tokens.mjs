@@ -133,7 +133,7 @@ for (const marker of [
   'resolver is unhealthy', 'unresolved TBC fixtures', "label: 'Group stage review'",
 ]) if (!navigationTests.includes(marker)) fail(`Navigation acceptance coverage is missing: ${marker}`)
 
-const foundationLoader = read('src/foundation/loadEuroFoundation.js')
+const foundationLoader = read('src/runtime/loadEuroApp.js')
 if (!foundationLoader.includes('result_status')) fail('Foundation loading must include authoritative result status for the navigation trigger')
 
 const appCss = read('src/styles/app.css')

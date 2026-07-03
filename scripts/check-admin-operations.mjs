@@ -48,15 +48,15 @@ else {
 for (const file of [
   'src/admin/adminOperationsModel.js',
   'src/admin/adminOperationsService.js',
-  'src/admin/AdminOperationsFoundation.jsx',
+  'src/admin/AdminOperations.jsx',
   'src/admin/__tests__/adminOperationsModel.test.js',
   'src/admin/__tests__/adminOperationsService.test.js',
   'docs/STAGE-10-ADMIN-RESULTS-AND-TOURNAMENT-OPERATIONS.md',
   'supabase/tests/database/012_admin_results_operations.test.sql',
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 10 file is missing: ${file}`)
 
-const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
-if (!app.includes('AdminOperationsFoundation')) fail('the active foundation does not expose Stage 10 admin operations')
+const app = fs.readFileSync(path.join(root, 'src/App.jsx'), 'utf8')
+if (!app.includes('AdminOperations')) fail('the active foundation does not expose Stage 10 admin operations')
 if (!app.includes('APP_ROUTE.ADMIN')) fail('the active app shell no longer routes this feature')
 
 const service = fs.existsSync(path.join(root, 'src/admin/adminOperationsService.js'))

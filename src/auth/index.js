@@ -1,3 +1,3 @@
-export { default as EuroAuthFoundation } from './EuroAuthFoundation.jsx'
+export { default as AccountAccess } from './AccountAccess.jsx'
 export * from './authValidation.js'
 export * from './euroAuthService.js'

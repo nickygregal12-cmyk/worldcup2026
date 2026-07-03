@@ -2,7 +2,7 @@ import React from 'react' // eslint-disable-line no-unused-vars
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { LEADERBOARD_COMPETITION } from '../../app/appRoutes.js'
-import ResultsAndLeaderboardsFoundation from '../ResultsAndLeaderboardsFoundation.jsx'
+import ResultsAndLeaderboards from '../ResultsAndLeaderboards.jsx'
 import { RESULTS_PAGE_VIEW } from '../resultsAccess.js'
 
 const client = {
@@ -21,7 +21,7 @@ const reference = {
 describe('Results and Leaderboards access surface', () => {
   it('renders dedicated route links for Results and Leaderboards', () => {
     const html = renderToStaticMarkup(
-      <ResultsAndLeaderboardsFoundation
+      <ResultsAndLeaderboards
         client={client}
         reference={reference}
         view={RESULTS_PAGE_VIEW.LEADERBOARDS}

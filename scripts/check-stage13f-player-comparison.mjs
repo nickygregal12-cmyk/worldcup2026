@@ -39,8 +39,8 @@ for (const [name, source] of [['league standings', leaguePresentation], ['overal
   if (source.includes('foundation-member-link')) fail(`${name} still uses an ad hoc player-name button`)
 }
 
-const leagueController = read('src/leagues/LeaguesFoundation.jsx')
-const resultsController = read('src/results/ResultsAndLeaderboardsFoundation.jsx')
+const leagueController = read('src/leagues/Leagues.jsx')
+const resultsController = read('src/results/ResultsAndLeaderboards.jsx')
 for (const [name, source] of [['league', leagueController], ['overall', resultsController]]) {
   if (!source.includes('<PlayerHeadToHead')) fail(`${name} comparison does not use the shared H2H surface`)
   if (!source.includes('buildStandingComparison')) fail(`${name} comparison is missing competition-scoped rank and points context`)
@@ -71,7 +71,7 @@ const roadmap = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
 for (const marker of [
   '## Stage 13F-B — Player identity and complete H2H',
   '## Stage 13P-A — Converging wall-chart bracket and Share Image',
-  'Install and accept Stage 13F-D, then begin Stage 13F-E Admin invisibility.',
+  'Stage 13F-I — Tournament-pick contract.',
 ]) if (!roadmap.includes(marker)) fail(`Roadmap is missing: ${marker}`)
 
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')

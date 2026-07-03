@@ -131,16 +131,16 @@ for (const required of [
   if (!authSource.includes(required)) fail(`auth foundation is missing: ${required}`)
 }
 
-const client = read('src/foundation/supabaseClient.js')
+const client = read('src/runtime/appClient.js')
 if (!client.includes('autoRefreshToken: true')) fail('auth client must refresh sessions')
 if (!client.includes('persistSession: true')) fail('auth client must persist sessions')
 if (!client.includes('detectSessionInUrl: true')) fail('auth client must process confirmation and recovery URLs')
 
-const app = read('src/foundation/EuroFoundationApp.jsx')
-if (!app.includes('EuroAuthFoundation')) fail('active foundation page must expose Euro authentication')
-if (!app.includes('PredictionJourneyFoundation') || !app.includes('KoPredictorFoundation')) fail('active page must expose both trusted prediction journeys')
+const app = read('src/App.jsx')
+if (!app.includes('AccountAccess')) fail('active foundation page must expose Euro authentication')
+if (!app.includes('PredictionJourney') || !app.includes('KoPredictor')) fail('active page must expose both trusted prediction journeys')
 
-const authView = read('src/auth/EuroAuthFoundation.jsx')
+const authView = read('src/auth/AccountAccess.jsx')
 if (!authView.includes('GuestAccountTransfer')) fail('signed-in account view must expose the explicit guest-draft transfer flow')
 if (/through Stage 6/i.test(authView)) fail('account copy must not expose development-stage wording')
 

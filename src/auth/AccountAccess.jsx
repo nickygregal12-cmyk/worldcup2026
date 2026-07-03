@@ -61,7 +61,7 @@ function TextField({ id, label, type = 'text', value, onChange, autoComplete, mi
   )
 }
 
-export default function EuroAuthFoundation({ client, reference }) {
+export default function AccountAccess({ client, reference }) {
   const [mode, setMode] = useState(initialMode)
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)

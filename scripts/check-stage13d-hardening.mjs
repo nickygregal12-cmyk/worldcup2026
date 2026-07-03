@@ -23,7 +23,7 @@ for (const marker of ['begin()', 'cancel()', 'isCurrent(token)']) {
 }
 
 const sharedComparison = [read('src/player/PlayerHeadToHead.jsx'), read('src/player/playerComparisonModel.js')].join('\n')
-const leagues = [read('src/leagues/LeaguesFoundation.jsx'), read('src/leagues/LeaguePresentation.jsx'), sharedComparison].join('\n')
+const leagues = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresentation.jsx'), sharedComparison].join('\n')
 for (const marker of [
   'createLatestRequestGuard',
   'competitionKey: requestedCompetitionKey',
@@ -38,7 +38,7 @@ if (leagues.includes('<HeadToHead state={comparison} competitionKey={competition
   fail('League comparison must use the competition captured by the authorised request')
 }
 
-const results = [read('src/results/ResultsAndLeaderboardsFoundation.jsx'), read('src/results/ResultsPresentation.jsx'), sharedComparison].join('\n')
+const results = [read('src/results/ResultsAndLeaderboards.jsx'), read('src/results/ResultsPresentation.jsx'), sharedComparison].join('\n')
 for (const marker of [
   'createLatestRequestGuard',
   "status: previous.data ? 'partial' : 'error'",
@@ -60,7 +60,7 @@ for (const marker of [
   if (!model.includes(marker)) fail(`Shared prediction model is missing: ${marker}`)
 }
 
-const fixture = read('src/app/stage13dVisualFixture.js')
+const fixture = read('src/testFixtures/stage13dVisualFixture.js')
 for (const marker of [
   'STAGE13D_VISUAL_SCENARIO',
   "PRIVACY: 'privacy'",
@@ -70,7 +70,7 @@ for (const marker of [
   if (!fixture.includes(marker)) fail(`Stage 13D QA fixture is missing: ${marker}`)
 }
 
-const fixtureTest = read('src/app/__tests__/stage13dVisualFixture.test.js')
+const fixtureTest = read('src/testFixtures/__tests__/stage13dVisualFixture.test.js')
 for (const marker of [
   'Original privacy scenario',
   'deterministic partial failures',

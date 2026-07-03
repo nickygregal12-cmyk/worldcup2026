@@ -9,14 +9,14 @@ const exists = relativePath => fs.existsSync(path.join(root, relativePath))
 const read = relativePath => fs.readFileSync(path.join(root, relativePath), 'utf8')
 
 const requiredFiles = [
-  'src/app/stage13dVisualFixture.js',
-  'src/app/__tests__/stage13dVisualFixture.test.js',
+  'src/testFixtures/stage13dVisualFixture.js',
+  'src/testFixtures/__tests__/stage13dVisualFixture.test.js',
   'docs/STAGE-13D-BATCH-2-RESPONSIVE.md',
   'docs/design-baselines/stage13d/README.md',
 ]
 for (const file of requiredFiles) if (!exists(file)) fail(`Stage 13D responsive file is missing: ${file}`)
 
-const fixture = read('src/app/stage13dVisualFixture.js')
+const fixture = read('src/testFixtures/stage13dVisualFixture.js')
 for (const marker of [
   'VISUAL_STAGE13D_REFERENCE',
   'VISUAL_STAGE13D_RESULT_ROWS',
@@ -29,7 +29,7 @@ for (const marker of [
   if (!fixture.includes(marker)) fail(`Stage 13D signed-in fixture is missing: ${marker}`)
 }
 
-const fixtureTest = read('src/app/__tests__/stage13dVisualFixture.test.js')
+const fixtureTest = read('src/testFixtures/__tests__/stage13dVisualFixture.test.js')
 for (const marker of [
   'complete canonical match rows',
   'separate league and points contracts',
@@ -38,10 +38,10 @@ for (const marker of [
   if (!fixtureTest.includes(marker)) fail(`Stage 13D fixture test is missing: ${marker}`)
 }
 
-const foundationApp = read('src/foundation/EuroFoundationApp.jsx')
-if (!foundationApp.includes("'stage13d'")) fail('The app shell does not recognise the Stage 13D visual fixture')
-if (!foundationApp.includes('createStage13dVisualClient')) fail('The Stage 13D fixture client is not wired into the app shell')
-if (!foundationApp.includes('VISUAL_STAGE13D_REFERENCE')) fail('The Stage 13D canonical visual reference is not wired into both routes')
+const productRoot = read('src/App.jsx')
+if (productRoot.includes('createStage13dVisualClient') || productRoot.includes('VISUAL_STAGE13D_REFERENCE')) {
+  fail('Stage 13D visual fixtures must not ship in the production product root')
+}
 
 const deployedVerifier = read('scripts/verify-euro28-foundation-page.mjs')
 for (const marker of [
@@ -56,7 +56,7 @@ for (const marker of [
 const theme = read('src/app/useTheme.js')
 if (!theme.includes("'stage13d'")) fail('Stage 13D visual captures cannot force light and dark themes')
 
-const leagues = [read('src/leagues/LeaguesFoundation.jsx'), read('src/leagues/LeaguePresentation.jsx')].join('\n')
+const leagues = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresentation.jsx')].join('\n')
 for (const marker of [
   'Compare with member',
   'Shared member list:',
@@ -66,7 +66,7 @@ for (const marker of [
   if (!leagues.includes(marker)) fail(`League usability journey is missing: ${marker}`)
 }
 
-const results = [read('src/results/ResultsAndLeaderboardsFoundation.jsx'), read('src/results/ResultsPresentation.jsx')].join('\n')
+const results = [read('src/results/ResultsAndLeaderboards.jsx'), read('src/results/ResultsPresentation.jsx')].join('\n')
 if (results.includes('title="Completed" rows={feed.sections.completed} open=')) fail('Completed results must not expand the full feed by default')
 if (!results.includes("rows.length === 1 ? 'entry' : 'entries'")) fail('Leaderboard entry counts are missing')
 

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Badge, Button, Card, LinkButton, PlayerIdentity, StatusBar, Tabs, TeamLabel } from '../design-system/index.jsx'
 import { RESULT_COMPETITION } from '../results/resultModel.js'
 import { loadMatchCentre } from './matchCentreService.js'
-import styles from './MatchCentreFoundation.module.css'
+import styles from './MatchCentre.module.css'
 
 const COMPETITION_OPTIONS = [
   { value: RESULT_COMPETITION.ORIGINAL, label: 'Original Predictor' },
@@ -85,7 +85,7 @@ function PlayerLine({ line }) {
   )
 }
 
-export default function MatchCentreFoundation({ client, reference, requestedMatchNumber = null, initialCompetition = RESULT_COMPETITION.ORIGINAL, initialLeagueId = null }) {
+export default function MatchCentre({ client, reference, requestedMatchNumber = null, initialCompetition = RESULT_COMPETITION.ORIGINAL, initialLeagueId = null }) {
   const [competitionKey, setCompetitionKey] = useState(initialCompetition)
   const [leagueId, setLeagueId] = useState(initialLeagueId ?? 'overall')
   const [state, setState] = useState({ status: 'loading', data: null, error: null })

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import KoPredictorMatchCentre from '../KoPredictorMatchCentre.jsx'
 import { TeamProfileContext } from '../../design-system/teamProfileContext.js'
 import { createKoPredictorDraft, summariseKoPredictor } from '../koPredictorModel.js'
-import { VISUAL_KO_BUNDLE, VISUAL_KO_REFERENCE, VISUAL_KO_STANDING } from '../../app/visualFixture.js'
+import { VISUAL_KO_BUNDLE, VISUAL_KO_REFERENCE, VISUAL_KO_STANDING } from '../../testFixtures/visualFixture.js'
 
 describe('KoPredictorMatchCentre', () => {
   it('renders the real-fixture competition with separate prediction controls', () => {

@@ -43,11 +43,11 @@ if (RESULT_COMPETITION.ORIGINAL !== 'original' || RESULT_COMPETITION.KO_PREDICTO
 for (const file of [
   'src/results/resultModel.js',
   'src/results/resultService.js',
-  'src/results/ResultsAndLeaderboardsFoundation.jsx',
+  'src/results/ResultsAndLeaderboards.jsx',
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 9 file is missing: ${file}`)
 
-const app = fs.readFileSync(path.join(root, 'src/foundation/EuroFoundationApp.jsx'), 'utf8')
-if (!app.includes('ResultsAndLeaderboardsFoundation')) fail('the active foundation does not expose Stage 9 results')
+const app = fs.readFileSync(path.join(root, 'src/App.jsx'), 'utf8')
+if (!app.includes('ResultsAndLeaderboards')) fail('the active foundation does not expose Stage 9 results')
 if (!app.includes('APP_ROUTE.RESULTS')) fail('the active app shell no longer routes this feature')
 
 if (errors.length) {

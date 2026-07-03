@@ -16,7 +16,7 @@ function messageForError(error) {
   return message
 }
 
-export default function LeaguesFoundation({ client, tournamentId, reference }) {
+export default function Leagues({ client, tournamentId, reference }) {
   const [session, setSession] = useState(null)
   const [loadingSession, setLoadingSession] = useState(Boolean(client))
   const [leagues, setLeagues] = useState([])

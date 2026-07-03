@@ -13,20 +13,20 @@ const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter
 if (migrations.length < 14) fail(`Stage 12 requires the original fourteen-migration baseline, found ${migrations.length}`)
 if (!migrations.includes('202607010010_euro28_competition_split_and_jokers.sql')) fail('Migration 010 is missing')
 for (const file of [
-  'src/journey/PredictionJourneyFoundation.jsx',
+  'src/journey/PredictionJourney.jsx',
   'src/journey/OriginalBracket.jsx',
-  'src/koPredictor/KoPredictorFoundation.jsx',
+  'src/koPredictor/KoPredictor.jsx',
   'src/koPredictor/KoPredictorMatchCentre.jsx',
   'src/grace/predictionGraceService.js',
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 8 file is missing: ${file}`)
 
 const original = [
-  read('src/journey/PredictionJourneyFoundation.jsx'),
+  read('src/journey/PredictionJourney.jsx'),
   read('src/journey/PredictionJourneyView.jsx'),
 ].join('\n')
 const groups = read('src/journey/GroupsPredictor.jsx')
 const bracket = read('src/journey/OriginalBracket.jsx')
-const ko = read('src/koPredictor/KoPredictorFoundation.jsx')
+const ko = read('src/koPredictor/KoPredictor.jsx')
 const koCentre = read('src/koPredictor/KoPredictorMatchCentre.jsx')
 for (const required of ['hasActivePredictionGrace', 'isPredictionMatchStarted', '<OriginalBracket']) {
   if (!original.includes(required)) fail(`original journey is missing: ${required}`)

@@ -1,8 +1,8 @@
 import fs from 'node:fs'
 
 const required = [
-  'src/matchCentre/MatchCentreFoundation.jsx',
-  'src/matchCentre/MatchCentreFoundation.module.css',
+  'src/matchCentre/MatchCentre.jsx',
+  'src/matchCentre/MatchCentre.module.css',
   'src/matchCentre/matchCentreModel.js',
   'src/matchCentre/matchCentreService.js',
   'src/matchCentre/__tests__/matchCentreModel.test.js',
@@ -11,7 +11,7 @@ for (const file of required) {
   if (!fs.existsSync(file)) throw new Error(`Stage 13F-C required file missing: ${file}`)
 }
 const route = fs.readFileSync('src/app/appRoutes.js', 'utf8')
-const app = fs.readFileSync('src/foundation/EuroFoundationApp.jsx', 'utf8')
+const app = fs.readFileSync('src/App.jsx', 'utf8')
 const model = fs.readFileSync('src/matchCentre/matchCentreModel.js', 'utf8')
 const service = fs.readFileSync('src/matchCentre/matchCentreService.js', 'utf8')
 const home = fs.readFileSync('src/home/HomeDashboard.jsx', 'utf8')
@@ -19,7 +19,7 @@ const results = fs.readFileSync('src/results/ResultsPresentation.jsx', 'utf8')
 const checks = [
   [route.includes("MATCH_CENTRE: 'match-centre'"), 'dedicated Match Centre route'],
   [route.includes('matchCentreParamsFromHash'), 'safe fixture/competition/scope query parsing'],
-  [app.includes('<MatchCentreFoundation'), 'application route integration'],
+  [app.includes('<MatchCentre'), 'application route integration'],
   [model.includes('buildFixtureImpact'), 'fixture impact model'],
   [model.includes('RESULT_COMPETITION'), 'competition boundary'],
   [service.includes('get_member_predictions_after_lock'), 'server-authorised overall prediction reads'],

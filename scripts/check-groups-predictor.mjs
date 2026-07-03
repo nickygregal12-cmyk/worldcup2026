@@ -78,7 +78,7 @@ for (const marker of ['Saved predictions count whether submitted or not', 'Group
 }
 
 const journey = [
-  read('src/journey/PredictionJourneyFoundation.jsx'),
+  read('src/journey/PredictionJourney.jsx'),
   read('src/journey/PredictionJourneyView.jsx'),
 ].join('\n')
 for (const marker of ['<GroupsPredictor', '<PredictionReview', 'activeGroupMatchNumber', 'fixtureDraft']) {
@@ -89,7 +89,7 @@ if (!read('src/journey/predictionJourneyConfig.js').includes('euro28-prediction-
 const guestModel = read('src/guest/guestReferenceModel.js')
 if (!guestModel.includes('metadata?.isoCode') || !guestModel.includes('isoCode:')) fail('Guest reference model must carry team ISO codes from central metadata')
 
-const fixture = read('src/app/visualFixture.js')
+const fixture = read('src/testFixtures/visualFixture.js')
 for (const marker of ['VISUAL_GROUP_REFERENCE', 'VISUAL_GROUP_DRAFT', "['SCO', 'Scotland']", 'isProvisional: true', 'GUEST_RESOLVER_VERSION']) {
   if (!fixture.includes(marker)) fail(`Stage 13B visual fixture is missing: ${marker}`)
 }

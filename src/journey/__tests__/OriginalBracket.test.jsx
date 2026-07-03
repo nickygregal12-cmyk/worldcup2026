@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import OriginalBracket from '../OriginalBracket.jsx'
 import { TeamProfileContext } from '../../design-system/teamProfileContext.js'
-import { VISUAL_BRACKET_DRAFT, VISUAL_GROUP_REFERENCE } from '../../app/visualFixture.js'
+import { VISUAL_BRACKET_DRAFT, VISUAL_GROUP_REFERENCE } from '../../testFixtures/visualFixture.js'
 import { resolveGuestTournamentPreview } from '../../guest/index.js'
 
 describe('OriginalBracket', () => {

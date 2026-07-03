@@ -44,7 +44,7 @@ for (const marker of ['ORIGINAL_BRACKET_ROUNDS', 'deriveOriginalBracketMatchStat
 }
 
 const journey = [
-  read('src/journey/PredictionJourneyFoundation.jsx'),
+  read('src/journey/PredictionJourney.jsx'),
   read('src/journey/PredictionJourneyView.jsx'),
 ].join('\n')
 if (!journey.includes("import OriginalBracket from './OriginalBracket.jsx'")) fail('Prediction journey does not use the shared OriginalBracket component')
@@ -72,7 +72,7 @@ for (const marker of ['KO_PREDICTOR_ROUNDS', 'koMethodOptions', "value: 'normal_
   if (!koModel.includes(marker)) fail(`KO presentation model is missing: ${marker}`)
 }
 
-const koFoundation = read('src/koPredictor/KoPredictorFoundation.jsx')
+const koFoundation = read('src/koPredictor/KoPredictor.jsx')
 for (const marker of ['saveMyKoPredictionBundle', 'loadMyKoPredictorStanding', '<KoPredictorMatchCentre', 'createGuestKoPredictionStorage', 'guestTransferMode']) {
   if (!koFoundation.includes(marker)) fail(`KO Predictor controller is missing: ${marker}`)
 }
@@ -83,7 +83,7 @@ for (const marker of ['get_my_competition_points', 'get_competition_leaderboard'
 }
 if (koService.includes('original_predictor')) fail('KO Predictor service must not read Original Predictor totals')
 
-const fixture = read('src/app/visualFixture.js')
+const fixture = read('src/testFixtures/visualFixture.js')
 for (const marker of ['VISUAL_BRACKET_DRAFT', 'VISUAL_KO_REFERENCE', 'VISUAL_KO_BUNDLE', 'VISUAL_KO_STANDING']) {
   if (!fixture.includes(marker)) fail(`Stage 13C visual fixture is missing: ${marker}`)
 }
