@@ -27,7 +27,8 @@ function NavLink({ destination, route, compact = false, centre = false, onClick 
 }
 
 function describeMoreDestination(destination) {
-  if (destination.key === APP_ROUTE.RESULTS) return 'Scores and both leaderboards'
+  if (destination.key === APP_ROUTE.RESULTS) return 'Scores, live tables and the live bracket'
+  if (destination.key === APP_ROUTE.LEADERBOARDS) return 'Full Original and KO Predictor tables'
   if (destination.key === APP_ROUTE.ACCOUNT) return 'Sign in and profile'
   if (destination.key === APP_ROUTE.TOURNAMENT) return 'Format and scoring rules'
   if (destination.key === APP_ROUTE.ADMIN) return 'Tournament operations'
@@ -42,6 +43,7 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, c
   const homeDestination = destinationForRoute(APP_ROUTE.HOME)
   const leaguesDestination = destinationForRoute(APP_ROUTE.LEAGUES)
   const resultsDestination = destinationForRoute(APP_ROUTE.RESULTS)
+  const leaderboardsDestination = destinationForRoute(APP_ROUTE.LEADERBOARDS)
   const navigationDestinations = useMemo(() => buildNavigationDestinations(navigation), [navigation])
   const primaryDestination = navigationDestinations.primary
   const bracketDestination = navigationDestinations.bracket
@@ -56,11 +58,12 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, c
 
   const moreDestinations = useMemo(() => [
     resultsDestination,
+    leaderboardsDestination,
     ...navigationDestinations.phaseMoreDestinations,
     destinationForRoute(APP_ROUTE.ACCOUNT),
     destinationForRoute(APP_ROUTE.TOURNAMENT),
     destinationForRoute(APP_ROUTE.ADMIN),
-  ], [resultsDestination, navigationDestinations])
+  ], [resultsDestination, leaderboardsDestination, navigationDestinations])
 
   const visibleMobileRoutes = new Set([
     APP_ROUTE.HOME,

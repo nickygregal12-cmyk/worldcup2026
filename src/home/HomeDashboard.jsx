@@ -3,6 +3,7 @@ import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
 import { GUEST_STATE_UPDATED_EVENT } from '../predictions/predictionSaveConfig.js'
 import { Badge, Button, Card, Icon, LinkButton, ProgressBar, StatusBar } from '../design-system/index.jsx'
 import { loadHomeDashboard } from './homeDashboardService.js'
+import styles from './HomeAccess.module.css'
 
 function formatDate(value, fallback = 'To be confirmed') {
   if (!value) return fallback
@@ -18,12 +19,17 @@ function formatRank(rank) {
   return rank ? `#${rank}` : '—'
 }
 
-function Stat({ label, value, note }) {
+function Stat({ label, value, note, href = null }) {
   return (
-    <Card className="home-stat" as="article">
+    <Card
+      className={`home-stat ${href ? styles.statLink : ''}`.trim()}
+      as={href ? 'a' : 'article'}
+      href={href ?? undefined}
+      aria-label={href ? `${label}: ${value}. ${note}. Open full leaderboard.` : undefined}
+    >
       <span>{label}</span>
       <strong>{value}</strong>
-      <small>{note}</small>
+      <small>{href ? `${note} · View full table` : note}</small>
     </Card>
   )
 }
@@ -145,6 +151,7 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
             <LinkButton href={dashboard.signedIn ? '#/leagues' : '#/account'} variant="secondary" icon={dashboard.signedIn ? 'leagues' : 'account'}>
               {dashboard.signedIn ? 'View leagues' : 'Create an account'}
             </LinkButton>
+            {dashboard.signedIn && <LinkButton href="#/leaderboards" variant="secondary" icon="results">Leaderboards</LinkButton>}
           </div>
         </div>
         <Card className="home-tournament-card" as="aside">
@@ -163,8 +170,8 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
       )}
 
       <section className="home-stat-grid" aria-label="Your predictor summary">
-        <Stat label="Original Predictor" value={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.original.points : '—'} note={dashboard.signedIn ? `${formatRank(dashboard.original.rank)} overall` : 'Guest drafts are unscored'} />
-        <Stat label="KO Predictor" value={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.koPredictor.points : '—'} note={koOpen ? `${formatRank(dashboard.koPredictor.rank)} overall` : 'Opens as real knockout fixtures are known'} />
+        <Stat label="Original Predictor" value={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.original.points : '—'} note={dashboard.signedIn ? `${formatRank(dashboard.original.rank)} overall` : 'Guest drafts are unscored'} href={dashboard.signedIn ? '#/leaderboards?competition=original' : null} />
+        <Stat label="KO Predictor" value={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.koPredictor.points : '—'} note={koOpen ? `${formatRank(dashboard.koPredictor.rank)} overall` : 'Opens as real knockout fixtures are known'} href={dashboard.signedIn ? '#/leaderboards?competition=koPredictor' : null} />
         <Stat label="Private leagues" value={dashboard.signedIn && !dashboard.sectionErrors.leagues ? dashboard.leagues.count : '—'} note={dashboard.signedIn ? `${dashboard.leagues.members} combined members` : 'Sign in to create or join'} />
       </section>
 

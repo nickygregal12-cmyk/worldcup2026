@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.2 — Stage 14B contrast completion from `8e11edd`
+### Version 4.3 — Stage 13F-0 access architecture from `7261888`
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -41,6 +41,7 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 14: observability and resilience accepted at `d522210`, 15 migrations.
 - Stage 14B Batch 1: architecture governance gates accepted at `66adb1f`; 59 test files and 321 tests passed.
 - Stage 14B Batch 2: structural compliance accepted at `8e11edd`; all active JSX files are within the 400-line hard cap and 59 test files / 321 tests passed.
+- Stage 14B Batch 3: contrast completion accepted at `7261888`; all 58 registered token pairs pass with zero exceptions and 59 test files / 321 tests passed.
 
 # Delivery sequence
 
@@ -66,7 +67,7 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - preserve existing class names, styling, behaviour and visual baselines;
 - defer style ownership migration because no styling was materially changed and all global compatibility ceilings remain frozen.
 
-### Batch 3 — contrast completion
+### Batch 3 — contrast completion — ACCEPTED AT `7261888`
 
 - darken the light-theme muted-text token from `#718096` to `#627085`;
 - darken the light-theme joker token from `#a66b00` to `#9c6500`;
@@ -78,46 +79,18 @@ Stage 14B ends with no oversized active UI component and no contrast exception.
 
 ## Stage 13F-0 — Site-wide information architecture and access contract
 
-This stage precedes new player-experience features.
+### Implementation scope
 
-### Current finding
+- dedicated `#/leaderboards` route rather than a Results alias;
+- Results owns fixture/result feed, live tables and live bracket;
+- Leaderboards owns full Original/KO tables and matching points;
+- competition-specific Home deep links;
+- Leaderboards in More without changing the five-position mobile navigation;
+- permanent `EURO28-SITE-ACCESS-MAP.md`;
+- `audit:access` enforcement;
+- corrected Project Constitution adoption.
 
-The complete overall leaderboards are technically accessible for signed-in users:
-
-- desktop: `Results` in primary navigation;
-- mobile: `More` → `Results`;
-- route: `#/results` or `#/leaderboards` alias;
-- data: the RPC returns the full table without a row limit;
-- presentation: all returned rows are rendered.
-
-The experience is still partial because leaderboards sit below results, live tables and live bracket in one long page, there is no dedicated leaderboard route state or competition deep link, and Home rank summaries do not take users directly to the relevant table.
-
-### Required access architecture
-
-1. Preserve the confirmed five-position mobile lifecycle.
-2. Add a dedicated **Leaderboards** destination in More and an explicit `#/leaderboards` route.
-3. Make `Results` focus on fixtures, live tables and live bracket.
-4. Make `Leaderboards` focus on:
-   - Original overall table;
-   - KO overall table;
-   - competition-specific points entry;
-   - player identity and H2H entry.
-5. Home Original/KO rank and points summaries link directly to the matching competition view.
-6. Leagues retains private-league standings and links player identities into the same shared player experience.
-7. Match Centre receives a direct match route/deep link when Stage 13F-C lands.
-8. Bracket Health is entered from the Original Bracket and relevant Home status, not as an unrelated main destination.
-9. Admin is absent unless access is positively confirmed.
-10. Account owns guest conversion, identity and security.
-11. Tournament owns format, rules and explanatory content.
-12. Every approved feature receives:
-    - one clear primary entry;
-    - contextual entry links where useful;
-    - back/close behaviour;
-    - mobile and desktop access;
-    - loading, empty, error and unauthorised handling;
-    - a direct route where sharing/reload/bookmarking is valuable.
-
-The implementation must not add a sixth permanent mobile navigation position.
+Admin invisibility remains Stage 13F-E and is explicitly not claimed complete here. Future H2H, Match Centre and Bracket Health entry rules are recorded now and implemented in their owning stages.
 
 ## Stage 13F-A — Guest journey and Lucky Dip
 
@@ -286,4 +259,4 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-Complete and accept Stage 14B Batch 3, then begin Stage 13F-0 with a complete route, entry-point and role-aware access audit before changing navigation.
+Install and accept Stage 13F-0, then begin Stage 13F-A guest journey completion and Euro-native Lucky Dip.

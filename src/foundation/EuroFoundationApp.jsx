@@ -9,9 +9,9 @@ import LeaguesFoundation from '../leagues/LeaguesFoundation.jsx'
 import HomeDashboard from '../home/HomeDashboard.jsx'
 import TournamentOverview from '../tournament/TournamentOverview.jsx'
 import EuroAppShell from '../app/EuroAppShell.jsx'
-import { APP_ROUTE } from '../app/appRoutes.js'
+import { APP_ROUTE, leaderboardCompetitionFromHash } from '../app/appRoutes.js'
 import { deriveNavigationLifecycle } from '../app/navigationLifecycle.js'
-import { useHashRoute } from '../app/useHashRoute.js'
+import { useHashLocation } from '../app/useHashRoute.js'
 import { useTheme } from '../app/useTheme.js'
 import { VISUAL_BRACKET_DRAFT, VISUAL_FOUNDATION, VISUAL_GROUP_DRAFT, VISUAL_HOME_DASHBOARD, VISUAL_KO_BUNDLE, VISUAL_KO_REFERENCE, VISUAL_KO_STANDING } from '../app/visualFixture.js'
 import { createStage13dVisualClient, STAGE13D_VISUAL_SCENARIO, VISUAL_STAGE13D_FOUNDATION, VISUAL_STAGE13D_REFERENCE } from '../app/stage13dVisualFixture.js'
@@ -78,7 +78,8 @@ export default function EuroFoundationApp() {
   const fixtureName = useMemo(() => visualFixtureName(), [])
   const visualFixture = Boolean(fixtureName)
   const fixtureScenario = useMemo(() => stage13dVisualScenario(fixtureName), [fixtureName])
-  const route = useHashRoute()
+  const hashLocation = useHashLocation()
+  const route = hashLocation.route
   const theme = useTheme()
   const clientState = useMemo(() => createFoundationClient(), [])
   const stage13dClient = useMemo(() => ['stage13d', 'stage13e'].includes(fixtureName) ? createStage13dVisualClient({ scenario: fixtureScenario }) : null, [fixtureName, fixtureScenario])
@@ -153,8 +154,20 @@ export default function EuroFoundationApp() {
   } else if (route === APP_ROUTE.RESULTS) {
     content = (
       <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Live tournament" title="Results and leaderboards" description="Canonical scores, live tables and two fully separate competition standings." />
-        <ResultsAndLeaderboardsFoundation client={activeClient} reference={['stage13d', 'stage13e'].includes(fixtureName) ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference} />
+        <PageIntro eyebrow="Live tournament" title="Results" description="Canonical scores, live group tables and the live knockout bracket." />
+        <ResultsAndLeaderboardsFoundation view="results" client={activeClient} reference={['stage13d', 'stage13e'].includes(fixtureName) ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference} />
+      </div>
+    )
+  } else if (route === APP_ROUTE.LEADERBOARDS) {
+    content = (
+      <div className="content-stack legacy-page">
+        <PageIntro eyebrow="Separate competition standings" title="Leaderboards" description="View the full Original Predictor or KO Predictor table and your matching points breakdown." />
+        <ResultsAndLeaderboardsFoundation
+          view="leaderboards"
+          initialCompetition={leaderboardCompetitionFromHash(hashLocation.hash)}
+          client={activeClient}
+          reference={['stage13d', 'stage13e'].includes(fixtureName) ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference}
+        />
       </div>
     )
   } else if (route === APP_ROUTE.ACCOUNT) {

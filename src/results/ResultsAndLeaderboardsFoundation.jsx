@@ -1,14 +1,30 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react' // eslint-disable-line no-unused-vars
+import { LinkButton, Tabs } from '../design-system/index.jsx'
+import { LEADERBOARD_COMPETITION } from '../app/appRoutes.js'
 import { loadOverallHeadToHead, loadResultsAndLeaderboards } from './resultService.js'
 import { buildCanonicalResultFeed, buildLiveBracketRounds, RESULT_COMPETITION } from './resultModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { GroupTable, Leaderboard, LiveBracket, OverallComparison, PointsBreakdown, ResultsFeed, SectionError } from './ResultsPresentation.jsx'
+import { RESULTS_PAGE_VIEW } from './resultsAccess.js'
+import styles from './ResultsAccess.module.css'
 
-export default function ResultsAndLeaderboardsFoundation({ client, reference }) {
+function AccessSwitcher({ view }) {
+  return (
+    <nav className={styles.switcher} aria-label="Results and leaderboard destinations">
+      <LinkButton href="#/results" variant={view === RESULTS_PAGE_VIEW.RESULTS ? 'primary' : 'secondary'} size="small" icon="results">Results</LinkButton>
+      <LinkButton href="#/leaderboards" variant={view === RESULTS_PAGE_VIEW.LEADERBOARDS ? 'primary' : 'secondary'} size="small" icon="results">Leaderboards</LinkButton>
+    </nav>
+  )
+}
+
+export default function ResultsAndLeaderboardsFoundation({ client, reference, view = RESULTS_PAGE_VIEW.RESULTS, initialCompetition = LEADERBOARD_COMPETITION.ORIGINAL }) {
   const [state, setState] = useState({ status: 'loading', data: null, error: null })
   const [comparison, setComparison] = useState(null)
+  const [competitionKey, setCompetitionKey] = useState(initialCompetition)
   const loadRequests = useRef(createLatestRequestGuard())
   const comparisonRequests = useRef(createLatestRequestGuard())
+
+  useEffect(() => setCompetitionKey(initialCompetition), [initialCompetition])
 
   const load = useCallback(async () => {
     const requestToken = loadRequests.current.begin()
@@ -39,14 +55,14 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
   const feed = useMemo(() => buildCanonicalResultFeed({ reference, liveSnapshot: state.data?.live }), [reference, state.data])
   const bracketRounds = useMemo(() => buildLiveBracketRounds({ reference, liveSnapshot: state.data?.live }), [reference, state.data])
 
-  const compareOverall = async (row, competitionKey) => {
+  const compareOverall = async (row, requestedCompetitionKey) => {
     if (!state.data?.currentUserId) return
     const requestToken = comparisonRequests.current.begin()
     setComparison({
       status: 'loading',
       otherName: row.displayName,
       otherUserId: row.userId,
-      competitionKey,
+      competitionKey: requestedCompetitionKey,
       data: null,
       error: null,
     })
@@ -55,7 +71,7 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
         tournamentId: reference.tournamentId,
         currentUserId: state.data.currentUserId,
         otherUserId: row.userId,
-        competitionKey,
+        competitionKey: requestedCompetitionKey,
       })
       if (!comparisonRequests.current.isCurrent(requestToken)) return
       setComparison(previous => ({ ...previous, status: 'ready', data, error: null }))
@@ -75,24 +91,39 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
     setComparison(null)
   }
 
+  const selectCompetition = nextCompetition => {
+    setCompetitionKey(nextCompetition)
+    if (view !== RESULTS_PAGE_VIEW.LEADERBOARDS || typeof window === 'undefined') return
+    const nextHash = `#/leaderboards?competition=${nextCompetition}`
+    if (window.location.hash !== nextHash) window.history.replaceState(null, '', nextHash)
+  }
+
+  const isLeaderboards = view === RESULTS_PAGE_VIEW.LEADERBOARDS
+  const selectedIsOriginal = competitionKey === LEADERBOARD_COMPETITION.ORIGINAL
+  const selectedLeaderboard = selectedIsOriginal ? state.data?.sections.originalLeaderboard : state.data?.sections.koLeaderboard
+  const selectedPoints = selectedIsOriginal ? state.data?.sections.originalPoints : state.data?.sections.koPoints
+  const resultCompetitionKey = selectedIsOriginal ? RESULT_COMPETITION.ORIGINAL : RESULT_COMPETITION.KO_PREDICTOR
+  const title = isLeaderboards ? 'Full competition leaderboards' : 'Results, live tables and live bracket'
+
   return (
     <section className="foundation-panel foundation-results" aria-labelledby="euro28-results-heading">
+      <AccessSwitcher view={view} />
       <div className="foundation-section-heading">
         <div>
-          <span className="foundation-kicker">Live tournament</span>
-          <h2 id="euro28-results-heading">Results, live tables and separate points</h2>
-          <p>Canonical live data never blends with predicted brackets. Original and KO Predictor totals never combine.</p>
+          <span className="foundation-kicker">{isLeaderboards ? 'Separate competition standings' : 'Live tournament'}</span>
+          <h2 id="euro28-results-heading">{title}</h2>
+          <p>{isLeaderboards ? 'View every ranked player and your points breakdown. Original and KO Predictor totals never combine.' : 'Canonical live data never blends with predicted brackets.'}</p>
         </div>
         <button type="button" className="foundation-secondary-button" onClick={() => { void load() }} disabled={state.status === 'loading'}>{state.status === 'loading' ? 'Refreshing…' : 'Refresh'}</button>
       </div>
 
-      {state.status === 'loading' && !state.data && <p className="foundation-empty-copy">Loading canonical results and competition tables…</p>}
+      {state.status === 'loading' && !state.data && <p className="foundation-empty-copy">Loading {isLeaderboards ? 'competition tables' : 'canonical results'}…</p>}
       {state.status === 'error' && !state.data && <p className="foundation-warning-text">{state.error}</p>}
-      {state.status === 'loading' && state.data && <p className="foundation-empty-copy">Refreshing available live and competition sections…</p>}
+      {state.status === 'loading' && state.data && <p className="foundation-empty-copy">Refreshing available sections…</p>}
       {state.error && state.data && <p className="foundation-warning-text">Refresh failed. The last available data remains visible: {state.error}</p>}
-      {state.status === 'partial' && !state.error && <p className="foundation-warning-text">Some sections could not be refreshed. Available live data and competition tables remain visible below.</p>}
+      {state.status === 'partial' && !state.error && <p className="foundation-warning-text">Some sections could not be refreshed. Available data remains visible below.</p>}
 
-      {state.data && (
+      {state.data && !isLeaderboards && (
         <>
           <SectionError section={state.data.sections.live} fallback="Canonical results could not be loaded." />
           {summary && (
@@ -103,7 +134,6 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
               <div><strong>{summary.manualReviewResults}</strong><span>manual review</span></div>
             </div>
           )}
-
           {state.data.live && (
             <>
               <ResultsFeed feed={feed} />
@@ -113,12 +143,9 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
                   <h3>Live group tables</h3>
                   <p>Calculated only from canonical live and confirmed group results.</p>
                   <div className="foundation-live-groups">
-                    {groups.map(([groupCode, table]) => (
-                      <GroupTable key={groupCode} groupCode={groupCode} table={table} reference={reference} />
-                    ))}
+                    {groups.map(([groupCode, table]) => <GroupTable key={groupCode} groupCode={groupCode} table={table} reference={reference} />)}
                   </div>
                 </article>
-
                 <article className="foundation-results-card">
                   <span className="foundation-kicker">Live context · not your bracket</span>
                   <h3>Live knockout bracket</h3>
@@ -128,37 +155,47 @@ export default function ResultsAndLeaderboardsFoundation({ client, reference }) 
               </div>
             </>
           )}
-
-          {state.data.signedIn ? (
-            <>
-              <div className="foundation-results-grid">
-                <Leaderboard
-                  title="Original Predictor"
-                  section={state.data.sections.originalLeaderboard}
-                  note="Groups + original bracket"
-                  currentUserId={state.data.currentUserId}
-                  onCompare={row => compareOverall(row, RESULT_COMPETITION.ORIGINAL)}
-                />
-                <Leaderboard
-                  title="KO Predictor"
-                  section={state.data.sections.koLeaderboard}
-                  note="Real knockout matches only"
-                  currentUserId={state.data.currentUserId}
-                  onCompare={row => compareOverall(row, RESULT_COMPETITION.KO_PREDICTOR)}
-                />
-              </div>
-              <div className="foundation-results-grid">
-                <PointsBreakdown title="Original Predictor breakdown" section={state.data.sections.originalPoints} competitionKey={RESULT_COMPETITION.ORIGINAL} />
-                <PointsBreakdown title="KO Predictor breakdown" section={state.data.sections.koPoints} competitionKey={RESULT_COMPETITION.KO_PREDICTOR} />
-              </div>
-              <OverallComparison state={comparison} reference={reference} onClose={closeComparison} />
-            </>
-          ) : state.data.sections.session.status === 'error' ? (
-            <p className="foundation-warning-text">Live results are available, but your signed-in competition data could not be checked: {state.data.sections.session.error}</p>
-          ) : (
-            <p className="foundation-empty-copy">Sign in to view the two scored leaderboards and separate points breakdowns. Guest predictions remain unscored.</p>
-          )}
         </>
+      )}
+
+      {state.data && isLeaderboards && state.data.signedIn && (
+        <>
+          <div className={styles.competitionTabs}>
+            <Tabs
+              label="Leaderboard competition"
+              value={competitionKey}
+              options={[
+                { value: LEADERBOARD_COMPETITION.ORIGINAL, label: 'Original Predictor' },
+                { value: LEADERBOARD_COMPETITION.KO_PREDICTOR, label: 'KO Predictor' },
+              ]}
+              onChange={selectCompetition}
+            />
+          </div>
+          <div className={styles.singleColumn}>
+            <Leaderboard
+              title={selectedIsOriginal ? 'Original Predictor' : 'KO Predictor'}
+              section={selectedLeaderboard}
+              note={selectedIsOriginal ? 'Groups + original bracket' : 'Real knockout matches only'}
+              currentUserId={state.data.currentUserId}
+              onCompare={row => compareOverall(row, resultCompetitionKey)}
+            />
+            <PointsBreakdown
+              title={selectedIsOriginal ? 'Original Predictor breakdown' : 'KO Predictor breakdown'}
+              section={selectedPoints}
+              competitionKey={resultCompetitionKey}
+            />
+          </div>
+          <OverallComparison state={comparison} reference={reference} onClose={closeComparison} />
+        </>
+      )}
+
+      {state.data && isLeaderboards && !state.data.signedIn && (
+        <article className={`foundation-results-card ${styles.signInCard}`}>
+          <span className="foundation-kicker">Account required</span>
+          <h3>Sign in to view the scored leaderboards</h3>
+          <p>Guest predictions stay in this browser and remain unscored until they are safely added to an account.</p>
+          <LinkButton href="#/account" icon="account">Sign in or create an account</LinkButton>
+        </article>
       )}
     </section>
   )

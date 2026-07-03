@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { APP_ROUTE, destinationForRoute, normaliseHashPath, routeFromHash } from '../appRoutes.js'
+import { APP_ROUTE, destinationForRoute, leaderboardCompetitionFromHash, LEADERBOARD_COMPETITION, normaliseHashPath, routeFromHash } from '../appRoutes.js'
 
 describe('Euro app routes', () => {
   it('normalises hashes without depending on a server-side router', () => {
@@ -14,7 +14,20 @@ describe('Euro app routes', () => {
     expect(routeFromHash('#/group-stage-review')).toBe(APP_ROUTE.PREDICT)
     expect(routeFromHash('#/bracket')).toBe(APP_ROUTE.BRACKET)
     expect(routeFromHash('#/ko')).toBe(APP_ROUTE.KO_PREDICTOR)
-    expect(routeFromHash('#/leaderboards')).toBe(APP_ROUTE.RESULTS)
+    expect(routeFromHash('#/leaderboards')).toBe(APP_ROUTE.LEADERBOARDS)
+    expect(routeFromHash('#/standings')).toBe(APP_ROUTE.LEADERBOARDS)
+    expect(routeFromHash('#/rankings')).toBe(APP_ROUTE.LEADERBOARDS)
+  })
+
+  it('keeps Results and Leaderboards as separate destinations', () => {
+    expect(destinationForRoute(APP_ROUTE.RESULTS)).toMatchObject({ label: 'Results', hash: '#/results' })
+    expect(destinationForRoute(APP_ROUTE.LEADERBOARDS)).toMatchObject({ label: 'Leaderboards', hash: '#/leaderboards' })
+  })
+
+  it('selects the requested leaderboard competition safely', () => {
+    expect(leaderboardCompetitionFromHash('#/leaderboards?competition=koPredictor')).toBe(LEADERBOARD_COMPETITION.KO_PREDICTOR)
+    expect(leaderboardCompetitionFromHash('#/leaderboards?competition=original')).toBe(LEADERBOARD_COMPETITION.ORIGINAL)
+    expect(leaderboardCompetitionFromHash('#/leaderboards?competition=combined')).toBe(LEADERBOARD_COMPETITION.ORIGINAL)
   })
 
   it('keeps Bracket and KO as permanently separate destinations', () => {

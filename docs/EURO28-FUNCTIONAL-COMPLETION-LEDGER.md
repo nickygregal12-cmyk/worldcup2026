@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.3 — reconciled for Stage 14B Batch 3 from commit `8e11edd`
+### Version 1.4 — Stage 13F-0 access architecture from commit `7261888`
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -27,8 +27,8 @@
 | KO Predictor | ✅ FUNCTIONAL | Separate real-fixture competition accepted in Stage 13C | — |
 | Private leagues | ✅ FUNCTIONAL | Both standings exist; controller reduced to 399 lines with presentation extracted and unchanged | — |
 | Results and leaderboards data | ✅ FUNCTIONAL | Both complete overall tables are returned and rendered for signed-in users | — |
-| Results and leaderboards access | 🟠 PARTIAL | Reachable at `#/results`; desktop top nav, mobile More. Leaderboards are buried below results/live tables with no dedicated destination or deep link | 13F-0 |
-| Site-wide information architecture | 🟠 PARTIAL | No authoritative route-to-feature access map; combined screens hide major journeys and role-aware access is incomplete | 13F-0 |
+| Results and leaderboards access | ✅ FUNCTIONAL | `#/results` owns live tournament content; `#/leaderboards` owns the full competition tables and points, with More and competition-specific Home links | — |
+| Core player information architecture | ✅ FUNCTIONAL | Authoritative site-access map, direct destinations and contextual entry rules are enforced by `audit:access`; restricted Admin visibility remains its own Stage 13F-E row | — |
 | Team Profile Sheet | ✅ FUNCTIONAL | Accepted in Stage 13E | — |
 | Head-to-head comparison | 🟠 PARTIAL | Secure league comparison exists; overall and match-aligned presentation are incomplete | 13F-B |
 | Tappable player identity | 🟠 PARTIAL | Some names are clickable; no shared player primitive or universal behaviour | 13F-B |
@@ -104,3 +104,4 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 - **v1.1:** Corrected H2H/player identity to partial, separated guest storage from dormant file tools, corrected guest account-import terminology, recorded three over-cap screens, recorded actual fixture and Netlify deployment state, and added site-wide information architecture/access.
 - **v1.2:** Recorded accepted architecture governance, split all three oversized live screens, removed every temporary component cap, and moved contrast automation to partial pending four explicit Batch 3 corrections.
 - **v1.3:** Corrected the two affected light-theme tokens, removed all four contrast exceptions, and marked the WCAG token contrast gate functional.
+- **v1.4:** Separated Results from Leaderboards, added direct competition-specific Home access, adopted the site-access contract and retained Admin invisibility as a separate unresolved row.
