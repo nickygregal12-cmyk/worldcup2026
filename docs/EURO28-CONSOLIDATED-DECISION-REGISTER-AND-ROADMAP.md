@@ -320,7 +320,7 @@ The Share Card decision is settled: the Share Card is the user’s completed bra
 - **13C — complete:** permanent winner-only predicted bracket; separate real-fixture KO match centre with 90-minute score, advancing team, method, five KO jokers, separate points/rank and hidden unresolved fixtures. No Migration 015.
 - **13D:** Leagues, results, shared predictions and responsive polish.
 - **13E:** Team Profile Sheet implemented through `<TeamLabel>` with the three-source data boundary and post-lock aggregate gate.
-- **13F:** Functional-completion sequence remains 13F-0, 13F-A through 13F-I.
+- **13F:** Functional-completion sequence remains 13F-0, 13F-A through 13F-J. Stage 13F-C owns the Euro Match Centre; Stage 13F-D owns bracket health; Stage 13F-J owns player insight and points storytelling.
 - **13P-A:** First post-13F polish batch: presentation-only converging predicted/live bracket layouts at `≥900px`, with the completed converging bracket rendered as the cross-device Share Card image.
 
 ### Later stages

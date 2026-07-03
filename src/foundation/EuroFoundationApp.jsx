@@ -4,12 +4,13 @@ import { useEuroSession } from '../auth/useEuroSession.js'
 import PredictionJourneyFoundation from '../journey/PredictionJourneyFoundation.jsx'
 import KoPredictorFoundation from '../koPredictor/KoPredictorFoundation.jsx'
 import ResultsAndLeaderboardsFoundation from '../results/ResultsAndLeaderboardsFoundation.jsx'
+import MatchCentreFoundation from '../matchCentre/MatchCentreFoundation.jsx'
 import AdminOperationsFoundation from '../admin/AdminOperationsFoundation.jsx'
 import LeaguesFoundation from '../leagues/LeaguesFoundation.jsx'
 import HomeDashboard from '../home/HomeDashboard.jsx'
 import TournamentOverview from '../tournament/TournamentOverview.jsx'
 import EuroAppShell from '../app/EuroAppShell.jsx'
-import { APP_ROUTE, leaderboardCompetitionFromHash } from '../app/appRoutes.js'
+import { APP_ROUTE, leaderboardCompetitionFromHash, matchCentreParamsFromHash } from '../app/appRoutes.js'
 import { deriveNavigationLifecycle } from '../app/navigationLifecycle.js'
 import { useHashLocation } from '../app/useHashRoute.js'
 import { useTheme } from '../app/useTheme.js'
@@ -149,6 +150,20 @@ export default function EuroFoundationApp() {
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Private competitions" title="Your leagues" description="One member list, with separate Original Predictor and KO Predictor tables." />
         <LeaguesFoundation client={activeClient} tournamentId={foundation.tournament.id} reference={['stage13d', 'stage13e'].includes(fixtureName) ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference} />
+      </div>
+    )
+  } else if (route === APP_ROUTE.MATCH_CENTRE) {
+    const matchCentre = matchCentreParamsFromHash(hashLocation.hash)
+    content = (
+      <div className="content-stack legacy-page">
+        <PageIntro eyebrow="Fixture intelligence" title="Euro Match Centre" description="Follow the fixture, community selections and points available without combining the Original and KO Predictor competitions." />
+        <MatchCentreFoundation
+          client={activeClient}
+          reference={['stage13d', 'stage13e'].includes(fixtureName) ? VISUAL_STAGE13D_REFERENCE : foundation.guestReference}
+          requestedMatchNumber={matchCentre.matchNumber}
+          initialCompetition={matchCentre.competition}
+          initialLeagueId={matchCentre.leagueId}
+        />
       </div>
     )
   } else if (route === APP_ROUTE.RESULTS) {

@@ -5,6 +5,7 @@ export const APP_ROUTE = Object.freeze({
   KO_PREDICTOR: 'ko-predictor',
   LEAGUES: 'leagues',
   RESULTS: 'results',
+  MATCH_CENTRE: 'match-centre',
   LEADERBOARDS: 'leaderboards',
   ACCOUNT: 'account',
   TOURNAMENT: 'tournament',
@@ -23,6 +24,7 @@ export const APP_DESTINATIONS = Object.freeze([
   Object.freeze({ key: APP_ROUTE.KO_PREDICTOR, label: 'KO Predictor', shortLabel: 'KO', hash: '#/ko-predictor', icon: 'trophy' }),
   Object.freeze({ key: APP_ROUTE.LEAGUES, label: 'Leagues', shortLabel: 'Leagues', hash: '#/leagues', icon: 'leagues' }),
   Object.freeze({ key: APP_ROUTE.RESULTS, label: 'Results', shortLabel: 'Results', hash: '#/results', icon: 'results' }),
+  Object.freeze({ key: APP_ROUTE.MATCH_CENTRE, label: 'Match Centre', shortLabel: 'Match', hash: '#/match-centre', icon: 'results' }),
   Object.freeze({ key: APP_ROUTE.LEADERBOARDS, label: 'Leaderboards', shortLabel: 'Tables', hash: '#/leaderboards', icon: 'results' }),
   Object.freeze({ key: APP_ROUTE.ACCOUNT, label: 'Account', shortLabel: 'Account', hash: '#/account', icon: 'account' }),
   Object.freeze({ key: APP_ROUTE.TOURNAMENT, label: 'Tournament', shortLabel: 'Tournament', hash: '#/tournament', icon: 'info' }),
@@ -42,6 +44,8 @@ const ROUTE_BY_PATH = new Map([
   ['/ko-predictor', APP_ROUTE.KO_PREDICTOR],
   ['/leagues', APP_ROUTE.LEAGUES],
   ['/results', APP_ROUTE.RESULTS],
+  ['/match-centre', APP_ROUTE.MATCH_CENTRE],
+  ['/match', APP_ROUTE.MATCH_CENTRE],
   ['/leaderboards', APP_ROUTE.LEADERBOARDS],
   ['/standings', APP_ROUTE.LEADERBOARDS],
   ['/rankings', APP_ROUTE.LEADERBOARDS],
@@ -74,4 +78,14 @@ export function routeFromHash(hashValue = '') {
 
 export function destinationForRoute(routeKey) {
   return APP_DESTINATIONS.find(destination => destination.key === routeKey) ?? APP_DESTINATIONS[0]
+}
+
+export function matchCentreParamsFromHash(hashValue = '') {
+  const params = hashSearchParams(hashValue)
+  const match = Number(params.get('match'))
+  return Object.freeze({
+    matchNumber: Number.isInteger(match) && match > 0 ? match : null,
+    competition: params.get('competition') === 'ko_predictor' ? 'ko_predictor' : 'original',
+    leagueId: params.get('league') || null,
+  })
 }

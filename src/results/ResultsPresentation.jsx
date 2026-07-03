@@ -104,7 +104,7 @@ export function LiveBracket({ rounds }) {
 
 function ResultRow({ row }) {
   return (
-    <article className={`foundation-result-row is-${row.state}`}>
+    <a className={`foundation-result-row is-${row.state}`} href={`#/match-centre?match=${row.matchNumber}`} aria-label={`Open Match ${row.matchNumber} Match Centre`}>
       <div>
         <span>{row.stageLabel} · Match {row.matchNumber}</span>
         <strong>{row.homeLabel} v {row.awayLabel}</strong>
@@ -114,7 +114,7 @@ function ResultRow({ row }) {
         <small>{row.detail ?? (row.state === 'upcoming' ? 'Upcoming' : row.state.replaceAll('_', ' '))}</small>
       </div>
       {row.corrected && <span className="foundation-revision-chip">Revision {row.resultRevision}</span>}
-    </article>
+    </a>
   )
 }
 

@@ -219,7 +219,7 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
             <div className="home-next-match">
               <Icon name="clock" />
               <div><strong>Match {next.matchNumber}</strong><span>{next.displayStatus === 'live' ? 'Live now' : formatDate(next.scheduledDate)}</span></div>
-              <LinkButton href="#/results" variant="ghost" size="small">Results<Icon name="chevron" size={16} /></LinkButton>
+              <LinkButton href={`#/match-centre?match=${next.matchNumber}`} variant="ghost" size="small">Match Centre<Icon name="chevron" size={16} /></LinkButton>
             </div>
           ) : <p>All tournament matches are complete.</p>}
         </Card>

@@ -133,21 +133,31 @@ Both ledger rows move together: player identity and H2H comparison. Stage 13F-B 
 
 ## Stage 13F-C — Euro Match Centre
 
-- canonical fixture/result state;
-- authorised player predictions;
-- points and joker outcomes;
-- player identity entry;
-- optional trustworthy live-minute slot;
+- dedicated per-fixture route with previous and next navigation;
+- canonical fixture/result state, unresolved participants and corrected-result context;
+- direct entry from Home and every Results row;
+- separate Original Predictor and KO Predictor tabs;
+- Overall and private-league scope selection;
+- privacy-safe community distribution from released predictions only;
+- sortable points-on-the-line rows with player identity, rank, current points, saved selection, joker and maximum available points;
+- signed-out, loading, empty, private, not-saved, partial and error states;
 - no odds or weather;
-- no WC26 MatchStats reuse.
+- no WC26 MatchStats reuse;
+- no new RPC, data model, migration or scoring invariant.
 
-A new privacy-safe bulk RPC requires separate design and Migration 016 approval.
+### Completion gate
+
+The route, canonical fixture state, direct entry points, competition separation, scope selection, community summary and player impact rows move together. Existing server-authorised privacy gates remain authoritative.
 
 ## Stage 13F-D — Original Bracket Health
 
-- alive teams and paths;
-- eliminated teams and dead paths;
-- earned and maximum remaining bracket points;
+- round-by-round bracket-health navigation;
+- alive, eliminated and guaranteed-loss predicted teams;
+- secured and maximum remaining bracket points;
+- exact matchup still possible, partially alive or lost;
+- saved winner still alive where an exact fixture route has changed;
+- route-conflict explanations when predicted teams must meet early;
+- completed-result survival cards in plain English;
 - predicted/live contexts remain distinct.
 
 ## Stage 13F-E — Admin invisibility
@@ -200,6 +210,16 @@ Recommended list awaiting approval:
 - highest-scoring team.
 
 The real player selector activates only in Stage 17A when official player data exists.
+
+## Stage 13F-J — Player insight and points storytelling
+
+- complete tournament summary for the viewing user and authorised visible players;
+- canonical points-source breakdown for group matches, group positions, Original bracket, awards/extra picks and KO Predictor separately;
+- correct outcomes, exact scores, successful jokers, matches scored, best matchday, streak and best/toughest calls where canonical data supports them;
+- expandable matchday, bracket-health, disagreement and awards/totals comparisons;
+- reuse Stage 13F-B player identity and H2H primitives;
+- never combine Original and KO Predictor totals;
+- no independent component scoring calculations.
 
 ## Stage 13P-A — Converging wall-chart bracket and Share Image
 
@@ -289,4 +309,4 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-Install and accept Stage 13F-B, then begin Stage 13F-C Euro Match Centre.
+Install and accept Stage 13F-C, then begin Stage 13F-D Original Bracket Health.

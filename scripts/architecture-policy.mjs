@@ -13,6 +13,7 @@ export const ACTIVE_UI_ROOTS = Object.freeze([
   'src/koPredictor',
   'src/grace',
   'src/results',
+  'src/matchCentre',
   'src/player',
   'src/teamProfile',
   'src/observability',

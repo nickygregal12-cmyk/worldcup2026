@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { APP_ROUTE, destinationForRoute, leaderboardCompetitionFromHash, LEADERBOARD_COMPETITION, normaliseHashPath, routeFromHash } from '../appRoutes.js'
+import { APP_ROUTE, destinationForRoute, leaderboardCompetitionFromHash, LEADERBOARD_COMPETITION, matchCentreParamsFromHash, normaliseHashPath, routeFromHash } from '../appRoutes.js'
 
 describe('Euro app routes', () => {
   it('normalises hashes without depending on a server-side router', () => {
@@ -17,6 +17,8 @@ describe('Euro app routes', () => {
     expect(routeFromHash('#/leaderboards')).toBe(APP_ROUTE.LEADERBOARDS)
     expect(routeFromHash('#/standings')).toBe(APP_ROUTE.LEADERBOARDS)
     expect(routeFromHash('#/rankings')).toBe(APP_ROUTE.LEADERBOARDS)
+    expect(routeFromHash('#/match-centre?match=37')).toBe(APP_ROUTE.MATCH_CENTRE)
+    expect(routeFromHash('#/match?match=37')).toBe(APP_ROUTE.MATCH_CENTRE)
   })
 
   it('keeps Results and Leaderboards as separate destinations', () => {
@@ -33,6 +35,11 @@ describe('Euro app routes', () => {
   it('keeps Bracket and KO as permanently separate destinations', () => {
     expect(destinationForRoute(APP_ROUTE.BRACKET)).toMatchObject({ label: 'Bracket', hash: '#/bracket' })
     expect(destinationForRoute(APP_ROUTE.KO_PREDICTOR)).toMatchObject({ label: 'KO Predictor', hash: '#/ko-predictor' })
+  })
+
+  it('parses Match Centre context safely', () => {
+    expect(matchCentreParamsFromHash('#/match-centre?match=37&competition=ko_predictor&league=abc')).toEqual({ matchNumber: 37, competition: 'ko_predictor', leagueId: 'abc' })
+    expect(matchCentreParamsFromHash('#/match-centre?match=bad&competition=combined')).toEqual({ matchNumber: null, competition: 'original', leagueId: null })
   })
 
   it('falls back safely to Home for unknown destinations', () => {
