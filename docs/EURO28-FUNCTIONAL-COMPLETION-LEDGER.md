@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.2 — reconciled for Stage 14B Batch 2 from commit `66adb1f`
+### Version 1.3 — reconciled for Stage 14B Batch 3 from commit `8e11edd`
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -68,7 +68,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Token architecture and raw-colour audit | ✅ FUNCTIONAL | Central semantic tokens and active colour audit | — |
 | Charter architecture section | ✅ FUNCTIONAL | Restored in Charter v1.7 and enforced by `audit:architecture` | — |
 | File-size/structure audit | ✅ FUNCTIONAL | 31 active JSX files checked; all are within the 400-line hard cap and temporary component caps are empty | — |
-| WCAG token contrast audit | 🟠 PARTIAL | 58 light/dark token pairs are automated; four exact light-theme exceptions remain for Batch 3 | 14B Batch 3 |
+| WCAG token contrast audit | ✅ FUNCTIONAL | All 58 registered light/dark token pairs pass; muted text and joker light-theme tokens were minimally corrected and the exception allowlist is empty | — |
 | Mount inversion | ❌ MISSING | Development-era root owns the real application | 13F-H |
 | Foundation naming retired | ❌ MISSING | Seven active Foundation components plus helpers | 13F-H |
 | Visual fixtures isolated | ⚠️ INCOHERENT | Not normally activatable on HTTPS staging, but fixture code/data ship in production bundle | 13F-H/15A |
@@ -103,3 +103,4 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 - **v1.0:** Independent audit draft.
 - **v1.1:** Corrected H2H/player identity to partial, separated guest storage from dormant file tools, corrected guest account-import terminology, recorded three over-cap screens, recorded actual fixture and Netlify deployment state, and added site-wide information architecture/access.
 - **v1.2:** Recorded accepted architecture governance, split all three oversized live screens, removed every temporary component cap, and moved contrast automation to partial pending four explicit Batch 3 corrections.
+- **v1.3:** Corrected the two affected light-theme tokens, removed all four contrast exceptions, and marked the WCAG token contrast gate functional.

@@ -77,10 +77,5 @@ export const CONTRAST_PAIRS = Object.freeze([
   ['focus-ring', 'surface-soft', 3, 'focus indicator'],
 ])
 
-// Known light-theme violations discovered at d522210. Floors ratchet upward only and exceptions must be removed once fixed.
-export const TEMPORARY_CONTRAST_EXCEPTIONS = Object.freeze({
-  'light:text-muted:surface-page': 3.62,
-  'light:text-muted:surface-raised': 4.01,
-  'light:text-muted:surface-soft': 3.83,
-  'light:joker:joker-soft': 4.08,
-})
+// Stage 14B closed every known contrast exception. Any future exception requires an approved Charter amendment.
+export const TEMPORARY_CONTRAST_EXCEPTIONS = Object.freeze({})

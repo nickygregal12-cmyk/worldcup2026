@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.1 — Stage 14B structural compliance from `66adb1f`
+### Version 4.2 — Stage 14B contrast completion from `8e11edd`
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -40,6 +40,7 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 13E: Team Profile Sheet accepted.
 - Stage 14: observability and resilience accepted at `d522210`, 15 migrations.
 - Stage 14B Batch 1: architecture governance gates accepted at `66adb1f`; 59 test files and 321 tests passed.
+- Stage 14B Batch 2: structural compliance accepted at `8e11edd`; all active JSX files are within the 400-line hard cap and 59 test files / 321 tests passed.
 
 # Delivery sequence
 
@@ -55,7 +56,7 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - record current contrast failures as exact non-regression exceptions;
 - add the Functional Completion Ledger and rebuilt roadmap.
 
-### Batch 2 — structural compliance
+### Batch 2 — structural compliance — ACCEPTED AT `8e11edd`
 
 - split `LeaguesFoundation.jsx` into a 399-line controller and 245-line presentation module;
 - split `PredictionJourneyFoundation.jsx` into a 327-line controller, 208-line view and 41-line runtime helper;
@@ -67,10 +68,11 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 
 ### Batch 3 — contrast completion
 
-- present the four current light-theme failures with proposed minimal token corrections;
-- apply only owner-approved token changes;
-- remove every contrast exception;
-- prove both themes and baselines remain coherent.
+- darken the light-theme muted-text token from `#718096` to `#627085`;
+- darken the light-theme joker token from `#a66b00` to `#9c6500`;
+- remove all four temporary contrast exceptions;
+- preserve the dark theme, layout, selectors and feature behaviour;
+- close Stage 14B once the owner acceptance gate passes.
 
 Stage 14B ends with no oversized active UI component and no contrast exception.
 
@@ -284,4 +286,4 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-Complete and accept Stage 14B Batch 1, then prepare Stage 14B Batch 2 screen splits from the accepted checkpoint.
+Complete and accept Stage 14B Batch 3, then begin Stage 13F-0 with a complete route, entry-point and role-aware access audit before changing navigation.
