@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react' // eslint-disable-line no-unused-vars
 import { APP_ROUTE, destinationForRoute } from './appRoutes.js'
 import { buildNavigationDestinations } from './navigationLifecycle.js'
 import { Dialog, Icon } from '../design-system/index.jsx'

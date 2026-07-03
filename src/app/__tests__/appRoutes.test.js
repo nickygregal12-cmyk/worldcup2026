@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { APP_ROUTE, destinationForRoute, leaderboardCompetitionFromHash, LEADERBOARD_COMPETITION, matchCentreParamsFromHash, normaliseHashPath, routeFromHash } from '../appRoutes.js'
+import { ADMIN_SECTIONS, APP_ROUTE, adminSectionFromHash, destinationForRoute, hasInvalidAdminSection, leaderboardCompetitionFromHash, LEADERBOARD_COMPETITION, matchCentreParamsFromHash, normaliseHashPath, routeFromHash } from '../appRoutes.js'
 
 describe('Euro app routes', () => {
   it('normalises hashes without depending on a server-side router', () => {
@@ -40,6 +40,16 @@ describe('Euro app routes', () => {
   it('parses Match Centre context safely', () => {
     expect(matchCentreParamsFromHash('#/match-centre?match=37&competition=ko_predictor&league=abc')).toEqual({ matchNumber: 37, competition: 'ko_predictor', leagueId: 'abc' })
     expect(matchCentreParamsFromHash('#/match-centre?match=bad&competition=combined')).toEqual({ matchNumber: null, competition: 'original', leagueId: null })
+  })
+
+  it('resolves query-addressed Admin sections without treating them as unknown hash routes', () => {
+    for (const section of ADMIN_SECTIONS) {
+      expect(routeFromHash(section.hash)).toBe(APP_ROUTE.ADMIN)
+      expect(adminSectionFromHash(section.hash)).toBe(section.key)
+      expect(hasInvalidAdminSection(section.hash)).toBe(false)
+    }
+    expect(adminSectionFromHash('#/admin?section=not-a-section')).toBe('overview')
+    expect(hasInvalidAdminSection('#/admin?section=not-a-section')).toBe(true)
   })
 
   it('falls back safely to Home for unknown destinations', () => {

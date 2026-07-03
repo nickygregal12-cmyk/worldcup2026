@@ -199,3 +199,20 @@
     align-items: start;
   }
 }
+
+.navigation a[aria-current='page'] {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--text-link);
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+
+.routeRecovery {
+  margin: 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--state-warning-border);
+  border-radius: 0.9rem;
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
+  font-weight: 700;
+}

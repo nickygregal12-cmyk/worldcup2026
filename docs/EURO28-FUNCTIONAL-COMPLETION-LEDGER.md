@@ -67,8 +67,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 |---|---|---|---|
 | Server result entry/corrections/recalculation | ✅ FUNCTIONAL | Revision-safe and audit-logged | — |
 | Admin invisible to non-admins | ✅ FUNCTIONAL | Server-authorised discovery and direct-route gate accepted in Stage 13F-E | — |
-| Admin UI fit for purpose | ⚠️ INCOHERENT | Stage 13F-F created section-looking controls, but their `#admin-*` hashes are consumed as application routes and unknown routes fall through to Home. The control room remains one long list without a functional section destination model. | 13G-A |
-| Admin section destinations and deep links | ❌ MISSING | No canonical Admin section registry, query-addressed destination, refresh/back-forward preservation or protected invalid-section recovery exists. | 13G-A |
+| Admin UI fit for purpose | 🟠 PARTIAL | Stage 13G-A route-integrity slice fixes Admin section destinations and removes the Home fall-through. Remaining central configuration and shared interaction primitive work stays scheduled. | 13G-A |
+| Admin section destinations and deep links | ✅ FUNCTIONAL | Canonical section registry and query-addressed `#/admin?section=...` destinations keep every section inside the protected Admin route, including invalid-section recovery. | — |
 | Staging Time & Phase controls | ✅ FUNCTIONAL | Owner-only audited shared clock, preset phases, custom time and site-wide warning accepted with approved Migration 016 | — |
 | Profile curation | ✅ FUNCTIONAL | Stage 13E owner editing | — |
 | Stage 13F-K operation inventory | ✅ FUNCTIONAL | Existing operations, genuine fixture/reconciliation/readiness gaps, exclusions and four-batch sequence approved in Stage 13F-K0 | — |
@@ -78,7 +78,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Tournament-pick Admin readiness home | ✅ FUNCTIONAL | One control-room section renders total goals, top scorer and highest-scoring team plus the Stage 17A dependency, with no fake outcome controls | — |
 | Operational readiness summary | ✅ FUNCTIONAL | One read-only presentation groups fixture, participant, result, scoring, Team Profile and safeguard evidence from Migration 018 | — |
 | Admin audit filters and detail | ✅ FUNCTIONAL | Read-only category filters expose up to 200 append-only events with actor, target, match, before/after and scoring-run detail | — |
-| Complete Admin operations backbone | 🟠 PARTIAL | K0/K1 operations and K3 role boundaries are proven, but the authorised control room lacks coherent functional section destinations. Tournament Picks executable outcomes remain Stage 17A. | 13G-A |
+| Complete Admin operations backbone | 🟠 PARTIAL | K0/K1 operations, K3 role boundaries and Stage 13G-A section routing are proven. Central config/shared primitives remain Stage 13G-A; Tournament Picks executable outcomes remain Stage 17A. | 13G-A |
 
 ## Section D — Architecture and enforcement
 
@@ -148,7 +148,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Stage 13G IA map and destination ownership | ✅ FUNCTIONAL | Approved direct/contextual destination map, homeless/duplicate findings and object-surface ownership recorded in Stage 13G-0 | — |
 | More lifecycle strategy | ✅ FUNCTIONAL | Approved phase-specific ordering, authorised Admin separation and pre-readiness KO explainer contract | — |
 | Hardwired-data inventory | ✅ FUNCTIONAL | Active production evidence recorded for chronology, stage inference, totals, rules prose, stale Admin values, dates, metadata and primitive bypasses | — |
-| Stage 13G-A destinations and discovery | 🕓 SCHEDULED | Central destination registry, grouped More, KO teaser, not-found state and corrected contextual routes | 13G-A |
+| Stage 13G-A route integrity and Admin sections | ✅ FUNCTIONAL | Canonical Admin section registry, query-addressed section destinations, invalid-section recovery, route-render tests and dead-destination audit | — |
+| Stage 13G-A central configuration and shared primitives | 🕓 SCHEDULED | Provisional tournament/lock config, account autosave unblock, shared confirmations, design-system selector and refresh policy | 13G-A |
 | Stage 13G-B tournament comprehension and chronology | 🕓 SCHEDULED | Real-time ordering, By group/By date, canonical rules guide, hardwired-data removal and Euro share assets | 13G-B |
 | Stage 13G-C people, profiles and sharing | 🕓 SCHEDULED | Shared player overview, one-tap invites, static/dynamic previews and synthetic identity preparation | 13G-C |
 | Stage 13G-D seeded whole-surface coherence | 🕓 SCHEDULED | Stage 16 cast, Scotland reference profile, all-screen re-baseline and charter review | 13G-D |
@@ -158,9 +159,11 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 - **v1.20:** Closes Stage 13F-K3 from `c4342f1` after three-role deployed acceptance, same-value transactional fixture proof with exact rollback, one real owner complete reconciliation, read-only event/run/separate-total verification, linked database gates and final deployed verification. No product code or Migration 019 is added; Stage 13G-A becomes next.
 
+- **v1.22:** Stage 13G-A route-integrity slice from `3c41628` adds canonical Admin section destinations, replaces legacy `#admin-*` links with protected `#/admin?section=...` hashes, adds invalid-section recovery, route-render integration tests and a dead-destination audit in `npm run check`. No database change and no Migration 019.
+
 - **v1.21:** Stage 13G-R0 corrects the false Stage 13F-F navigation claim, downgrades Admin UI/coherent operations truthfully, consolidates the 3 July amendments into the canonical Register, approves C1 Option A and the Original-bracket invalidation contract, records offline players as decision pending, rebuilds accepted-commit chronology through `b7f50de`, and makes same-commit Ledger updates mandatory for every future batch. Documentation only; no product code, database action or Migration 019.
 
-- **Accepted-commit chronology:** 13F-E `8349e83`; 13F-F `369ddfc` (retrospectively corrected by v1.21); 13F-G `7324d43`; 13F-H `74c8dd3`; 13F-I `63d7acb`; 13F-J `f7f2fb5`; 13G-0 `efce59f`; 13F-K0 `b6c7ddc`; 13F-K1 `0e4d5b7`; 13F-K2 `c4342f1`; 13F-K3 `b7f50de`; 13G-R0 next accepted commit.
+- **Accepted-commit chronology:** 13F-E `8349e83`; 13F-F `369ddfc` (retrospectively corrected by v1.21); 13F-G `7324d43`; 13F-H `74c8dd3`; 13F-I `63d7acb`; 13F-J `f7f2fb5`; 13G-0 `efce59f`; 13F-K0 `b6c7ddc`; 13F-K1 `0e4d5b7`; 13F-K2 `c4342f1`; 13F-K3 `b7f50de`; 13G-R0 `586c6a1`; Stage 13G test-strategy amendment `3c41628`; Stage 13G-A route-integrity next accepted commit.
 
 - **v1.19:** Implements Stage 13F-K2 from `0e4d5b7`: split control-room components, owner-only fixture and complete-reconciliation actions, consolidated readiness, Stage 17A Tournament Picks hand-off, filtered expandable append-only audit detail, role/timezone tests and six responsive light/dark structural baselines. No Migration 019; Stage 13F-K3 remains the final deployed role acceptance.
 

@@ -12,6 +12,36 @@ export const APP_ROUTE = Object.freeze({
   ADMIN: 'admin',
 })
 
+export const ADMIN_SECTION = Object.freeze({
+  OVERVIEW: 'overview',
+  RESULTS: 'results',
+  CORRECTIONS: 'corrections',
+  FIXTURES: 'fixtures',
+  PHASE_FEATURES: 'phase-features',
+  GRACE: 'grace',
+  TIME: 'time',
+  PROFILES: 'profiles',
+  SCORING: 'scoring',
+  TOURNAMENT_PICKS: 'tournament-picks',
+  AUDIT: 'audit',
+})
+
+export const ADMIN_SECTIONS = Object.freeze([
+  Object.freeze({ key: ADMIN_SECTION.OVERVIEW, label: 'Overview', hash: '#/admin?section=overview', heading: 'Operational overview' }),
+  Object.freeze({ key: ADMIN_SECTION.RESULTS, label: 'Results', hash: '#/admin?section=results', heading: 'Result operations' }),
+  Object.freeze({ key: ADMIN_SECTION.CORRECTIONS, label: 'Corrections', hash: '#/admin?section=corrections', heading: 'Result correction controls' }),
+  Object.freeze({ key: ADMIN_SECTION.FIXTURES, label: 'Fixtures', hash: '#/admin?section=fixtures', heading: 'Fixture schedule operations' }),
+  Object.freeze({ key: ADMIN_SECTION.PHASE_FEATURES, label: 'Phase & features', hash: '#/admin?section=phase-features', heading: 'Phase and feature safeguards' }),
+  Object.freeze({ key: ADMIN_SECTION.GRACE, label: 'Grace', hash: '#/admin?section=grace', heading: 'Prediction grace controls' }),
+  Object.freeze({ key: ADMIN_SECTION.TIME, label: 'Time', hash: '#/admin?section=time', heading: 'Staging Time & Phase' }),
+  Object.freeze({ key: ADMIN_SECTION.PROFILES, label: 'Profiles', hash: '#/admin?section=profiles', heading: 'Team content' }),
+  Object.freeze({ key: ADMIN_SECTION.SCORING, label: 'Scoring', hash: '#/admin?section=scoring', heading: 'Scoring and recovery' }),
+  Object.freeze({ key: ADMIN_SECTION.TOURNAMENT_PICKS, label: 'Tournament Picks', hash: '#/admin?section=tournament-picks', heading: 'Tournament Picks' }),
+  Object.freeze({ key: ADMIN_SECTION.AUDIT, label: 'Audit', hash: '#/admin?section=audit', heading: 'Administrator audit' }),
+])
+
+const ADMIN_SECTION_KEYS = new Set(ADMIN_SECTIONS.map(section => section.key))
+
 export const LEADERBOARD_COMPETITION = Object.freeze({
   ORIGINAL: 'original',
   KO_PREDICTOR: 'koPredictor',
@@ -74,6 +104,32 @@ export function leaderboardCompetitionFromHash(hashValue = '') {
 
 export function routeFromHash(hashValue = '') {
   return ROUTE_BY_PATH.get(normaliseHashPath(hashValue)) ?? APP_ROUTE.HOME
+}
+
+
+export function adminSectionFromHash(hashValue = '') {
+  const requested = hashSearchParams(hashValue).get('section')
+  return ADMIN_SECTION_KEYS.has(requested) ? requested : ADMIN_SECTION.OVERVIEW
+}
+
+export function hasInvalidAdminSection(hashValue = '') {
+  const requested = hashSearchParams(hashValue).get('section')
+  return requested !== null && !ADMIN_SECTION_KEYS.has(requested)
+}
+
+export function adminSectionDestination(sectionKey) {
+  return ADMIN_SECTIONS.find(section => section.key === sectionKey) ?? ADMIN_SECTIONS[0]
+}
+
+export function isKnownAppHash(hashValue = '') {
+  return ROUTE_BY_PATH.has(normaliseHashPath(hashValue))
+}
+
+export function knownInternalHashes() {
+  return Object.freeze([
+    ...APP_DESTINATIONS.map(destination => destination.hash),
+    ...ADMIN_SECTIONS.map(section => section.hash),
+  ])
 }
 
 export function destinationForRoute(routeKey) {

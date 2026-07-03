@@ -505,6 +505,17 @@ This extension is binding for Stage 13G and later acceptance gates. It addresses
 
 Rejected for now to prevent test gold-plating: mutation testing, broad visual regression and multi-browser matrices.
 
+
+## 10E. Stage 13G-A route integrity slice — IMPLEMENTED
+
+From checkpoint `3c41628`, Stage 13G-A starts with the approved test-strategy extension rather than visual/product polish. The first implementation slice adds the route-render and dead-destination proof that Stage 13F-F lacked.
+
+The Admin control room now has one canonical section registry and query-addressed destinations under the protected Admin route. Legacy `#admin-*` links are removed. Each Admin section resolves through `#/admin?section=...`, so clicking section controls, refreshing a section URL or opening a section deep link stays inside `/admin`. Invalid section values recover inside the protected Admin route and show Overview instead of falling through to Home.
+
+The route-integrity audit scans active source links for unresolved app hashes and legacy Admin fragments. It is included in `npm run check`, so future destination drift fails the build. Rendered route tests cover every current application destination and every Admin section destination.
+
+This slice does not implement the rest of Stage 13G-A. Central tournament/lock configuration, account-autosave unblocking, shared destructive confirmation, design-system selector replacement, refresh policy and `foundation-*` ratchet remain scheduled. No database change and no Migration 019.
+
 ### Offline players / claim-account
 
 Decision pending. Stage 16 synthetic seeding may reuse service-role-only participant creation, deterministic naming, prediction seeding, league membership, auditing and marker-safe teardown. It must not decide the production identity model. Any managed/offline participant feature requires a separately approved application participant identity, nullable auth link, ownership/privacy rules, one-time opaque claim token, atomic server claim and rollback contract.

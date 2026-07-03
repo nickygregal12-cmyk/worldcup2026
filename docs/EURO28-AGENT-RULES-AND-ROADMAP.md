@@ -323,7 +323,7 @@ Stage 13G is one holistic post-functional-completion pass. It is governed by the
 - approve dynamic per-league preview titles/descriptions using a static Euro image;
 - add no product/runtime code, migration or deployed asset; align one stale Stage 13D audit assertion with the already accepted `f7f2fb5` verifier wording.
 
-### Stage 13G-A — Destinations and discovery
+### Stage 13G-A — Route integrity, central configuration and shared interaction primitives
 
 - one central destination registry;
 - grouped phase-aware More sheet;
@@ -515,7 +515,7 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-From verified archive checkpoint `b7f50de`, install and accept **Stage 13G-R0 — Canonical Documentation Reconciliation and Truthful Ledger v1.21**. This batch changes governing documentation only, removes the superseded standalone 3 July addendum, retains exactly 18 migrations and creates no Migration 019. After owner acceptance and commit/push, Stage 13G-A is next. No product code, database role change, synthetic seeding, Stage 17A or Stage 13P-A work may begin inside R0.
+From checkpoint `3c41628`, following accepted Stage 13F-K3 commit `b7f50de` and Stage 13G-R0 commit `586c6a1`, install and accept the first **Stage 13G-A route-integrity slice**. It must add rendered route coverage, the dead-destination audit, canonical Admin section registry, query-addressed Admin section links and invalid-section protected recovery. It must not add a migration, staging role change, real global lock, shared kick-off write, synthetic seeding, Stage 17A or Stage 13P-A work. After acceptance, continue Stage 13G-A with central tournament/lock configuration and shared interaction primitives.
 
 ### Approved Stage 13G sequence
 

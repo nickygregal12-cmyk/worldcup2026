@@ -186,7 +186,7 @@ export default function App() {
       <AdminRouteGate visibility={adminVisibility}>
         <div className="content-stack legacy-page">
           <PageIntro eyebrow="Restricted access" title="Tournament control room" description="Secure result operations, locks, grace windows and operational safeguards." />
-          <AdminOperations client={activeClient} reference={appData.guestReference} />
+          <AdminOperations client={activeClient} reference={appData.guestReference} hash={hashLocation.hash} />
         </div>
       </AdminRouteGate>
     )
