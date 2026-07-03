@@ -14,6 +14,8 @@ const reference = {
   knockoutMatches: Array.from({ length: 15 }, (_, index) => ({
     matchNumber: index + 37,
     participantsResolved: index < 3,
+    homeTeamId: index < 3 ? `home-${index + 37}` : null,
+    awayTeamId: index < 3 ? `away-${index + 37}` : null,
   })),
   teamsById: Object.fromEntries(Array.from({ length: 24 }, (_, index) => [
     `team-${index + 1}`,
@@ -119,12 +121,16 @@ describe('Home dashboard model', () => {
   it('surfaces a central KO readiness signal for Home instead of re-deriving copy locally', () => {
     const dashboard = makeDashboard()
 
-    expect(dashboard.koReadiness).toEqual({
+    expect(dashboard.koReadiness).toEqual(expect.objectContaining({
       open: true,
       available: 3,
       label: '3 real knockout fixtures ready',
       tone: 'info',
-    })
+      phase: 'ko_early_access',
+      showInMore: true,
+      primaryReady: false,
+    }))
+    expect(dashboard.koReadiness.availableKoMatches.map(match => match.matchNumber)).toEqual([37, 38, 39])
     expect(dashboard.koPredictor.available).toBe(3)
   })
 

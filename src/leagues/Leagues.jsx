@@ -2,12 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueHeadToHead, loadLeagueOverview, readLeagueSession } from './leagueService.js'
 import { buildLeagueLifecycleState, buildStandingComparison, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { CompetitionLifecycleNote, CompetitionTabs, LeagueLifecycleBanner, LeaguePicker, LeagueSummaryCard, MemberPicker, StandingsTable } from './LeaguePresentation.jsx'
+import { CompetitionLifecycleNote, CompetitionTabs, LeagueActionConfirmation, LeagueCompetitionHeading, LeagueKoReadinessCard, LeagueLifecycleBanner, LeaguePicker, LeagueSummaryCard, MemberPicker, StandingsTable } from './LeaguePresentation.jsx'
 import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
-
-function competitionName(competitionKey) {
-  return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
-}
 
 function messageForError(error) {
   const message = error instanceof Error ? error.message : String(error)
@@ -16,7 +12,7 @@ function messageForError(error) {
   return message
 }
 
-export default function Leagues({ client, tournamentId, reference, lifecycle }) {
+export default function Leagues({ client, tournamentId, reference, lifecycle, koReadiness }) {
   const [session, setSession] = useState(null)
   const [loadingSession, setLoadingSession] = useState(Boolean(client))
   const [leagues, setLeagues] = useState([])
@@ -251,13 +247,24 @@ export default function Leagues({ client, tournamentId, reference, lifecycle }) 
   }
   const overviewLoading = Boolean(selectedLeague?.id) && overview.leagueId !== selectedLeague.id
   const activeOverview = overviewLoading ? null : overview.data
-  const activeSection = competitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.sections.original : activeOverview?.sections.koPredictor
+  const koLeagueReady = Boolean(koReadiness?.open)
+  const effectiveCompetitionKey = competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR && !koLeagueReady
+    ? LEAGUE_COMPETITION.ORIGINAL
+    : competitionKey
+  const activeSection = effectiveCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.sections.original : activeOverview?.sections.koPredictor
   const standings = activeSection?.data ?? []
   const leagueLifecycle = activeOverview
-    ? buildLeagueLifecycleState({ lifecycle, originalSummary: activeOverview.summaries.original, koSummary: activeOverview.summaries.koPredictor })
-    : buildLeagueLifecycleState({ lifecycle })
-  const activeSummary = competitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.summaries.original : activeOverview?.summaries.koPredictor
+    ? buildLeagueLifecycleState({ lifecycle, originalSummary: activeOverview.summaries.original, koSummary: activeOverview.summaries.koPredictor, koReadiness })
+    : buildLeagueLifecycleState({ lifecycle, koReadiness })
+  const activeSummary = effectiveCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.summaries.original : activeOverview?.summaries.koPredictor
   const leagueListLoading = ['idle', 'loading'].includes(leagueListStatus)
+
+  useEffect(() => {
+    if (competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR && !koLeagueReady) {
+      setCompetitionKey(LEAGUE_COMPETITION.ORIGINAL)
+      clearComparison()
+    }
+  }, [competitionKey, koLeagueReady])
 
   const chooseComparisonMember = memberUserId => {
     if (!memberUserId) {
@@ -330,7 +337,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle }) 
             <>
               <div className="foundation-league-toolbar">
                 <LeaguePicker leagues={leagues} selectedId={selectedLeague.id} onSelect={value => { overviewRequests.current.cancel(); setSelectedLeagueId(value); clearComparison(); setPendingLeagueAction(null) }} />
-                <CompetitionTabs value={competitionKey} onChange={value => { setCompetitionKey(value); clearComparison() }} />
+                <CompetitionTabs value={effectiveCompetitionKey} koReadiness={koReadiness} onChange={value => { setCompetitionKey(value); clearComparison() }} />
               </div>
 
               <article className="foundation-league-card">
@@ -349,18 +356,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle }) 
                   </div>
                 </div>
 
-                {pendingLeagueAction && (
-                  <div className="foundation-destructive-confirmation" role="alert">
-                    <div>
-                      <strong>{pendingLeagueAction === 'delete' ? `Delete ${selectedLeague.name}?` : `Leave ${selectedLeague.name}?`}</strong>
-                      <p>{pendingLeagueAction === 'delete' ? 'This removes the private league for every member. Prediction and scoring records remain separate.' : 'You will lose access to this league and its member comparisons.'}</p>
-                    </div>
-                    <div className="foundation-inline-actions">
-                      <button type="button" className="foundation-danger-button" onClick={() => { void confirmLeagueAction() }} disabled={actionStatus === 'loading'}>{actionStatus === 'loading' ? 'Working…' : pendingLeagueAction === 'delete' ? 'Confirm delete' : 'Confirm leave'}</button>
-                      <button type="button" className="foundation-secondary-button" onClick={() => setPendingLeagueAction(null)} disabled={actionStatus === 'loading'}>Cancel</button>
-                    </div>
-                  </div>
-                )}
+                <LeagueActionConfirmation action={pendingLeagueAction} leagueName={selectedLeague.name} actionStatus={actionStatus} onConfirm={confirmLeagueAction} onCancel={() => setPendingLeagueAction(null)} />
 
                 {(overview.status === 'loading' || overviewLoading) && !overview.data && <p className="foundation-empty-copy">Loading both competition tables…</p>}
                 {activeOverview && (
@@ -368,7 +364,11 @@ export default function Leagues({ client, tournamentId, reference, lifecycle }) 
                     {overview.status === 'partial' && <p className="foundation-warning-text">One competition table could not be loaded. The available table remains usable.</p>}
                     <div className="foundation-league-summary-grid">
                       <LeagueSummaryCard title="Original Predictor" summary={activeOverview.summaries.original} section={activeOverview.sections.original} />
-                      <LeagueSummaryCard title="KO Predictor" summary={activeOverview.summaries.koPredictor} section={activeOverview.sections.koPredictor} />
+                      {koLeagueReady ? (
+                        <LeagueSummaryCard title="KO Predictor" summary={activeOverview.summaries.koPredictor} section={activeOverview.sections.koPredictor} />
+                      ) : (
+                        <LeagueKoReadinessCard koReadiness={koReadiness} />
+                      )}
                     </div>
                     <div className="foundation-shared-member-row">
                       <p className="foundation-member-count">Shared member list: <strong>{activeOverview.members.length}</strong></p>
@@ -377,16 +377,13 @@ export default function Leagues({ client, tournamentId, reference, lifecycle }) 
                   </>
                 )}
 
-                <div className="foundation-competition-heading">
-                  <div><span className="foundation-kicker">Separate standings</span><h3>{competitionName(competitionKey)}</h3></div>
-                  <small>{competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Group matches and original bracket only' : 'Real knockout fixtures only'}</small>
-                </div>
-                <CompetitionLifecycleNote competitionKey={competitionKey} lifecycle={lifecycle} summary={activeSummary} />
+                <LeagueCompetitionHeading competitionKey={effectiveCompetitionKey} />
+                <CompetitionLifecycleNote competitionKey={effectiveCompetitionKey} lifecycle={lifecycle} summary={activeSummary} koReadiness={koReadiness} />
 
                 {activeSection?.status === 'error' && <p className="foundation-warning-text">{activeSection.error}</p>}
                 {(overview.status === 'loading' || overviewLoading) && <p className="foundation-empty-copy">Refreshing standings…</p>}
                 {overview.status !== 'loading' && !overviewLoading && activeSection?.status === 'ready' && standings.length === 0 && <p className="foundation-empty-copy">No league members were returned.</p>}
-                {standings.length > 0 && <StandingsTable rows={standings} competitionKey={competitionKey} onCompare={compareMember} />}
+                {standings.length > 0 && <StandingsTable rows={standings} competitionKey={effectiveCompetitionKey} onCompare={compareMember} />}
               </article>
 
               <PlayerHeadToHead state={comparison} reference={reference} lifecycle={lifecycle} onClose={clearComparison} context={PLAYER_COMPARISON_CONTEXT.LEAGUE} />

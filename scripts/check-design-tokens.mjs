@@ -116,14 +116,19 @@ for (const marker of [
 ]) if (!routes.includes(marker)) fail(`Route model is missing: ${marker}`)
 
 const navigationLifecycle = read('src/app/navigationLifecycle.js')
+const koReadiness = read('src/app/koReadiness.js')
 for (const marker of [
-  'NAVIGATION_PHASE', 'KO_EARLY_ACCESS', 'KO_PRIMARY', 'groupMatches.length === 36',
-  "match.status === 'completed'", "match.resultStatus === 'confirmed'",
-  'ROUND_OF_16_MATCH_NUMBERS.length', 'showKoInMore', 'showGroupReviewInMore',
+  'NAVIGATION_PHASE', 'KO_EARLY_ACCESS', 'KO_PRIMARY', "import { buildKoReadiness } from './koReadiness.js'",
+  'koReadiness ?? buildKoReadiness', 'showKoInMore', 'showGroupReviewInMore',
   "label: 'Group stage review'", 'resolverHealthy', 'buildNavigationDestinations',
 ]) if (!navigationLifecycle.includes(marker)) fail(`Navigation lifecycle is missing: ${marker}`)
-if (/new Date\s*\(|Date\.now\s*\(/.test(navigationLifecycle)) {
-  fail('Navigation lifecycle must not use a component-level calendar trigger')
+for (const marker of [
+  'ROUND_OF_16_MATCH_NUMBERS', 'groupMatches.length === 36',
+  "match.status === 'completed'", "match.resultStatus === 'confirmed'",
+  'ROUND_OF_16_MATCH_NUMBERS.length', 'primaryReady', 'showInMore',
+]) if (!koReadiness.includes(marker)) fail(`Shared KO-readiness model is missing: ${marker}`)
+if (/new Date\s*\(|Date\.now\s*\(/.test(`${navigationLifecycle}\n${koReadiness}`)) {
+  fail('Navigation lifecycle and KO readiness must not use a component-level calendar trigger')
 }
 
 const navigationTests = read('src/app/__tests__/navigationLifecycle.test.js')

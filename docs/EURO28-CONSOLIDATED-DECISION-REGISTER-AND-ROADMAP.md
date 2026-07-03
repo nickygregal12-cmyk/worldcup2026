@@ -569,3 +569,7 @@ From checkpoint `177605b`, the next Stage 13G-B slice aligns Results, Leaderboar
 ## Stage 13G-B Player Insight and Team Profile lifecycle alignment
 
 From checkpoint `a651d33`, Player Insight and Team Profile are aligned with central lifecycle context without changing server privacy, scoring, database policy or migrations. Player Insight displays lifecycle copy for Original global-lock evidence and KO fixture-by-fixture evidence, while the canonical authorised-read phrase remains active. Team Profile displays lifecycle copy for Original-only community bracket aggregates, keeps KO Predictor data excluded and repeats that no Original/KO points are combined. `audit:player-team-lifecycle` is included in `npm run check`; active migrations remain 18 and no Migration 019 is created.
+
+## Stage 13G-B KO-readiness signal close-out
+
+From checkpoint `659809c`, the KO-readiness decision is centralised for Home, Navigation and Leagues. The shared readiness model counts only real knockout fixtures whose participant slots are resolved. Navigation keeps the five-position contract: Groups remains primary until the full approved readiness boundary is met, early KO access appears in More only, and Group review moves to More only after KO becomes primary. Leagues consume the same readiness signal before presenting KO league context. No database change or Migration 019 is created.

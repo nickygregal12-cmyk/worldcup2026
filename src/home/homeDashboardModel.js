@@ -1,4 +1,5 @@
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
+import { buildKoReadiness } from '../app/koReadiness.js'
 import { resolveTournamentLifecycle } from '../config/tournamentLifecycle.js'
 import { getNow } from '../lib/clock.js'
 
@@ -74,15 +75,6 @@ function lifecyclePhase(lifecycle, now) {
   }
   return { key: 'build', label: 'Build your predictor', tone: 'safe' }
 }
-
-function koReadiness(reference) {
-  const available = reference.knockoutMatches.filter(match => match.participantsResolved).length
-  if (available > 0) {
-    return Object.freeze({ open: true, available, label: `${available} real knockout fixture${available === 1 ? '' : 's'} ready`, tone: 'info' })
-  }
-  return Object.freeze({ open: false, available: 0, label: 'KO Predictor opens when real fixtures are known', tone: 'neutral' })
-}
-
 function nextMatch(reference, live) {
   const resultByMatch = new Map((live?.results ?? []).map(result => [result.matchNumber, result]))
   const matches = [...reference.groupMatches, ...reference.knockoutMatches]
@@ -116,7 +108,7 @@ export function buildHomeDashboard({
       }
   const lifecycle = resolveTournamentLifecycle(tournament, now)
   const phase = lifecyclePhase(lifecycle, now)
-  const ko = koReadiness(reference)
+  const ko = buildKoReadiness(reference)
   const originalStory = leaderboardStory(results, 'original', userId)
   const koStory = leaderboardStory(results, 'koPredictor', userId)
   const live = results?.live ?? null

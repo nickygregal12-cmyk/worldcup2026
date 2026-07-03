@@ -125,7 +125,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Predicted group standings | ❌ MISSING | Complete shared predicted tables are not available in the approved Groups journey. | 13G-C |
 | Shared third-place table | ❌ MISSING | One canonical predicted/live third-place presentation is not used wherever standings appear. | 13G-C |
 | Results, leaderboards and Match Centre lifecycle alignment | ✅ FUNCTIONAL | Results, Leaderboards and Match Centre now consume central lifecycle state plus canonical result/fixture state through `audit:results-lifecycle`; no competitions are combined. | — |
-| Central KO-readiness signal | 🟠 PARTIAL | Home now exposes a single KO readiness model for its own surface. Navigation and Leagues still need to consume the same signal in a later Stage 13G-B/C slice. | 13G-B |
+| Central KO-readiness signal | ✅ FUNCTIONAL | Home, Navigation and Leagues now consume one shared KO-readiness model. Groups remains primary until the confirmed full readiness boundary, early KO access stays in More, and league KO context stays hidden until real fixtures are ready. | — |
 | Player Insight and Team Profile lifecycle alignment | ✅ FUNCTIONAL | Player Insight and Team Profile now consume central lifecycle context for phase copy while preserving server-authorised privacy gates, Original-only Team Profile aggregates, KO exclusion and separate Original/KO point boundaries through `audit:player-team-lifecycle`. No database change and no Migration 019. | — |
 | PlayerIdentity whole-product coverage | 🟠 PARTIAL | Shared identity exists but not every rendered player name uses it. | 13G-D |
 | PlayerInsight as sole detailed-points surface | 🟠 PARTIAL | The shared model exists, but duplicate/local detail surfaces remain to be retired. | 13G-D |
@@ -159,6 +159,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 ## Change log
 
+- **v1.30:** Stage 13G-B KO-readiness signal close-out from `659809c` centralises KO readiness for Home, Navigation and Leagues, preserves the five-position navigation trigger, keeps early KO access in More, gates league KO context by real fixture readiness, adds `audit:ko-readiness` to `npm run check`, and keeps active migrations at 18 with no Migration 019.
 - **v1.29:** Stage 13G-B Player Insight and Team Profile lifecycle alignment from `aa76fbe` adds central lifecycle copy to Player Insight and Team Profile, preserves the canonical server privacy phrase, keeps Team Profile aggregates Original-only, excludes KO Predictor data from Team Profile percentages, adds `audit:player-team-lifecycle` to `npm run check`, and keeps active migrations at 18 with no Migration 019.
 - **v1.28:** Stage 13G-B League lifecycle alignment slice from `a651d33` adds central lifecycle input to private leagues, competition-scoped Original/KO release copy, member-comparison release copy and `audit:league-lifecycle` in `npm run check`. No database change and no Migration 019.
 - **v1.27:** Stage 13G-B Results lifecycle alignment slice from `177605b` adds central lifecycle banners to Results, competition-scoped lifecycle copy to Leaderboards, fixture-level lifecycle copy to Match Centre and `audit:results-lifecycle` in `npm run check`. No database change and no Migration 019.

@@ -5,7 +5,6 @@ function competitionName(competitionKey) {
   return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
 }
 
-
 export function LeagueLifecycleBanner({ lifecycleState }) {
   if (!lifecycleState) return null
   return (
@@ -18,8 +17,8 @@ export function LeagueLifecycleBanner({ lifecycleState }) {
   )
 }
 
-export function CompetitionLifecycleNote({ competitionKey, lifecycle, summary }) {
-  const copy = buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle, summary })
+export function CompetitionLifecycleNote({ competitionKey, lifecycle, summary, koReadiness }) {
+  const copy = buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle, summary, koReadiness })
   return (
     <aside className="foundation-lifecycle-note" aria-label={`${competitionName(competitionKey)} lifecycle`}>
       <span>{copy.label}</span>
@@ -28,21 +27,52 @@ export function CompetitionLifecycleNote({ competitionKey, lifecycle, summary })
   )
 }
 
-export function CompetitionTabs({ value, onChange }) {
+export function LeagueActionConfirmation({ action, leagueName, actionStatus, onConfirm, onCancel }) {
+  if (!action) return null
+  const deleting = action === 'delete'
+  return (
+    <div className="foundation-destructive-confirmation" role="alert">
+      <div>
+        <strong>{deleting ? `Delete ${leagueName}?` : `Leave ${leagueName}?`}</strong>
+        <p>{deleting ? 'This removes the private league for every member. Prediction and scoring records remain separate.' : 'You will lose access to this league and its member comparisons.'}</p>
+      </div>
+      <div className="foundation-inline-actions">
+        <button type="button" className="foundation-danger-button" onClick={() => { void onConfirm() }} disabled={actionStatus === 'loading'}>{actionStatus === 'loading' ? 'Working…' : deleting ? 'Confirm delete' : 'Confirm leave'}</button>
+        <button type="button" className="foundation-secondary-button" onClick={onCancel} disabled={actionStatus === 'loading'}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
+export function LeagueCompetitionHeading({ competitionKey }) {
+  const original = competitionKey === LEAGUE_COMPETITION.ORIGINAL
+  return (
+    <div className="foundation-competition-heading">
+      <div><span className="foundation-kicker">Separate standings</span><h3>{competitionName(competitionKey)}</h3></div>
+      <small>{original ? 'Group matches and original bracket only' : 'Real knockout fixtures only'}</small>
+    </div>
+  )
+}
+
+export function CompetitionTabs({ value, onChange, koReadiness }) {
   return (
     <div className="foundation-league-tabs" role="tablist" aria-label="League competition">
-      {Object.values(LEAGUE_COMPETITION).map(key => (
-        <button
-          key={key}
-          type="button"
-          role="tab"
-          aria-selected={value === key}
-          className={value === key ? 'is-active' : ''}
-          onClick={() => onChange(key)}
-        >
-          {competitionName(key)}
-        </button>
-      ))}
+      {Object.values(LEAGUE_COMPETITION).map(key => {
+        const disabled = key === LEAGUE_COMPETITION.KO_PREDICTOR && !koReadiness?.open
+        return (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={value === key}
+            className={value === key ? 'is-active' : ''}
+            disabled={disabled}
+            onClick={() => { if (!disabled) onChange(key) }}
+          >
+            {competitionName(key)}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -63,7 +93,6 @@ export function LeaguePicker({ leagues, selectedId, onSelect }) {
   )
 }
 
-
 export function MemberPicker({ members, selectedId, onSelect }) {
   const available = members.filter(member => !member.isCurrentUser)
   if (available.length === 0) return null
@@ -76,6 +105,17 @@ export function MemberPicker({ members, selectedId, onSelect }) {
       placeholder="Choose a member"
       options={available.map(member => ({ value: member.userId, label: member.displayName }))}
     />
+  )
+}
+
+export function LeagueKoReadinessCard({ koReadiness }) {
+  return (
+    <article className="foundation-league-summary-card">
+      <span className="foundation-kicker">KO Predictor</span>
+      <strong>Waiting for real fixtures</strong>
+      <span>—</span>
+      <small>{koReadiness?.label ?? 'KO Predictor opens when real fixtures are known'}</small>
+    </article>
   )
 }
 

@@ -129,11 +129,13 @@ export function buildLeagueCompetitionSummary(rows, competitionKey) {
   })
 }
 
-export function buildLeagueLifecycleState({ lifecycle, originalSummary, koSummary } = {}) {
+export function buildLeagueLifecycleState({ lifecycle, originalSummary, koSummary, koReadiness } = {}) {
   const originalActive = originalSummary?.state === 'active'
   const koActive = koSummary?.state === 'active'
   const locked = Boolean(lifecycle?.locked)
   const tournamentStarted = Boolean(lifecycle?.tournamentStarted)
+  const koOpen = Boolean(koReadiness?.open)
+  const koAvailable = Number(koReadiness?.available ?? 0)
 
   const originalState = !locked
     ? 'pre_lock'
@@ -141,7 +143,7 @@ export function buildLeagueLifecycleState({ lifecycle, originalSummary, koSummar
       ? 'scoring'
       : 'released'
 
-  const koState = !tournamentStarted
+  const koState = !koOpen
     ? 'waiting_for_knockout_fixtures'
     : koActive
       ? 'scoring'
@@ -150,6 +152,11 @@ export function buildLeagueLifecycleState({ lifecycle, originalSummary, koSummar
   return Object.freeze({
     locked,
     tournamentStarted,
+    koReadiness: Object.freeze({
+      open: koOpen,
+      available: koAvailable,
+      label: koReadiness?.label ?? 'KO Predictor opens when real fixtures are known',
+    }),
     originalState,
     koState,
     headline: locked ? 'League tables are open under privacy rules' : 'League tables are warming up',
@@ -159,14 +166,14 @@ export function buildLeagueLifecycleState({ lifecycle, originalSummary, koSummar
         ? 'Original Predictor standings are scoring from group and pre-tournament bracket selections only.'
         : 'Original Predictor selections are released, but points appear only after results are scored.',
     koCopy: koState === 'waiting_for_knockout_fixtures'
-      ? 'KO Predictor tables remain separate and only reveal real knockout fixtures after each fixture starts.'
+      ? 'KO Predictor tables remain separate and hidden until the shared KO-readiness signal confirms a real knockout fixture.'
       : koState === 'scoring'
         ? 'KO Predictor standings are scoring real knockout fixtures only.'
         : 'KO Predictor comparisons unlock fixture by fixture after each real knockout match starts.',
   })
 }
 
-export function buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle, summary } = {}) {
+export function buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle, summary, koReadiness } = {}) {
   if (!Object.values(LEAGUE_COMPETITION).includes(competitionKey)) {
     throw new TypeError('Unsupported league competition')
   }
@@ -188,11 +195,11 @@ export function buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle,
     })
   }
 
-  if (!lifecycle?.tournamentStarted) {
+  if (!koReadiness?.open) {
     return Object.freeze({
       state: 'waiting_for_knockout_fixtures',
       label: 'Waiting for real KO fixtures',
-      copy: 'KO Predictor rows stay separate and hidden until each real knockout fixture starts.',
+      copy: 'KO Predictor rows stay separate and hidden until the shared KO-readiness signal confirms a real knockout fixture.',
     })
   }
 

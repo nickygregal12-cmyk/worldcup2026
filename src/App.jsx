@@ -15,6 +15,7 @@ import TournamentOverview from './tournament/TournamentOverview.jsx'
 import EuroAppShell from './app/EuroAppShell.jsx'
 import { APP_ROUTE, leaderboardCompetitionFromHash, matchCentreParamsFromHash } from './app/appRoutes.js'
 import { deriveNavigationLifecycle } from './app/navigationLifecycle.js'
+import { buildKoReadiness } from './app/koReadiness.js'
 import { useHashLocation } from './app/useHashRoute.js'
 import { useTheme } from './app/useTheme.js'
 import { Badge, Button, Card } from './design-system/index.jsx'
@@ -107,7 +108,8 @@ export default function App() {
   if (state.status === 'error' || !state.data) return <AppLoadError message={state.error} onRetry={refresh} />
 
   const appData = state.data
-  const navigation = deriveNavigationLifecycle(appData.guestReference)
+  const koReadiness = buildKoReadiness(appData.guestReference)
+  const navigation = deriveNavigationLifecycle(appData.guestReference, { koReadiness })
   const lifecycle = resolveTournamentLifecycle(appData.tournament)
 
   let content
@@ -138,7 +140,7 @@ export default function App() {
     content = (
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Private competitions" title="Your leagues" description="One member list, with separate Original Predictor and KO Predictor tables." />
-        <Leagues client={activeClient} tournamentId={appData.tournament.id} reference={appData.guestReference} lifecycle={lifecycle} />
+        <Leagues client={activeClient} tournamentId={appData.tournament.id} reference={appData.guestReference} lifecycle={lifecycle} koReadiness={koReadiness} />
       </div>
     )
   } else if (route === APP_ROUTE.MATCH_CENTRE) {

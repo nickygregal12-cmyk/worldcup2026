@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildGuestReference } from '../../guest/__tests__/fixtures.js'
+import { buildKoReadiness } from '../koReadiness.js'
 import { APP_ROUTE } from '../appRoutes.js'
 import { buildNavigationDestinations, deriveNavigationLifecycle, NAVIGATION_PHASE } from '../navigationLifecycle.js'
 
@@ -53,6 +54,17 @@ describe('phase-driven navigation lifecycle', () => {
     expect(buildNavigationDestinations(lifecycle).phaseMoreDestinations).toEqual([
       expect.objectContaining({ key: APP_ROUTE.KO_PREDICTOR, label: 'KO Predictor', icon: 'trophy' }),
     ])
+  })
+
+
+  it('can consume a prebuilt shared KO readiness signal', () => {
+    const reference = lifecycleReference({ resolvedRoundOf16: 1 })
+    const readiness = buildKoReadiness(reference)
+    const lifecycle = deriveNavigationLifecycle(reference, { koReadiness: readiness })
+
+    expect(lifecycle.koReadiness).toBe(readiness)
+    expect(lifecycle.showKoInMore).toBe(true)
+    expect(lifecycle.resolvedRoundOf16Count).toBe(1)
   })
 
   it('keeps Groups primary after the group stage until all eight pairings are resolved', () => {

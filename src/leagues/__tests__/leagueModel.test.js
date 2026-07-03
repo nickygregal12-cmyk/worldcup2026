@@ -87,7 +87,19 @@ describe('league model', () => {
     expect(state.originalState).toBe('pre_lock')
     expect(state.koState).toBe('waiting_for_knockout_fixtures')
     expect(state.originalCopy).toContain('global prediction lock')
-    expect(state.koCopy).toContain('fixture starts')
+    expect(state.koCopy).toContain('shared KO-readiness signal')
+  })
+
+  it('keeps KO league tables waiting when the tournament has started but KO readiness is closed', () => {
+    const state = buildLeagueLifecycleState({
+      lifecycle: { locked: true, tournamentStarted: true },
+      originalSummary: { state: 'active' },
+      koSummary: { state: 'active' },
+      koReadiness: { open: false, available: 0, label: 'KO Predictor opens when real fixtures are known' },
+    })
+
+    expect(state.koState).toBe('waiting_for_knockout_fixtures')
+    expect(state.koReadiness.open).toBe(false)
   })
 
   it('describes competition-scoped league release rules', () => {
@@ -101,6 +113,7 @@ describe('league model', () => {
       competitionKey: LEAGUE_COMPETITION.KO_PREDICTOR,
       lifecycle: { tournamentStarted: true },
       summary: { state: 'pre_competition' },
+      koReadiness: { open: true, available: 1 },
     })).toMatchObject({ state: 'fixture_release', label: 'Fixture-by-fixture release' })
   })
 
