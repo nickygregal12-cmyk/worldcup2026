@@ -1,0 +1,59 @@
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+}
+
+.actions h3,
+.actions p {
+  margin: 0;
+}
+
+.actions h3 {
+  margin-top: var(--space-1);
+}
+
+.actions p {
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.buttons,
+.dialogActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.dialog {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dialog p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.dialogActions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 48rem) {
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .buttons > button {
+    flex: 1 1 12rem;
+  }
+}

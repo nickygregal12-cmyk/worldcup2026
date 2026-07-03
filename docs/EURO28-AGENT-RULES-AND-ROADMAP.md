@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.3 — Stage 13F-0 access architecture from `7261888`
+### Version 4.4 — Stage 13F-A guest journey from `51696c3`
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -77,9 +77,9 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 
 Stage 14B ends with no oversized active UI component and no contrast exception.
 
-## Stage 13F-0 — Site-wide information architecture and access contract
+## Stage 13F-0 — Site-wide information architecture and access contract — ACCEPTED AT `51696c3`
 
-### Implementation scope
+### Accepted scope
 
 - dedicated `#/leaderboards` route rather than a Results alias;
 - Results owns fixture/result feed, live tables and live bracket;
@@ -94,13 +94,23 @@ Admin invisibility remains Stage 13F-E and is explicitly not claimed complete he
 
 ## Stage 13F-A — Guest journey and Lucky Dip
 
-- verify full guest Groups, Original Bracket and eligible KO use;
-- automatic local persistence;
-- designed signup encouragement;
-- one-tap guest-draft transfer after signup/sign-in;
-- never clear local data before confirmed account save;
-- remove ordinary JSON file controls;
-- Euro-native Groups Lucky Dip without odds or automatic jokers.
+### Implementation scope
+
+- preserve the existing Groups and Original Bracket browser draft;
+- add separate browser persistence for available KO Predictor fixtures;
+- continue an unfinished browser Original draft after sign-in rather than replacing it with an empty account workspace;
+- offer one safe account action for eligible Original and KO browser entries;
+- never overwrite existing account predictions;
+- clear each browser copy only after its matching controlled account save succeeds;
+- add progress-aware signup prompts without repeated nagging;
+- remove ordinary JSON import/export controls from the live journey;
+- add Euro-native fill-empty and confirmed replace-all Lucky Dip modes;
+- preserve jokers and clear bracket picks made stale by changed group tables;
+- use no odds, rankings, WC26 code or database change.
+
+### Completion gate
+
+All five guest ledger rows move together: KO persistence, transfer, signup encouragement, JSON-control removal and Lucky Dip. Stage 13F-A is not complete if any one remains partial or inaccessible.
 
 ## Stage 13F-B — Player identity and complete H2H
 
@@ -259,4 +269,4 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-Install and accept Stage 13F-0, then begin Stage 13F-A guest journey completion and Euro-native Lucky Dip.
+Install and accept Stage 13F-A, then begin Stage 13F-B shared player identity and complete H2H.

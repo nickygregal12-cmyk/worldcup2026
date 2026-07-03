@@ -140,6 +140,10 @@ const app = read('src/foundation/EuroFoundationApp.jsx')
 if (!app.includes('EuroAuthFoundation')) fail('active foundation page must expose Euro authentication')
 if (!app.includes('PredictionJourneyFoundation') || !app.includes('KoPredictorFoundation')) fail('active page must expose both trusted prediction journeys')
 
+const authView = read('src/auth/EuroAuthFoundation.jsx')
+if (!authView.includes('GuestAccountTransfer')) fail('signed-in account view must expose the explicit guest-draft transfer flow')
+if (/through Stage 6/i.test(authView)) fail('account copy must not expose development-stage wording')
+
 const databaseTest = read('supabase/tests/database/006_auth_profiles.test.sql')
 for (const required of [
   "has_table('public', 'profiles'",
@@ -171,6 +175,6 @@ console.log('Migration 007: explicit browser-role function privilege hardening')
 console.log('Migration 008: provisional joker-cap drift correction')
 console.log('Account flows: sign-up, sign-in, sign-out and password recovery')
 console.log('Profile writes: controlled RPC only; no direct browser table writes')
-console.log('Guest draft: retained locally unless the signed-in user explicitly imports it through Stage 6')
+console.log('Guest draft: remains local through sign-in and transfers only after an explicit confirmed account save')
 console.log('Prediction save RPCs: separated by Migration 010')
 console.log(`Active migrations: ${migrations.length}`)

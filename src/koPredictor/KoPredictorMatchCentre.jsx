@@ -17,7 +17,7 @@ export default function KoPredictorMatchCentre({
   summary,
   standing = { points: 0, rank: null },
   saveState = 'idle',
-  signedIn = false,
+  storageContext = 'guest',
   notice = null,
   saving = false,
   onChange,
@@ -136,9 +136,16 @@ export default function KoPredictorMatchCentre({
 
       {notice && <p className="guest-notice guest-notice--warning" role="status">{notice}</p>}
       <div className="ko-save-bar">
-        <PredictionStateBadge state={saveState === 'idle' ? 'empty' : saveState} label={saveState === 'dirty' ? 'Changes waiting' : null} />
-        <div><strong>{signedIn ? 'KO Predictor saves separately' : 'Sign in to save KO predictions'}</strong><span>Original Predictor points and picks are never included.</span></div>
-        <Button onClick={onSave} loading={saving} disabled={!signedIn || resolvedMatches.length === 0}>{saving ? 'Saving…' : 'Save KO Predictor'}</Button>
+        <PredictionStateBadge state={saveState === 'idle' ? 'empty' : saveState} label={saveState === 'dirty' ? 'Changes waiting' : saveState === 'local' ? 'Saved on this device' : null} />
+        <div>
+          <strong>{storageContext === 'account' ? 'KO Predictor saves separately' : storageContext === 'guest-transfer' ? 'Browser KO draft ready for your account' : 'KO predictions save on this device'}</strong>
+          <span>Original Predictor points and picks are never included.</span>
+        </div>
+        {storageContext !== 'guest' && (
+          <Button onClick={onSave} loading={saving} disabled={resolvedMatches.length === 0 || summary.complete === 0}>
+            {saving ? 'Saving…' : storageContext === 'guest-transfer' ? 'Add KO draft to account' : 'Save KO Predictor'}
+          </Button>
+        )}
       </div>
     </section>
   )

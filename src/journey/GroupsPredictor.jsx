@@ -1,9 +1,11 @@
 import React from 'react' // eslint-disable-line no-unused-vars
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
-import { ScoreInput, TeamLabel, PredictionStateBadge, Button, ProgressBar } from '../design-system/index.jsx'
+import { ScoreInput, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar } from '../design-system/index.jsx'
 import { hasActivePredictionGrace, isPredictionMatchStarted, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import { buildGroupProgress, deriveGroupMatchState, jokerControlLabel } from './groupsPresentationModel.js'
+import { EURO_LUCKY_DIP_MODE } from './euroLuckyDip.js'
+import styles from './GroupsPredictorActions.module.css'
 
 function formatMatchDate(dateValue) {
   if (!dateValue) return 'Date to be confirmed'
@@ -26,8 +28,11 @@ export default function GroupsPredictor({
   context,
   activeMatchNumber,
   onChange,
+  onLuckyDip,
+  luckyDipDisabled,
   onOpenReview,
 }) {
+  const [replaceOpen, setReplaceOpen] = useState(false)
   const groupProgress = useMemo(() => buildGroupProgress(reference, draft), [reference, draft])
 
   return (
@@ -48,6 +53,28 @@ export default function GroupsPredictor({
           </div>
         </div>
       </section>
+
+      <section className={styles.actions} aria-label="Lucky Dip group score helper">
+        <div>
+          <span className="page-eyebrow">Lucky Dip</span>
+          <h3>Need a starting point?</h3>
+          <p>Generate realistic group scores locally. Lucky Dip never uses odds and never changes your jokers.</p>
+        </div>
+        <div className={styles.buttons}>
+          <Button variant="secondary" onClick={() => onLuckyDip(EURO_LUCKY_DIP_MODE.EMPTY)} disabled={luckyDipDisabled}>Fill empty scores</Button>
+          <Button variant="secondary" onClick={() => setReplaceOpen(true)} disabled={luckyDipDisabled}>Replace all scores</Button>
+        </div>
+      </section>
+
+      <Dialog open={replaceOpen} title="Replace every group score?" onClose={() => setReplaceOpen(false)}>
+        <div className={styles.dialog}>
+          <p>This replaces all 36 group scores with a fresh Lucky Dip. Jokers stay where they are, and any bracket picks made impossible by the new tables are cleared.</p>
+          <div className={styles.dialogActions}>
+            <Button variant="secondary" onClick={() => setReplaceOpen(false)}>Keep my scores</Button>
+            <Button onClick={() => { onLuckyDip(EURO_LUCKY_DIP_MODE.REPLACE); setReplaceOpen(false) }}>Replace all scores</Button>
+          </div>
+        </div>
+      </Dialog>
 
       <nav className="groups-jump" aria-label="Jump to a group">
         {groupProgress.map(group => (

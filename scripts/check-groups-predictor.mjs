@@ -21,7 +21,10 @@ const requiredFiles = [
   'src/journey/GroupsPredictor.jsx',
   'src/journey/PredictionReview.jsx',
   'src/journey/groupsPresentationModel.js',
+  'src/journey/euroLuckyDip.js',
+  'src/journey/GroupsPredictorActions.module.css',
   'src/journey/__tests__/groupsPresentationModel.test.js',
+  'src/journey/__tests__/euroLuckyDip.test.js',
   'src/styles/groups-predictor.css',
   'docs/STAGE-13B-GROUPS-PREDICTOR-AND-REVIEW.md',
   'docs/THIRD-PARTY-ASSETS.md',
@@ -65,6 +68,7 @@ for (const marker of [
   'TeamLabel', 'ScoreInput', 'PredictionStateBadge', 'hasActivePredictionGrace',
   'isPredictionMatchStarted', 'group-match-card--joker', 'aria-pressed={row.jokerApplied}',
   'Review progress', 'reference.groups.map', 'reference.groupMatches.filter',
+  'Fill empty scores', 'Replace all scores', 'Lucky Dip never uses odds',
 ]) if (!groups.includes(marker)) fail(`Groups predictor is missing: ${marker}`)
 if (/onClick=.*group-match-card/.test(groups)) fail('The surrounding match card must not become a team-profile trigger')
 

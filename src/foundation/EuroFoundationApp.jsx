@@ -173,8 +173,8 @@ export default function EuroFoundationApp() {
   } else if (route === APP_ROUTE.ACCOUNT) {
     content = (
       <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Account" title={visualSession.session ? 'Profile and security' : 'Sign in or create an account'} description="Your browser guest draft remains separate and safe until you explicitly import it." />
-        <EuroAuthFoundation client={activeClient} />
+        <PageIntro eyebrow="Account" title={visualSession.session ? 'Profile and security' : 'Sign in or create an account'} description="Sign in without losing predictions already saved on this device." />
+        <EuroAuthFoundation client={activeClient} reference={foundation.guestReference} />
       </div>
     )
   } else if (route === APP_ROUTE.TOURNAMENT) {

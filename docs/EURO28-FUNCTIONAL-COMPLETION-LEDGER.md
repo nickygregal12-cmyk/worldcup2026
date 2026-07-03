@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.4 — Stage 13F-0 access architecture from commit `7261888`
+### Version 1.5 — Stage 13F-A guest journey and Lucky Dip from commit `51696c3`
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -45,11 +45,11 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 |---|---|---|---|
 | Guest resolver | ✅ FUNCTIONAL | Same canonical slot-reference resolver | — |
 | Guest Groups/Original browser persistence | ✅ FUNCTIONAL | Local browser storage exists and survives signup on the same browser/domain | — |
-| Guest KO access and persistence | 🕓 SCHEDULED | Intended and must be verified end to end | 13F-A |
-| Guest-to-account transfer | 🟠 PARTIAL | Service logic exists; live journey is incomplete and copy is misleading | 13F-A |
-| Signup encouragement | ❌ MISSING | No designed conversion journey | 13F-A |
-| Manual JSON file controls | ⚠️ INCOHERENT | Development-era recovery UX conflicts with seamless conversion; remove from normal journey | 13F-A |
-| Lucky Dip | 🕓 SCHEDULED | Euro-native Groups-only implementation; no odds dependency | 13F-A |
+| Guest KO access and persistence | ✅ FUNCTIONAL | Available real KO fixtures save in separate browser storage; sign-in preserves the local draft and confirmed account transfer never affects Original Predictor data | — |
+| Guest-to-account transfer | ✅ FUNCTIONAL | Signed-in users continue unfinished browser drafts; eligible Original and KO entries transfer through existing controlled RPCs, never overwrite account entries and clear only after confirmed save | — |
+| Signup encouragement | ✅ FUNCTIONAL | Progress-aware account prompts appear in Original and KO guest journeys; Account detects saved browser predictions and offers the safe transfer action | — |
+| Manual JSON file controls | 🚫 REJECTED | Removed from the live prediction journey; dormant recovery modules remain quarantined for Stage 13F-H cleanup unless separately approved | 13F-H |
+| Lucky Dip | ✅ FUNCTIONAL | Groups-only local weighted score generation; fill-empty and confirmed replace-all modes preserve jokers and clear stale bracket picks | — |
 
 ## Section C — Admin
 
@@ -99,6 +99,9 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Hosted simulation project | 🔒 DECISION PENDING | Free tier already occupied; initial Stage 16 is local-only | 16 |
 
 ## Change log
+
+- v1.5 — Stage 13F-A records separate KO guest persistence, seamless browser-draft continuation and transfer, progress-aware signup prompts, removal of normal JSON controls and Euro-native Lucky Dip.
+
 
 - **v1.0:** Independent audit draft.
 - **v1.1:** Corrected H2H/player identity to partial, separated guest storage from dormant file tools, corrected guest account-import terminology, recorded three over-cap screens, recorded actual fixture and Netlify deployment state, and added site-wide information architecture/access.

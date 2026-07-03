@@ -10,6 +10,7 @@ import {
 } from '../src/guest/guestPredictionConfig.js'
 import { createGuestPredictionBundle } from '../src/guest/guestPredictionBundle.js'
 import { createGuestPredictionState } from '../src/guest/guestPredictionState.js'
+import { GUEST_KO_PREDICTION_STATE_VERSION } from '../src/guest/guestKoPredictionStorage.js'
 
 const root = process.cwd()
 const errors = []
@@ -27,6 +28,7 @@ const bundle = createGuestPredictionBundle(state, reference, { now:'2026-07-01T0
 if (GUEST_PREDICTION_CONTEXT !== 'guest') fail('guest context must remain guest')
 if (GUEST_PREDICTION_STATE_VERSION !== 'euro28-guest-state-v2') fail('guest state must use v2 split model')
 if (GUEST_PREDICTION_BUNDLE_FORMAT !== 'euro28-guest-prediction-bundle' || GUEST_PREDICTION_BUNDLE_VERSION !== 2) fail('guest bundle must use version 2')
+if (GUEST_KO_PREDICTION_STATE_VERSION !== 'euro28-guest-ko-state-v1') fail('guest KO state must use the separate v1 storage model')
 if (GUEST_MATCH_RANGES.group.count !== 36 || GUEST_MATCH_RANGES.bracket.count !== 15 || GUEST_MATCH_RANGES.total !== 51) fail('guest original predictor must contain 36 group rows and 15 bracket rows')
 if (Object.keys(state.groupPredictions).length !== 36) fail('guest state must contain 36 group score rows')
 if (Object.keys(state.bracketPredictions).length !== 15) fail('guest state must contain 15 bracket winner rows')
@@ -49,6 +51,6 @@ console.log(`Guest state: ${GUEST_PREDICTION_STATE_VERSION}`)
 console.log(`Bundle: ${GUEST_PREDICTION_BUNDLE_FORMAT} v${GUEST_PREDICTION_BUNDLE_VERSION}`)
 console.log('Storage: browser localStorage only; no guest server persistence')
 console.log('Original predictor rows: 36 group scores + 15 winner-only bracket picks')
-console.log('Separate KO Predictor is not blended into the guest original bundle')
+console.log('Separate KO Predictor uses its own browser storage and is not blended into the guest original bundle')
 console.log('Account identity in exports: none')
 console.log(`Active migrations: ${migrations.length}`)

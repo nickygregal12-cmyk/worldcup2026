@@ -1,4 +1,5 @@
 import { PredictionStateBadge } from '../design-system/index.jsx'
+import GuestAccountPrompt from '../guest/GuestAccountPrompt.jsx'
 import { hasActivePredictionGrace } from '../grace/index.js'
 import OriginalBracket from './OriginalBracket.jsx'
 import GroupsPredictor from './GroupsPredictor.jsx'
@@ -9,6 +10,8 @@ function AutosaveBadge({ context, status, revision, savedAt }) {
   let label = 'Ready'
   if (context === 'guest') {
     label = 'Saved in this browser'
+  } else if (context === 'guest-transfer') {
+    label = 'Browser draft · ready to transfer'
   } else if (status === PREDICTION_AUTOSAVE_STATE.SAVING) {
     label = 'Saving…'
   } else if (status === PREDICTION_AUTOSAVE_STATE.DIRTY) {
@@ -25,7 +28,7 @@ function AutosaveBadge({ context, status, revision, savedAt }) {
     label = `Account revision ${revision}`
   }
 
-  const state = context === 'guest' ? 'local' : status === PREDICTION_AUTOSAVE_STATE.IDLE ? 'empty' : status
+  const state = context === 'guest' || context === 'guest-transfer' ? 'local' : status === PREDICTION_AUTOSAVE_STATE.IDLE ? 'empty' : status
   return (
     <div className="journey-autosave" aria-live="polite">
       <PredictionStateBadge state={state} label={label} />
@@ -38,9 +41,9 @@ function AutosaveBadge({ context, status, revision, savedAt }) {
 
 export default function PredictionJourneyView({
   reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
-  accountRows, guestSummary, canImportGuest, busy, importGuestDraft, exportGuest, importGuestFile,
+  accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
   view, setView, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
-  updateGroup, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, notice,
+  updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, notice,
 }) {
   return (
     <section className="foundation-panel prediction-journey" aria-labelledby="prediction-journey-title">
@@ -69,33 +72,25 @@ export default function PredictionJourneyView({
           <span style={{ width: `${Math.round((summary.totalComplete / 51) * 100)}%` }} />
         </div>
         <div>
-          <span>{context === 'account' ? 'Account workspace' : 'Guest workspace'}</span>
+          <span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved browser draft' : 'Guest workspace'}</span>
           <strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong>
         </div>
       </div>
 
-      {signedIn && accountRows === 0 && (
+      {guestTransferMode && accountRows === 0 && (
         <div className="journey-import-strip">
           <div>
             <strong>Browser draft: {guestSummary.totalComplete}/51 complete</strong>
-            <span>A complete guest bracket can be imported once and will never overwrite account predictions.</span>
+            <span>Keep editing this saved browser draft. Once all 51 selections are complete, one tap moves it into your account.</span>
           </div>
           <button type="button" onClick={importGuestDraft} disabled={!canImportGuest || busy}>
-            {busy ? 'Importing…' : 'Import complete browser draft'}
+            {busy ? 'Adding…' : 'Add completed draft to account'}
           </button>
         </div>
       )}
 
-      {!signedIn && (
-        <div className="journey-guest-tools">
-          <span>Browser-only tools</span>
-          <button type="button" className="foundation-secondary-button" onClick={exportGuest}>Export JSON</button>
-          <label className="foundation-secondary-button guest-import-button">
-            Import JSON
-            <input type="file" accept="application/json,.json" onChange={importGuestFile} />
-          </label>
-        </div>
-      )}
+
+      {!signedIn && <GuestAccountPrompt completed={guestTouched} total={51} label="Original Predictor selections started" />}
 
       <nav className="journey-tabs" aria-label="Prediction sections">
         {[
@@ -131,6 +126,8 @@ export default function PredictionJourneyView({
               context={context}
               activeMatchNumber={activeGroupMatchNumber}
               onChange={updateGroup}
+              onLuckyDip={runLuckyDip}
+              luckyDipDisabled={readOnly || locked}
               onOpenReview={() => setView(PREDICTION_JOURNEY_VIEW.REVIEW)}
             />
           )}

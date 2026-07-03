@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createGuestPredictionState, createGuestPredictionStorage, importGuestPredictionBundle, serialiseGuestPredictionBundle, buildGuestBundleFilename } from '../guest/index.js'
+import { countTouchedOriginalRows, createGuestPredictionState, createGuestPredictionStorage } from '../guest/index.js'
 import { importGuestDraftToAccount, loadMyPredictionBundle, saveMyPredictionBundle } from '../predictions/predictionSaveService.js'
 import { GUEST_STATE_UPDATED_EVENT, PREDICTION_SAVE_SOURCE } from '../predictions/predictionSaveConfig.js'
 import { hasActivePredictionGrace, isPredictionMatchStarted, loadMyPredictionGraceWindows, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import { PREDICTION_AUTOSAVE_DELAY_MS, PREDICTION_AUTOSAVE_STATE, PREDICTION_JOURNEY_VIEW } from './predictionJourneyConfig.js'
 import { buildPredictionJourneyRows, clearStaleBracketSelections, createPredictionJourneyDraft, summarisePredictionJourney, updatePredictionJourneyGroup, updatePredictionJourneyBracket } from './predictionJourneyModel.js'
+import { applyEuroLuckyDip } from './euroLuckyDip.js'
 import PredictionJourneyView from './PredictionJourneyView.jsx'
 import { browserStorage, messageForError, readGuestReview, writeGuestReview } from './predictionJourneyRuntime.js'
 
@@ -36,15 +37,18 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   const savingRef = useRef(false)
 
   const signedIn = Boolean(session?.user)
-  const context = signedIn ? 'account' : 'guest'
-  const draft = signedIn ? accountDraft : guestDraft
+  const accountRows = accountBundle?.predictions?.length ?? 0
+  const guestSummary = useMemo(() => summarisePredictionJourney(reference, guestDraft), [guestDraft, reference])
+  const guestTouched = useMemo(() => countTouchedOriginalRows(guestDraft), [guestDraft])
+  const guestTransferMode = signedIn && accountRows === 0 && guestTouched > 0
+  const context = signedIn && !guestTransferMode ? 'account' : guestTransferMode ? 'guest-transfer' : 'guest'
+  const draft = signedIn && !guestTransferMode ? accountDraft : guestDraft
   const summary = useMemo(() => summarisePredictionJourney(reference, draft), [reference, draft])
-  const reviewMode = signedIn ? Boolean(accountBundle?.submittedAt) : guestReview
+  const reviewMode = signedIn && !guestTransferMode ? Boolean(accountBundle?.submittedAt) : guestReview
   const lockConfigured = Boolean(tournament.prediction_lock_at || tournament.prediction_locked_at)
   const locked = Boolean(tournament.prediction_locked_at) ||
     Boolean(tournament.prediction_lock_at && new Date(tournament.prediction_lock_at) <= new Date())
   const readOnly = locked || reviewMode
-  const accountRows = accountBundle?.predictions?.length ?? 0
 
   const loadAccount = useCallback(async nextSession => {
     if (!client || !nextSession?.user) {
@@ -149,7 +153,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   }, [accountBundle, client, lockConfigured, reference, session])
 
   useEffect(() => {
-    if (!signedIn || accountLoading || reviewMode || !lockConfigured) return undefined
+    if (!signedIn || guestTransferMode || accountLoading || reviewMode || !lockConfigured) return undefined
     if (editVersion <= savedEditVersion || savingRef.current) return undefined
 
     setAutosaveStatus(PREDICTION_AUTOSAVE_STATE.DIRTY)
@@ -169,6 +173,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
     saveAccount,
     savedEditVersion,
     signedIn,
+    guestTransferMode,
   ])
 
   function persistGuest(nextDraft, message = 'Saved in this browser.') {
@@ -182,7 +187,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   }
 
   function applyDraftUpdate(updater) {
-    if (signedIn) {
+    if (signedIn && !guestTransferMode) {
       setAccountDraft(current => updater(current))
       setEditVersion(value => value + 1)
       return
@@ -230,6 +235,11 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
         expectedRevision: accountBundle?.revision ?? 0,
       })
       await loadAccount(session)
+      guestStorage.clear()
+      setGuestReview(false)
+      writeGuestReview(reference, false)
+      setGuestDraft(createGuestPredictionState(reference))
+      globalThis.dispatchEvent?.(new Event(GUEST_STATE_UPDATED_EVENT))
       setNotice({
         tone: 'safe',
         message: `Imported all ${result.savedPredictionCount} browser predictions into the account at revision ${result.revision}.`,
@@ -241,25 +251,23 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
     }
   }
 
-  function exportGuest() {
-    const json = serialiseGuestPredictionBundle(guestDraft, reference)
-    const blob = new Blob([json], { type: 'application/json' })
-    const objectUrl = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = objectUrl
-    anchor.download = buildGuestBundleFilename(reference)
-    anchor.click()
-    URL.revokeObjectURL(objectUrl)
-  }
 
-  async function importGuestFile(event) {
-    const [file] = event.target.files ?? []
-    event.target.value = ''
-    if (!file) return
+  function runLuckyDip(mode) {
+    if (readOnly || locked) return
     try {
-      const nextDraft = importGuestPredictionBundle(await file.text(), reference, guestDraft)
-      persistGuest(nextDraft)
-      setNotice({ tone: 'safe', message: 'Browser prediction file imported.' })
+      const result = applyEuroLuckyDip(reference, draft, { mode })
+      if (signedIn && !guestTransferMode) {
+        setAccountDraft(result.draft)
+        setEditVersion(value => value + 1)
+      } else {
+        persistGuest(result.draft)
+      }
+      setNotice({
+        tone: 'safe',
+        message: result.changed === 0
+          ? 'Every group score is already filled.'
+          : `Lucky Dip filled ${result.changed} group score${result.changed === 1 ? '' : 's'}. Jokers were not changed.`,
+      })
     } catch (error) {
       setNotice({ tone: 'danger', message: messageForError(error) })
     }
@@ -273,7 +281,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
 
   async function submitReview() {
     if (!summary.canSubmit) return
-    if (!signedIn) {
+    if (!signedIn || guestTransferMode) {
       setGuestReview(true)
       writeGuestReview(reference, true)
       setView(PREDICTION_JOURNEY_VIEW.REVIEW)
@@ -291,7 +299,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   }
 
   async function editPredictions() {
-    if (!signedIn) {
+    if (!signedIn || guestTransferMode) {
       setGuestReview(false)
       writeGuestReview(reference, false)
       setView(PREDICTION_JOURNEY_VIEW.GROUPS)
@@ -311,16 +319,15 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
     setBusy(false)
   }
 
-  const guestSummary = useMemo(() => summarisePredictionJourney(reference, guestDraft), [guestDraft, reference])
-  const canImportGuest = signedIn && accountRows === 0 && guestSummary.canSubmit && !locked && lockConfigured
+  const canImportGuest = guestTransferMode && guestSummary.canSubmit && !locked && lockConfigured
 
   return (
     <PredictionJourneyView
       {...{
         reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
-        accountRows, guestSummary, canImportGuest, busy, importGuestDraft, exportGuest, importGuestFile,
+        accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
         view, setView, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
-        updateGroup, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, notice,
+        updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, notice,
       }}
     />
   )

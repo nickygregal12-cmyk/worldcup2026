@@ -73,7 +73,7 @@ for (const marker of ['KO_PREDICTOR_ROUNDS', 'koMethodOptions', "value: 'normal_
 }
 
 const koFoundation = read('src/koPredictor/KoPredictorFoundation.jsx')
-for (const marker of ['saveMyKoPredictionBundle', 'loadMyKoPredictorStanding', '<KoPredictorMatchCentre']) {
+for (const marker of ['saveMyKoPredictionBundle', 'loadMyKoPredictorStanding', '<KoPredictorMatchCentre', 'createGuestKoPredictionStorage', 'guestTransferMode']) {
   if (!koFoundation.includes(marker)) fail(`KO Predictor controller is missing: ${marker}`)
 }
 
@@ -139,4 +139,5 @@ console.log('Original bracket: permanent predicted context, winner-only picks an
 console.log('KO Predictor: real fixtures, 90-minute scores, advancing team, method and five separate jokers')
 console.log('Competition totals: Original Predictor and KO Predictor remain separate')
 console.log('Unresolved knockout fixtures: hidden')
+console.log('Guest KO entries: saved locally and transferable without affecting Original Predictor data')
 console.log(`Database: original 14-migration baseline preserved; ${migrations.length} active migrations detected`)

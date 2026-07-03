@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import GuestAccountTransfer from '../guest/GuestAccountTransfer.jsx'
 import {
   buildAuthRedirectUrl,
   getEmailForSession,
@@ -60,7 +61,7 @@ function TextField({ id, label, type = 'text', value, onChange, autoComplete, mi
   )
 }
 
-export default function EuroAuthFoundation({ client }) {
+export default function EuroAuthFoundation({ client, reference }) {
   const [mode, setMode] = useState(initialMode)
   const [session, setSession] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -146,7 +147,7 @@ export default function EuroAuthFoundation({ client }) {
 
       await signInWithEmail(client, { email, password })
       setPassword('')
-      setNotice({ tone: 'safe', message: 'Signed in successfully. Your guest draft remains stored in this browser.' })
+      setNotice({ tone: 'safe', message: 'Signed in successfully. Any browser predictions are still safe on this device.' })
     })
   }
 
@@ -174,7 +175,7 @@ export default function EuroAuthFoundation({ client }) {
       setNotice({
         tone: 'safe',
         message: result.session
-          ? 'Account created and signed in. Your guest draft remains separate until you explicitly import it through Stage 6.'
+          ? 'Account created and signed in. Any saved browser predictions are ready to add to this account.'
           : 'Account created. Check your email to confirm it before signing in.',
       })
     })
@@ -264,6 +265,7 @@ export default function EuroAuthFoundation({ client }) {
             <strong>Private to your account</strong>
           </div>
         </div>
+        {reference && <GuestAccountTransfer client={client} reference={reference} userId={session.user.id} />}
         <AuthNotice notice={notice} />
       </section>
     )
