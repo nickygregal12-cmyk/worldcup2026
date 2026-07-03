@@ -608,3 +608,12 @@ This amendment is read with the Stage 13G master prompt and corrects records bef
 - Visual fixtures stay outside the production graph; `Stage14ErrorFixture` is DEV-only.
 - Size governance clarifies 200/250 review guidance, 400/400 hard caps and test-fixture ratchets.
 - No database change and no Migration 019.
+
+
+### Stage 13G-H2 product-facing alignment and reference-asset decision — ACCEPTED
+- The official UEFA EURO 2028 logo, trophy rendering, tournament wordmark and wider UEFA competition identity are not approved as deployable app assets unless explicit usage permission/licence is obtained and recorded later. Use a future independent app mark instead.
+- The WC26/FPL-style league screenshot remains reference only. Evaluated patterns: glanceable rank story adopt-improved; rank movement adapt pending trustworthy previous-rank data; top-three treatment adopt-improved with designed elements and no emoji medals; YOU row anchoring adopt-improved; gap-to-leader adopt-improved; copying the reference layout is dropped.
+- Dedicated player route direction is recorded for a later route build: `#/player/:userId`, `#/player/:userId/head-to-head?against=me` and `#/player/:userId/points`. H2 does not build these routes.
+- Tournament Picks player-facing entry remains a schedule decision and is not moved into H2. If moved earlier, it must stay Original-only with no jokers and no KO Predictor points.
+- Guest signup import prompt and signed-in copy sweep are the recommended next tight product build.
+- No route, component, scoring, resolver, database or migration change. Active migrations remain 18 and no Migration 019 is created.

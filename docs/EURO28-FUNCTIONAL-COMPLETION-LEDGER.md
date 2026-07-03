@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.31 — Stage 13G-H0 housekeeping and record corrections
+### Version 1.33 — Stage 13G-H2 product-facing alignment and reference-asset decision
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -170,6 +170,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Visual fixture production gating | ✅ FUNCTIONAL | Deterministic visual fixtures remain outside the production graph; the only root-mounted fixture is `Stage14ErrorFixture`, gated to `import.meta.env.DEV` and not deployable by VITE flags. | — |
 | Size governance clarification | ✅ FUNCTIONAL | The Charter records 200/250 as review guidance and 400/400 as enforced hard caps. Test fixtures now share the hard cap, with the one current over-cap fixture ledgered and ratcheted. | — |
 | Bottom nav alignment wording | ✅ FUNCTIONAL | Charter clarifies that the centred Home circle overlaps slightly above the bar top line while all five icons and labels remain vertically aligned. | — |
+| Stage 13G-H2 product-facing alignment | ✅ FUNCTIONAL | Official UEFA EURO 2028 logo is rejected as a deployable asset without permission; leagues reference patterns are evaluated before build; player routes, Tournament Picks entry and guest import are sequenced without changing routes, scoring, resolver or database state. | — |
 | Home theme compliance sweep | 🕓 SCHEDULED | Audit every Home element in light and dark themes and fix through semantic tokens. | 13G-E |
 | Debug/developer strip removal | 🕓 SCHEDULED | Version strings, row counters and lock mechanics such as account autosave/debug strips must not be user-facing copy. | 13G-H1 |
 | Signed-in copy and signup import flow | 🕓 SCHEDULED | Signed-in users never see “browser draft”; signup shows one dominant import prompt with Import to account / Start fresh choices. | 13G-C |
@@ -181,6 +182,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 
 ## Change log
+
+- **v1.33:** Stage 13G-H2 product-facing alignment rejects the official UEFA EURO 2028 logo as a deployable asset without explicit permission, evaluates leagues reference patterns as adopt-improved/adapt/drop before build, keeps Tournament Picks player entry as a schedule decision, records the dedicated player route direction and recommends guest import copy as the next tight build. No route, component, scoring, resolver, database or migration change; active migrations remain 18 with no Migration 019.
 
 - **v1.32:** Stage 13G-H1 bypass-class tooling sweep from `dbdcc7d` enforces false-by-default time travel, coverage no-decrease floors, eslint-disable reason/cap governance, DEV-only fixture gating, test-fixture size ratchets and frozen bridge melt rules. No database change and no Migration 019.
 
