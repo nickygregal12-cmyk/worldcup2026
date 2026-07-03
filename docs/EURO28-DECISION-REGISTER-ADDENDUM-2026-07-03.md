@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Decision Register Addendum — 3 July 2026
-### Reconciled for Stage 13F-J close-out and expanded Stage 16A approval
+### Reconciled for Stage 13G-0 information architecture approval
 
 ## Confirmed decisions
 
@@ -23,8 +23,15 @@
 17. Seed → validate → teardown → zero residue → reseed is a non-negotiable acceptance path. Real users, administrators, tournament configuration and staging controls must remain untouched.
 18. The real irreversible global lock must never be triggered during shared-staging simulation. A separately packaged staging-effective database-time contract is approved in principle, provided it fails closed outside the provisional Euro staging tournament and changes no scoring or resolver rule.
 19. A separately packaged privacy-safe synthetic badge contract is approved in principle. Authorised reads may expose only `is_synthetic`; another user's email and raw auth metadata must never be exposed.
+20. Stage 13G is one holistic information-architecture and coherent-interface pass. Nothing may be bolted onto a convenient page without a designed destination and contextual owner.
+21. More is a curated phase-aware destination. Before KO readiness it may contain a KO explainer teaser but not unresolved fixtures or active prediction controls. Home gives the later competition only modest secondary prominence until readiness.
+22. Upcoming fixtures order by next real kick-off and completed results order most-recent-first. Group-stage views support shared By group and By date presentations, defaulting by tournament phase while respecting manual choice.
+23. Tournament is a key destination. Its scoring, joker, lock, sharing and competition-separation guide renders from versioned contracts/configuration so visible rules cannot drift.
+24. Any player name opens one shared authorised player overview. Any team name uses `TeamLabel`. Existing privacy rules apply independently to each overview section.
+25. League invites use one-tap copy and rich previews. Static Euro metadata is mandatory; dynamic per-league title/description with a static Euro image is approved. Member names, standings, owner email and predictions are never preview metadata.
+26. Stage 13G follows Stage 13F-K. Stage 16A seeding interleaves after Stage 13G-C, and Stage 13G-D uses that cast for whole-app coherence and Scotland profile proof. Stage 13P-A begins only after Stage 13G acceptance.
 
 ## Pending approvals
 
 - Whether a portable advanced guest-backup tool is retained outside the normal journey.
-- Any future database design for tournament-pick persistence/operations or managed participants. Match Centre and player-insight read contracts are settled. Stage 16 synthetic-marker and staging-effective-time preconditions require their own exact scope, tests and migration decision before implementation.
+- Any future database design for tournament-pick persistence/operations or managed participants. Match Centre and player-insight read contracts are settled. Stage 13G-C must inspect invite-safe metadata and synthetic-marker reads before proposing any narrow migration. Stage 16 staging-effective-time still requires its own exact scope, tests and migration decision.

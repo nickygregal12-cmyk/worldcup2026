@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.15 — Stage 13F-J close-out and expanded Stage 16A acceptance plan
+### Version 1.16 — Stage 13G information architecture and coherent UI plan
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -109,7 +109,22 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Dependency updates | 🟠 PARTIAL | Monthly manual review until default-branch decision after WC26 | OB-1 |
 | Hosted Euro staging simulation | 🕓 SCHEDULED | Existing guarded Euro staging project is approved for Stage 16A; WC26 production remains blocked | 16A |
 
+## Section G — Information architecture and coherent UI
+
+| Item | Status | Evidence / notes | Owner |
+|---|---|---|---|
+| Stage 13G IA map and destination ownership | ✅ FUNCTIONAL | Approved direct/contextual destination map, homeless/duplicate findings and object-surface ownership recorded in Stage 13G-0 | — |
+| More lifecycle strategy | ✅ FUNCTIONAL | Approved phase-specific ordering, authorised Admin separation and pre-readiness KO explainer contract | — |
+| Hardwired-data inventory | ✅ FUNCTIONAL | Active production evidence recorded for chronology, stage inference, totals, rules prose, stale Admin values, dates, metadata and primitive bypasses | — |
+| Stage 13G-A destinations and discovery | 🕓 SCHEDULED | Central destination registry, grouped More, KO teaser, not-found state and corrected contextual routes | 13G-A |
+| Stage 13G-B tournament comprehension and chronology | 🕓 SCHEDULED | Real-time ordering, By group/By date, canonical rules guide, hardwired-data removal and Euro share assets | 13G-B |
+| Stage 13G-C people, profiles and sharing | 🕓 SCHEDULED | Shared player overview, one-tap invites, static/dynamic previews and synthetic identity preparation | 13G-C |
+| Stage 13G-D seeded whole-surface coherence | 🕓 SCHEDULED | Stage 16 cast, Scotland reference profile, all-screen re-baseline and charter review | 13G-D |
+| Whole-app new-player walk-through | 🕓 SCHEDULED | Owner acceptance after navigating every direct and contextual journey as a casual first-time player | 13G-D |
+
 ## Change log
+
+- **v1.16:** Records the accepted Stage 13G-0 IA map, More strategy and hardwired-data inventory as functional planning contracts. Schedules Stage 13G-A through 13G-D after Stage 13F-K, with Stage 16A seeding interleaved before the final coherence proof. No Stage 13F-K implementation, Stage 16A acceptance or Stage 13P-A row moves.
 
 - **v1.15:** Expanded the scheduled Stage 16A opening batch to include 24 provisional teams, nineteen deterministic synthetic personas, independent phase/correction points assertions, large/tiny/multiple/no-league membership, marker-safe teardown and hosted Euro staging simulation. Added partial acceptance rows for real multi-user persistence, database-aware Time & Phase behaviour and correction recalculation. No Stage 13F-K, Stage 13P-A or Stage 17A row moves.
 

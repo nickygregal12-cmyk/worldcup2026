@@ -1,17 +1,17 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 3.3 — Stage 13F-J insight contract and expanded Stage 16A acceptance plan
+### Version 3.4 — Stage 13G information architecture and coherent UI plan
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
 ## 1. Current return point
 
-- Expected Git commit: `63d7acb` — **Define Euro tournament pick contract**.
+- Expected Git commit: `f7f2fb5` — **Fix Euro deployed verification**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
-- Active migration count before Stage 13F-J: **16**. Migration 017 is the approved read-only player-insight contract for this package.
-- Stages 1–12, 13A–13E, 14, 14B and Stage 13F-0 through Stage 13F-I are accepted.
-- The exact current package is Stage 13F-J from `63d7acb`.
-- Stage 13F-J adds one authorised read RPC and player-facing insight; it changes no scoring rule, prediction contract or admin power.
+- Active migration count: **17**. Migration 017 is applied to Euro staging and is the accepted read-only player-insight contract.
+- Stages 1–12, 13A–13E, 14, 14B and Stage 13F-0 through Stage 13F-J are accepted.
+- The exact current package is Stage 13G-0, a planning-only IA/coherent UI scope contract from `f7f2fb5`, plus one audit-only correction for stale Stage 13D verifier wording.
+- Stage 13F-K remains the next implementation task. Stage 13G-A starts only after Stage 13F-K acceptance.
 - Original and KO Predictor totals remain permanently separate.
 
 ## 2. Existing confirmed product decisions
@@ -87,7 +87,7 @@ The mobile navigation has five fixed positions with Home centred and slightly la
 4. **Leagues**
 5. **More**
 
-KO Predictor is not shown in the primary navigation. More does not need to show KO until at least one Round of 16 fixture is display-ready.
+KO Predictor is not shown in the primary navigation. More contains a deliberate explainer teaser, but the active KO workspace, unresolved fixtures and prediction controls remain unavailable until at least one Round of 16 fixture is display-ready.
 
 ### State 2 — early KO access while Groups remains primary
 
@@ -123,7 +123,7 @@ At this point Groups moves to More under **Group stage review** and remains perm
 - Position 1 begins as **Groups** and becomes **KO** only at the confirmed readiness boundary in Section 6.
 - Position 2 is permanently **Bracket** and always opens the user's original pre-tournament bracket.
 - The Bracket destination never changes, because the original bracket remains important after the group stage as real results score progression points against it.
-- Early KO access is through More only; it never displaces Groups before the full switch.
+- Before early access, More may explain KO Predictor without exposing the workspace. Early active access is through More only and never displaces Groups before the full switch.
 - A knockout fixture is display-ready only when both participant slots are resolved. TBC or partially resolved fixtures are hidden from the early KO list.
 - When Position 1 becomes KO, group-stage access moves to More under **Group stage review** and remains permanently reachable.
 - The switching tab's label, icon and destination change together.
@@ -158,7 +158,7 @@ This is the validated Round of 16 readiness boundary. The switch must not occur 
 
 ### Early KO access before the main switch
 
-Before the full readiness boundary, KO Predictor may become reachable from More as soon as at least one Round of 16 fixture is display-ready.
+Before the full readiness boundary, More carries a non-interactive KO explainer. The active KO Predictor becomes reachable from More as soon as at least one Round of 16 fixture is display-ready.
 
 A fixture is display-ready only when both teams are resolved. During early access:
 
@@ -166,7 +166,7 @@ A fixture is display-ready only when both teams are resolved. During early acces
 - hide every TBC, partially resolved or unresolved fixture;
 - keep Groups in Position 1;
 - keep Bracket permanently in Position 2; and
-- do not present an empty KO destination when no complete fixture is available.
+- do not present an empty KO destination when no complete fixture is available; the earlier More entry remains an explainer only.
 
 ### After the main switch
 
@@ -180,7 +180,7 @@ When all four readiness conditions are satisfied:
 
 ### Required acceptance tests
 
-1. During the group stage with no complete Round of 16 pairing, Position 1 is Groups and KO is absent from More.
+1. During the group stage with no complete Round of 16 pairing, Position 1 is Groups; More shows only the KO explainer and cannot open active prediction controls.
 2. When at least one Round of 16 pairing is complete but the full Round of 16 is not ready, Position 1 remains Groups, More exposes KO Predictor, and only complete fixtures are rendered.
 3. When all group matches are complete but one or more Round of 16 fixtures remain unresolved, Position 1 still remains Groups.
 4. At the exact moment all 36 group results, final standings and all eight Round of 16 pairings are valid, Position 1 changes to KO.
@@ -356,7 +356,29 @@ Binding constraints:
 
 The Share Card decision is settled: the Share Card is the user’s completed bracket rendered from this converging wall-chart layout in the Euro 2028 Predictor identity as a shareable/downloadable image. It must work on every device, including phones, and is not a separate visual design or separate bracket implementation.
 
-**Roadmap owner:** Stage 13P-A, the first polish batch after every Stage 13F functional-completion batch has been accepted. No current Stage 13F scope or sequence changes.
+**Roadmap owner:** Stage 13P-A, the specialised converging-bracket/share-image batch after Stage 13F-K and every Stage 13G coherence batch have been accepted.
+
+## 10B. Stage 13G information architecture and coherent UI pass — CONFIRMED
+
+Stage 13G is one holistic coherence pass, not a collection of page-by-page fixes. The binding question is whether every capability is in the place a casual player expects and is presented through the same shared primitives and anatomy used everywhere else.
+
+Confirmed decisions:
+
+1. The five-position mobile navigation remains Groups/KO, Bracket, Home, Leagues and More. No sixth position is added.
+2. More is phase-aware and deliberately ordered. Before play it leads with Tournament & how to play; during live phases it leads with current competition needs. Admin is separated and authorised only.
+3. Before a display-ready Round of 16 fixture, More may show a KO explainer teaser but not the active workspace, unresolved fixtures or prediction controls. Home gives KO at most modest secondary prominence.
+4. Upcoming matches order by next real kick-off; completed results order most-recent-first. Match Centre previous/next follows chronology, not match number.
+5. Group-stage fixtures support shared By group and By date presentations. By group is the pre-tournament default; By date is the live-tournament default; a manual choice is respected.
+6. Tournament becomes a key destination containing canonical facts, venues, format and a complete casual-player guide for both competitions. Binding values and rules render from versioned contracts/configuration, never copied prose.
+7. Every team name uses `TeamLabel`. Every player name uses one shared player identity activation primitive and opens one authorised overview containing predictions, permanent Original bracket, separate points stories and H2H.
+8. League sharing uses a one-tap copy-link flow. Generic static Open Graph metadata is mandatory. Dynamic per-league title/description using a static Euro image is approved; dynamic image generation is rejected.
+9. Inherited WC26 OG and icon assets are replaced with Euro identity assets. The deferred PWA manifest/service worker do not return before Stage 18C.
+10. Scotland is the seeded reference Team Profile. Stage 13G-D proves curation through Admin and documents Stage 17 data entry for the remaining 23 teams.
+11. Stage 13G is split into 13G-0 documents, 13G-A destinations/discovery, 13G-B tournament comprehension/chronology, 13G-C people/profiles/sharing and 13G-D seeded coherence.
+12. Stage 13F-K completes first. Stage 16A supplies seeded acceptance data after 13G-C. Stage 13G-D and Stage 16A close in the same evidence window. Stage 13P-A begins only after Stage 13G acceptance.
+13. Stage 13G-0 adds no migration. A narrow Stage 13G-C read contract for `is_synthetic` or invite-safe metadata must be proved and separately approved.
+
+The full IA map, More ordering, hardwired-data evidence and batch contract live in `docs/STAGE-13G-0-INFORMATION-ARCHITECTURE-AND-COHERENT-UI-SCOPE.md`.
 
 ## 11. Updated build roadmap
 
@@ -389,7 +411,8 @@ The Share Card decision is settled: the Share Card is the user’s completed bra
 - **13D:** Leagues, results, shared predictions and responsive polish.
 - **13E:** Team Profile Sheet implemented through `<TeamLabel>` with the three-source data boundary and post-lock aggregate gate.
 - **13F:** Functional-completion sequence is 13F-0, 13F-A through 13F-K. Stage 13F-I owns the tournament-pick contract; Stage 13F-J owns player insight and points storytelling; Stage 13F-K owns the complete Admin operations backbone.
-- **13P-A:** First post-13F polish batch: presentation-only converging predicted/live bracket layouts at `≥900px`, with the completed converging bracket rendered as the cross-device Share Card image.
+- **13G:** Holistic information architecture and coherent UI pass: 13G-0 scope, 13G-A destinations, 13G-B tournament comprehension/chronology, 13G-C people/profiles/sharing and 13G-D seeded coherence.
+- **13P-A:** First specialised presentation batch after Stage 13G: converging predicted/live bracket layouts at `≥900px`, with the completed converging bracket rendered as the cross-device Share Card image.
 
 ### Later stages
 
@@ -413,10 +436,9 @@ The Share Card decision is settled: the Share Card is the user’s completed bra
 
 ## 13. Exact next task
 
-Stage 13F-J is the current package built from verified checkpoint `63d7acb`. It adds canonical player insight, privacy-authorised other-player point evidence and read-only Migration 017.
+Stage 13G-0 is the current planning package built from verified checkpoint `f7f2fb5`; it also repairs one stale audit assertion introduced by the accepted deployed-verifier wording. It records the approved IA map, More strategy, hardwired-data inventory, build batches and Stage 16 interleaving.
 
-After its verified clean push, build **Stage 13F-K — Complete Admin Operations Backbone**. Only after every Stage 13F row is accepted may Stage 13P-A begin; Stage 16A remains later.
+After its verified clean push, build **Stage 13F-K — Complete Admin Operations Backbone**. Then build Stage 13G-A through 13G-C, interleave Stage 16A seeding, and close Stage 13G-D/Stage 16A with seeded evidence. Stage 13P-A remains later.
 
-**Starting commit:** `63d7acb`
-**Migration count before installation:** `16`
-**Migration count after accepted Migration 017:** `17`
+**Starting commit:** `f7f2fb5`
+**Migration count before and after Stage 13G-0:** `17`

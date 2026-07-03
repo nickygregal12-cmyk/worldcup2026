@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.14 — Stage 13F-J close-out and expanded Stage 16A acceptance plan
+### Version 4.15 — Stage 13G-0 information architecture and coherent UI scope
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -51,6 +51,8 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 13F-F: Admin Control Room visual rebuild accepted at `369ddfc`.
 - Stage 13F-G: audited staging Time & Phase accepted at `7324d43`; Migration 016 applied.
 - Stage 13F-H: product-root and runtime coherence accepted at `74c8dd3`; 70 test files and 352 tests passed.
+- Stage 13F-I: Original-only tournament-pick contract accepted at `63d7acb`.
+- Stage 13F-J: player insight and points storytelling accepted at `f7f2fb5`; Migration 017 applied; 74 test files and 363 tests passed.
 
 # Delivery sequence
 
@@ -268,9 +270,71 @@ The Stage 13F-J audit, frontend tests, Migration 017 database test, full reposit
 
 The owner can perform every approved launch and live-tournament operation through the Euro control room without exposing Admin to ordinary users or relying on inherited WC26 tooling.
 
+## Stage 13G — Information architecture and coherent UI pass
+
+Stage 13G is one holistic post-functional-completion pass. It is governed by the Project Constitution, Design Charter, Decision Register, Site Access Map and Functional Completion Ledger. Batches are organised by information-architecture area rather than page.
+
+### Stage 13G-0 — IA and scope contract — CURRENT PLANNING PACKAGE FROM `f7f2fb5`
+
+- approve the full destination map and ownership of direct/contextual journeys;
+- approve the lifecycle-specific More strategy and pre-readiness KO teaser;
+- record the hardwired-data inventory with active-file evidence;
+- approve the Stage 13G-A through 13G-D batch structure;
+- position Stage 13G against Stage 13F-K, Stage 16A and Stage 13P-A;
+- approve dynamic per-league preview titles/descriptions using a static Euro image;
+- add no product/runtime code, migration or deployed asset; align one stale Stage 13D audit assertion with the already accepted `f7f2fb5` verifier wording.
+
+### Stage 13G-A — Destinations and discovery
+
+- one central destination registry;
+- grouped phase-aware More sheet;
+- deliberate pre-readiness KO explainer and modest Home treatment;
+- explicit not-found state;
+- corrected Home-to-Results access;
+- designed contextual ownership for Match Centre, Team Profile, Player Overview, H2H and Bracket Health.
+
+No migration is expected.
+
+### Stage 13G-B — Tournament comprehension and match organisation
+
+- real-time chronological match ordering;
+- By group and By date group-stage views using shared match components;
+- By group default before the opening match and By date default once play starts, while respecting manual choice;
+- complete Tournament and how-to-play destination;
+- all binding rules and values rendered from versioned configuration/contracts;
+- remove active development-era hardwired counts, stages, dates and stale environment copy;
+- replace inherited WC26 share/favicon/icon assets with Euro identity assets.
+
+No migration is expected.
+
+### Stage 13G-C — People, profiles and sharing
+
+- every player name uses one shared activation primitive;
+- one authorised player overview owns predictions, Original bracket, separate points stories and H2H;
+- one-tap league invite links with confirmation state;
+- static Open Graph preview minimum and approved dynamic per-league title/description;
+- prepare privacy-safe synthetic identity output for Stage 16A.
+
+Any narrow read-contract migration for `is_synthetic` or invite-safe metadata must be proved and separately approved.
+
+### Stage 13G-D — Seeded proof and whole-surface coherence
+
+- consume the Stage 16A seeded cast;
+- populate Scotland through the completed Admin curation workflow;
+- document the Stage 17 procedure for the other 23 teams;
+- exercise every lifecycle-specific More state, player context and invite preview;
+- re-baseline every active screen in both themes;
+- complete the screen-by-screen charter review and owner new-player walk-through.
+
+Stage 13G-D and Stage 16A close in the same evidence window but move their ledger rows independently.
+
+### Stage 13G completion gate
+
+Every destination has an intentional home, all shared identities and match anatomies are coherent, no active hardwired presentation value can drift from its canonical source, seeded multi-user journeys pass, and the owner accepts the app while walking it as a new casual player.
+
 ## Stage 13P-A — Converging wall-chart bracket and Share Image
 
-This is the first polish batch after every Stage 13F functional-completion batch has been accepted. No incomplete Stage 13F work may be deferred into this batch.
+This specialised presentation batch begins only after Stage 13F-K and every Stage 13G batch have been accepted. No incomplete functional or coherence work may be deferred into it.
 
 - Add a classic converging wall-chart layout to the existing Original predicted bracket and live bracket destinations.
 - At widths of `≥900px`, place Round of 16 ties on the outer left and right, quarter-finals and semi-finals converging inward, and the final in the centre.
@@ -399,7 +463,7 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-After Stage 13F-J is verified, committed and pushed from checkpoint `63d7acb`, the exact next task is Stage 13F-K — Complete Admin Operations Backbone. Stage 13P-A and Stage 16A must not begin early.
+From verified checkpoint `f7f2fb5`, install and accept the Stage 13G-0 planning scope package. The next implementation task remains Stage 13F-K — Complete Admin Operations Backbone. Stage 13G-A, Stage 16A seeding and Stage 13P-A must not begin early.
 
 ### Stage 13F-H acceptance
 

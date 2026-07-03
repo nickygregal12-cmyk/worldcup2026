@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.8 — converging bracket and share-image decision recorded
+### Version 1.9 — information architecture and coherent UI contract recorded
 
 > **Authority:** This document governs how the Euro 2028 Predictor looks and feels. The Consolidated Decision Register governs product rules. The Agent Rules govern build process. A visual deviation must be proposed here before it ships.
 
@@ -25,6 +25,8 @@ Changing the future palette must mean editing that token file and updating this 
 5. **Predicted and live contexts stay distinct.** The UI must never visually blend the original predicted bracket with the live bracket or KO Predictor.
 6. **Light and dark are first-class.** Both themes use the same semantic tokens and component rules.
 7. **Accessible by default.** WCAG AA contrast, visible focus, semantic HTML, labelled inputs and reduced-motion support.
+8. **Everything has a designed home.** No capability is attached to an arbitrary page because it lacks an information-architecture owner.
+9. **Shared identities behave the same everywhere.** Team and player names use one activation primitive each; screens do not invent local alternatives.
 
 ## 3. Token architecture — CONFIRMED
 
@@ -78,7 +80,10 @@ Mobile uses five positions with Home centred, slightly larger and raised above t
 
 - Groups remains Position 1.
 - Bracket remains Position 2.
-- KO Predictor is absent from More.
+- The active KO workspace is unavailable.
+- More contains a deliberate KO explainer teaser describing what the separate competition is and when it opens.
+- The teaser contains no unresolved fixtures, score inputs or false access.
+- Home gives KO at most modest secondary prominence and does not let it compete with the Original Predictor.
 
 ### State 2 — early KO access
 
@@ -106,6 +111,17 @@ After the switch:
 
 The lifecycle is driven by central competition readiness and canonical resolver state, never a hardcoded calendar date inside a component. Desktop navigation preserves the same distinction.
 
+### More curation — CONFIRMED
+
+More is grouped and phase-aware rather than a flat accumulation list.
+
+- Before the tournament: Tournament & how to play, Results, Leaderboards, KO explainer, Account, Appearance, then authorised Admin.
+- During the group stage: Results, Leaderboards, Tournament & how to play, KO explainer, Account, Appearance, then authorised Admin.
+- Early KO access: KO Predictor first, then Results, Leaderboards, Tournament & how to play, Account, Appearance and authorised Admin.
+- Full KO readiness: Group stage review first, then Results, Leaderboards, Tournament & how to play, Account, Appearance and authorised Admin.
+
+Admin is visually separated and never appears for an unauthorised user.
+
 ## 8. Icons — CONFIRMED
 
 **Lucide** is the single source for ordinary interface icons. It provides consistent SVG line icons while allowing only used icons into the production bundle.
@@ -127,6 +143,8 @@ Every shared component supports both themes and its loading, empty, error, disab
 - Badges: icon plus label; status colour is never the only signal.
 - Dialogs and sheets: focus trapped, Escape closes, focus restored, background scroll locked; mobile uses bottom sheets.
 - Loading, empty, error and partial-failure states are designed rather than improvised.
+- Any player name uses the shared player identity activation primitive and opens the same authorised overview.
+- League invite copy uses one shared action with copied, failed and retry states.
 - The Stage 13B score input will use a mobile numeric keypad, clear saved/saving state and an unmistakable read-only locked state.
 
 ## 10. Football conventions — CONFIRMED
@@ -137,6 +155,19 @@ Every shared component supports both themes and its loading, empty, error, disab
 - A joker is shown with the reserved joker treatment.
 - Predicted and live bracket screens carry different context banners.
 - Original Predictor and KO Predictor leaderboards remain visual siblings but never display a combined score.
+- Upcoming playable/viewable matches order by next real kick-off. Completed results order most-recent-first.
+- Group-stage fixtures support By group and By date views using the same match-card primitive.
+- Tournament rules and displayed point values render from central versioned contracts/configuration rather than duplicated prose.
+
+### 10A. Information architecture and coherent surfaces — CONFIRMED
+
+- Direct destinations own complete user intentions; contextual surfaces remain attached to the object that opens them.
+- Match Centre, Team Profile, Player Overview, H2H and Bracket Health do not become unrelated permanent navigation items.
+- Unknown routes use an explicit recovery state rather than silently pretending to be Home.
+- Destination labels, descriptions, categories and lifecycle visibility live in one registry.
+- Tournament is a key casual-player destination, not a technical summary page.
+- Static Open Graph metadata uses Euro identity assets. Dynamic league previews may expose only the league name and generic product copy.
+- Every Stage 13G build batch re-baselines affected screens at 380, 768 and 1200 pixels in both themes.
 
 ## 11. Frontend architecture and enforcement — CONFIRMED
 
@@ -249,6 +280,7 @@ The staging preview remains the sign-off surface for future palette refinements.
 
 ## Change log
 
+- **v1.9:** Approved the holistic Stage 13G information architecture, phase-aware More strategy, KO teaser, real-time match ordering, shared group views, canonical rules guide, global player identity activation, league invite previews and seeded coherence acceptance.
 - **v1.0:** Fresh identity proposed; green/lime palette and typography provisional.
 - **v1.1:** Blue direction confirmed; colours centralised and intentionally adjustable; app name confirmed; five-position navigation fixed; Lucide and typography confirmed.
 - **v1.3:** Made Bracket permanent and reversed the phase-aware destination so Groups becomes KO.

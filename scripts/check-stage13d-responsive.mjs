@@ -47,8 +47,8 @@ const deployedVerifier = read('scripts/verify-euro28-foundation-page.mjs')
 for (const marker of [
   'Stage 13D leagues, shared predictions',
   'Compare with member',
-  'Original Predictor breakdown',
-  'KO Predictor breakdown',
+  'Original bracket progression',
+  'Advancing teams',
 ]) {
   if (!deployedVerifier.includes(marker)) fail(`The deployed Stage 13D verifier is missing: ${marker}`)
 }
