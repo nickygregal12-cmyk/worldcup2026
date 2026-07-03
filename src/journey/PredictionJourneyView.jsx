@@ -2,6 +2,7 @@ import { PredictionStateBadge } from '../design-system/index.jsx'
 import GuestAccountPrompt from '../guest/GuestAccountPrompt.jsx'
 import { hasActivePredictionGrace } from '../grace/index.js'
 import OriginalBracket from './OriginalBracket.jsx'
+import { OriginalBracketHealth } from '../bracketHealth/index.js'
 import GroupsPredictor from './GroupsPredictor.jsx'
 import PredictionReview from './PredictionReview.jsx'
 import { EURO28_PREDICTION_JOURNEY_VERSION, PREDICTION_AUTOSAVE_STATE, PREDICTION_JOURNEY_VIEW } from './predictionJourneyConfig.js'
@@ -43,7 +44,7 @@ export default function PredictionJourneyView({
   reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
   accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
   view, setView, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
-  updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, notice,
+  updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, notice, liveBracketState,
 }) {
   return (
     <section className="foundation-panel prediction-journey" aria-labelledby="prediction-journey-title">
@@ -158,6 +159,15 @@ export default function PredictionJourneyView({
                 graceWindows={graceWindows}
                 onChange={updateBracket}
               />
+              {(locked || reviewMode) && summary.bracketComplete > 0 && (
+                <OriginalBracketHealth
+                  reference={reference}
+                  preview={summary.preview}
+                  liveSnapshot={liveBracketState?.snapshot ?? null}
+                  status={liveBracketState?.status ?? 'unavailable'}
+                  error={liveBracketState?.error ?? null}
+                />
+              )}
             </>
           )}
 

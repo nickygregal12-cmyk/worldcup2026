@@ -33,7 +33,7 @@
 | Head-to-head comparison | ✅ FUNCTIONAL | League and overall tables open one shared, competition-scoped surface aligning all 51 Original positions or all 15 KO fixtures with same/different/private/not-saved states | — |
 | Tappable player identity | ✅ FUNCTIONAL | One accessible `PlayerIdentity` primitive is used by league standings, overall leaderboards and comparison headers; self identity remains non-interactive | — |
 | Match Centre/per-match stats | ✅ FUNCTIONAL | Dedicated fixture route, previous/next navigation, canonical state, Home/Results entry, separate Original/KO views, Overall/private-league scopes, community distribution and points-on-the-line rows accepted in Stage 13F-C | — |
-| Bracket Health | ❌ MISSING | No alive/dead path and remaining-points view | 13F-D |
+| Bracket Health | ✅ FUNCTIONAL | Immutable Original bracket compared with canonical known fixtures, round health, route conflicts, secured/remaining points, unresolved-original fallback and Match Centre links accepted in Stage 13F-D | — |
 | Extra tournament picks | 🕓 SCHEDULED | Original Predictor feature; final list/values still require approval | 13F-I/17A |
 | Player insight and points storytelling | 🕓 SCHEDULED | Canonical points-source breakdown, performance statistics and expandable comparisons; Original and KO totals remain separate and Stage 13F-B identity/H2H primitives are reused | 13F-J |
 | Converging wall-chart bracket layout (≥900px) + share-card image rendering | 🕓 SCHEDULED | Presentation-only second layout of the existing predicted and live bracket destinations. At ≥900px, Round of 16 ties sit on the outer left and right, with quarter-finals and semi-finals converging towards the centred final. Phones retain the current vertical bracket. Both layouts use the same canonical resolver, slot references, shared `<TeamLabel>` primitive and dashed unresolved-slot chips. Predicted and live contexts remain separately bannered and never blend. The share asset is this wall-chart layout rendered as a shareable/downloadable image. No new logic, data model, migration or invariant change. | 13P-A |
@@ -112,3 +112,4 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 - **v1.4:** Separated Results from Leaderboards, added direct competition-specific Home access, adopted the site-access contract and retained Admin invisibility as a separate unresolved row.
 
 - **v1.7:** Stage 13F-C adds the dedicated Euro Match Centre and closes the per-match information gap without a migration or privacy change.
+- **v1.8:** Stage 13F-D adds immutable Original Bracket Health comparison against canonical known fixtures, with unresolved-original fallback and Match Centre access, without a migration or scoring change.

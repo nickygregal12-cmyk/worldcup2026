@@ -14,6 +14,7 @@ export const ACTIVE_UI_ROOTS = Object.freeze([
   'src/grace',
   'src/results',
   'src/matchCentre',
+  'src/bracketHealth',
   'src/player',
   'src/teamProfile',
   'src/observability',

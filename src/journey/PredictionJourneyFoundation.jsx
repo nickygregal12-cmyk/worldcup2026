@@ -7,6 +7,7 @@ import { PREDICTION_AUTOSAVE_DELAY_MS, PREDICTION_AUTOSAVE_STATE, PREDICTION_JOU
 import { buildPredictionJourneyRows, clearStaleBracketSelections, createPredictionJourneyDraft, summarisePredictionJourney, updatePredictionJourneyGroup, updatePredictionJourneyBracket } from './predictionJourneyModel.js'
 import { applyEuroLuckyDip } from './euroLuckyDip.js'
 import PredictionJourneyView from './PredictionJourneyView.jsx'
+import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { browserStorage, messageForError, readGuestReview, writeGuestReview } from './predictionJourneyRuntime.js'
 
 export default function PredictionJourneyFoundation({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, fixtureDraft = null }) {
@@ -34,6 +35,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState(null)
   const [activeGroupMatchNumber, setActiveGroupMatchNumber] = useState(null)
+  const [liveBracketState, setLiveBracketState] = useState(() => ({ status: client ? 'loading' : 'unavailable', snapshot: null, error: null }))
   const savingRef = useRef(false)
 
   const signedIn = Boolean(session?.user)
@@ -106,6 +108,20 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
       data.subscription.unsubscribe()
     }
   }, [client, loadAccount])
+
+
+  useEffect(() => {
+    if (!client) return undefined
+    let active = true
+    loadCanonicalTournamentSnapshot(client, reference)
+      .then(snapshot => {
+        if (active) setLiveBracketState({ status: 'ready', snapshot, error: null })
+      })
+      .catch(error => {
+        if (active) setLiveBracketState({ status: 'error', snapshot: null, error: messageForError(error) })
+      })
+    return () => { active = false }
+  }, [client, reference])
 
   const saveAccount = useCallback(async ({ submitted, targetVersion, draftSnapshot }) => {
     if (!client || !session?.user || savingRef.current) return null
@@ -327,7 +343,7 @@ export default function PredictionJourneyFoundation({ client, reference, tournam
         reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
         accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
         view, setView, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
-        updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, notice,
+        updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, notice, liveBracketState,
       }}
     />
   )

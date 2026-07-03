@@ -158,7 +158,16 @@ The route, canonical fixture state, direct entry points, competition separation,
 - saved winner still alive where an exact fixture route has changed;
 - route-conflict explanations when predicted teams must meet early;
 - completed-result survival cards in plain English;
-- predicted/live contexts remain distinct.
+- the locked prediction remains immutable and is never rewritten by results;
+- when both real participants are canonically known, the real fixture becomes the comparison context while the original pick remains visible;
+- every known real knockout fixture links to Match Centre for league and points impact;
+- unresolved future fixtures continue to show the user’s original predicted matchup;
+- Original and live bracket states remain independently resolved even when displayed together for comparison;
+- no new bracket logic, data model, RPC, migration or scoring invariant.
+
+### Completion gate
+
+Prediction immutability, real-fixture comparison, unresolved-original fallback, round health, route conflicts, secured/remaining points and Match Centre access move together. A comparison view must never mutate or masquerade as the saved Original bracket.
 
 ## Stage 13F-E — Admin invisibility
 
@@ -309,4 +318,4 @@ Staging owner access remains restricted and documented.
 
 ## Next single task
 
-Install and accept Stage 13F-C, then begin Stage 13F-D Original Bracket Health.
+Install and accept Stage 13F-D, then begin Stage 13F-E Admin invisibility.

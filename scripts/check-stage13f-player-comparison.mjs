@@ -71,7 +71,7 @@ const roadmap = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
 for (const marker of [
   '## Stage 13F-B — Player identity and complete H2H',
   '## Stage 13P-A — Converging wall-chart bracket and Share Image',
-  'Install and accept Stage 13F-C, then begin Stage 13F-D Original Bracket Health.',
+  'Install and accept Stage 13F-D, then begin Stage 13F-E Admin invisibility.',
 ]) if (!roadmap.includes(marker)) fail(`Roadmap is missing: ${marker}`)
 
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')

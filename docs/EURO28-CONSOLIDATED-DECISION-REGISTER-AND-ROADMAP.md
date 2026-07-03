@@ -349,3 +349,7 @@ Stage 13C is the current frontend-only batch built from verified Stage 13B commi
 
 **Starting commit:** `78882dd`
 **Migration count:** `14`
+
+### Stage 13F-D clarification — Original bracket comparison
+
+The user’s saved Original bracket is immutable after lock. Canonical live results may be displayed beside it for comparison but may never rewrite, advance or replace the saved prediction. Once both real participants in a knockout fixture are known, that real fixture becomes the comparison context and receives Match Centre access; until then, the user’s original predicted matchup remains visible. Original and live brackets remain independently resolved data contexts, even when presented together.
