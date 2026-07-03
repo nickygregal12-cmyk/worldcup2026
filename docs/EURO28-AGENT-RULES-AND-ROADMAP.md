@@ -570,3 +570,8 @@ From checkpoint `08524b6`, install the first Stage 13G-B slice. It must keep dat
 ### Stage 13G-B prediction lifecycle slice
 
 From checkpoint `1dda826`, the second Stage 13G-B slice aligns the active prediction surfaces with the central lifecycle model. Original Predictor now shows lock, group-score, winner-only bracket and KO-boundary lifecycle cards. KO Predictor now shows real-fixture readiness and a separate-competition lifecycle strip. The slice adds `audit:prediction-lifecycle` to `npm run check`, keeps active migrations at 18 and adds no Migration 019.
+
+
+### Stage 13G-B Results lifecycle alignment
+
+The Results, Leaderboards and Match Centre surfaces must consume central tournament lifecycle state and canonical result/fixture state rather than hard-coded phase copy. Original Predictor and KO Predictor leaderboard copy must remain competition-scoped. Match Centre must not reveal unresolved KO fixtures early and must preserve existing prediction privacy gates. `audit:results-lifecycle` is part of `npm run check`. No database change or Migration 019 belongs to this slice.

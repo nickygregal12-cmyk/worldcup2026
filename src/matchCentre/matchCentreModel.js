@@ -77,6 +77,56 @@ function fixtureFromMatch(reference, liveSnapshot, match) {
   })
 }
 
+
+export function buildMatchCentreLifecycle({ fixture, competitionKey, lifecycle }) {
+  if (!fixture) {
+    return Object.freeze({ tone: 'info', title: 'Match Centre is preparing', body: 'Fixture context will appear once the tournament reference has loaded.' })
+  }
+  const isKo = Number(fixture.matchNumber) > 36
+  const competitionLabel = competitionKey === RESULT_COMPETITION.KO_PREDICTOR ? 'KO Predictor' : 'Original Predictor'
+
+  if (fixture.state === 'live') {
+    return Object.freeze({
+      tone: 'danger',
+      title: 'This fixture is live',
+      body: `${competitionLabel} selections use the current fixture release rules while canonical scores remain separate from prediction totals.`,
+    })
+  }
+  if (fixture.state === 'review') {
+    return Object.freeze({
+      tone: 'warning',
+      title: 'Result review is active',
+      body: 'Scores may be visible, but scoring should wait for the confirmed or corrected canonical result.',
+    })
+  }
+  if (fixture.state === 'completed') {
+    return Object.freeze({
+      tone: 'safe',
+      title: 'Fixture completed',
+      body: 'Confirmed result context and maximum points are shown without combining Original and KO Predictor totals.',
+    })
+  }
+  if (isKo && !fixture.participantsResolved) {
+    return Object.freeze({
+      tone: 'info',
+      title: 'Knockout participants are not known yet',
+      body: 'The KO Predictor remains separate and only opens for this match once the real fixture is resolved.',
+    })
+  }
+  if (!lifecycle?.started) {
+    return Object.freeze({
+      tone: 'info',
+      title: 'Fixture is scheduled',
+      body: 'Match Centre is ready, but prediction visibility still follows the central tournament lifecycle and privacy gates.',
+    })
+  }
+  return Object.freeze({
+    tone: 'info',
+    title: 'Fixture is waiting for kick-off',
+    body: 'Community selections and points context will update when the fixture reaches the relevant release state.',
+  })
+}
+
 export function buildMatchCentreNavigation({ reference, liveSnapshot, matchNumber }) {
   if (!reference?.tournamentId) throw new TypeError('A Euro tournament reference is required')
   const all = [...reference.groupMatches, ...reference.knockoutMatches]

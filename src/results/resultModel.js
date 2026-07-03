@@ -9,6 +9,112 @@ export const RESULT_COMPETITION = Object.freeze({
   KO_PREDICTOR: 'ko_predictor',
 })
 
+
+const RESULT_LIFECYCLE_STATE = Object.freeze({
+  PRE_TOURNAMENT: 'pre_tournament',
+  LIVE: 'live',
+  REVIEW: 'review',
+  COMPLETED: 'completed',
+  QUIET: 'quiet',
+})
+
+function summariseResultRows(liveSnapshot) {
+  const results = liveSnapshot?.results ?? []
+  return {
+    liveMatches: results.filter(result => LIVE_STATUSES.has(result.status)).length,
+    reviewMatches: results.filter(result => ['manual_review', 'pending'].includes(result.resultStatus) && result.scoreVisible).length,
+    confirmedMatches: results.filter(result => result.confirmed).length,
+  }
+}
+
+export function buildResultsLifecycle({ lifecycle, liveSnapshot }) {
+  const summary = summariseResultRows(liveSnapshot)
+  const started = Boolean(lifecycle?.started) || summary.liveMatches > 0 || summary.confirmedMatches > 0
+  const complete = Boolean(liveSnapshot?.summary?.confirmedMatches >= 51)
+  const state = summary.liveMatches > 0
+    ? RESULT_LIFECYCLE_STATE.LIVE
+    : summary.reviewMatches > 0
+      ? RESULT_LIFECYCLE_STATE.REVIEW
+      : complete
+        ? RESULT_LIFECYCLE_STATE.COMPLETED
+        : started
+          ? RESULT_LIFECYCLE_STATE.QUIET
+          : RESULT_LIFECYCLE_STATE.PRE_TOURNAMENT
+
+  const copy = {
+    [RESULT_LIFECYCLE_STATE.PRE_TOURNAMENT]: {
+      tone: 'info',
+      title: 'Results open when the tournament starts',
+      body: 'Fixtures are ready, but scores, live tables and the live bracket stay quiet until canonical result records arrive.',
+    },
+    [RESULT_LIFECYCLE_STATE.LIVE]: {
+      tone: 'danger',
+      title: 'Live results are moving now',
+      body: 'The feed, tables and Match Centre use canonical live records only. Predictions remain in their own competition contexts.',
+    },
+    [RESULT_LIFECYCLE_STATE.REVIEW]: {
+      tone: 'warning',
+      title: 'Some scores need confirmation or review',
+      body: 'Visible scores remain separate from final scoring until the result status is confirmed or corrected by Admin.',
+    },
+    [RESULT_LIFECYCLE_STATE.COMPLETED]: {
+      tone: 'safe',
+      title: 'Tournament results are complete',
+      body: 'All canonical results have been confirmed. Corrections still show their revision trail where applicable.',
+    },
+    [RESULT_LIFECYCLE_STATE.QUIET]: {
+      tone: 'info',
+      title: 'No match is live right now',
+      body: 'Confirmed results remain visible and the next unresolved fixture stays available through Match Centre.',
+    },
+  }
+
+  return Object.freeze({
+    state,
+    tone: copy[state].tone,
+    title: copy[state].title,
+    body: copy[state].body,
+    liveMatches: summary.liveMatches,
+    reviewMatches: summary.reviewMatches,
+    confirmedMatches: summary.confirmedMatches,
+  })
+}
+
+export function buildLeaderboardLifecycle({ competitionKey, lifecycle, leaderboardRows = [], points }) {
+  if (!Object.values(RESULT_COMPETITION).includes(competitionKey)) throw new TypeError('Unsupported leaderboard competition')
+  const isKo = competitionKey === RESULT_COMPETITION.KO_PREDICTOR
+  const scoredRows = leaderboardRows.filter(row => Number(row.scoredMatchCount ?? 0) > 0 || Number(row.totalPoints ?? 0) > 0).length
+  const hasScored = scoredRows > 0 || Number(points?.scoredMatchCount ?? 0) > 0 || Number(points?.totalPoints ?? 0) > 0
+  const preStart = !lifecycle?.started && !hasScored
+  const locked = Boolean(lifecycle?.locked)
+
+  if (preStart) {
+    return Object.freeze({
+      tone: 'info',
+      title: isKo ? 'KO leaderboard waits for real knockout fixtures' : 'Leaderboard waits for scored results',
+      body: isKo ? 'The KO Predictor table remains empty until real knockout matches are known and scored.' : 'Original Predictor standings will start once canonical results produce points.',
+      scoredRows,
+      locked,
+    })
+  }
+  if (!hasScored) {
+    return Object.freeze({
+      tone: 'warning',
+      title: 'No points have been awarded yet',
+      body: 'The table is visible, but scoring only appears after confirmed result records are processed.',
+      scoredRows,
+      locked,
+    })
+  }
+  return Object.freeze({
+    tone: 'safe',
+    title: isKo ? 'KO Predictor standings are separate' : 'Original Predictor standings are live',
+    body: isKo ? 'Only real knockout match predictions feed this table.' : 'Group scores and the original pre-tournament bracket feed this table.',
+    scoredRows,
+    locked,
+  })
+}
+
 function freezeRows(rows) {
   return Object.freeze(rows.map(row => Object.freeze(row)))
 }

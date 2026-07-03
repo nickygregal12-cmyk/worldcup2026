@@ -152,6 +152,7 @@ export default function App() {
           requestedMatchNumber={matchCentre.matchNumber}
           initialCompetition={matchCentre.competition}
           initialLeagueId={matchCentre.leagueId}
+          lifecycle={lifecycle}
         />
       </div>
     )
@@ -159,7 +160,7 @@ export default function App() {
     content = (
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Live tournament" title="Results" description="Canonical scores, live group tables and the live knockout bracket." />
-        <ResultsAndLeaderboards view="results" client={activeClient} reference={appData.guestReference} />
+        <ResultsAndLeaderboards view="results" client={activeClient} reference={appData.guestReference} lifecycle={lifecycle} />
       </div>
     )
   } else if (route === APP_ROUTE.LEADERBOARDS) {
@@ -171,6 +172,7 @@ export default function App() {
           initialCompetition={leaderboardCompetitionFromHash(hashLocation.hash)}
           client={activeClient}
           reference={appData.guestReference}
+          lifecycle={lifecycle}
         />
       </div>
     )

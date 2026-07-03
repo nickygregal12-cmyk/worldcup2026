@@ -1,8 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react' // eslint-disable-line no-unused-vars
-import { LinkButton, Tabs } from '../design-system/index.jsx'
+import { LinkButton, StatusBar, Tabs } from '../design-system/index.jsx'
 import { LEADERBOARD_COMPETITION } from '../app/appRoutes.js'
 import { loadOverallHeadToHead, loadResultsAndLeaderboards } from './resultService.js'
-import { buildCanonicalResultFeed, buildLiveBracketRounds, RESULT_COMPETITION } from './resultModel.js'
+import { buildCanonicalResultFeed, buildLeaderboardLifecycle, buildLiveBracketRounds, buildResultsLifecycle, RESULT_COMPETITION } from './resultModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { GroupTable, Leaderboard, LiveBracket, ResultsFeed, SectionError } from './ResultsPresentation.jsx'
 import { buildStandingComparison } from '../leagues/leagueModel.js'
@@ -19,7 +19,7 @@ function AccessSwitcher({ view }) {
   )
 }
 
-export default function ResultsAndLeaderboards({ client, reference, view = RESULTS_PAGE_VIEW.RESULTS, initialCompetition = LEADERBOARD_COMPETITION.ORIGINAL }) {
+export default function ResultsAndLeaderboards({ client, reference, lifecycle, view = RESULTS_PAGE_VIEW.RESULTS, initialCompetition = LEADERBOARD_COMPETITION.ORIGINAL }) {
   const [state, setState] = useState({ status: 'loading', data: null, error: null })
   const [comparison, setComparison] = useState(null)
   const [competitionKey, setCompetitionKey] = useState(initialCompetition)
@@ -56,6 +56,7 @@ export default function ResultsAndLeaderboards({ client, reference, view = RESUL
   const groups = useMemo(() => Object.entries(state.data?.live?.groups ?? {}), [state.data])
   const feed = useMemo(() => buildCanonicalResultFeed({ reference, liveSnapshot: state.data?.live }), [reference, state.data])
   const bracketRounds = useMemo(() => buildLiveBracketRounds({ reference, liveSnapshot: state.data?.live }), [reference, state.data])
+  const resultsLifecycle = useMemo(() => buildResultsLifecycle({ lifecycle, liveSnapshot: state.data?.live }), [lifecycle, state.data])
 
   const compareOverall = async (row, requestedCompetitionKey) => {
     if (!state.data?.currentUserId) return
@@ -115,7 +116,13 @@ export default function ResultsAndLeaderboards({ client, reference, view = RESUL
   const selectedLeaderboard = selectedIsOriginal ? state.data?.sections.originalLeaderboard : state.data?.sections.koLeaderboard
   const selectedPoints = selectedIsOriginal ? state.data?.sections.originalPoints : state.data?.sections.koPoints
   const resultCompetitionKey = selectedIsOriginal ? RESULT_COMPETITION.ORIGINAL : RESULT_COMPETITION.KO_PREDICTOR
-  const selectedLeaderboardRows = selectedLeaderboard?.data ?? []
+  const selectedLeaderboardRows = useMemo(() => selectedLeaderboard?.data ?? [], [selectedLeaderboard])
+  const selectedLeaderboardLifecycle = useMemo(() => buildLeaderboardLifecycle({
+    competitionKey: resultCompetitionKey,
+    lifecycle,
+    leaderboardRows: selectedLeaderboardRows,
+    points: selectedPoints?.data,
+  }), [lifecycle, resultCompetitionKey, selectedLeaderboardRows, selectedPoints])
   const selectedCurrentPlayer = selectedLeaderboardRows.find(row => row.userId === state.data?.currentUserId) ?? {
     userId: state.data?.currentUserId ?? null,
     displayName: selectedPoints?.data?.displayName ?? 'You',
@@ -143,6 +150,7 @@ export default function ResultsAndLeaderboards({ client, reference, view = RESUL
 
       {state.data && !isLeaderboards && (
         <>
+          <StatusBar tone={resultsLifecycle.tone} title={resultsLifecycle.title}>{resultsLifecycle.body}</StatusBar>
           <SectionError section={state.data.sections.live} fallback="Canonical results could not be loaded." />
           {summary && (
             <div className="foundation-result-summary">
@@ -189,6 +197,7 @@ export default function ResultsAndLeaderboards({ client, reference, view = RESUL
               onChange={selectCompetition}
             />
           </div>
+          <StatusBar tone={selectedLeaderboardLifecycle.tone} title={selectedLeaderboardLifecycle.title}>{selectedLeaderboardLifecycle.body}</StatusBar>
           <div className={styles.singleColumn}>
             <Leaderboard
               title={selectedIsOriginal ? 'Original Predictor' : 'KO Predictor'}

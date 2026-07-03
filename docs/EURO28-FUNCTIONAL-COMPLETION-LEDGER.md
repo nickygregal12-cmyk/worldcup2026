@@ -124,6 +124,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | In-tournament today's-matches hub | ✅ FUNCTIONAL | Home now owns a Today’s match hub that promotes live or next fixture context into Match Centre without presenting missing results as final. | — |
 | Predicted group standings | ❌ MISSING | Complete shared predicted tables are not available in the approved Groups journey. | 13G-C |
 | Shared third-place table | ❌ MISSING | One canonical predicted/live third-place presentation is not used wherever standings appear. | 13G-C |
+| Results, leaderboards and Match Centre lifecycle alignment | ✅ FUNCTIONAL | Results, Leaderboards and Match Centre now consume central lifecycle state plus canonical result/fixture state through `audit:results-lifecycle`; no competitions are combined. | — |
 | Central KO-readiness signal | 🟠 PARTIAL | Home now exposes a single KO readiness model for its own surface. Navigation and Leagues still need to consume the same signal in a later Stage 13G-B/C slice. | 13G-B |
 | PlayerIdentity whole-product coverage | 🟠 PARTIAL | Shared identity exists but not every rendered player name uses it. | 13G-D |
 | PlayerInsight as sole detailed-points surface | 🟠 PARTIAL | The shared model exists, but duplicate/local detail surfaces remain to be retired. | 13G-D |
@@ -156,6 +157,9 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Whole-app new-player walk-through | 🕓 SCHEDULED | Owner acceptance after navigating every direct and contextual journey as a casual first-time player | 13G-D |
 
 ## Change log
+
+- **v1.27:** Stage 13G-B Results lifecycle alignment slice from `177605b` adds central lifecycle banners to Results, competition-scoped lifecycle copy to Leaderboards, fixture-level lifecycle copy to Match Centre and `audit:results-lifecycle` in `npm run check`. No database change and no Migration 019.
+
 
 - **v1.26:** Stage 13G-B prediction lifecycle slice from `1dda826` adds Original Predictor lifecycle cards, KO Predictor real-fixture readiness, central tournament lifecycle input on the KO route and `audit:prediction-lifecycle` in `npm run check`. No database change and no Migration 019.
 

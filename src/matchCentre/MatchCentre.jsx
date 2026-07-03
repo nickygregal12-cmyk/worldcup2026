@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Badge, Button, Card, LinkButton, PlayerIdentity, SelectField, StatusBar, Tabs, TeamLabel } from '../design-system/index.jsx'
 import { RESULT_COMPETITION } from '../results/resultModel.js'
+import { buildMatchCentreLifecycle } from './matchCentreModel.js'
 import { loadMatchCentre } from './matchCentreService.js'
 import styles from './MatchCentre.module.css'
 
@@ -85,7 +86,7 @@ function PlayerLine({ line }) {
   )
 }
 
-export default function MatchCentre({ client, reference, requestedMatchNumber = null, initialCompetition = RESULT_COMPETITION.ORIGINAL, initialLeagueId = null }) {
+export default function MatchCentre({ client, reference, lifecycle, requestedMatchNumber = null, initialCompetition = RESULT_COMPETITION.ORIGINAL, initialLeagueId = null }) {
   const [competitionKey, setCompetitionKey] = useState(initialCompetition)
   const [leagueId, setLeagueId] = useState(initialLeagueId ?? 'overall')
   const [state, setState] = useState({ status: 'loading', data: null, error: null })
@@ -105,6 +106,11 @@ export default function MatchCentre({ client, reference, requestedMatchNumber = 
   const data = state.data
   const currentMatchNumber = data?.navigation?.current?.matchNumber ?? requestedMatchNumber
   const scopeOptions = useMemo(() => data?.scopes ?? [], [data])
+  const matchLifecycle = useMemo(() => buildMatchCentreLifecycle({
+    fixture: data?.navigation?.current,
+    competitionKey,
+    lifecycle,
+  }), [competitionKey, data, lifecycle])
 
   if (state.status === 'loading' && !data) return <div className={styles.loading} role="status">Loading Match Centre…</div>
   if (state.status === 'error') return <StatusBar tone="danger" title="Match Centre could not load" action={<Button variant="secondary" size="small" icon="refresh" onClick={load}>Try again</Button>}>{state.error}</StatusBar>
@@ -117,6 +123,7 @@ export default function MatchCentre({ client, reference, requestedMatchNumber = 
       </nav>
       {!data.navigation.requestedFound && <StatusBar tone="warning" title="Requested fixture was not found">Showing Match {currentMatchNumber} instead.</StatusBar>}
       <FixtureHero fixture={data.navigation.current} />
+      <StatusBar tone={matchLifecycle.tone} title={matchLifecycle.title}>{matchLifecycle.body}</StatusBar>
 
       <Card className={styles.controls} as="section">
         <Tabs label="Match Centre competition" value={competitionKey} options={COMPETITION_OPTIONS} onChange={value => { setCompetitionKey(value); setLeagueId('overall') }} />

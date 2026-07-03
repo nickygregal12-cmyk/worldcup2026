@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { buildGuestReference } from '../../guest/__tests__/fixtures.js'
 import {
   buildCanonicalResultFeed,
+  buildLeaderboardLifecycle,
   buildLiveBracketRounds,
+  buildResultsLifecycle,
   buildLiveTournamentSnapshot,
   mapStoredDecisionMethod,
   normaliseCanonicalResult,
@@ -122,4 +124,33 @@ describe('Stage 13D result model', () => {
     expect(points.matchBreakdown[0]).toMatchObject({ matchNumber: 1, jokerBonus: 10, corrected: true })
     expect(points.bracketBreakdown[0].teamLabel).toBe('Group A slot 1')
   })
+
+  it('derives results lifecycle from central start and canonical result states', () => {
+    expect(buildResultsLifecycle({ lifecycle: { started: false }, liveSnapshot: null })).toMatchObject({
+      state: 'pre_tournament',
+      title: 'Results open when the tournament starts',
+    })
+    const live = buildResultsLifecycle({
+      lifecycle: { started: true },
+      liveSnapshot: { results: [{ status: 'live', resultStatus: 'pending', scoreVisible: true, confirmed: false }] },
+    })
+    expect(live).toMatchObject({ state: 'live', liveMatches: 1 })
+  })
+
+  it('keeps leaderboard lifecycle scoped by competition', () => {
+    const original = buildLeaderboardLifecycle({
+      competitionKey: RESULT_COMPETITION.ORIGINAL,
+      lifecycle: { started: true, locked: true },
+      leaderboardRows: [{ scoredMatchCount: 1, totalPoints: 30 }],
+    })
+    expect(original).toMatchObject({ title: 'Original Predictor standings are live', scoredRows: 1, locked: true })
+
+    const ko = buildLeaderboardLifecycle({
+      competitionKey: RESULT_COMPETITION.KO_PREDICTOR,
+      lifecycle: { started: false, locked: false },
+      leaderboardRows: [],
+    })
+    expect(ko.title).toBe('KO leaderboard waits for real knockout fixtures')
+  })
+
 })

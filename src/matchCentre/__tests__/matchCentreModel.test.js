@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { RESULT_COMPETITION } from '../../results/resultModel.js'
-import { buildFixtureImpact, buildMatchCentreNavigation } from '../matchCentreModel.js'
+import { buildFixtureImpact, buildMatchCentreLifecycle, buildMatchCentreNavigation } from '../matchCentreModel.js'
 
 const reference = {
   tournamentId: 'tournament-1',
@@ -61,4 +61,21 @@ describe('Euro Match Centre model', () => {
     expect(impact.lines[0].maximumPoints).toBe(45)
     expect(impact.competitionKey).toBe(RESULT_COMPETITION.KO_PREDICTOR)
   })
+
+  it('derives Match Centre lifecycle for live and unresolved knockout states', () => {
+    const live = buildMatchCentreLifecycle({
+      fixture: { matchNumber: 1, state: 'live', participantsResolved: true },
+      competitionKey: RESULT_COMPETITION.ORIGINAL,
+      lifecycle: { started: true },
+    })
+    expect(live).toMatchObject({ tone: 'danger', title: 'This fixture is live' })
+
+    const unresolvedKo = buildMatchCentreLifecycle({
+      fixture: { matchNumber: 37, state: 'upcoming', participantsResolved: false },
+      competitionKey: RESULT_COMPETITION.KO_PREDICTOR,
+      lifecycle: { started: true },
+    })
+    expect(unresolvedKo.title).toBe('Knockout participants are not known yet')
+  })
+
 })
