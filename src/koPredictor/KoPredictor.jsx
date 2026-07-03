@@ -9,6 +9,8 @@ import {
 } from '../guest/index.js'
 import { GUEST_STATE_UPDATED_EVENT } from '../predictions/predictionSaveConfig.js'
 import KoPredictorMatchCentre from './KoPredictorMatchCentre.jsx'
+import { resolveTournamentLifecycle } from '../config/index.js'
+import { buildKoPredictorLifecycleStatus } from './koPredictorPresentationModel.js'
 import { buildKoPredictorRows, createKoPredictorDraft, summariseKoPredictor, updateKoPredictorDraft } from './koPredictorModel.js'
 import { loadMyKoPredictionBundle, loadMyKoPredictorStanding, saveMyKoPredictionBundle } from './koPredictorService.js'
 
@@ -20,7 +22,7 @@ function browserStorage() {
   }
 }
 
-export default function KoPredictor({ client, reference, fixtureBundle, fixtureStanding }) {
+export default function KoPredictor({ client, reference, tournament = {}, fixtureBundle, fixtureStanding }) {
   const fixtureMode = fixtureBundle !== undefined
   const guestStorage = useMemo(() => createGuestKoPredictionStorage({ storage: browserStorage(), reference }), [reference])
   const [session, setSession] = useState(() => fixtureMode ? { user: { id: 'visual-user' } } : null)
@@ -43,6 +45,8 @@ export default function KoPredictor({ client, reference, fixtureBundle, fixtureS
   const storageContext = fixtureMode || (signedIn && !guestTransferMode) ? 'account' : guestTransferMode ? 'guest-transfer' : 'guest'
   const draft = storageContext === 'account' ? accountDraft : guestDraft
   const summary = useMemo(() => summariseKoPredictor(reference, draft), [reference, draft])
+  const lifecycle = useMemo(() => resolveTournamentLifecycle(tournament), [tournament])
+  const lifecycleStatus = useMemo(() => buildKoPredictorLifecycleStatus(reference, lifecycle, summary), [reference, lifecycle, summary])
 
   const load = useCallback(async nextSession => {
     if (!nextSession?.user) {
@@ -148,6 +152,7 @@ export default function KoPredictor({ client, reference, fixtureBundle, fixtureS
         reference={reference}
         draft={draft}
         summary={summary}
+        lifecycleStatus={lifecycleStatus}
         standing={standing}
         saveState={saveState}
         storageContext={storageContext}

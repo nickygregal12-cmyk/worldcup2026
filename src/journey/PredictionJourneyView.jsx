@@ -5,6 +5,7 @@ import OriginalBracket from './OriginalBracket.jsx'
 import { OriginalBracketHealth } from '../bracketHealth/index.js'
 import GroupsPredictor from './GroupsPredictor.jsx'
 import PredictionReview from './PredictionReview.jsx'
+import lifecycleStyles from './PredictionLifecycle.module.css'
 import { EURO28_PREDICTION_JOURNEY_VERSION, PREDICTION_AUTOSAVE_STATE, PREDICTION_JOURNEY_VIEW } from './predictionJourneyConfig.js'
 
 function AutosaveBadge({ context, status, revision, savedAt }) {
@@ -44,7 +45,7 @@ export default function PredictionJourneyView({
   reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
   accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
   view, setView, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
-  updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, notice, liveBracketState,
+  updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
 }) {
   return (
     <section className="foundation-panel prediction-journey" aria-labelledby="prediction-journey-title">
@@ -76,6 +77,29 @@ export default function PredictionJourneyView({
           <span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved browser draft' : 'Guest workspace'}</span>
           <strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong>
         </div>
+      </div>
+
+      <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor lifecycle">
+        <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}>
+          <span>Prediction lock</span>
+          <strong>{surfaceLifecycle.lockLabel}</strong>
+          <small>{surfaceLifecycle.provisional ? 'Using central provisional Euro 2028 config' : `Source: ${surfaceLifecycle.source}`}</small>
+        </article>
+        <article className={lifecycleStyles.card}>
+          <span>Groups</span>
+          <strong>{surfaceLifecycle.groupsLabel}</strong>
+          <small>Scores and five group-stage jokers only</small>
+        </article>
+        <article className={lifecycleStyles.card}>
+          <span>Original bracket</span>
+          <strong>{surfaceLifecycle.bracketLabel}</strong>
+          <small>Winner-only picks; no bracket jokers</small>
+        </article>
+        <article className={lifecycleStyles.card}>
+          <span>Competition boundary</span>
+          <strong>{surfaceLifecycle.koBoundaryLabel}</strong>
+          <small>Original points never mix with KO Predictor points</small>
+        </article>
       </div>
 
       {guestTransferMode && accountRows === 0 && (

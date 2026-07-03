@@ -39,3 +39,30 @@ export function buildKoRoundProgress(reference, draft) {
     return Object.freeze({ ...round, available: matches.length, complete, isComplete: matches.length > 0 && complete === matches.length })
   })
 }
+
+export function buildKoPredictorLifecycleStatus(reference, lifecycle, summary) {
+  const available = reference?.knockoutMatches?.filter(match => match.participantsResolved).length ?? 0
+  const complete = Number(summary?.complete ?? 0)
+  const total = Number(summary?.available ?? available)
+  const lockedOriginal = Boolean(lifecycle?.locked)
+
+  if (available === 0) {
+    return Object.freeze({
+      key: 'waiting-for-fixtures',
+      tone: 'neutral',
+      title: 'KO Predictor waits for real fixtures',
+      detail: 'Unresolved knockout matches stay hidden until both teams are confirmed.',
+      progressLabel: '0 real knockout fixtures available',
+      boundaryLabel: lockedOriginal ? 'Original Predictor lock does not open KO Predictor fixtures early' : 'Original Predictor lifecycle remains separate',
+    })
+  }
+
+  return Object.freeze({
+    key: complete === total && total > 0 ? 'ready-for-review' : 'open-fixtures',
+    tone: complete === total && total > 0 ? 'safe' : 'info',
+    title: `${available} real knockout fixture${available === 1 ? '' : 's'} available`,
+    detail: 'Predict the 90-minute score, advancing team and method only after real fixtures exist.',
+    progressLabel: `${complete}/${total} available KO predictions complete`,
+    boundaryLabel: 'KO Predictor points, jokers and standings remain separate from the Original Predictor',
+  })
+}

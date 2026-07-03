@@ -131,7 +131,7 @@ export default function App() {
     content = (
       <div className="content-stack knockout-page">
         <PageIntro eyebrow="Separate competition" title="KO Predictor" description="Predict each real knockout fixture once its participants are confirmed." />
-        <KoPredictor client={activeClient} reference={appData.guestReference} />
+        <KoPredictor client={activeClient} reference={appData.guestReference} tournament={appData.tournament} />
       </div>
     )
   } else if (route === APP_ROUTE.LEAGUES) {

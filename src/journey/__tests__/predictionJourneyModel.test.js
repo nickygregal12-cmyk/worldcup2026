@@ -3,6 +3,7 @@ import { createGuestPredictionState } from '../../guest/index.js'
 import { buildGuestReference, COMPLETE_GROUP_SCORES } from '../../guest/__tests__/fixtures.js'
 import { PREDICTION_ROW_KIND } from '../../contracts/predictionDatabaseContract.js'
 import {
+  buildOriginalPredictionLifecycle,
   buildPredictionJourneyRows,
   clearStaleBracketSelections,
   createPredictionJourneyDraft,
@@ -107,6 +108,26 @@ describe('prediction journey model', () => {
     expect(summary.bracketComplete).toBe(0)
     expect(summary.savableRows).toBe(36)
     expect(summary.preview.resolution.knockout.byMatchNumber[37].participantsResolved).toBe(true)
+  })
+
+
+  it('summarises the central lifecycle and Original/KO boundary for prediction surfaces', () => {
+    const reference = buildGuestReference()
+    const draft = completeGroups(reference)
+    const summary = summarisePredictionJourney(reference, draft)
+    const lifecycle = {
+      predictionLockAt: '2028-06-09T19:00:00.000Z',
+      locked: false,
+      provisional: true,
+      source: 'central-provisional',
+    }
+
+    const surface = buildOriginalPredictionLifecycle(reference, lifecycle, summary)
+
+    expect(surface.lockLabel).toBe('Editable until the central prediction lock')
+    expect(surface.bracketOpen).toBe(true)
+    expect(surface.bracketLabel).toBe('0/15 winner-only bracket picks')
+    expect(surface.koBoundaryLabel).toContain('separate real-fixture competition')
   })
 
   it('requires the bracket winner to be one of the predicted participants', () => {

@@ -1,0 +1,50 @@
+.lifecycle {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.card {
+  display: grid;
+  gap: 0.25rem;
+  min-height: 7.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  background: var(--surface-raised);
+}
+
+.card span,
+.card small {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.card strong {
+  color: var(--text-strong);
+  line-height: 1.2;
+}
+
+.safe {
+  border-color: color-mix(in srgb, var(--state-success) 36%, var(--border-default));
+  background: color-mix(in srgb, var(--state-success) 8%, var(--surface-raised));
+}
+
+.warning {
+  border-color: color-mix(in srgb, var(--state-warning) 44%, var(--border-default));
+  background: color-mix(in srgb, var(--state-warning) 10%, var(--surface-raised));
+}
+
+.danger {
+  border-color: color-mix(in srgb, var(--state-danger) 38%, var(--border-default));
+  background: color-mix(in srgb, var(--state-danger) 8%, var(--surface-raised));
+}
+
+@media (max-width: 900px) {
+  .lifecycle { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .lifecycle { grid-template-columns: 1fr; }
+}

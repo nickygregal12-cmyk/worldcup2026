@@ -168,6 +168,39 @@ export function summarisePredictionJourney(reference, draft) {
   }
 }
 
+export function buildOriginalPredictionLifecycle(reference, lifecycle, summary) {
+  assertReference(reference)
+  const lockLabel = lifecycle?.predictionLockedAt
+    ? 'Locked by persisted tournament control'
+    : lifecycle?.locked
+      ? 'Central prediction lock reached'
+      : lifecycle?.predictionLockAt
+        ? 'Editable until the central prediction lock'
+        : 'Prediction lock not configured'
+  const groupsComplete = Number(summary?.groupComplete ?? 0)
+  const bracketComplete = Number(summary?.bracketComplete ?? 0)
+  const groupsTotal = reference.groupMatches.length
+  const bracketTotal = reference.knockoutMatches.length
+  const bracketOpen = groupsComplete === groupsTotal
+  const complete = groupsComplete + bracketComplete
+  const total = groupsTotal + bracketTotal
+
+  return Object.freeze({
+    lockLabel,
+    lockTone: lifecycle?.locked ? 'warning' : lifecycle?.predictionLockAt ? 'safe' : 'danger',
+    source: lifecycle?.source ?? 'unconfigured',
+    provisional: Boolean(lifecycle?.provisional),
+    locked: Boolean(lifecycle?.locked),
+    groupsLabel: `${groupsComplete}/${groupsTotal} group scores`,
+    bracketLabel: bracketOpen
+      ? `${bracketComplete}/${bracketTotal} winner-only bracket picks`
+      : 'Complete all group scores to open the bracket',
+    bracketOpen,
+    koBoundaryLabel: 'KO Predictor is a separate real-fixture competition',
+    progressLabel: `${complete}/${total} Original Predictor selections`,
+  })
+}
+
 export function clearStaleBracketSelections(reference, draft, { now } = {}) {
   const preview = resolveGuestTournamentPreview(reference, draft)
   const staleMatchNumbers = new Set(

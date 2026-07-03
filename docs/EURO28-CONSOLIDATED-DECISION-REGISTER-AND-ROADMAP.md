@@ -551,3 +551,8 @@ Decision pending. Stage 16 synthetic seeding may reuse service-role-only partici
 ## Stage 13G-B Home lifecycle amendment
 
 The first Stage 13G-B implementation slice starts from `08524b6` and is limited to Home lifecycle alignment. Home must render first-visit and returning-guest conversion copy, prediction-lock and tournament-start countdowns from central lifecycle configuration, a Today’s match hub linking into Match Centre, and a Home-owned KO readiness signal. Date-only staging tournament starts must not override the central precise tournament-start timestamp. No database change or Migration 019 is permitted.
+
+
+### Stage 13G-B prediction lifecycle slice
+
+From checkpoint `1dda826`, the second Stage 13G-B slice aligns the active prediction surfaces with the central lifecycle model. Original Predictor now shows lock, group-score, winner-only bracket and KO-boundary lifecycle cards. KO Predictor now shows real-fixture readiness and a separate-competition lifecycle strip. The slice adds `audit:prediction-lifecycle` to `npm run check`, keeps active migrations at 18 and adds no Migration 019.

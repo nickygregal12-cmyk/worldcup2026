@@ -565,3 +565,8 @@ After this slice, Stage 13G-A is ready to close and Stage 13G-B may begin with H
 ### Stage 13G-B Home lifecycle alignment
 
 From checkpoint `08524b6`, install the first Stage 13G-B slice. It must keep database migrations at 18 and must not create Migration 019. It aligns Home with the central lifecycle resolver, displays prediction-lock and tournament-start countdowns from central configuration, adds first-visit/returning-guest conversion copy, promotes live/next fixture context into the Today’s match hub and records the remaining KO-readiness adoption work for nav/leagues. Acceptance requires `audit:home-lifecycle`, focused Home/config tests and the full `npm run check`.
+
+
+### Stage 13G-B prediction lifecycle slice
+
+From checkpoint `1dda826`, the second Stage 13G-B slice aligns the active prediction surfaces with the central lifecycle model. Original Predictor now shows lock, group-score, winner-only bracket and KO-boundary lifecycle cards. KO Predictor now shows real-fixture readiness and a separate-competition lifecycle strip. The slice adds `audit:prediction-lifecycle` to `npm run check`, keeps active migrations at 18 and adds no Migration 019.

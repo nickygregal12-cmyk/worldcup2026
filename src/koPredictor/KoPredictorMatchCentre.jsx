@@ -1,4 +1,5 @@
 import React from 'react' // eslint-disable-line no-unused-vars
+import lifecycleStyles from './KoPredictorLifecycle.module.css'
 import { Badge, Button, Icon, PredictionStateBadge, ProgressBar, ScoreInput, TeamLabel } from '../design-system/index.jsx'
 import { buildKoRoundProgress, deriveKoMatchPresentation, koMethodOptions, KO_PREDICTOR_ROUNDS } from './koPredictorPresentationModel.js'
 
@@ -15,6 +16,7 @@ export default function KoPredictorMatchCentre({
   reference,
   draft,
   summary,
+  lifecycleStatus = null,
   standing = { points: 0, rank: null },
   saveState = 'idle',
   storageContext = 'guest',
@@ -37,6 +39,21 @@ export default function KoPredictorMatchCentre({
         </div>
         <Badge tone="warning" icon="trophy">Separate competition</Badge>
       </div>
+
+
+      {lifecycleStatus && (
+        <div className={`${lifecycleStyles.lifecycle} ${lifecycleStyles[lifecycleStatus.tone] ?? ''}`} aria-label="KO Predictor lifecycle">
+          <div>
+            <span>KO lifecycle</span>
+            <strong>{lifecycleStatus.title}</strong>
+            <small>{lifecycleStatus.detail}</small>
+          </div>
+          <div>
+            <span>{lifecycleStatus.progressLabel}</span>
+            <small>{lifecycleStatus.boundaryLabel}</small>
+          </div>
+        </div>
+      )}
 
       <div className="knockout-summary-grid">
         <article className="knockout-summary-card">

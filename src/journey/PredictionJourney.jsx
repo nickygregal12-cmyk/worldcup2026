@@ -4,7 +4,7 @@ import { importGuestDraftToAccount, loadMyPredictionBundle, saveMyPredictionBund
 import { GUEST_STATE_UPDATED_EVENT, PREDICTION_SAVE_SOURCE } from '../predictions/predictionSaveConfig.js'
 import { hasActivePredictionGrace, isPredictionMatchStarted, loadMyPredictionGraceWindows, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import { PREDICTION_AUTOSAVE_DELAY_MS, PREDICTION_AUTOSAVE_STATE, PREDICTION_JOURNEY_VIEW } from './predictionJourneyConfig.js'
-import { buildPredictionJourneyRows, clearStaleBracketSelections, createPredictionJourneyDraft, summarisePredictionJourney, updatePredictionJourneyGroup, updatePredictionJourneyBracket } from './predictionJourneyModel.js'
+import { buildOriginalPredictionLifecycle, buildPredictionJourneyRows, clearStaleBracketSelections, createPredictionJourneyDraft, summarisePredictionJourney, updatePredictionJourneyGroup, updatePredictionJourneyBracket } from './predictionJourneyModel.js'
 import { applyEuroLuckyDip } from './euroLuckyDip.js'
 import PredictionJourneyView from './PredictionJourneyView.jsx'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
@@ -52,6 +52,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
   const lockConfigured = lifecycle.lockConfigured
   const locked = lifecycle.locked
   const readOnly = locked || reviewMode
+  const surfaceLifecycle = useMemo(() => buildOriginalPredictionLifecycle(reference, lifecycle, summary), [reference, lifecycle, summary])
 
   const loadAccount = useCallback(async nextSession => {
     if (!client || !nextSession?.user) {
@@ -344,7 +345,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
         reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
         accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
         view, setView, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
-        updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, notice, liveBracketState,
+        updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
       }}
     />
   )

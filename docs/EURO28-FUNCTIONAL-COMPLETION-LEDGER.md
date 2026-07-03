@@ -157,6 +157,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 ## Change log
 
+- **v1.26:** Stage 13G-B prediction lifecycle slice from `1dda826` adds Original Predictor lifecycle cards, KO Predictor real-fixture readiness, central tournament lifecycle input on the KO route and `audit:prediction-lifecycle` in `npm run check`. No database change and no Migration 019.
+
 - **v1.20:** Closes Stage 13F-K3 from `c4342f1` after three-role deployed acceptance, same-value transactional fixture proof with exact rollback, one real owner complete reconciliation, read-only event/run/separate-total verification, linked database gates and final deployed verification. No product code or Migration 019 is added; Stage 13G-A becomes next.
 
 - **v1.25:** Stage 13G-B Home lifecycle slice from `08524b6` adds Home first-visit/returning-guest conversion copy, central-config prediction-lock and tournament-start countdowns, Today’s match hub entry to Match Centre, a Home KO-readiness signal and `audit:home-lifecycle` in `npm run check`. It fixes date-only staging tournament starts so they cannot override the central precise tournament-start timestamp. No database change and no Migration 019.
@@ -209,3 +211,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 ## Stage 13F-G — Staging Time & Phase
 
 Accepted scope: one owner-only audited staging clock, scenario presets, real-time reset, permanent warning, and fail-closed environment safeguards. Migration 016 is approved solely for persistent audited time-control state.
+
+
+### Stage 13G-B prediction lifecycle slice
+
+From checkpoint `1dda826`, the second Stage 13G-B slice aligns the active prediction surfaces with the central lifecycle model. Original Predictor now shows lock, group-score, winner-only bracket and KO-boundary lifecycle cards. KO Predictor now shows real-fixture readiness and a separate-competition lifecycle strip. The slice adds `audit:prediction-lifecycle` to `npm run check`, keeps active migrations at 18 and adds no Migration 019.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildKoRoundProgress, deriveKoMatchPresentation, koMethodOptions, koRowIsComplete } from '../koPredictorPresentationModel.js'
+import { buildKoPredictorLifecycleStatus, buildKoRoundProgress, deriveKoMatchPresentation, koMethodOptions, koRowIsComplete } from '../koPredictorPresentationModel.js'
 
 const complete = { homeScore: 1, awayScore: 1, advancingTeamId: 'a', decisionMethod: 'penalties' }
 
@@ -17,6 +17,31 @@ describe('KO Predictor presentation model', () => {
   it('locks live and completed fixtures', () => {
     expect(deriveKoMatchPresentation({ status: 'live' }, complete)).toMatchObject({ locked: true, label: 'Live · locked' })
     expect(deriveKoMatchPresentation({ status: 'completed' }, complete)).toMatchObject({ locked: true, label: 'Finished' })
+  })
+
+
+  it('keeps KO Predictor closed until real fixtures are resolved', () => {
+    const reference = { knockoutMatches: [
+      { matchNumber: 37, participantsResolved: false },
+      { matchNumber: 38, participantsResolved: false },
+    ] }
+    const status = buildKoPredictorLifecycleStatus(reference, { locked: true }, { complete: 0, available: 0 })
+
+    expect(status.key).toBe('waiting-for-fixtures')
+    expect(status.title).toBe('KO Predictor waits for real fixtures')
+    expect(status.boundaryLabel).toContain('does not open KO Predictor fixtures early')
+  })
+
+  it('summarises available KO fixtures without mixing Original points', () => {
+    const reference = { knockoutMatches: [
+      { matchNumber: 37, participantsResolved: true },
+      { matchNumber: 38, participantsResolved: false },
+    ] }
+    const status = buildKoPredictorLifecycleStatus(reference, { locked: false }, { complete: 1, available: 1 })
+
+    expect(status.key).toBe('ready-for-review')
+    expect(status.progressLabel).toBe('1/1 available KO predictions complete')
+    expect(status.boundaryLabel).toContain('separate from the Original Predictor')
   })
 
   it('summarises only resolved fixtures by round', () => {

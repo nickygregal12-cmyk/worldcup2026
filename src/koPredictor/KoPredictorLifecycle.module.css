@@ -1,0 +1,40 @@
+.lifecycle {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: var(--space-4);
+  align-items: start;
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-soft);
+}
+
+.lifecycle > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.lifecycle span,
+.lifecycle small {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.lifecycle strong {
+  color: var(--text-strong);
+}
+
+.safe {
+  border-color: color-mix(in srgb, var(--state-success) 36%, var(--border-default));
+  background: color-mix(in srgb, var(--state-success) 8%, var(--surface-soft));
+}
+
+.info {
+  border-color: color-mix(in srgb, var(--brand) 30%, var(--border-default));
+  background: color-mix(in srgb, var(--brand) 7%, var(--surface-soft));
+}
+
+@media (max-width: 56.25rem) {
+  .lifecycle { grid-template-columns: 1fr; }
+}
