@@ -136,14 +136,16 @@ describe('admin operations model', () => {
     const control = normaliseAdminControlRoom({
       tournament_id: 't', admin_role: 'owner',
       lock: { scheduled_at: '2028-06-09T12:00:00Z', is_effective: false, is_irreversible: false },
-      health: { total_matches: 51, disabled_features: 1 },
+      health: { total_matches: 51, fixtures_missing_date: 2, completed_scoring_runs: 4, incomplete_team_profiles: 3, disabled_features: 1 },
       features: [{ feature_key: 'prediction_saving', is_enabled: false, revision: 2 }],
       knockout_allocation: [{ match_id: 'm', match_number: 37, side: 'home', source_type: 'group_position', is_resolved: false }],
       joker_locks: [{ match_id: 'm', match_number: 37, competition_key: 'ko_predictor', match_status: 'scheduled', is_locked: false, joker_allocation_count: 3 }],
+      tournament_picks: { contract_version: 'euro28-tournament-picks-v1', contract_ready: true, outcome_activation_ready: false, activation_dependency: 'stage_17a' },
     })
-    expect(control.health).toMatchObject({ totalMatches: 51, disabledFeatures: 1 })
+    expect(control.health).toMatchObject({ totalMatches: 51, fixturesMissingDate: 2, completedScoringRuns: 4, incompleteTeamProfiles: 3, disabledFeatures: 1 })
     expect(control.features[0]).toMatchObject({ label: 'Prediction saving', revision: 2, isEnabled: false })
     expect(control.jokerLocks[0].jokerAllocationCount).toBe(3)
+    expect(control.tournamentPicks).toMatchObject({ contractReady: true, activationDependency: 'stage_17a' })
   })
 
   it('normalises grace and combined operation rows', () => {

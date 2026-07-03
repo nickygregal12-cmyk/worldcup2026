@@ -80,7 +80,10 @@ for (const rpc of [
   'admin_list_operation_events',
 ]) if (!service.includes(rpc)) fail(`admin control-room service is missing RPC: ${rpc}`)
 
-const controlView = fs.readFileSync(path.join(root, 'src/admin/AdminControlRoomSections.jsx'), 'utf8')
+const controlView = [
+  'src/admin/AdminControlRoomSections.jsx',
+  'src/admin/AdminAuditTimeline.jsx',
+].map(file => fs.readFileSync(path.join(root, file), 'utf8')).join('\n')
 for (const text of [
   'Operational kill-switches',
   'Prediction grace windows',

@@ -11,6 +11,7 @@ import {
   normaliseScoringRuns,
 } from './adminOperationsModel.js'
 import { parseExternal } from '../contracts/externalValidation.js'
+import { buildAdminFixturePayload, normaliseAdminVenues } from './adminFixtureModel.js'
 import { adminAccessSchema, adminRecordRowsSchema, adminRecordSchema, mutationResultSchema } from '../contracts/externalSchemas.js'
 
 function throwForError(label, error) {
@@ -32,18 +33,20 @@ export async function loadAdminAccess(client, tournamentId) {
 export async function loadAdminOperations(client, tournamentId) {
   const access = await loadAdminAccess(client, tournamentId)
   if (!access.isAdmin) {
-    return Object.freeze({ access, matches: [], scoringRuns: [] })
+    return Object.freeze({ access, matches: [], venues: [], scoringRuns: [], operationEvents: [] })
   }
 
-  const [matchesResponse, runsResponse, controlResponse, graceResponse, timelineResponse, teamProfilesResponse] = await Promise.all([
+  const [matchesResponse, venuesResponse, runsResponse, controlResponse, graceResponse, timelineResponse, teamProfilesResponse] = await Promise.all([
     client.rpc('admin_list_tournament_matches', { p_tournament_id: tournamentId }),
+    client.rpc('admin_list_tournament_venues', { p_tournament_id: tournamentId }),
     client.rpc('admin_list_scoring_runs', { p_tournament_id: tournamentId, p_limit: 25 }),
     client.rpc('admin_get_tournament_control_room', { p_tournament_id: tournamentId }),
     client.rpc('admin_list_prediction_grace', { p_tournament_id: tournamentId }),
-    client.rpc('admin_list_operation_events', { p_tournament_id: tournamentId, p_limit: 50 }),
+    client.rpc('admin_list_operation_events', { p_tournament_id: tournamentId, p_limit: 200 }),
     client.rpc('admin_list_team_profiles', { p_tournament_id: tournamentId }),
   ])
   throwForError('Admin match list failed', matchesResponse.error)
+  throwForError('Admin venue list failed', venuesResponse.error)
   throwForError('Admin scoring run list failed', runsResponse.error)
   throwForError('Admin control room failed', controlResponse.error)
   throwForError('Admin grace-window list failed', graceResponse.error)
@@ -53,6 +56,7 @@ export async function loadAdminOperations(client, tournamentId) {
   return Object.freeze({
     access,
     matches: Object.freeze(parseExternal(adminRecordRowsSchema, matchesResponse.data ?? [], 'Admin matches response').map(normaliseAdminMatch)),
+    venues: normaliseAdminVenues(parseExternal(adminRecordRowsSchema, venuesResponse.data ?? [], 'Admin venues response')),
     scoringRuns: normaliseScoringRuns(parseExternal(adminRecordRowsSchema, runsResponse.data ?? [], 'Admin scoring runs response')),
     controlRoom: normaliseAdminControlRoom(parseExternal(adminRecordSchema, controlResponse.data ?? {}, 'Admin control-room response')),
     graceWindows: normalisePredictionGrace(parseExternal(adminRecordRowsSchema, graceResponse.data ?? [], 'Admin grace response')),
@@ -172,4 +176,30 @@ export async function saveAdminTeamProfile(client, tournamentId, profile, valida
   })
   throwForError('Admin team profile save failed', response.error)
   return parseExternal(mutationResultSchema, response.data ?? null, 'Admin team profile save response')
+}
+
+
+export async function updateAdminMatchFixture(client, tournamentId, match, draft, venues) {
+  const built = buildAdminFixturePayload(match, draft, venues)
+  const response = await client.rpc('admin_update_match_fixture', {
+    p_tournament_id: tournamentId,
+    p_match_id: match.matchId,
+    p_expected_fixture_revision: built.expectedFixtureRevision,
+    p_scheduled_date: built.scheduledDate,
+    p_kickoff_at: built.kickoffAt,
+    p_venue_id: built.venueId,
+    p_schedule_status: built.scheduleStatus,
+    p_note: built.note,
+  })
+  throwForError('Admin fixture update failed', response.error)
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Admin fixture update response')
+}
+
+export async function reconcileAdminTournamentPoints(client, tournamentId, note) {
+  const response = await client.rpc('admin_reconcile_tournament_points', {
+    p_tournament_id: tournamentId,
+    p_note: note,
+  })
+  throwForError('Tournament points reconciliation failed', response.error)
+  return parseExternal(mutationResultSchema, response.data ?? null, 'Tournament reconciliation response')
 }

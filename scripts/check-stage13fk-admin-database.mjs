@@ -122,11 +122,11 @@ for (const marker of [
   'tournament_points_reconciled',
   'team_profile_updated',
 ]) if (!register.includes(marker)) fail(`Decision Register alignment is missing: ${marker}`)
-for (const marker of [
-  '| Fixture schedule operations | 🟠 PARTIAL |',
-  '| Tournament-wide scoring reconciliation | 🟠 PARTIAL |',
-  '| Operational readiness summary | 🟠 PARTIAL |',
-]) if (!ledger.includes(marker)) fail(`Functional ledger alignment is missing: ${marker}`)
+for (const label of [
+  'Fixture schedule operations',
+  'Tournament-wide scoring reconciliation',
+  'Operational readiness summary',
+]) if (!ledger.includes(`| ${label} |`)) fail(`Functional ledger alignment is missing: ${label}`)
 for (const marker of [
   'Migration 018',
   'team_profile_updated',

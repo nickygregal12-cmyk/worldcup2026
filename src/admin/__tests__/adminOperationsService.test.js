@@ -12,6 +12,8 @@ import {
   updateAdminMatchStatus,
   updateTournamentFeature,
   saveAdminTeamProfile,
+  updateAdminMatchFixture,
+  reconcileAdminTournamentPoints,
 } from '../adminOperationsService.js'
 
 function clientWithRpc(handler) {
@@ -39,6 +41,7 @@ describe('admin operations service', () => {
     const client = clientWithRpc(async name => {
       if (name === 'get_my_tournament_admin_access') return { data: { is_admin: true, admin_role: 'owner' }, error: null }
       if (name === 'admin_list_tournament_matches') return { data: [{ match_id: 'm', match_number: 1, match_status: 'scheduled', result_status: 'pending', result_revision: 0 }], error: null }
+      if (name === 'admin_list_tournament_venues') return { data: [{ venue_id: 'v', venue_name: 'Hampden Park', venue_city: 'Glasgow', venue_timezone: 'Europe/London' }], error: null }
       if (name === 'admin_list_scoring_runs') return { data: [{ scoring_run_id: 'r', status: 'completed', started_at: '2026-07-01T10:00:00Z' }], error: null }
       if (name === 'admin_get_tournament_control_room') return { data: { admin_role: 'owner', lock: {}, health: { total_matches: 51 }, features: [], knockout_allocation: [], joker_locks: [] }, error: null }
       if (name === 'admin_list_prediction_grace') return { data: [], error: null }
@@ -49,6 +52,7 @@ describe('admin operations service', () => {
     const result = await loadAdminOperations(client, 't')
     expect(result.access.adminRole).toBe('owner')
     expect(result.matches[0].matchId).toBe('m')
+    expect(result.venues[0]).toMatchObject({ venueId: 'v', venueName: 'Hampden Park' })
     expect(result.scoringRuns[0].scoringRunId).toBe('r')
     expect(result.controlRoom.health.totalMatches).toBe(51)
     expect(result.teamProfiles[0].teamName).toBe('Scotland')
@@ -111,6 +115,44 @@ describe('admin operations service', () => {
   })
 
 
+
+
+  it('uses the protected fixture and whole-tournament recovery RPCs', async () => {
+    const client = clientWithRpc(async (name, args) => {
+      if (name === 'admin_update_match_fixture') {
+        expect(args).toMatchObject({
+          p_expected_fixture_revision: 3,
+          p_scheduled_date: '2028-06-09',
+          p_venue_id: 'venue-1',
+          p_schedule_status: 'official_datetime',
+        })
+      }
+      if (name === 'admin_reconcile_tournament_points') {
+        expect(args.p_note).toBe('Rebuild all canonical totals')
+      }
+      return { data: { operation: name }, error: null }
+    })
+    const fixtureMatch = {
+      ...match,
+      fixtureRevision: 3,
+      matchStatus: 'scheduled',
+      resultStatus: 'pending',
+      resultRevision: 0,
+    }
+    const venues = [{ venueId: 'venue-1', venueTimezone: 'Europe/London' }]
+    await updateAdminMatchFixture(client, 't', fixtureMatch, {
+      scheduledDate: '2028-06-09',
+      kickoffLocal: '2028-06-09T20:00',
+      venueId: 'venue-1',
+      scheduleStatus: 'official_datetime',
+      note: 'Official schedule confirmed',
+    }, venues)
+    await reconcileAdminTournamentPoints(client, 't', 'Rebuild all canonical totals')
+    expect(client.rpc.mock.calls.map(call => call[0])).toEqual([
+      'admin_update_match_fixture',
+      'admin_reconcile_tournament_points',
+    ])
+  })
 
   it('saves an owner-curated team profile through the protected revision-safe RPC', async () => {
     const client = clientWithRpc(async (name, args) => {

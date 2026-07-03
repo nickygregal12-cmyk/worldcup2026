@@ -48,6 +48,11 @@ assert(
 for (const text of [
   'Make every Euro 2028 match matter.',
   'Your Original Predictor and KO Predictor are tracked separately',
+  'Fixture schedule operations',
+  'Reconcile all tournament points',
+  'Tournament Picks readiness',
+  'Combined audit timeline',
+
   'Some live account data is temporarily unavailable',
   'Progress temporarily unavailable',
   'Tournament control room',
@@ -138,7 +143,7 @@ console.log('Review: saved predictions count whether submitted or not')
 console.log('Knockout controls: 90-minute score, advancing team, method and five separate KO jokers')
 console.log('Navigation: Groups stays primary until all group results and eight Round of 16 pairings are ready')
 console.log('Competition boundary: Original and KO points remain separate; predicted and live brackets never blend')
-console.log('Admin controls: protected operations and revision-safe curated team profiles remain owner-controlled')
+console.log('Admin controls: fixture scheduling, full reconciliation, readiness, Tournament Picks hand-off and append-only audit detail are role-controlled')
 console.log('Team profile sources: curated admin facts, app-owned tournament data and privacy-gated Original Predictor aggregates')
 console.log('External result APIs: deferred')
 console.log('Database migrations: 18, including Admin operations Migration 018 and read-only player-insight Migration 017')

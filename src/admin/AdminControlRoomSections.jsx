@@ -23,28 +23,6 @@ function initialExpiry() {
   return new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 16)
 }
 
-function HealthSummary({ health }) {
-  const items = [
-    ['Matches', health.totalMatches],
-    ['Unresolved slots', health.unresolvedParticipantSlots],
-    ['Missing kick-offs', health.missingKickoffTimes],
-    ['Live or paused', health.liveOrPausedMatches],
-    ['Confirmed results', health.confirmedResults],
-    ['Manual review', health.manualReviewResults],
-    ['Failed scoring runs', health.failedScoringRuns],
-    ['Active grace', health.activeGraceWindows],
-    ['Disabled features', health.disabledFeatures],
-  ]
-
-  return (
-    <div className="foundation-control-health">
-      {items.map(([label, value]) => (
-        <div key={label}><strong>{value}</strong><span>{label}</span></div>
-      ))}
-    </div>
-  )
-}
-
 function GlobalLockControl({ client, tournamentId, controlRoom, isOwner, runAction }) {
   const [note, setNote] = useState('')
   const lock = controlRoom.lock
@@ -281,38 +259,17 @@ function AllocationReview({ controlRoom }) {
   )
 }
 
-function OperationTimeline({ events }) {
-  return (
-    <article className="foundation-results-card foundation-results-card--wide">
-      <span className="foundation-kicker">Append-only operations</span>
-      <h3>Combined audit timeline</h3>
-      {events.length === 0 && <p className="foundation-empty-copy">No administrator operations have been recorded.</p>}
-      <ol className="foundation-admin-history">
-        {events.map(event => (
-          <li key={event.eventId}>
-            <div><strong>{humanise(event.operationType)}{event.matchNumber ? ` · Match ${event.matchNumber}` : ''}</strong><span>{formatTimestamp(event.createdAt)}</span></div>
-            <p>{event.note}</p>
-            <small>{event.performedByDisplayName}{event.targetDisplayName ? ` · ${event.targetDisplayName}` : ''}</small>
-          </li>
-        ))}
-      </ol>
-    </article>
-  )
-}
-
 export default function AdminControlRoomSections({ client, tournamentId, data, matches, runAction }) {
   const controlRoom = data.controlRoom
   const isOwner = data.access.adminRole === 'owner'
 
   return (
     <div className="foundation-control-room">
-      <HealthSummary health={controlRoom.health} />
       <div className="foundation-admin-workspace">
         <GlobalLockControl client={client} tournamentId={tournamentId} controlRoom={controlRoom} isOwner={isOwner} runAction={runAction} />
         <FeatureControls client={client} tournamentId={tournamentId} features={controlRoom.features} isOwner={isOwner} runAction={runAction} />
         <GraceManagement client={client} tournamentId={tournamentId} matches={matches} graceWindows={data.graceWindows} isOwner={isOwner} runAction={runAction} />
         <AllocationReview controlRoom={controlRoom} />
-        <OperationTimeline events={data.operationEvents} />
       </div>
     </div>
   )

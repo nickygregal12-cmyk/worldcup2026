@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Decision Register Addendum — 3 July 2026
-### Reconciled for Stage 13F-K1 Admin database operations
+### Reconciled for Stage 13F-K2 Euro control-room implementation
 
 ## Confirmed decisions
 
@@ -39,6 +39,12 @@
 33. Migration 018 implements the accepted K1 contract from `b6c7ddc`: optimistic fixture revision, protected venue/match reads, owner-only fixture scheduling, owner-only full reconciliation and readiness evidence.
 34. The only new event values are `fixture_schedule_updated` and `tournament_points_reconciled`. Migration 018 also restores the already accepted `team_profile_updated` value accidentally omitted by Migration 016 while preserving both Time & Phase values.
 35. Stage 13F-K1 changes no frontend, participant assignment, resolver rule, scoring value, tournament-pick persistence, manual point edit, provider integration or Admin role.
+
+36. Stage 13F-K2 is frontend-only and retains exactly 18 migrations. It connects only the accepted Migration 018 fixture, reconciliation and readiness contracts.
+37. Owner-only fixture and complete-reconciliation actions are absent for results administrators; ordinary users remain unaware of Admin through the accepted route gate.
+38. Fixture kick-off input is interpreted in the selected venue timezone, not the browser timezone, and every write retains optimistic `fixture_revision` conflict handling.
+39. The Tournament Picks section is a dependency/readiness hand-off only. It contains no fake outcome controls before Stage 17A.
+40. Audit filters and expandable detail are read-only views over append-only events; they cannot mutate or delete evidence.
 
 ## Pending approvals
 

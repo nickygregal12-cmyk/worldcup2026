@@ -1,18 +1,18 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 3.6 — Stage 13F-K1 database operations contract
+### Version 3.7 — Stage 13F-K2 Euro control-room implementation
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
 ## 1. Current return point
 
-- Expected Git commit: `b6c7ddc` — **Define Euro admin operations contract**.
+- Expected Git commit: `0e4d5b7` — **Update Euro migration verification summary**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
-- Active migration count before Stage 13F-K1 installation: **17**. Migration 018 is the package under acceptance; repository and Euro staging become 18 only after the guarded database gate.
+- Active migration count: **18**, aligned locally and on Euro staging. Stage 13F-K2 adds no migration.
 - Stages 1–12, 13A–13E, 14, 14B, Stage 13F-0 through Stage 13F-J and Stage 13G-0 are accepted.
-- The exact current package is Stage 13F-K1, the Migration 018 database operations contract from `b6c7ddc`.
+- The exact current package is Stage 13F-K2, the Euro control-room implementation from `0e4d5b7`.
 - Migration 018 adds fixture revision/editing, protected venue and match reads, complete reconciliation, readiness evidence and the two approved new event types. It also restores `team_profile_updated`, which Migration 016 accidentally omitted from the event constraint.
-- Stage 13F-K1 is the current implementation package. Stage 13F-K2 follows after linked database acceptance; Stage 13G-A starts only after Stage 13F-K3 acceptance.
+- The Stage 13F-K1 database operations contract is accepted. Stage 13F-K2 connects Migration 018 to the protected control room; Stage 13F-K3 follows for deployed role acceptance before Stage 13G-A.
 - Original and KO Predictor totals remain permanently separate.
 
 ## 2. Existing confirmed product decisions
@@ -457,9 +457,9 @@ The approved scope lives in `docs/STAGE-13F-K0-ADMIN-OPERATIONS-SCOPE-AND-SERVER
 
 ## 13. Exact next task
 
-Stage 13F-K1 is the current database package built from verified checkpoint `b6c7ddc`. It implements the accepted Migration 018 contract, transactional pgTAP acceptance, repository audit wiring and the partial ledger movement for database-complete/UI-pending operations.
+Stage 13F-K2 is the current frontend package built from verified checkpoint `0e4d5b7`. It connects the accepted Migration 018 fixture, reconciliation and readiness contracts to the protected control room, adds the Stage 17A Tournament Picks hand-off and improves append-only audit inspection.
 
-After backup, guarded Euro-staging application, linked pgTAP, database lint, clean commit and push, build **Stage 13F-K2 — Euro control-room implementation**. Stage 13F-K3 follows before Stage 13G-A. Stage 16A execution and Stage 13P-A remain later.
+After focused and full repository gates, clean commit/push and deployed verification, run **Stage 13F-K3 — staging acceptance and close-out**. Stage 13G-A, Stage 16A execution and Stage 13P-A remain later.
 
-**Starting commit:** `b6c7ddc`
-**Migration count:** `17` before Stage 13F-K1; `18` after accepted hosted application
+**Starting commit:** `0e4d5b7`
+**Migration count:** `18`; no Migration 019 in Stage 13F-K2

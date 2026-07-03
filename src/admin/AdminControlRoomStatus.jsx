@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import React, { useMemo } from 'react' // eslint-disable-line no-unused-vars
 import styles from './AdminControlRoom.module.css'
 
 function formatTimestamp(value) {

@@ -1,0 +1,291 @@
+.readinessGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.readinessCard {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--border-default);
+  border-top: 4px solid var(--state-info);
+  border-radius: 1rem;
+  background: var(--surface-raised);
+}
+
+.readinessCard[data-state='ready'] {
+  border-top-color: var(--state-success);
+}
+
+.readinessCard[data-state='attention'] {
+  border-top-color: var(--state-warning);
+}
+
+.readinessCard[data-state='blocked'] {
+  border-top-color: var(--state-danger);
+}
+
+.readinessCard h4,
+.readinessCard p,
+.readinessCard dl {
+  margin: 0;
+}
+
+.readinessCard p,
+.fieldHelp,
+.permissionNote,
+.blockedNote {
+  color: var(--text-secondary);
+}
+
+.readinessHeading,
+.readinessCard dl > div,
+.fixtureFacts > div,
+.pickBoundaries > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.readinessHeading span,
+.readinessCard dd,
+.fixtureFacts dd,
+.pickBoundaries dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 700;
+}
+
+.readinessCard dl,
+.fixtureFacts,
+.pickBoundaries {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.readinessCard dl > div,
+.fixtureFacts > div,
+.pickBoundaries > div {
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.fixtureWorkspace {
+  display: grid;
+  grid-template-columns: minmax(15rem, 0.75fr) minmax(0, 1.75fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.fixtureSelector {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 1rem;
+  background: var(--surface-soft);
+}
+
+.fixtureIdentity {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.fixtureIdentity span,
+.fixtureIdentity small,
+.fixtureFacts dt,
+.pickBoundaries dt {
+  color: var(--text-secondary);
+}
+
+.fixtureFormGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.permissionNote,
+.blockedNote,
+.fieldHelp {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border-radius: 0.75rem;
+  background: var(--surface-soft);
+}
+
+.blockedNote {
+  border: 1px solid var(--state-warning-border);
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
+}
+
+.recoveryGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.confirmationCheck {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
+.confirmationCheck input {
+  width: auto;
+  margin-top: 0.2rem;
+}
+
+.tournamentPicks {
+  border-top: 4px solid var(--brand);
+}
+
+.readinessBadge {
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: var(--state-success-soft);
+  color: var(--state-success);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.readinessBadge[data-state='blocked'] {
+  background: var(--state-warning-soft);
+  color: var(--state-warning);
+}
+
+.pickGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.pickGrid > div {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border-default);
+  border-radius: 0.85rem;
+  background: var(--surface-soft);
+}
+
+.pickGrid span {
+  color: var(--brand-strong);
+  font-weight: 800;
+}
+
+.pickGrid small {
+  color: var(--text-secondary);
+}
+
+.auditFilters {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+}
+
+.auditFilters button {
+  flex: 0 0 auto;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border-default);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+}
+
+.auditFilters button[aria-pressed='true'] {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.auditList li {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.auditDetail {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.auditDetail p {
+  margin: 0;
+}
+
+.auditDetail pre {
+  max-height: 20rem;
+  overflow: auto;
+  padding: 0.75rem;
+  border-radius: 0.65rem;
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.auditSnapshots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.auditSnapshot {
+  padding: 0.75rem;
+  border: 1px solid var(--border-default);
+  border-radius: 0.75rem;
+  background: var(--surface-soft);
+}
+
+.auditSnapshot dl {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+}
+
+.auditSnapshot dl > div {
+  display: grid;
+  grid-template-columns: minmax(5rem, 0.7fr) minmax(0, 1.3fr);
+  gap: 0.5rem;
+}
+
+.auditSnapshot dt {
+  color: var(--text-secondary);
+}
+
+.auditSnapshot dd {
+  margin: 0;
+}
+
+@media (max-width: 920px) {
+  .readinessGrid,
+  .pickGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fixtureWorkspace,
+  .recoveryGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .readinessGrid,
+  .pickGrid,
+  .fixtureFormGrid,
+  .auditSnapshots {
+    grid-template-columns: 1fr;
+  }
+
+  .readinessHeading,
+  .readinessCard dl > div,
+  .fixtureFacts > div,
+  .pickBoundaries > div {
+    align-items: start;
+  }
+
+  .navigation {
+    margin-inline: -0.25rem;
+  }
+}

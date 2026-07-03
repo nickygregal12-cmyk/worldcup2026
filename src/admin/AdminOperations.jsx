@@ -1,61 +1,35 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  ADMIN_DECISION_METHOD,
-  ADMIN_MATCH_STATUS,
-  ADMIN_RESULT_STATUS,
-  createAdminResultDraft,
-  validateAdminResultDraft,
-} from './adminOperationsModel.js'
+import { useCallback, useEffect, useState } from 'react'
+import AdminAuditTimeline from './AdminAuditTimeline.jsx'
 import AdminControlRoomSections from './AdminControlRoomSections.jsx'
+import AdminFixtureOperations from './AdminFixtureOperations.jsx'
+import AdminMatchOperations from './AdminMatchOperations.jsx'
+import AdminReadiness from './AdminReadiness.jsx'
+import AdminScoringRecovery from './AdminScoringRecovery.jsx'
 import AdminTeamProfiles from './AdminTeamProfiles.jsx'
+import AdminTournamentPicks from './AdminTournamentPicks.jsx'
 import styles from './AdminControlRoom.module.css'
-import { AdminSummary, ResultHistory, ScoringRuns } from './AdminControlRoomStatus.jsx'
+import { AdminSummary } from './AdminControlRoomStatus.jsx'
 import { RuntimeHealthPanel } from '../observability/index.js'
 import { AdminTimePhaseSection, useTournamentTimeControl } from '../timePhase/index.js'
-import {
-  loadAdminMatchHistory,
-  loadAdminOperations,
-  recalculateAdminMatchPoints,
-  saveAdminMatchResult,
-  updateAdminMatchStatus,
-} from './adminOperationsService.js'
-function formatTimestamp(value) {
-  if (!value) return 'Not recorded'
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value))
-}
-function humanise(value) {
-  return String(value ?? '').replaceAll('_', ' ').replace(/^./, character => character.toUpperCase())
-}
-function ScoreInput({ label, value, onChange, disabled = false }) {
+import { loadAdminOperations } from './adminOperationsService.js'
+import { humaniseAdminValue } from './adminPresentation.js'
+
+function AccessState({ title, description, error = false, onRetry = null }) {
   return (
-    <label className="foundation-admin-score-field">
-      <span>{label}</span>
-      <input
-        type="number"
-        min="0"
-        step="1"
-        inputMode="numeric"
-        value={value}
-        disabled={disabled}
-        onChange={event => onChange(event.target.value)}
-      />
-    </label>
+    <section className={`foundation-panel foundation-admin${error ? ' foundation-panel--error' : ''}`} aria-labelledby="stage13fk2-admin-heading">
+      <span className="foundation-kicker">Tournament control room</span>
+      <h2 id="stage13fk2-admin-heading">{title}</h2>
+      <p>{description}</p>
+      {onRetry && <button type="button" onClick={onRetry}>Try again</button>}
+    </section>
   )
 }
+
 export default function AdminOperations({ client, reference }) {
   const [state, setState] = useState({ status: 'loading', signedIn: false, data: null, error: null })
-  const [selectedMatchId, setSelectedMatchId] = useState('')
-  const selectedMatchIdRef = useRef('')
-  const [draft, setDraft] = useState(null)
-  const [history, setHistory] = useState([])
-  const [statusDraft, setStatusDraft] = useState('scheduled')
-  const [statusNote, setStatusNote] = useState('')
-  const [recalculationNote, setRecalculationNote] = useState('')
   const [action, setAction] = useState({ status: 'idle', message: '' })
   const timeState = useTournamentTimeControl({ client, tournamentId: reference.tournamentId })
+
   const load = useCallback(async () => {
     try {
       const sessionResponse = await client.auth.getSession()
@@ -66,22 +40,6 @@ export default function AdminOperations({ client, reference }) {
       }
       const data = await loadAdminOperations(client, reference.tournamentId)
       setState({ status: 'ready', signedIn: true, data, error: null })
-      const nextMatchId = data.matches.some(match => match.matchId === selectedMatchIdRef.current)
-        ? selectedMatchIdRef.current
-        : data.matches[0]?.matchId ?? ''
-      selectedMatchIdRef.current = nextMatchId
-      setSelectedMatchId(nextMatchId)
-      const nextMatch = data.matches.find(match => match.matchId === nextMatchId) ?? null
-      setDraft(nextMatch ? createAdminResultDraft(nextMatch) : null)
-      setStatusDraft(nextMatch?.matchStatus ?? 'scheduled')
-      setStatusNote('')
-      setRecalculationNote('')
-      if (nextMatch) {
-        const nextHistory = await loadAdminMatchHistory(client, reference.tournamentId, nextMatch.matchId)
-        setHistory(nextHistory)
-      } else {
-        setHistory([])
-      }
     } catch (error) {
       setState({ status: 'error', signedIn: false, data: null, error: error instanceof Error ? error.message : String(error) })
     }
@@ -93,42 +51,6 @@ export default function AdminOperations({ client, reference }) {
     return () => subscription.data.subscription.unsubscribe()
   }, [client, load])
 
-  const matches = useMemo(() => state.data?.matches ?? [], [state.data])
-  const selectedMatch = useMemo(
-    () => matches.find(match => match.matchId === selectedMatchId) ?? null,
-    [matches, selectedMatchId],
-  )
-
-  const chooseMatch = useCallback(async matchId => {
-    selectedMatchIdRef.current = matchId
-    setSelectedMatchId(matchId)
-    const match = matches.find(candidate => candidate.matchId === matchId) ?? null
-    setDraft(match ? createAdminResultDraft(match) : null)
-    setStatusDraft(match?.matchStatus ?? 'scheduled')
-    setStatusNote('')
-    setRecalculationNote('')
-    if (!match) {
-      setHistory([])
-      return
-    }
-    try {
-      const nextHistory = await loadAdminMatchHistory(client, reference.tournamentId, match.matchId)
-      setHistory(nextHistory)
-    } catch (error) {
-      setAction({ status: 'error', message: error instanceof Error ? error.message : String(error) })
-    }
-  }, [client, matches, reference.tournamentId])
-
-
-  const updateDraft = (key, value) => setDraft(previous => ({ ...previous, [key]: value }))
-  const validation = selectedMatch && draft ? validateAdminResultDraft(selectedMatch, draft) : null
-  const showExtraTime = selectedMatch?.matchNumber > 36 && ['extra_time', 'penalties'].includes(draft?.decisionMethod)
-  const showPenalties = selectedMatch?.matchNumber > 36 && draft?.decisionMethod === 'penalties'
-  const clearsScores = ['manual_review', 'void'].includes(draft?.resultStatus)
-  const features = state.data?.controlRoom?.features ?? []
-  const resultEntryEnabled = features.find(feature => feature.featureKey === 'result_entry')?.isEnabled ?? true
-  const scoringRecalculationEnabled = features.find(feature => feature.featureKey === 'scoring_recalculation')?.isEnabled ?? true
-
   const runAction = async (work, successMessage) => {
     setAction({ status: 'working', message: 'Applying the audited operation…' })
     try {
@@ -136,67 +58,39 @@ export default function AdminOperations({ client, reference }) {
       setAction({ status: 'success', message: successMessage })
       await load()
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
       const stale = error?.code === '40001'
       setAction({
         status: 'error',
         message: stale
-          ? 'The result changed after this screen loaded. Refresh and review the latest revision before trying again.'
-          : error instanceof Error ? error.message : String(error),
+          ? message.includes('Fixture')
+            ? 'The fixture changed after this screen loaded. Refresh and review the latest fixture revision before trying again.'
+            : 'The result changed after this screen loaded. Refresh and review the latest result revision before trying again.'
+          : message,
       })
     }
   }
 
-  if (state.status === 'loading') {
-    return (
-      <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
-        <span className="foundation-kicker">Tournament control room</span>
-        <h2 id="stage12-admin-heading">Checking administrator access…</h2>
-      </section>
-    )
-  }
+  if (state.status === 'loading') return <AccessState title="Checking administrator access…" description="Verifying the protected Euro staging role." />
+  if (state.status === 'error') return <AccessState error title="Admin operations could not load" description={state.error} onRetry={load} />
+  if (!state.signedIn) return <AccessState title="Secure admin controls" description="Sign in with an account that has been granted Euro tournament administrator access." />
+  if (!state.data?.access.isAdmin) return <AccessState title="No administrator access" description="Your account is signed in but has not been granted tournament administration rights. Access cannot be self-assigned from the browser." />
 
-  if (state.status === 'error') {
-    return (
-      <section className="foundation-panel foundation-panel--error foundation-admin" aria-labelledby="stage12-admin-heading">
-        <span className="foundation-kicker">Tournament control room</span>
-        <h2 id="stage12-admin-heading">Admin operations could not load</h2>
-        <p>{state.error}</p>
-        <button type="button" onClick={load}>Try again</button>
-      </section>
-    )
-  }
-
-  if (!state.signedIn) {
-    return (
-      <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
-        <span className="foundation-kicker">Tournament control room</span>
-        <h2 id="stage12-admin-heading">Secure admin controls</h2>
-        <p>Sign in with an account that has been granted Euro tournament administrator access.</p>
-      </section>
-    )
-  }
-
-  if (!state.data?.access.isAdmin) {
-    return (
-      <section className="foundation-panel foundation-admin" aria-labelledby="stage12-admin-heading">
-        <span className="foundation-kicker">Tournament control room</span>
-        <h2 id="stage12-admin-heading">No administrator access</h2>
-        <p>Your account is signed in but has not been granted tournament administration rights. Access cannot be self-assigned from the browser.</p>
-      </section>
-    )
-  }
+  const data = state.data
+  const matches = data.matches ?? []
+  const features = data.controlRoom?.features ?? []
 
   return (
-    <section className={`foundation-panel foundation-admin ${styles.page}`} aria-labelledby="stage12-admin-heading">
+    <section className={`foundation-panel foundation-admin ${styles.page}`} aria-labelledby="stage13fk2-admin-heading">
       <header className={styles.hero}>
         <div className={styles.heroCopy}>
           <span className="foundation-kicker">Tournament control room</span>
-          <h2 id="stage12-admin-heading">Euro 2028 operations</h2>
-          <p>One authorised workspace for tournament safeguards, official results, recovery, editorial content and audit evidence.</p>
+          <h2 id="stage13fk2-admin-heading">Euro 2028 operations</h2>
+          <p>One authorised workspace for readiness, fixture scheduling, official results, scoring recovery, safeguards, content and audit evidence.</p>
           <div className={styles.heroMeta}>
-            <span className={styles.metaChip}>Role: {humanise(state.data.access.adminRole)}</span>
-            <span className={styles.metaChip}>Environment: development</span>
-            <span className={styles.metaChip}>16 active migrations</span>
+            <span className={styles.metaChip}>Role: {humaniseAdminValue(data.access.adminRole)}</span>
+            <span className={styles.metaChip}>Protected Euro staging</span>
+            <span className={styles.metaChip}>Migration 018 active</span>
           </div>
         </div>
         <button type="button" className="foundation-secondary-button" onClick={load}>Refresh control room</button>
@@ -204,194 +98,66 @@ export default function AdminOperations({ client, reference }) {
 
       <nav className={styles.navigation} aria-label="Admin control-room sections">
         <a href="#admin-overview">Overview</a>
+        <a href="#admin-readiness">Readiness</a>
         <a href="#admin-safeguards">Safeguards</a>
         <a href="#admin-time-phase">Time &amp; Phase</a>
         <a href="#admin-team-content">Team content</a>
-        <a href="#admin-match-operations">Match operations</a>
-        <a href="#admin-scoring-activity">Scoring activity</a>
+        <a href="#admin-fixture-operations">Fixtures</a>
+        <a href="#admin-match-operations">Results</a>
+        <a href="#admin-scoring-activity">Scoring</a>
+        <a href="#admin-tournament-picks">Tournament Picks</a>
+        <a href="#admin-audit">Audit</a>
       </nav>
 
       <section className={styles.section} id="admin-overview" aria-labelledby="admin-overview-heading">
-        <div className={styles.sectionHeader}>
-          <div>
-            <h3 id="admin-overview-heading">Operational overview</h3>
-            <p>Check live risk, unresolved fixtures and recent system health before changing tournament state.</p>
-          </div>
-        </div>
-        <AdminSummary matches={matches} role={state.data.access.adminRole} />
+        <div className={styles.sectionHeader}><div><h3 id="admin-overview-heading">Operational overview</h3><p>Check current tournament state and runtime health before changing shared data.</p></div></div>
+        <AdminSummary matches={matches} role={data.access.adminRole} />
         <RuntimeHealthPanel />
       </section>
 
-      {action.message && (
-        <p className={styles.actionMessage} data-state={action.status} role="status" aria-live="polite">
-          {action.message}
-        </p>
-      )}
+      {action.message && <p className={styles.actionMessage} data-state={action.status} role="status" aria-live="polite">{action.message}</p>}
 
-      <section className={styles.section} id="admin-safeguards" aria-labelledby="admin-safeguards-heading">
-        <div className={styles.sectionHeader}>
-          <div>
-            <h3 id="admin-safeguards-heading">Tournament safeguards</h3>
-            <p>Global lock, feature controls, grace windows, allocation review and the append-only operations timeline.</p>
-          </div>
-        </div>
-        <p className={styles.safetyNote}>Irreversible and high-impact actions remain server-authorised, note-gated and audited.</p>
-        <AdminControlRoomSections
-          client={client}
-          tournamentId={reference.tournamentId}
-          data={state.data}
-          matches={matches}
-          runAction={runAction}
-        />
+      <section className={styles.section} id="admin-readiness" aria-labelledby="admin-readiness-heading">
+        <div className={styles.sectionHeader}><div><h3 id="admin-readiness-heading">Operational readiness</h3><p>One read-only view of schedule, participant, result, scoring, profile and safeguard readiness.</p></div></div>
+        <AdminReadiness controlRoom={data.controlRoom} />
       </section>
 
-      <AdminTimePhaseSection
-        client={client}
-        tournamentId={reference.tournamentId}
-        adminRole={state.data.access.adminRole}
-        timeState={timeState}
-        onChanged={timeState.refresh}
-        sectionClass={styles.section}
-        headerClass={styles.sectionHeader}
-      />
+      <section className={styles.section} id="admin-safeguards" aria-labelledby="admin-safeguards-heading">
+        <div className={styles.sectionHeader}><div><h3 id="admin-safeguards-heading">Tournament safeguards</h3><p>Global lock, feature controls, grace windows and canonical allocation review.</p></div></div>
+        <p className={styles.safetyNote}>Irreversible and high-impact actions remain server-authorised, note-gated and audited.</p>
+        <AdminControlRoomSections client={client} tournamentId={reference.tournamentId} data={data} matches={matches} runAction={runAction} />
+      </section>
+
+      <AdminTimePhaseSection client={client} tournamentId={reference.tournamentId} adminRole={data.access.adminRole} timeState={timeState} onChanged={timeState.refresh} sectionClass={styles.section} headerClass={styles.sectionHeader} />
 
       <section className={styles.section} id="admin-team-content" aria-labelledby="admin-team-content-heading">
-        <div className={styles.sectionHeader}>
-          <div>
-            <h3 id="admin-team-content-heading">Team content</h3>
-            <p>Review and maintain the curated tournament profile content available to users.</p>
-          </div>
-        </div>
-        <AdminTeamProfiles
-          client={client}
-          tournamentId={reference.tournamentId}
-          profiles={state.data.teamProfiles ?? []}
-          adminRole={state.data.access.adminRole}
-          runAction={runAction}
-        />
+        <div className={styles.sectionHeader}><div><h3 id="admin-team-content-heading">Team content</h3><p>Review and maintain the curated tournament profile content available to users.</p></div></div>
+        <AdminTeamProfiles client={client} tournamentId={reference.tournamentId} profiles={data.teamProfiles ?? []} adminRole={data.access.adminRole} runAction={runAction} />
+      </section>
+
+      <section className={`${styles.section} ${styles.matchArea}`} id="admin-fixture-operations" aria-labelledby="admin-fixture-operations-heading">
+        <div className={styles.sectionHeader}><div><h3 id="admin-fixture-operations-heading">Fixture schedule operations</h3><p>Review every fixture. Owners can update only date, venue, venue-local kick-off and schedule status.</p></div></div>
+        <AdminFixtureOperations key={matches.map(match => match.fixtureRevision).join('-')} client={client} tournamentId={reference.tournamentId} matches={matches} venues={data.venues ?? []} adminRole={data.access.adminRole} actionStatus={action.status} runAction={runAction} />
       </section>
 
       <section className={`${styles.section} ${styles.matchArea}`} id="admin-match-operations" aria-labelledby="admin-match-operations-heading">
-        <div className={styles.sectionHeader}>
-          <div>
-            <h3 id="admin-match-operations-heading">Match operations</h3>
-            <p>Select one fixture, review its current revision, then record a result, update status or run an explicit recalculation.</p>
-          </div>
-        </div>
-        <div className="foundation-admin-layout">
-          <aside className="foundation-admin-match-list">
-            <label>
-              <span>Choose match</span>
-              <select value={selectedMatchId} onChange={event => chooseMatch(event.target.value)}>
-                {matches.map(match => (
-                  <option key={match.matchId} value={match.matchId}>
-                    {match.matchNumber}. {match.homeTeamLabel} v {match.awayTeamLabel} · {humanise(match.resultStatus)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            {selectedMatch && (
-              <div className="foundation-admin-match-summary">
-                <span>{selectedMatch.stageName}{selectedMatch.groupCode ? ` · Group ${selectedMatch.groupCode}` : ''}</span>
-                <strong>{selectedMatch.homeTeamLabel} v {selectedMatch.awayTeamLabel}</strong>
-                <small>Result revision {selectedMatch.resultRevision} · Updated {formatTimestamp(selectedMatch.updatedAt)}</small>
-              </div>
-            )}
-          </aside>
-
-          {selectedMatch && draft && (
-            <div className="foundation-admin-workspace">
-              <article className="foundation-results-card foundation-results-card--wide">
-                <div className="foundation-results-card__heading">
-                  <div>
-                    <span className="foundation-kicker">Canonical result</span>
-                    <h3>Record or correct result</h3>
-                  </div>
-                  <small>Expected revision {selectedMatch.resultRevision}</small>
-                </div>
-
-                <div className="foundation-admin-form-grid">
-                  <label><span>Match status</span><select value={draft.matchStatus} onChange={event => updateDraft('matchStatus', event.target.value)}>{ADMIN_MATCH_STATUS.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
-                  <label><span>Result status</span><select value={draft.resultStatus} onChange={event => updateDraft('resultStatus', event.target.value)}>{ADMIN_RESULT_STATUS.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
-                  <label><span>Decision method</span><select disabled={clearsScores || selectedMatch.matchNumber <= 36} value={draft.decisionMethod} onChange={event => updateDraft('decisionMethod', event.target.value)}>{ADMIN_DECISION_METHOD.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
-                </div>
-
-                <div className="foundation-admin-score-grid">
-                  <ScoreInput label={`${selectedMatch.homeTeamLabel} after 90 min`} value={draft.homeScore90} disabled={clearsScores} onChange={value => updateDraft('homeScore90', value)} />
-                  <ScoreInput label={`${selectedMatch.awayTeamLabel} after 90 min`} value={draft.awayScore90} disabled={clearsScores} onChange={value => updateDraft('awayScore90', value)} />
-                  {showExtraTime && <ScoreInput label={`${selectedMatch.homeTeamLabel} after extra time`} value={draft.homeScoreAet} disabled={clearsScores} onChange={value => updateDraft('homeScoreAet', value)} />}
-                  {showExtraTime && <ScoreInput label={`${selectedMatch.awayTeamLabel} after extra time`} value={draft.awayScoreAet} disabled={clearsScores} onChange={value => updateDraft('awayScoreAet', value)} />}
-                  {showPenalties && <ScoreInput label={`${selectedMatch.homeTeamLabel} penalties`} value={draft.homePenalties} disabled={clearsScores} onChange={value => updateDraft('homePenalties', value)} />}
-                  {showPenalties && <ScoreInput label={`${selectedMatch.awayTeamLabel} penalties`} value={draft.awayPenalties} disabled={clearsScores} onChange={value => updateDraft('awayPenalties', value)} />}
-                </div>
-
-                <label className="foundation-admin-note">
-                  <span>Audit note</span>
-                  <textarea value={draft.note} maxLength="500" onChange={event => updateDraft('note', event.target.value)} placeholder="State the official source or reason for this change." />
-                </label>
-
-                {validation && !validation.valid && (
-                  <ul className="foundation-admin-validation">
-                    {validation.errors.map(error => <li key={error}>{error}</li>)}
-                  </ul>
-                )}
-
-                <button
-                  type="button"
-                  disabled={!validation?.valid || !resultEntryEnabled || action.status === 'working'}
-                  onClick={() => runAction(
-                    () => saveAdminMatchResult(client, reference.tournamentId, selectedMatch, draft),
-                    `Match ${selectedMatch.matchNumber} result saved and points recalculated.`,
-                  )}
-                >
-                  {selectedMatch.resultRevision > 0 ? 'Save corrected result' : 'Record result'}
-                </button>
-              </article>
-
-              <article className="foundation-results-card">
-                <span className="foundation-kicker">Status only</span>
-                <h3>Update match state</h3>
-                <p>Use this for live, paused or postponed status changes without rewriting the result revision.</p>
-                <label><span>New status</span><select value={statusDraft} onChange={event => setStatusDraft(event.target.value)}>{ADMIN_MATCH_STATUS.map(value => <option key={value} value={value}>{humanise(value)}</option>)}</select></label>
-                <label className="foundation-admin-note"><span>Audit note</span><textarea value={statusNote} maxLength="500" onChange={event => setStatusNote(event.target.value)} /></label>
-                <button type="button" disabled={statusNote.trim().length < 5 || action.status === 'working'} onClick={() => runAction(
-                  () => updateAdminMatchStatus(client, reference.tournamentId, selectedMatch, statusDraft, statusNote),
-                  `Match ${selectedMatch.matchNumber} status updated.`,
-                )}>Update status</button>
-              </article>
-
-              <article className="foundation-results-card">
-                <span className="foundation-kicker">Recovery control</span>
-                <h3>Recalculate this match</h3>
-                <p>This replaces this match’s existing point rows. It never adds a duplicate score.</p>
-                <label className="foundation-admin-note"><span>Audit note</span><textarea value={recalculationNote} maxLength="500" onChange={event => setRecalculationNote(event.target.value)} /></label>
-                <button type="button" disabled={!scoringRecalculationEnabled || selectedMatch.resultStatus !== 'confirmed' || recalculationNote.trim().length < 5 || action.status === 'working'} onClick={() => runAction(
-                  () => recalculateAdminMatchPoints(client, reference.tournamentId, selectedMatch, recalculationNote),
-                  `Match ${selectedMatch.matchNumber} points recalculated.`,
-                )}>Recalculate points</button>
-              </article>
-
-              <article className="foundation-results-card foundation-results-card--wide">
-                <span className="foundation-kicker">Append-only audit</span>
-                <h3>Result revision history</h3>
-                <ResultHistory history={history} />
-              </article>
-            </div>
-          )}
-        </div>
+        <div className={styles.sectionHeader}><div><h3 id="admin-match-operations-heading">Result operations</h3><p>Record canonical results, update match state and run explicit single-match recovery.</p></div></div>
+        <AdminMatchOperations key={matches.map(match => match.resultRevision).join('-')} client={client} tournamentId={reference.tournamentId} matches={matches} features={features} actionStatus={action.status} runAction={runAction} />
       </section>
 
       <section className={styles.section} id="admin-scoring-activity" aria-labelledby="admin-scoring-activity-heading">
-        <div className={styles.sectionHeader}>
-          <div>
-            <h3 id="admin-scoring-activity-heading">Scoring activity</h3>
-            <p>Review the latest replacement-based scoring runs and any recorded failure message.</p>
-          </div>
-        </div>
-        <article className="foundation-results-card foundation-results-card--wide">
-          <ScoringRuns runs={state.data.scoringRuns} />
-        </article>
+        <div className={styles.sectionHeader}><div><h3 id="admin-scoring-activity-heading">Scoring and recovery</h3><p>Review replacement-based scoring runs and, for owners only, reconcile the whole tournament.</p></div></div>
+        <AdminScoringRecovery client={client} tournamentId={reference.tournamentId} adminRole={data.access.adminRole} features={features} runs={data.scoringRuns} actionStatus={action.status} runAction={runAction} />
+      </section>
+
+      <section className={styles.section} id="admin-tournament-picks" aria-labelledby="admin-tournament-picks-heading">
+        <div className={styles.sectionHeader}><div><h3 id="admin-tournament-picks-heading">Tournament Picks</h3><p>The approved contract is ready here; executable outcome entry remains a Stage 17A dependency.</p></div></div>
+        <AdminTournamentPicks readiness={data.controlRoom.tournamentPicks} />
+      </section>
+
+      <section className={styles.section} id="admin-audit" aria-labelledby="admin-audit-heading">
+        <div className={styles.sectionHeader}><div><h3 id="admin-audit-heading">Administrator audit</h3><p>Filter and inspect up to 200 append-only operation events without changing or deleting evidence.</p></div></div>
+        <AdminAuditTimeline events={data.operationEvents} />
       </section>
     </section>
   )
