@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TOURNAMENT_CONFIG } from '../../config/tournament.js'
-import { DATES, LEGACY_WC26_DATE_ISO } from '../tournamentDates.js'
+import { DATES } from '../tournamentDates.js'
 
 describe('tournament configuration', () => {
   it('identifies the isolated Euro staging tournament', () => {
@@ -9,8 +9,8 @@ describe('tournament configuration', () => {
     expect(TOURNAMENT_CONFIG.provisionalData).toBe(true)
   })
 
-  it('keeps valid temporary compatibility dates until Euro dates are configured', () => {
+  it('uses the central provisional Euro start date instead of the legacy WC26 fallback', () => {
     expect(DATES.TOURNAMENT_START).toBeInstanceOf(Date)
-    expect(DATES.TOURNAMENT_START.getTime()).toBe(new Date(LEGACY_WC26_DATE_ISO.TOURNAMENT_START).getTime())
+    expect(DATES.TOURNAMENT_START.toISOString()).toBe('2028-06-09T20:00:00.000Z')
   })
 })

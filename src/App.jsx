@@ -22,6 +22,7 @@ import TeamProfileProvider from './teamProfile/TeamProfileProvider.jsx'
 import { StagingTimeBanner, useTournamentTimeControl } from './timePhase/index.js'
 import { loadEuroApp } from './runtime/loadEuroApp.js'
 import { createAppClient } from './runtime/appClient.js'
+import { resolveTournamentLifecycle } from './config/index.js'
 
 function PageIntro({ eyebrow, title, description, badge = null }) {
   return (
@@ -107,6 +108,7 @@ export default function App() {
 
   const appData = state.data
   const navigation = deriveNavigationLifecycle(appData.guestReference)
+  const lifecycle = resolveTournamentLifecycle(appData.tournament)
 
   let content
   if (route === APP_ROUTE.HOME) {
@@ -114,7 +116,7 @@ export default function App() {
   } else if (route === APP_ROUTE.PREDICT) {
     content = (
       <div className="content-stack groups-page">
-        <PageIntro eyebrow="Original Predictor" title="Predict the group stage" description="Enter all 36 group scores, place up to five jokers and review your progress at any time." badge={{ tone: appData.tournament.prediction_locked_at ? 'warning' : 'safe', label: appData.tournament.prediction_locked_at ? 'Locked' : 'Open' }} />
+        <PageIntro eyebrow="Original Predictor" title="Predict the group stage" description="Enter all 36 group scores, place up to five jokers and review your progress at any time." badge={{ tone: lifecycle.locked ? 'warning' : 'safe', label: lifecycle.locked ? 'Locked' : lifecycle.provisional ? 'Open · provisional lock set' : 'Open' }} />
         <PredictionJourney key={`groups-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="groups" />
       </div>
     )

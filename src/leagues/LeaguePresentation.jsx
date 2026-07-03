@@ -1,4 +1,4 @@
-import { PlayerIdentity } from '../design-system/index.jsx'
+import { PlayerIdentity, SelectField } from '../design-system/index.jsx'
 import { formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
 
 function competitionName(competitionKey) {
@@ -27,16 +27,16 @@ export function CompetitionTabs({ value, onChange }) {
 export function LeaguePicker({ leagues, selectedId, onSelect }) {
   if (leagues.length === 0) return null
   return (
-    <label className="auth-field foundation-league-picker">
-      <span>Your leagues</span>
-      <select value={selectedId ?? ''} onChange={event => onSelect(event.target.value)}>
-        {leagues.map(league => (
-          <option key={league.id} value={league.id}>
-            {league.name} · {league.memberCount} member{league.memberCount === 1 ? '' : 's'}
-          </option>
-        ))}
-      </select>
-    </label>
+    <SelectField
+      label="Your leagues"
+      className="foundation-league-picker"
+      value={selectedId ?? ''}
+      onChange={onSelect}
+      options={leagues.map(league => ({
+        value: league.id,
+        label: `${league.name} · ${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`,
+      }))}
+    />
   )
 }
 
@@ -45,15 +45,14 @@ export function MemberPicker({ members, selectedId, onSelect }) {
   const available = members.filter(member => !member.isCurrentUser)
   if (available.length === 0) return null
   return (
-    <label className="auth-field foundation-member-picker">
-      <span>Compare with member</span>
-      <select value={selectedId ?? ''} onChange={event => onSelect(event.target.value)}>
-        <option value="">Choose a member</option>
-        {available.map(member => (
-          <option key={member.userId} value={member.userId}>{member.displayName}</option>
-        ))}
-      </select>
-    </label>
+    <SelectField
+      label="Compare with member"
+      className="foundation-member-picker"
+      value={selectedId ?? ''}
+      onChange={onSelect}
+      placeholder="Choose a member"
+      options={available.map(member => ({ value: member.userId, label: member.displayName }))}
+    />
   )
 }
 

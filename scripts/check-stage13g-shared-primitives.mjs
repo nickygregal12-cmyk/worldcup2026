@@ -1,0 +1,37 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
+const root = process.cwd()
+const read = file => fs.readFileSync(path.join(root, file), 'utf8')
+const fail = message => { console.error(message); process.exit(1) }
+
+const tournament = read('src/config/tournament.js')
+const lifecycle = read('src/config/tournamentLifecycle.js')
+const journey = read('src/journey/PredictionJourney.jsx')
+const view = read('src/journey/PredictionJourneyView.jsx')
+const design = read('src/design-system/index.jsx')
+const account = read('src/auth/AccountAccess.jsx')
+const leagues = read('src/leagues/LeaguePresentation.jsx')
+const refresh = read('src/runtime/refreshPolicy.js')
+const packageJson = JSON.parse(read('package.json'))
+const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
+
+if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
+if (migrations.some(file => file.includes('019'))) fail('Migration 019 must not exist in this Stage 13G-A slice')
+if (!tournament.includes("predictionLockAt: import.meta.env.VITE_PREDICTION_LOCK_AT || '2028-06-09T19:00:00.000Z'")) fail('Central provisional prediction lock fallback is missing')
+if (!tournament.includes("tournamentStartAt: import.meta.env.VITE_TOURNAMENT_START_AT || '2028-06-09T20:00:00.000Z'")) fail('Central provisional tournament start fallback is missing')
+if (!lifecycle.includes('resolveTournamentLifecycle') || !lifecycle.includes('CENTRAL_PROVISIONAL')) fail('Tournament lifecycle resolver is missing central provisional source handling')
+if (!journey.includes('resolveTournamentLifecycle(tournament)')) fail('PredictionJourney must derive lock state from the lifecycle resolver')
+if (!view.includes('Account autosave is enabled from the central provisional Euro 2028 lock configuration')) fail('Autosave unblock notice is missing')
+if (!design.includes('export function ConfirmDialog') || !design.includes('export function SelectField')) fail('Shared confirmation and selector primitives are missing')
+if (!account.includes('ConfirmDialog') || !account.includes('Sign out of Euro 2028 Predictor?')) fail('Sign-out must use the shared confirmation dialog')
+if (!leagues.includes('SelectField') || leagues.includes('<select value={selectedId')) fail('League pickers must use the design-system selector groundwork')
+if (!refresh.includes('REFRESH_POLICY') || !refresh.includes('manualButton: false')) fail('Refresh-policy groundwork is missing')
+if (!packageJson.scripts['audit:shared-primitives']) fail('audit:shared-primitives script is not registered')
+if (!packageJson.scripts.check.includes('npm run audit:shared-primitives')) fail('npm run check must include the shared-primitives audit')
+
+console.log('Stage 13G-A shared primitives audit passed.')
+console.log('Central provisional lock: 2028-06-09T19:00:00.000Z')
+console.log('Central provisional tournament start: 2028-06-09T20:00:00.000Z')
+console.log(`Active migrations: ${migrations.length}`)
+console.log(`Latest migration: ${migrations.at(-1)}`)

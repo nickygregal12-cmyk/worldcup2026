@@ -9,6 +9,7 @@ import { applyEuroLuckyDip } from './euroLuckyDip.js'
 import PredictionJourneyView from './PredictionJourneyView.jsx'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { browserStorage, messageForError, readGuestReview, writeGuestReview } from './predictionJourneyRuntime.js'
+import { resolveTournamentLifecycle } from '../config/index.js'
 
 export default function PredictionJourney({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, fixtureDraft = null }) {
   const guestStorage = useMemo(() => createGuestPredictionStorage({
@@ -47,9 +48,9 @@ export default function PredictionJourney({ client, reference, tournament, initi
   const draft = signedIn && !guestTransferMode ? accountDraft : guestDraft
   const summary = useMemo(() => summarisePredictionJourney(reference, draft), [reference, draft])
   const reviewMode = signedIn && !guestTransferMode ? Boolean(accountBundle?.submittedAt) : guestReview
-  const lockConfigured = Boolean(tournament.prediction_lock_at || tournament.prediction_locked_at)
-  const locked = Boolean(tournament.prediction_locked_at) ||
-    Boolean(tournament.prediction_lock_at && new Date(tournament.prediction_lock_at) <= new Date())
+  const lifecycle = useMemo(() => resolveTournamentLifecycle(tournament), [tournament])
+  const lockConfigured = lifecycle.lockConfigured
+  const locked = lifecycle.locked
   const readOnly = locked || reviewMode
 
   const loadAccount = useCallback(async nextSession => {
@@ -343,7 +344,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
         reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
         accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
         view, setView, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
-        updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, notice, liveBracketState,
+        updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, notice, liveBracketState,
       }}
     />
   )

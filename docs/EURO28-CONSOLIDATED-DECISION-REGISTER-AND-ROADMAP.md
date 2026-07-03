@@ -527,3 +527,12 @@ Decision pending. Stage 16 synthetic seeding may reuse service-role-only partici
 - The converging wall-chart bracket/share image remains scheduled for Stage 13P-A.
 - Static Euro Open Graph identity is mandatory; dynamic per-league previews require a server-visible invite route and may expose only invite-safe metadata.
 - The Functional Completion Ledger must update in the same commit as every future batch, including micro-fixes.
+
+### Stage 13G-A central configuration/shared primitive amendment
+
+- Central provisional prediction lock and tournament start values are now held in `TOURNAMENT_CONFIG`.
+- Original Predictor account autosave must use `resolveTournamentLifecycle()` rather than checking database lock fields directly.
+- The central provisional value unblocks staging autosave but must never apply the irreversible real global lock.
+- Shared `ConfirmDialog`, `SelectField` and `REFRESH_POLICY` primitives are approved for incremental adoption.
+- Remaining destructive actions, native selectors and refresh consumers stay ledger-tracked until fully migrated.
+- No database change or Migration 019 belongs to this slice.

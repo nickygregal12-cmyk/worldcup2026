@@ -17,8 +17,8 @@ export const TOURNAMENT_CONFIG = Object.freeze({
   status: 'development',
   provisionalData: true,
   dates: Object.freeze({
-    predictionLockAt: import.meta.env.VITE_PREDICTION_LOCK_AT || null,
-    tournamentStartAt: import.meta.env.VITE_TOURNAMENT_START_AT || null,
+    predictionLockAt: import.meta.env.VITE_PREDICTION_LOCK_AT || '2028-06-09T19:00:00.000Z',
+    tournamentStartAt: import.meta.env.VITE_TOURNAMENT_START_AT || '2028-06-09T20:00:00.000Z',
     groupStageEndAt: import.meta.env.VITE_GROUP_STAGE_END_AT || null,
     knockoutPredictorOpenAt: import.meta.env.VITE_KO_PREDICTOR_OPEN_AT || null,
     tournamentEndAt: import.meta.env.VITE_TOURNAMENT_END_AT || null,

@@ -535,3 +535,12 @@ From checkpoint `3c41628`, following accepted Stage 13F-K3 commit `b7f50de` and 
 - no Migration 019;
 - no Results Admin revocation inside the package;
 - no change to Original/KO competition separation.
+
+### Stage 13G-A central configuration/shared primitive amendment
+
+- Central provisional prediction lock and tournament start values are now held in `TOURNAMENT_CONFIG`.
+- Original Predictor account autosave must use `resolveTournamentLifecycle()` rather than checking database lock fields directly.
+- The central provisional value unblocks staging autosave but must never apply the irreversible real global lock.
+- Shared `ConfirmDialog`, `SelectField` and `REFRESH_POLICY` primitives are approved for incremental adoption.
+- Remaining destructive actions, native selectors and refresh consumers stay ledger-tracked until fully migrated.
+- No database change or Migration 019 belongs to this slice.

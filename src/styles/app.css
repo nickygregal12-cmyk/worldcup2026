@@ -560,7 +560,7 @@ a {
   font-weight: 800;
 }
 
-.ui-field input,
+.ui-field input, .ui-field select,
 .legacy-page input,
 .legacy-page select,
 .legacy-page textarea {
@@ -573,10 +573,8 @@ a {
   color: var(--text-primary);
 }
 
-.ui-field small {
-  color: var(--text-secondary);
-  font-weight: 500;
-}
+.ui-field small { color: var(--text-secondary); font-weight: 500; }
+
 
 .has-dialog-open {
   overflow: hidden;

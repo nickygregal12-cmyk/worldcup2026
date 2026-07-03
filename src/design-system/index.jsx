@@ -160,4 +160,34 @@ export function Dialog({ open, title, onClose, children, labelledBy, className =
   )
 }
 
+
+export function SelectField({ label, hint, id: providedId, value, options, onChange, className = '', placeholder = null, ...props }) {
+  const generatedId = useId()
+  const id = providedId ?? generatedId
+  return (
+    <label className={`ui-field ui-select-field ${className}`.trim()} htmlFor={id} data-design-system-select="true">
+      <span>{label}</span>
+      <select id={id} value={value ?? ''} onChange={event => onChange(event.target.value)} {...props}>
+        {placeholder && <option value="">{placeholder}</option>}
+        {options.map(option => (
+          <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>
+        ))}
+      </select>
+      {hint && <small>{hint}</small>}
+    </label>
+  )
+}
+
+export function ConfirmDialog({ open, title, children, confirmLabel = 'Confirm', cancelLabel = 'Cancel', tone = 'warning', busy = false, onConfirm, onCancel }) {
+  return (
+    <Dialog open={open} title={title} onClose={onCancel} className={`ui-confirm-dialog ui-confirm-dialog--${tone}`}>
+      <div className="ui-confirm-dialog__body">{children}</div>
+      <footer className="ui-confirm-dialog__actions">
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={busy}>{cancelLabel}</Button>
+        <Button type="button" variant={tone === 'danger' ? 'danger' : 'primary'} onClick={onConfirm} loading={busy}>{confirmLabel}</Button>
+      </footer>
+    </Dialog>
+  )
+}
+
 export { Icon, PlayerIdentity, TeamLabel, ScoreInput, PredictionStateBadge }

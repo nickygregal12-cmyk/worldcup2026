@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { ConfirmDialog } from '../design-system/index.jsx'
 import GuestAccountTransfer from '../guest/GuestAccountTransfer.jsx'
 import {
   buildAuthRedirectUrl,
@@ -73,6 +74,7 @@ export default function AccountAccess({ client, reference }) {
   const [confirmation, setConfirmation] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [profileName, setProfileName] = useState('')
+  const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false)
 
   const isRecovery = mode === 'update-password'
   const emailAddress = useMemo(() => getEmailForSession(session), [session])
@@ -216,8 +218,9 @@ export default function AccountAccess({ client, reference }) {
     })
   }
 
-  const handleSignOut = () => run(async () => {
+  const confirmSignOut = () => run(async () => {
     await signOut(client)
+    setSignOutConfirmOpen(false)
     setNotice({ tone: 'safe', message: 'Signed out. The browser-only guest draft was not removed.' })
   })
 
@@ -233,6 +236,18 @@ export default function AccountAccess({ client, reference }) {
   if (session?.user && !isRecovery) {
     return (
       <section className="foundation-panel auth-foundation">
+        <ConfirmDialog
+          open={signOutConfirmOpen}
+          title="Sign out of Euro 2028 Predictor?"
+          confirmLabel="Sign out"
+          cancelLabel="Stay signed in"
+          tone="danger"
+          busy={busy}
+          onConfirm={confirmSignOut}
+          onCancel={() => setSignOutConfirmOpen(false)}
+        >
+          Your browser-only guest draft stays on this device. Account predictions already saved to staging remain attached to your account.
+        </ConfirmDialog>
         <div className="foundation-section-heading auth-foundation__heading">
           <div>
             <span className="foundation-kicker">Euro account</span>
@@ -241,7 +256,7 @@ export default function AccountAccess({ client, reference }) {
               Manage the display name used on leaderboards and shared predictions. Your email remains private.
             </p>
           </div>
-          <button className="foundation-secondary-button" type="button" onClick={handleSignOut} disabled={busy}>
+          <button className="foundation-secondary-button" type="button" onClick={() => setSignOutConfirmOpen(true)} disabled={busy}>
             Sign out
           </button>
         </div>

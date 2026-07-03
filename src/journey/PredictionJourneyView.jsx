@@ -44,7 +44,7 @@ export default function PredictionJourneyView({
   reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
   accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
   view, setView, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
-  updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, notice, liveBracketState,
+  updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, notice, liveBracketState,
 }) {
   return (
     <section className="foundation-panel prediction-journey" aria-labelledby="prediction-journey-title">
@@ -200,7 +200,12 @@ export default function PredictionJourneyView({
 
       {!lockConfigured && (
         <p className="guest-notice guest-notice--warning">
-          Account autosave is intentionally blocked until the official first kick-off lock is configured. Guest browser saving still works.
+          Account autosave is intentionally blocked until the prediction lock is configured. Guest browser saving still works.
+        </p>
+      )}
+      {lifecycle?.provisional && (
+        <p className="guest-notice guest-notice--safe">
+          Account autosave is enabled from the central provisional Euro 2028 lock configuration. This does not apply the irreversible tournament lock.
         </p>
       )}
       {notice && <p className={`guest-notice guest-notice--${notice.tone}`} role="status">{notice.message}</p>}
