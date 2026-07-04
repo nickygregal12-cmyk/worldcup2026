@@ -19,6 +19,13 @@ describe('Euro app routes', () => {
     expect(routeFromHash('#/rankings')).toBe(APP_ROUTE.LEADERBOARDS)
     expect(routeFromHash('#/match-centre?match=37')).toBe(APP_ROUTE.MATCH_CENTRE)
     expect(routeFromHash('#/match?match=37')).toBe(APP_ROUTE.MATCH_CENTRE)
+    expect(routeFromHash('#/how-to-play')).toBe(APP_ROUTE.HOW_TO_PLAY)
+    expect(routeFromHash('#/rules')).toBe(APP_ROUTE.HOW_TO_PLAY)
+  })
+
+  it('keeps Tournament and How to Play as separate destinations', () => {
+    expect(destinationForRoute(APP_ROUTE.TOURNAMENT)).toMatchObject({ label: 'Tournament', hash: '#/tournament' })
+    expect(destinationForRoute(APP_ROUTE.HOW_TO_PLAY)).toMatchObject({ label: 'How to play', hash: '#/how-to-play' })
   })
 
   it('keeps Results and Leaderboards as separate destinations', () => {

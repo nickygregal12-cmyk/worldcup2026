@@ -42,6 +42,22 @@ Verified in Euro staging:
 
 Each of the six groups contains exactly four positions.
 
+## Confirmed UEFA 2028 facts
+
+UEFA confirmed the final tournament schedule and venue list on 12 November 2025. The canonical project model now treats these as confirmed facts:
+
+- Tournament dates: 9 June 2028 to 9 July 2028.
+- Host nations: England, Scotland, Wales and Republic of Ireland.
+- Northern Ireland is not a final-schedule host nation after Casement Park was removed from the confirmed venue list.
+- Opening match: National Stadium of Wales, Cardiff, Friday 9 June 2028.
+- Semi-finals: Wembley Stadium, London, Tuesday 4 July and Wednesday 5 July 2028.
+- Final: Wembley Stadium, London, Sunday 9 July 2028.
+- Confirmed venues: Wembley Stadium and Tottenham Hotspur Stadium in London, National Stadium of Wales in Cardiff, Manchester City Stadium in Manchester, Everton Stadium in Liverpool, St James' Park in Newcastle, Villa Park in Birmingham, Hampden Park in Glasgow and Dublin Arena in Dublin.
+
+The format remains 24 teams, six groups of four, the top two in each group plus the four best third-placed teams advancing to the Round of 16, then a straight knockout with no third-place play-off.
+
+Group participants and match-specific kick-off times remain unconfirmed. The model must not invent them.
+
 ## Batch 2: Official venues and group-stage schedule
 
 Completed: 30 June 2026
@@ -61,7 +77,7 @@ Remote migration history confirms:
 
 The Euro staging database contains:
 
-- 9 confirmed tournament venues;
+- 9 confirmed tournament venues across eight cities and four host nations;
 - 36 official group-stage matches;
 - official group-stage dates from 9 June 2028 to 21 June 2028;
 - official match numbers 1 to 36;
@@ -79,7 +95,7 @@ Every group-stage match currently uses:
 - `participants_status = provisional`;
 - `kickoff_at = null`.
 
-UEFA has confirmed each group match's date and venue, but the match-specific kick-off times will not be confirmed until after the final tournament draw. No kick-off times have been invented.
+UEFA has confirmed each group match's date and venue. Match-specific kick-off times will not be confirmed until after the final tournament draw. No kick-off times have been invented.
 
 The A1 to F4 match sources currently resolve to provisional tournament slots only. They are not real qualified teams.
 
@@ -157,6 +173,6 @@ Verified in Euro staging:
 
 ## Current position
 
-Stage 1 Batches 1, 2 and 3 are complete. The staging tournament model now contains all 51 official Euro 2028 match numbers, dates, venues and participant-source rules currently available from UEFA.
+Stage 1 Batches 1, 2 and 3 are complete. The staging tournament model now contains all 51 official Euro 2028 match numbers, dates, venues and participant-source rules currently available from UEFA. The source-of-truth config now also records the confirmed final tournament date window, host nations, opening-match venue and Wembley final-week facts.
 
 Real teams and match-specific kick-off times remain unresolved. Scoring, predictions, authentication, leagues and UI redesign have not started.

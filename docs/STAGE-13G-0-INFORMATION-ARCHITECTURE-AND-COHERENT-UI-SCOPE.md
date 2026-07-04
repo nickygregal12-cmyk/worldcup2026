@@ -437,3 +437,6 @@ Stage 13G closes only when:
 - every active screen is re-baselined in both themes;
 - the screen-by-screen charter review finds no orphaned entry point, duplicated anatomy or avoidable clutter;
 - Nicky accepts the app while walking it as a new casual player.
+
+
+| How to play | `#/how-to-play` | More and footer | Original Predictor, KO Predictor, scoring, locks, jokers and mechanics FAQ | Split from Tournament in Stage 13G-B-TOURNAMENT-1. |

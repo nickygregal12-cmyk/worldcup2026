@@ -1,5 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.38 — Stage 13G-B Tournament / How to Play split
+
+Stage 13G-B-TOURNAMENT-1 implements the Tournament/How to Play split: `#/tournament` now owns football facts and `#/how-to-play` owns predictor mechanics. Canonical tournament facts are corrected in `TOURNAMENT_CONFIG` and the Stage 1 model doc. Active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.37 — Stage 13G destination reference adoption
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
@@ -157,7 +161,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Stage 13G-A route integrity and Admin sections | ✅ FUNCTIONAL | Canonical Admin section registry, query-addressed section destinations, invalid-section recovery, route-render tests and dead-destination audit | — |
 | Stage 13G-A central configuration and shared primitives | ✅ FUNCTIONAL | Central provisional lifecycle config, account autosave unblock, shared confirmation, design-system selector adoption across active surfaces, refresh-policy enforcement and foundation-class ratchet groundwork are proven by audits. | — |
 | Stage 13G destination reference adoption | ✅ FUNCTIONAL | Five approved reference artefacts for Tournament, How to Play, Account, Admin and Match Centre are recorded under `docs/reference-prototypes/`, with `audit:stage13g-destination-reference-adoption` wired into `npm run check`. Docs/audit only; no UI, config, scoring, resolver, Supabase write or migration change. | — |
-| Stage 13G-B Tournament / How to Play split and canonical facts | 🕓 SCHEDULED | Amend existing Stage 13G-B in place: split `#/tournament` into Tournament facts and `#/how-to-play` mechanics, correct confirmed Euro 2028 dates/venues/hosts in the canonical source of truth, keep group participants and match-specific kick-offs explicitly unconfirmed, and add a split/facts audit. | 13G-B-TOURNAMENT-1 |
+| Stage 13G-B Tournament / How to Play split and canonical facts | ✅ FUNCTIONAL | Split `#/tournament` into Tournament facts and `#/how-to-play` mechanics. Canonical tournament facts now record confirmed Euro 2028 dates/venues/hosts; group participants and match-specific kick-offs remain explicitly unconfirmed. | 13G-B-TOURNAMENT-1 |
 | Stage 13G-C people, profiles and sharing | 🕓 SCHEDULED | Shared player overview, one-tap invites, static/dynamic previews and synthetic identity preparation | 13G-C |
 | Stage 13G-D seeded whole-surface coherence | 🕓 SCHEDULED | Stage 16 cast, Scotland reference profile, all-screen re-baseline and charter review | 13G-D |
 | Whole-app new-player walk-through | 🕓 SCHEDULED | Owner acceptance after navigating every direct and contextual journey as a casual first-time player | 13G-D |
@@ -183,7 +187,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Joker design-system element | 🕓 SCHEDULED | Replace hard-coded `J` circle with a gold design-system special-action/multiplier joker element using central scoring values and accessible states. | 13G-C |
 | Bracket slot long-name resilience | 🕓 SCHEDULED | Fix advance/selected controls overlapping team names inside the slot primitive and add long-name baselines. | 13G-C |
 | Shared Tabs/switcher pattern | 🕓 SCHEDULED | Use one design-system Tabs pattern for group/KO round switches and By group/By date views. | 13G-B/C |
-| FAQ/how-to-play section | 🕓 SCHEDULED | Add user-facing FAQ generated from central rules/config; exclude correction-mechanics question from ordinary user copy. | 13G-B/C |
+| FAQ/how-to-play section | ✅ FUNCTIONAL | Dedicated `#/how-to-play` destination explains Original Predictor, KO Predictor, scoring, locks, jokers and mechanics FAQ from central config/contracts; correction mechanics stay out of ordinary copy. | 13G-B-TOURNAMENT-1 |
 | Converging wall-chart bracket/share image | 🕓 SCHEDULED | Scheduled for Stage 13P-A; desktop bracket must not ship as an unscaled mobile layout. | 13P-A |
 
 

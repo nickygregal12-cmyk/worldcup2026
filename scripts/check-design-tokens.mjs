@@ -147,11 +147,14 @@ for (const marker of [
   'font-variant-numeric: tabular-nums', '.app-nav-link--home', 'prefers-reduced-motion',
 ]) if (!appCss.includes(marker)) fail(`Charter CSS behaviour is missing: ${marker}`)
 
-for (const file of ['src/home/HomeDashboard.jsx', 'src/tournament/TournamentOverview.jsx']) {
-  const source = read(file)
+const scoringSources = {
+  'src/home/HomeDashboard.jsx': read('src/home/HomeDashboard.jsx'),
+  'src/tournament/TournamentOverview.jsx': `${read('src/tournament/TournamentOverview.jsx')}\n${read('src/tournament/tournamentPageModel.js')}`,
+}
+for (const [file, source] of Object.entries(scoringSources)) {
   if (!source.includes('EURO_SCORING_CONFIG')) fail(`${file} does not use central scoring configuration`)
   for (const duplicate of ['30 pts', '10 pts', '5 jokers']) {
-    if (source.includes(duplicate)) fail(`${file} hard-codes a configurable rule: ${duplicate}`)
+    if (read(file).includes(duplicate)) fail(`${file} hard-codes a configurable rule: ${duplicate}`)
   }
 }
 

@@ -9,6 +9,7 @@ export const APP_ROUTE = Object.freeze({
   LEADERBOARDS: 'leaderboards',
   ACCOUNT: 'account',
   TOURNAMENT: 'tournament',
+  HOW_TO_PLAY: 'how-to-play',
   ADMIN: 'admin',
 })
 
@@ -58,6 +59,7 @@ export const APP_DESTINATIONS = Object.freeze([
   Object.freeze({ key: APP_ROUTE.LEADERBOARDS, label: 'Leaderboards', shortLabel: 'Tables', hash: '#/leaderboards', icon: 'results' }),
   Object.freeze({ key: APP_ROUTE.ACCOUNT, label: 'Account', shortLabel: 'Account', hash: '#/account', icon: 'account' }),
   Object.freeze({ key: APP_ROUTE.TOURNAMENT, label: 'Tournament', shortLabel: 'Tournament', hash: '#/tournament', icon: 'info' }),
+  Object.freeze({ key: APP_ROUTE.HOW_TO_PLAY, label: 'How to play', shortLabel: 'Rules', hash: '#/how-to-play', icon: 'info' }),
   Object.freeze({ key: APP_ROUTE.ADMIN, label: 'Admin', shortLabel: 'Admin', hash: '#/admin', icon: 'admin' }),
 ])
 
@@ -81,6 +83,9 @@ const ROUTE_BY_PATH = new Map([
   ['/rankings', APP_ROUTE.LEADERBOARDS],
   ['/account', APP_ROUTE.ACCOUNT],
   ['/tournament', APP_ROUTE.TOURNAMENT],
+  ['/rules', APP_ROUTE.HOW_TO_PLAY],
+  ['/how-to-play', APP_ROUTE.HOW_TO_PLAY],
+  ['/howtoplay', APP_ROUTE.HOW_TO_PLAY],
   ['/admin', APP_ROUTE.ADMIN],
 ])
 

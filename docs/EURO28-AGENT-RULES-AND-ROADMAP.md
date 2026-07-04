@@ -336,6 +336,10 @@ Stage 13G is one holistic post-functional-completion pass. It is governed by the
 
 No migration is expected.
 
+### Stage 13G-B-TOURNAMENT-1 — Tournament / How to Play split
+
+Next-agent checkpoint: Part A is now implemented as a scoped Tournament/How to Play split. `#/tournament` is the football facts destination and `#/how-to-play` is the predictor mechanics destination. Both read from central tournament/scoring config and resolver-derived totals rather than duplicated prose. `TOURNAMENT_CONFIG` records confirmed dates, host nations, venues, Cardiff opener and Wembley final-week facts; group participants and match-specific kick-off times remain unconfirmed. Keep Account, Admin and Match Centre for later focused batches. No Migration 019.
+
 ### Stage 13G-B — Tournament comprehension and match organisation
 
 Accepted Home/lifecycle slice from `08524b6` adds first-visit/returning guest copy, central-config countdowns, a Today’s match hub, Home KO-readiness signal and a build audit. Remaining Stage 13G-B work stays scoped to match organisation and tournament comprehension.
@@ -621,7 +625,7 @@ From checkpoint `5c9f415`, update the governing documents before the next produc
 - Tournament Picks player entry moving earlier than Stage 17A is a schedule change.
 - Dedicated player, H2H and points-breakdown routes are a route/deep-link contract change.
 - Joker design, bracket long-name resilience and shared Tabs/switcher treatment belong to the 13G-C prediction-surface quality work.
-- FAQ/how-to-play belongs to 13G-B/C and must render rule values from central contracts/configuration.
+- FAQ/how-to-play is implemented as `#/how-to-play` in 13G-B-TOURNAMENT-1 and must continue to render rule values from central contracts/configuration.
 - The converging wall-chart bracket/share image remains scheduled for Stage 13P-A and must not be left as unowned backlog.
 
 

@@ -11,7 +11,7 @@ import { ADMIN_VISIBILITY_STATUS } from './admin/adminVisibilityModel.js'
 import { useAdminVisibility } from './admin/useAdminVisibility.js'
 import Leagues from './leagues/Leagues.jsx'
 import HomeDashboard from './home/HomeDashboard.jsx'
-import TournamentOverview from './tournament/TournamentOverview.jsx'
+import TournamentOverview, { HowToPlayOverview } from './tournament/TournamentOverview.jsx'
 import EuroAppShell from './app/EuroAppShell.jsx'
 import { APP_ROUTE, leaderboardCompetitionFromHash, matchCentreParamsFromHash } from './app/appRoutes.js'
 import { deriveNavigationLifecycle } from './app/navigationLifecycle.js'
@@ -187,6 +187,8 @@ export default function App() {
     )
   } else if (route === APP_ROUTE.TOURNAMENT) {
     content = <TournamentOverview foundation={appData} />
+  } else if (route === APP_ROUTE.HOW_TO_PLAY) {
+    content = <HowToPlayOverview foundation={appData} />
   } else if (route === APP_ROUTE.ADMIN) {
     content = (
       <AdminRouteGate visibility={adminVisibility}>

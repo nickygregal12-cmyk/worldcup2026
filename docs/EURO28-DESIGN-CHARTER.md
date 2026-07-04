@@ -304,3 +304,6 @@ The Bracket must use one state and one set of tie/slot primitives across both ar
 The predicted-context banner is: `Your predicted bracket — built from your predicted tables, never blended with live results`.
 
 Compliance by absence is part of the charter: no score inputs, no method controls and no joker controls on Original Bracket. First implementation proceeds without connector lines, with share-card image rendering deferred to its own batch, and with a single 900px breakpoint.
+
+
+- Tournament is a key casual-player football-facts destination, not a technical summary page. How to Play is a separate mechanics lookup destination.

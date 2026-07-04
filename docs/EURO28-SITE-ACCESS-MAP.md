@@ -37,7 +37,7 @@ No sixth mobile position is introduced.
 | Leaderboards | `#/leaderboards`; aliases `#/standings`, `#/rankings` | More | More | Home competition ranks and Results switcher | Full separate competition standings and personal insight |
 | Match Centre | `#/match-centre?match=<number>`; alias `#/match` | Contextual | Contextual | Fixture, result, bracket, points and comparison rows | Everything about one match |
 | Account | `#/account` | Header/More | Header/More | Guest conversion prompts | Authentication, recovery and profile |
-| Tournament & how to play | `#/tournament` | More/footer | More/footer | Home rules | Tournament facts, venues, format and complete rules guide |
+| Tournament & how to play | `#/tournament` and `#/how-to-play` | More/footer | More/footer | Home rules | Tournament facts, venues, format and complete rules guide |
 | Admin | restricted `#/admin` | Authorised More | Authorised More | No ordinary-user entry | Tournament operations |
 | Not found | explicit recovery state | Invalid direct link only | Invalid direct link only | — | Explain invalid link and return safely |
 

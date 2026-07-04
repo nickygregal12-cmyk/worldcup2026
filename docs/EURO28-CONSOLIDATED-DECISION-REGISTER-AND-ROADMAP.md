@@ -1010,7 +1010,7 @@ Scope boundaries: no venue meta-line implementation, no score-stepper implementa
 
 This docs/audit package records the approved `euro28-tournament-page-prototype.html`, `euro28-how-to-play-page-prototype.html`, `euro28-account-page-prototype.html`, `euro28-admin-page-prototype.html` and `euro28-match-centre-page-prototype.html` artefacts under `docs/reference-prototypes/`, together with the build-agent reference brief. The artefacts are adopted as information-architecture, copy-register and data-source-discipline references only, not as pixel-perfect code to port.
 
-The next implementation task is **13G-B-TOURNAMENT-1 — Tournament / How to Play split and canonical tournament fact correction**. It amends existing Stage 13G-B in place and must correct confirmed tournament dates, host nations and venues in the canonical source of truth before rebuilding the split destinations. Account, Admin and Match Centre are scheduled as later focused batches and must not be bundled into the Tournament split without explicit acceptance.
+Stage 13G-B-TOURNAMENT-1 is now the scoped implementation task for the split destinations: `#/tournament` is Tournament facts and `#/how-to-play` is predictor mechanics. It amends existing Stage 13G-B in place and corrects confirmed tournament dates, host nations and venues in the canonical source of truth. Account, Admin and Match Centre remain later focused batches and must not be bundled into the Tournament split without explicit acceptance.
 
 Constraints: docs/audit only in this package; no UI rebuild, route implementation, config correction, scoring change, resolver change, Supabase write or migration. Active migrations remain 18 and Migration 019 is not created.
 

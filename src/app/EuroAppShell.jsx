@@ -30,7 +30,8 @@ function describeMoreDestination(destination) {
   if (destination.key === APP_ROUTE.RESULTS) return 'Scores, live tables and the live bracket'
   if (destination.key === APP_ROUTE.LEADERBOARDS) return 'Full Original and KO Predictor tables'
   if (destination.key === APP_ROUTE.ACCOUNT) return 'Sign in and profile'
-  if (destination.key === APP_ROUTE.TOURNAMENT) return 'Format and scoring rules'
+  if (destination.key === APP_ROUTE.TOURNAMENT) return 'Hosts, venues, dates and format'
+  if (destination.key === APP_ROUTE.HOW_TO_PLAY) return 'Scoring, locks and predictor rules'
   if (destination.key === APP_ROUTE.ADMIN) return 'Tournament operations'
   if (destination.key === APP_ROUTE.KO_PREDICTOR) return 'Only confirmed real knockout fixtures are shown'
   if (destination.key === APP_ROUTE.PREDICT) return 'Review every group-stage prediction and result'
@@ -63,6 +64,7 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, a
       ...navigationDestinations.phaseMoreDestinations,
       destinationForRoute(APP_ROUTE.ACCOUNT),
       destinationForRoute(APP_ROUTE.TOURNAMENT),
+      destinationForRoute(APP_ROUTE.HOW_TO_PLAY),
     ]
     if (adminVisibility?.isAdmin) destinations.push(destinationForRoute(APP_ROUTE.ADMIN))
     return destinations
@@ -129,7 +131,7 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, a
 
       <footer className="app-footer">
         <span>Euro 2028 Predictor</span>
-        <nav aria-label="Footer navigation"><a href="#/tournament">Tournament and rules</a><a href="#/account">Account</a></nav>
+        <nav aria-label="Footer navigation"><a href="#/tournament">Tournament</a><a href="#/how-to-play">How to play</a><a href="#/account">Account</a></nav>
       </footer>
 
       <nav className="app-mobile-nav" aria-label="Mobile navigation">

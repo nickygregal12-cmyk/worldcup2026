@@ -1,0 +1,203 @@
+.wideLeft {
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.65fr);
+}
+
+.sectionCopy {
+  margin: var(--space-3) 0 0;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.venueGrid,
+.groupsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.venueCard {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+}
+
+.venueCard strong,
+.dateList strong,
+.formatRung strong,
+.lockList strong {
+  color: var(--text-strong);
+}
+
+.venueCard span,
+.dateList small,
+.formatRung span,
+.lockList small {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.venueTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.dateList,
+.formatLadder,
+.lockList,
+.faqList {
+  display: grid;
+  margin-top: var(--space-5);
+}
+
+.dateList > div,
+.formatRung,
+.lockList > div {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-default);
+}
+
+.dateList > div:first-child,
+.formatRung:first-child,
+.lockList > div:first-child {
+  border-top: 0;
+}
+
+.dateList span {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dateList small {
+  grid-column: 2 / -1;
+}
+
+.formatNumber,
+.lockDot {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--surface-emphasis);
+  color: var(--brand-strong);
+  font-family: var(--font-display);
+  font-weight: 900;
+}
+
+.lockDot {
+  width: 0.7rem;
+  height: 0.7rem;
+  background: var(--accent);
+}
+
+.formatRung b {
+  color: var(--brand-strong);
+  font-family: var(--font-display);
+  text-align: right;
+}
+
+.groupCard {
+  gap: var(--space-4);
+}
+
+.slotGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.slotPill {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1.5px dashed var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.slotPill strong {
+  color: var(--brand-strong);
+  font-family: var(--font-display);
+}
+
+.pointsTable {
+  width: 100%;
+  margin-top: var(--space-5);
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.pointsTable th,
+.pointsTable td {
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--border-default);
+}
+
+.pointsTable th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-align: left;
+}
+
+.pointsTable td {
+  color: var(--brand-strong);
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-align: right;
+}
+
+.faqList details {
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border-default);
+}
+
+.faqList details:first-child {
+  border-top: 0;
+}
+
+.faqList summary {
+  cursor: pointer;
+  color: var(--text-strong);
+  font-weight: 800;
+}
+
+.faqList p {
+  margin: var(--space-3) 0 0;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 56.25rem) {
+  .wideLeft,
+  .venueGrid,
+  .groupsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 40rem) {
+  .dateList > div,
+  .formatRung,
+  .lockList > div {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: flex-start;
+  }
+
+  .formatRung b {
+    grid-column: 2;
+    text-align: left;
+  }
+}

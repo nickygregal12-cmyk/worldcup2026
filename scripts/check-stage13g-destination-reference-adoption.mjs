@@ -96,16 +96,11 @@ requireIncludes('package.json', packageJson, [
   'npm run audit:stage13g-destination-reference-adoption',
 ])
 
-const forbiddenImplementationMarkers = [
-  ['src/app/appRoutes.js', 'HOW_TO_PLAY'],
-  ['src/config/tournament.js', 'tournamentEndAt: import.meta.env.VITE_TOURNAMENT_END_AT || \'2028-07-09'],
-]
-for (const [file, marker] of forbiddenImplementationMarkers) {
-  const content = fs.existsSync(path.join(repo, file)) ? read(file) : ''
-  if (content.includes(marker)) {
-    errors.push(`${file} appears to contain implementation work forbidden in this docs/audit package: ${marker}`)
-  }
-}
+const implementationDoc = read('docs/STAGE-13G-B-TOURNAMENT-HOW-TO-PLAY-SPLIT.md')
+requireIncludes('docs/STAGE-13G-B-TOURNAMENT-HOW-TO-PLAY-SPLIT.md', implementationDoc, [
+  'Stage 13G-B-TOURNAMENT-1',
+  'Account, Admin and Match Centre reference prototypes remain recorded for later focused batches',
+])
 
 const migrationsDir = path.join(repo, 'supabase', 'migrations')
 if (fs.existsSync(migrationsDir)) {
@@ -122,6 +117,6 @@ if (errors.length) {
 
 console.log('Euro Stage 13G destination reference adoption audit passed.')
 console.log('References: Tournament, How to Play, Account, Admin and Match Centre prototypes are recorded.')
-console.log('Sequencing: next implementation is 13G-B-TOURNAMENT-1; Account/Admin/Match Centre remain later focused batches.')
-console.log('Scope: docs/audit only; no UI, route, scoring, resolver, Supabase write or migration change.')
+console.log('Sequencing: 13G-B-TOURNAMENT-1 is the scoped Part A implementation; Account/Admin/Match Centre remain later focused batches.')
+console.log('Scope guard: reference artefacts remain recorded and no migration is introduced by the later implementation slice.')
 console.log('Database: active migrations remain 18; no Migration 019.')
