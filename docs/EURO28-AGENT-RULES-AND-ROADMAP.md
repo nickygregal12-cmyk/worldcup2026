@@ -695,3 +695,38 @@ Agents must preserve these rules:
 - Original Predictor and KO Predictor evidence must remain separate.
 - Do not start the full seeded cast until Stage 16A-P2 is complete or deliberately re-sequenced.
 
+
+
+## Stage 13G-REF agent rules — Home and League prototype adoption
+
+The approved Home and League prototypes are reference artefacts only. Agents must rebuild natively in the Euro design system rather than porting single-file HTML, CSS or JavaScript.
+
+Mandatory Home rules:
+
+- Use one countdown only: `First match & prediction lock`, `Euro 2028 starts in`, `Predictions lock at first kick-off.` and `One deadline. Your Original Predictor locks when the opening match kicks off.`
+- The Home countdown, displayed prediction-lock deadline and Original Predictor lock enforcement must read the same central first-kick-off config value.
+- Before KO Predictor readiness, Home has zero KO Predictor presence: no card, tease, prompt, locked state, countdown, banner or placeholder.
+- Before readiness, KO Predictor discovery is only in the More sheet and the how-to-play guide; the guide line is `everyone starts the knockouts on zero`.
+- One readiness signal governs nav tab, Home KO card existence, More KO entry state and league KO standings together.
+- Signed-out Home uses the approved thesis hook, three-beat flow, account-first CTAs and guest-draft promise.
+- Matchday Home leads with points/rank and uses row order live → upcoming by kick-off → finished.
+- Bottom nav baseline rule: the Home circle overlaps the bar line and all five labels share one baseline.
+
+Mandatory League rules:
+
+- League tables are pure: one running total per competition, no stat chips.
+- Gap-to-leader appears on every row; leader shows clear of second.
+- Top-three badges are designed elements: accent-filled first, accent outline second, quiet ring third. No gold and no emoji.
+- Player row tap opens the dedicated S5 player view; inline H2H below the league is retired.
+- League switching uses a design-system bottom sheet; delete uses danger-ghost plus shared dialog; copy invite uses confirmed-state plus toast; freshness is passive with no refresh controls.
+- KO pre-readiness has no KO tab and no KO table. It shows only: `KO Predictor standings arrive at the knockouts — everyone starts on zero.`
+- One central readiness signal drives the KO note, competition tabs and player-view KO line.
+- Rules strip must render from the central versioned ruleset.
+
+Do not import prototype sample data, stub toasts, state switches, readiness switches, Google-hosted fonts, CDN flags or single-file architecture. This reference-adoption package creates no Migration 019 and leaves active migrations at 18.
+
+
+Stage 13G-REF phrase locks: Home and League reference prototype adoption; euro28-home-page-prototype.html; euro28-league-page-prototype.html; not as code to port; sample data; stub toasts; prototype switches; Google-hosted fonts; CDN flags; single-file architecture; same central first-kick-off config value; Predict every match. Beat your mates.; updates if your group predictions change; stat-chip question is closed; rules strip renders from the central versioned ruleset.
+
+
+Stage 13G-REF audit phrase locks: one countdown, not two; KO Predictor zero Home presence pre-readiness; no KO Predictor card; navigation tab state; More sheet KO entry state; league KO standings availability; leader shows points clear of second; inline-H2H-below-the-league presentation is retired; Freshness is passive.

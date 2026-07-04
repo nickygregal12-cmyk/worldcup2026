@@ -683,3 +683,42 @@ Confirmed decisions:
 
 Next sequenced package: Stage 16A-P2 — Staging-effective database time, unless deliberately re-sequenced before the full seeded-cast implementation.
 
+
+
+## Stage 13G-REF — Home and League reference prototype adoption
+
+Status: scheduled and accepted as docs/audit-only reference adoption.
+
+The approved Home reference artefact is `euro28-home-page-prototype.html`. It covers signed-out hook, signed-in pre-tournament and matchday hub. It is adopted as behaviour, hierarchy, spacing intent and copy-register reference only, not as code to port. The prototype is amended by owner authority in two places: one countdown only, and zero KO Predictor Home presence before readiness.
+
+The approved League reference artefact is `euro28-league-page-prototype.html`. It supersedes the earlier WC26 screenshot reference and any current league presentation where they differ. It is adopted as behaviour, hierarchy, spacing intent and copy-register reference only, not as code to port.
+
+Confirmed Home amendments and decisions:
+
+1. Amendment 1 — one countdown, not two. Prediction lock is the first tournament kick-off: one moment. The Home countdown uses the wording `First match & prediction lock`, `Euro 2028 starts in`, `Predictions lock at first kick-off.` and `One deadline. Your Original Predictor locks when the opening match kicks off.` The Home countdown, displayed lock deadline and lock enforcement must read the same central first-kick-off config value.
+2. Amendment 2 — KO Predictor zero Home presence pre-readiness. The previous quiet tease card decision is superseded. Before readiness, Home shows no KO Predictor card, locked tease, countdown, banner, prompt or placeholder.
+3. Pre-readiness KO Predictor discovery is limited to the More sheet and the how-to-play guide. The guide records the second-chance line: `everyone starts the knockouts on zero`.
+4. One central KO readiness signal now governs the navigation tab state, the Home KO card existence, the More sheet KO entry state and league KO standings availability. Lifecycle tests must assert all four flip together.
+5. Signed-out Home adopts the thesis headline, three-beat how-it-plays, account-first CTAs, direct guest path and guest-draft promise.
+6. Matchday Home adopts the points/rank strip first, then rows ordered live → upcoming by kick-off → finished. Row anatomy is kickoff/live/FT column, stacked teams with flags, meta line with group and stadium plus predicted score or points chip, joker edge and chevron to match centre.
+7. Bottom navigation charter wording is amended: the Home circle overlaps the bar line, and all five labels share one baseline.
+
+Confirmed League amendments and decisions:
+
+1. League tables are pure: one running total per competition, no stat chips. The earlier stat-chip question is closed as `NO`.
+2. Gap-to-leader appears on every row; the leader shows points clear of second.
+3. Top-three treatment uses designed rank badges: accent-filled first, accent outline second and quiet ring third. No gold and no emoji.
+4. Player row tap opens the dedicated S5 player view. The inline-H2H-below-the-league presentation is retired.
+5. League switching uses the design-system bottom sheet. Delete league uses small danger-ghost plus shared confirmation dialog. Copy invite uses confirmed-state plus toast. Freshness is passive; no refresh controls.
+6. KO pre-readiness shows no KO tab and no KO table. It shows the single note: `KO Predictor standings arrive at the knockouts — everyone starts on zero.`
+7. One central readiness signal drives the league KO note, competition tabs and player-view KO line together.
+8. The rules strip renders from the central versioned ruleset.
+
+Prototype exclusions: sample data, stub toasts, prototype switches, Google-hosted fonts, CDN flags and single-file architecture must not be imported. Future implementation must use real data, real lifecycle signals, semantic tokens, CSS Modules, shared primitives and Section 11 architecture.
+
+No route, component, scoring, resolver, database or migration implementation is included in this package. Active migrations remain 18 and no Migration 019 is created.
+
+Next single task: `13G-HOME-1` single countdown contract and config-to-surface test, unless deliberately re-sequenced.
+
+
+Stage 13G-REF exact phrase locks: no UI build; no route implementation; no scoring change; no resolver change; no Supabase write; Predict every match. Beat your mates.; updates if your group predictions change; sample data; stub toasts; prototype switches; Google-hosted fonts; CDN flags; single-file architecture.

@@ -291,3 +291,29 @@ Stage 13G-C5 preserves the compact private-league table introduced by C4. The de
 Status: complete in development.
 
 Stage 13G-C6 simplifies the default private-league shell around the compact table. The default view now leads with league selection, competition selection and rank/member/points. League code, lifecycle/privacy copy, summary cards and shared-member notes sit behind details after the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
+
+
+## Stage 13G-REF — Home and League reference prototype adoption
+
+Status: scheduled and accepted as docs/audit-only reference adoption.
+
+Ledger rows recorded:
+
+| Row | Status | Record |
+| --- | --- | --- |
+| 13G Home reference prototype adoption | SCHEDULED | `euro28-home-page-prototype.html` adopted as reference with two owner amendments. |
+| 13G Home countdown contract | SCHEDULED | One countdown only. Home countdown and lock enforcement read the same first-kick-off config value. |
+| 13G Home KO pre-readiness presence | AMENDED | Previous quiet tease card superseded. Home shows no KO Predictor card, tease, countdown, banner, prompt or placeholder before readiness. |
+| 13G Home readiness fan-out | SCHEDULED | One readiness signal governs nav tab, Home KO card existence, More entry and league KO standings. |
+| 13G Home signed-out hook | SCHEDULED | Thesis headline, three-beat explanation, account-first CTAs and guest-draft promise adopted. |
+| 13G Home matchday hub | SCHEDULED | Points/rank strip first; rows live → upcoming → finished; rows link to match centre. |
+| 13G bottom-nav baseline | AMENDED | Home circle overlaps the bar line; all five labels share one baseline. |
+| 13G League reference prototype adoption | SCHEDULED | `euro28-league-page-prototype.html` supersedes earlier WC26 screenshot reference and current presentation. |
+| 13G League table purity | AMENDED | Pure tables only; one running total per competition; stat-chip decision closed as NO. |
+| 13G League gap/rank treatment | SCHEDULED | Gap every row; leader clear of second; top-three designed badges; no gold, no emoji. |
+| 13G League player row destination | AMENDED | Inline H2H below league retired; player row opens dedicated S5 player view. |
+| 13G League management patterns | SCHEDULED | Bottom sheet switching, danger-ghost delete with shared dialog, copy invite confirmed-state plus toast, passive freshness. |
+| 13G League KO pre-readiness | SCHEDULED | No KO tab/table; one second-chance note only. |
+| 13G League rules strip | SCHEDULED | Render from central versioned ruleset. |
+
+This package is documentation and audit only. It adds no UI build, no route implementation, no scoring change, no resolver change, no Supabase write, no database policy change and no Migration 019. Active migrations remain 18.
