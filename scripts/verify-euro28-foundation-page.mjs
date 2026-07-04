@@ -106,7 +106,7 @@ for (const text of [
   'Your KO points',
   'KO jokers',
   'One member list, two separate competitions',
-  'Compare with member',
+  'Open a member row for the detailed comparison',
   'Fixtures and results',
   'Canonical result records',
   'Live context · not your bracket',

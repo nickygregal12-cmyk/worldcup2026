@@ -46,7 +46,7 @@ if (productRoot.includes('createStage13dVisualClient') || productRoot.includes('
 const deployedVerifier = read('scripts/verify-euro28-foundation-page.mjs')
 for (const marker of [
   'Stage 13D leagues, shared predictions',
-  'Compare with member',
+  'Open a member row for the detailed comparison',
   'Original bracket progression',
   'Advancing teams',
 ]) {
@@ -58,7 +58,7 @@ if (!theme.includes("'stage13d'")) fail('Stage 13D visual captures cannot force 
 
 const leagues = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresentation.jsx')].join('\n')
 for (const marker of [
-  'Compare with member',
+  'Open a member row for the detailed comparison',
   'Shared member list:',
   'League code copied.',
   'formatOrdinal',
