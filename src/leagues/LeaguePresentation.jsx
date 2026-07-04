@@ -1,6 +1,6 @@
 import styles from './leagueRace.module.css'
 import { PlayerIdentity, SelectField } from '../design-system/index.jsx'
-import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
+import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, buildLeagueRaceSummary, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
 
 function competitionName(competitionKey) {
   return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
@@ -146,6 +146,44 @@ export function LeagueSummaryCard({ title, summary, section }) {
       <span>{summary.currentPoints} pts</span>
       <small>{summary.gapToLeaderLabel ?? stateCopy}</small>
     </article>
+  )
+}
+
+export function LeagueRaceSummary({ rows, competitionKey, section }) {
+  if (section?.status === 'error') {
+    return (
+      <aside className={styles.raceSummaryStrip} aria-label="League race summary">
+        <span className={styles.raceSummaryKicker}>Race summary</span>
+        <strong>Race context unavailable</strong>
+        <small>{section.error ?? 'This competition table could not be loaded.'}</small>
+      </aside>
+    )
+  }
+
+  const summary = buildLeagueRaceSummary(rows, competitionKey)
+
+  return (
+    <aside className={styles.raceSummaryStrip} aria-label={`${summary.competitionLabel} race summary`}>
+      <div className={styles.raceSummaryLead}>
+        <span className={styles.raceSummaryKicker}>Race summary</span>
+        <strong>{summary.headline}</strong>
+        <small>{summary.copy}</small>
+      </div>
+      <dl className={styles.raceSummaryStats}>
+        <div>
+          <dt>Your place</dt>
+          <dd>{summary.currentLabel}</dd>
+        </div>
+        <div>
+          <dt>Leader</dt>
+          <dd>{summary.leaderLabel}</dd>
+        </div>
+        <div>
+          <dt>Gap</dt>
+          <dd>{summary.gapLabel}</dd>
+        </div>
+      </dl>
+    </aside>
   )
 }
 

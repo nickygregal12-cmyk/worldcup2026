@@ -5,6 +5,7 @@ import {
   buildLeagueCompetitionSummary,
   buildLeagueLifecycleState,
   buildLeagueRaceRows,
+  buildLeagueRaceSummary,
   buildSharedLeagueMemberList,
   buildSharedPredictionJourney,
   buildStandingComparison,
@@ -107,6 +108,42 @@ describe('league model', () => {
     expect(raceRows[3].podium).toBeNull()
     expect(raceRows[1].rankMovementLabel).toBeNull()
     expect(raceRows[1].rankMovementReason).toContain('previous-rank data')
+  })
+
+  it('builds a league race summary strip model without combining competitions', () => {
+    const rows = [
+      { userId: 'leader', displayName: 'Amy', rank: 1, totalPoints: 80, matchPoints: 70, bracketPoints: 10, scoredMatchCount: 5, isCurrentUser: false },
+      { userId: 'me', displayName: 'Nicky', rank: 2, totalPoints: 63, matchPoints: 53, bracketPoints: 10, scoredMatchCount: 5, isCurrentUser: true },
+    ]
+
+    const summary = buildLeagueRaceSummary(rows, LEAGUE_COMPETITION.ORIGINAL)
+    expect(summary).toMatchObject({
+      competitionKey: LEAGUE_COMPETITION.ORIGINAL,
+      competitionLabel: 'Original Predictor',
+      state: 'active',
+      headline: 'You are 17 behind leader',
+      currentLabel: '2nd · 63 pts',
+      leaderLabel: 'Amy · 80 pts',
+      gapLabel: '17 behind leader',
+      gapToLeader: 17,
+    })
+    expect(() => buildLeagueRaceSummary(rows, 'combined')).toThrow('Unsupported league competition')
+  })
+
+  it('builds pre-scoring and empty league race summary states', () => {
+    expect(buildLeagueRaceSummary([], LEAGUE_COMPETITION.KO_PREDICTOR)).toMatchObject({
+      state: 'empty',
+      competitionLabel: 'KO Predictor',
+      gapLabel: 'Race starts when members appear',
+    })
+
+    expect(buildLeagueRaceSummary([
+      { userId: 'me', displayName: 'Nicky', rank: 1, totalPoints: 0, matchPoints: 0, bracketPoints: 0, scoredMatchCount: 0, isCurrentUser: true },
+    ], LEAGUE_COMPETITION.ORIGINAL)).toMatchObject({
+      state: 'pre_scoring',
+      headline: 'Original Predictor race has not started',
+      gapLabel: 'No points scored yet',
+    })
   })
 
 
