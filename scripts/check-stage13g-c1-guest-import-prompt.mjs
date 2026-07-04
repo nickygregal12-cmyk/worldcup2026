@@ -33,8 +33,8 @@ for (const [file, text] of [
   ['STAGE-13G-C1-GUEST-IMPORT-PROMPT.md', doc],
 ]) {
   for (const marker of [
-    'Import your saved Euro 2028 predictions?',
-    'Import predictions to my account',
+    'Keep your predictions from this device?',
+    'Keep these predictions',
     'Start fresh',
   ]) {
     if (!text.includes(marker)) fail(`${file} missing marker: ${marker}`)
@@ -106,12 +106,12 @@ if (migrationFiles.length !== 18) fail(`C1 must not change migration count; foun
 if (migrationFiles.some(name => /(?:^|_)019|202607030019/.test(name))) fail('C1 must not create Migration 019')
 
 if (errors.length) {
-  console.error('Euro Stage 13G-C1 guest import prompt audit failed:')
+  console.error('Euro Stage 13G-C1 guest keep prompt audit failed:')
   errors.forEach(error => console.error(`- ${error}`))
   process.exit(1)
 }
 
-console.log('Euro Stage 13G-C1 guest import prompt audit passed.')
+console.log('Euro Stage 13G-C1 guest keep prompt audit passed.')
 console.log('Prompt: accepted import/start-fresh wording is present.')
 console.log('Copy: signed-in import surfaces use device wording, not browser-draft wording.')
 console.log('Competition boundary: Original Predictor and KO Predictor import readiness remains separate.')

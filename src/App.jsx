@@ -182,7 +182,7 @@ export default function App() {
     content = (
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Account" title={activeSession.session ? 'Profile and security' : 'Sign in or create an account'} description="Sign in without losing predictions already saved on this device." />
-        <AccountAccess client={activeClient} reference={appData.guestReference} />
+        <AccountAccess client={activeClient} reference={appData.guestReference} tournament={appData.tournament} lifecycle={lifecycle} />
       </div>
     )
   } else if (route === APP_ROUTE.TOURNAMENT) {

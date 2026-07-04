@@ -58,7 +58,7 @@ function readySnapshot() {
 }
 
 describe('GuestAccountTransferPanel', () => {
-  it('renders the accepted import prompt and competition-specific readiness copy', () => {
+  it('renders the accepted keep prompt and competition-specific readiness copy', () => {
     globalThis.React = React
     const snapshot = readySnapshot()
     const prompt = buildGuestAccountTransferPrompt(snapshot)
@@ -91,11 +91,11 @@ describe('GuestAccountTransferPanel', () => {
     expect(originalStatus({
       accountOriginal: null,
       originalCompleteness: { readyForAccountImport: true },
-    })).toBe('Ready to import')
+    })).toBe('Ready to keep')
     expect(originalStatus({
       accountOriginal: null,
       originalCompleteness: { readyForAccountImport: false },
-    })).toBe('Finish the draft before import')
+    })).toBe('Finish the draft before keeping')
 
     expect(koStatus({
       accountKo: true,
@@ -104,11 +104,11 @@ describe('GuestAccountTransferPanel', () => {
     expect(koStatus({
       accountKo: null,
       koSummary: { complete: 1 },
-    })).toBe('Ready to import')
+    })).toBe('Ready to keep')
     expect(koStatus({
       accountKo: null,
       koSummary: { complete: 0 },
-    })).toBe('Finish one available fixture before import')
+    })).toBe('Finish one available fixture before keeping')
 
     expect(messageForError(new Error('guest import cannot overwrite'))).toContain('device copy')
     expect(messageForError(new Error('globally locked'))).toContain('device copy')

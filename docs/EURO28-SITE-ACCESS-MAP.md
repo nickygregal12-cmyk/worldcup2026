@@ -180,3 +180,7 @@ Stage 13G audits must fail if:
 ## Stage 13G-H0 player destination correction
 
 The intended player-name activation destination is a dedicated Player Overview, not an inline H2H strip. Dedicated H2H and points-breakdown pages are route/deep-link contract changes requiring explicit acceptance before build.
+
+## Stage 13G-ACCOUNT-1 Account update
+
+`#/account` is the real Account destination and renders `src/auth/AccountAccess.jsx`. The signed-in state owns identity, quick stats, security/preferences, leagues shortcut and danger-zone actions. Legacy `src/pages/Profile.jsx` is retired as unreachable WC26 code.

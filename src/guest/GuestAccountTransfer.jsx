@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Card, LinkButton } from '../design-system/index.jsx'
+import { Button, Card, Dialog, LinkButton } from '../design-system/index.jsx'
 import { buildGuestReviewStorageKey } from '../journey/index.js'
 import { buildKoPredictorRows, loadMyKoPredictionBundle, saveMyKoPredictionBundle } from '../koPredictor/index.js'
 import { importGuestDraftToAccount, loadMyPredictionBundle } from '../predictions/index.js'
@@ -11,9 +11,9 @@ import { browserStorage, koStatus, messageForError, originalStatus } from './gue
 import styles from './GuestAccountTransfer.module.css'
 
 
-export function GuestAccountTransferPanel({ snapshot, prompt, busy, notice, transfer, startFresh }) {
+export function GuestAccountTransferPanel({ snapshot, prompt, busy, notice, transfer, startFresh, asDialog = false }) {
   return (
-    <Card className={styles.card} aria-labelledby="guest-transfer-heading">
+    <Card className={`${styles.card} ${asDialog ? styles.dialogCard : ''}`.trim()} aria-labelledby="guest-transfer-heading">
       <div className={styles.heading}>
         <div>
           <span>Saved on this device</span>
@@ -50,7 +50,7 @@ export function GuestAccountTransferPanel({ snapshot, prompt, busy, notice, tran
   )
 }
 
-export default function GuestAccountTransfer({ client, reference, userId }) {
+export default function GuestAccountTransfer({ client, reference, userId, asDialog = false, open = true, onClose = () => {}, onComplete = () => {} }) {
   const storage = useMemo(() => browserStorage(), [])
   const originalStorage = useMemo(() => createGuestPredictionStorage({ storage, reference }), [reference, storage])
   const koStorage = useMemo(() => createGuestKoPredictionStorage({ storage, reference }), [reference, storage])
@@ -138,9 +138,10 @@ export default function GuestAccountTransfer({ client, reference, userId }) {
       setNotice({
         tone: completed.length ? 'safe' : 'warning',
         message: completed.length
-          ? `${completed.join(' and ')} imported safely into your account.${retained.length ? ` ${retained.join('. ')} remains on this device.` : ''}`
+          ? `${completed.join(' and ')} kept safely with your account.${retained.length ? ` ${retained.join('. ')} remains on this device.` : ''}`
           : `${retained.join('. ')}. The device copy has not been removed.`,
       })
+      if (completed.length) onComplete()
     } catch (error) {
       await refresh().catch(() => {})
       setNotice({
@@ -162,9 +163,10 @@ export default function GuestAccountTransfer({ client, reference, userId }) {
     setSnapshot(null)
     globalThis.dispatchEvent?.(new Event(GUEST_STATE_UPDATED_EVENT))
     refresh().catch(error => setNotice({ tone: 'danger', message: messageForError(error) }))
+    onComplete()
   }
 
-  return (
+  const panel = (
     <GuestAccountTransferPanel
       snapshot={snapshot}
       prompt={prompt}
@@ -172,6 +174,15 @@ export default function GuestAccountTransfer({ client, reference, userId }) {
       notice={notice}
       transfer={transfer}
       startFresh={startFresh}
+      asDialog={asDialog}
     />
+  )
+
+  if (!asDialog) return panel
+
+  return (
+    <Dialog open={open} title={prompt.heading} onClose={onClose} className={styles.dialog}>
+      {panel}
+    </Dialog>
   )
 }

@@ -1031,3 +1031,7 @@ Next single task after this docs/audit package: 13G-BRACKET-1 — Original Brack
 Next-agent checkpoint: Stage 13G-BRACKET-1 now implements the approved Original Bracket stacked/wall-chart rebuild. Treat the Original Bracket as a winner-only Original Predictor surface using one `OriginalBracketTie` and one `OriginalBracketSlot` primitive set across the single 900px breakpoint. Do not reintroduce layout-specific business logic, connector lines, score inputs, method controls or joker controls.
 
 Acceptance must include `npm run audit:stage13g-bracket-responsive-wallchart`, the existing Bracket reference audit, frontend architecture audit, full check, build and deployed foundation verification. Active migrations remain 18 and Migration 019 must not be created unless a genuine schema/read-contract gap is proved.
+
+## Stage 13G-ACCOUNT-1 — Account destination rebuild
+
+Next-agent checkpoint: Account has been rebuilt as a focused signed-in destination. Preserve the one-time guest-transfer dialog placement, the corrected keep/start-fresh copy, the Original-only pre-lock clear action and the no-Migration-019 boundary. Do not merge later Admin or Match Centre work into this batch.

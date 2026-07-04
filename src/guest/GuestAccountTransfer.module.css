@@ -102,3 +102,14 @@
     width: 100%;
   }
 }
+
+.dialogCard {
+  border: 0;
+  box-shadow: none;
+  margin: 0;
+}
+
+.dialog :global(.ui-dialog__header) h2 {
+  font-size: 1rem;
+}
+

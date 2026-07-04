@@ -140,7 +140,7 @@ const app = read('src/App.jsx')
 if (!app.includes('AccountAccess')) fail('active foundation page must expose Euro authentication')
 if (!app.includes('PredictionJourney') || !app.includes('KoPredictor')) fail('active page must expose both trusted prediction journeys')
 
-const authView = read('src/auth/AccountAccess.jsx')
+const authView = read('src/auth/AccountAccess.jsx') + read('src/auth/AccountDashboard.jsx')
 if (!authView.includes('GuestAccountTransfer')) fail('signed-in account view must expose the explicit guest-draft transfer flow')
 if (/through Stage 6/i.test(authView)) fail('account copy must not expose development-stage wording')
 

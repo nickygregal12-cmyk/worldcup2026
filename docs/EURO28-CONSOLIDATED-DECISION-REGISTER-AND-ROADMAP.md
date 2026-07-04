@@ -1034,3 +1034,7 @@ Stage 13G-BRACKET-1 implements the approved Original Bracket reference adoption 
 Implementation rules recorded: one rendered bracket surface, one shared `OriginalBracketTie` primitive, one shared `OriginalBracketSlot` primitive, source-code labels on every slot, centred champion box on the wall chart, no connector lines, share-card rendering still follow-on, and no score inputs, method controls or joker controls.
 
 The stale-pick rule is implemented as presentation plus state handling: ties whose stored pick no longer matches either feeding slot show `Re-pick — your tables changed this tie`; upstream bracket changes clear only downstream picks that are no longer fed while preserving surviving downstream picks. Active migrations remain 18. No Migration 019.
+
+## Stage 13G-ACCOUNT-1 — Account destination rebuild
+
+Stage 13G-ACCOUNT-1 implements the approved Account reference destination as a standalone batch after Stage 13G-B-TOURNAMENT-1. The signed-in Account page now carries identity, read-only prediction/league stats, security/preferences, leagues navigation and a danger zone. Guest transfer no longer appears as a persistent Account card; it is a one-time post sign-in/sign-up dialog using the corrected `Keep your predictions from this device?` wording. `Clear my predictions` is scoped to Original Predictor group scores and bracket picks only, hidden after the central lock and implemented without Migration 019.

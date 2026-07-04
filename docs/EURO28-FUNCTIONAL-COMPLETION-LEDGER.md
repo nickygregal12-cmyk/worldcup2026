@@ -398,3 +398,9 @@ Active migrations remain 18. Migration 019 is not created.
 | Original Bracket source-code slot anatomy | IMPLEMENTED / TESTED | Slots show source references including `1A`, `2B`, `3ABCD` and match-winner `W39` style references. Resolved slots keep `TeamLabel` identity plus separate progression action; unresolved slots are dashed placeholders. |
 | Original Bracket re-pick treatment | IMPLEMENTED / TESTED | Stale stored picks render amber treatment with exact flag `Re-pick — your tables changed this tie`; bracket-pick changes prune only downstream picks no longer fed. |
 | Original Bracket control absence | IMPLEMENTED / AUDITED | Original Bracket remains winner-only with no score inputs, method controls or joker controls. Active migrations remain 18 and no Migration 019 is created. |
+
+## Stage 13G-ACCOUNT-1 — Account destination rebuild
+
+| Item | Status | Evidence | Stage |
+| --- | --- | --- | --- |
+| Account destination rebuild | IMPLEMENTED / LOCAL ACCEPTANCE REQUIRED | Rebuilds signed-in Account with identity, quick stats, security/preferences, leagues shortcut and danger zone. Guest transfer moves to a one-time post sign-in/sign-up dialog. `Clear my predictions` is Original-only, pre-lock only and uses the existing atomic save boundary. | 13G-ACCOUNT-1 |

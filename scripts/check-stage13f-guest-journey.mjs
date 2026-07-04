@@ -44,8 +44,8 @@ for (const forbidden of ['Export JSON', 'Import JSON', 'guest-import-button']) {
   if (journeyView.includes(forbidden)) fail(`Live prediction journey still exposes development file UX: ${forbidden}`)
 }
 
-const auth = read('src/auth/AccountAccess.jsx')
-for (const marker of ['GuestAccountTransfer', 'Any saved device predictions are ready to import to this account']) {
+const auth = read('src/auth/AccountAccess.jsx') + read('src/auth/AccountDashboard.jsx')
+for (const marker of ['GuestAccountTransfer', 'Saved predictions on this device can be kept after sign-in']) {
   if (!auth.includes(marker)) fail(`Account conversion journey is missing: ${marker}`)
 }
 if (auth.includes('through Stage 6')) fail('Account copy still exposes Stage 6 development wording')

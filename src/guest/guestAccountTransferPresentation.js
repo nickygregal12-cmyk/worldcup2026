@@ -9,21 +9,21 @@ export function browserStorage() {
 export function messageForError(error) {
   const message = error instanceof Error ? error.message : String(error)
   if (/guest import cannot overwrite/i.test(message)) return 'This account already contains Original Predictor entries, so the device copy was left untouched.'
-  if (/globally locked|global lock/i.test(message)) return 'The Original Predictor is locked, so the device copy cannot be imported.'
+  if (/globally locked|global lock/i.test(message)) return 'The Original Predictor is locked, so the device copy cannot be kept.'
   if (/revision/i.test(message)) return 'The account changed while the import was running. Reload and try again.'
   return message
 }
 
 export function originalStatus(snapshot) {
   if (snapshot.accountOriginal) return 'Account entries already exist'
-  if (snapshot.originalCompleteness.readyForAccountImport) return 'Ready to import'
-  return 'Finish the draft before import'
+  if (snapshot.originalCompleteness.readyForAccountImport) return 'Ready to keep'
+  return 'Finish the draft before keeping'
 }
 
 export function koStatus(snapshot) {
   if (snapshot.accountKo) return 'Account entries already exist'
-  if (snapshot.koSummary.complete > 0) return 'Ready to import'
-  return 'Finish one available fixture before import'
+  if (snapshot.koSummary.complete > 0) return 'Ready to keep'
+  return 'Finish one available fixture before keeping'
 }
 
 export function importButtonDisabled(snapshot, busy) {

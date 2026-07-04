@@ -2,8 +2,8 @@ import { resolveGuestTournamentPreview } from './guestTournamentPreview.js'
 import { summariseGuestKoPredictionState } from './guestKoPredictionStorage.js'
 
 export const GUEST_IMPORT_PROMPT_COPY = Object.freeze({
-  heading: 'Import your saved Euro 2028 predictions?',
-  primaryAction: 'Import predictions to my account',
+  heading: 'Keep your predictions from this device?',
+  primaryAction: 'Keep these predictions',
   secondaryAction: 'Start fresh',
 })
 
@@ -28,7 +28,7 @@ export function buildGuestAccountTransferPrompt(summary) {
 
   return Object.freeze({
     heading: GUEST_IMPORT_PROMPT_COPY.heading,
-    helper: `${foundCopy} Choose whether to import them to this account or start fresh.`,
+    helper: `${foundCopy} Choose whether to keep them with this account or start fresh.`,
     primaryAction: GUEST_IMPORT_PROMPT_COPY.primaryAction,
     secondaryAction: GUEST_IMPORT_PROMPT_COPY.secondaryAction,
   })

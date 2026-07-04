@@ -1,4 +1,4 @@
-# Stage 13G-C1 — Guest import prompt and signed-in copy sweep
+# Stage 13G-C1 — Guest keep prompt and signed-in copy sweep
 
 ## Status
 
@@ -12,9 +12,9 @@ No route, scoring, resolver, league, admin, database policy or migration change 
 
 When a guest has saved Euro 2028 predictions on this device and then signs up or signs in, the account page must show a dominant prompt:
 
-- heading: “Import your saved Euro 2028 predictions?”
+- heading: “Keep your predictions from this device?”
 - helper copy: mentions group scores, bracket picks and/or a KO Predictor draft found on this device;
-- primary action: “Import predictions to my account”;
+- primary action: “Keep these predictions”;
 - secondary action: “Start fresh”.
 
 The signed-in surface must not use “browser draft”, “browser copy” or similar internal-storage language. It should say “this device” or “device copy”.
@@ -44,3 +44,7 @@ C1 acceptance requires:
 - `audit:guest-import-prompt` is included in `npm run check`;
 - active migrations remain 18;
 - no Migration 019 is created.
+
+## Stage 13G-ACCOUNT-1 copy and placement amendment
+
+Stage 13G-ACCOUNT-1 reopens this accepted copy contract for one narrow product correction: the signed-in prompt now says “Keep your predictions from this device?” with primary action “Keep these predictions”. The underlying transfer boundaries do not change. Original Predictor and KO Predictor remain separate, start fresh still clears the local device draft only, and account data is never overwritten. The prompt is also moved out of the persistent Account page and into the one-time post sign-in/sign-up modal path.

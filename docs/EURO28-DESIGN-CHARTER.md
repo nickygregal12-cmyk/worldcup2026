@@ -307,3 +307,7 @@ Compliance by absence is part of the charter: no score inputs, no method control
 
 
 - Tournament is a key casual-player football-facts destination, not a technical summary page. How to Play is a separate mechanics lookup destination.
+
+## Stage 13G-ACCOUNT-1 Account destination note
+
+Account follows the Stage 13G destination reference pattern: useful signed-in state first, no persistent guest-transfer card, calm security/preferences rows and destructive actions isolated in a danger zone. Coming-soon notification rows must not imply active notification functionality.
