@@ -370,6 +370,8 @@ Stage 13G is one holistic coherence pass, not a collection of page-by-page fixes
 
 Confirmed decisions:
 
+The Stage 13F-K1 database operations contract remains accepted and is the binding owner-only fixture, reconciliation, readiness and audit contract delivered by Migration 018.
+
 1. The five-position mobile navigation remains Groups/KO, Bracket, Home, Leagues and More. No sixth position is added.
 2. More is phase-aware and deliberately ordered. Before play it leads with Tournament & how to play; during live phases it leads with current competition needs. Admin is separated and authorised only.
 3. Before a display-ready Round of 16 fixture, More may show a KO explainer teaser but not the active workspace, unresolved fixtures or prediction controls. Home gives KO at most modest secondary prominence.
@@ -391,8 +393,6 @@ The full IA map, More ordering, hardwired-data evidence and batch contract live 
 Stage 13F-K completes the remaining normal launch/live operations through the existing Euro control room. It extends the secure Admin foundation; it does not duplicate already accepted result, safeguard, Time & Phase or content-correction behaviour.
 
 Confirmed decisions:
-
-The Stage 13F-K1 database operations contract remains accepted and is the binding owner-only fixture, reconciliation, readiness and audit contract delivered by Migration 018.
 
 1. Fixture date, kick-off, venue and schedule status become owner-only Admin operations with optimistic fixture revision and append-only before/after audit evidence.
 2. Participant identities, group membership, match numbering, fixture code, resolver slots and knockout allocation remain outside browser editing.
@@ -664,3 +664,22 @@ Stage 13G-C5 preserves the compact private-league table introduced by C4. The de
 Status: complete in development.
 
 Stage 13G-C6 simplifies the default private-league shell around the compact table. The default view now leads with league selection, competition selection and rank/member/points. League code, lifecycle/privacy copy, summary cards and shared-member notes sit behind details after the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
+
+## Stage 16A-P1 — Privacy-safe synthetic identity plumbing
+
+Status: complete in development as a local catalogue, guard and audit package.
+
+Stage 16A-P1 records the privacy-safe synthetic identity contract before any staging seeding implementation. It creates no users, includes no user creation, writes no Supabase data, includes no database writes, exposes no email addresses or raw Auth metadata to the browser, changes no UI components, changes no resolver logic, changes no scoring and creates no Migration 019.
+
+Confirmed decisions:
+
+1. The approved Stage 16A persona set remains exactly nineteen deterministic personas: `exact_score_heavy`, `outcome_only`, `all_wrong`, `partial_predictions`, `no_predictions`, `submitted_complete`, `unsubmitted_identical`, `joker_cap_reached`, `zero_jokers`, `engineered_tie_a`, `engineered_tie_b`, `bracket_survives_deep`, `bracket_dead_early`, `ko_only`, `original_only`, `ko_advancing_only`, `ko_method_variant`, `ko_joker_variant`, `correction_sensitive`.
+2. Every future seeded account must carry both reserved markers: email domain `@synthetic.euro28.test` and user metadata marker `synthetic_euro28: true`.
+3. The future teardown must require both reserved markers before deleting anything. Email domain alone is insufficient, and metadata marker alone is insufficient.
+4. P1 tooling fails closed to the Euro staging project `gcfdwobpnanjchcnvdco` and explicitly blocks WC26 production `ouhxawizadnwrhrjppld`.
+5. Original Predictor and KO Predictor participation remains competition-scoped in the catalogue. No combined totals, blended leaderboards or cross-competition scoring evidence are approved.
+6. P1 does not decide the future production offline-player or managed-participant model.
+7. The package adds `audit:stage16a-p1-synthetic-identity` to `npm run check`; active migrations remain 18 and no Migration 019 is created.
+
+Next sequenced package: Stage 16A-P2 — Staging-effective database time, unless deliberately re-sequenced before the full seeded-cast implementation.
+

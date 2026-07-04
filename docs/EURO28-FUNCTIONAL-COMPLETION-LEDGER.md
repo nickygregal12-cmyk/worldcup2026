@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.35 — Stage 16A scope alignment and launch gates
+### Version 1.36 — Stage 16A-P1 synthetic identity plumbing
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -38,7 +38,7 @@
 | Tournament-pick persistence and player-facing UI | 🟠 PARTIAL | Admin readiness and the contract exist, but ordinary players cannot yet enter total goals, top scorer or highest-scoring team. Build the player surface inside the Original Predictor journey, lock it at the global lock, score via the central ruleset and show the live race on Home during the tournament. Moving this earlier than Stage 17A requires explicit schedule acceptance. | 13G-C / 17A re-approval |
 | Player insight engine and points storytelling | 🟠 PARTIAL | Canonical insight data, lifecycle copy and H2H engines exist, but the accepted product shape is not the current inline strip. Player-name activation must open a dedicated player view with overview, predictions, bracket/tables, dedicated H2H and dedicated points-breakdown destinations, plus informative pre-lock placeholders. | 13G-C |
 | Provisional team seeding and zero-code-change rehearsal | 🕓 SCHEDULED | Guarded 24-team staging seed, replace/confirm mode and Stage 17 zero-code-change rehearsal | 16A |
-| Synthetic identities and deterministic persona catalogue | 🕓 SCHEDULED | Nineteen approved personas, dual identity markers and local-only Admin API credentials | 16A |
+| Synthetic identities and deterministic persona catalogue | ✅ FUNCTIONAL | Stage 16A-P1 defines the Privacy-safe synthetic identity plumbing local catalogue, exactly nineteen deterministic personas, reserved `@synthetic.euro28.test` emails, required `synthetic_euro28: true` metadata, dual-marker teardown guard and Euro-staging/WC26 fail-closed project boundary. No user creation, no database writes, no UI exposure and no Migration 019. | 16A-P1 |
 | Synthetic prediction and scenario oracle | 🕓 SCHEDULED | Independent precomputed points at every Time & Phase preset, including correction replacement | 16A |
 | Synthetic league population | 🕓 SCHEDULED | Large and tiny leagues, multi-league member and no-league member across both standings | 16A |
 | Marker-safe teardown and reseed | 🕓 SCHEDULED | Delete only dual-marker synthetic data; prove zero residue and repeatable reseed | 16A |
@@ -184,6 +184,9 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 
 ## Change log
+
+- **v1.36:** Stage 16A-P1 completes Privacy-safe synthetic identity plumbing. The repo now has a canonical local catalogue of exactly nineteen personas, reserved `@synthetic.euro28.test` emails, required `synthetic_euro28: true` metadata, dual-marker teardown guards, Euro staging project enforcement and explicit WC26 production blocking. This is no user creation, no database writes, no UI exposure, no scoring/resolver/component change and no Migration 019.
+
 - **v1.35:** Stage 16A scope alignment adds the Stage 16A-S0 launch-gate document and audit, records 16A-P1 and 16A-P2 as separately guarded preconditions, freezes the 24-team/19-persona/league/correction/teardown scope, preserves the Euro-staging-only and WC26 fail-closed boundary, and adds `audit:stage16a-scope-alignment` to `npm run check`. No component, resolver, scoring, route, database or migration implementation is included; active migrations remain 18 and no Migration 019 is created.
 
 - **v1.34:** Stage 13G-C1 guest import prompt updates the signed-in import surface to “Import your saved Euro 2028 predictions?”, adds the accepted primary and secondary actions, replaces internal browser-draft copy with device wording, and preserves separate Original Predictor and KO Predictor import boundaries. No database change; active migrations remain 18 with no Migration 019.

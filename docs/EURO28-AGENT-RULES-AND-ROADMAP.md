@@ -680,3 +680,18 @@ Stage 13G-C5 preserves the compact private-league table introduced by C4. The de
 Status: complete in development.
 
 Stage 13G-C6 simplifies the default private-league shell around the compact table. The default view now leads with league selection, competition selection and rank/member/points. League code, lifecycle/privacy copy, summary cards and shared-member notes sit behind details after the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
+
+## Stage 16A-P1 agent rules — synthetic identity plumbing
+
+Stage 16A-P1 Privacy-safe synthetic identity plumbing is complete as local catalogue and guard tooling only.
+
+Agents must preserve these rules:
+
+- Use exactly nineteen deterministic personas: `exact_score_heavy`, `outcome_only`, `all_wrong`, `partial_predictions`, `no_predictions`, `submitted_complete`, `unsubmitted_identical`, `joker_cap_reached`, `zero_jokers`, `engineered_tie_a`, `engineered_tie_b`, `bracket_survives_deep`, `bracket_dead_early`, `ko_only`, `original_only`, `ko_advancing_only`, `ko_method_variant`, `ko_joker_variant`, `correction_sensitive`.
+- Every future synthetic account must use `@synthetic.euro28.test` and `synthetic_euro28: true`.
+- Teardown must require both markers before deletion.
+- P1 contains no database writes, no user creation, no service-role handling, no UI exposure, no scoring changes, no resolver changes and no Migration 019.
+- Tooling must fail closed to Euro staging `gcfdwobpnanjchcnvdco` and explicitly block WC26 production `ouhxawizadnwrhrjppld`.
+- Original Predictor and KO Predictor evidence must remain separate.
+- Do not start the full seeded cast until Stage 16A-P2 is complete or deliberately re-sequenced.
+
