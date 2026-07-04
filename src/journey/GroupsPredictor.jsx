@@ -1,7 +1,7 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { useMemo, useState } from 'react'
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
-import { ScoreInput, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar } from '../design-system/index.jsx'
+import { ScoreInput, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar, JokerMeter, JokerPill } from '../design-system/index.jsx'
 import { hasActivePredictionGrace, isPredictionMatchStarted, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import { buildGroupProgress, deriveGroupMatchState, jokerControlLabel } from './groupsPresentationModel.js'
 import { EURO_LUCKY_DIP_MODE } from './euroLuckyDip.js'
@@ -45,12 +45,12 @@ export default function GroupsPredictor({
         </div>
         <div className="groups-overview__progress">
           <ProgressBar value={summary.groupComplete} max={36} label="Group predictions completed" />
-          <div className="groups-joker-meter" aria-label={`${summary.groupJokers} of ${summary.groupJokerCap} group jokers selected`}>
-            <span className="groups-joker-mark" aria-hidden="true">J</span>
-            <strong>{summary.groupJokers}/{summary.groupJokerCap}</strong>
-            <span>jokers</span>
-            <small>{EURO_SCORING_CONFIG.joker.MULTIPLIER}× points</small>
-          </div>
+          <JokerMeter
+            value={summary.groupJokers}
+            max={summary.groupJokerCap}
+            multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER}
+            label="group jokers selected"
+          />
         </div>
       </section>
 
@@ -155,17 +155,14 @@ export default function GroupsPredictor({
 
                       <footer className="group-match-card__footer">
                         <span>{complete ? `${row.homeScore}–${row.awayScore} predicted` : 'Enter both scores'}</span>
-                        <button
-                          type="button"
-                          className={row.jokerApplied ? 'joker-control is-active' : 'joker-control'}
+                        <JokerPill
+                          active={row.jokerApplied}
                           disabled={jokerDisabled}
-                          aria-pressed={row.jokerApplied}
-                          aria-label={`${jokerLabel} for match ${match.matchNumber}`}
+                          multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER}
+                          statusLabel={jokerLabel}
+                          matchLabel={`match ${match.matchNumber}`}
                           onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })}
-                        >
-                          <span className="groups-joker-mark" aria-hidden="true">J</span>
-                          <span>{jokerLabel}</span>
-                        </button>
+                        />
                       </footer>
                     </article>
                   )

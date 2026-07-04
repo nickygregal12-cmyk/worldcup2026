@@ -13,6 +13,7 @@ import {
   LockKeyhole,
   LoaderCircle,
   Save,
+  Star,
   Moon,
   RefreshCw,
   ShieldCheck,
@@ -47,6 +48,7 @@ const ICONS = Object.freeze({
   lock: LockKeyhole,
   unlock: UnlockKeyhole,
   save: Save,
+  star: Star,
 })
 
 export default function Icon({ name, size = 22, strokeWidth = 1.9, className = '' }) {

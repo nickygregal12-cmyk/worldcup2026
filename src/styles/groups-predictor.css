@@ -603,3 +603,76 @@ button.team-label {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Stage 13G-GROUPS-1: approved joker pill and five-dot meter reference adoption */
+.groups-joker-meter--dots {
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+}
+
+.groups-joker-meter__star,
+.groups-joker-meter__label,
+.groups-joker-dot.is-active {
+  color: var(--joker);
+}
+
+.groups-joker-meter__label {
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.groups-joker-meter__dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.groups-joker-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1.5px solid var(--joker-border);
+  border-radius: var(--radius-full);
+  background: transparent;
+}
+
+.groups-joker-dot.is-active {
+  border-color: currentColor;
+  background: currentColor;
+}
+
+.joker-control--pill {
+  min-height: 2.75rem;
+  border-width: 1.5px;
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+}
+
+.joker-control--pill .joker-control__icon {
+  color: currentColor;
+}
+
+.joker-control--pill.is-active {
+  border-color: var(--joker-border);
+  background: var(--joker-soft);
+  color: var(--joker);
+  box-shadow: 0 0 0 1px var(--joker-border);
+}
+
+.group-match-card--joker {
+  border-color: var(--joker-border);
+  box-shadow: 0 0 0 2px var(--joker-border), var(--shadow-1);
+}
+
+.joker-control__multiplier {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.75rem;
+  min-height: 1.5rem;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--joker);
+  color: var(--surface-raised);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}

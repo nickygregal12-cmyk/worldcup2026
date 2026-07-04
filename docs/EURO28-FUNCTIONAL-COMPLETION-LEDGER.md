@@ -352,3 +352,11 @@ Active migrations remain 18. No Migration 019.
 | Player predicted tables | SCHEDULED | Tables tab shows the player's predicted group tables, using the same qualification-edge and third-place logic as the Groups destination. |
 | Player View links | SCHEDULED | Header actions route to real Head-to-head and Points breakdown destinations. Prototype stub buttons are not imported. |
 | Player View prototype exclusions | SCHEDULED | Do not import sample data, lock switch, toast stubs, Google fonts or single-file structure. |
+
+## Stage 13G-GROUPS-1 — Groups Joker Control Implementation
+
+| Ledger row | Status | Evidence |
+| --- | --- | --- |
+| 13G-GROUPS-1 joker pill and meter implementation | FUNCTIONAL | Groups predictor uses the shared `JokerPill` and `JokerMeter` primitives. The visible bare `J` circle is retired from the Groups surface. |
+| Disabled-at-cap treatment | FUNCTIONAL | When the five-group-joker cap is reached, unarmed joker pills render disabled with explicit state text. |
+| Scope boundary | FUNCTIONAL | No venue meta-line, score-stepper, bracket, league, Player View, scoring, resolver, Supabase or migration change is included. |

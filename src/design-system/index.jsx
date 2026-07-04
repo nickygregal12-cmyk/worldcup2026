@@ -5,6 +5,7 @@ import PredictionStateBadge from './PredictionStateBadge.jsx'
 import { useEffect, useId, useRef } from 'react'
 import Icon from './Icon.jsx'
 import PlayerIdentity from './PlayerIdentity.jsx'
+import JokerPill, { JokerMeter } from './JokerControl.jsx'
 
 export function Button({ children, variant = 'primary', size = 'medium', icon = null, loading = false, className = '', disabled, ...props }) {
   return (
@@ -190,4 +191,4 @@ export function ConfirmDialog({ open, title, children, confirmLabel = 'Confirm',
   )
 }
 
-export { Icon, PlayerIdentity, TeamLabel, ScoreInput, PredictionStateBadge }
+export { Icon, PlayerIdentity, TeamLabel, ScoreInput, PredictionStateBadge, JokerPill, JokerMeter }

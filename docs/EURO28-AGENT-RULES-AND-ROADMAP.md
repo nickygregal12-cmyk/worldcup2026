@@ -991,3 +991,9 @@ Next build order after this reference is recorded:
 
 1. 13G-GROUPS-1 — joker pill, shared joker meter and disabled-at-cap tests.
 2. League/Player View implementation can then consume the approved Player View reference when scheduled.
+
+## Stage 13G-GROUPS-1 — implemented joker pill and shared meter
+
+The Groups predictor now uses the approved shared joker pill and five-dot joker meter. Future KO joker work must reuse the same `JokerPill` and `JokerMeter` primitives rather than introducing a separate control. The retired bare `J` circle must not return.
+
+Next recommended implementation slice: `13G-GROUPS-2 — Groups view switcher, phase default and context banner implementation`.

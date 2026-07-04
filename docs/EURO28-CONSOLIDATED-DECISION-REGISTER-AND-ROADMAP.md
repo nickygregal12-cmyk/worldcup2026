@@ -996,3 +996,11 @@ Contract changes flagged:
 | Original / KO split | Header may show KO state, but points and content remain separate. |
 
 This is a docs/audit-only reference adoption. It does not implement UI, routes, resolver logic, scoring logic, Supabase writes or a migration. Active migrations remain 18 and Migration 019 is not created.
+
+## Stage 13G-GROUPS-1 — Joker Pill and Shared Joker Meter Implementation
+
+Status: implemented.
+
+This slice implements the approved Groups joker-control decision from the reference prototype. The bare `J` circle is retired from the Groups predictor surface. Group match cards now use the shared `JokerPill` primitive with a star icon, visible `Joker` label and `2×` multiplier only when armed. The page controls now use the shared five-dot gold `JokerMeter` primitive. Disabled cap treatment remains explicit when the five-group-joker cap is reached.
+
+Scope boundaries: no venue meta-line implementation, no score-stepper implementation, no view-switcher rebuild, no predicted-table rebuild, no bracket rebuild, no league or Player View rebuild, no Supabase write change, no scoring or resolver change, and no migration.
