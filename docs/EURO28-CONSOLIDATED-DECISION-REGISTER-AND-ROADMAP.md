@@ -651,3 +651,9 @@ Stage 13G-C4 corrects the over-dense Stage 13G-C2/C3 league presentation. The de
 Status: complete in development.
 
 Stage 13G-C5 preserves the compact private-league table introduced by C4. The default table remains rank, member and points. Deeper member comparison, point splits, gap context and privacy/lock copy now open through the member row detail destination below the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
+
+## Stage 13G-C6 — Compact league page shell
+
+Status: complete in development.
+
+Stage 13G-C6 simplifies the default private-league shell around the compact table. The default view now leads with league selection, competition selection and rank/member/points. League code, lifecycle/privacy copy, summary cards and shared-member notes sit behind details after the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.

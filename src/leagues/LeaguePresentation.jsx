@@ -48,9 +48,12 @@ export function LeagueActionConfirmation({ action, leagueName, actionStatus, onC
 export function LeagueCompetitionHeading({ competitionKey }) {
   const original = competitionKey === LEAGUE_COMPETITION.ORIGINAL
   return (
-    <div className="foundation-competition-heading">
-      <div><span className="foundation-kicker">Separate standings</span><h3>{competitionName(competitionKey)}</h3></div>
-      <small>{original ? 'Group matches and original bracket only' : 'Real knockout fixtures only'}</small>
+    <div className={styles.compactCompetitionHeading}>
+      <div>
+        <span className="foundation-kicker">Standings</span>
+        <h3>{competitionName(competitionKey)}</h3>
+      </div>
+      <small>{original ? 'Groups + original bracket' : 'Real knockout fixtures'}</small>
     </div>
   )
 }
@@ -94,18 +97,28 @@ export function LeaguePicker({ leagues, selectedId, onSelect }) {
   )
 }
 
-export function MemberPicker({ members, selectedId, onSelect }) {
-  const available = members.filter(member => !member.isCurrentUser)
-  if (available.length === 0) return null
+export function LeagueCodeDisclosure({ joinCode, onCopy }) {
+  if (!joinCode) return null
   return (
-    <SelectField
-      label="Compare with member"
-      className="foundation-member-picker"
-      value={selectedId ?? ''}
-      onChange={onSelect}
-      placeholder="Choose a member"
-      options={available.map(member => ({ value: member.userId, label: member.displayName }))}
-    />
+    <details className={styles.leagueCodeDisclosure}>
+      <summary>League code</summary>
+      <div className="foundation-league-code">
+        <span>Invite code</span>
+        <strong>{joinCode}</strong>
+        <button type="button" className="foundation-secondary-button" onClick={onCopy}>Copy</button>
+      </div>
+    </details>
+  )
+}
+
+export function LeagueSecondaryDetails({ title = 'League details', children }) {
+  return (
+    <details className={styles.secondaryDetails}>
+      <summary>{title}</summary>
+      <div className={styles.secondaryDetailsBody}>
+        {children}
+      </div>
+    </details>
   )
 }
 

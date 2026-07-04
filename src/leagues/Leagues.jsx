@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueHeadToHead, loadLeagueOverview, readLeagueSession } from './leagueService.js'
 import { buildLeagueLifecycleState, buildStandingComparison, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { CompetitionLifecycleNote, CompetitionTabs, LeagueActionConfirmation, LeagueCompetitionHeading, LeagueDetailDestination, LeagueKoReadinessCard, LeagueLifecycleBanner, LeaguePicker, LeagueSummaryCard, StandingsTable } from './LeaguePresentation.jsx'
+import { CompetitionLifecycleNote, CompetitionTabs, LeagueActionConfirmation, LeagueCodeDisclosure, LeagueCompetitionHeading, LeagueDetailDestination, LeagueKoReadinessCard, LeagueLifecycleBanner, LeaguePicker, LeagueSecondaryDetails, LeagueSummaryCard, StandingsTable } from './LeaguePresentation.jsx'
 import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
 
 function messageForError(error) {
@@ -287,12 +287,11 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
       <div className="foundation-section-heading">
         <div>
           <span className="foundation-kicker">Private leagues</span>
-          <h2 id="euro28-leagues-heading">One member list, two separate competitions</h2>
-          <p>Original Predictor and KO Predictor ranks and points are always shown separately. Original Predictor and KO Predictor ranks, comparisons and release rules stay separate at every lifecycle phase.</p>
+          <h2 id="euro28-leagues-heading">Private leagues</h2>
+          <p>Track each competition separately with a compact points table. Original Predictor and KO Predictor ranks and points are always shown separately.</p>
         </div>
       </div>
 
-      <LeagueLifecycleBanner lifecycleState={leagueLifecycle} />
 
       {notice && <p className={`auth-notice auth-notice--${notice.tone}`}>{notice.message}</p>}
       {loadingSession && <p className="foundation-empty-copy">Checking your league access…</p>}
@@ -342,7 +341,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                   <div>
                     <span className="foundation-kicker">{selectedLeague.memberCount} member{selectedLeague.memberCount === 1 ? '' : 's'}</span>
                     <h3>{selectedLeague.name}</h3>
-                    <div className="foundation-league-code"><span>League code</span><strong>{selectedLeague.joinCode}</strong><button type="button" className="foundation-secondary-button" onClick={copyLeagueCode}>Copy</button></div>
+                    <LeagueCodeDisclosure joinCode={selectedLeague.joinCode} onCopy={copyLeagueCode} />
                   </div>
                   <div className="foundation-inline-actions">
                     {selectedLeague.memberRole === 'owner' ? (
@@ -356,9 +355,19 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                 <LeagueActionConfirmation action={pendingLeagueAction} leagueName={selectedLeague.name} actionStatus={actionStatus} onConfirm={confirmLeagueAction} onCancel={() => setPendingLeagueAction(null)} />
 
                 {(overview.status === 'loading' || overviewLoading) && !overview.data && <p className="foundation-empty-copy">Loading both competition tables…</p>}
+                {activeOverview && overview.status === 'partial' && <p className="foundation-warning-text">One competition table could not be loaded. The available table remains usable.</p>}
+
+                <LeagueCompetitionHeading competitionKey={effectiveCompetitionKey} />
+
+                {activeSection?.status === 'error' && <p className="foundation-warning-text">{activeSection.error}</p>}
+                {(overview.status === 'loading' || overviewLoading) && <p className="foundation-empty-copy">Refreshing standings…</p>}
+                {overview.status !== 'loading' && !overviewLoading && activeSection?.status === 'ready' && standings.length === 0 && <p className="foundation-empty-copy">No league members were returned.</p>}
+                {standings.length > 0 && <StandingsTable rows={standings} selectedUserId={comparisonMemberId} onCompare={row => compareMember(row, effectiveCompetitionKey)} />}
+
                 {activeOverview && (
-                  <>
-                    {overview.status === 'partial' && <p className="foundation-warning-text">One competition table could not be loaded. The available table remains usable.</p>}
+                  <LeagueSecondaryDetails title="League details">
+                    <LeagueLifecycleBanner lifecycleState={leagueLifecycle} />
+                    <CompetitionLifecycleNote competitionKey={effectiveCompetitionKey} lifecycle={lifecycle} summary={activeSummary} koReadiness={koReadiness} />
                     <div className="foundation-league-summary-grid">
                       <LeagueSummaryCard title="Original Predictor" summary={activeOverview.summaries.original} section={activeOverview.sections.original} />
                       {koLeagueReady ? (
@@ -370,16 +379,8 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                     <div className="foundation-shared-member-row">
                       <p className="foundation-member-count">Shared member list: <strong>{activeOverview.members.length}</strong>. Open a member row for the detailed comparison.</p>
                     </div>
-                  </>
+                  </LeagueSecondaryDetails>
                 )}
-
-                <LeagueCompetitionHeading competitionKey={effectiveCompetitionKey} />
-                <CompetitionLifecycleNote competitionKey={effectiveCompetitionKey} lifecycle={lifecycle} summary={activeSummary} koReadiness={koReadiness} />
-
-                {activeSection?.status === 'error' && <p className="foundation-warning-text">{activeSection.error}</p>}
-                {(overview.status === 'loading' || overviewLoading) && <p className="foundation-empty-copy">Refreshing standings…</p>}
-                {overview.status !== 'loading' && !overviewLoading && activeSection?.status === 'ready' && standings.length === 0 && <p className="foundation-empty-copy">No league members were returned.</p>}
-                {standings.length > 0 && <StandingsTable rows={standings} selectedUserId={comparisonMemberId} onCompare={row => compareMember(row, effectiveCompetitionKey)} />}
               </article>
 
               <div ref={detailRef}>
