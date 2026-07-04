@@ -997,3 +997,17 @@ Next build order after this reference is recorded:
 The Groups predictor now uses the approved shared joker pill and five-dot joker meter. Future KO joker work must reuse the same `JokerPill` and `JokerMeter` primitives rather than introducing a separate control. The retired bare `J` circle must not return.
 
 Next recommended implementation slice: `13G-GROUPS-2 — Groups view switcher, phase default and context banner implementation`.
+
+## Stage 13G-BRACKET-REF — Original Bracket Reference Adoption
+
+Status: accepted docs/audit reference-adoption package for the Original Bracket destination. The approved prototype is `docs/reference-prototypes/euro28-bracket-page-prototype.html`.
+
+Contract change: the charter v1.8 converging wall-chart decision moves from backlog into Stage 13G Original Bracket scope. This is intentional and must not be treated as silent scope drift.
+
+Recorded decisions: below 900px stacked layout with per-round pick counters; at ≥900px converging wall chart; one state and one tie/slot primitive set; visible slot source codes such as `1B`, `2A` and `3DEF`; tap-to-advance winner-only picks; selective downstream clearing; amber re-pick flag `Re-pick — your tables changed this tie`; champion strip and centred champion box; copy `Winner picks only — scores and jokers live in the KO Predictor`; predicted-context banner `Your predicted bracket — built from your predicted tables, never blended with live results`; audit-required absence of score inputs, method controls and joker controls.
+
+Owner sign-off for open decisions: first build proceeds without connector lines; share-card rendering lands in its own follow-on batch; one 900px breakpoint is retained with no intermediate tablet layout unless real-device review proves need.
+
+Scope: no UI build, no route implementation, no scoring change, no resolver change, no Supabase write and no migration. Active migrations remain 18 and Migration 019 must not exist.
+
+Next single task after this docs/audit package: 13G-BRACKET-1 — Original Bracket responsive stacked/wall-chart rebuild with shared tie/slot primitives.

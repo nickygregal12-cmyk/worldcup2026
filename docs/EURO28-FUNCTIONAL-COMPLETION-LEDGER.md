@@ -360,3 +360,21 @@ Active migrations remain 18. No Migration 019.
 | 13G-GROUPS-1 joker pill and meter implementation | FUNCTIONAL | Groups predictor uses the shared `JokerPill` and `JokerMeter` primitives. The visible bare `J` circle is retired from the Groups surface. |
 | Disabled-at-cap treatment | FUNCTIONAL | When the five-group-joker cap is reached, unarmed joker pills render disabled with explicit state text. |
 | Scope boundary | FUNCTIONAL | No venue meta-line, score-stepper, bracket, league, Player View, scoring, resolver, Supabase or migration change is included. |
+
+## Stage 13G-BRACKET-REF — Original Bracket Reference Adoption
+
+| Ledger row | Status | Record |
+| --- | ---: | --- |
+| Stage 13G-BRACKET-REF — Original Bracket reference adopted | ACCEPTED / SPEC SOURCE | `euro28-bracket-page-prototype.html` is the approved behaviour, hierarchy and copy reference for both layouts. |
+| Charter v1.8 converging wall chart | CONTRACT CHANGE | Wall-chart layout moves from backlog into Stage 13G Original Bracket scope; this is a visible contract change. |
+| Original Bracket responsive split | ACCEPTED / SCHEDULED | `<900px` stacked layout; `≥900px` converging wall chart. |
+| Original Bracket slot anatomy | ACCEPTED / SCHEDULED | Source code visible, resolved slots tappable, picked success/tick, unresolved dashed placeholders. |
+| Original Bracket pick mechanics | ACCEPTED / TEST REQUIRED | Tap-to-advance winner-only; selective downstream clearing; surviving picks persist. |
+| Re-pick presentation | ACCEPTED / TEST REQUIRED | `Re-pick — your tables changed this tie` amber/partial treatment. |
+| Champion and context copy | ACCEPTED / COPY LOCKED | Champion strip/box plus approved KO sub-line `Winner picks only — scores and jokers live in the KO Predictor` and predicted-context banner `Your predicted bracket — built from your predicted tables, never blended with live results`. |
+| Original Bracket controls absence | ACCEPTED / AUDIT REQUIRED | No score inputs, method controls or joker controls. |
+| Connector lines | SIGNED OFF / WITHOUT LINES | First implementation ships without connector lines. |
+| Share-card rendering | SIGNED OFF / FOLLOW-ON | Dedicated export surface in later batch; not first Bracket implementation. |
+| Tablet band | SIGNED OFF / SINGLE BREAKPOINT | Keep one 900px breakpoint; no silent third layout. |
+
+Active migrations remain 18. Migration 019 is not created.

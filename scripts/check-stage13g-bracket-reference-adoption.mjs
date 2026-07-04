@@ -1,0 +1,104 @@
+import fs from 'node:fs'
+import path from 'node:path'
+
+const repo = process.cwd()
+const errors = []
+
+function read(file) {
+  const full = path.join(repo, file)
+  if (!fs.existsSync(full)) {
+    errors.push(`Missing required file: ${file}`)
+    return ''
+  }
+  return fs.readFileSync(full, 'utf8')
+}
+
+function requireIncludes(file, content, tokens) {
+  for (const token of tokens) {
+    if (!content.includes(token)) errors.push(`${file} is missing: ${token}`)
+  }
+}
+
+const doc = read('docs/STAGE-13G-BRACKET-REFERENCE-ADOPTION.md')
+const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
+const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
+const agent = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
+const charter = read('docs/EURO28-DESIGN-CHARTER.md')
+const prototype = read('docs/reference-prototypes/euro28-bracket-page-prototype.html')
+const packageJson = read('package.json')
+
+requireIncludes('docs/STAGE-13G-BRACKET-REFERENCE-ADOPTION.md', doc, [
+  'Stage 13G-BRACKET-REF',
+  'Contract change',
+  'below `900px`',
+  'At `≥900px`',
+  'converging wall chart',
+  'one state and one set of tie/slot primitives',
+  '`1B`',
+  '`2A`',
+  '`3DEF`',
+  'tap-to-advance and winner-only',
+  'clears only downstream picks that are no longer fed',
+  'Re-pick — your tables changed this tie',
+  'Pick through to the final',
+  'Winner picks only — scores and jokers live in the KO Predictor',
+  'Your predicted bracket — built from your predicted tables, never blended with live results',
+  'score inputs',
+  'method controls',
+  'joker controls',
+  'without lines',
+  'follow-on batch',
+  'single 900px breakpoint',
+  'No UI rebuild',
+  'No Supabase writes',
+  'Migration 019 is not created',
+])
+
+for (const [file, content] of [
+  ['docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md', register],
+  ['docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', ledger],
+  ['docs/EURO28-AGENT-RULES-AND-ROADMAP.md', agent],
+  ['docs/EURO28-DESIGN-CHARTER.md', charter],
+]) {
+  requireIncludes(file, content, [
+    'Stage 13G-BRACKET-REF',
+    'contract change',
+    'converging wall chart',
+    '900px',
+    'Winner picks only — scores and jokers live in the KO Predictor',
+    'never blended with live results',
+  ])
+}
+
+requireIncludes('docs/reference-prototypes/euro28-bracket-page-prototype.html', prototype, [
+  'Your predicted bracket',
+  'Winner picks only — scores and jokers live in the KO Predictor',
+  'Wall chart bracket',
+  'Re-pick — your tables changed this tie',
+  '3DEF',
+])
+
+requireIncludes('package.json', packageJson, [
+  'audit:stage13g-bracket-reference-adoption',
+  'check-stage13g-bracket-reference-adoption.mjs',
+])
+
+const migrationsDir = path.join(repo, 'supabase', 'migrations')
+if (fs.existsSync(migrationsDir)) {
+  const active = fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
+  if (active.length !== 18) errors.push(`Expected 18 active migrations, found ${active.length}`)
+  if (active.some((name) => name.includes('019'))) errors.push('Migration 019 must not exist for Stage 13G-BRACKET-REF')
+}
+
+if (errors.length) {
+  console.error('Euro Stage 13G-BRACKET-REF audit failed:')
+  for (const error of errors) console.error(`- ${error}`)
+  process.exit(1)
+}
+
+console.log('Euro Stage 13G-BRACKET-REF Original Bracket reference audit passed.')
+console.log('Reference: stacked <900px and converging wall chart ≥900px recorded.')
+console.log('Contract change: charter v1.8 wall chart moved from backlog into Stage 13G.')
+console.log('Sign-off: no connector lines first, share-card follow-on, single 900px breakpoint.')
+console.log('Scope: docs/audit only; no UI build, scoring, resolver, Supabase write or migration change.')
+console.log('Database: active migrations remain 18; no Migration 019.')

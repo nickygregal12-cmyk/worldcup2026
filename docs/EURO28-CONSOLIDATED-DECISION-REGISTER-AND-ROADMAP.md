@@ -1004,3 +1004,15 @@ Status: implemented.
 This slice implements the approved Groups joker-control decision from the reference prototype. The bare `J` circle is retired from the Groups predictor surface. Group match cards now use the shared `JokerPill` primitive with a star icon, visible `Joker` label and `2×` multiplier only when armed. The page controls now use the shared five-dot gold `JokerMeter` primitive. Disabled cap treatment remains explicit when the five-group-joker cap is reached.
 
 Scope boundaries: no venue meta-line implementation, no score-stepper implementation, no view-switcher rebuild, no predicted-table rebuild, no bracket rebuild, no league or Player View rebuild, no Supabase write change, no scoring or resolver change, and no migration.
+
+## Stage 13G-BRACKET-REF — Original Bracket Reference Adoption
+
+Status: accepted docs/audit reference-adoption package for the Original Bracket destination. The approved prototype is `docs/reference-prototypes/euro28-bracket-page-prototype.html`.
+
+Contract change: the charter v1.8 converging wall-chart decision moves from backlog into Stage 13G Original Bracket scope. This is intentional and must not be treated as silent scope drift.
+
+Recorded decisions: below 900px stacked layout with per-round pick counters; at ≥900px converging wall chart; one state and one tie/slot primitive set; visible slot source codes such as `1B`, `2A` and `3DEF`; tap-to-advance winner-only picks; selective downstream clearing; amber re-pick flag `Re-pick — your tables changed this tie`; champion strip and centred champion box; copy `Winner picks only — scores and jokers live in the KO Predictor`; predicted-context banner `Your predicted bracket — built from your predicted tables, never blended with live results`; audit-required absence of score inputs, method controls and joker controls.
+
+Owner sign-off for open decisions: first build proceeds without connector lines; share-card rendering lands in its own follow-on batch; one 900px breakpoint is retained with no intermediate tablet layout unless real-device review proves need.
+
+Scope: no UI build, no route implementation, no scoring change, no resolver change, no Supabase write and no migration. Active migrations remain 18 and Migration 019 must not exist.
