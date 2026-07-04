@@ -35,7 +35,7 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   'src/design/typography.css': 12,
   'src/styles/feature-compat.css': 2590,
   'src/styles/app.css': 1903,
-  'src/styles/groups-predictor.css': 605,
+  'src/styles/groups-predictor.css': 603,
   'src/styles/knockout-experiences.css': 463,
 })
 

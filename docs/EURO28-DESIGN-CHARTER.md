@@ -195,7 +195,7 @@ The following exact ceilings are temporary compatibility debt, not budgets:
 
 - `src/styles/feature-compat.css`: 2,590 lines;
 - `src/styles/app.css`: 1,906 lines;
-- `src/styles/groups-predictor.css`: 605 lines;
+- `src/styles/groups-predictor.css`: 603 lines;
 - `src/styles/knockout-experiences.css`: 463 lines.
 
 They must not grow. New feature selectors are forbidden. When a file shrinks, its audited cap shrinks in the same commit. A cap increase or a new exception requires explicit approval. The allowlist must eventually become empty.
