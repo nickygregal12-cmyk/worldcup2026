@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.33 — Stage 13G-H2 product-facing alignment and reference-asset decision
+### Version 1.35 — Stage 16A scope alignment and launch gates
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -142,6 +142,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Sentry reporting | 🟠 PARTIAL | Integration exists without credentials; activation gate at Stage 16 | 16 |
 | Dependency updates | 🟠 PARTIAL | Monthly manual review until default-branch decision after WC26 | OB-1 |
 | Hosted Euro staging simulation | 🕓 SCHEDULED | Existing guarded Euro staging project is approved for Stage 16A; WC26 production remains blocked | 16A |
+| Stage 16A scope alignment | ✅ FUNCTIONAL | Stage 16A-S0 records the staging-only launch gates, 16A-P1 privacy-safe synthetic identity plumbing, 16A-P2 staging-effective database time, full seeded-cast exclusions, dual synthetic markers, teardown/reseed acceptance and WC26 fail-closed boundary. No component, resolver, scoring, route, database or migration implementation is included; active migrations remain 18 and no Migration 019 is created. | — |
 
 ## Section G — Information architecture and coherent UI
 
@@ -183,6 +184,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 
 ## Change log
+- **v1.35:** Stage 16A scope alignment adds the Stage 16A-S0 launch-gate document and audit, records 16A-P1 and 16A-P2 as separately guarded preconditions, freezes the 24-team/19-persona/league/correction/teardown scope, preserves the Euro-staging-only and WC26 fail-closed boundary, and adds `audit:stage16a-scope-alignment` to `npm run check`. No component, resolver, scoring, route, database or migration implementation is included; active migrations remain 18 and no Migration 019 is created.
+
 - **v1.34:** Stage 13G-C1 guest import prompt updates the signed-in import surface to “Import your saved Euro 2028 predictions?”, adds the accepted primary and secondary actions, replaces internal browser-draft copy with device wording, and preserves separate Original Predictor and KO Predictor import boundaries. No database change; active migrations remain 18 with no Migration 019.
 
 - **v1.33:** Stage 13G-H2 product-facing alignment rejects the official UEFA EURO 2028 logo as a deployable asset without explicit permission, evaluates leagues reference patterns as adopt-improved/adapt/drop before build, keeps Tournament Picks player entry as a schedule decision, records the dedicated player route direction and recommends guest import copy as the next tight build. No route, component, scoring, resolver, database or migration change; active migrations remain 18 with no Migration 019.

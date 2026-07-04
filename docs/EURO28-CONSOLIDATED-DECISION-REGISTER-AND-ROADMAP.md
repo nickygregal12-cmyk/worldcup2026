@@ -1,19 +1,22 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 3.9 — Stage 13G-R0 canonical reconciliation and approved Stage 13G contract
+### Version 4.0 — Stage 16A scope alignment and launch gates
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
 ## 1. Current return point
 
-- Expected Git commit: `b7f50de` — **Complete Euro admin staging acceptance**.
+- Expected Git commit before this scope package: `2e6f79b` — **Compact Stage 13G league shell**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
-- Active migration count: **18**, aligned locally and on Euro staging. Stage 13F-K3 adds no migration.
-- Stages 1–12, 13A–13E, 14, 14B, Stage 13F-0 through Stage 13F-J and Stage 13G-0 are accepted.
-- Stage 13F-K3 is accepted at `b7f50de`. The next single package is Stage 13G-R0, documentation and reconciliation only.
-- Migration 018 adds fixture revision/editing, protected venue and match reads, complete reconciliation, readiness evidence and the two approved new event types. It also restores `team_profile_updated`, which Migration 016 accidentally omitted from the event constraint.
-- The Stage 13F-K1 database operations contract and Stage 13F-K2 control-room implementation are accepted. Stage 13F-K3 now proves deployed owner/results-admin/member behaviour, rollback-safe fixture operation and one real complete reconciliation before Stage 13G-A.
+- Active migration count: **18**, aligned locally and on Euro staging.
+- Stages 1–12, 13A–13E, 14, 14B, Stage 13F, Stage 13G-R0, Stage 13G-A, Stage 13G-B and Stage 13G-C league simplification through C6 are accepted at the package level recorded in the ledger.
+- Stage 16A-S0 is a scope-alignment package before implementation. No component, resolver, scoring, route, database or migration implementation is included.
+- Migration 018 remains the latest active migration. Migration 019 has not been created.
 - Original and KO Predictor totals remain permanently separate.
+
+## 1A. Current package note
+
+**Stage 16A scope alignment** records the launch gates for the staging seeded acceptance cast. Stage 16A-S0 is not a seeding implementation. It confirms 16A-P1 and 16A-P2 as the next separately guarded preconditions, keeps the full provisional-team/persona/league/correction rehearsal in later implementation slices, and keeps active migrations remain 18 and no Migration 019 is created.
 
 ## 2. Existing confirmed product decisions
 
@@ -241,6 +244,8 @@ A dedicated **Stage 13E — Team Profile Sheet** is added immediately after Stag
 ## 8. Stage 16A seeded acceptance cast — CONFIRMED
 
 Stage 16 opens with **Stage 16A — Provisional teams, synthetic users and deterministic scenario seeding** against Euro staging project `gcfdwobpnanjchcnvdco` only. The blocked WC26 production project `ouhxawizadnwrhrjppld` must always fail closed.
+
+**Stage 16A-S0 — Stage 16A scope alignment** locks the launch gates before implementation. It records 16A-P1 privacy-safe synthetic identity plumbing, 16A-P2 staging-effective database time and the later data-seeding implementation slices. No component, resolver, scoring, route, database or migration implementation is included. Scope alignment is documentation/audit only; active migrations remain 18 and no Migration 019 is created.
 
 ### 8.1 Provisional teams
 

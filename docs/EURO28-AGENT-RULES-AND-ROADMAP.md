@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.24 — Stage 13G-H0 housekeeping and record corrections
+### Version 4.25 — Stage 16A scope alignment and launch gates
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -55,6 +55,8 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 13F-J: player insight and points storytelling accepted at `f7f2fb5`; Migration 017 applied; 74 test files and 363 tests passed.
 - Stage 13F-K0/K1: Admin scope and Migration 018 database contract accepted through `0e4d5b7`; 18 migrations are aligned and 50 local plus 50 linked pgTAP tests passed.
 - Stage 13F-K2: Euro control-room implementation accepted at `c4342f1`; 78 test files and 376 tests passed, all six responsive theme baselines were accepted and deployed verification passed.
+- Stage 13F-K3 and Stage 13G-A/B/C/H docs/tooling/product-alignment packages are recorded through the current ledger; the latest known completed product commit before Stage 16A-S0 is `2e6f79b Compact Stage 13G league shell`.
+- Stage 16A-S0 is the current scope-alignment package. No component, resolver, scoring, route, database or migration implementation is included; active migrations remain 18 and no Migration 019 is created.
 
 # Delivery sequence
 
@@ -427,6 +429,10 @@ After browser coverage:
 ## Stage 16 — Staging-seeded lifecycle simulation
 
 ### Stage 16A — Provisional teams, synthetic users and deterministic scenario seeding
+
+#### Stage 16A-S0 — Stage 16A scope alignment
+
+Stage 16A-S0 is a docs/audit launch gate before implementation. It freezes the split into 16A-P1 privacy-safe synthetic identity plumbing, 16A-P2 staging-effective database time and later provisional-team/persona/league/correction/teardown slices. No component, resolver, scoring, route, database or migration implementation is included; active migrations remain 18 and no Migration 019 is created.
 
 This is the opening Stage 16 batch. It is staging-only and must not change the resolver, scoring rules or ordinary product navigation. No migration is permitted unless a genuine schema/read-contract gap is proved and separately packaged.
 
