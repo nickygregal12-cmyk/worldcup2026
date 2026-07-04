@@ -149,7 +149,7 @@ export function LeagueSummaryCard({ title, summary, section }) {
   )
 }
 
-export function StandingsTable({ rows, onCompare }) {
+export function StandingsTable({ rows, selectedUserId, onCompare }) {
   const raceRows = buildLeagueRaceRows(rows)
   const hasScoring = raceRows.some(row => row.scoredMatchCount > 0 || row.totalPoints > 0)
   return (
@@ -161,24 +161,52 @@ export function StandingsTable({ rows, onCompare }) {
           </tr>
         </thead>
         <tbody>
-          {raceRows.map(row => (
-            <tr key={row.userId} className={row.isCurrentUser ? styles.currentUserRow : ''}>
-              <td data-label="Rank">
-                <span className={styles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
-              </td>
-              <td data-label="Member">
-                <PlayerIdentity
-                  player={row}
-                  isCurrentUser={row.isCurrentUser}
-                  onActivate={row.isCurrentUser ? null : onCompare}
-                  meta={row.isCurrentUser ? 'You' : row.memberRole === 'owner' ? 'League owner' : 'Open comparison'}
-                />
-              </td>
-              <td data-label="Pts"><strong>{row.totalPoints}</strong></td>
-            </tr>
-          ))}
+          {raceRows.map(row => {
+            const selected = row.userId === selectedUserId
+            const rowClassName = [
+              row.isCurrentUser ? styles.currentUserRow : '',
+              selected ? styles.selectedRow : '',
+            ].filter(Boolean).join(' ')
+            const memberMeta = row.isCurrentUser
+              ? 'You'
+              : selected
+                ? 'Details open'
+                : row.memberRole === 'owner'
+                  ? 'League owner · view details'
+                  : 'View details'
+            return (
+              <tr key={row.userId} className={rowClassName}>
+                <td data-label="Rank">
+                  <span className={styles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
+                </td>
+                <td data-label="Member">
+                  <PlayerIdentity
+                    player={row}
+                    isCurrentUser={row.isCurrentUser}
+                    onActivate={row.isCurrentUser ? null : onCompare}
+                    meta={memberMeta}
+                  />
+                </td>
+                <td data-label="Pts"><strong>{row.totalPoints}</strong></td>
+              </tr>
+            )
+          })}
         </tbody>
       </table>
     </div>
+  )
+}
+
+export function LeagueDetailDestination({ comparison, children }) {
+  if (!comparison) return null
+  return (
+    <section className={styles.detailDestination} aria-label="League member detail">
+      <div className={styles.detailDestinationHeading}>
+        <span className="foundation-kicker">Member details</span>
+        <strong>{comparison.otherName ?? 'Selected member'}</strong>
+        <small>Breakdowns open here so the league table stays as rank, member and points.</small>
+      </div>
+      {children}
+    </section>
   )
 }

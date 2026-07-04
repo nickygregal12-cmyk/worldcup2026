@@ -18,3 +18,26 @@
   outline: 2px solid currentColor;
   outline-offset: -2px;
 }
+
+/* Stage 13G-C5 league row detail destination */
+
+.selectedRow {
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.detailDestination {
+  margin-top: 1rem;
+  border: 1px solid currentColor;
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.detailDestinationHeading {
+  display: grid;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.detailDestinationHeading small {
+  opacity: 0.78;
+}

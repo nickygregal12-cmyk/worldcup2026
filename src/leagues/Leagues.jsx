@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueHeadToHead, loadLeagueOverview, readLeagueSession } from './leagueService.js'
 import { buildLeagueLifecycleState, buildStandingComparison, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { CompetitionLifecycleNote, CompetitionTabs, LeagueActionConfirmation, LeagueCompetitionHeading, LeagueKoReadinessCard, LeagueLifecycleBanner, LeaguePicker, LeagueSummaryCard, MemberPicker, StandingsTable } from './LeaguePresentation.jsx'
+import { CompetitionLifecycleNote, CompetitionTabs, LeagueActionConfirmation, LeagueCompetitionHeading, LeagueDetailDestination, LeagueKoReadinessCard, LeagueLifecycleBanner, LeaguePicker, LeagueSummaryCard, StandingsTable } from './LeaguePresentation.jsx'
 import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
 
 function messageForError(error) {
@@ -29,6 +29,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const [pendingLeagueAction, setPendingLeagueAction] = useState(null)
   const overviewRequests = useRef(createLatestRequestGuard())
   const comparisonRequests = useRef(createLatestRequestGuard())
+  const detailRef = useRef(null)
 
   const selectedLeague = useMemo(
     () => leagues.find(league => league.id === selectedLeagueId) ?? leagues[0] ?? null,
@@ -266,14 +267,10 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     }
   }, [competitionKey, koLeagueReady])
 
-  const chooseComparisonMember = memberUserId => {
-    if (!memberUserId) {
-      clearComparison()
-      return
-    }
-    const member = activeOverview?.members.find(candidate => candidate.userId === memberUserId)
-    if (member) compareMember(member)
-  }
+  useEffect(() => {
+    if (!comparison?.otherUserId) return
+    detailRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
+  }, [comparison?.otherUserId])
 
   const copyLeagueCode = async () => {
     if (!selectedLeague?.joinCode) return
@@ -371,8 +368,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                       )}
                     </div>
                     <div className="foundation-shared-member-row">
-                      <p className="foundation-member-count">Shared member list: <strong>{activeOverview.members.length}</strong></p>
-                      <MemberPicker members={activeOverview.members} selectedId={comparisonMemberId} onSelect={chooseComparisonMember} />
+                      <p className="foundation-member-count">Shared member list: <strong>{activeOverview.members.length}</strong>. Open a member row for the detailed comparison.</p>
                     </div>
                   </>
                 )}
@@ -383,10 +379,14 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                 {activeSection?.status === 'error' && <p className="foundation-warning-text">{activeSection.error}</p>}
                 {(overview.status === 'loading' || overviewLoading) && <p className="foundation-empty-copy">Refreshing standings…</p>}
                 {overview.status !== 'loading' && !overviewLoading && activeSection?.status === 'ready' && standings.length === 0 && <p className="foundation-empty-copy">No league members were returned.</p>}
-                {standings.length > 0 && <StandingsTable rows={standings} competitionKey={effectiveCompetitionKey} onCompare={compareMember} />}
+                {standings.length > 0 && <StandingsTable rows={standings} selectedUserId={comparisonMemberId} onCompare={row => compareMember(row, effectiveCompetitionKey)} />}
               </article>
 
-              <PlayerHeadToHead state={comparison} reference={reference} lifecycle={lifecycle} onClose={clearComparison} context={PLAYER_COMPARISON_CONTEXT.LEAGUE} />
+              <div ref={detailRef}>
+                <LeagueDetailDestination comparison={comparison}>
+                  <PlayerHeadToHead state={comparison} reference={reference} lifecycle={lifecycle} onClose={clearComparison} context={PLAYER_COMPARISON_CONTEXT.LEAGUE} />
+                </LeagueDetailDestination>
+              </div>
             </>
           )}
         </>
