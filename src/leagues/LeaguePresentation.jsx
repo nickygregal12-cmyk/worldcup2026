@@ -1,5 +1,6 @@
+import styles from './leagueRace.module.css'
 import { PlayerIdentity, SelectField } from '../design-system/index.jsx'
-import { buildLeagueCompetitionLifecycleCopy, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
+import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
 
 function competitionName(competitionKey) {
   return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
@@ -143,13 +144,14 @@ export function LeagueSummaryCard({ title, summary, section }) {
       <span className="foundation-kicker">{title}</span>
       <strong>{formatOrdinal(summary.currentRank)}</strong>
       <span>{summary.currentPoints} pts</span>
-      <small>{stateCopy}</small>
+      <small>{summary.gapToLeaderLabel ?? stateCopy}</small>
     </article>
   )
 }
 
 export function StandingsTable({ rows, competitionKey, onCompare }) {
   const original = competitionKey === LEAGUE_COMPETITION.ORIGINAL
+  const raceRows = buildLeagueRaceRows(rows)
   return (
     <div className="foundation-table-wrap">
       <table className="foundation-league-table">
@@ -161,24 +163,32 @@ export function StandingsTable({ rows, competitionKey, onCompare }) {
           </tr>
         </thead>
         <tbody>
-          {rows.map(row => (
-            <tr key={row.userId} className={row.isCurrentUser ? 'is-current-user' : ''}>
-              <td data-label="Rank">{row.rank}</td>
+          {raceRows.map(row => (
+            <tr key={row.userId} className={[row.isCurrentUser ? styles.currentUserRow : '', row.podium === 'top-1' ? styles.topOneRow : '', row.podium === 'top-2' ? styles.topTwoRow : '', row.podium === 'top-3' ? styles.topThreeRow : ''].filter(Boolean).join(' ')}>
+              <td data-label="Rank">
+                <span className={styles.rankMarker}>{row.rank}</span>
+              </td>
               <td data-label="Member">
-                <PlayerIdentity
-                  player={row}
-                  isCurrentUser={row.isCurrentUser}
-                  onActivate={row.isCurrentUser ? null : onCompare}
-                  meta={row.memberRole === 'owner' ? 'League owner' : 'Open comparison'}
-                />
-                {row.memberRole === 'owner' && <span className="foundation-owner-chip">Owner</span>}
+                <div className={styles.raceCell}>
+                  <PlayerIdentity
+                    player={row}
+                    isCurrentUser={row.isCurrentUser}
+                    onActivate={row.isCurrentUser ? null : onCompare}
+                    meta={row.memberRole === 'owner' ? 'League owner' : 'Open comparison'}
+                  />
+                  <span className={styles.raceChips}>
+                    {row.isCurrentUser && <span className={styles.youChip}>YOU</span>}
+                    {row.podiumLabel && <span className={styles.topThreeChip}>{row.podiumLabel}</span>}
+                    {row.memberRole === 'owner' && <span className="foundation-owner-chip">Owner</span>}
+                  </span>
+                </div>
               </td>
               {original ? (
                 <><td data-label="Groups">{row.matchPoints}</td><td data-label="Bracket">{row.bracketPoints}</td></>
               ) : (
                 <><td data-label="Scored">{row.scoredMatchCount}</td><td data-label="Match points">{row.matchPoints}</td></>
               )}
-              <td data-label="Total"><strong>{row.totalPoints}</strong></td>
+              <td data-label="Total"><strong>{row.totalPoints}</strong><small className={styles.gapLabel}>{row.gapToLeaderLabel}</small></td>
             </tr>
           ))}
         </tbody>

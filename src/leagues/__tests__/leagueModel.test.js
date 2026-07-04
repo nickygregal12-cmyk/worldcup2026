@@ -4,6 +4,7 @@ import {
   buildLeagueCompetitionLifecycleCopy,
   buildLeagueCompetitionSummary,
   buildLeagueLifecycleState,
+  buildLeagueRaceRows,
   buildSharedLeagueMemberList,
   buildSharedPredictionJourney,
   buildStandingComparison,
@@ -68,13 +69,44 @@ describe('league model', () => {
   })
 
   it('builds separate current-user summaries without combining competitions', () => {
-    const original = [normaliseStanding({
-      rank: 2, user_id: 'me', display_name: 'Nicky', match_points: 20,
-      bracket_points: 10, total_points: 30, scored_match_count: 3, is_current_user: true,
-    })]
+    const original = [
+      normaliseStanding({
+        rank: 1, user_id: 'leader', display_name: 'Amy', match_points: 40,
+        bracket_points: 10, total_points: 50, scored_match_count: 3, is_current_user: false,
+      }),
+      normaliseStanding({
+        rank: 2, user_id: 'me', display_name: 'Nicky', match_points: 20,
+        bracket_points: 10, total_points: 30, scored_match_count: 3, is_current_user: true,
+      }),
+    ]
     const summary = buildLeagueCompetitionSummary(original, LEAGUE_COMPETITION.ORIGINAL)
-    expect(summary).toMatchObject({ currentRank: 2, currentPoints: 30, state: 'active' })
+    expect(summary).toMatchObject({
+      currentRank: 2,
+      currentPoints: 30,
+      leaderName: 'Amy',
+      leaderPoints: 50,
+      gapToLeader: 20,
+      gapToLeaderLabel: '20 behind leader',
+      state: 'active',
+    })
     expect(() => buildLeagueCompetitionSummary([], 'combined')).toThrow('Unsupported league competition')
+  })
+
+  it('builds league race rows with top-three, current-user anchor and gap to leader', () => {
+    const rows = [
+      { userId: 'leader', displayName: 'Amy', rank: 1, totalPoints: 80, matchPoints: 70, bracketPoints: 10, scoredMatchCount: 5, isCurrentUser: false },
+      { userId: 'me', displayName: 'Nicky', rank: 2, totalPoints: 63, matchPoints: 53, bracketPoints: 10, scoredMatchCount: 5, isCurrentUser: true },
+      { userId: 'third', displayName: 'Zara', rank: 3, totalPoints: 61, matchPoints: 51, bracketPoints: 10, scoredMatchCount: 5, isCurrentUser: false },
+      { userId: 'fourth', displayName: 'Ben', rank: 4, totalPoints: 40, matchPoints: 30, bracketPoints: 10, scoredMatchCount: 5, isCurrentUser: false },
+    ]
+
+    const raceRows = buildLeagueRaceRows(rows)
+    expect(raceRows[0]).toMatchObject({ podium: 'top-1', podiumLabel: 'Top spot', gapToLeaderLabel: 'Leader' })
+    expect(raceRows[1]).toMatchObject({ podium: 'top-2', rankStoryLabel: 'YOU', gapToLeader: 17, gapToLeaderLabel: '17 behind leader' })
+    expect(raceRows[2]).toMatchObject({ podium: 'top-3', podiumLabel: 'Top three' })
+    expect(raceRows[3].podium).toBeNull()
+    expect(raceRows[1].rankMovementLabel).toBeNull()
+    expect(raceRows[1].rankMovementReason).toContain('previous-rank data')
   })
 
 

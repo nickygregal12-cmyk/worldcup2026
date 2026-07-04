@@ -116,17 +116,55 @@ export function buildLeagueCompetitionSummary(rows, competitionKey) {
   const current = standings.find(row => row.isCurrentUser) ?? null
   const leader = standings[0] ?? null
   const hasScoring = standings.some(row => row.scoredMatchCount > 0 || row.totalPoints > 0)
+  const currentPoints = current?.totalPoints ?? 0
+  const leaderPoints = hasScoring ? leader?.totalPoints ?? 0 : 0
+  const gapToLeader = hasScoring && current ? Math.max(leaderPoints - currentPoints, 0) : null
 
   return Object.freeze({
     competitionKey,
     memberCount: standings.length,
     currentRank: current?.rank ?? null,
-    currentPoints: current?.totalPoints ?? 0,
+    currentPoints,
     currentScoredMatchCount: current?.scoredMatchCount ?? 0,
     leaderName: hasScoring ? leader?.displayName ?? null : null,
-    leaderPoints: hasScoring ? leader?.totalPoints ?? 0 : 0,
+    leaderPoints,
+    gapToLeader,
+    gapToLeaderLabel: gapToLeader === null ? null : gapToLeader === 0 ? 'You are leading' : `${gapToLeader} behind leader`,
     state: standings.length === 0 ? 'empty' : hasScoring ? 'active' : 'pre_competition',
   })
+}
+
+function podiumLabel(rank) {
+  if (rank === 1) return 'Top spot'
+  if (rank === 2) return 'Top two'
+  if (rank === 3) return 'Top three'
+  return null
+}
+
+export function buildLeagueRaceRows(rows) {
+  const standings = Array.isArray(rows) ? rows : []
+  const leader = standings[0] ?? null
+  const leaderPoints = numberOrZero(leader?.totalPoints)
+
+  return freezeRows(standings.map((row, index) => {
+    const rank = Number.isInteger(Number(row.rank)) && Number(row.rank) > 0 ? Number(row.rank) : index + 1
+    const totalPoints = numberOrZero(row.totalPoints)
+    const gapToLeader = Math.max(leaderPoints - totalPoints, 0)
+    const podium = rank <= 3 ? `top-${rank}` : null
+
+    return {
+      ...row,
+      rank,
+      totalPoints,
+      podium,
+      podiumLabel: podiumLabel(rank),
+      gapToLeader,
+      gapToLeaderLabel: gapToLeader === 0 ? 'Leader' : `${gapToLeader} behind leader`,
+      rankStoryLabel: row.isCurrentUser ? 'YOU' : podiumLabel(rank),
+      rankMovementLabel: null,
+      rankMovementReason: 'Rank movement waits for trustworthy previous-rank data.',
+    }
+  }))
 }
 
 export function buildLeagueLifecycleState({ lifecycle, originalSummary, koSummary, koReadiness } = {}) {

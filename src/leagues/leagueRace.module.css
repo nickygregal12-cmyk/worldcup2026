@@ -1,0 +1,52 @@
+/* Stage 13G-C2 league race-story polish */
+
+.raceCell {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.raceChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.rankMarker,
+.youChip,
+.topThreeChip {
+  display: inline-flex;
+  min-height: 1.55rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rankMarker {
+  min-width: 2.1rem;
+}
+
+.gapLabel {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.72;
+}
+
+.currentUserRow {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+
+.topOneRow .rankMarker,
+.topTwoRow .rankMarker,
+.topThreeRow .rankMarker {
+  border-width: 2px;
+}

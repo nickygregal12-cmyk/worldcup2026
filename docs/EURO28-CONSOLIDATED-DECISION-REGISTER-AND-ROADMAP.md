@@ -627,3 +627,9 @@ This amendment is read with the Stage 13G master prompt and corrects records bef
 - Signed-in import/account copy avoids “browser draft”, “browser copy” and “browser predictions” wording.
 - Original Predictor and KO Predictor import readiness remain separate and do not blend points, totals, jokers or leaderboards.
 - No route, scoring, resolver, league, admin, database policy or migration change. Active migrations remain 18 and no Migration 019 is created.
+
+## Stage 13G-C2 — League race-story polish
+
+Status: complete in development.
+
+Stage 13G-C2 adopts the useful league-reference patterns natively in the Euro design system: a current-user `YOU` row anchor, top-three designed treatment and gap-to-leader race context. Rank movement is explicitly deferred until trustworthy previous-rank data exists. Original Predictor and KO Predictor standings remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
