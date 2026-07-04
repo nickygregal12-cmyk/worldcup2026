@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Groups — Euro 2028 Predictor (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#173A66; --brand-strong:#0E2A4F; --accent:#0EA5E9; --on-accent:#FFFFFF;
+  --surface-page:#F6F8FB; --surface-raised:#FFFFFF; --surface-sunken:#EAEEF4;
+  --text-primary:#0F1726; --text-secondary:#3E4A5E; --text-muted:#69758A;
+  --border:#D9E0EA;
+  --state-success:#15803D; --state-success-bg:#DCFCE7;
+  --state-partial:#B45309; --state-partial-bg:#FEF3C7;
+  --state-live:#DC2626; --state-live-bg:#FEE2E2;
+  --joker:#B8860B; --joker-bg:#FEF9E7;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --shadow-1:0 1px 2px rgba(15,23,38,.06);
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --brand:#1C4275; --accent:#38BDF8; --on-accent:#0A0F1C;
+  --surface-page:#0A0F1C; --surface-raised:#131B2C; --surface-sunken:#070B14;
+  --text-primary:#EEF2F8; --text-secondary:#B4C0D2; --text-muted:#7B8799;
+  --border:#22304A;
+  --state-success:#4ADE80; --state-success-bg:#122D1D;
+  --state-partial:#FBBF24; --state-partial-bg:#2B2410;
+  --state-live:#FF5A5A; --state-live-bg:#3A1418;
+  --joker:#FACC15; --joker-bg:#2B2410;
+  --shadow-1:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--surface-page);color:var(--text-primary);font-family:var(--font-body);font-size:16px;line-height:1.5;padding-bottom:92px}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer;color:inherit;background:none;border:none;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+.num{font-variant-numeric:tabular-nums}
+.app{max-width:560px;margin:0 auto;padding:12px 12px 0}
+svg{display:block}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.hdr{background:var(--brand);color:#EEF2F8;border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;min-height:56px}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:18px}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.save-pill{font-size:12px;font-weight:500;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.14);display:none;align-items:center;gap:5px}
+.save-pill.show{display:inline-flex}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(255,255,255,.14)}
+/* context + controls */
+.ctx{margin-top:12px;font-size:12px;font-weight:500;padding:7px 12px;border-radius:var(--radius-sm);display:flex;align-items:center;gap:7px;background:var(--surface-sunken);color:var(--text-secondary)}
+.controls{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px}
+.seg{display:flex;gap:4px;background:var(--surface-sunken);border-radius:999px;padding:3px}
+.seg button{min-height:36px;padding:0 14px;border-radius:999px;font-size:13px;font-weight:500;color:var(--text-muted)}
+.seg button[aria-selected="true"]{background:var(--surface-raised);color:var(--text-primary);box-shadow:var(--shadow-1)}
+.joker-meter{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-muted)}
+.jdot{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--joker)}
+.jdot.on{background:var(--joker)}
+.gtabs{display:flex;gap:6px;margin-top:10px;overflow-x:auto;padding-bottom:2px}
+.gtab{min-width:44px;min-height:40px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-raised);font-weight:500;flex:none}
+.gtab[aria-selected="true"]{background:var(--brand);color:#EEF2F8;border-color:var(--brand)}
+.lucky{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--accent);min-height:40px;padding:0 10px;border-radius:var(--radius-sm)}
+/* match card */
+.card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:13px;margin-top:10px;box-shadow:var(--shadow-1)}
+.card.jok{border:2px solid var(--joker);padding:12px}
+.mtop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.mline{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px}
+.team{display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;min-width:0}
+.team img{width:24px;height:24px;border-radius:50%;flex:none}
+.team span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.score-in{width:50px;height:50px;text-align:center;font-family:var(--font-display);font-weight:700;font-size:19px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-page);color:var(--text-primary)}
+.mflag{width:14px;height:14px;border-radius:50%;vertical-align:-2px}
+.swrap{display:flex;align-items:center;gap:2px}
+.steps{display:none}
+@media(min-width:640px){
+  .steps{display:flex;flex-direction:column;gap:2px}
+  .steps button{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-raised);color:var(--text-muted)}
+  .steps button:hover{background:var(--surface-sunken);color:var(--text-primary)}
+  .steps svg{width:12px;height:12px}
+}
+.score-sep{font-family:var(--font-display);font-weight:700;color:var(--text-muted)}
+.score-static{font-family:var(--font-display);font-weight:700;font-size:19px;white-space:nowrap}
+.muted{color:var(--text-muted);font-size:12px}
+/* joker control (S3.1 proposal) */
+.joker-btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;min-height:36px;padding:0 12px;border-radius:999px;border:1.5px solid var(--border);color:var(--text-muted)}
+.joker-btn svg{width:13px;height:13px}
+.joker-btn.on{background:var(--joker-bg);color:var(--joker);border-color:var(--joker)}
+.joker-btn:disabled{opacity:.4;cursor:not-allowed}
+.chip{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px}
+.chip.pts-x{background:var(--state-success-bg);color:var(--state-success)}
+.chip.pts-o{background:var(--state-partial-bg);color:var(--state-partial)}
+.chip.pts-0{background:var(--surface-sunken);color:var(--text-muted)}
+.chip.jokc{background:var(--joker-bg);color:var(--joker)}
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--text-muted);font-weight:500;font-size:11px;padding:5px 4px;border-bottom:1px solid var(--border)}
+td{padding:7px 4px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+td.r,th.r{text-align:right}
+tr.q td:first-child{box-shadow:inset 3px 0 0 var(--state-success)}
+tr.q3 td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.tbl-title{font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:space-between}
+.date-h{margin:16px 2px 2px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)}
+/* dialog */
+.dialog{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;padding:24px;background:rgba(10,15,28,.5)}
+.dialog.open{display:flex}
+.dialog-card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;max-width:340px;width:100%}
+.dialog-card h3{font-size:16px}
+.dialog-card p{font-size:13.5px;color:var(--text-secondary);margin:8px 0 16px}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;border-radius:var(--radius-md);padding:0 16px;min-height:46px;border:1px solid var(--border);background:var(--surface-raised)}
+.btn-primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.dialog-actions{display:flex;gap:10px}
+/* nav */
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface-raised);border-top:1px solid var(--border);z-index:40}
+.nav-inner{max-width:560px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-around;padding:6px 4px calc(8px + env(safe-area-inset-bottom))}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--text-muted);min-width:56px;min-height:48px;justify-content:flex-end;padding:2px;border-radius:var(--radius-sm)}
+.nav-item svg{width:22px;height:22px}
+.nav-item[aria-current="page"]{color:var(--accent);font-weight:500}
+.nav-home .circle{width:46px;height:46px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;margin-top:-18px;border:4px solid var(--surface-page)}
+.proto{margin:30px 0 8px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs>
+<g id="i-home"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-list"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-bracket"><path d="M4 4h5v5H4zM4 15h5v5H4zM15 9.5h5v5h-5zM9 6.5h3v11H9M12 12h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-more"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></g>
+<g id="i-star"><path d="m12 3 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.4l6-.9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+<g id="i-dice"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="9" r="1.3" fill="currentColor"/><circle cx="15" cy="15" r="1.3" fill="currentColor"/><circle cx="15" cy="9" r="1.3" fill="currentColor"/><circle cx="9" cy="15" r="1.3" fill="currentColor"/></g>
+<g id="i-check"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-sun"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-chev-u"><path d="m6 15 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-chev-dn"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+</defs></svg>
+
+<div class="app">
+  <header class="hdr">
+    <h1 class="wordmark">Euro 2028</h1>
+    <div class="hdr-right">
+      <span class="save-pill" id="savePill"><svg width="12" height="12"><use href="#i-check"/></svg><span id="saveTxt">Saved</span></span>
+      <button class="icon-btn" id="themeBtn" aria-label="Switch to dark mode"><svg width="18" height="18"><use href="#i-moon" id="themeIcon"/></svg></button>
+    </div>
+  </header>
+
+  <div class="ctx" id="ctxBanner"><svg width="14" height="14"><use href="#i-list"/></svg><span id="ctxTxt">Your predictions — private until they lock at the first kick-off</span></div>
+
+  <div class="controls">
+    <div class="seg" role="tablist">
+      <button role="tab" aria-selected="true" id="vGroup">By group</button>
+      <button role="tab" aria-selected="false" id="vDate">By date</button>
+    </div>
+    <div class="joker-meter" id="jokerMeter" aria-label="Jokers used"></div>
+  </div>
+
+  <!-- BY GROUP -->
+  <section id="viewGroup">
+    <div class="gtabs" role="tablist" id="gtabs"></div>
+    <div class="controls" style="margin-top:6px">
+      <span class="muted" id="grpProgress"></span>
+      <button class="lucky" id="luckyBtn"><svg width="15" height="15"><use href="#i-dice"/></svg> Lucky dip</button>
+    </div>
+    <div id="matchList"></div>
+    <div class="card">
+      <div class="tbl-title"><span id="stTitle">Predicted table — Group A</span></div>
+      <table aria-label="Predicted group standings"><thead><tr><th>#</th><th>Team</th><th class="r">P</th><th class="r">GD</th><th class="r">Pts</th></tr></thead><tbody id="stBody"></tbody></table>
+      <p class="muted" style="margin:8px 0 0">Top two qualify. Calculated live from your predictions.</p>
+    </div>
+    <div class="card">
+      <div class="tbl-title"><span>Predicted third-place ranking</span></div>
+      <table aria-label="Predicted third place ranking"><thead><tr><th>#</th><th>Team</th><th>Grp</th><th class="r">GD</th><th class="r">Pts</th></tr></thead><tbody id="thirdBody"></tbody></table>
+      <p class="muted" style="margin:8px 0 0">The best four third-placed teams reach the Round of 16 and shape your bracket.</p>
+    </div>
+  </section>
+
+  <!-- BY DATE -->
+  <section id="viewDate" class="hide"></section>
+
+  <div class="proto">
+    <span>Prototype — tournament state</span>
+    <div class="seg" role="tablist">
+      <button aria-selected="true" data-ph="pre">Predicting</button>
+      <button aria-selected="false" data-ph="in">In tournament</button>
+    </div>
+  </div>
+</div>
+
+<!-- bracket coherence dialog (Part 1.3) -->
+<div class="dialog" id="bDialog" role="alertdialog" aria-modal="true" aria-labelledby="bdT">
+  <div class="dialog-card">
+    <h3 id="bdT">This changes your bracket</h3>
+    <p>Your predicted tables feed your bracket. Editing group scores re-derives it — any picks for teams that drop out of a slot will be flagged for you to re-pick.</p>
+    <div class="dialog-actions"><button class="btn btn-primary" id="bdOk">Got it</button></div>
+  </div>
+</div>
+
+<nav class="nav" aria-label="Main">
+  <div class="nav-inner">
+    <button class="nav-item" aria-current="page"><svg><use href="#i-list"/></svg>Groups</button>
+    <button class="nav-item"><svg><use href="#i-bracket"/></svg>Bracket</button>
+    <button class="nav-item nav-home"><span class="circle"><svg width="20" height="20"><use href="#i-home"/></svg></span><span>Home</span></button>
+    <button class="nav-item"><svg><use href="#i-users"/></svg>Leagues</button>
+    <button class="nav-item"><svg><use href="#i-more"/></svg>More</button>
+  </div>
+</nav>
+
+<script>
+/* ===== provisional teams (data, not code) ===== */
+const F=c=>`https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/${c}.svg`;
+const GROUPS={
+ A:[{n:"Scotland",c:"gb-sct"},{n:"France",c:"fr"},{n:"Austria",c:"at"},{n:"Norway",c:"no"}],
+ B:[{n:"England",c:"gb-eng"},{n:"Netherlands",c:"nl"},{n:"Türkiye",c:"tr"},{n:"Georgia",c:"ge"}],
+ C:[{n:"Wales",c:"gb-wls"},{n:"Spain",c:"es"},{n:"Sweden",c:"se"},{n:"Serbia",c:"rs"}],
+ D:[{n:"Ireland",c:"ie"},{n:"Germany",c:"de"},{n:"Czechia",c:"cz"},{n:"Hungary",c:"hu"}],
+ E:[{n:"N. Ireland",c:"gb-nir"},{n:"Portugal",c:"pt"},{n:"Denmark",c:"dk"},{n:"Croatia",c:"hr"}],
+ F:[{n:"Italy",c:"it"},{n:"Belgium",c:"be"},{n:"Switzerland",c:"ch"},{n:"Poland",c:"pl"}]};
+const PAIRS=[[0,1],[2,3],[0,2],[1,3],[3,0],[1,2]];
+const MD=["Fri 16 Jun","Sat 17 Jun","Tue 20 Jun","Wed 21 Jun","Sat 24 Jun","Sat 24 Jun"];
+/* venues carry the HOST country's flag (Hampden→Scotland, Wembley→England…) */
+const VEN={
+ A:[{v:"Hampden Park",c:"gb-sct"},{v:"Murrayfield",c:"gb-sct"}],
+ B:[{v:"Wembley",c:"gb-eng"},{v:"Villa Park",c:"gb-eng"}],
+ C:[{v:"Principality Stadium",c:"gb-wls"},{v:"Wembley",c:"gb-eng"}],
+ D:[{v:"Aviva Stadium",c:"ie"},{v:"Croke Park",c:"ie"}],
+ E:[{v:"Casement Park",c:"gb-nir"},{v:"Hampden Park",c:"gb-sct"}],
+ F:[{v:"Etihad Stadium",c:"gb-eng"},{v:"St James' Park",c:"gb-eng"}]};
+const venue=(g,i)=>VEN[g][i%2];
+const KO_TIMES=["14:00","17:00","20:00"];
+const JCAP=5;
+const preds={}; let cur="A", phase="pre", warned=false, view="group";
+/* sample results for in-tournament state (Group A + B finished-ish) */
+const RESULTS={"A-0":[2,1],"A-1":[0,0],"A-2":[1,1],"B-0":[3,1],"B-1":[2,0]};
+/* seed a few predictions so tables show life */
+Object.assign(preds,{"A-0":{h:"2",a:"1",j:true},"A-1":{h:"1",a:"0",j:false},"A-2":{h:"1",a:"1",j:false},"B-0":{h:"1",a:"0",j:true},"B-1":{h:"2",a:"0",j:false},"C-0":{h:"0",a:"2",j:true}});
+
+const pid=(g,i)=>g+"-"+i;
+const P=(g,i)=>preds[pid(g,i)]||(preds[pid(g,i)]={h:"",a:"",j:false});
+const jokersUsed=()=>Object.values(preds).filter(p=>p.j).length;
+
+/* ===== save pill ===== */
+let saveT=null;
+function touchSave(){
+  const p=document.getElementById('savePill'),t=document.getElementById('saveTxt');
+  p.classList.add('show');t.textContent='Saving…';clearTimeout(saveT);
+  saveT=setTimeout(()=>{t.textContent='Saved';setTimeout(()=>p.classList.remove('show'),1600)},550);
+}
+/* ===== joker meter ===== */
+function renderMeter(){
+  const u=jokersUsed();
+  document.getElementById('jokerMeter').innerHTML =
+    `<svg width="13" height="13" style="color:var(--joker)"><use href="#i-star"/></svg>`+
+    Array.from({length:JCAP},(_,i)=>`<span class="jdot ${i<u?'on':''}"></span>`).join('')+
+    `<span class="num">${u}/${JCAP}</span>`;
+}
+/* ===== bracket coherence warning (once per session) ===== */
+function maybeWarn(){ if(phase==='pre'&&!warned){warned=true;document.getElementById('bDialog').classList.add('open');document.getElementById('bdOk').focus();} }
+document.getElementById('bdOk').addEventListener('click',()=>document.getElementById('bDialog').classList.remove('open'));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.getElementById('bDialog').classList.remove('open')});
+
+/* ===== match card builder (shared by both views) ===== */
+function matchCard(g,i,dateLabel){
+  const p=P(g,i),[hi,ai]=PAIRS[i],h=GROUPS[g][hi],a=GROUPS[g][ai];
+  const done=phase==='in'&&RESULTS[pid(g,i)];
+  const card=document.createElement('div');card.className='card'+(p.j?' jok':'');
+  let right='';
+  if(done){
+    const[rh,ra]=RESULTS[pid(g,i)];
+    const exact=p.h!==''&&+p.h===rh&&+p.a===ra;
+    const out=p.h!==''&&Math.sign(+p.h-+p.a)===Math.sign(rh-ra);
+    const base=exact?30:out?10:0;
+    const chip=exact?`<span class="chip pts-x">Exact +${p.j?base*2:base}</span>`:out?`<span class="chip pts-o">Outcome +${p.j?base*2:base}</span>`:`<span class="chip pts-0">0 pts</span>`;
+    const ven=venue(g,i);
+    right=`<span class="score-static num">${rh} – ${ra}</span>`;
+    card.innerHTML=`<div class="mtop"><span class="muted">${dateLabel} · ${ven.v} <img class="mflag" src="${F(ven.c)}" alt=""> · Full time</span>${chip}</div>
+      <div class="mline"><span class="team"><img src="${F(h.c)}" alt="">${h.n}</span>${right}<span class="team" style="justify-content:flex-end"><img src="${F(a.c)}" alt="">${a.n}</span></div>
+      <div class="mtop" style="margin-top:8px"><span class="muted">You predicted ${p.h!==''?`<span class="num">${p.h}–${p.a}</span>`:'no score'}</span>${p.j?'<span class="chip jokc"><svg style="display:inline-block;vertical-align:-2px" width="10" height="10"><use href="#i-star"/></svg> Joker 2×</span>':''}</div>`;
+    return card;
+  }
+  const ven=venue(g,i);
+  card.innerHTML=`<div class="mtop"><span class="muted">${dateLabel} · ${ven.v} <img class="mflag" src="${F(ven.c)}" alt=""> · Group ${g}</span>
+    <button class="joker-btn ${p.j?'on':''}" ${!p.j&&jokersUsed()>=JCAP?'disabled':''} aria-pressed="${p.j}" aria-label="Joker doubles this match's points">
+      <svg><use href="#i-star"/></svg> Joker ${p.j?'2×':''}</button></div>
+    <div class="mline">
+      <span class="team"><img src="${F(h.c)}" alt="">${h.n}</span>
+      <span style="display:flex;align-items:center;gap:5px">
+        <span class="swrap"><span class="steps"><button data-s="h1" aria-label="${h.n} score up"><svg><use href="#i-chev-u"/></svg></button><button data-s="h-1" aria-label="${h.n} score down"><svg><use href="#i-chev-dn"/></svg></button></span>
+        <input class="score-in num" type="text" inputmode="numeric" maxlength="2" value="${p.h}" aria-label="${h.n} score"></span>
+        <span class="score-sep">–</span>
+        <span class="swrap"><input class="score-in num" type="text" inputmode="numeric" maxlength="2" value="${p.a}" aria-label="${a.n} score">
+        <span class="steps"><button data-s="a1" aria-label="${a.n} score up"><svg><use href="#i-chev-u"/></svg></button><button data-s="a-1" aria-label="${a.n} score down"><svg><use href="#i-chev-dn"/></svg></button></span></span>
+      </span>
+      <span class="team" style="justify-content:flex-end"><img src="${F(a.c)}" alt="">${a.n}</span>
+    </div>`;
+  const[iH,iA]=card.querySelectorAll('input');
+  const clean=v=>v.replace(/[^0-9]/g,'').slice(0,2);
+  const onEdit=()=>{maybeWarn();touchSave();renderTables();refreshProgress();};
+  iH.addEventListener('input',()=>{p.h=clean(iH.value);iH.value=p.h;onEdit();});
+  iA.addEventListener('input',()=>{p.a=clean(iA.value);iA.value=p.a;onEdit();});
+  card.querySelectorAll('.steps button').forEach(b=>b.addEventListener('click',()=>{
+    const side=b.dataset.s[0], d=+b.dataset.s.slice(1);
+    const cur=side==='h'?p.h:p.a;
+    const next=Math.min(15,Math.max(0,(cur===''?0:+cur)+d));
+    if(side==='h'){p.h=String(next);iH.value=p.h;}else{p.a=String(next);iA.value=p.a;}
+    onEdit();
+  }));
+  card.querySelector('.joker-btn').addEventListener('click',()=>{
+    if(!p.j&&jokersUsed()>=JCAP)return;
+    p.j=!p.j;touchSave();renderMeter();renderCurrentView();
+  });
+  return card;
+}
+
+/* ===== standings maths ===== */
+function tableFor(g,useResults){
+  const t=GROUPS[g].map(x=>({...x,g,P:0,GF:0,GA:0,Pts:0}));
+  PAIRS.forEach((pr,i)=>{
+    let h,a;
+    if(useResults){const r=RESULTS[pid(g,i)];if(!r)return;[h,a]=r;}
+    else{const p=preds[pid(g,i)];if(!p||p.h===''||p.a==='')return;h=+p.h;a=+p.a;}
+    const H=t[pr[0]],A=t[pr[1]];
+    H.P++;A.P++;H.GF+=h;H.GA+=a;A.GF+=a;A.GA+=h;
+    if(h>a)H.Pts+=3;else if(a>h)A.Pts+=3;else{H.Pts++;A.Pts++}
+  });
+  return t.sort((x,y)=>y.Pts-x.Pts||(y.GF-y.GA)-(x.GF-x.GA)||y.GF-x.GF||x.n.localeCompare(y.n));
+}
+function renderTables(){
+  const useR=phase==='in';
+  const t=tableFor(cur,useR);
+  document.getElementById('stTitle').textContent=`${useR?'Table':'Predicted table'} — Group ${cur}`;
+  document.getElementById('stBody').innerHTML=t.map((x,i)=>`<tr class="${i<2?'q':i===2?'q3':''}">
+    <td class="num">${i+1}</td>
+    <td><span class="team" style="font-size:13px"><img style="width:20px;height:20px" src="${F(x.c)}" alt="">${x.n}</span></td>
+    <td class="r num">${x.P}</td><td class="r num">${x.GF-x.GA>0?'+':''}${x.GF-x.GA}</td><td class="r num" style="font-weight:600">${x.Pts}</td></tr>`).join('');
+  /* third-place ranking across ALL groups (4.3) */
+  const thirds=Object.keys(GROUPS).map(g=>tableFor(g,useR)[2]).filter(x=>x&&x.P>0||!useR&&x);
+  thirds.sort((x,y)=>y.Pts-x.Pts||(y.GF-y.GA)-(x.GF-x.GA)||y.GF-x.GF||x.n.localeCompare(y.n));
+  document.getElementById('thirdBody').innerHTML=thirds.map((x,i)=>`<tr class="${i<4?'q':''}">
+    <td class="num">${i+1}</td>
+    <td><span class="team" style="font-size:13px"><img style="width:20px;height:20px" src="${F(x.c)}" alt="">${x.n}</span></td>
+    <td>${x.g}</td><td class="r num">${x.GF-x.GA>0?'+':''}${x.GF-x.GA}</td><td class="r num" style="font-weight:600">${x.Pts}</td></tr>`).join('');
+}
+function refreshProgress(){
+  const done=PAIRS.filter((_,i)=>{const p=preds[pid(cur,i)];return p&&p.h!==''&&p.a!==''}).length;
+  document.getElementById('grpProgress').innerHTML=`Group ${cur} · <span class="num">${done}</span> of <span class="num">6</span> predicted`;
+}
+
+/* ===== views ===== */
+function renderGroupView(){
+  const tabs=document.getElementById('gtabs');tabs.innerHTML='';
+  Object.keys(GROUPS).forEach(g=>{
+    const b=document.createElement('button');b.className='gtab';b.textContent=g;b.setAttribute('role','tab');
+    b.setAttribute('aria-selected',g===cur);
+    b.addEventListener('click',()=>{cur=g;renderGroupView();});
+    tabs.appendChild(b);
+  });
+  const list=document.getElementById('matchList');list.innerHTML='';
+  PAIRS.forEach((_,i)=>list.appendChild(matchCard(cur,i,MD[i])));
+  renderTables();refreshProgress();
+}
+function renderDateView(){
+  const wrap=document.getElementById('viewDate');wrap.innerHTML='';
+  const days={};
+  Object.keys(GROUPS).forEach(g=>PAIRS.forEach((_,i)=>{(days[MD[i]]=days[MD[i]]||[]).push([g,i])}));
+  Object.entries(days).slice(0,3).forEach(([d,ms])=>{
+    const h=document.createElement('div');h.className='date-h';h.textContent=d;wrap.appendChild(h);
+    ms.slice(0,3).forEach(([g,i],k)=>wrap.appendChild(matchCard(g,i,KO_TIMES[k%3]+' · Group '+g)));
+  });
+  const note=document.createElement('p');note.className='muted';note.style.margin='14px 4px';
+  note.textContent='Prototype shows the first three matchdays — the real view lists every day, next kick-off first.';
+  wrap.appendChild(note);
+}
+function renderCurrentView(){ view==='group'?renderGroupView():renderDateView(); }
+document.getElementById('vGroup').addEventListener('click',()=>{view='group';setView();});
+document.getElementById('vDate').addEventListener('click',()=>{view='date';setView();});
+function setView(){
+  document.getElementById('vGroup').setAttribute('aria-selected',view==='group');
+  document.getElementById('vDate').setAttribute('aria-selected',view==='date');
+  document.getElementById('viewGroup').classList.toggle('hide',view!=='group');
+  document.getElementById('viewDate').classList.toggle('hide',view!=='date');
+  renderCurrentView();
+}
+
+/* ===== lucky dip (binding WC26-era decision, carried) ===== */
+document.getElementById('luckyBtn').addEventListener('click',()=>{
+  maybeWarn();
+  PAIRS.forEach((_,i)=>{const p=P(cur,i);if(p.h===''||p.a===''){p.h=String(Math.floor(Math.random()*4));p.a=String(Math.floor(Math.random()*3));}});
+  touchSave();renderCurrentView();
+});
+
+/* ===== phase (prototype control): defaults per 4.1 — by group predicting, by date in tournament ===== */
+document.querySelectorAll('.proto .seg button').forEach(b=>b.addEventListener('click',()=>{
+  phase=b.dataset.ph;
+  document.querySelectorAll('.proto .seg button').forEach(x=>x.setAttribute('aria-selected',x===b));
+  document.getElementById('ctxTxt').textContent = phase==='pre'
+    ? 'Your predictions — private until they lock at the first kick-off'
+    : 'Group stage — results, your points and the live tables';
+  view = phase==='pre' ? 'group' : 'date';
+  setView();
+}));
+
+/* ===== theme ===== */
+let dark=false;
+document.getElementById('themeBtn').addEventListener('click',function(){
+  dark=!dark;
+  if(dark)document.documentElement.setAttribute('data-theme','dark');else document.documentElement.removeAttribute('data-theme');
+  document.getElementById('themeIcon').setAttribute('href',dark?'#i-sun':'#i-moon');
+  this.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+});
+
+renderMeter();setView();
+</script>
+</body>
+</html>

@@ -317,3 +317,24 @@ Ledger rows recorded:
 | 13G League rules strip | SCHEDULED | Render from central versioned ruleset. |
 
 This package is documentation and audit only. It adds no UI build, no route implementation, no scoring change, no resolver change, no Supabase write, no database policy change and no Migration 019. Active migrations remain 18.
+
+## Stage 13G-REF-2 — Groups and Original Bracket Reference Prototype Adoption
+
+Reference artefacts: `euro28-groups-page-prototype.html` and `euro28-bracket-page-prototype.html`. Scope: no UI build, no route implementation, no scoring change, no resolver change, no Supabase write, no fixture-data implementation, no score-stepper UI implementation.
+
+| Ledger row | Status | Record |
+| --- | ---: | --- |
+| 13G Groups reference prototype adoption | SCHEDULED | Approved Groups prototype adopted as behavioural, hierarchy and copy spec; rebuild natively and do not port prototype code. |
+| S3.1 Joker control | AMENDED / CLOSED | Bare `J` circle retired; joker pill uses star icon, `Joker` label and `2×` when armed; disabled at cap. |
+| Groups joker meter | SCHEDULED | Five-dot gold JOKER METER in page controls; same pattern in Groups and KO. |
+| S3.3 Groups view switcher | AMENDED / CLOSED | `By group | By date` segmented control; by group while predicting and by date once play begins. |
+| 4.2 Predicted tables | AMENDED / CLOSED | Qualification edges and `Calculated live from your predictions.` line. |
+| 4.3 Third-place table | AMENDED / CLOSED | Third-place ranking across all six groups under every group table; top four marked bracket-bound. |
+| Part 1.3 bracket coherence | AMENDED / CLOSED | Warning-once and FLAG-FOR-RE-PICK; stale picks visibly flagged, never silently kept or dropped. |
+| Match card meta line | AMENDED / SCHEDULED | Every card carries date · venue with host-country circle flag · group; values live centrally with fixture data and reuse existing circle-flag assets. |
+| Score steppers | AMENDED / SCHEDULED | Desktop-only at ≥640px; clamp 0–15; blank increments from zero; same save/coherence/table flow as typed entry; accessibility resolution required. |
+| 13G Original Bracket reference prototype adoption | SCHEDULED | Approved Bracket prototype adopted for stacked mobile and desktop wall-chart layouts. |
+| Charter v1.8 wall chart | CONTRACT CHANGE / MOVED INTO 13G | Converging wall chart moves from backlog into 13G scope. |
+| Original Bracket control absence | TEST REQUIRED | No score inputs, no method controls and no joker controls anywhere on Original Bracket. |
+
+Active migrations remain 18. No Migration 019.

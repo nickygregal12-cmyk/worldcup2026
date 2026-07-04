@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Bracket — Euro 2028 Predictor (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#173A66; --accent:#0EA5E9; --on-accent:#FFFFFF;
+  --surface-page:#F6F8FB; --surface-raised:#FFFFFF; --surface-sunken:#EAEEF4;
+  --text-primary:#0F1726; --text-secondary:#3E4A5E; --text-muted:#69758A;
+  --border:#D9E0EA;
+  --state-success:#15803D; --state-success-bg:#DCFCE7;
+  --state-partial:#B45309; --state-partial-bg:#FEF3C7;
+  --joker:#B8860B;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --shadow-1:0 1px 2px rgba(15,23,38,.06);
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --brand:#1C4275; --accent:#38BDF8; --on-accent:#0A0F1C;
+  --surface-page:#0A0F1C; --surface-raised:#131B2C; --surface-sunken:#070B14;
+  --text-primary:#EEF2F8; --text-secondary:#B4C0D2; --text-muted:#7B8799;
+  --border:#22304A;
+  --state-success:#4ADE80; --state-success-bg:#122D1D;
+  --state-partial:#FBBF24; --state-partial-bg:#2B2410;
+  --joker:#FACC15;
+  --shadow-1:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--surface-page);color:var(--text-primary);font-family:var(--font-body);font-size:16px;line-height:1.5;padding-bottom:92px}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer;color:inherit;background:none;border:none;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+.num{font-variant-numeric:tabular-nums}
+svg{display:block}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.app{max-width:560px;margin:0 auto;padding:12px 12px 0}
+@media(min-width:900px){.app{max-width:1180px}}
+.hdr{background:var(--brand);color:#EEF2F8;border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;min-height:56px}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:18px}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(255,255,255,.14)}
+.ctx{margin-top:12px;font-size:12px;font-weight:500;padding:7px 12px;border-radius:var(--radius-sm);display:flex;align-items:center;gap:7px;background:var(--surface-sunken);color:var(--text-secondary)}
+.champ-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;box-shadow:var(--shadow-1)}
+.champ-strip .lbl{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.champ-strip .who{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-weight:700;font-size:17px}
+.champ-strip img{width:24px;height:24px;border-radius:50%}
+.muted{color:var(--text-muted);font-size:12px}
+/* ===== tie & slot (shared by both layouts) ===== */
+.tie{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:6px;box-shadow:var(--shadow-1)}
+.tie.repick{border-color:var(--state-partial)}
+.repick-flag{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:600;color:var(--state-partial);background:var(--state-partial-bg);border-radius:999px;padding:2px 9px;width:fit-content;margin:2px 4px 4px}
+.slot{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:7px 8px;border-radius:var(--radius-sm);font-size:13.5px;min-height:42px}
+.slot:hover{background:var(--surface-sunken)}
+.slot img{width:22px;height:22px;border-radius:50%;flex:none}
+.slot .src{font-size:9.5px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;width:22px;flex:none;text-align:center}
+.slot.picked{background:var(--state-success-bg)}
+.slot.picked .nm{font-weight:600;color:var(--state-success)}
+.slot .dash{border:1.5px dashed var(--text-muted);border-radius:999px;padding:2px 9px;font-size:11.5px;color:var(--text-muted)}
+.slot .tick{margin-left:auto;color:var(--state-success)}
+.round-h{margin:16px 2px 8px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);display:flex;justify-content:space-between;align-items:baseline}
+.round-h .n{font-weight:400;text-transform:none;letter-spacing:0}
+/* ===== mobile: vertical ===== */
+.mobileBr .tie{margin-bottom:10px}
+/* ===== desktop: converging wall chart ===== */
+.wall{display:none}
+@media(min-width:900px){
+  .mobileBr{display:none}
+  .wall{display:grid;grid-template-columns:1fr 1fr 1fr 1.05fr 1fr 1fr 1fr;gap:12px;margin-top:14px;align-items:stretch}
+  .wcol{display:flex;flex-direction:column;justify-content:space-around;gap:10px;min-height:560px}
+  .wcol h3{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);text-align:center;margin-bottom:2px}
+  .wall .final-col{justify-content:center;gap:16px}
+  .champ-box{background:var(--surface-raised);border:1.5px solid var(--accent);border-radius:var(--radius-lg);padding:14px;text-align:center}
+  .champ-box .lbl{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+  .champ-box .who{display:flex;align-items:center;justify-content:center;gap:8px;font-family:var(--font-display);font-weight:700;font-size:18px;margin-top:6px}
+  .champ-box img{width:26px;height:26px;border-radius:50%}
+}
+/* nav */
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface-raised);border-top:1px solid var(--border);z-index:40}
+.nav-inner{max-width:560px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-around;padding:6px 4px calc(8px + env(safe-area-inset-bottom))}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--text-muted);min-width:56px;min-height:48px;justify-content:flex-end;padding:2px;border-radius:var(--radius-sm)}
+.nav-item svg{width:22px;height:22px}
+.nav-item[aria-current="page"]{color:var(--accent);font-weight:500}
+.nav-home .circle{width:46px;height:46px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;margin-top:-18px;border:4px solid var(--surface-page)}
+.proto{margin:30px 0 8px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:11.5px;color:var(--text-muted)}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs>
+<g id="i-home"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-list"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-bracket"><path d="M4 4h5v5H4zM4 15h5v5H4zM15 9.5h5v5h-5zM9 6.5h3v11H9M12 12h3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-more"><circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/></g>
+<g id="i-check"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-alert"><path d="M12 8v5M12 16.5h.01M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-sun"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+</defs></svg>
+
+<div class="app">
+  <header class="hdr">
+    <h1 class="wordmark">Euro 2028</h1>
+    <button class="icon-btn" id="themeBtn" aria-label="Switch to dark mode"><svg width="18" height="18"><use href="#i-moon" id="themeIcon"/></svg></button>
+  </header>
+
+  <div class="ctx"><svg width="14" height="14"><use href="#i-bracket"/></svg> Your predicted bracket — built from your predicted tables, never blended with live results</div>
+
+  <div class="champ-strip">
+    <span><span class="lbl">Your champion</span><span class="who" id="champWho"><span class="muted" style="font-weight:400">Pick through to the final</span></span></span>
+    <span class="muted">Winner picks only — scores and jokers live in the KO Predictor</span>
+  </div>
+
+  <!-- MOBILE: vertical rounds -->
+  <section class="mobileBr" id="mbr"></section>
+
+  <!-- DESKTOP ≥900px: converging wall chart -->
+  <section class="wall" id="wall" aria-label="Wall chart bracket"></section>
+
+  <div class="proto">Prototype — resize or rotate to see the desktop wall chart take over at 900px. One amber tie shows the flag-for-re-pick state after group edits changed a slot. Slot origins (1A, 3DEF…) come from your predicted tables — dashed chips are slots your predictions haven't resolved yet.</div>
+</div>
+
+<nav class="nav" aria-label="Main">
+  <div class="nav-inner">
+    <button class="nav-item"><svg><use href="#i-list"/></svg>Groups</button>
+    <button class="nav-item" aria-current="page"><svg><use href="#i-bracket"/></svg>Bracket</button>
+    <button class="nav-item nav-home"><span class="circle"><svg width="20" height="20"><use href="#i-home"/></svg></span><span>Home</span></button>
+    <button class="nav-item"><svg><use href="#i-users"/></svg>Leagues</button>
+    <button class="nav-item"><svg><use href="#i-more"/></svg>More</button>
+  </div>
+</nav>
+
+<script>
+/* ===== sample resolution from predicted tables (data, not code) ===== */
+const F=c=>`https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/${c}.svg`;
+const T={sco:{n:"Scotland",c:"gb-sct"},fra:{n:"France",c:"fr"},eng:{n:"England",c:"gb-eng"},ned:{n:"Netherlands",c:"nl"},
+esp:{n:"Spain",c:"es"},wal:{n:"Wales",c:"gb-wls"},ger:{n:"Germany",c:"de"},irl:{n:"Ireland",c:"ie"},
+por:{n:"Portugal",c:"pt"},den:{n:"Denmark",c:"dk"},ita:{n:"Italy",c:"it"},bel:{n:"Belgium",c:"be"},
+sui:{n:"Switzerland",c:"ch"},aut:{n:"Austria",c:"at"},cze:{n:"Czechia",c:"cz"},cro:{n:"Croatia",c:"hr"}};
+/* R16: [slotSource, team|null] — null = unresolved placeholder */
+const R16=[
+ [["1B",T.eng],["3ADEF",T.aut]],   /* left side */
+ [["2A",T.fra],["2C",T.esp]],
+ [["1F",T.ita],["3ABC",null]],
+ [["2D",T.ger],["2E",T.den]],
+ [["1E",T.por],["3ABCD",T.cze]],   /* right side */
+ [["1D",T.irl],["2F",T.bel]],
+ [["1C",T.wal],["3DEF",null]],
+ [["1A",T.sco],["2B",T.ned]],
+];
+/* picks: r16[8], qf[4], sf[2], f[1]; pre-seed a stale QF pick to demo flag-for-re-pick */
+const picks={r16:[T.eng,T.fra,null,T.ger,T.por,null,null,T.sco],qf:[null,null,null,T.cro],sf:[null,null],f:[null]};
+/* T.cro is nowhere in the feeding slots → stale → repick flag */
+const ROUNDS=[["r16","Round of 16",8],["qf","Quarter-finals",4],["sf","Semi-finals",2],["f","Final",1]];
+const prev={qf:"r16",sf:"qf",f:"sf"};
+
+function feeder(round,tie,side){
+  if(round==="r16"){const[src,team]=R16[tie*2+side-tie];return null}
+}
+function slotTeam(round,tie,side){
+  if(round==="r16"){const s=R16[tie][side];return{src:s[0],team:s[1]}}
+  const idx=tie*2+side;
+  return{src:null,team:picks[prev[round]][idx],ph:{qf:"R16",sf:"QF",f:"SF"}[round]+" "+(idx+1)}
+}
+function tieStale(round,tie){
+  const p=picks[round][tie];if(!p)return false;
+  const a=slotTeam(round,tie,0).team,b=slotTeam(round,tie,1).team;
+  return p!==a&&p!==b;
+}
+function pick(round,tie,team){
+  if(!team)return;
+  picks[round][tie]=team;
+  const order=["r16","qf","sf","f"];
+  for(let r=order.indexOf(round)+1;r<order.length;r++){
+    picks[order[r]]=picks[order[r]].map((p,i)=>{
+      /* clear downstream picks no longer fed */
+      const a=slotTeamAfter(order[r],i,0),b=slotTeamAfter(order[r],i,1);
+      return p===a||p===b?p:null;
+    });
+  }
+  render();
+}
+function slotTeamAfter(round,tie,side){const idx=tie*2+side;return picks[prev[round]][idx]}
+
+function slotHTML(round,tie,side){
+  const s=slotTeam(round,tie,side);
+  const picked=picks[round][tie]&&s.team&&picks[round][tie].n===s.team.n;
+  if(!s.team){
+    return `<div class="slot" aria-disabled="true">${s.src?`<span class="src">${s.src}</span>`:""}<span class="dash">${s.src?slotLabel(s.src):s.ph||"TBC"}</span></div>`;
+  }
+  return `<button class="slot ${picked?'picked':''}" data-r="${round}" data-t="${tie}" data-n="${s.team.n}" aria-label="Advance ${s.team.n}" aria-pressed="${!!picked}">
+    ${s.src?`<span class="src">${s.src}</span>`:'<span class="src"></span>'}
+    <img src="${F(s.team.c)}" alt=""><span class="nm">${s.team.n}</span>
+    ${picked?'<svg class="tick" width="15" height="15"><use href="#i-check"/></svg>':''}
+  </button>`;
+}
+function slotLabel(src){return src.startsWith("3")?("3rd "+src.slice(1).split("").join("/")):src}
+function tieHTML(round,tie){
+  const stale=tieStale(round,tie);
+  return `<div class="tie ${stale?'repick':''}">
+    ${stale?'<span class="repick-flag"><svg width="11" height="11"><use href="#i-alert"/></svg> Re-pick — your tables changed this tie</span>':''}
+    ${slotHTML(round,tie,0)}${slotHTML(round,tie,1)}
+  </div>`;
+}
+
+/* ===== renders: one state, two layouts ===== */
+function render(){
+  /* mobile vertical */
+  const m=document.getElementById('mbr');
+  m.innerHTML=ROUNDS.map(([key,label,n])=>{
+    const done=picks[key].filter(Boolean).length;
+    return `<div class="round-h"><span>${label}</span><span class="n num">${done}/${n} picked</span></div>`+
+      Array.from({length:n},(_,t)=>tieHTML(key,t)).join('');
+  }).join('');
+  /* desktop wall chart: L-R16 | L-QF | L-SF | FINAL | R-SF | R-QF | R-R16 */
+  const w=document.getElementById('wall');
+  const col=(title,html)=>`<div class="wcol"><div><h3>${title}</h3></div>${html}</div>`;
+  const ties=(key,idxs)=>idxs.map(t=>tieHTML(key,t)).join('');
+  const champ=picks.f[0];
+  w.innerHTML=
+    col("Round of 16",ties('r16',[0,1,2,3]))+
+    col("Quarter-finals",ties('qf',[0,1]))+
+    col("Semi-final",ties('sf',[0]))+
+    `<div class="wcol final-col"><div><h3>Final</h3></div>${tieHTML('f',0)}
+      <div class="champ-box"><span class="lbl">Champion</span><span class="who">${champ?`<img src="${F(champ.c)}" alt="">${champ.n}`:'<span class="muted" style="font-weight:400;font-size:13px">Pick your final</span>'}</span></div></div>`+
+    col("Semi-final",ties('sf',[1]))+
+    col("Quarter-finals",ties('qf',[2,3]))+
+    col("Round of 16",ties('r16',[4,5,6,7]));
+  /* champion strip */
+  document.getElementById('champWho').innerHTML=champ?`<img src="${F(champ.c)}" alt="">${champ.n}`:'<span class="muted" style="font-weight:400">Pick through to the final</span>';
+  /* wire slots */
+  document.querySelectorAll('.slot[data-r]').forEach(b=>b.addEventListener('click',()=>{
+    const team=Object.values(T).find(x=>x.n===b.dataset.n);
+    pick(b.dataset.r,+b.dataset.t,team);
+  }));
+}
+render();
+
+let dark=false;
+document.getElementById('themeBtn').addEventListener('click',function(){
+  dark=!dark;
+  if(dark)document.documentElement.setAttribute('data-theme','dark');else document.documentElement.removeAttribute('data-theme');
+  document.getElementById('themeIcon').setAttribute('href',dark?'#i-sun':'#i-moon');
+  this.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+});
+</script>
+</body>
+</html>
