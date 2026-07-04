@@ -1,6 +1,6 @@
 import styles from './leagueRace.module.css'
 import { PlayerIdentity, SelectField } from '../design-system/index.jsx'
-import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, buildLeagueRaceSummary, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
+import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
 
 function competitionName(competitionKey) {
   return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
@@ -149,84 +149,32 @@ export function LeagueSummaryCard({ title, summary, section }) {
   )
 }
 
-export function LeagueRaceSummary({ rows, competitionKey, section }) {
-  if (section?.status === 'error') {
-    return (
-      <aside className={styles.raceSummaryStrip} aria-label="League race summary">
-        <span className={styles.raceSummaryKicker}>Race summary</span>
-        <strong>Race context unavailable</strong>
-        <small>{section.error ?? 'This competition table could not be loaded.'}</small>
-      </aside>
-    )
-  }
-
-  const summary = buildLeagueRaceSummary(rows, competitionKey)
-
-  return (
-    <aside className={styles.raceSummaryStrip} aria-label={`${summary.competitionLabel} race summary`}>
-      <div className={styles.raceSummaryLead}>
-        <span className={styles.raceSummaryKicker}>Race summary</span>
-        <strong>{summary.headline}</strong>
-        <small>{summary.copy}</small>
-      </div>
-      <dl className={styles.raceSummaryStats}>
-        <div>
-          <dt>Your place</dt>
-          <dd>{summary.currentLabel}</dd>
-        </div>
-        <div>
-          <dt>Leader</dt>
-          <dd>{summary.leaderLabel}</dd>
-        </div>
-        <div>
-          <dt>Gap</dt>
-          <dd>{summary.gapLabel}</dd>
-        </div>
-      </dl>
-    </aside>
-  )
-}
-
-export function StandingsTable({ rows, competitionKey, onCompare }) {
-  const original = competitionKey === LEAGUE_COMPETITION.ORIGINAL
+export function StandingsTable({ rows, onCompare }) {
   const raceRows = buildLeagueRaceRows(rows)
+  const hasScoring = raceRows.some(row => row.scoredMatchCount > 0 || row.totalPoints > 0)
   return (
     <div className="foundation-table-wrap">
       <table className="foundation-league-table">
         <thead>
           <tr>
-            <th>#</th><th>Member</th>
-            {original ? <><th>Groups</th><th>Bracket</th></> : <><th>Scored</th><th>Match points</th></>}
-            <th>Total</th>
+            <th>#</th><th>Member</th><th>Pts</th>
           </tr>
         </thead>
         <tbody>
           {raceRows.map(row => (
-            <tr key={row.userId} className={[row.isCurrentUser ? styles.currentUserRow : '', row.podium === 'top-1' ? styles.topOneRow : '', row.podium === 'top-2' ? styles.topTwoRow : '', row.podium === 'top-3' ? styles.topThreeRow : ''].filter(Boolean).join(' ')}>
+            <tr key={row.userId} className={row.isCurrentUser ? styles.currentUserRow : ''}>
               <td data-label="Rank">
-                <span className={styles.rankMarker}>{row.rank}</span>
+                <span className={styles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
               </td>
               <td data-label="Member">
-                <div className={styles.raceCell}>
-                  <PlayerIdentity
-                    player={row}
-                    isCurrentUser={row.isCurrentUser}
-                    onActivate={row.isCurrentUser ? null : onCompare}
-                    meta={row.memberRole === 'owner' ? 'League owner' : 'Open comparison'}
-                  />
-                  <span className={styles.raceChips}>
-                    {row.isCurrentUser && <span className={styles.youChip}>YOU</span>}
-                    {row.podiumLabel && <span className={styles.topThreeChip}>{row.podiumLabel}</span>}
-                    {row.memberRole === 'owner' && <span className="foundation-owner-chip">Owner</span>}
-                  </span>
-                </div>
+                <PlayerIdentity
+                  player={row}
+                  isCurrentUser={row.isCurrentUser}
+                  onActivate={row.isCurrentUser ? null : onCompare}
+                  meta={row.isCurrentUser ? 'You' : row.memberRole === 'owner' ? 'League owner' : 'Open comparison'}
+                />
               </td>
-              {original ? (
-                <><td data-label="Groups">{row.matchPoints}</td><td data-label="Bracket">{row.bracketPoints}</td></>
-              ) : (
-                <><td data-label="Scored">{row.scoredMatchCount}</td><td data-label="Match points">{row.matchPoints}</td></>
-              )}
-              <td data-label="Total"><strong>{row.totalPoints}</strong><small className={styles.gapLabel}>{row.gapToLeaderLabel}</small></td>
+              <td data-label="Pts"><strong>{row.totalPoints}</strong></td>
             </tr>
           ))}
         </tbody>

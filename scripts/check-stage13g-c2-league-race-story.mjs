@@ -34,9 +34,8 @@ for (const marker of [
 }
 
 for (const marker of [
-  'styles.youChip',
-  'styles.topThreeChip',
-  'styles.gapLabel',
+  'styles.rankMarker',
+  'styles.currentUserRow',
   'buildLeagueRaceRows',
   "from './leagueRace.module.css'",
 ]) {

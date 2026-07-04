@@ -22,3 +22,7 @@ Stage 13G-C3 adds league race summary context above the standings table. It cont
 - No database migration was required.
 - Active migrations remain 18.
 - Migration 019 was not created.
+
+## Stage 13G-C4 correction
+
+The rendered race summary strip was superseded by Stage 13G-C4 after visual review. The accepted league default is now a compact running-total table: rank, member and points. Deeper race/breakdown context belongs in member comparison, player insight, match centre and results.

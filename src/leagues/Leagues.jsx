@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueHeadToHead, loadLeagueOverview, readLeagueSession } from './leagueService.js'
 import { buildLeagueLifecycleState, buildStandingComparison, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { CompetitionLifecycleNote, CompetitionTabs, LeagueActionConfirmation, LeagueCompetitionHeading, LeagueKoReadinessCard, LeagueLifecycleBanner, LeaguePicker, LeagueRaceSummary, LeagueSummaryCard, MemberPicker, StandingsTable } from './LeaguePresentation.jsx'
+import { CompetitionLifecycleNote, CompetitionTabs, LeagueActionConfirmation, LeagueCompetitionHeading, LeagueKoReadinessCard, LeagueLifecycleBanner, LeaguePicker, LeagueSummaryCard, MemberPicker, StandingsTable } from './LeaguePresentation.jsx'
 import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
 
 function messageForError(error) {
@@ -381,7 +381,6 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                 <CompetitionLifecycleNote competitionKey={effectiveCompetitionKey} lifecycle={lifecycle} summary={activeSummary} koReadiness={koReadiness} />
 
                 {activeSection?.status === 'error' && <p className="foundation-warning-text">{activeSection.error}</p>}
-                {activeSection?.status === 'ready' && <LeagueRaceSummary rows={standings} competitionKey={effectiveCompetitionKey} section={activeSection} />}
                 {(overview.status === 'loading' || overviewLoading) && <p className="foundation-empty-copy">Refreshing standings…</p>}
                 {overview.status !== 'loading' && !overviewLoading && activeSection?.status === 'ready' && standings.length === 0 && <p className="foundation-empty-copy">No league members were returned.</p>}
                 {standings.length > 0 && <StandingsTable rows={standings} competitionKey={effectiveCompetitionKey} onCompare={compareMember} />}

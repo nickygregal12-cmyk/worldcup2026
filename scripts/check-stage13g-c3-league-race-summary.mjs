@@ -36,27 +36,23 @@ for (const marker of [
 }
 
 for (const marker of [
-  'LeagueRaceSummary',
-  'styles.raceSummaryStrip',
-  'styles.raceSummaryStats',
-  'buildLeagueRaceSummary',
+  'buildLeagueRaceRows',
+  'Pts',
+  'styles.rankMarker',
 ]) {
-  if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing marker: ${marker}`)
+  if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing compact correction marker: ${marker}`)
+}
+
+if (leaguesPage.includes('LeagueRaceSummary')) {
+  fail('Leagues.jsx must not render the superseded C3 race summary strip after the compact C4 correction')
 }
 
 for (const marker of [
-  'LeagueRaceSummary',
-  'activeSection?.status === \'ready\'',
+  '.rankMarker',
+  '.currentUserRow',
+  'Stage 13G-C4 compact league standings',
 ]) {
-  if (!leaguesPage.includes(marker)) fail(`Leagues.jsx missing marker: ${marker}`)
-}
-
-for (const marker of [
-  '.raceSummaryStrip',
-  '.raceSummaryStats',
-  '@media (max-width: 640px)',
-]) {
-  if (!cssModule.includes(marker)) fail(`leagueRace.module.css missing marker: ${marker}`)
+  if (!cssModule.includes(marker)) fail(`leagueRace.module.css missing compact correction marker: ${marker}`)
 }
 
 for (const marker of [
@@ -96,7 +92,7 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log('Euro Stage 13G-C3 league race-summary audit passed.')
+console.log('Euro Stage 13G-C3 league race-summary audit passed with C4 compact-table correction.')
 console.log('Summary: you-vs-leader, pre-scoring and empty-member states are modelled.')
 console.log('Boundary: Original Predictor and KO Predictor remain separate.')
 console.log('Database: active migrations remain 18; no Migration 019.')
