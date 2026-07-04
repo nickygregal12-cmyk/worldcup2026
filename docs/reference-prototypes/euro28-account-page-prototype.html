@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Account — Euro 2028 Predictor (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#173A66; --brand-strong:#0E2A4F; --accent:#0EA5E9; --on-accent:#FFFFFF;
+  --surface-page:#F6F8FB; --surface-raised:#FFFFFF; --surface-sunken:#EAEEF4;
+  --text-primary:#0F1726; --text-secondary:#3E4A5E; --text-muted:#69758A;
+  --border:#D9E0EA;
+  --state-success:#15803D; --state-success-bg:#DCFCE7;
+  --state-partial:#B45309; --state-partial-bg:#FEF3C7;
+  --state-danger:#B91C1C; --state-danger-bg:#FEE2E2;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --shadow-1:0 1px 2px rgba(15,23,38,.06);
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --brand:#1C4275; --brand-strong:#173A66; --accent:#38BDF8; --on-accent:#0A0F1C;
+  --surface-page:#0A0F1C; --surface-raised:#131B2C; --surface-sunken:#070B14;
+  --text-primary:#EEF2F8; --text-secondary:#B4C0D2; --text-muted:#7B8799;
+  --border:#22304A;
+  --state-success:#4ADE80; --state-success-bg:#122D1D;
+  --state-partial:#FBBF24; --state-partial-bg:#2B2410;
+  --state-danger:#F87171; --state-danger-bg:#3A1418;
+  --shadow-1:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--surface-page);color:var(--text-primary);font-family:var(--font-body);font-size:16px;line-height:1.5}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer;color:inherit;background:none;border:none;padding:0}
+input{font:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+svg{display:block}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.app{max-width:560px;margin:0 auto;padding:12px 12px 40px}
+@media(min-width:900px){.app{max-width:760px}}
+.hdr{background:var(--brand);color:#EEF2F8;border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;min-height:56px}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:18px}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(255,255,255,.14)}
+.ctx{margin-top:12px;font-size:12px;font-weight:500;padding:7px 12px;border-radius:var(--radius-sm);display:flex;align-items:center;gap:7px;background:var(--surface-sunken);color:var(--text-secondary)}
+.card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-top:12px;box-shadow:var(--shadow-1)}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:4px}
+.muted{color:var(--text-muted);font-size:12.5px}
+.section-gap{margin-top:22px}
+/* ===== identity ===== */
+.identity{display:flex;align-items:center;gap:14px;margin-top:14px}
+.avatar{width:56px;height:56px;border-radius:50%;background:var(--brand);color:#EEF2F8;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:20px;flex:none}
+.identity-name{min-width:0;flex:1}
+.identity-name h1{font-size:19px}
+.identity-name span{display:block;font-size:12.5px;color:var(--text-muted);margin-top:2px}
+/* ===== field row ===== */
+.field{margin-top:14px}
+.field label{display:block;font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:5px}
+.field-row{display:flex;gap:8px}
+.field-row input{flex:1;min-height:44px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-page);color:var(--text-primary);font-size:14px}
+.field-row input:disabled{color:var(--text-muted);background:var(--surface-sunken)}
+.btn{font-size:14px;font-weight:500;border-radius:var(--radius-md);padding:0 16px;min-height:44px;border:1px solid var(--border);background:var(--surface-raised)}
+.btn-primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn-ghost-danger{color:var(--state-danger);border-color:transparent;background:none}
+.readonly-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px}
+.readonly-row span{font-size:12px;font-weight:500;color:var(--text-secondary)}
+.readonly-row strong{font-size:13.5px;font-weight:500}
+/* ===== quick stats — the part that keeps this page worth opening ===== */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.stat{background:var(--surface-sunken);border-radius:var(--radius-sm);padding:12px 10px;text-align:center}
+.stat strong{display:block;font-family:var(--font-display);font-weight:700;font-size:19px}
+.stat span{display:block;font-size:10.5px;color:var(--text-muted);margin-top:2px;letter-spacing:.02em}
+/* ===== list rows ===== */
+.list-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;min-height:52px;padding:10px 2px;border-top:1px solid var(--border)}
+.list-row:first-child{border-top:none}
+.list-row .body{flex:1;min-width:0}
+.list-row .body strong{display:block;font-size:14px;font-weight:500}
+.list-row .body span{display:block;font-size:12px;color:var(--text-muted);margin-top:1px}
+.list-row svg:last-child{color:var(--text-muted);flex:none}
+.switch{position:relative;width:40px;height:24px;border-radius:999px;background:var(--surface-sunken);border:1px solid var(--border);flex:none}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--surface-raised);border:1px solid var(--border);transition:left .15s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{left:18px}
+.switch:disabled{opacity:.5;cursor:not-allowed}
+.badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex:none}
+.b-info{background:var(--surface-sunken);color:var(--text-secondary)}
+.b-success{background:var(--state-success-bg);color:var(--state-success)}
+/* ===== guest transfer banner ===== */
+.transfer{display:flex;align-items:flex-start;gap:10px;background:var(--state-partial-bg);border:1px solid var(--state-partial);border-radius:var(--radius-md);padding:12px 14px;margin-top:12px}
+.transfer svg{flex:none;color:var(--state-partial);margin-top:2px}
+.transfer strong{display:block;font-size:14px;font-weight:600}
+.transfer p{margin:4px 0 10px;font-size:12.5px;color:var(--text-secondary)}
+.transfer .actions{display:flex;gap:8px}
+/* ===== danger zone ===== */
+.danger-card{border-color:var(--state-danger)}
+/* ===== dialog ===== */
+.scrim{position:fixed;inset:0;background:rgba(10,15,28,.5);z-index:40;display:none}
+.scrim.open{display:block}
+.dialog{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:60;padding:24px}
+.dialog.open{display:flex}
+.dialog-card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;max-width:360px;width:100%}
+.dialog-card h3{font-size:16px}
+.dialog-card p{font-size:13.5px;color:var(--text-secondary);margin:8px 0 16px}
+.dialog-actions{display:flex;gap:10px}
+.dialog-actions .btn{flex:1}
+.proto{margin-top:30px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:11.5px;color:var(--text-muted)}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs>
+<g id="i-key"><circle cx="8" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 12l8-8M16 4l3 3M13 7l2.5 2.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-chev-r"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-download"><path d="M12 3v12M8 11l4 4 4-4M5 17v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-alert"><path d="M12 8v5M12 16.5h.01M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-sun"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+</defs></svg>
+
+<div class="app">
+  <header class="hdr">
+    <h1 class="wordmark">Euro 2028</h1>
+    <button class="icon-btn" id="themeBtn" aria-label="Switch to dark mode"><svg width="18" height="18"><use href="#i-moon" id="themeIcon"/></svg></button>
+  </header>
+
+  <div class="ctx">Account</div>
+
+  <!-- ===== identity ===== -->
+  <section class="card">
+    <div class="identity">
+      <span class="avatar">N</span>
+      <div class="identity-name"><h1>Nicky</h1><span>Signed in with email · private, never shown on leaderboards</span></div>
+    </div>
+    <div class="field">
+      <label for="displayName">Display name</label>
+      <div class="field-row">
+        <input id="displayName" type="text" value="Nicky">
+        <button class="btn btn-primary" type="button">Save</button>
+      </div>
+    </div>
+    <div class="readonly-row"><span>Email</span><strong>nicky•••@••••.com</strong></div>
+  </section>
+
+  <!-- ===== quick stats — recurring reason to open this page ===== -->
+  <section class="card section-gap">
+    <span class="eyebrow">Your predictor</span>
+    <div class="stats">
+      <div class="stat"><strong>3</strong><span>Leagues joined</span></div>
+      <div class="stat"><strong>29/36</strong><span>Group scores saved</span></div>
+      <div class="stat"><strong>2/5</strong><span>Jokers armed</span></div>
+    </div>
+    <p class="muted" style="margin-top:10px">Pulled live from your real prediction and league data — check back here any time to see where you stand before lock.</p>
+  </section>
+
+  <!-- ===== guest transfer intentionally NOT here ==========================
+       Handled as a one-time modal immediately after sign-in/sign-up instead —
+       shown once, choice made, dismissed for good. It never becomes a
+       permanent fixture of the Account page. See the prompt for the modal
+       spec (Part B). ======================================================= -->
+
+  <!-- ===== security & preferences ===== -->
+  <section class="card section-gap">
+    <span class="eyebrow">Security &amp; preferences</span>
+    <button class="list-row" type="button">
+      <svg width="18" height="18"><use href="#i-key"/></svg>
+      <span class="body"><strong>Change password</strong><span>Sends a reset link to your email</span></span>
+      <svg width="16" height="16"><use href="#i-chev-r"/></svg>
+    </button>
+    <div class="list-row">
+      <span class="body"><strong>Match reminders</strong><span>Notify me before matches I've predicted kick off</span></span>
+      <button class="switch" role="switch" aria-checked="false" aria-label="Match reminders" disabled></button>
+      <span class="badge b-info" style="margin-left:8px">Coming soon</span>
+    </div>
+    <div class="list-row">
+      <span class="body"><strong>Daily points update</strong><span>A daily summary of how your predictions scored</span></span>
+      <button class="switch" role="switch" aria-checked="false" aria-label="Daily points update" disabled></button>
+      <span class="badge b-info" style="margin-left:8px">Coming soon</span>
+    </div>
+  </section>
+
+  <!-- ===== leagues shortcut — keeps Account from being a dead end ===== -->
+  <section class="card section-gap">
+    <span class="eyebrow">Your leagues</span>
+    <button class="list-row" type="button">
+      <svg width="18" height="18"><use href="#i-users"/></svg>
+      <span class="body"><strong>The Boys WhatsApp, +2 more</strong><span>Manage or leave a league from Leagues</span></span>
+      <svg width="16" height="16"><use href="#i-chev-r"/></svg>
+    </button>
+  </section>
+
+  <!-- ===== danger zone ===== -->
+  <section class="card danger-card section-gap">
+    <span class="eyebrow">Danger zone</span>
+    <div class="list-row">
+      <span class="body"><strong>Clear my predictions</strong><span>Wipes every group score and bracket pick so you can start over</span></span>
+      <span class="badge b-info" style="margin-right:8px">Pre-lock only</span>
+      <button class="btn btn-ghost-danger" type="button" id="clearBtn">Clear</button>
+    </div>
+    <div class="list-row">
+      <span class="body"><strong>Sign out</strong><span>Guest predictions saved on this device stay here either way</span></span>
+      <button class="btn btn-ghost-danger" type="button" id="signOutBtn">Sign out</button>
+    </div>
+  </section>
+
+  <div class="proto">Prototype — display name, email, stats and leagues read from real account/prediction data. Guest-transfer ("Keep these predictions" / "Start fresh") is deliberately not shown here — it's a one-time modal right after sign-in/sign-up, not a permanent Account fixture; once a choice is made it never appears again. "Clear my predictions" only appears before the Original Predictor locks — it disappears automatically once the opening match kicks off, same as every other pre-lock control in the app.</div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="dialog" id="clearDialog" role="dialog" aria-modal="true" aria-labelledby="clearTitle">
+  <div class="dialog-card">
+    <h3 id="clearTitle">Clear all your predictions?</h3>
+    <p>This wipes every group score and bracket pick on your account so you can start over. It can't be undone. This is only available before the Original Predictor locks.</p>
+    <div class="dialog-actions">
+      <button class="btn" type="button" id="cancelClear">Keep my predictions</button>
+      <button class="btn btn-primary" type="button" style="background:var(--state-danger);border-color:var(--state-danger)">Clear predictions</button>
+    </div>
+  </div>
+</div>
+<div class="dialog" id="signOutDialog" role="dialog" aria-modal="true" aria-labelledby="signOutTitle">
+  <div class="dialog-card">
+    <h3 id="signOutTitle">Sign out of Euro 2028 Predictor?</h3>
+    <p>Guest predictions saved on this device stay here. Account predictions already saved to staging remain attached to your account.</p>
+    <div class="dialog-actions">
+      <button class="btn" type="button" id="cancelSignOut">Stay signed in</button>
+      <button class="btn btn-primary" type="button" style="background:var(--state-danger);border-color:var(--state-danger)">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const scrim=document.getElementById('scrim');
+const clearDlg=document.getElementById('clearDialog');
+const signOutDlg=document.getElementById('signOutDialog');
+function open(dlg){dlg.classList.add('open');scrim.classList.add('open');}
+function closeAll(){clearDlg.classList.remove('open');signOutDlg.classList.remove('open');scrim.classList.remove('open');}
+document.getElementById('clearBtn').addEventListener('click',()=>open(clearDlg));
+document.getElementById('cancelClear').addEventListener('click',closeAll);
+document.getElementById('signOutBtn').addEventListener('click',()=>open(signOutDlg));
+document.getElementById('cancelSignOut').addEventListener('click',closeAll);
+scrim.addEventListener('click',closeAll);
+
+let dark=false;
+document.getElementById('themeBtn').addEventListener('click',function(){
+  dark=!dark;
+  if(dark) document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme');
+  document.getElementById('themeIcon').setAttribute('href',dark?'#i-sun':'#i-moon');
+  this.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+});
+</script>
+</body>
+</html>

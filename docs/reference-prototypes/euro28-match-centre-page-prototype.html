@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Match Centre — Euro 2028 Predictor (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#173A66; --brand-strong:#0E2A4F; --accent:#0EA5E9; --on-accent:#FFFFFF;
+  --surface-page:#F6F8FB; --surface-raised:#FFFFFF; --surface-sunken:#EAEEF4;
+  --text-primary:#0F1726; --text-secondary:#3E4A5E; --text-muted:#69758A;
+  --border:#D9E0EA;
+  --state-success:#15803D; --state-success-bg:#DCFCE7;
+  --state-partial:#B45309; --state-partial-bg:#FEF3C7;
+  --state-live:#DC2626; --state-live-bg:#FEE2E2;
+  --joker:#B8860B; --joker-bg:#FEF9E7;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --shadow-1:0 1px 2px rgba(15,23,38,.06);
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --brand:#1C4275; --brand-strong:#173A66; --accent:#38BDF8; --on-accent:#0A0F1C;
+  --surface-page:#0A0F1C; --surface-raised:#131B2C; --surface-sunken:#070B14;
+  --text-primary:#EEF2F8; --text-secondary:#B4C0D2; --text-muted:#7B8799;
+  --border:#22304A;
+  --state-success:#4ADE80; --state-success-bg:#122D1D;
+  --state-partial:#FBBF24; --state-partial-bg:#2B2410;
+  --state-live:#FF5A5A; --state-live-bg:#3A1418;
+  --joker:#FACC15; --joker-bg:#2B2410;
+  --shadow-1:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--surface-page);color:var(--text-primary);font-family:var(--font-body);font-size:16px;line-height:1.5}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button,a{font:inherit;cursor:pointer;color:inherit;background:none;border:none;padding:0;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+.num{font-variant-numeric:tabular-nums}
+svg{display:block}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.app{max-width:560px;margin:0 auto;padding:12px 12px 40px}
+@media(min-width:900px){.app{max-width:760px}}
+.hdr{background:var(--brand);color:#EEF2F8;border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;min-height:56px}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:18px}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(255,255,255,.14)}
+/* ===== demo-only switcher — NOT part of the real product ===== */
+.demoswitch{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding:9px 12px;background:var(--joker-bg);border:1px dashed var(--joker);border-radius:var(--radius-sm)}
+.demoswitch span{font-size:11.5px;font-weight:600;color:var(--joker)}
+.demoswitch .seg{display:flex;gap:3px;background:var(--surface-raised);border-radius:999px;padding:3px}
+.demoswitch .seg button{min-height:30px;padding:0 12px;border-radius:999px;font-size:12px;font-weight:500;color:var(--text-muted)}
+.demoswitch .seg button[aria-pressed="true"]{background:var(--brand);color:#EEF2F8}
+/* ===== fixture nav ===== */
+.fixnav{display:flex;gap:8px;margin-top:12px}
+.fixnav a{flex:1;display:flex;flex-direction:column;gap:2px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-raised);min-height:56px;justify-content:center}
+.fixnav a:last-child{text-align:right;align-items:flex-end}
+.fixnav small{font-size:10.5px;color:var(--text-muted)}
+.fixnav strong{font-size:12.5px;font-weight:600}
+.fixnav span{font-size:11.5px;color:var(--text-secondary)}
+/* ===== fixture hero ===== */
+.hero{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-top:10px;box-shadow:var(--shadow-1)}
+.hero-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:4px}
+.hero h2{font-size:17px}
+.badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;flex:none}
+.b-live{background:var(--state-live-bg);color:var(--state-live)}
+.b-info{background:var(--surface-sunken);color:var(--text-secondary)}
+.b-success{background:var(--state-success-bg);color:var(--state-success)}
+.b-partial{background:var(--state-partial-bg);color:var(--state-partial)}
+.b-joker{background:var(--joker-bg);color:var(--joker)}
+.hero-teams{display:flex;align-items:center;justify-content:center;gap:16px;margin:16px 0}
+.hero-teams .team{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;min-width:0}
+.hero-teams img{width:34px;height:34px;border-radius:50%}
+.hero-teams span{font-size:13px;font-weight:600;text-align:center}
+.hero-teams strong{font-family:var(--font-display);font-weight:700;font-size:24px;flex:none}
+.hero-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:12px;color:var(--text-muted);justify-content:center;margin-top:4px}
+/* ===== status bar ===== */
+.statusbar{display:flex;gap:10px;align-items:flex-start;border-radius:var(--radius-md);padding:11px 13px;margin-top:10px;font-size:12.5px}
+.statusbar.info{background:var(--surface-sunken);color:var(--text-secondary)}
+.statusbar.success{background:var(--state-success-bg);color:var(--state-success)}
+.statusbar strong{display:block;font-size:13px;margin-bottom:1px}
+/* ===== controls card ===== */
+.card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-top:12px;box-shadow:var(--shadow-1)}
+.tabs{display:flex;gap:4px;background:var(--surface-sunken);border-radius:999px;padding:3px;width:fit-content}
+.tabs button{min-height:34px;padding:0 16px;border-radius:999px;font-size:13px;font-weight:500;color:var(--text-muted)}
+.tabs button[aria-selected="true"]{background:var(--surface-raised);color:var(--text-primary);box-shadow:var(--shadow-1)}
+.viewing{margin-top:10px;display:flex;align-items:center;gap:8px;font-size:13px}
+.viewing select{min-height:36px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-page);color:var(--text-primary);padding:0 8px}
+.controls-note{margin-top:8px;font-size:11.5px;color:var(--text-muted)}
+/* ===== panel heading ===== */
+.panel-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px}
+.panel-heading h3{font-size:15px}
+/* ===== group impact ===== */
+.grouptable{width:100%;border-collapse:collapse;font-size:13px}
+.grouptable th{text-align:left;color:var(--text-muted);font-weight:500;font-size:10.5px;padding:5px 4px;border-bottom:1px solid var(--border)}
+.grouptable td{padding:8px 4px;border-bottom:1px solid var(--border)}
+.grouptable tr:last-child td{border-bottom:none}
+.grouptable td.c{text-align:center}
+.grouptable tr.in-match{background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.grouptable .teamcell{display:flex;align-items:center;gap:7px;font-weight:500}
+.grouptable .teamcell img{width:18px;height:18px;border-radius:50%}
+.scenario{display:flex;gap:9px;align-items:flex-start;background:var(--surface-sunken);border-radius:var(--radius-sm);padding:10px 11px;margin-top:10px;font-size:12.5px;color:var(--text-secondary)}
+.scenario svg{flex:none;color:var(--accent);margin-top:1px}
+/* ===== bracket-point preview (live, read-only, never persisted) ===== */
+.bracket-preview{margin-top:12px;padding:12px 13px;border:1.5px dashed var(--state-live);border-radius:var(--radius-md);background:color-mix(in srgb,var(--state-live) 6%,transparent)}
+.bracket-preview-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.bracket-preview p{margin:0 0 8px;font-size:12.5px;color:var(--text-secondary)}
+.bracket-preview-pts{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+.bracket-preview-pts strong{font-family:var(--font-display);font-weight:700;font-size:20px}
+.bracket-preview-pts span{font-size:12px;color:var(--text-muted)}
+.bracket-preview small{display:block;font-size:11px;color:var(--text-muted)}
+/* ===== live comparison status pills (group predictions panel) ===== */
+.pts.livegood{color:var(--state-success);font-weight:600;width:auto}
+.pts.liveoff{color:var(--text-muted);font-weight:500;width:auto}
+/* ===== bracket impact ===== */
+.bracketpath{display:flex;flex-direction:column;gap:8px;margin-top:2px}
+.pathrow{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-sunken)}
+.pathrow img{width:22px;height:22px;border-radius:50%;flex:none}
+.pathrow .who{font-size:13px;font-weight:600;flex:none;width:80px}
+.pathrow .arrow{color:var(--text-muted);flex:none}
+.pathrow .dest{font-size:12.5px;color:var(--text-secondary);min-width:0}
+.pathrow .dest strong{font-weight:600;color:var(--text-primary)}
+.elim-note{display:flex;gap:9px;align-items:flex-start;background:var(--state-partial-bg);border-radius:var(--radius-sm);padding:10px 11px;margin-top:10px;font-size:12.5px;color:var(--state-partial)}
+.elim-note svg{flex:none;margin-top:1px}
+/* ===== points on the line ===== */
+.playerlist{list-style:none;margin:0;padding:0}
+.playerline{display:flex;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--border)}
+.playerline:first-child{border-top:none}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--brand);color:#EEF2F8;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:12px;flex:none}
+.playerline .who{flex:1;min-width:0}
+.playerline .who strong{display:block;font-size:13.5px;font-weight:600}
+.playerline .who span{display:block;font-size:11px;color:var(--text-muted)}
+.playerline .sel{flex:none;text-align:right;font-size:12.5px}
+.playerline .sel strong{display:block;font-family:var(--font-display);font-weight:700;font-size:14px}
+.playerline .pts{flex:none;text-align:right;font-size:11px;color:var(--text-muted);width:100px}
+.section-note{font-size:12px;color:var(--text-muted);margin-top:2px}
+.variant{display:none}
+.variant.active{display:block}
+.proto{margin-top:24px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:11.5px;color:var(--text-muted)}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs>
+<g id="i-info"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v5.5M12 7.5h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-arrow-r"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-alert"><path d="M12 8v5M12 16.5h.01M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-sun"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+</defs></svg>
+
+<div class="app">
+  <header class="hdr">
+    <h1 class="wordmark">Euro 2028</h1>
+    <button class="icon-btn" id="themeBtn" aria-label="Switch to dark mode"><svg width="18" height="18"><use href="#i-moon" id="themeIcon"/></svg></button>
+  </header>
+
+  <!-- demo-only, would not exist in the product — the real fixture decides which variant renders -->
+  <div class="demoswitch">
+    <span>Prototype view</span>
+    <div class="seg" role="tablist" aria-label="Preview fixture type">
+      <button role="tab" aria-pressed="true" data-variant="group">Group match</button>
+      <button role="tab" aria-pressed="false" data-variant="knockout">Knockout match</button>
+    </div>
+  </div>
+
+  <!-- ===== shared: fixture nav ===== -->
+  <nav class="fixnav" aria-label="Fixture navigation">
+    <a href="#"><small>Previous fixture</small><strong id="prevMatch">Match 14</strong><span id="prevTeams">Spain v Sweden</span></a>
+    <a href="#"><small>Next fixture</small><strong id="nextMatch">Match 16</strong><span id="nextTeams">Germany v Czechia</span></a>
+  </nav>
+
+  <!-- ===== shared: fixture hero (content swaps per variant) ===== -->
+  <section class="hero">
+    <div class="hero-head">
+      <div><span class="eyebrow" id="heroEyebrow">Group C · Match 15</span><h2 id="heroTitle">Fixture Match Centre</h2></div>
+      <span class="badge b-live" id="heroBadge">Live · 64'</span>
+    </div>
+    <div class="hero-teams">
+      <div class="team"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/es.svg" alt=""><span id="homeName">Spain</span></div>
+      <strong id="heroScore">1–0</strong>
+      <div class="team"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-wls.svg" alt=""><span id="awayName">Wales</span></div>
+    </div>
+    <div class="hero-meta">
+      <span id="heroKickoff">Kick-off 20:00 BST</span>
+      <span id="heroVenue">Principality Stadium, Cardiff</span>
+    </div>
+  </section>
+
+  <div class="statusbar info"><svg width="15" height="15" style="flex:none;margin-top:1px"><use href="#i-info"/></svg><div><strong id="statusTitle">This fixture is live</strong><span id="statusBody">Original Predictor selections stay separate from canonical live scores while the match is in progress.</span></div></div>
+
+  <!-- ===== shared: competition controls (tabs are conditional — see script) ===== -->
+  <div class="card">
+    <div class="tabs" role="tablist" aria-label="Match Centre competition" id="compTabs">
+      <button role="tab" aria-selected="true">Original Predictor</button>
+    </div>
+    <p class="controls-note" id="tabsNote">This is a group match — there's no KO Predictor entry for it. KO Predictor opens once the real knockout draw is known.</p>
+    <div class="viewing">
+      <span>Viewing</span>
+      <select><option>Overall</option><option>The Boys WhatsApp</option></select>
+    </div>
+    <p class="controls-note">Original and KO Predictor information remain separate. This screen never combines their points.</p>
+  </div>
+
+  <!-- ===== GROUP MATCH variant ===== -->
+  <div class="variant active" id="variant-group">
+    <div class="card">
+      <div class="panel-heading"><div><span class="eyebrow">Group impact</span><h3 id="groupTableTitle">Group C table — live projection</h3></div><span class="badge b-live" id="groupTableBadge">Live projection</span></div>
+      <table class="grouptable">
+        <thead><tr><th>Pos</th><th>Team</th><th class="c">P</th><th class="c">GD</th><th class="c">Pts</th></tr></thead>
+        <tbody>
+          <tr class="in-match"><td>1</td><td class="teamcell"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/es.svg" alt="">Spain <span class="badge b-live" style="margin-left:4px;padding:1px 6px;font-size:9px">LIVE</span></td><td class="c num">2</td><td class="c num">+2</td><td class="c num">4</td></tr>
+          <tr><td>2</td><td class="teamcell"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/se.svg" alt="">Sweden <span class="badge b-live" style="margin-left:4px;padding:1px 6px;font-size:9px">LIVE</span></td><td class="c num">2</td><td class="c num">+1</td><td class="c num">4</td></tr>
+          <tr class="in-match"><td>3</td><td class="teamcell"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-wls.svg" alt="">Wales</td><td class="c num">2</td><td class="c num">-1</td><td class="c num">1</td></tr>
+          <tr><td>4</td><td class="teamcell"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fi.svg" alt="">Finland</td><td class="c num">2</td><td class="c num">-2</td><td class="c num">1</td></tr>
+        </tbody>
+      </table>
+      <div class="scenario"><svg width="14" height="14"><use href="#i-info"/></svg><span id="scenarioText">Every team in Group C is live right now — this table updates as those scores change and finalises the moment all four matches are confirmed.</span></div>
+
+      <div class="bracket-preview">
+        <div class="bracket-preview-head"><span class="eyebrow" style="margin:0">Your bracket, if this held</span><span class="badge b-live">Projected</span></div>
+        <p>You predicted <strong>Spain</strong> and <strong>Sweden</strong> to advance from Group C. Both are currently through.</p>
+        <div class="bracket-preview-pts"><strong>20 pts</strong><span>secured toward the Round of 16 if groups ended now</span></div>
+        <small>Recalculates live as scores change — locks in as soon as every Group C match is confirmed. This is a preview only; it never changes your saved bracket.</small>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="panel-heading"><div><span class="eyebrow">This match's predictions</span><h3>What people picked for Spain v Wales</h3></div><span class="badge b-info">Live comparison</span></div>
+      <p class="section-note">Every group match always has a prediction riding on it — the useful bit is how each one is doing against the current score. Updates live, confirms at full time.</p>
+      <ul class="playerlist">
+        <li class="playerline"><span class="avatar">N</span><span class="who"><strong>Nicky</strong><span>#2 · 118 pts</span></span><span class="sel"><strong>2–0</strong></span><span class="pts livegood">Exact score so far</span></li>
+        <li class="playerline"><span class="avatar">C</span><span class="who"><strong>Callum</strong><span>#1 · 124 pts</span></span><span class="sel"><strong>1–1</strong><span class="badge b-joker" style="margin-top:2px">Joker</span></span><span class="pts liveoff">Not on track yet</span></li>
+        <li class="playerline"><span class="avatar">R</span><span class="who"><strong>Ross</strong><span>#4 · 96 pts</span></span><span class="sel"><strong>Protected</strong></span><span class="pts">Visible after lock</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===== KNOCKOUT MATCH variant ===== -->
+  <div class="variant" id="variant-knockout">
+    <div class="card">
+      <div class="panel-heading"><div><span class="eyebrow">Bracket impact</span><h3>What's next for each side</h3></div><span class="badge b-info">Round of 16</span></div>
+      <div class="bracketpath">
+        <div class="pathrow"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/de.svg" alt=""><span class="who">Germany</span><svg class="arrow" width="15" height="15"><use href="#i-arrow-r"/></svg><span class="dest">Quarter-final vs <strong>Winner of Match 41</strong> · 30 Jun, Etihad Stadium</span></div>
+        <div class="pathrow"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/cz.svg" alt=""><span class="who">Czechia</span><svg class="arrow" width="15" height="15"><use href="#i-arrow-r"/></svg><span class="dest">Eliminated if they lose here — tournament ends tonight</span></div>
+      </div>
+      <div class="elim-note"><svg width="14" height="14"><use href="#i-alert"/></svg><span>Straight knockout from here — there's no group safety net and no third-place play-off.</span></div>
+    </div>
+
+    <div class="card">
+      <div class="panel-heading"><div><span class="eyebrow">Points on the line</span><h3>14 players in this scope</h3></div><span class="badge b-success">Maximum available</span></div>
+      <p class="section-note">Rows show the maximum currently available from the saved bracket pick. Protected predictions stay hidden.</p>
+      <ul class="playerlist">
+        <li class="playerline"><span class="avatar">N</span><span class="who"><strong>Nicky</strong><span>#2 · 118 pts</span></span><span class="sel"><strong>Germany</strong><span style="display:block;font-size:11px;color:var(--text-muted)">to advance</span></span><span class="pts">Up to 15 pts</span></li>
+        <li class="playerline"><span class="avatar">C</span><span class="who"><strong>Callum</strong><span>#1 · 124 pts</span></span><span class="sel"><strong>Czechia</strong><span style="display:block;font-size:11px;color:var(--text-muted)">to advance</span></span><span class="pts">Up to 15 pts</span></li>
+        <li class="playerline"><span class="avatar">R</span><span class="who"><strong>Ross</strong><span>#4 · 96 pts</span></span><span class="sel"><strong>Protected</strong></span><span class="pts">Visible after lock</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="proto">Prototype — the "Group match / Knockout match" toggle above is a demo aid only; the real Match Centre already knows which one it's showing from the fixture itself (<code>matchNumber &lt;= 36</code> in <code>matchCentreModel.js</code>). Fixture nav, hero, status bar, viewing-scope selector are the shared shell already built and unchanged. Competition tabs are now conditional (Decision 1). The group table becomes a live projection during live group matches, computed via the existing <code>resolveGroupTable</code> resolver with live scores standing in for results — never a second calculator (Decisions 2–3). The bracket-point preview reuses <code>resolveGroupTable</code> → <code>rankBestThirdTeams</code>/<code>resolveBestThirdAssignments</code> → <code>resolveKnockoutBracket</code> purely as an on-screen projection; it never writes to <code>bracket_predictions</code> and never touches the real Original Bracket page (Decision 4). "Points on the line" stays exactly as-is for knockout fixtures (Decision 6) and is replaced by a live prediction-comparison panel for group fixtures (Decisions 7–8).</div>
+</div>
+
+<script>
+document.querySelectorAll('.demoswitch [data-variant]').forEach(btn=>btn.addEventListener('click',function(){
+  document.querySelectorAll('.demoswitch [data-variant]').forEach(b=>b.setAttribute('aria-pressed','false'));
+  this.setAttribute('aria-pressed','true');
+  const v=this.dataset.variant;
+  document.getElementById('variant-group').classList.toggle('active', v==='group');
+  document.getElementById('variant-knockout').classList.toggle('active', v==='knockout');
+  if(v==='group'){
+    document.getElementById('heroEyebrow').textContent='Group C · Match 15';
+    document.getElementById('heroBadge').outerHTML='<span class="badge b-live" id="heroBadge">Live · 64\'</span>';
+    document.getElementById('homeName').textContent='Spain';
+    document.getElementById('awayName').textContent='Wales';
+    document.getElementById('heroScore').textContent='1–0';
+    document.getElementById('heroKickoff').textContent='Kick-off 20:00 BST';
+    document.getElementById('heroVenue').textContent='Principality Stadium, Cardiff';
+    document.getElementById('statusTitle').textContent='This fixture is live';
+    document.getElementById('statusBody').textContent='Original Predictor selections stay separate from canonical live scores while the match is in progress.';
+    document.getElementById('compTabs').innerHTML='<button role="tab" aria-selected="true">Original Predictor</button>';
+    document.getElementById('tabsNote').textContent="This is a group match — there's no KO Predictor entry for it. KO Predictor opens once the real knockout draw is known.";
+  } else {
+    document.getElementById('heroEyebrow').textContent='Round of 16 · Match 40';
+    document.getElementById('heroBadge').outerHTML='<span class="badge b-partial" id="heroBadge">Scheduled</span>';
+    document.getElementById('homeName').textContent='Germany';
+    document.getElementById('awayName').textContent='Czechia';
+    document.getElementById('heroScore').textContent='v';
+    document.getElementById('heroKickoff').textContent='27 Jun · kick-off TBC';
+    document.getElementById('heroVenue').textContent='St James\' Park, Newcastle';
+    document.getElementById('statusTitle').textContent='Fixture is scheduled';
+    document.getElementById('statusBody').textContent='Match Centre is ready, but prediction visibility still follows the central tournament lifecycle and privacy gates.';
+    document.getElementById('compTabs').innerHTML='<button role="tab" aria-selected="true">Original Predictor</button><button role="tab" aria-selected="false">KO Predictor</button>';
+    document.getElementById('tabsNote').textContent='This knockout fixture has both an Original bracket pick and a separate real KO Predictor entry — pick a tab to see either.';
+  }
+}));
+let dark=false;
+document.getElementById('themeBtn').addEventListener('click',function(){
+  dark=!dark;
+  if(dark) document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme');
+  document.getElementById('themeIcon').setAttribute('href',dark?'#i-sun':'#i-moon');
+  this.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+});
+</script>
+</body>
+</html>

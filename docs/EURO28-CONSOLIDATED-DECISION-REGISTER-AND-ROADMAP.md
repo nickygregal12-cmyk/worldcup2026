@@ -9,7 +9,7 @@
 - Expected Git commit before this scope package: `2e6f79b` — **Compact Stage 13G league shell**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
 - Active migration count: **18**, aligned locally and on Euro staging.
-- Stages 1–12, 13A–13E, 14, 14B, Stage 13F, Stage 13G-R0, Stage 13G-A, Stage 13G-B and Stage 13G-C league simplification through C6 are accepted at the package level recorded in the ledger.
+- Stages 1–12, 13A–13E, 14, 14B, Stage 13F, Stage 13G-R0, Stage 13G-A, Stage 13G-B lifecycle slices, Stage 13G-C league simplification through C6 and Stage 13G destination reference adoption are accepted at the package level recorded in the ledger.
 - Stage 16A-S0 is a scope-alignment package before implementation. No component, resolver, scoring, route, database or migration implementation is included.
 - Migration 018 remains the latest active migration. Migration 019 has not been created.
 - Original and KO Predictor totals remain permanently separate.
@@ -377,7 +377,7 @@ The Stage 13F-K1 database operations contract remains accepted and is the bindin
 3. Before a display-ready Round of 16 fixture, More may show a KO explainer teaser but not the active workspace, unresolved fixtures or prediction controls. Home gives KO at most modest secondary prominence.
 4. Upcoming matches order by next real kick-off; completed results order most-recent-first. Match Centre previous/next follows chronology, not match number.
 5. Group-stage fixtures support shared By group and By date presentations. By group is the pre-tournament default; By date is the live-tournament default; a manual choice is respected.
-6. Tournament becomes a key destination containing canonical facts, venues, format and a complete casual-player guide for both competitions. Binding values and rules render from versioned contracts/configuration, never copied prose.
+6. Tournament and How to Play are separate More/footer destinations. Tournament owns canonical football facts, hosts, venues, dates, format and provisional groups. How to Play owns predictor mechanics, competitions, scoring, locks, jokers and mechanics FAQ. Binding values and rules render from versioned contracts/configuration, never copied prose.
 7. Every team name uses `TeamLabel`. Every player name uses one shared player identity activation primitive and opens one authorised overview containing predictions, permanent Original bracket, separate points stories and H2H.
 8. League sharing uses a one-tap copy-link flow. Generic static Open Graph metadata is mandatory. Dynamic per-league title/description using a static Euro image is approved; dynamic image generation is rejected.
 9. Inherited WC26 OG and icon assets are replaced with Euro identity assets. The deferred PWA manifest/service worker do not return before Stage 18C.
@@ -606,7 +606,8 @@ This amendment is read with the Stage 13G master prompt and corrects records bef
 - Stage 13G-H1: bypass-class tooling sweep.
 - Stage 13G-C: guest import flow, signed-in copy sweep, joker control, bracket overlap, shared tabs, Tournament Picks player entry if schedule change is accepted.
 - Stage 13G-C/D: dedicated player view, H2H and points-breakdown destinations.
-- Stage 13G-B/C: how-to-play and FAQ guide.
+- Stage 13G-B-TOURNAMENT-1: Tournament / How to Play split and canonical tournament fact correction.
+- Stage 13G-B/C: how-to-play and FAQ guide, using the split How to Play destination rather than the old combined Tournament page.
 - Stage 13P-A: converging wall-chart bracket and share image.
 
 
@@ -1004,6 +1005,14 @@ Status: implemented.
 This slice implements the approved Groups joker-control decision from the reference prototype. The bare `J` circle is retired from the Groups predictor surface. Group match cards now use the shared `JokerPill` primitive with a star icon, visible `Joker` label and `2×` multiplier only when armed. The page controls now use the shared five-dot gold `JokerMeter` primitive. Disabled cap treatment remains explicit when the five-group-joker cap is reached.
 
 Scope boundaries: no venue meta-line implementation, no score-stepper implementation, no view-switcher rebuild, no predicted-table rebuild, no bracket rebuild, no league or Player View rebuild, no Supabase write change, no scoring or resolver change, and no migration.
+
+## Stage 13G Destination Reference Adoption — Tournament, How to Play, Account, Admin and Match Centre
+
+This docs/audit package records the approved `euro28-tournament-page-prototype.html`, `euro28-how-to-play-page-prototype.html`, `euro28-account-page-prototype.html`, `euro28-admin-page-prototype.html` and `euro28-match-centre-page-prototype.html` artefacts under `docs/reference-prototypes/`, together with the build-agent reference brief. The artefacts are adopted as information-architecture, copy-register and data-source-discipline references only, not as pixel-perfect code to port.
+
+The next implementation task is **13G-B-TOURNAMENT-1 — Tournament / How to Play split and canonical tournament fact correction**. It amends existing Stage 13G-B in place and must correct confirmed tournament dates, host nations and venues in the canonical source of truth before rebuilding the split destinations. Account, Admin and Match Centre are scheduled as later focused batches and must not be bundled into the Tournament split without explicit acceptance.
+
+Constraints: docs/audit only in this package; no UI rebuild, route implementation, config correction, scoring change, resolver change, Supabase write or migration. Active migrations remain 18 and Migration 019 is not created.
 
 ## Stage 13G-BRACKET-REF — Original Bracket Reference Adoption
 

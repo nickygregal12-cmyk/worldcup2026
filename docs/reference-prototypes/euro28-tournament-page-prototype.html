@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tournament — Euro 2028 Predictor (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#173A66; --brand-strong:#0E2A4F; --accent:#0EA5E9; --on-accent:#FFFFFF;
+  --surface-page:#F6F8FB; --surface-raised:#FFFFFF; --surface-sunken:#EAEEF4;
+  --text-primary:#0F1726; --text-secondary:#3E4A5E; --text-muted:#69758A;
+  --border:#D9E0EA;
+  --state-success:#15803D; --state-success-bg:#DCFCE7;
+  --state-partial:#B45309; --state-partial-bg:#FEF3C7;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --shadow-1:0 1px 2px rgba(15,23,38,.06);
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --brand:#1C4275; --brand-strong:#173A66; --accent:#38BDF8; --on-accent:#0A0F1C;
+  --surface-page:#0A0F1C; --surface-raised:#131B2C; --surface-sunken:#070B14;
+  --text-primary:#EEF2F8; --text-secondary:#B4C0D2; --text-muted:#7B8799;
+  --border:#22304A;
+  --state-success:#4ADE80; --state-success-bg:#122D1D;
+  --state-partial:#FBBF24; --state-partial-bg:#2B2410;
+  --shadow-1:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--surface-page);color:var(--text-primary);font-family:var(--font-body);font-size:16px;line-height:1.5}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer;color:inherit;background:none;border:none;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+.num{font-variant-numeric:tabular-nums}
+svg{display:block}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.app{max-width:560px;margin:0 auto;padding:12px 12px 40px}
+@media(min-width:900px){.app{max-width:900px}}
+.hdr{background:var(--brand);color:#EEF2F8;border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;min-height:56px}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:18px}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(255,255,255,.14)}
+.ctx{margin-top:12px;font-size:12px;font-weight:500;padding:7px 12px;border-radius:var(--radius-sm);display:flex;align-items:center;gap:7px;background:var(--surface-sunken);color:var(--text-secondary)}
+.intro{margin-top:14px}
+.intro h1{font-size:22px}
+.intro p{margin:6px 0 0;color:var(--text-secondary);font-size:14px;max-width:56ch}
+.card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-top:12px;box-shadow:var(--shadow-1)}
+.card h2{font-size:16px}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:4px}
+.muted{color:var(--text-muted);font-size:12.5px}
+.section-gap{margin-top:22px}
+/* quick facts */
+.facts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+@media(min-width:640px){.facts{grid-template-columns:repeat(4,1fr)}}
+.fact{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px;box-shadow:var(--shadow-1)}
+.fact span{display:block;font-size:11px;color:var(--text-muted)}
+.fact strong{display:block;font-family:var(--font-display);font-size:15px;margin-top:3px;line-height:1.25}
+.fact small{display:block;margin-top:3px;font-size:11px;color:var(--text-muted)}
+/* badges */
+.badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.b-success{background:var(--state-success-bg);color:var(--state-success)}
+.b-partial{background:var(--state-partial-bg);color:var(--state-partial)}
+.b-info{background:var(--surface-sunken);color:var(--text-secondary)}
+/* venue list */
+.venues{margin-top:10px;display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:640px){.venues{grid-template-columns:1fr 1fr}}
+.venue{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-sunken)}
+.venue .mk{width:34px;height:34px;border-radius:50%;background:var(--surface-raised);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex:none}
+.venue .mk svg{width:16px;height:16px;color:var(--text-muted)}
+.venue .info{min-width:0;flex:1}
+.venue .info strong{display:block;font-size:13.5px;font-weight:600}
+.venue .info span{display:block;font-size:12px;color:var(--text-muted)}
+.venue .tag{flex:none}
+/* format ladder */
+.ladder{display:flex;flex-direction:column;gap:0;margin-top:10px}
+.rung{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border)}
+.rung:first-child{border-top:none}
+.rung .n{width:30px;height:30px;border-radius:50%;background:var(--surface-sunken);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:13px;flex:none}
+.rung .body{flex:1;min-width:0}
+.rung .body strong{display:block;font-size:14px;font-weight:600}
+.rung .body span{display:block;font-size:12.5px;color:var(--text-muted);margin-top:1px}
+.rung .count{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--text-secondary);flex:none;text-align:right}
+.rung .count small{display:block;font-weight:400;font-size:10.5px;color:var(--text-muted)}
+/* groups */
+.gtabs{display:flex;gap:6px;margin-top:12px;overflow-x:auto;padding-bottom:2px}
+.gtab{min-width:40px;min-height:36px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-raised);font-weight:500;font-size:13px}
+.gtab[aria-selected="true"]{background:var(--brand);color:#EEF2F8;border-color:var(--brand)}
+.gslots{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gslot{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:13px;color:var(--text-muted)}
+.gslot .code{font-family:var(--font-display);font-weight:700;font-size:12px;width:22px;text-align:center;flex:none;color:var(--text-secondary)}
+.ghead-note{margin-top:10px;padding:9px 10px;background:var(--surface-sunken);border-radius:var(--radius-sm);font-size:12px;color:var(--text-secondary);display:flex;gap:7px;align-items:flex-start}
+.proto{margin-top:30px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:11.5px;color:var(--text-muted)}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs>
+<g id="i-info"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v5.5M12 7.5h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-pin"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="9.5" r="2.4" fill="none" stroke="currentColor" stroke-width="2"/></g>
+<g id="i-sun"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+</defs></svg>
+
+<div class="app">
+  <header class="hdr">
+    <h1 class="wordmark">Euro 2028</h1>
+    <button class="icon-btn" id="themeBtn" aria-label="Switch to dark mode"><svg width="18" height="18"><use href="#i-moon" id="themeIcon"/></svg></button>
+  </header>
+
+  <div class="ctx"><svg width="14" height="14"><use href="#i-info"/></svg> Tournament</div>
+
+  <section class="intro">
+    <h1>The tournament itself</h1>
+    <p>Hosts, venues, dates and format — the facts about Euro 2028, not the Predictor. This fills in with real teams and stays useful right through the tournament, not just before it.</p>
+  </section>
+
+  <section class="facts" aria-label="Tournament quick facts">
+    <div class="fact"><span>Hosts</span><strong>4 nations</strong><small>Eng · Sco · Wal · Rep of Ire</small></div>
+    <div class="fact"><span>Dates</span><strong>9 Jun – 9 Jul</strong><small>2028</small></div>
+    <div class="fact"><span>Teams</span><strong>24</strong><small>6 groups of 4</small></div>
+    <div class="fact"><span>Matches</span><strong>51</strong><small>Across 9 venues, 8 cities</small></div>
+  </section>
+
+  <!-- ===== venues — this is the part that stays useful all tournament ===== -->
+  <section class="card section-gap">
+    <span class="eyebrow">Venues</span>
+    <h2>9 stadiums, 8 cities</h2>
+    <div class="venues">
+      <div class="venue"><span class="mk"><svg><use href="#i-pin"/></svg></span><span class="info"><strong>Principality Stadium</strong><span>Cardiff, Wales</span></span><span class="tag badge b-info">Opener · 9 Jun</span></div>
+      <div class="venue"><span class="mk"><svg><use href="#i-pin"/></svg></span><span class="info"><strong>Wembley Stadium</strong><span>London, England</span></span><span class="tag badge b-info">Semis &amp; final</span></div>
+      <div class="venue"><span class="mk"><svg><use href="#i-pin"/></svg></span><span class="info"><strong>Tottenham Hotspur Stadium</strong><span>London, England</span></span></div>
+      <div class="venue"><span class="mk"><svg><use href="#i-pin"/></svg></span><span class="info"><strong>Etihad Stadium</strong><span>Manchester, England</span></span></div>
+      <div class="venue"><span class="mk"><svg><use href="#i-pin"/></svg></span><span class="info"><strong>Hill Dickinson Stadium</strong><span>Liverpool, England</span></span></div>
+      <div class="venue"><span class="mk"><svg><use href="#i-pin"/></svg></span><span class="info"><strong>St James' Park</strong><span>Newcastle, England</span></span></div>
+      <div class="venue"><span class="mk"><svg><use href="#i-pin"/></svg></span><span class="info"><strong>Villa Park</strong><span>Birmingham, England</span></span></div>
+      <div class="venue"><span class="mk"><svg><use href="#i-pin"/></svg></span><span class="info"><strong>Hampden Park</strong><span>Glasgow, Scotland</span></span></div>
+      <div class="venue"><span class="mk"><svg><use href="#i-pin"/></svg></span><span class="info"><strong>Aviva Stadium</strong><span>Dublin, Republic of Ireland</span></span></div>
+    </div>
+    <p class="muted" style="margin-top:10px">Scotland and the Republic of Ireland play all three group games at their home stadium if they qualify — worth knowing before you predict venue-specific ties later in the bracket.</p>
+  </section>
+
+  <!-- ===== format ===== -->
+  <section class="card section-gap">
+    <span class="eyebrow">Format</span>
+    <h2>How 24 teams become 1 champion</h2>
+    <div class="ladder">
+      <div class="rung"><span class="n">1</span><div class="body"><strong>Group stage</strong><span>6 groups of 4 — top 2 plus the 4 best third-placed teams go through</span></div><span class="count num">36<small>9–21 Jun</small></span></div>
+      <div class="rung"><span class="n">2</span><div class="body"><strong>Round of 16</strong></div><span class="count num">8<small>24–27 Jun</small></span></div>
+      <div class="rung"><span class="n">3</span><div class="body"><strong>Quarter-finals</strong></div><span class="count num">4<small>30 Jun – 1 Jul</small></span></div>
+      <div class="rung"><span class="n">4</span><div class="body"><strong>Semi-finals</strong><span>Both at Wembley</span></div><span class="count num">2<small>4–5 Jul</small></span></div>
+      <div class="rung"><span class="n">5</span><div class="body"><strong>Final</strong><span>Wembley — no third-place play-off</span></div><span class="count num">1<small>9 Jul</small></span></div>
+    </div>
+  </section>
+
+  <!-- ===== groups — the part that genuinely updates over time ===== -->
+  <section class="card section-gap">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+      <div><span class="eyebrow">Groups</span><h2>Group C</h2></div>
+      <span class="badge b-partial">Qualifying under way</span>
+    </div>
+    <div class="gtabs" role="tablist" aria-label="Group">
+      <button class="gtab" role="tab">A</button>
+      <button class="gtab" role="tab">B</button>
+      <button class="gtab" role="tab" aria-selected="true">C</button>
+      <button class="gtab" role="tab">D</button>
+      <button class="gtab" role="tab">E</button>
+      <button class="gtab" role="tab">F</button>
+    </div>
+    <div class="gslots">
+      <div class="gslot"><span class="code">C1</span> To be confirmed</div>
+      <div class="gslot"><span class="code">C2</span> To be confirmed</div>
+      <div class="gslot"><span class="code">C3</span> To be confirmed</div>
+      <div class="gslot"><span class="code">C4</span> To be confirmed</div>
+    </div>
+    <div class="ghead-note"><svg width="14" height="14" style="flex:none;margin-top:1px;color:var(--text-muted)"><use href="#i-info"/></svg> Each slot fills in with the real qualified team the moment UEFA confirms it — nothing for you to do, and every group prediction already made carries over automatically.</div>
+  </section>
+
+  <div class="proto">Prototype — venues, dates and format come from confirmed UEFA sources. Groups pull live from the canonical tournament model, so this page updates itself as qualifying resolves rather than needing a rewrite closer to the tournament.</div>
+</div>
+
+<script>
+document.querySelectorAll('.gtab').forEach(t=>t.addEventListener('click',function(){
+  document.querySelectorAll('.gtab').forEach(x=>x.setAttribute('aria-selected','false'));
+  this.setAttribute('aria-selected','true');
+}));
+let dark=false;
+document.getElementById('themeBtn').addEventListener('click',function(){
+  dark=!dark;
+  if(dark) document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme');
+  document.getElementById('themeIcon').setAttribute('href',dark?'#i-sun':'#i-moon');
+  this.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+});
+</script>
+</body>
+</html>

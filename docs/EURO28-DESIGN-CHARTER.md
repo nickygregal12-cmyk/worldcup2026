@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.9 — information architecture and coherent UI contract recorded
+### Version 1.10 — destination reference split recorded
 
 > **Authority:** This document governs how the Euro 2028 Predictor looks and feels. The Consolidated Decision Register governs product rules. The Agent Rules govern build process. A visual deviation must be proposed here before it ships.
 
@@ -115,10 +115,10 @@ The lifecycle is driven by central competition readiness and canonical resolver 
 
 More is grouped and phase-aware rather than a flat accumulation list.
 
-- Before the tournament: Tournament & how to play, Results, Leaderboards, KO explainer, Account, Appearance, then authorised Admin.
-- During the group stage: Results, Leaderboards, Tournament & how to play, KO explainer, Account, Appearance, then authorised Admin.
-- Early KO access: KO Predictor first, then Results, Leaderboards, Tournament & how to play, Account, Appearance and authorised Admin.
-- Full KO readiness: Group stage review first, then Results, Leaderboards, Tournament & how to play, Account, Appearance and authorised Admin.
+- Before the tournament: Tournament, How to Play, Results, Leaderboards, KO explainer, Account, Appearance, then authorised Admin.
+- During the group stage: Results, Leaderboards, Tournament, How to Play, KO explainer, Account, Appearance, then authorised Admin.
+- Early KO access: KO Predictor first, then Results, Leaderboards, Tournament, How to Play, Account, Appearance and authorised Admin.
+- Full KO readiness: Group stage review first, then Results, Leaderboards, Tournament, How to Play, Account, Appearance and authorised Admin.
 
 Admin is visually separated and never appears for an unauthorised user.
 
@@ -158,6 +158,7 @@ Every shared component supports both themes and its loading, empty, error, disab
 - Upcoming playable/viewable matches order by next real kick-off. Completed results order most-recent-first.
 - Group-stage fixtures support By group and By date views using the same match-card primitive.
 - Tournament rules and displayed point values render from central versioned contracts/configuration rather than duplicated prose.
+- Tournament and How to Play split — CONFIRMED: football tournament reference content and predictor mechanics must not be bundled into one destination.
 
 ### 10A. Information architecture and coherent surfaces — CONFIRMED
 
@@ -165,7 +166,7 @@ Every shared component supports both themes and its loading, empty, error, disab
 - Match Centre, Team Profile, Player Overview, H2H and Bracket Health do not become unrelated permanent navigation items.
 - Unknown routes use an explicit recovery state rather than silently pretending to be Home.
 - Destination labels, descriptions, categories and lifecycle visibility live in one registry.
-- Tournament is a key casual-player destination, not a technical summary page.
+- Tournament is a key casual-player destination for football facts; How to Play is a separate key destination for predictor mechanics, scoring, locks and FAQ.
 - Static Open Graph metadata uses Euro identity assets. Dynamic league previews may expose only the league name and generic product copy.
 - Every Stage 13G build batch re-baselines affected screens at 380, 768 and 1200 pixels in both themes.
 

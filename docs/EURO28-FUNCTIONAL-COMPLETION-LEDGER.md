@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.36 — Stage 16A-P1 synthetic identity plumbing
+### Version 1.37 — Stage 13G destination reference adoption
 
 > **Purpose:** The Decision Register records decisions. This ledger records actual functional state. A stage may not be called complete while an approved item in its scope remains partial, missing or incoherent.
 
@@ -33,6 +33,7 @@
 | Head-to-head comparison | ✅ FUNCTIONAL | League and overall tables open one shared, competition-scoped surface aligning all 51 Original positions or all 15 KO fixtures with same/different/private/not-saved states | — |
 | Tappable player identity | ✅ FUNCTIONAL | One accessible `PlayerIdentity` primitive is used by league standings, overall leaderboards and comparison headers; self identity remains non-interactive | — |
 | Match Centre/per-match stats | ✅ FUNCTIONAL | Dedicated fixture route, previous/next navigation, canonical state, Home/Results entry, separate Original/KO views, Overall/private-league scopes, community distribution and points-on-the-line rows accepted in Stage 13F-C | — |
+| Match Centre group-match upgrade | 🕓 SCHEDULED | Adopt the Match Centre reference in a later focused batch so group matches gain group-impact context, live comparison and points-on-the-line content while knockout bracket impact remains KO-only. | 13G-B-MATCHCENTRE-1 |
 | Bracket Health | ✅ FUNCTIONAL | Immutable Original bracket compared with canonical known fixtures, round health, route conflicts, secured/remaining points, unresolved-original fallback and Match Centre links accepted in Stage 13F-D | — |
 | Tournament-pick contract | ✅ FUNCTIONAL | Contract only: approved Original-only set is total tournament goals, top scorer and highest-scoring team; 20 points each; nearest-total ties and official joint winners receive full points; one global lock; no joker; no KO points. The audit proves this contract and Admin readiness, not a player-facing entry surface. | — |
 | Tournament-pick persistence and player-facing UI | 🟠 PARTIAL | Admin readiness and the contract exist, but ordinary players cannot yet enter total goals, top scorer or highest-scoring team. Build the player surface inside the Original Predictor journey, lock it at the global lock, score via the central ruleset and show the live race on Home during the tournament. Moving this earlier than Stage 17A requires explicit schedule acceptance. | 13G-C / 17A re-approval |
@@ -58,6 +59,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Guest KO access and persistence | ✅ FUNCTIONAL | Available real KO fixtures save in separate browser storage; sign-in preserves the local draft and confirmed account transfer never affects Original Predictor data | — |
 | Guest-to-account transfer | 🟠 PARTIAL | The import engine exists, but the accepted flow is now a dominant one-tap signup prompt using `importGuestPredictionBundle()`: primary action imports predictions to the account and secondary action starts fresh. Signed-in users must never see “browser draft” language. | 13G-C |
 | Signup encouragement | ✅ FUNCTIONAL | Progress-aware account prompts appear in Original and KO guest journeys; Account detects saved browser predictions and offers the safe transfer action | — |
+| Account destination rebuild | 🕓 SCHEDULED | Adopt the Account reference in a later focused batch: useful signed-in Account header/stats, one-time post-sign-in device-prediction modal, scoped clear-Original-predictions danger action before lock, security/preferences rows and confirmed retirement path for dead legacy Profile code. | 13G-ACCOUNT-1 |
 | Manual JSON file controls | 🚫 REJECTED | Removed from the live journey; dormant recovery components were deleted in Stage 13F-H | — |
 | Lucky Dip | ✅ FUNCTIONAL | Groups-only local weighted score generation; fill-empty and confirmed replace-all modes preserve jokers and clear stale bracket picks | — |
 
@@ -68,6 +70,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Server result entry/corrections/recalculation | ✅ FUNCTIONAL | Revision-safe and audit-logged | — |
 | Admin invisible to non-admins | ✅ FUNCTIONAL | Server-authorised discovery and direct-route gate accepted in Stage 13F-E | — |
 | Admin UI fit for purpose | 🟠 PARTIAL | Stage 13G-A route-integrity slice fixes Admin section destinations and removes the Home fall-through. Remaining central configuration and shared interaction primitive work stays scheduled. | 13G-A |
+| Admin cosmetic reference restyle | 🕓 SCHEDULED | Adopt the Admin prototype visual language in a cosmetic-only batch after scope is frozen; no owner/results-admin boundary, Admin operation, audit or Tournament Picks readiness contract may change. | 13G-ADMIN-1 |
 | Admin section destinations and deep links | ✅ FUNCTIONAL | Canonical section registry and query-addressed `#/admin?section=...` destinations keep every section inside the protected Admin route, including invalid-section recovery. | — |
 | Staging Time & Phase controls | ✅ FUNCTIONAL | Owner-only audited shared clock, preset phases, custom time and site-wide warning accepted with approved Migration 016 | — |
 | Profile curation | ✅ FUNCTIONAL | Stage 13E owner editing | — |
@@ -153,7 +156,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Hardwired-data inventory | ✅ FUNCTIONAL | Active production evidence recorded for chronology, stage inference, totals, rules prose, stale Admin values, dates, metadata and primitive bypasses | — |
 | Stage 13G-A route integrity and Admin sections | ✅ FUNCTIONAL | Canonical Admin section registry, query-addressed section destinations, invalid-section recovery, route-render tests and dead-destination audit | — |
 | Stage 13G-A central configuration and shared primitives | ✅ FUNCTIONAL | Central provisional lifecycle config, account autosave unblock, shared confirmation, design-system selector adoption across active surfaces, refresh-policy enforcement and foundation-class ratchet groundwork are proven by audits. | — |
-| Stage 13G-B tournament comprehension and chronology | 🕓 SCHEDULED | Real-time ordering, By group/By date, canonical rules guide, hardwired-data removal and Euro share assets | 13G-B |
+| Stage 13G destination reference adoption | ✅ FUNCTIONAL | Five approved reference artefacts for Tournament, How to Play, Account, Admin and Match Centre are recorded under `docs/reference-prototypes/`, with `audit:stage13g-destination-reference-adoption` wired into `npm run check`. Docs/audit only; no UI, config, scoring, resolver, Supabase write or migration change. | — |
+| Stage 13G-B Tournament / How to Play split and canonical facts | 🕓 SCHEDULED | Amend existing Stage 13G-B in place: split `#/tournament` into Tournament facts and `#/how-to-play` mechanics, correct confirmed Euro 2028 dates/venues/hosts in the canonical source of truth, keep group participants and match-specific kick-offs explicitly unconfirmed, and add a split/facts audit. | 13G-B-TOURNAMENT-1 |
 | Stage 13G-C people, profiles and sharing | 🕓 SCHEDULED | Shared player overview, one-tap invites, static/dynamic previews and synthetic identity preparation | 13G-C |
 | Stage 13G-D seeded whole-surface coherence | 🕓 SCHEDULED | Stage 16 cast, Scotland reference profile, all-screen re-baseline and charter review | 13G-D |
 | Whole-app new-player walk-through | 🕓 SCHEDULED | Owner acceptance after navigating every direct and contextual journey as a casual first-time player | 13G-D |
@@ -184,6 +188,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 
 ## Change log
+
+- **v1.37:** Stage 13G destination reference adoption records the Tournament, How to Play, Account, Admin and Match Centre prototypes plus the build-agent brief under `docs/reference-prototypes/`, amends Stage 13G-B so Tournament/How to Play split and canonical tournament fact correction happen before UI work, sequences Account/Admin/Match Centre as later focused batches, and adds `audit:stage13g-destination-reference-adoption` to `npm run check`. Docs/audit only; active migrations remain 18 and no Migration 019 is created.
 
 - **v1.36:** Stage 16A-P1 completes Privacy-safe synthetic identity plumbing. The repo now has a canonical local catalogue of exactly nineteen personas, reserved `@synthetic.euro28.test` emails, required `synthetic_euro28: true` metadata, dual-marker teardown guards, Euro staging project enforcement and explicit WC26 production blocking. This is no user creation, no database writes, no UI exposure, no scoring/resolver/component change and no Migration 019.
 

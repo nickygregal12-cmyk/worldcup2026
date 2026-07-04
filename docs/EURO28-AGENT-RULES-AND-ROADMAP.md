@@ -343,7 +343,8 @@ Accepted Home/lifecycle slice from `08524b6` adds first-visit/returning guest co
 - real-time chronological match ordering;
 - By group and By date group-stage views using shared match components;
 - By group default before the opening match and By date default once play starts, while respecting manual choice;
-- complete Tournament and how-to-play destination;
+- split Tournament and How to Play into separate More/footer destinations;
+- next scoped implementation: `13G-B-TOURNAMENT-1 — Tournament / How to Play split and canonical tournament fact correction`;
 - all binding rules and values rendered from versioned configuration/contracts;
 - remove active development-era hardwired counts, stages, dates and stale environment copy;
 - replace inherited WC26 share/favicon/icon assets with Euro identity assets.
@@ -997,6 +998,14 @@ Next build order after this reference is recorded:
 The Groups predictor now uses the approved shared joker pill and five-dot joker meter. Future KO joker work must reuse the same `JokerPill` and `JokerMeter` primitives rather than introducing a separate control. The retired bare `J` circle must not return.
 
 Next recommended implementation slice: `13G-GROUPS-2 — Groups view switcher, phase default and context banner implementation`.
+
+## Stage 13G Destination Reference Adoption — accepted docs/audit checkpoint
+
+The approved reference artefacts for Tournament, How to Play, Account, Admin and Match Centre are recorded under `docs/reference-prototypes/` and guarded by `audit:stage13g-destination-reference-adoption`. Treat them as information architecture, content hierarchy, copy register and data-source discipline references only. Do not port prototype HTML, inline CSS, Google fonts, sample data or demo switches into product code.
+
+Next single implementation task: **13G-B-TOURNAMENT-1 — Tournament / How to Play split and canonical tournament fact correction**. Amend existing Stage 13G-B in place before building. Account, Admin and Match Centre are later focused batches and must not be silently bundled into this Tournament split.
+
+No migration, scoring change, resolver change, Supabase write or WC26 production exposure is authorised by the reference adoption. Active migrations must remain 18 and Migration 019 must not be created.
 
 ## Stage 13G-BRACKET-REF — Original Bracket Reference Adoption
 

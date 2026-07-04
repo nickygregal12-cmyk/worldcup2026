@@ -41,7 +41,8 @@ Stage 13G is organised by information-architecture area, not by page. Findings d
 | Leaderboards | `#/leaderboards`; compatibility aliases `#/standings`, `#/rankings` | More, Home competition rank links, Results switcher | Full separate Original or KO standings and points story | Correct destination. Player names must activate one shared player overview. |
 | Match Centre | `#/match-centre?match=<number>`; compatibility alias `#/match` | Fixture, result, points, bracket and comparison links | Everything about one match | Correctly contextual. Ordering and previous/next navigation must use kick-off chronology. |
 | Account | `#/account` | Header account control, More, footer and guest prompts | Sign in, register, recover and manage profile | Repeated access is intentional. |
-| Tournament and how to play | `#/tournament` | More, footer and Home rules link | Understand the tournament and both predictor competitions | Key destination is currently underpowered. It must become the complete casual-player guide. |
+| Tournament | `#/tournament` | More, footer and contextual tournament links | Understand hosts, venues, dates, format and provisional groups | Split required. Tournament owns football facts only and must read from canonical config/source data. |
+| How to Play | `#/how-to-play` | More, footer and Home rules links | Understand the Original Predictor, KO Predictor, scoring, locks, jokers and mechanics FAQ | Split required. Mechanics must render from central rules/config, not copied prose. |
 | Admin | restricted `#/admin` | Authorised More entry and direct route | Operate and safeguard the tournament | Correctly protected. Stage 13F-K must complete the operation set before Stage 13G curation proof. |
 | Not found | New explicit state; no permanent navigation | Invalid direct links only | Understand that a link is invalid and recover safely | Missing. Unknown hashes currently fall silently to Home. |
 
@@ -83,35 +84,38 @@ No sixth mobile position is introduced. Results remains a desktop primary destin
 
 ### 3.2 Before the tournament starts
 
-1. Tournament & how to play
-2. Results
-3. Leaderboards
-4. KO Predictor — coming after the group stage
-5. Account
-6. Appearance
-7. Admin — separate, authorised users only
+1. Tournament
+2. How to Play
+3. Results
+4. Leaderboards
+5. KO Predictor — coming after the group stage
+6. Account
+7. Appearance
+8. Admin — separate, authorised users only
 
-Tournament is first because a new player is still learning the product.
+Tournament is first because a new player is still learning the football context. How to Play is second because a new player then needs the app mechanics. Stage 13G destination reference adoption amends this map so Tournament and How to Play become two separate More/footer destinations rather than one combined page.
 
 ### 3.3 Group stage live, before any complete Round of 16 pairing
 
 1. Results
 2. Leaderboards
-3. Tournament & how to play
-4. KO Predictor — coming after the group stage
-5. Account
-6. Appearance
-7. Admin — separate, authorised users only
+3. Tournament
+4. How to Play
+5. KO Predictor — coming after the group stage
+6. Account
+7. Appearance
+8. Admin — separate, authorised users only
 
 ### 3.4 Early KO access
 
 1. KO Predictor — confirmed fixtures available
 2. Results
 3. Leaderboards
-4. Tournament & how to play
-5. Account
-6. Appearance
-7. Admin — separate, authorised users only
+4. Tournament
+5. How to Play
+6. Account
+7. Appearance
+8. Admin — separate, authorised users only
 
 Groups remains Position 1. Only resolved real knockout fixtures enter the KO workspace.
 
@@ -120,10 +124,11 @@ Groups remains Position 1. Only resolved real knockout fixtures enter the KO wor
 1. Group stage review
 2. Results
 3. Leaderboards
-4. Tournament & how to play
-5. Account
-6. Appearance
-7. Admin — separate, authorised users only
+4. Tournament
+5. How to Play
+6. Account
+7. Appearance
+8. Admin — separate, authorised users only
 
 KO becomes Position 1 only at the already confirmed full readiness boundary.
 
@@ -286,7 +291,8 @@ IA area: how tournament information is ordered and explained.
 - default By group before the opening match;
 - default By date once matches begin;
 - retain the player's manual view preference;
-- rebuild Tournament as a key destination;
+- rebuild Tournament as a key destination for football facts;
+- add How to Play as the separate mechanics, scoring, locks and FAQ destination;
 - tournament facts and venues from canonical sources;
 - rules guide generated from versioned contracts/configuration;
 - hardwired count, stage and date removal;
