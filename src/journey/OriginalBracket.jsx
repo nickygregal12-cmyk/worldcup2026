@@ -3,11 +3,15 @@ import { hasActivePredictionGrace, PREDICTION_COMPETITION_KEY } from '../grace/i
 import { Badge, Icon, PredictionStateBadge, ProgressBar, TeamLabel } from '../design-system/index.jsx'
 import {
   buildOriginalBracketRoundProgress,
+  buildOriginalBracketSurface,
   deriveOriginalBracketMatchState,
-  describeBracketSlot,
-  ORIGINAL_BRACKET_ROUNDS,
   predictedChampion,
 } from './originalBracketPresentationModel.js'
+import styles from './OriginalBracket.module.css'
+
+const REPICK_COPY = 'Re-pick — your tables changed this tie'
+const CONTEXT_COPY = 'Your predicted bracket — built from your predicted tables, never blended with live results'
+const KO_SUBLINE = 'Winner picks only — scores and jokers live in the KO Predictor'
 
 function formatDate(dateValue) {
   if (!dateValue) return 'Date to be confirmed'
@@ -20,6 +24,7 @@ function teamFor(reference, teamId) {
 }
 
 function stateBadge(state) {
+  if (state === 'repick') return { state: 'dirty', label: REPICK_COPY }
   if (state === 'blocked') return { state: 'empty', label: 'Waiting for earlier pick' }
   if (state === 'locked') return { state: 'locked', label: 'Bracket locked' }
   if (state === 'grace') return { state: 'grace', label: 'Grace window active' }
@@ -27,21 +32,119 @@ function stateBadge(state) {
   return { state: 'empty', label: 'Choose a winner' }
 }
 
+function ChampionIdentity({ champion, emptyLabel = 'Pick through to the final', compact = false }) {
+  return champion
+    ? <TeamLabel team={champion} compact={compact} />
+    : <strong className={styles.emptyChampion}>{emptyLabel}</strong>
+}
+
+function OriginalBracketSlot({ slot, disabled, onSelect }) {
+  const className = [
+    styles.slot,
+    'bracket-team-choice',
+    slot.selected ? styles.slotSelected : '',
+    slot.selected ? 'is-selected' : '',
+    slot.unresolved ? styles.slotUnresolved : '',
+  ].filter(Boolean).join(' ')
+  const actionLabel = slot.selected ? 'Selected to advance' : 'Pick to advance'
+
+  return (
+    <div className={className} data-slot-source={slot.sourceCode} data-slot-side={slot.side}>
+      <span className={styles.slotSource}>{slot.sourceCode}</span>
+      {slot.unresolved ? (
+        <span className={styles.placeholderChip}>{slot.placeholderLabel}</span>
+      ) : (
+        <>
+          <TeamLabel team={slot.team} label={slot.label} compact />
+          <button
+            type="button"
+            className={`${styles.slotAction} bracket-team-choice__action`}
+            disabled={disabled}
+            aria-pressed={slot.selected}
+            onClick={() => onSelect(slot.teamId)}
+          >
+            <span>{actionLabel}</span>
+            {slot.selected && <Icon name="check" size={15} />}
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+function OriginalBracketTie({ tie, reference, disabled, state, onChange }) {
+  const badge = stateBadge(state)
+  const staleSelectedTeam = tie.stale ? teamFor(reference, tie.selectedTeamId) : null
+  return (
+    <article
+      className={`${styles.tie} ${styles[`tie${state[0].toUpperCase()}${state.slice(1)}`] ?? ''}`}
+      data-match-number={tie.matchNumber}
+      data-stage={tie.stage}
+      style={{ '--wall-column': tie.wallColumn, '--wall-row': tie.wallRow }}
+    >
+      <div className={styles.tieMeta}>
+        <div><strong>Match {tie.matchNumber}</strong><span>{formatDate(tie.scheduledDate)}</span></div>
+        <PredictionStateBadge state={badge.state} label={badge.label} />
+      </div>
+      {tie.stale && (
+        <div className={styles.repickFlag} role="status">
+          <Icon name="alert" size={14} />
+          <span>{REPICK_COPY}</span>
+          {staleSelectedTeam && <small>Previous pick: {staleSelectedTeam.label}</small>}
+        </div>
+      )}
+      <div className={styles.slotStack}>
+        {tie.slots.map(slot => (
+          <OriginalBracketSlot
+            key={slot.side}
+            slot={slot}
+            disabled={disabled || slot.unresolved}
+            onSelect={teamId => onChange(tie, slot.selected ? null : teamId)}
+          />
+        ))}
+      </div>
+      {tie.winnerTeamId && !tie.stale && (
+        <div className={styles.winnerLine}>
+          <Icon name="chevron" size={16} /><span>{teamFor(reference, tie.winnerTeamId)?.label ?? 'Selected team'} progresses</span>
+        </div>
+      )}
+    </article>
+  )
+}
+
+function WallChampionBox({ champion }) {
+  return (
+    <aside className={styles.wallChampion} aria-label="Predicted champion">
+      <span>Champion</span>
+      <ChampionIdentity champion={champion} emptyLabel="Pick your final" compact />
+    </aside>
+  )
+}
+
 export default function OriginalBracket({ reference, draft, preview, contentLocked, reviewMode, graceWindows, onChange }) {
   const progress = buildOriginalBracketRoundProgress(preview)
   const champion = predictedChampion(preview, reference)
   const completed = progress.reduce((total, round) => total + round.complete, 0)
+  const surface = buildOriginalBracketSurface({ reference, draft, preview })
 
   return (
-    <section className="original-bracket" aria-labelledby="original-bracket-heading">
+    <section className={styles.bracket} aria-labelledby="original-bracket-heading">
       <div className="knockout-context knockout-context--predicted">
         <div className="knockout-context__icon"><Icon name="bracket" size={24} /></div>
         <div>
           <span>Predicted context</span>
           <h2 id="original-bracket-heading">Your permanent pre-tournament bracket</h2>
-          <p>This is part of the Original Predictor. Pick only who advances—there are no scores, methods or jokers here.</p>
+          <p>{CONTEXT_COPY}</p>
         </div>
         <Badge tone="info" icon="bracket">Original Predictor</Badge>
+      </div>
+
+      <div className={styles.championStrip}>
+        <div>
+          <span>Your champion</span>
+          <ChampionIdentity champion={champion} />
+        </div>
+        <small>{KO_SUBLINE}</small>
       </div>
 
       <div className="knockout-summary-grid">
@@ -52,13 +155,13 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
         </article>
         <article className="knockout-summary-card knockout-summary-card--champion">
           <span>Predicted champion</span>
-          {champion ? <TeamLabel team={champion} /> : <strong>Not selected yet</strong>}
+          <ChampionIdentity champion={champion} emptyLabel="Not selected yet" compact />
           <small>The final winner becomes your predicted champion.</small>
         </article>
         <article className="knockout-summary-card">
           <span>Scoring boundary</span>
           <strong>0 bracket jokers</strong>
-          <small>Progression points only. KO Predictor points never enter this total.</small>
+          <small>Pick only who advances. No scores or methods are stored here.</small>
         </article>
       </div>
 
@@ -70,67 +173,45 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
         ))}
       </nav>
 
-      <div className="original-bracket__rounds">
-        {ORIGINAL_BRACKET_ROUNDS.map(round => {
-          const matches = preview.resolution.knockout.matches.filter(match => match.stage === round.key)
-          return (
-            <section className="original-bracket__round" id={`bracket-${round.key}`} key={round.key}>
-              <header>
-                <div><span>{round.shortLabel}</span><h3>{round.label}</h3></div>
-                <small>{matches.filter(match => match.decisionResolved).length}/{matches.length} selected</small>
-              </header>
-              <div className="original-bracket__matches">
-                {matches.map(match => {
-                  const row = draft.bracketPredictions[String(match.matchNumber)]
-                  const referenceMatch = reference.knockoutMatches.find(item => item.matchNumber === match.matchNumber)
-                  const hasGrace = hasActivePredictionGrace(graceWindows, {
-                    competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
-                    matchId: referenceMatch?.matchId,
-                  })
-                  const disabled = reviewMode || (contentLocked && !hasGrace) || !match.participantsResolved
-                  const state = deriveOriginalBracketMatchState({ participantsResolved: match.participantsResolved, selectedTeamId: row.advancingTeamId, disabled, hasGrace })
-                  const badge = stateBadge(state)
-                  return (
-                    <article className={`original-bracket-match original-bracket-match--${state}`} key={match.matchNumber}>
-                      <div className="original-bracket-match__meta">
-                        <div><strong>Match {match.matchNumber}</strong><span>{formatDate(referenceMatch?.scheduledDate)}</span></div>
-                        <PredictionStateBadge state={badge.state} label={badge.label} />
-                      </div>
-                      <div className="original-bracket-match__teams">
-                        {[['home', match.homeTeamId, match.home], ['away', match.awayTeamId, match.away]].map(([side, teamId, slot]) => {
-                          const selected = row.advancingTeamId === teamId && Boolean(teamId)
-                          const team = teamFor(reference, teamId)
-                          return (
-                            <div
-                              key={side}
-                              className={selected ? 'bracket-team-choice is-selected' : 'bracket-team-choice'}
-                            >
-                              <TeamLabel team={team} label={team?.label ?? describeBracketSlot(slot)} unresolved={!teamId} compact />
-                              <button
-                                type="button"
-                                className="bracket-team-choice__action"
-                                disabled={disabled || !teamId}
-                                aria-pressed={selected}
-                                onClick={() => onChange(match, selected ? null : teamId)}
-                              >
-                                {selected ? 'Selected to advance' : teamId ? 'Pick to advance' : 'Not resolved'}
-                              </button>
-                            </div>
-                          )
-                        })}
-                      </div>
-                      {match.winnerTeamId && (
-                        <div className="original-bracket-match__winner">
-                          <Icon name="chevron" size={16} /><span>{teamFor(reference, match.winnerTeamId)?.label ?? 'Selected team'} progresses</span>
-                        </div>
-                      )}
-                    </article>
-                  )
-                })}
-              </div>
-            </section>
-          )
-        })}
+      <div className={styles.wallLabels} aria-hidden="true">
+        {surface.wallColumns.map(column => <span key={column.key} style={{ '--wall-column': column.column }}>{column.shortLabel}</span>)}
+      </div>
+
+      <div className={styles.rounds} aria-label="Wall chart bracket">
+        {surface.rounds.map(round => (
+          <section className={styles.round} id={`bracket-${round.key}`} key={round.key}>
+            <header className={styles.roundHeader}>
+              <div><span>{round.shortLabel}</span><h3>{round.label}</h3></div>
+              <small>{round.complete}/{round.total} picked</small>
+            </header>
+            {round.ties.map(tie => {
+              const referenceMatch = reference.knockoutMatches.find(item => item.matchNumber === tie.matchNumber)
+              const hasGrace = hasActivePredictionGrace(graceWindows, {
+                competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
+                matchId: referenceMatch?.matchId,
+              })
+              const disabled = reviewMode || (contentLocked && !hasGrace) || !tie.participantsResolved
+              const state = deriveOriginalBracketMatchState({
+                participantsResolved: tie.participantsResolved,
+                selectedTeamId: tie.stale ? null : tie.selectedTeamId,
+                disabled,
+                hasGrace,
+                stale: tie.stale,
+              })
+              return (
+                <OriginalBracketTie
+                  key={tie.matchNumber}
+                  tie={tie}
+                  reference={reference}
+                  disabled={disabled}
+                  state={state}
+                  onChange={onChange}
+                />
+              )
+            })}
+          </section>
+        ))}
+        <WallChampionBox champion={champion} />
       </div>
     </section>
   )

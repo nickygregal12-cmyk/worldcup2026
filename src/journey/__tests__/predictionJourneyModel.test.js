@@ -5,6 +5,7 @@ import { PREDICTION_ROW_KIND } from '../../contracts/predictionDatabaseContract.
 import {
   buildOriginalPredictionLifecycle,
   buildPredictionJourneyRows,
+  clearDisconnectedBracketSelections,
   clearStaleBracketSelections,
   createPredictionJourneyDraft,
   summarisePredictionJourney,
@@ -151,6 +152,25 @@ describe('prediction journey model', () => {
     expect(rows.filter(row => row.prediction_kind === PREDICTION_ROW_KIND.GROUP_SCORE)).toHaveLength(36)
     expect(rows.filter(row => row.prediction_kind === PREDICTION_ROW_KIND.BRACKET_PICK)).toHaveLength(15)
     expect(rows.slice(36).every(row => row.home_score_90 === null && row.joker_applied === false)).toBe(true)
+  })
+
+
+
+  it('clears only downstream picks no longer fed after an upstream bracket change', () => {
+    const reference = buildGuestReference()
+    let draft = completeTournament(reference)
+    const before = summarisePredictionJourney(reference, draft)
+    const survivingSemiPick = draft.bracketPredictions['49'].advancingTeamId
+    const match45 = before.preview.resolution.knockout.byMatchNumber[45]
+
+    draft = updatePredictionJourneyBracket(draft, match45, match45.awayTeamId)
+    const pruned = clearDisconnectedBracketSelections(reference, draft, { changedMatchNumber: 45 })
+    const after = summarisePredictionJourney(reference, pruned)
+
+    expect(after.preview.diagnostics).toEqual([])
+    expect(pruned.bracketPredictions['46'].advancingTeamId).toBe(before.preview.resolution.knockout.byMatchNumber[46].winnerTeamId)
+    expect(pruned.bracketPredictions['49'].advancingTeamId).not.toBe(survivingSemiPick)
+    expect(pruned.bracketPredictions['50'].advancingTeamId).toBe(before.preview.resolution.knockout.byMatchNumber[50].winnerTeamId)
   })
 
   it('clears downstream bracket selections that become stale', () => {

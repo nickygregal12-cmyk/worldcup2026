@@ -91,6 +91,30 @@ export function updatePredictionJourneyBracket(draft, match, advancingTeamId, op
   }, options)
 }
 
+export function clearDisconnectedBracketSelections(reference, draft, { changedMatchNumber = 36, now } = {}) {
+  let next = draft
+  let changed = true
+
+  while (changed) {
+    changed = false
+    const preview = resolveGuestTournamentPreview(reference, next)
+    for (const match of preview.resolution.knockout.matches) {
+      if (match.matchNumber <= changedMatchNumber) continue
+      const row = next.bracketPredictions[String(match.matchNumber)]
+      if (!row?.advancingTeamId) continue
+      const stillFed = match.participantsResolved && [match.homeTeamId, match.awayTeamId].includes(row.advancingTeamId)
+      if (stillFed) continue
+      next = updateGuestBracketPrediction(next, {
+        matchNumber: match.matchNumber,
+        advancingTeamId: null,
+      }, { now })
+      changed = true
+    }
+  }
+
+  return next
+}
+
 // Compatibility alias while Stage 7 callers are replaced.
 export const updatePredictionJourneyKnockout = (draft, match, patch, options) => (
   updatePredictionJourneyBracket(draft, match, patch?.advancingTeamId ?? null, options)

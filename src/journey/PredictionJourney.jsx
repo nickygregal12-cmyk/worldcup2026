@@ -4,7 +4,7 @@ import { importGuestDraftToAccount, loadMyPredictionBundle, saveMyPredictionBund
 import { GUEST_STATE_UPDATED_EVENT, PREDICTION_SAVE_SOURCE } from '../predictions/predictionSaveConfig.js'
 import { hasActivePredictionGrace, isPredictionMatchStarted, loadMyPredictionGraceWindows, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import { PREDICTION_AUTOSAVE_DELAY_MS, PREDICTION_AUTOSAVE_STATE, PREDICTION_JOURNEY_VIEW } from './predictionJourneyConfig.js'
-import { buildOriginalPredictionLifecycle, buildPredictionJourneyRows, clearStaleBracketSelections, createPredictionJourneyDraft, summarisePredictionJourney, updatePredictionJourneyGroup, updatePredictionJourneyBracket } from './predictionJourneyModel.js'
+import { buildOriginalPredictionLifecycle, buildPredictionJourneyRows, clearDisconnectedBracketSelections, clearStaleBracketSelections, createPredictionJourneyDraft, summarisePredictionJourney, updatePredictionJourneyGroup, updatePredictionJourneyBracket } from './predictionJourneyModel.js'
 import { applyEuroLuckyDip } from './euroLuckyDip.js'
 import PredictionJourneyView from './PredictionJourneyView.jsx'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
@@ -237,7 +237,11 @@ export default function PredictionJourney({ client, reference, tournament, initi
       matchId: referenceMatch?.matchId,
     })
     if (locked && !hasGrace) return
-    applyDraftUpdate(current => updatePredictionJourneyBracket(current, match, advancingTeamId))
+    applyDraftUpdate(current => clearDisconnectedBracketSelections(
+      reference,
+      updatePredictionJourneyBracket(current, match, advancingTeamId),
+      { changedMatchNumber: match.matchNumber },
+    ))
   }
 
   async function importGuestDraft() {

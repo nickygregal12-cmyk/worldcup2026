@@ -1016,3 +1016,12 @@ Recorded decisions: below 900px stacked layout with per-round pick counters; at 
 Owner sign-off for open decisions: first build proceeds without connector lines; share-card rendering lands in its own follow-on batch; one 900px breakpoint is retained with no intermediate tablet layout unless real-device review proves need.
 
 Scope: no UI build, no route implementation, no scoring change, no resolver change, no Supabase write and no migration. Active migrations remain 18 and Migration 019 must not exist.
+
+
+## Stage 13G-BRACKET-1 — Original Bracket Responsive Wall-Chart Rebuild
+
+Stage 13G-BRACKET-1 implements the approved Original Bracket reference adoption after `b7a8956 Record Stage 13G Bracket reference`. The first Bracket build includes both the stacked vertical layout below 900px and the converging wall chart at 900px and above, so the previously split BRACKET-1/BRACKET-2 schedule is consolidated into this single scoped implementation batch.
+
+Implementation rules recorded: one rendered bracket surface, one shared `OriginalBracketTie` primitive, one shared `OriginalBracketSlot` primitive, source-code labels on every slot, centred champion box on the wall chart, no connector lines, share-card rendering still follow-on, and no score inputs, method controls or joker controls.
+
+The stale-pick rule is implemented as presentation plus state handling: ties whose stored pick no longer matches either feeding slot show `Re-pick — your tables changed this tie`; upstream bracket changes clear only downstream picks that are no longer fed while preserving surviving downstream picks. Active migrations remain 18. No Migration 019.

@@ -378,3 +378,13 @@ Active migrations remain 18. No Migration 019.
 | Tablet band | SIGNED OFF / SINGLE BREAKPOINT | Keep one 900px breakpoint; no silent third layout. |
 
 Active migrations remain 18. Migration 019 is not created.
+
+
+## Stage 13G-BRACKET-1 — Original Bracket Responsive Wall-Chart Rebuild
+
+| Row | Status | Record |
+| --- | ---: | --- |
+| Stage 13G-BRACKET-1 — Original Bracket responsive stacked/wall-chart rebuild | IMPLEMENTED / LOCAL ACCEPTANCE REQUIRED | Rebuilds the Original Bracket with stacked vertical layout below 900px and converging wall chart at 900px and above, using shared `OriginalBracketTie` and `OriginalBracketSlot` primitives. |
+| Original Bracket source-code slot anatomy | IMPLEMENTED / TESTED | Slots show source references including `1A`, `2B`, `3ABCD` and match-winner `W39` style references. Resolved slots keep `TeamLabel` identity plus separate progression action; unresolved slots are dashed placeholders. |
+| Original Bracket re-pick treatment | IMPLEMENTED / TESTED | Stale stored picks render amber treatment with exact flag `Re-pick — your tables changed this tie`; bracket-pick changes prune only downstream picks no longer fed. |
+| Original Bracket control absence | IMPLEMENTED / AUDITED | Original Bracket remains winner-only with no score inputs, method controls or joker controls. Active migrations remain 18 and no Migration 019 is created. |

@@ -1011,3 +1011,10 @@ Owner sign-off for open decisions: first build proceeds without connector lines;
 Scope: no UI build, no route implementation, no scoring change, no resolver change, no Supabase write and no migration. Active migrations remain 18 and Migration 019 must not exist.
 
 Next single task after this docs/audit package: 13G-BRACKET-1 — Original Bracket responsive stacked/wall-chart rebuild with shared tie/slot primitives.
+
+
+## Stage 13G-BRACKET-1 — Original Bracket Responsive Wall-Chart Rebuild
+
+Next-agent checkpoint: Stage 13G-BRACKET-1 now implements the approved Original Bracket stacked/wall-chart rebuild. Treat the Original Bracket as a winner-only Original Predictor surface using one `OriginalBracketTie` and one `OriginalBracketSlot` primitive set across the single 900px breakpoint. Do not reintroduce layout-specific business logic, connector lines, score inputs, method controls or joker controls.
+
+Acceptance must include `npm run audit:stage13g-bracket-responsive-wallchart`, the existing Bracket reference audit, frontend architecture audit, full check, build and deployed foundation verification. Active migrations remain 18 and Migration 019 must not be created unless a genuine schema/read-contract gap is proved.
