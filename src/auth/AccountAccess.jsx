@@ -149,7 +149,7 @@ export default function AccountAccess({ client, reference }) {
 
       await signInWithEmail(client, { email, password })
       setPassword('')
-      setNotice({ tone: 'safe', message: 'Signed in successfully. Any browser predictions are still safe on this device.' })
+      setNotice({ tone: 'safe', message: 'Signed in successfully. Any saved device predictions are ready to import to this account.' })
     })
   }
 
@@ -177,7 +177,7 @@ export default function AccountAccess({ client, reference }) {
       setNotice({
         tone: 'safe',
         message: result.session
-          ? 'Account created and signed in. Any saved browser predictions are ready to add to this account.'
+          ? 'Account created and signed in. Any saved device predictions are ready to import to this account.'
           : 'Account created. Check your email to confirm it before signing in.',
       })
     })
@@ -221,7 +221,7 @@ export default function AccountAccess({ client, reference }) {
   const confirmSignOut = () => run(async () => {
     await signOut(client)
     setSignOutConfirmOpen(false)
-    setNotice({ tone: 'safe', message: 'Signed out. The browser-only guest draft was not removed.' })
+    setNotice({ tone: 'safe', message: 'Signed out. Guest predictions saved on this device were not removed.' })
   })
 
   if (loadingSession) {
@@ -246,7 +246,7 @@ export default function AccountAccess({ client, reference }) {
           onConfirm={confirmSignOut}
           onCancel={() => setSignOutConfirmOpen(false)}
         >
-          Your browser-only guest draft stays on this device. Account predictions already saved to staging remain attached to your account.
+          Guest predictions saved on this device stay here. Account predictions already saved to staging remain attached to your account.
         </ConfirmDialog>
         <div className="foundation-section-heading auth-foundation__heading">
           <div>
@@ -293,7 +293,7 @@ export default function AccountAccess({ client, reference }) {
           <span className="foundation-kicker">Euro account</span>
           <h2>{isRecovery ? 'Choose a new password' : 'Create or access your Euro account'}</h2>
           <p className="foundation-panel-copy">
-            Your guest draft remains browser-only. Signing in does not upload, replace or clear it.
+            Your guest draft stays on this device. Signing in does not upload, replace or clear it.
           </p>
         </div>
       </div>

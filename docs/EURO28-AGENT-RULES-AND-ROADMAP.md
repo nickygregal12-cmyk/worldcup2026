@@ -634,3 +634,13 @@ From checkpoint `5c9f415`, update the governing documents before the next produc
 - Tournament Picks player-facing entry remains a schedule decision and is not moved into H2. If moved earlier, it must stay Original-only with no jokers and no KO Predictor points.
 - Guest signup import prompt and signed-in copy sweep are the recommended next tight product build.
 - No route, component, scoring, resolver, database or migration change. Active migrations remain 18 and no Migration 019 is created.
+
+
+### Stage 13G-C1 guest import prompt — ACCEPTED
+- Signed-in guest import uses the accepted dominant prompt: “Import your saved Euro 2028 predictions?”
+- Helper copy explains that group scores, bracket picks and/or a KO Predictor draft were found on this device.
+- Primary action is “Import predictions to my account”.
+- Secondary action is “Start fresh” and clears the saved device-side guest draft without writing to the database.
+- Signed-in import/account copy avoids “browser draft”, “browser copy” and “browser predictions” wording.
+- Original Predictor and KO Predictor import readiness remain separate and do not blend points, totals, jokers or leaderboards.
+- No route, scoring, resolver, league, admin, database policy or migration change. Active migrations remain 18 and no Migration 019 is created.

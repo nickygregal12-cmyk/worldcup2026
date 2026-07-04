@@ -171,6 +171,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Size governance clarification | ✅ FUNCTIONAL | The Charter records 200/250 as review guidance and 400/400 as enforced hard caps. Test fixtures now share the hard cap, with the one current over-cap fixture ledgered and ratcheted. | — |
 | Bottom nav alignment wording | ✅ FUNCTIONAL | Charter clarifies that the centred Home circle overlaps slightly above the bar top line while all five icons and labels remain vertically aligned. | — |
 | Stage 13G-H2 product-facing alignment | ✅ FUNCTIONAL | Official UEFA EURO 2028 logo is rejected as a deployable asset without permission; leagues reference patterns are evaluated before build; player routes, Tournament Picks entry and guest import are sequenced without changing routes, scoring, resolver or database state. | — |
+| Stage 13G-C1 guest import prompt | ✅ FUNCTIONAL | Signed-in guest import now uses the accepted one-tap prompt, device-only copy, Import predictions to my account and Start fresh actions while preserving separate Original Predictor and KO Predictor import boundaries. | — |
 | Home theme compliance sweep | 🕓 SCHEDULED | Audit every Home element in light and dark themes and fix through semantic tokens. | 13G-E |
 | Debug/developer strip removal | 🕓 SCHEDULED | Version strings, row counters and lock mechanics such as account autosave/debug strips must not be user-facing copy. | 13G-H1 |
 | Signed-in copy and signup import flow | 🕓 SCHEDULED | Signed-in users never see “browser draft”; signup shows one dominant import prompt with Import to account / Start fresh choices. | 13G-C |
@@ -182,6 +183,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 
 
 ## Change log
+- **v1.34:** Stage 13G-C1 guest import prompt updates the signed-in import surface to “Import your saved Euro 2028 predictions?”, adds the accepted primary and secondary actions, replaces internal browser-draft copy with device wording, and preserves separate Original Predictor and KO Predictor import boundaries. No database change; active migrations remain 18 with no Migration 019.
 
 - **v1.33:** Stage 13G-H2 product-facing alignment rejects the official UEFA EURO 2028 logo as a deployable asset without explicit permission, evaluates leagues reference patterns as adopt-improved/adapt/drop before build, keeps Tournament Picks player entry as a schedule decision, records the dedicated player route direction and recommends guest import copy as the next tight build. No route, component, scoring, resolver, database or migration change; active migrations remain 18 with no Migration 019.
 

@@ -194,7 +194,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
     guestTransferMode,
   ])
 
-  function persistGuest(nextDraft, message = 'Saved in this browser.') {
+  function persistGuest(nextDraft, message = 'Saved on this device.') {
     const result = guestStorage.save(nextDraft)
     setGuestDraft(nextDraft)
     globalThis.dispatchEvent?.(new Event(GUEST_STATE_UPDATED_EVENT))
@@ -246,7 +246,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
     setNotice(null)
     try {
       const guestSummary = summarisePredictionJourney(reference, guestDraft)
-      if (!guestSummary.canSubmit) throw new Error('Complete all 51 browser predictions before importing them to the account.')
+      if (!guestSummary.canSubmit) throw new Error('Complete all 51 device predictions before importing them to the account.')
       const result = await importGuestDraftToAccount(client, {
         reference,
         state: guestDraft,
@@ -260,7 +260,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
       globalThis.dispatchEvent?.(new Event(GUEST_STATE_UPDATED_EVENT))
       setNotice({
         tone: 'safe',
-        message: `Imported all ${result.savedPredictionCount} browser predictions into the account at revision ${result.revision}.`,
+        message: `Imported all ${result.savedPredictionCount} device predictions into the account at revision ${result.revision}.`,
       })
     } catch (error) {
       setNotice({ tone: 'danger', message: messageForError(error) })

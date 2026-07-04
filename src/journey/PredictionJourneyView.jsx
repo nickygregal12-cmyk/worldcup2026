@@ -11,9 +11,9 @@ import { EURO28_PREDICTION_JOURNEY_VERSION, PREDICTION_AUTOSAVE_STATE, PREDICTIO
 function AutosaveBadge({ context, status, revision, savedAt }) {
   let label = 'Ready'
   if (context === 'guest') {
-    label = 'Saved in this browser'
+    label = 'Saved on this device'
   } else if (context === 'guest-transfer') {
-    label = 'Browser draft · ready to transfer'
+    label = 'Device draft · ready to transfer'
   } else if (status === PREDICTION_AUTOSAVE_STATE.SAVING) {
     label = 'Saving…'
   } else if (status === PREDICTION_AUTOSAVE_STATE.DIRTY) {
@@ -74,7 +74,7 @@ export default function PredictionJourneyView({
           <span style={{ width: `${Math.round((summary.totalComplete / 51) * 100)}%` }} />
         </div>
         <div>
-          <span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved browser draft' : 'Guest workspace'}</span>
+          <span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved device draft' : 'Guest workspace'}</span>
           <strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong>
         </div>
       </div>
@@ -105,8 +105,8 @@ export default function PredictionJourneyView({
       {guestTransferMode && accountRows === 0 && (
         <div className="journey-import-strip">
           <div>
-            <strong>Browser draft: {guestSummary.totalComplete}/51 complete</strong>
-            <span>Keep editing this saved browser draft. Once all 51 selections are complete, one tap moves it into your account.</span>
+            <strong>Device draft: {guestSummary.totalComplete}/51 complete</strong>
+            <span>Keep editing this saved device draft. Once all 51 selections are complete, one tap imports it into your account.</span>
           </div>
           <button type="button" onClick={importGuestDraft} disabled={!canImportGuest || busy}>
             {busy ? 'Adding…' : 'Add completed draft to account'}
@@ -224,7 +224,7 @@ export default function PredictionJourneyView({
 
       {!lockConfigured && (
         <p className="guest-notice guest-notice--warning">
-          Account autosave is intentionally blocked until the prediction lock is configured. Guest browser saving still works.
+          Account autosave is intentionally blocked until the prediction lock is configured. Guest device saving still works.
         </p>
       )}
       {lifecycle?.provisional && (

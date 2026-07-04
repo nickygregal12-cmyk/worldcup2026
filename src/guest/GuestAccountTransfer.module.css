@@ -16,6 +16,12 @@
   display: block;
 }
 
+.actions {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
 .heading span {
   color: var(--brand-strong);
   font-size: var(--text-xs);
@@ -86,5 +92,13 @@
   .heading {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+
+  .actions button {
+    width: 100%;
   }
 }

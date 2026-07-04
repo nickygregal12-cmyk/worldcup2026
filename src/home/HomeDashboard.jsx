@@ -162,7 +162,7 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
   const heroPrompt = dashboard.signedIn
     ? 'Your Original Predictor and KO Predictor are tracked separately, with their own points, jokers and leaderboards.'
     : dashboard.original.totalComplete > 0
-      ? 'Your browser draft is underway. Create an account when you are ready to protect it and join leagues.'
+      ? 'Your device draft is underway. Create an account when you are ready to protect it and join leagues.'
       : 'Start as a guest, build the full predictor, then create an account when you are ready to save it online.'
 
   return (

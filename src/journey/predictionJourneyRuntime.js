@@ -14,7 +14,7 @@ export function messageForError(error) {
   if (/revision is stale/i.test(message)) return 'These predictions changed in another session. Reload the account draft before editing again.'
   if (/globally locked/i.test(message) || /global lock/i.test(message)) return 'Prediction content is locked for the tournament.'
   if (/joker cap/i.test(message)) return 'The configured joker limit has been reached.'
-  if (/guest import cannot overwrite/i.test(message)) return 'This account already contains predictions, so the browser draft was not imported.'
+  if (/guest import cannot overwrite/i.test(message)) return 'This account already contains predictions, so the device draft was not imported.'
   return message
 }
 

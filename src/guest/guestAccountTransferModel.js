@@ -1,6 +1,39 @@
 import { resolveGuestTournamentPreview } from './guestTournamentPreview.js'
 import { summariseGuestKoPredictionState } from './guestKoPredictionStorage.js'
 
+export const GUEST_IMPORT_PROMPT_COPY = Object.freeze({
+  heading: 'Import your saved Euro 2028 predictions?',
+  primaryAction: 'Import predictions to my account',
+  secondaryAction: 'Start fresh',
+})
+
+function formatList(items) {
+  if (items.length === 0) return ''
+  if (items.length === 1) return items[0]
+  if (items.length === 2) return `${items[0]} and ${items[1]}`
+  return `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
+}
+
+export function buildGuestAccountTransferPrompt(summary) {
+  const found = []
+  if (summary?.hasOriginal) {
+    found.push('group scores')
+    found.push('bracket picks')
+  }
+  if (summary?.hasKo) found.push('a KO Predictor draft')
+
+  const foundCopy = found.length
+    ? `We found ${formatList(found)} on this device.`
+    : 'No saved Euro 2028 predictions were found on this device.'
+
+  return Object.freeze({
+    heading: GUEST_IMPORT_PROMPT_COPY.heading,
+    helper: `${foundCopy} Choose whether to import them to this account or start fresh.`,
+    primaryAction: GUEST_IMPORT_PROMPT_COPY.primaryAction,
+    secondaryAction: GUEST_IMPORT_PROMPT_COPY.secondaryAction,
+  })
+}
+
 export function countTouchedOriginalRows(state) {
   if (!state) return 0
   const groups = Object.values(state.groupPredictions ?? {}).filter(row => (

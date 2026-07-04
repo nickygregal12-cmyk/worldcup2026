@@ -36,7 +36,7 @@ for (const marker of [
 const journeyView = read('src/journey/PredictionJourneyView.jsx')
 for (const marker of [
   'GuestAccountPrompt',
-  'Keep editing this saved browser draft',
+  'Keep editing this saved device draft',
   'Add completed draft to account',
   'onLuckyDip={runLuckyDip}',
 ]) if (!journeyView.includes(marker)) fail(`Original guest presentation is missing: ${marker}`)
@@ -45,7 +45,7 @@ for (const forbidden of ['Export JSON', 'Import JSON', 'guest-import-button']) {
 }
 
 const auth = read('src/auth/AccountAccess.jsx')
-for (const marker of ['GuestAccountTransfer', 'Any saved browser predictions are ready to add to this account']) {
+for (const marker of ['GuestAccountTransfer', 'Any saved device predictions are ready to import to this account']) {
   if (!auth.includes(marker)) fail(`Account conversion journey is missing: ${marker}`)
 }
 if (auth.includes('through Stage 6')) fail('Account copy still exposes Stage 6 development wording')

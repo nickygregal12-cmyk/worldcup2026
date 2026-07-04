@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ALL_HOME_KNOCKOUT, buildGuestReference, COMPLETE_GROUP_SCORES } from './fixtures.js'
 import { createGuestPredictionState } from '../guestPredictionState.js'
 import { createGuestKoPredictionState, updateGuestKoPredictionState } from '../guestKoPredictionStorage.js'
-import { buildGuestAccountTransferSummary } from '../guestAccountTransferModel.js'
+import { buildGuestAccountTransferPrompt, buildGuestAccountTransferSummary } from '../guestAccountTransferModel.js'
 import { updatePredictionJourneyBracket, updatePredictionJourneyGroup } from '../../journey/predictionJourneyModel.js'
 import { resolveGuestTournamentPreview } from '../guestTournamentPreview.js'
 
@@ -54,7 +54,7 @@ describe('guest account transfer summary', () => {
     expect(summary).toMatchObject({ canImportOriginal: false, canImportKo: false, transferable: false })
   })
 
-  it('retains an incomplete browser draft until it is ready', () => {
+  it('retains an incomplete device draft until it is ready', () => {
     const reference = withResolvedKo(buildGuestReference())
     let originalState = createGuestPredictionState(reference)
     originalState = updatePredictionJourneyGroup(originalState, { matchNumber: 1, homeScore: 1, awayScore: 1 })
@@ -63,4 +63,21 @@ describe('guest account transfer summary', () => {
     expect(summary.canImportOriginal).toBe(false)
     expect(summary.originalCompleteness.remaining).toBe(50)
   })
+
+  it('builds the accepted signed-in import prompt copy for combined Original and KO drafts', () => {
+    const prompt = buildGuestAccountTransferPrompt({ hasOriginal: true, hasKo: true })
+    expect(prompt).toMatchObject({
+      heading: 'Import your saved Euro 2028 predictions?',
+      helper: 'We found group scores, bracket picks and a KO Predictor draft on this device. Choose whether to import them to this account or start fresh.',
+      primaryAction: 'Import predictions to my account',
+      secondaryAction: 'Start fresh',
+    })
+  })
+
+  it('builds device-only helper copy when only a KO Predictor draft exists', () => {
+    const prompt = buildGuestAccountTransferPrompt({ hasOriginal: false, hasKo: true })
+    expect(prompt.helper).toBe('We found a KO Predictor draft on this device. Choose whether to import them to this account or start fresh.')
+    expect(prompt.helper).not.toMatch(/browser draft|browser copy/i)
+  })
+
 })

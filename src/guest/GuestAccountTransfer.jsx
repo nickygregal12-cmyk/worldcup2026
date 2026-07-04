@@ -6,23 +6,48 @@ import { importGuestDraftToAccount, loadMyPredictionBundle } from '../prediction
 import { GUEST_STATE_UPDATED_EVENT } from '../predictions/predictionSaveConfig.js'
 import { createGuestPredictionStorage } from './guestPredictionStorage.js'
 import { createGuestKoPredictionStorage } from './guestKoPredictionStorage.js'
-import { buildGuestAccountTransferSummary } from './guestAccountTransferModel.js'
+import { buildGuestAccountTransferPrompt, buildGuestAccountTransferSummary } from './guestAccountTransferModel.js'
+import { browserStorage, koStatus, messageForError, originalStatus } from './guestAccountTransferPresentation.js'
 import styles from './GuestAccountTransfer.module.css'
 
-function browserStorage() {
-  try {
-    return globalThis.localStorage ?? null
-  } catch {
-    return null
-  }
-}
 
-function messageForError(error) {
-  const message = error instanceof Error ? error.message : String(error)
-  if (/guest import cannot overwrite/i.test(message)) return 'This account already contains Original Predictor entries, so the browser copy was left untouched.'
-  if (/globally locked|global lock/i.test(message)) return 'The Original Predictor is locked, so the browser copy cannot be transferred.'
-  if (/revision/i.test(message)) return 'The account changed while the transfer was running. Reload and try again.'
-  return message
+export function GuestAccountTransferPanel({ snapshot, prompt, busy, notice, transfer, startFresh }) {
+  return (
+    <Card className={styles.card} aria-labelledby="guest-transfer-heading">
+      <div className={styles.heading}>
+        <div>
+          <span>Saved on this device</span>
+          <h3 id="guest-transfer-heading">{prompt.heading}</h3>
+          <p>{prompt.helper}</p>
+        </div>
+        <div className={styles.actions}>
+          <Button onClick={transfer} loading={busy} disabled={!snapshot.transferable}>{prompt.primaryAction}</Button>
+          <Button type="button" variant="secondary" onClick={startFresh} disabled={busy}>{prompt.secondaryAction}</Button>
+        </div>
+      </div>
+
+      <div className={styles.rows}>
+        {snapshot.hasOriginal && (
+          <div>
+            <strong>Original Predictor</strong>
+            <span>{snapshot.originalCompleteness.complete}/51 complete</span>
+            <small>{originalStatus(snapshot)}</small>
+            {!snapshot.originalCompleteness.readyForAccountImport && !snapshot.accountOriginal && <LinkButton href="#/groups" variant="secondary" size="small">Continue Original Predictor</LinkButton>}
+          </div>
+        )}
+        {snapshot.hasKo && (
+          <div>
+            <strong>KO Predictor</strong>
+            <span>{snapshot.koSummary.complete}/{snapshot.koSummary.available} available fixtures complete</span>
+            <small>{koStatus(snapshot)}</small>
+            {snapshot.koSummary.complete === 0 && !snapshot.accountKo && <LinkButton href="#/ko-predictor" variant="secondary" size="small">Continue KO Predictor</LinkButton>}
+          </div>
+        )}
+      </div>
+
+      {notice && <p className={styles[notice.tone]} role={notice.tone === 'danger' ? 'alert' : 'status'}>{notice.message}</p>}
+    </Card>
+  )
 }
 
 export default function GuestAccountTransfer({ client, reference, userId }) {
@@ -69,8 +94,9 @@ export default function GuestAccountTransfer({ client, reference, userId }) {
 
   if (!snapshot) return null
 
-  const { hasOriginal, hasKo, canImportOriginal, canImportKo, transferable } = snapshot
+  const { hasOriginal, hasKo, canImportOriginal, canImportKo } = snapshot
   if (!hasOriginal && !hasKo) return null
+  const prompt = buildGuestAccountTransferPrompt(snapshot)
 
   async function transfer() {
     setBusy(true)
@@ -85,7 +111,7 @@ export default function GuestAccountTransfer({ client, reference, userId }) {
           expectedRevision: 0,
         })
         originalStorage.clear()
-        try { storage?.removeItem(buildGuestReviewStorageKey(reference)) } catch { /* Browser storage may be unavailable. */ }
+        try { storage?.removeItem(buildGuestReviewStorageKey(reference)) } catch { /* Device storage may be unavailable. */ }
         completed.push('Original Predictor')
       } else if (hasOriginal) {
         retained.push(snapshot.accountOriginal
@@ -104,7 +130,7 @@ export default function GuestAccountTransfer({ client, reference, userId }) {
       } else if (hasKo) {
         retained.push(snapshot.accountKo
           ? 'KO Predictor already exists in this account'
-          : 'Complete at least one available KO fixture before transfer')
+          : 'Complete at least one available KO fixture before import')
       }
 
       globalThis.dispatchEvent?.(new Event(GUEST_STATE_UPDATED_EVENT))
@@ -112,8 +138,8 @@ export default function GuestAccountTransfer({ client, reference, userId }) {
       setNotice({
         tone: completed.length ? 'safe' : 'warning',
         message: completed.length
-          ? `${completed.join(' and ')} moved safely into your account.${retained.length ? ` ${retained.join('. ')} remains on this device.` : ''}`
-          : `${retained.join('. ')}. Your browser copy has not been removed.`,
+          ? `${completed.join(' and ')} imported safely into your account.${retained.length ? ` ${retained.join('. ')} remains on this device.` : ''}`
+          : `${retained.join('. ')}. The device copy has not been removed.`,
       })
     } catch (error) {
       await refresh().catch(() => {})
@@ -128,37 +154,24 @@ export default function GuestAccountTransfer({ client, reference, userId }) {
     }
   }
 
+  function startFresh() {
+    originalStorage.clear()
+    koStorage.clear()
+    try { storage?.removeItem(buildGuestReviewStorageKey(reference)) } catch { /* Device storage may be unavailable. */ }
+    setNotice(null)
+    setSnapshot(null)
+    globalThis.dispatchEvent?.(new Event(GUEST_STATE_UPDATED_EVENT))
+    refresh().catch(error => setNotice({ tone: 'danger', message: messageForError(error) }))
+  }
+
   return (
-    <Card className={styles.card} aria-labelledby="guest-transfer-heading">
-      <div className={styles.heading}>
-        <div>
-          <span>Saved on this device</span>
-          <h3 id="guest-transfer-heading">Add your guest predictions to this account</h3>
-          <p>Your browser copy stays untouched unless the matching account save succeeds.</p>
-        </div>
-        <Button onClick={transfer} loading={busy} disabled={!transferable}>Add saved predictions</Button>
-      </div>
-
-      <div className={styles.rows}>
-        {hasOriginal && (
-          <div>
-            <strong>Original Predictor</strong>
-            <span>{snapshot.originalCompleteness.complete}/51 complete</span>
-            <small>{snapshot.accountOriginal ? 'Account entries already exist' : snapshot.originalCompleteness.readyForAccountImport ? 'Ready to transfer' : 'Finish the draft before transfer'}</small>
-            {!snapshot.originalCompleteness.readyForAccountImport && !snapshot.accountOriginal && <LinkButton href="#/groups" variant="secondary" size="small">Continue Original Predictor</LinkButton>}
-          </div>
-        )}
-        {hasKo && (
-          <div>
-            <strong>KO Predictor</strong>
-            <span>{snapshot.koSummary.complete}/{snapshot.koSummary.available} available fixtures complete</span>
-            <small>{snapshot.accountKo ? 'Account entries already exist' : snapshot.koSummary.complete > 0 ? 'Ready to transfer' : 'Finish one available fixture before transfer'}</small>
-            {snapshot.koSummary.complete === 0 && !snapshot.accountKo && <LinkButton href="#/ko-predictor" variant="secondary" size="small">Continue KO Predictor</LinkButton>}
-          </div>
-        )}
-      </div>
-
-      {notice && <p className={styles[notice.tone]} role={notice.tone === 'danger' ? 'alert' : 'status'}>{notice.message}</p>}
-    </Card>
+    <GuestAccountTransferPanel
+      snapshot={snapshot}
+      prompt={prompt}
+      busy={busy}
+      notice={notice}
+      transfer={transfer}
+      startFresh={startFresh}
+    />
   )
 }
