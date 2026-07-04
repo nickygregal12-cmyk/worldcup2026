@@ -967,3 +967,32 @@ Contract changes flagged:
 Next single task after this package: `13G-GROUPS-1 — joker pill, shared joker meter and disabled-at-cap tests`.
 
 Audit phrase locks: Stage 13G-REF-2; Groups decisions 9 and 10; euro28-groups-page-prototype.html; euro28-bracket-page-prototype.html; star icon; Joker label; 2×; five-dot gold JOKER METER; bare J circle is retired; By group | By date; third-place ranking across all six groups; Calculated live from your predictions; This changes your bracket; FLAG-FOR-RE-PICK; Lucky Dip; fills only blank scores in the current group; You predicted; date · venue with the host country; host-country circle flag; fixture data; ≥640px; clamp 0–15; blank as zero; pointer-only exemption; autosave pill; privacy context banner; zero dev text; below 900px; ≥900px; converging wall chart; ONE state, ONE set of tie/slot primitives; 1B; 2A; 3DEF; dashed placeholder chips; tap-to-advance; winner-only; downstream picks that are no longer fed; Re-pick — your tables changed this tie; Winner picks only — scores and jokers live in the KO Predictor; built from your predicted tables, never blended with live results; no score inputs; no method controls; no joker controls; without connector lines; share-card rendering lands in its own follow-on batch; 900px single breakpoint; active migrations remain 18; no Migration 019.
+
+## Stage 13G-PLAYER-REF — Player View / Viewing Player Predictions Reference Prototype Adoption
+
+The approved Player View / Viewing Player Predictions prototype is adopted as a reference artefact for the dedicated destination opened from league rows and other player-entry points.
+
+Register decisions recorded:
+
+- Viewing another member's predictions is a dedicated Player View, not inline expansion under a league table.
+- Before the global Original Predictor lock, prediction content is hidden behind an informative privacy placeholder.
+- The header remains visible before and after lock because it contains no private prediction detail.
+- Post-lock information architecture is Predictions / Bracket / Tables.
+- Prediction rows show fixture, predicted score, result or upcoming status, points chip and joker chip where applied.
+- The Bracket tab shows champion, semi-finalists and quarter-finalists, with knocked-out teams struck through for bracket-health clarity.
+- The Tables tab shows the player's predicted group tables and must reuse Groups table and third-place logic.
+- Header actions route to real Head-to-head and Points breakdown destinations; prototype stubs are not imported.
+- Original Predictor and KO Predictor stay separate; KO state may say “Starts at the knockouts” before readiness but KO points are not blended into Original totals.
+
+Contract changes flagged:
+
+| Contract | Change |
+|---|---|
+| League player-row destination | Confirmed as dedicated Player View, not inline expansion. |
+| Player prediction privacy | Pre-lock content is hidden behind an informative placeholder. |
+| Player View tabs | Predictions / Bracket / Tables becomes the approved IA. |
+| Player bracket display | Compact summary in Player View; full chart remains separate. |
+| Player predicted tables | Must reuse Groups table and third-place logic. |
+| Original / KO split | Header may show KO state, but points and content remain separate. |
+
+This is a docs/audit-only reference adoption. It does not implement UI, routes, resolver logic, scoring logic, Supabase writes or a migration. Active migrations remain 18 and Migration 019 is not created.

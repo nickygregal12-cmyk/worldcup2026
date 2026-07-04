@@ -338,3 +338,17 @@ Reference artefacts: `euro28-groups-page-prototype.html` and `euro28-bracket-pag
 | Original Bracket control absence | TEST REQUIRED | No score inputs, no method controls and no joker controls anywhere on Original Bracket. |
 
 Active migrations remain 18. No Migration 019.
+
+## Stage 13G-PLAYER-REF — Player View / Viewing Player Predictions Reference Prototype Adoption
+
+| Ledger row | Status | Record |
+|---|---:|---|
+| 13G Player View reference prototype adoption | SCHEDULED | Approved player-view prototype adopted as the reference for viewing another member's predictions. Rebuild natively; do not port prototype code. |
+| Player View privacy state | SCHEDULED | Before global Original Predictor lock, predictions are hidden and the page shows only the informative privacy placeholder. |
+| Player View header | SCHEDULED | Header card is always visible because it contains no private prediction detail: avatar, display name, league/rank context, Original points, KO state and recent-form summary. |
+| Player View post-lock tabs | SCHEDULED | Post-lock view uses three top-level tabs: Predictions, Bracket and Tables. |
+| Player predictions rows | SCHEDULED | Prediction rows show fixture, predicted score, result/status, points chip and joker chip where applied. |
+| Player bracket summary | SCHEDULED | Bracket tab shows champion, semi-finalists and quarter-finalists, with knocked-out teams struck through for bracket-health clarity. |
+| Player predicted tables | SCHEDULED | Tables tab shows the player's predicted group tables, using the same qualification-edge and third-place logic as the Groups destination. |
+| Player View links | SCHEDULED | Header actions route to real Head-to-head and Points breakdown destinations. Prototype stub buttons are not imported. |
+| Player View prototype exclusions | SCHEDULED | Do not import sample data, lock switch, toast stubs, Google fonts or single-file structure. |

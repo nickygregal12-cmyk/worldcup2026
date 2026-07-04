@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Dougie — Euro 2028 Predictor (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#173A66; --accent:#0EA5E9; --on-accent:#FFFFFF;
+  --surface-page:#F6F8FB; --surface-raised:#FFFFFF; --surface-sunken:#EAEEF4;
+  --text-primary:#0F1726; --text-secondary:#3E4A5E; --text-muted:#69758A;
+  --border:#D9E0EA;
+  --state-success:#15803D; --state-success-bg:#DCFCE7;
+  --state-partial:#B45309; --state-partial-bg:#FEF3C7;
+  --joker:#B8860B; --joker-bg:#FEF9E7;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --shadow-1:0 1px 2px rgba(15,23,38,.06);
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --brand:#1C4275; --accent:#38BDF8; --on-accent:#0A0F1C;
+  --surface-page:#0A0F1C; --surface-raised:#131B2C; --surface-sunken:#070B14;
+  --text-primary:#EEF2F8; --text-secondary:#B4C0D2; --text-muted:#7B8799;
+  --border:#22304A;
+  --state-success:#4ADE80; --state-success-bg:#122D1D;
+  --state-partial:#FBBF24; --state-partial-bg:#2B2410;
+  --joker:#FACC15; --joker-bg:#2B2410;
+  --shadow-1:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--surface-page);color:var(--text-primary);font-family:var(--font-body);font-size:16px;line-height:1.5;padding-bottom:40px}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer;color:inherit;background:none;border:none;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+.num{font-variant-numeric:tabular-nums}
+svg{display:block}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.app{max-width:560px;margin:0 auto;padding:12px 12px 0}
+.top{display:flex;align-items:center;gap:8px;min-height:44px}
+.back{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:500;color:var(--text-secondary);min-height:44px;padding:0 8px 0 2px;border-radius:var(--radius-sm)}
+.icon-btn{margin-left:auto;width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:var(--surface-sunken)}
+/* header card */
+.phead{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-top:8px;box-shadow:var(--shadow-1)}
+.pid{display:flex;align-items:center;gap:12px}
+.avatar{width:52px;height:52px;border-radius:50%;background:#5B7DB1;color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:20px;flex:none}
+.pid h1{font-size:22px}
+.pid .sub{font-size:12.5px;color:var(--text-muted)}
+.pstats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px}
+.pstat{background:var(--surface-sunken);border-radius:var(--radius-sm);padding:9px 10px}
+.pstat .l{font-size:10.5px;color:var(--text-muted)}
+.pstat .v{font-family:var(--font-display);font-weight:700;font-size:18px}
+.form{display:flex;gap:3px;align-items:flex-end;height:22px;margin-top:3px}
+.form i{width:9px;border-radius:2px;background:var(--accent);display:block}
+.plinks{display:flex;gap:10px;margin-top:14px}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13.5px;font-weight:500;border-radius:var(--radius-md);min-height:46px;border:1px solid var(--border);background:var(--surface-raised)}
+/* section switcher */
+.seg{display:flex;gap:4px;background:var(--surface-sunken);border-radius:999px;padding:3px;margin-top:14px}
+.seg button{flex:1;min-height:38px;border-radius:999px;font-size:13px;font-weight:500;color:var(--text-muted)}
+.seg button[aria-selected="true"]{background:var(--surface-raised);color:var(--text-primary);box-shadow:var(--shadow-1)}
+.seg2{display:flex;gap:4px;background:var(--surface-sunken);border-radius:999px;padding:3px;width:fit-content;margin-top:12px}
+.seg2 button{min-height:32px;padding:0 13px;border-radius:999px;font-size:12px;font-weight:500;color:var(--text-muted)}
+.seg2 button[aria-selected="true"]{background:var(--surface-raised);color:var(--text-primary);box-shadow:var(--shadow-1)}
+/* cards & rows */
+.card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:13px;margin-top:10px;box-shadow:var(--shadow-1)}
+.muted{color:var(--text-muted);font-size:12px}
+.prow{display:flex;align-items:center;gap:9px;padding:9px 2px;border-top:1px solid var(--border)}
+.prow:first-of-type{border-top:none}
+.prow.jok{box-shadow:inset 3px 0 0 var(--joker)}
+.prow img{width:20px;height:20px;border-radius:50%;flex:none}
+.prow .t{font-size:13.5px;font-weight:500;flex:1;min-width:0;display:flex;align-items:center;gap:6px}
+.prow .pred{font-family:var(--font-display);font-weight:700;font-size:15px;white-space:nowrap}
+.prow .res{font-size:11px;color:var(--text-muted);white-space:nowrap}
+.chip{font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;white-space:nowrap}
+.chip.x{background:var(--state-success-bg);color:var(--state-success)}
+.chip.o{background:var(--state-partial-bg);color:var(--state-partial)}
+.chip.z{background:var(--surface-sunken);color:var(--text-muted)}
+.chip.j{background:var(--joker-bg);color:var(--joker)}
+.date-h{margin:14px 2px 0;font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)}
+/* bracket summary */
+.round-lbl{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted);margin:12px 0 6px}
+.pickchips{display:flex;flex-wrap:wrap;gap:6px}
+.pick{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;border:1px solid var(--border);border-radius:999px;padding:4px 11px 4px 5px;background:var(--surface-sunken)}
+.pick img{width:18px;height:18px;border-radius:50%}
+.pick.out{opacity:.5;text-decoration:line-through}
+.champ{display:flex;align-items:center;gap:10px;background:var(--surface-sunken);border:1.5px solid var(--accent);border-radius:var(--radius-md);padding:10px 14px}
+.champ img{width:26px;height:26px;border-radius:50%}
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--text-muted);font-weight:500;font-size:11px;padding:5px 4px;border-bottom:1px solid var(--border)}
+td{padding:7px 4px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+td.r,th.r{text-align:right}
+tr.q td:first-child{box-shadow:inset 3px 0 0 var(--state-success)}
+tr.q3 td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+/* pre-lock placeholder */
+.locked{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-lg);padding:30px 20px;margin-top:12px;text-align:center;box-shadow:var(--shadow-1)}
+.locked .mark{width:44px;height:44px;border-radius:50%;background:var(--surface-sunken);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:var(--text-muted)}
+.locked h2{font-size:17px}
+.locked p{font-size:13.5px;color:var(--text-secondary);max-width:34ch;margin:8px auto 0}
+.locked .when{display:inline-flex;align-items:center;gap:6px;margin-top:14px;font-size:12px;font-weight:600;color:var(--accent)}
+.proto{margin:28px 0 8px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:11.5px;color:var(--text-muted);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.switch{position:relative;width:40px;height:24px;border-radius:999px;background:var(--surface-sunken);border:1px solid var(--border);flex:none}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--surface-raised);border:1px solid var(--border);transition:left .15s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{left:18px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);background:var(--brand);color:#EEF2F8;font-size:13px;padding:9px 16px;border-radius:999px;opacity:0;transition:.25s;z-index:70;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs>
+<g id="i-back"><path d="m14 6-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-vs"><path d="M4 5l4 14M8 19l4-14M14 5h6M14 5v6h5M14 19v-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-check"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-lock"><rect x="4" y="11" width="16" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-star"><path d="m12 3 2.7 5.5 6 .9-4.3 4.2 1 6-5.4-2.8-5.4 2.8 1-6L3.3 9.4l6-.9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+<g id="i-sun"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+</defs></svg>
+
+<div class="app">
+  <div class="top">
+    <button class="back"><svg width="17" height="17"><use href="#i-back"/></svg> The Boys WhatsApp</button>
+    <button class="icon-btn" id="themeBtn" aria-label="Switch to dark mode"><svg width="18" height="18"><use href="#i-moon" id="themeIcon"/></svg></button>
+  </div>
+
+  <!-- header card: always visible, no private data -->
+  <section class="phead">
+    <div class="pid">
+      <span class="avatar">D</span>
+      <div><h1>Dougie</h1><span class="sub">2nd in this league · <span class="num">8</span> behind you overall</span></div>
+    </div>
+    <div class="pstats">
+      <div class="pstat"><span class="l">Original</span><span class="v num" id="stOrig">239</span></div>
+      <div class="pstat"><span class="l">KO Predictor</span><span class="v" style="font-size:11.5px;font-weight:500;color:var(--text-muted)">Starts at the knockouts</span></div>
+      <div class="pstat"><span class="l">Last 3 matchdays</span>
+        <span class="form" aria-label="Points from the last three matchdays: 34, 12, 41">
+          <i style="height:16px" title="34 pts"></i><i style="height:7px" title="12 pts"></i><i style="height:22px" title="41 pts"></i>
+        </span>
+      </div>
+    </div>
+    <div class="plinks">
+      <button class="btn"><svg width="15" height="15"><use href="#i-vs"/></svg> Head to head</button>
+      <button class="btn"><svg width="15" height="15"><use href="#i-check"/></svg> Points breakdown</button>
+    </div>
+  </section>
+
+  <!-- ============ PRE-LOCK: informative placeholder ============ -->
+  <section id="preLock" class="locked hide">
+    <span class="mark"><svg width="19" height="19"><use href="#i-lock"/></svg></span>
+    <h2>Dougie's predictions are under wraps</h2>
+    <p>Everyone's group scores, jokers, bracket and predicted tables appear here the moment predictions lock at the first kick-off. Until then, they're private — yours are too.</p>
+    <span class="when"><svg width="13" height="13"><use href="#i-lock"/></svg> Unlocks Fri 16 Jun, 14:00</span>
+  </section>
+
+  <!-- ============ POST-LOCK: the full view ============ -->
+  <section id="postLock">
+    <div class="seg" role="tablist">
+      <button role="tab" aria-selected="true" data-s="preds">Predictions</button>
+      <button role="tab" aria-selected="false" data-s="bracket">Bracket</button>
+      <button role="tab" aria-selected="false" data-s="tables">Tables</button>
+    </div>
+
+    <!-- PREDICTIONS -->
+    <div id="sec-preds">
+      <div class="seg2" role="tablist">
+        <button role="tab" aria-selected="true">By date</button>
+        <button role="tab" aria-selected="false">By group</button>
+      </div>
+      <div class="date-h">Fri 16 Jun</div>
+      <div class="card" style="padding:6px 13px">
+        <div class="prow jok">
+          <img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt="">
+          <span class="t">Scotland – France</span>
+          <span class="chip j"><svg style="display:inline-block;vertical-align:-2px" width="9" height="9"><use href="#i-star"/></svg> 2×</span>
+          <span class="pred num">2–1</span>
+          <span class="res num">FT 2–1</span>
+          <span class="chip x">+60</span>
+        </div>
+        <div class="prow">
+          <img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-eng.svg" alt="">
+          <span class="t">England – Georgia</span>
+          <span class="pred num">1–0</span>
+          <span class="res num">FT 3–1</span>
+          <span class="chip o">+10</span>
+        </div>
+        <div class="prow">
+          <img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/it.svg" alt="">
+          <span class="t">Italy – Poland</span>
+          <span class="pred num">0–2</span>
+          <span class="res num">FT 1–0</span>
+          <span class="chip z">0</span>
+        </div>
+      </div>
+      <div class="date-h">Sat 17 Jun</div>
+      <div class="card" style="padding:6px 13px">
+        <div class="prow">
+          <img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/ie.svg" alt="">
+          <span class="t">Ireland – Wales</span>
+          <span class="pred num">2–0</span>
+          <span class="res num">Today 17:00</span>
+        </div>
+        <div class="prow">
+          <img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/pt.svg" alt="">
+          <span class="t">Portugal – Croatia</span>
+          <span class="pred num">3–1</span>
+          <span class="res num">Today 20:00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BRACKET -->
+    <div id="sec-bracket" class="hide">
+      <div class="card">
+        <div class="champ"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt=""><span><span class="muted" style="display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase">Their champion</span><strong style="font-family:var(--font-display);font-size:16px">France</strong></span></div>
+        <div class="round-lbl">Semi-finalists</div>
+        <div class="pickchips">
+          <span class="pick"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt="">France</span>
+          <span class="pick"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-eng.svg" alt="">England</span>
+          <span class="pick"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/de.svg" alt="">Germany</span>
+          <span class="pick out"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/it.svg" alt="">Italy</span>
+        </div>
+        <div class="round-lbl">Quarter-finalists</div>
+        <div class="pickchips">
+          <span class="pick"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt="">France</span>
+          <span class="pick"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-eng.svg" alt="">England</span>
+          <span class="pick"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt="">Scotland</span>
+          <span class="pick"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/de.svg" alt="">Germany</span>
+          <span class="pick"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/es.svg" alt="">Spain</span>
+          <span class="pick out"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/it.svg" alt="">Italy</span>
+          <span class="pick"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/pt.svg" alt="">Portugal</span>
+          <span class="pick"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/nl.svg" alt="">Netherlands</span>
+        </div>
+        <p class="muted" style="margin:12px 0 0">Teams knocked out of the real tournament are struck through — bracket health at a glance. Full chart opens from here in the real app.</p>
+      </div>
+    </div>
+
+    <!-- TABLES -->
+    <div id="sec-tables" class="hide">
+      <div class="seg2" role="tablist" id="tblTabs"></div>
+      <div class="card">
+        <div class="muted" style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:4px">Dougie's predicted table — Group A</div>
+        <table aria-label="Dougie's predicted Group A table"><thead><tr><th>#</th><th>Team</th><th class="r">GD</th><th class="r">Pts</th></tr></thead><tbody>
+          <tr class="q"><td class="num">1</td><td><span style="display:flex;align-items:center;gap:6px"><img style="width:18px;height:18px;border-radius:50%" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt="">France</span></td><td class="r num">+5</td><td class="r num" style="font-weight:600">7</td></tr>
+          <tr class="q"><td class="num">2</td><td><span style="display:flex;align-items:center;gap:6px"><img style="width:18px;height:18px;border-radius:50%" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt="">Scotland</span></td><td class="r num">+3</td><td class="r num" style="font-weight:600">6</td></tr>
+          <tr class="q3"><td class="num">3</td><td><span style="display:flex;align-items:center;gap:6px"><img style="width:18px;height:18px;border-radius:50%" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/at.svg" alt="">Austria</span></td><td class="r num">-2</td><td class="r num" style="font-weight:600">4</td></tr>
+          <tr><td class="num">4</td><td><span style="display:flex;align-items:center;gap:6px"><img style="width:18px;height:18px;border-radius:50%" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/no.svg" alt="">Norway</span></td><td class="r num">-6</td><td class="r num" style="font-weight:600">0</td></tr>
+        </tbody></table>
+        <p class="muted" style="margin:8px 0 0">Their third-place ranking sits below, same as your own Groups view.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="proto">
+    <span>Prototype — global lock (before lock, the whole view is the informative placeholder)</span>
+    <button class="switch" id="lockSwitch" role="switch" aria-checked="true" aria-label="Simulate post-lock"></button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Opens as its own destination in the full app</div>
+
+<script>
+/* section switcher */
+document.querySelectorAll('.seg [data-s]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.seg [data-s]').forEach(x=>x.setAttribute('aria-selected',x===b));
+  ['preds','bracket','tables'].forEach(s=>document.getElementById('sec-'+s).classList.toggle('hide',s!==b.dataset.s));
+}));
+/* group tabs in Tables (visual only) */
+const tt=document.getElementById('tblTabs');
+"ABCDEF".split("").forEach((g,i)=>{const b=document.createElement('button');b.textContent=g;b.setAttribute('role','tab');b.setAttribute('aria-selected',i===0);b.addEventListener('click',()=>{tt.querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',x===b))});tt.appendChild(b)});
+/* lock toggle: pre-lock shows ONLY the placeholder (server would return nothing anyway) */
+document.getElementById('lockSwitch').addEventListener('click',function(){
+  const post=this.getAttribute('aria-checked')!=='true'; this.setAttribute('aria-checked',post);
+  document.getElementById('postLock').classList.toggle('hide',!post);
+  document.getElementById('preLock').classList.toggle('hide',post);
+  document.getElementById('stOrig').textContent=post?'239':'—';
+});
+/* stubs */
+document.querySelectorAll('.plinks .btn, .back, .seg2 button').forEach(el=>el.addEventListener('click',()=>{
+  const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1300);
+}));
+/* theme */
+let dark=false;
+document.getElementById('themeBtn').addEventListener('click',function(){
+  dark=!dark;
+  if(dark)document.documentElement.setAttribute('data-theme','dark');else document.documentElement.removeAttribute('data-theme');
+  document.getElementById('themeIcon').setAttribute('href',dark?'#i-sun':'#i-moon');
+  this.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+});
+</script>
+</body>
+</html>

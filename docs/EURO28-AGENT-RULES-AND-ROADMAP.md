@@ -973,3 +973,21 @@ Contract changes flagged:
 Next single task after this package: `13G-GROUPS-1 — joker pill, shared joker meter and disabled-at-cap tests`.
 
 Audit phrase locks: Stage 13G-REF-2; Groups decisions 9 and 10; euro28-groups-page-prototype.html; euro28-bracket-page-prototype.html; star icon; Joker label; 2×; five-dot gold JOKER METER; bare J circle is retired; By group | By date; third-place ranking across all six groups; Calculated live from your predictions; This changes your bracket; FLAG-FOR-RE-PICK; Lucky Dip; fills only blank scores in the current group; You predicted; date · venue with the host country; host-country circle flag; fixture data; ≥640px; clamp 0–15; blank as zero; pointer-only exemption; autosave pill; privacy context banner; zero dev text; below 900px; ≥900px; converging wall chart; ONE state, ONE set of tie/slot primitives; 1B; 2A; 3DEF; dashed placeholder chips; tap-to-advance; winner-only; downstream picks that are no longer fed; Re-pick — your tables changed this tie; Winner picks only — scores and jokers live in the KO Predictor; built from your predicted tables, never blended with live results; no score inputs; no method controls; no joker controls; without connector lines; share-card rendering lands in its own follow-on batch; 900px single breakpoint; active migrations remain 18; no Migration 019.
+
+## Stage 13G-PLAYER-REF — Player View Reference Placement
+
+Add `13G-PLAYER-REF` after 13G-REF-2 and before 13G-GROUPS-1.
+
+Scope:
+
+- Record the approved Player View / Viewing Player Predictions prototype.
+- Treat the prototype as behavioural, hierarchy and copy reference only.
+- Rebuild natively in the real Euro design system later; do not port prototype code.
+- Preserve privacy: pre-lock player prediction content is hidden behind the informative placeholder.
+- Preserve competition separation: Original Predictor and KO Predictor remain separate.
+- No UI implementation, route implementation, resolver change, scoring change, Supabase write or migration is allowed in this reference package.
+
+Next build order after this reference is recorded:
+
+1. 13G-GROUPS-1 — joker pill, shared joker meter and disabled-at-cap tests.
+2. League/Player View implementation can then consume the approved Player View reference when scheduled.
