@@ -156,6 +156,7 @@ export default function GroupsPredictor({
                       <footer className="group-match-card__footer">
                         <span>{complete ? `${row.homeScore}–${row.awayScore} predicted` : 'Enter both scores'}</span>
                         <JokerPill
+                    aria-pressed={row.jokerApplied}
                           active={row.jokerApplied}
                           disabled={jokerDisabled}
                           multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER}

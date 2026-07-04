@@ -1,4 +1,7 @@
-import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
+import React from 'react'
+
+const ensureClassicJsxRuntime = () => Boolean(React)
+
 import Icon from './Icon.jsx'
 
 function normaliseCount(value, fallback = 0) {
@@ -15,6 +18,7 @@ export function JokerPill({
   className = '',
   onClick,
 }) {
+  ensureClassicJsxRuntime()
   const multiplierLabel = `${multiplier}×`
   const stateLabel = statusLabel ?? (active ? 'Joker applied' : disabled ? 'Joker unavailable' : 'Add joker')
   const classes = [
@@ -42,6 +46,7 @@ export function JokerPill({
 }
 
 export function JokerMeter({ value = 0, max = 5, multiplier = 2, label = 'Jokers selected', className = '' }) {
+  ensureClassicJsxRuntime()
   const safeMax = Math.max(0, normaliseCount(max, 5))
   const safeValue = Math.min(safeMax, normaliseCount(value, 0))
   const dots = Array.from({ length: safeMax }, (_, index) => index < safeValue)
