@@ -392,6 +392,8 @@ Stage 13F-K completes the remaining normal launch/live operations through the ex
 
 Confirmed decisions:
 
+The Stage 13F-K1 database operations contract remains accepted and is the binding owner-only fixture, reconciliation, readiness and audit contract delivered by Migration 018.
+
 1. Fixture date, kick-off, venue and schedule status become owner-only Admin operations with optimistic fixture revision and append-only before/after audit evidence.
 2. Participant identities, group membership, match numbering, fixture code, resolver slots and knockout allocation remain outside browser editing.
 3. Complete tournament points reconciliation is owner-only, note-gated, feature-controlled and replacement-based through the existing canonical scoring function with a null match scope.
