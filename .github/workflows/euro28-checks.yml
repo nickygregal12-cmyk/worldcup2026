@@ -1,0 +1,52 @@
+# Euro 2028 Predictor — CI guardrails
+# Install at: .github/workflows/euro28-checks.yml
+#
+# Purpose: every push and pull request to euro28-development runs the full
+# audit chain, the unit tests and a production build — regardless of whether
+# the agent that made the commit remembered to run them locally. A red run is
+# visible as a red cross on the commit in GitHub with zero code reading.
+#
+# After installing, turn on branch protection (GitHub → Settings → Branches →
+# Add rule for euro28-development → "Require status checks to pass" → select
+# "checks"). From then on, nothing that fails these gates can land.
+name: checks
+
+on:
+  push:
+    branches: [euro28-development]
+  pull_request:
+    branches: [euro28-development]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies (exact lockfile)
+        run: npm ci
+
+      - name: Full audit chain
+        run: npm run check
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+      # The build must never embed a service_role key or the blocked WC26
+      # project. Belt-and-braces on top of check-client-singleton.
+      - name: Secret and blocked-project scan of build output
+        run: |
+          if grep -rl "service_role" dist/ 2>/dev/null; then
+            echo "::error::service_role key found in build output"; exit 1
+          fi
+          if grep -rl "ouhxawizadnwrhrjppld" dist/ src/ 2>/dev/null; then
+            echo "::error::Blocked WC26 Supabase project referenced"; exit 1
+          fi
