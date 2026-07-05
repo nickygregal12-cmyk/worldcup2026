@@ -1,8 +1,10 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.7 — Product gate decisions register
+### Version 4.8 — Rules hub signup gate status
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
+
+**Stage RULES-1B-SIGNUP-GATE-STATUS** makes the unresolved public-signup gates visible on the `#/how-to-play` Rules Hub. The panel lists support contact, capacity and tiers, email confirmation, privacy region and name moderation as still-open owner/implementation gates. It deliberately does not open wide signups or invent owner choices: no support address, capacity number, Supabase/Netlify tier, auth-email budget, email-confirmation setting, data region or blocked-word list is selected. This package is UI/model/docs/audit-only with no Supabase writes, no Auth users, no prediction seeding, no service-role credential use/read/print, no scoring/resolver changes, no new route and no migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
 
 ## 1. Current return point
 

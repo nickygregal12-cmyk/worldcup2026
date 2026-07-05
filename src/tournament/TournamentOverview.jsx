@@ -188,6 +188,30 @@ function TrustCards({ cards }) {
   )
 }
 
+function SignupGatePanel({ gate }) {
+  return (
+    <Card as="section" className={styles.signupGatePanel}>
+      <div className="home-section-heading">
+        <div>
+          <span className="page-eyebrow">{gate.eyebrow}</span>
+          <h2>{gate.title}</h2>
+        </div>
+        <Badge tone="warning">{gate.badge}</Badge>
+      </div>
+      <p>{gate.detail}</p>
+      <div className={styles.signupGateGrid}>
+        {gate.items.map(item => (
+          <div key={item.label} className={styles.signupGateItem}>
+            <span>{item.status}</span>
+            <strong>{item.label}</strong>
+            <small>{item.detail}</small>
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
 function PolicyCard({ policy }) {
   return (
     <Card as="article" className={styles.policyCard}>
@@ -250,6 +274,8 @@ export function HowToPlayOverview({ foundation }) {
       </section>
 
       <TrustCards cards={model.trustCards} />
+
+      <SignupGatePanel gate={model.signupGateStatus} />
 
       <section className={styles.rulesCompetitionGrid}>
         {model.competitions.map(competition => (

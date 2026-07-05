@@ -28,6 +28,8 @@ RULES-1A improves the visible page, but it does not close every signup gate. Bef
 - the final email-confirmation decision; and
 - the capacity/tier planning number.
 
+RULES-1B now makes those unresolved signup gates visible on the Rules Hub itself. It still does not close the gates or invent owner choices.
+
 ## Boundaries
 
 This slice is read-only presentation work.

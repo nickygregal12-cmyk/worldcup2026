@@ -286,6 +286,29 @@
 
 .trustCard { background: linear-gradient(180deg, var(--surface-card), var(--surface-soft)); }
 
+.signupGatePanel {
+  gap: var(--space-5); border-style: dashed;
+  background: radial-gradient(circle at top right, color-mix(in srgb, var(--state-warning-soft) 55%, transparent), transparent 42%), linear-gradient(180deg, var(--surface-card), var(--surface-soft));
+}
+
+.signupGatePanel p { max-width: 58rem; margin: 0; color: var(--text-secondary); line-height: 1.6; }
+
+.signupGateGrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); }
+
+.signupGateItem {
+  display: grid; gap: var(--space-2); min-width: 0; padding: var(--space-4);
+  border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--surface-card);
+}
+
+.signupGateItem span {
+  width: fit-content; padding: 0.18rem 0.48rem; border-radius: 999px;
+  background: var(--state-warning-soft); color: var(--state-warning);
+  font-size: 0.68rem; font-weight: 900; letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+.signupGateItem strong { color: var(--text-strong); line-height: 1.25; }
+.signupGateItem small { color: var(--text-secondary); line-height: 1.45; }
+
 .trustCard h2,
 .policyCard h2,
 .rulesCompetitionCard h2,
@@ -344,6 +367,10 @@
 
 .tieBreakSteps strong { color: var(--text-strong); line-height: 1.35; }
 
+@media (max-width: 72rem) {
+  .signupGateGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 62rem) {
   .rulesHero,
   .trustGrid,
@@ -359,4 +386,5 @@
 @media (max-width: 40rem) {
   .rulesHero { padding: var(--space-5); }
   .rulesHeroPanel { padding: var(--space-4); }
+  .signupGateGrid { grid-template-columns: 1fr; }
 }

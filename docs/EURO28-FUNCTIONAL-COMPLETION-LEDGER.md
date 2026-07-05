@@ -1,6 +1,8 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.49 — Product gate decisions register
+### Version 1.50 — Rules hub signup gate status
+
+Stage RULES-1B-SIGNUP-GATE-STATUS is accepted as a UI/model/docs/audit-only Rules Hub follow-on. The `#/how-to-play` page now visibly lists the unresolved public-signup gates: support contact, capacity and tiers, email confirmation, privacy region and name moderation. The slice does not open public registration and does not invent owner choices. No support address, capacity number, tier, email-confirmation setting, data region or blocked-word list is selected. No Supabase writes, Auth users, prediction seeds, service-role credential use/read/print, scoring changes, resolver changes, new routes or database migration are introduced. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
 
 
 Stage PRODUCT-GATE-DECISIONS-1 is accepted as a docs/audit-only product-completeness decision register slice. It records the next owner/implementation rows for tie-break ladders, display-name and league-name moderation, capacity planning and email confirmation without inventing an owner choice. The exact capacity number, Supabase/Netlify tier, auth-email budget and final email-confirmation setting remain owner decisions before wide signups; tie-break and moderation implementation remain later scoped stages. No Supabase writes, Auth users, prediction seeds, service-role credential use/read/print, scoring changes, resolver changes, UI route changes or database migration are introduced. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
