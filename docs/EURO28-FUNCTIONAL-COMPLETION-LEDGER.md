@@ -562,3 +562,8 @@ Confirmed decisions:
 11. Active migrations remain 18 and no Migration 019 is created.
 
 Next sequenced package: RULES-1 or a narrow owner-decision register update for support channel, capacity and email confirmation.
+
+
+## Stage RULES-1A — Rules hub UI upgrade — CLOSED-PENDING-LOCAL-GATES
+
+RULES-1A upgrades the existing `#/how-to-play` destination into a visible rules hub covering scoring, locks, competition separation, audited corrections, name policy, privacy/deletion expectations, support-contact status and the tie-break tournament gate. It is UI/model/docs/audit-only: no Supabase writes, no Auth users, no prediction seeding, no service-role credential use/read/print, no scoring change, no resolver change, no new route and no migration. Active migrations remain 18 and no Migration 019 is created.

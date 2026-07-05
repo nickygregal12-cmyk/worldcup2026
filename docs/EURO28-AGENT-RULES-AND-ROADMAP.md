@@ -1194,3 +1194,8 @@ Rules:
 - Future acceptance must prove seed, validate, teardown, zero residue, reseed and validate again before Stage 16A closes.
 
 The next Stage 16A package may consider a default-off write-capable skeleton only after explicit approval. It must not combine Auth user creation, profile rows, provisional teams, predictions, leagues, corrections, scoring oracle and teardown in one patch.
+
+
+### Stage RULES-1A — rules hub UI upgrade
+
+The existing `#/how-to-play` route has been upgraded into the rules hub. Future agents must keep it read-only and config-driven where practical: scoring values come from `EURO_SCORING_CONFIG`, Original Predictor and KO Predictor remain separate, and owner decisions for support contact, Supabase region, email confirmation and capacity/tier must not be invented. RULES-1A has no Supabase writes, no service-role use, no scoring/resolver change, no new route and no migration.

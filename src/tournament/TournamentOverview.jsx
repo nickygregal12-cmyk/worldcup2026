@@ -160,24 +160,107 @@ function PointsTable({ rows }) {
   )
 }
 
+function RulesHeroStats({ items }) {
+  return (
+    <div className={styles.rulesHeroStats}>
+      {items.map(item => (
+        <div key={item.label}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+          <small>{item.note}</small>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function TrustCards({ cards }) {
+  return (
+    <section className={styles.trustGrid} aria-label="Rules and trust summary">
+      {cards.map(card => (
+        <Card key={card.title} as="article" className={styles.trustCard}>
+          <span className="page-eyebrow">{card.label}</span>
+          <h2>{card.title}</h2>
+          <p>{card.detail}</p>
+        </Card>
+      ))}
+    </section>
+  )
+}
+
+function PolicyCard({ policy }) {
+  return (
+    <Card as="article" className={styles.policyCard}>
+      <div className="home-section-heading">
+        <div>
+          <span className="page-eyebrow">Player trust</span>
+          <h2>{policy.title}</h2>
+        </div>
+        <Badge tone={policy.badge === 'Audited' ? 'safe' : policy.badge === 'Owner decision' ? 'warning' : 'info'}>{policy.badge}</Badge>
+      </div>
+      <p>{policy.detail}</p>
+      <ul className="content-list">
+        {policy.bullets.map(item => <li key={item}>{item}</li>)}
+      </ul>
+    </Card>
+  )
+}
+
+function TieBreakPanel({ tieBreaks }) {
+  return (
+    <Card as="section" className={styles.tieBreakPanel}>
+      <div className="home-section-heading">
+        <div>
+          <span className="page-eyebrow">Final standings</span>
+          <h2>{tieBreaks.title}</h2>
+        </div>
+        <Badge tone="warning">{tieBreaks.status}</Badge>
+      </div>
+      <p>{tieBreaks.detail}</p>
+      <div className={styles.tieBreakSteps}>
+        {tieBreaks.steps.map((step, index) => (
+          <div key={step}>
+            <span>{index + 1}</span>
+            <strong>{step}</strong>
+          </div>
+        ))}
+      </div>
+    </Card>
+  )
+}
+
 export function HowToPlayOverview({ foundation }) {
   const model = buildHowToPlayPageModel(foundation)
   return (
-    <div className="content-stack tournament-overview how-to-play-overview">
-      <section className="page-intro">
-        <div>
-          <Badge tone="info">How to play</Badge>
+    <div className={`content-stack tournament-overview how-to-play-overview ${styles.rulesHub}`}>
+      <section className={styles.rulesHero}>
+        <div className={styles.rulesHeroCopy}>
+          <Badge tone="info">Rules hub</Badge>
           <h1>{model.heading}</h1>
-          <p>Fast lookup for the two competitions, scoring values, lock timing and mechanics questions.</p>
+          <p>{model.intro}</p>
+          <div className={styles.rulesHeroActions}>
+            <LinkButton href="#/groups" icon="predict">Start predicting</LinkButton>
+            <LinkButton href="#/tournament" variant="secondary" icon="info">Tournament facts</LinkButton>
+          </div>
         </div>
-        <LinkButton href="#/tournament" variant="secondary" icon="info">Tournament facts</LinkButton>
+        <aside className={styles.rulesHeroPanel} aria-label="Rules snapshot">
+          <Badge tone="warning">{model.status}</Badge>
+          <RulesHeroStats items={model.heroStats} />
+        </aside>
       </section>
 
-      <section className="tournament-content-grid">
+      <TrustCards cards={model.trustCards} />
+
+      <section className={styles.rulesCompetitionGrid}>
         {model.competitions.map(competition => (
-          <Card key={competition.title} as="article">
-            <span className="page-eyebrow">Competition</span>
-            <h2>{competition.title}</h2>
+          <Card key={competition.title} as="article" className={styles.rulesCompetitionCard}>
+            <div className="home-section-heading">
+              <div>
+                <span className="page-eyebrow">{competition.eyebrow}</span>
+                <h2>{competition.title}</h2>
+              </div>
+              <Badge tone={competition.title === 'Original Predictor' ? 'info' : 'safe'}>{competition.title === 'Original Predictor' ? 'Pre-tournament' : 'Knockouts'}</Badge>
+            </div>
             <p className={styles.sectionCopy}>{competition.summary}</p>
             <ul className="content-list">
               {competition.bullets.map(item => <li key={item}>{item}</li>)}
@@ -187,24 +270,32 @@ export function HowToPlayOverview({ foundation }) {
         ))}
       </section>
 
-      <Card as="section">
-        <div className="home-section-heading">
-          <div><span className="page-eyebrow">Locks</span><h2>When choices close</h2></div>
-          <Badge tone="warning">Tournament timing</Badge>
-        </div>
-        <div className={styles.lockList}>
-          {model.locks.map(lock => (
-            <div key={lock.title}>
-              <span className={styles.lockDot} aria-hidden="true" />
-              <div><strong>{lock.title}</strong><small>{lock.detail}</small></div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      <section className={styles.rulesTwoColumn}>
+        <Card as="section">
+          <div className="home-section-heading">
+            <div><span className="page-eyebrow">Locks</span><h2>When choices close</h2></div>
+            <Badge tone="warning">Tournament timing</Badge>
+          </div>
+          <div className={styles.lockList}>
+            {model.locks.map(lock => (
+              <div key={lock.title}>
+                <span className={styles.lockDot} aria-hidden="true" />
+                <div><strong>{lock.title}</strong><small>{lock.detail}</small></div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <TieBreakPanel tieBreaks={model.tieBreaks} />
+      </section>
+
+      <section className={styles.policyGrid}>
+        {model.policies.map(policy => <PolicyCard key={policy.title} policy={policy} />)}
+      </section>
 
       <Card as="section">
         <div className="home-section-heading">
-          <div><span className="page-eyebrow">FAQ</span><h2>Mechanics only</h2></div>
+          <div><span className="page-eyebrow">Mechanics only</span><h2>Quick answers</h2></div>
           <Badge tone="info">{model.scoringStatus}</Badge>
         </div>
         <div className={styles.faqList}>

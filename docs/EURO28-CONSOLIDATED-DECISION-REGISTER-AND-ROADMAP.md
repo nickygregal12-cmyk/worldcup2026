@@ -1205,3 +1205,8 @@ Confirmed product boundaries:
 - Active migrations remain 18.
 
 Next sequenced package: a default-off write-capable skeleton only after explicit approval. It must not combine Auth user creation, profile rows, provisional teams, predictions, leagues, corrections, scoring oracle and teardown in one oversized patch.
+
+
+### Stage RULES-1A — Rules hub UI upgrade
+
+`#/how-to-play` is now the product rules hub rather than a minimal mechanics page. It surfaces scoring from the central scoring constants, keeps Original Predictor and KO Predictor separate, explains lock timing, corrections, name policy, privacy/deletion expectations, support-contact status and the tie-break tournament gate. The remaining RULES-1 signup decisions are still owner-owned: support contact, Supabase data region, email confirmation and capacity/tier. This rules hub slice is UI/model/docs/audit-only with no Supabase writes, no scoring/resolver changes, no route change and no migration.
