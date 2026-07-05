@@ -17,6 +17,23 @@ const TAB_OPTIONS = [
   { value: 'tables', label: 'Tables' },
 ]
 
+const COMPETITION_CONTEXT = {
+  [LEAGUE_COMPETITION.ORIGINAL]: {
+    eyebrow: 'Viewing Original Predictor picks',
+    summary: 'Group scores, bracket picks and table evidence appear here as they are shared.',
+    pointsLabel: 'Original points',
+    releaseLabel: 'Original sharing',
+    controlsTitle: 'Choose Original or KO',
+  },
+  [LEAGUE_COMPETITION.KO_PREDICTOR]: {
+    eyebrow: 'Viewing KO Predictor picks',
+    summary: 'Real knockout fixture picks stay separate from the Original Predictor.',
+    pointsLabel: 'KO points',
+    releaseLabel: 'KO sharing',
+    controlsTitle: 'Choose KO or Original',
+  },
+}
+
 function setHashParams({ userId, competitionKey }) {
   const params = new URLSearchParams()
   if (userId) params.set('user', userId)
@@ -28,17 +45,52 @@ function formatRank(rank) {
   return rank ? `#${rank}` : '—'
 }
 
+function statValue(value) {
+  return Number(value) > 0 ? value : '—'
+}
+
 function PlayerHeader({ view }) {
+  const context = COMPETITION_CONTEXT[view.competitionKey]
+
   return (
     <Card className={styles.header} as="section">
-      <PlayerIdentity player={view.player} isCurrentUser={view.player.isCurrentUser} size="large" />
+      <div className={styles.hero}>
+        <div className={styles.heroCopy}>
+          <span className="page-eyebrow">{context.eyebrow}</span>
+          <PlayerIdentity player={view.player} isCurrentUser={view.player.isCurrentUser} size="large" />
+          <p>{context.summary}</p>
+        </div>
+        <Badge tone={view.release.state === 'released' ? 'safe' : 'info'}>{context.releaseLabel}</Badge>
+      </div>
       <div className={styles.headerStats} aria-label="Player summary">
         <div><strong>{formatRank(view.player.rank)}</strong><span>Rank</span></div>
-        <div><strong>{view.player.totalPoints}</strong><span>Total points</span></div>
-        <div><strong>{view.counts.visiblePredictions}</strong><span>Released picks</span></div>
-        <div><strong>{view.counts.jokerPredictions}</strong><span>Jokers shown</span></div>
+        <div><strong>{view.player.totalPoints}</strong><span>{context.pointsLabel}</span></div>
+        <div><strong>{statValue(view.counts.visiblePredictions)}</strong><span>Released picks</span></div>
+        <div><strong>{statValue(view.counts.protectedPredictions)}</strong><span>Hidden picks</span></div>
       </div>
     </Card>
+  )
+}
+
+function PanelIntro({ eyebrow, title, badge = null, children }) {
+  return (
+    <div className={styles.sectionIntro}>
+      <div>
+        <span className="page-eyebrow">{eyebrow}</span>
+        <h3>{title}</h3>
+        {children && <p>{children}</p>}
+      </div>
+      {badge}
+    </div>
+  )
+}
+
+function EmptyState({ title, children }) {
+  return (
+    <div className={styles.emptyState}>
+      <strong>{title}</strong>
+      <p>{children}</p>
+    </div>
   )
 }
 
@@ -67,12 +119,18 @@ function PredictionRow({ row }) {
 function PredictionsPanel({ view }) {
   return (
     <Card className={styles.panel} as="section">
-      <div className={styles.panelHeading}>
-        <div><span className="page-eyebrow">Predictions</span><h3>Saved match picks</h3></div>
-        <Badge tone="info">{view.predictions.length}</Badge>
-      </div>
-      <p>Rows show this player’s released picks only. Protected picks stay hidden until the existing privacy rules allow them.</p>
-      {view.predictions.length === 0 ? <p className={styles.empty}>No prediction rows are available.</p> : (
+      <PanelIntro
+        eyebrow="Predictions"
+        title="Match picks"
+        badge={<Badge tone="info">{view.counts.visiblePredictions}/{view.predictions.length} shown</Badge>}
+      >
+        Released picks appear here. Hidden picks stay hidden until sharing opens.
+      </PanelIntro>
+      {view.predictions.length === 0 ? (
+        <EmptyState title="No match picks to show yet">
+          This player’s picks will appear here once there is something available to share.
+        </EmptyState>
+      ) : (
         <div className={styles.rows}>{view.predictions.map(row => <PredictionRow key={row.key} row={row} />)}</div>
       )}
     </Card>
@@ -83,23 +141,32 @@ function BracketPanel({ view }) {
   if (view.competitionKey !== LEAGUE_COMPETITION.ORIGINAL) {
     return (
       <Card className={styles.panel} as="section">
-        <div className={styles.panelHeading}><div><span className="page-eyebrow">Bracket</span><h3>Original bracket only</h3></div></div>
-        <p className={styles.empty}>KO Predictor uses real knockout fixtures, so the pre-tournament bracket does not appear in this competition.</p>
+        <PanelIntro eyebrow="Bracket" title="Original bracket only" />
+        <EmptyState title="No bracket in KO Predictor">
+          KO Predictor uses real knockout fixtures, so the pre-tournament bracket does not appear here.
+        </EmptyState>
       </Card>
     )
   }
 
   return (
     <Card className={styles.panel} as="section">
-      <div className={styles.panelHeading}>
-        <div><span className="page-eyebrow">Bracket</span><h3>Original bracket summary</h3></div>
-        <Badge tone="info">{view.bracketSummary.visibleCount}/{view.bracketSummary.totalCount} shown</Badge>
+      <PanelIntro
+        eyebrow="Bracket"
+        title="Original bracket"
+        badge={<Badge tone="info">{view.bracketSummary.visibleCount}/{view.bracketSummary.totalCount} shown</Badge>}
+      >
+        Original bracket picks stay separate from KO Predictor match picks.
+      </PanelIntro>
+      <div className={styles.summaryStrip}>
+        <div><span>Champion pick</span><strong>{view.bracketSummary.champion ?? 'Hidden'}</strong></div>
+        <div><span>Released picks</span><strong>{view.bracketSummary.visibleCount}</strong></div>
       </div>
-      <div className={styles.summaryGrid}>
-        <div><strong>{view.bracketSummary.champion ?? 'Hidden'}</strong><span>Champion pick</span></div>
-        <div><strong>{view.bracketSummary.visibleCount}</strong><span>Released bracket picks</span></div>
-      </div>
-      {view.bracket.length === 0 ? <p className={styles.empty}>No bracket rows are available.</p> : (
+      {view.bracket.length === 0 ? (
+        <EmptyState title="No bracket picks to show yet">
+          Bracket picks will appear here once they are available to share.
+        </EmptyState>
+      ) : (
         <div className={styles.rows}>{view.bracket.map(row => <PredictionRow key={row.key} row={row} />)}</div>
       )}
     </Card>
@@ -110,24 +177,35 @@ function TablesPanel({ view }) {
   if (view.competitionKey !== LEAGUE_COMPETITION.ORIGINAL) {
     return (
       <Card className={styles.panel} as="section">
-        <div className={styles.panelHeading}><div><span className="page-eyebrow">Tables</span><h3>Predicted tables</h3></div></div>
-        <p className={styles.empty}>Predicted group tables belong to the Original Predictor. KO Predictor remains separate.</p>
+        <PanelIntro eyebrow="Tables" title="Predicted tables" />
+        <EmptyState title="Tables belong to Original Predictor">
+          KO Predictor stays focused on the real knockout fixture list.
+        </EmptyState>
       </Card>
     )
   }
 
   return (
     <Card className={styles.panel} as="section">
-      <div className={styles.panelHeading}>
-        <div><span className="page-eyebrow">Tables</span><h3>Predicted group table evidence</h3></div>
-        <Badge tone="info">{view.predictedTables.length} groups</Badge>
-      </div>
-      <p>Compact table evidence is rebuilt from this player’s released group score predictions.</p>
-      {view.predictedTables.length === 0 ? <p className={styles.empty}>Predicted table rows are not available yet.</p> : (
+      <PanelIntro
+        eyebrow="Tables"
+        title="Predicted tables"
+        badge={<Badge tone="info">{view.predictedTables.length} groups</Badge>}
+      >
+        Group table evidence is rebuilt from this player’s released group score picks.
+      </PanelIntro>
+      {view.predictedTables.length === 0 ? (
+        <EmptyState title="No table rows to show yet">
+          Predicted tables will appear here once released group picks are available.
+        </EmptyState>
+      ) : (
         <div className={styles.tableGroups}>
           {view.predictedTables.map(group => (
             <section key={group.groupCode} className={styles.row}>
-              <h4>Group {group.groupCode}</h4>
+              <div className={styles.tableGroupHeader}>
+                <h4>Group {group.groupCode}</h4>
+                <span>{group.rows.length} fixtures</span>
+              </div>
               {group.rows.map(row => (
                 <div key={row.key} className={styles.tableRow}>
                   <strong>Match {row.matchNumber}: {row.fixture}</strong>
@@ -183,10 +261,14 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
       <PlayerHeader view={view} />
       <StatusBar tone={view.release.state === 'released' ? 'safe' : 'info'} title={view.release.title}>{view.release.copy}</StatusBar>
 
-      <Card className={styles.panel} as="section">
+      <Card className={`${styles.panel} ${styles.controls}`} as="section">
+        <div className={styles.controlIntro}>
+          <span className="page-eyebrow">Player picks</span>
+          <h2>{COMPETITION_CONTEXT[competitionKey].controlsTitle}</h2>
+        </div>
         <Tabs label="Player View competition" value={competitionKey} options={COMPETITION_OPTIONS} onChange={value => { setCompetitionKey(value); setActiveTab('predictions') }} />
         <Tabs label="Player View sections" value={activeTab} options={tabOptions} onChange={setActiveTab} />
-        <small>Keep each competition in its own lane. This view is read-only.</small>
+        <small className={styles.controlNote}>Original and KO Predictor stay separate. This page is read-only.</small>
       </Card>
 
       {activeTab === 'predictions' && <PredictionsPanel view={view} />}

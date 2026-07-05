@@ -57,8 +57,10 @@ describe('PlayerView component markers', () => {
     const html = renderToStaticMarkup(createElement(PlayerView, props))
 
     expect(html).toContain('Dougie')
-    expect(html).toContain('Saved match picks')
-    expect(html).toContain('Released picks')
+    expect(html).toContain('Viewing Original Predictor picks')
+    expect(html).toContain('Match picks')
+    expect(html).toContain('Original points')
+    expect(html).toContain('Hidden picks')
     expect(html).toContain('Joker')
   })
 
@@ -66,7 +68,7 @@ describe('PlayerView component markers', () => {
     const { props } = loadedData({ tab: 'bracket' })
     const html = renderToStaticMarkup(createElement(PlayerView, props))
 
-    expect(html).toContain('Original bracket summary')
+    expect(html).toContain('Original bracket')
     expect(html).toContain('Champion pick')
   })
 
@@ -74,7 +76,7 @@ describe('PlayerView component markers', () => {
     const { props } = loadedData({ tab: 'tables' })
     const html = renderToStaticMarkup(createElement(PlayerView, props))
 
-    expect(html).toContain('Predicted group table evidence')
+    expect(html).toContain('Predicted tables')
     expect(html).toContain('Group A')
   })
 
@@ -83,8 +85,9 @@ describe('PlayerView component markers', () => {
     const html = renderToStaticMarkup(createElement(PlayerView, props))
 
     expect(html).toContain('KO Predictor')
-    expect(html).toContain('Saved match picks')
-    expect(html).not.toContain('Original bracket summary')
-    expect(html).not.toContain('Predicted group table evidence')
+    expect(html).toContain('Viewing KO Predictor picks')
+    expect(html).toContain('Match picks')
+    expect(html).not.toContain('Champion pick')
+    expect(html).not.toContain('Group A')
   })
 })

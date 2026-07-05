@@ -5,7 +5,27 @@
 
 .header {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  overflow: hidden;
+}
+
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.heroCopy {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.heroCopy p,
+.sectionIntro p {
+  margin: 0;
+  color: var(--color-text-secondary);
 }
 
 .headerStats,
@@ -16,7 +36,8 @@
 }
 
 .headerStats div,
-.summaryGrid div {
+.summaryGrid div,
+.summaryStrip div {
   padding: var(--space-3);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
@@ -24,9 +45,17 @@
 }
 
 .headerStats strong,
-.summaryGrid strong {
+.summaryGrid strong,
+.summaryStrip strong {
   display: block;
   font-size: var(--font-size-lg);
+  color: var(--color-text-strong);
+}
+
+.headerStats span,
+.summaryGrid span,
+.summaryStrip span {
+  color: var(--color-text-muted);
 }
 
 .panel {
@@ -34,11 +63,41 @@
   gap: var(--space-3);
 }
 
-.panelHeading {
+.controls {
+  gap: var(--space-3);
+}
+
+.controlIntro {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.controlIntro h2 {
+  margin: 0;
+}
+
+.controlNote {
+  color: var(--color-text-muted);
+}
+
+.panelHeading,
+.sectionIntro,
+.tableGroupHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
+}
+
+.sectionIntro h3,
+.tableGroupHeader h4 {
+  margin: 0;
+}
+
+.summaryStrip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-2);
 }
 
 .rows,
@@ -48,13 +107,23 @@
 }
 
 .row,
-.tableRow {
+.tableRow,
+.emptyState {
   display: grid;
   gap: var(--space-2);
   padding: var(--space-3);
   border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-lg);
   background: var(--color-surface-raised);
+}
+
+.emptyState {
+  background: var(--color-surface-soft);
+}
+
+.emptyState p {
+  margin: 0;
+  color: var(--color-text-secondary);
 }
 
 .rowMain {
@@ -74,10 +143,17 @@
 .chips {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
   flex-wrap: wrap;
 }
 
+.tableRow {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+
+.tableGroupHeader span,
 .protected {
   color: var(--color-text-muted);
 }
@@ -88,8 +164,16 @@
 }
 
 @media (max-width: 640px) {
+  .hero,
   .panelHeading,
-  .rowMain {
+  .sectionIntro,
+  .rowMain,
+  .tableGroupHeader,
+  .tableRow {
     display: grid;
+  }
+
+  .chips {
+    justify-content: flex-start;
   }
 }
