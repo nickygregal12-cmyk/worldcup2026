@@ -188,8 +188,14 @@ The intended player-name activation destination is a dedicated Player Overview, 
 
 Stage 13G-ADMIN-1 Admin control-room cosmetic restyle preserves the restricted Admin access model. The change is cosmetic presentation only: protected routing, permission checks, section destinations and operation contracts remain unchanged. Active migrations remain 18 and Migration 019 is not created.
 
+
+## Stage 13G-MATCH-CENTRE-REF Match Centre checkpoint
+
+Stage 13G-MATCH-CENTRE-REF Match Centre group-match reference adoption is accepted as an access-map checkpoint. Match Centre remains a contextual route at `#/match-centre?match=<number>` and does not become a permanent navigation item. Stage 13G-MATCH-CENTRE-REF accepts group-match behaviour for the next build only: group fixtures show Original Predictor context, knockout fixtures retain Original/KO Predictor context, group impact uses `Live projection` or `Final`, projection maths reuses `resolveGroupTable`, bracket-point preview is read-only, and knockout `Points on the line` remains unchanged. Stage 13G-MATCH-CENTRE-1 owns implementation. Active migrations remain 18 and Migration 019 must not be created.
+
 ## Stage 13G handover access checkpoint
 
 After `64f2f3e`, the deployed user-facing destinations include the split Tournament/How to Play pages, rebuilt Account destination and restyled protected Admin control room. Match Centre remains contextual. The next Match Centre build may improve group-fixture content and conditional tabs, but it must not change the entry route shape or make Match Centre a permanent navigation item.
 
 Future Player View destinations should use `#/player/:userId`, `#/player/:userId/head-to-head` and `#/player/:userId/points` route shapes unless the implementation proves a better route contract before build. League rows should route to the dedicated Player View once Stage 13G-PLAYER-1 is implemented.
+

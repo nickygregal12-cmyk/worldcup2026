@@ -1,5 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.42 — Stage 13G Match Centre reference adoption
+
+Stage 13G-MATCH-CENTRE-REF is accepted as a docs/audit-only reference-adoption package. It records the group-fixture Match Centre decisions, including Match Centre group-match reference adoption markers for `Live projection`, `Final`, `resolveGroupTable` and read-only bracket-point preview, wires `audit:stage13g-match-centre-reference-adoption` into `npm run check`, keeps Stage 13G-MATCH-CENTRE-1 as the separate implementation slice, and preserves active migrations at 18 with no Migration 019.
+
 ### Version 1.41 — Stage 13G handover and next-reference alignment
 
 Records the post-Admin handover state after `64f2f3e`, adds the expanded Stage 13G prompt and new references for guest-transfer modal, Head-to-head page, Points Breakdown page and spec-echo audit, and schedules Match Centre, Player destinations and UI-copy hygiene as separate next batches. Active migrations remain 18 and no Migration 019 is created.
@@ -30,7 +34,7 @@ Stage 13G-B-TOURNAMENT-1 implements the Tournament/How to Play split: `#/tournam
 2. A stage may not be recorded complete while a scoped row is `PARTIAL`, `MISSING` or `INCOHERENT`.
 3. A new UI promise, capability or development tool adds a row immediately.
 4. Status changes require file, test, Terminal or deployed evidence.
-5. Statuses: ✅ FUNCTIONAL · 🟠 PARTIAL · ❌ MISSING · ⚠️ INCOHERENT · 🔒 DECISION PENDING · 🚫 REJECTED · 🕓 SCHEDULED.
+5. Statuses: ✅ FUNCTIONAL · 🟠 PARTIAL · ❌ MISSING · ⚠️ INCOHERENT · 🔒 DECISION PENDING · 🚫 REJECTED · 🕓 SCHEDULED · 🧭 REFERENCE ACCEPTED.
 6. Before every batch: verify branch, clean tree, expected commit and permitted Supabase reference; read the current Register, Charter, ledger and roadmap; name the rows being moved; confirm no new half-wired row; freeze scope; prepare exact manifests and checksums.
 7. Acceptance requires Nicky's Terminal evidence and the named ledger-row movement.
 
@@ -49,7 +53,7 @@ Stage 13G-B-TOURNAMENT-1 implements the Tournament/How to Play split: `#/tournam
 | Head-to-head comparison | ✅ FUNCTIONAL | League and overall tables open one shared, competition-scoped surface aligning all 51 Original positions or all 15 KO fixtures with same/different/private/not-saved states | — |
 | Tappable player identity | ✅ FUNCTIONAL | One accessible `PlayerIdentity` primitive is used by league standings, overall leaderboards and comparison headers; self identity remains non-interactive | — |
 | Match Centre/per-match stats | ✅ FUNCTIONAL | Dedicated fixture route, previous/next navigation, canonical state, Home/Results entry, separate Original/KO views, Overall/private-league scopes, community distribution and points-on-the-line rows accepted in Stage 13F-C | — |
-| Match Centre group-match upgrade | 🕓 SCHEDULED | Reference decisions are now recorded for conditional competition tabs, live/final group impact, read-only bracket-point preview and group-specific prediction comparison. Implementation remains separate and must preserve knockout panel behaviour. | 13G-MATCH-CENTRE-REF / 13G-MATCH-CENTRE-1 |
+| Match Centre group-match upgrade | 🧭 REFERENCE ACCEPTED | Stage 13G-MATCH-CENTRE-REF records and audits conditional group-only Original tabs, live/final group impact, resolver-backed read-only bracket-point preview, no matchday hardcode and group-specific prediction comparison. Implementation remains separate and must preserve knockout panel behaviour. | 13G-MATCH-CENTRE-1 |
 | Bracket Health | ✅ FUNCTIONAL | Immutable Original bracket compared with canonical known fixtures, round health, route conflicts, secured/remaining points, unresolved-original fallback and Match Centre links accepted in Stage 13F-D | — |
 | Tournament-pick contract | ✅ FUNCTIONAL | Contract only: approved Original-only set is total tournament goals, top scorer and highest-scoring team; 20 points each; nearest-total ties and official joint winners receive full points; one global lock; no joker; no KO points. The audit proves this contract and Admin readiness, not a player-facing entry surface. | — |
 | Tournament-pick persistence and player-facing UI | 🟠 PARTIAL | Admin readiness and the contract exist, but ordinary players cannot yet enter total goals, top scorer or highest-scoring team. Build the player surface inside the Original Predictor journey, lock it at the global lock, score via the central ruleset and show the live race on Home during the tournament. Moving this earlier than Stage 17A requires explicit schedule acceptance. | 13G-C / 17A re-approval |
@@ -424,3 +428,4 @@ Active migrations remain 18. Migration 019 is not created.
 | Item | Status | Evidence | Stage |
 | --- | --- | --- | --- |
 | Admin control-room cosmetic restyle | COMPLETE / PUSHED / DEPLOYED | Deployed at `64f2f3e`. Protected Admin shell, hero, section navigation, role chips, summary cards, guardrail banner and audit filter pills adopt the approved Admin prototype visual language using semantic tokens only. Admin services, roles, RPCs, audit records, Tournament Picks readiness and migration count remain unchanged. | 13G-ADMIN-1 |
+

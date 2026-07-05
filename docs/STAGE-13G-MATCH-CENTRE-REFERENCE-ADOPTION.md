@@ -1,6 +1,6 @@
 # Stage 13G-MATCH-CENTRE-REF — Match Centre group-match reference adoption
 
-Status: reference recorded / implementation scheduled.
+Status: accepted docs/audit reference-adoption package / implementation scheduled.
 
 ## Source references
 
@@ -29,6 +29,10 @@ Status: reference recorded / implementation scheduled.
 - Original Predictor and KO Predictor stay separate.
 - Predicted and live brackets never blend; the Match Centre preview is read-only display evidence only.
 
+## Accepted reference scope
+
+This stage records the Match Centre group-match decisions only. It does not build UI, change routing, change service reads, change scoring, change resolver logic, write to Supabase or create a migration. Active migrations remain 18 and Migration 019 must not be created unless a later implementation proves a genuine schema/read-contract gap and receives explicit approval.
+
 ## Next implementation stage
 
-Use `13G-MATCH-CENTRE-1` for the code build. Add a focused audit asserting the decisions above and wire it into `npm run check`.
+Use `13G-MATCH-CENTRE-1` for the code build. Add or extend a focused implementation audit asserting the decisions above against rendered/source behaviour, including conditional tabs, live/final group impact, resolver reuse, read-only bracket preview boundaries and unchanged knockout content.

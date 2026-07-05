@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.25 — Stage 16A scope alignment and launch gates
+### Version 4.26 — Stage 13G Match Centre reference adoption
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -56,7 +56,7 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 13F-K0/K1: Admin scope and Migration 018 database contract accepted through `0e4d5b7`; 18 migrations are aligned and 50 local plus 50 linked pgTAP tests passed.
 - Stage 13F-K2: Euro control-room implementation accepted at `c4342f1`; 78 test files and 376 tests passed, all six responsive theme baselines were accepted and deployed verification passed.
 - Stage 13F-K3 and Stage 13G-A/B/C/H docs/tooling/product-alignment packages are recorded through the current ledger; the latest known completed product commit before Stage 16A-S0 is `2e6f79b Compact Stage 13G league shell`.
-- Stage 16A-S0 is the current scope-alignment package. No component, resolver, scoring, route, database or migration implementation is included; active migrations remain 18 and no Migration 019 is created.
+- Stage 16A-S0 is recorded as a scope-alignment package. Stage 13G-MATCH-CENTRE-REF is the current accepted docs/audit-only checkpoint for Match Centre group-fixture behaviour; active migrations remain 18 and no Migration 019 is created.
 
 # Delivery sequence
 
@@ -1042,6 +1042,25 @@ Next-agent checkpoint: Account has been rebuilt as a focused signed-in destinati
 Next-agent checkpoint: Admin has been restyled as a cosmetic-only protected control-room destination. Preserve the existing Admin route gate, section registry, owner/results-admin boundaries, note gates, confirmation behaviour, append-only audit model, Tournament Picks readiness contract and no-Migration-019 boundary. Do not merge Match Centre work into this batch.
 
 Acceptance must include `npm run audit:stage13g-admin-control-room-restyle`, existing Admin control-room audits, route integrity, frontend architecture, lint, tests, build, full check and deployed foundation verification.
+
+
+## Stage 13G-MATCH-CENTRE-REF — Match Centre group-match reference adoption
+
+Accepted scope:
+
+- record the approved Match Centre group-fixture decisions as a docs/audit-only package;
+- keep group fixtures to Original Predictor only while knockout fixtures retain Original/KO Predictor tabs;
+- require `Live projection` and `Final` group-impact states from group live/confirmed status;
+- require live/final projections to reuse `resolveGroupTable`, not a second standings calculator;
+- keep bracket-point preview read-only and forbid writes to `bracket_predictions`, persisted standings or scores;
+- forbid hardcoded matchday triggers;
+- preserve the knockout `Points on the line` panel unchanged;
+- replace group maximum-available framing with `This match’s predictions`;
+- wire `audit:stage13g-match-centre-reference-adoption` into `npm run check`;
+- keep `13G-MATCH-CENTRE-1` as the separate implementation slice;
+- create no database change and no Migration 019.
+
+Completion gate: this reference stage does not make Match Centre group-match upgrade functional. The ledger row remains non-functional until `13G-MATCH-CENTRE-1` implements and audits the behaviour in the real app.
 
 ## Stage 13G handover checkpoint — after Admin restyle
 

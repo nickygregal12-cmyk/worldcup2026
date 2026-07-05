@@ -1063,6 +1063,13 @@ The next stages remain separate: Match Centre group-match upgrade, Player View/d
 
 The next Match Centre stage must preserve the existing shell and knockout panel, while adding group-specific behaviour: group fixtures show only Original Predictor, carry live/final group-impact state, reuse the canonical resolver for live projections, show read-only projected/confirmed bracket-point preview, and replace “points on the line” with this match’s prediction comparison. No storage write, scoring change, resolver rewrite or migration is expected.
 
+
+## Stage 13G-MATCH-CENTRE-REF — accepted docs/audit checkpoint
+
+Stage 13G-MATCH-CENTRE-REF accepts the Match Centre group-match reference adoption as documentation and audit only. The accepted implementation contract is: group fixtures render only Original Predictor tabs; knockout fixtures retain Original/KO Predictor tabs; group impact carries `Live projection` or `Final`; live/final tables reuse `resolveGroupTable`; bracket-point preview is read-only and may never write to `bracket_predictions`, persisted standings or scores; activation follows group live/confirmed status rather than a hardcoded matchday; knockout `Points on the line` remains unchanged; group fixtures use `This match’s predictions`; and group fixtures avoid maximum-available framing.
+
+The next scoped build is `13G-MATCH-CENTRE-1`. It must preserve the existing Match Centre shell, route shape, fixture navigation, status bar and viewing-scope selector unless a defect is separately proved. No scoring change, resolver rewrite, Supabase write, migration or Migration 019 is authorised by the reference package.
+
 ### Player destination reference decisions
 
 The Player View implementation remains scheduled. It must create a dedicated player view plus real Head-to-head and Points Breakdown destinations, reuse existing H2H and points-breakdown engines, rewire league-row entry to the player destination, and keep Original/KO separation. The ledger must remain partial until all three destinations and the league-row rewire are live.
