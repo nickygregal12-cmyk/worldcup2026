@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.32 — Product completeness register alignment
+### Version 4.33 — Product gate decisions register
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -1206,3 +1206,10 @@ The next Stage 16A package may consider a default-off write-capable skeleton onl
 ### Stage RULES-1A — rules hub UI upgrade
 
 The existing `#/how-to-play` route has been upgraded into the rules hub. Future agents must keep it read-only and config-driven where practical: scoring values come from `EURO_SCORING_CONFIG`, Original Predictor and KO Predictor remain separate, and owner decisions for support contact, Supabase region, email confirmation and capacity/tier must not be invented. RULES-1A has no Supabase writes, no service-role use, no scoring/resolver change, no new route and no migration.
+
+
+## Stage PRODUCT-GATE-DECISIONS-1 — Product gate decisions register
+
+Stage PRODUCT-GATE-DECISIONS-1 records the next signup/tournament decision rows: tie-break ladders, display-name and league-name moderation, capacity planning and email confirmation. Future agents must preserve that no owner choice is invented in this stage: exact capacity number, Supabase/Netlify tier, auth-email budget and final email-confirmation setting remain owner decisions before wide signups. Tie-break and moderation implementation remain later scoped stages.
+
+Scope guard: docs/audit-only. Do not add Supabase writes, Auth users, prediction seeding, service-role credential use/read/print, scoring changes, resolver changes, UI route changes or a migration under this stage. Active migrations remain 18 and Migration 019 must not exist.

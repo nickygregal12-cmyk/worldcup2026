@@ -1,6 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.48 — Product completeness register alignment
+### Version 1.49 — Product gate decisions register
+
+
+Stage PRODUCT-GATE-DECISIONS-1 is accepted as a docs/audit-only product-completeness decision register slice. It records the next owner/implementation rows for tie-break ladders, display-name and league-name moderation, capacity planning and email confirmation without inventing an owner choice. The exact capacity number, Supabase/Netlify tier, auth-email budget and final email-confirmation setting remain owner decisions before wide signups; tie-break and moderation implementation remain later scoped stages. No Supabase writes, Auth users, prediction seeds, service-role credential use/read/print, scoring changes, resolver changes, UI route changes or database migration are introduced. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
 
 Product completeness register alignment is accepted as a docs/audit-only scale-gate package. It records the consolidated product completeness roadmap, moves RULES-1, moderation, scalable support, capacity planning, email confirmation, privacy/deletion, tie-break ladders, load reality-check and uptime/error monitoring into explicit signup/tournament gates, and keeps owner-specific values as recorded decisions before wide signups. It does not execute Supabase writes, create Auth users, seed predictions, use or read service-role credentials, change scoring, change resolver logic, change UI routes or create a database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
 

@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.6 — Product completeness register alignment
+### Version 4.7 — Product gate decisions register
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
@@ -16,7 +16,9 @@
 
 ## 1A. Current package note
 
-**Product completeness register alignment** records the scale-driven signup and tournament gates that must be closed before Euro 2028 registration is opened widely or before matchday one. It adds the product completeness roadmap, records RULES-1 as a signup gate, records moderation, scalable support, capacity planning, email confirmation, privacy/deletion, load reality-check and uptime/error monitoring gates, and keeps owner choices explicit where values are not yet selected. This package is docs/audit-only: no Supabase writes, no Auth users, no prediction seeding, no service-role credential use/read/print, no scoring/resolver/route changes and no migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+**Stage PRODUCT-GATE-DECISIONS-1** records the next product-completeness decision rows for tie-break ladders, display-name and league-name moderation, capacity planning and email confirmation. It deliberately does not invent owner choices: the exact capacity number, Supabase/Netlify tier, auth-email budget and final email-confirmation setting remain owner decisions before wide signups, while tie-break and moderation implementation remain later scoped stages. This package is docs/audit-only: no Supabase writes, no Auth users, no prediction seeding, no service-role credential use/read/print, no scoring/resolver/route changes and no migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
+**Product completeness register alignment** remains accepted as the prior scale-gate package. It records RULES-1 as a signup gate, records moderation, scalable support, capacity planning, email confirmation, privacy/deletion, load reality-check and uptime/error monitoring gates, and keeps owner choices explicit where values are not yet selected.
 
 **Stage 16A-P6A Seed write acceptance plan only** remains accepted as the prior no-write acceptance-plan checkpoint.
 
@@ -95,6 +97,12 @@ The offline player lifecycle and growth mechanics remain scheduled. They are imp
 Unknown app hashes such as `#/not-a-route` now render a friendly recovery surface instead of silently falling through to Home. The fallback tells the user that the requested screen is not available, confirms predictions have not been changed, and offers direct safe actions to Home, Groups and How to play. Invalid Admin sections remain protected Admin-route recovery and continue to resolve to the Admin overview section.
 
 This slice is UI/test/docs/audit only: no Supabase writes, no Auth users, no prediction seeding, no service-role credential use/read/print, no scoring change, no resolver change and no migration. Active migrations remain 18 and no Migration 019 is created.
+
+## 2C. Stage PRODUCT-GATE-DECISIONS-1 — Product gate decisions register
+
+This stage records the next signup and tournament decision rows without pretending they are implemented or owner-approved. No owner choice is invented. The current planning range remains 650–1,300 users, but the exact capacity number, Supabase tier, Netlify tier and auth-email budget still require an owner decision before wide signups. Email confirmation remains a required owner decision before wide signups, with the recommendation still ON for stranger-scale registration. Display-name and league-name moderation remains a required signup gate, with implementation deferred to a later moderation stage. Tie-break ladders remain a required tournament gate, with resolver-backed implementation deferred to a later tie-break implementation stage.
+
+This package is docs/audit-only. It introduces no Supabase writes, Auth users, prediction seeding, service-role credential use/read/print, scoring change, resolver change, UI route change or database migration. Active migrations remain 18 and Migration 019 is not created.
 
 ## 3. Scoring model
 

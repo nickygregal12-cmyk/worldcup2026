@@ -66,9 +66,7 @@ widely) or [GATE: tournament] (must exist before the first ball is kicked) or
 
 ## D. Suggested sequencing
 
-- Next docs patch: Register entries for items 1 (tie-breaks), 5 (moderation
-  policy), 7 (capacity number + tier), 9 (email confirmation) — all
-  paste-and-bump decisions.
+- Stage PRODUCT-GATE-DECISIONS-1 — CLOSED: decision-register rows now record items 1 (tie-breaks), 5 (moderation policy), 7 (capacity planning + tier decision) and 9 (email confirmation) as explicit owner/implementation gates without inventing unresolved owner choices.
 - RULES-1 stage: unchanged scope, contact line now uses the item-6 channel.
 - Before opening signups beyond the WC26 group: items 2, 5, 6, 7, 9, 12 done.
 - Before matchday 1: items 1 (resolver), 8, 11.
