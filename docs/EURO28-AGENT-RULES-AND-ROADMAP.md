@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.30 — Stage 16A-P5 staging write preflight
+### Version 4.31 — Stage 16A-P6A seed write acceptance plan
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -1078,7 +1078,9 @@ For Match Centre, projections are screen-only and must never write to persisted 
 
 Stage 16A-P2 — Staging-effective database time is a guarded planning, model and audit package. It records that later seeded acceptance must exercise privacy, simulated-lock, release, correction-review and final-state evidence through the existing Time & Phase control. It must not apply the irreversible real global prediction lock, must remain Euro-staging-only, must block WC26 production, must not create users or seed predictions, must not change scoring/resolver/UI routes and must create no Migration 019. Original Predictor and KO Predictor evidence remain separate.
 
-Stage 16A-P5 — Staging write preflight and teardown contract is accepted as the current no-write checkpoint. It records `canStartWrite: false`, `requiresExplicitNextSliceApproval: true`, local environment variable names only, dual synthetic teardown markers, zero-residue assertion and reseed validation. It performs no database writes, no user creation, no prediction seeding, no service-role credential reading or printing and no Migration 019.
+Stage 16A-P6A — Seed write acceptance plan only is accepted as the current no-write checkpoint. It records `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false`, `requiresExplicitNextSliceApproval: true`, exact local environment names, exact later-slice write flags, dual synthetic markers, exact teardown selector, zero-residue proof and reseed validation proof. It performs no database writes, no user creation, no prediction seeding, no service-role credential reading or printing and no Migration 019.
+
+Stage 16A-P5 — Staging write preflight and teardown contract remains accepted as the prior no-write preflight checkpoint.
 
 Stage 16A-P4 — Seed SQL preview dry-run remains accepted as the prior read-only SELECT checkpoint.
 
@@ -1139,4 +1141,31 @@ Rules:
 - Future teardown must require both `@synthetic.euro28.test` and `synthetic_euro28: true`.
 - Future acceptance must prove zero residue and clean reseed validation.
 
-The next Stage 16A package may introduce a very narrow staging-only seed write executor only after explicit approval. Do not combine Auth user creation, profile rows, provisional teams, predictions, leagues, corrections, scoring oracle and teardown in one patch.
+The next Stage 16A package is Stage 16A-P6A — Seed write acceptance plan only. It must remain docs/audit/test-only, must keep `writesDatabase: false`, `canStartWrite: false` and `hasWriteExecutor: false`, and must define the exact acceptance evidence before any write-capable skeleton is introduced.
+
+
+## Stage 16A-P6A seed write acceptance plan — accepted process guard
+
+Stage 16A-P6A — Seed write acceptance plan only is a docs/audit/test-only acceptance-plan package. Agents must treat it as a no-write checkpoint, not as seeded acceptance, not as a write skeleton and not as permission to write staging data.
+
+Rules:
+
+- Keep `writesDatabase: false`.
+- Keep `canStartWrite: false`.
+- Keep `hasWriteExecutor: false`.
+- Keep `requiresExplicitNextSliceApproval: true`.
+- Record exact local environment names only; do not read or print secret values.
+- Define the later-slice write flags exactly as `STAGE16A_ALLOW_STAGING_SEED_WRITE=true` and `STAGE16A_SEED_TEARDOWN_CONFIRMATION=I_UNDERSTAND_STAGE16A_SYNTHETIC_TEARDOWN_ONLY`.
+- Do not execute Supabase writes in Stage 16A-P6A.
+- Do not create Auth users.
+- Do not seed predictions.
+- Do not use, read or print service-role credentials.
+- Do not change scoring, resolver logic or UI routes.
+- Do not create a database migration.
+- Keep active migrations at 18 and do not create Migration 019.
+- Keep Original Predictor and KO Predictor separate.
+- Keep WC26 production and `main` blocked.
+- Future teardown must require both `@synthetic.euro28.test` and `synthetic_euro28: true`.
+- Future acceptance must prove seed, validate, teardown, zero residue, reseed and validate again before Stage 16A closes.
+
+The next Stage 16A package may consider a default-off write-capable skeleton only after explicit approval. It must not combine Auth user creation, profile rows, provisional teams, predictions, leagues, corrections, scoring oracle and teardown in one patch.

@@ -159,6 +159,7 @@ npm run audit:stage16a-p2-staging-effective-time
 npm run audit:stage16a-p3-seed-manifest
 npm run audit:stage16a-p4-seed-dry-run-sql
 npm run audit:stage16a-p5-write-preflight
+npm run audit:stage16a-p6a-write-acceptance-plan
 npm run audit:tooling-wiring
 npm run audit:governance-coherence
 npm run audit:marker-hygiene
@@ -166,6 +167,7 @@ npm run audit:marker-hygiene
 npm run stage16a:p5:write-preflight
 
 npm test -- \
+  scripts/__tests__/stage16aSeedWriteAcceptancePlan.test.js \
   scripts/__tests__/stage16aSeedWritePreflight.test.js \
   scripts/__tests__/stage16aSeedDryRunSql.test.js \
   scripts/__tests__/stage16aSeedManifest.test.js \
@@ -180,4 +182,6 @@ npm run verify:foundation-page
 
 ## Next allowed work
 
-After Stage 16A-P5, the next package may introduce the first staging-only seed write executor, but only as a very narrow slice with explicit approval. It must not bundle Auth user creation, profile rows, provisional teams, predictions, leagues, corrections, scoring oracle and teardown into one oversized package.
+16A-P6A — Seed write acceptance plan only is the accepted follow-on docs/audit/test-only package. It records `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false`, exact local environment names, exact later-slice write flags, exact synthetic markers, exact teardown selector, zero-residue proof and reseed validation proof while still avoiding database writes, Auth user creation, prediction seeding, service-role credential use and Migration 019.
+
+After Stage 16A-P6A, the next package may consider a default-off write-capable skeleton, but only with explicit approval. It must not bundle Auth user creation, profile rows, provisional teams, predictions, leagues, corrections, scoring oracle and teardown into one oversized package.

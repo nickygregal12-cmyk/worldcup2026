@@ -1,5 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.47 — Stage 16A-P6A seed write acceptance plan
+
+Stage 16A-P6A — Seed write acceptance plan only is accepted as a docs/audit/test-only no-write package. It records exact local environment names, exact later-slice write flags, exact synthetic markers, exact teardown selector, exact zero-residue proof and exact reseed validation proof while carrying `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false` and `requiresExplicitNextSliceApproval: true`. It does not execute Supabase writes, create Auth users, seed predictions, use or read service-role credentials, change scoring, change resolver logic, change UI routes or create a database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.46 — Stage 16A-P5 staging write preflight
 
 Stage 16A-P5 — Staging write preflight and teardown contract is accepted as a no-write preflight package. It records local environment variable names without reading or printing values, sets `canStartWrite: false`, requires `requiresExplicitNextSliceApproval: true`, preserves dual synthetic teardown markers, zero-residue assertion and reseed validation, and does not execute Supabase writes, create Auth users, seed predictions, use service-role credentials, change scoring, change resolver logic, change UI routes or create a database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
@@ -505,4 +509,29 @@ Confirmed decisions:
 9. Original Predictor and KO Predictor remain separate; no combined totals or blended standings are approved.
 10. Active migrations remain 18 and no Migration 019 is created.
 
-Next sequenced package: a narrow staging-only seed write executor only after explicit approval.
+Next sequenced package: Stage 16A-P6A — Seed write acceptance plan only, still docs/audit/test-only and no-write.
+
+
+## Stage 16A-P6A — Seed write acceptance plan only
+
+Status: complete in development as a docs/audit/test-only no-write acceptance plan.
+
+Stage 16A-P6A records the seed write acceptance plan before any staging write executor exists. The package validates the acceptance contract locally. It does not create Auth users, write Supabase data, seed predictions, create leagues, run scoring, use or read service-role credentials or create a database migration.
+
+Confirmed decisions:
+
+1. The plan consumes the Stage 16A-P3 manifest dry-run and Stage 16A-P5 preflight evidence.
+2. The plan sets `writesDatabase: false`.
+3. The plan sets `canStartWrite: false`.
+4. The plan sets `hasWriteExecutor: false`.
+5. The plan requires `requiresExplicitNextSliceApproval: true`.
+6. The plan records required local environment variable names without reading or printing values.
+7. The plan defines exact later-slice write flags and the teardown confirmation phrase.
+8. Future teardown must require both the reserved synthetic email domain and the synthetic metadata marker.
+9. Future acceptance must prove zero-residue teardown and clean reseed validation.
+10. The model fails closed against WC26 production, non-Euro project references and `main`.
+11. The package has no database writes, no user creation and no prediction seeding.
+12. Original Predictor and KO Predictor remain separate; no combined totals or blended standings are approved.
+13. Active migrations remain 18 and no Migration 019 is created.
+
+Next sequenced package: a default-off write-capable skeleton only after explicit approval.

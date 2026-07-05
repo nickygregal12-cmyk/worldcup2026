@@ -198,3 +198,8 @@ Stage 16A-P4 — Seed SQL preview dry-run is now accepted as a read-only SELECT 
 ## Stage 16A-P5 acceptance update
 
 Stage 16A-P5 — Staging write preflight and teardown contract is now accepted as a no-write preflight package. It records local environment variable names without reading or printing values, sets `canStartWrite: false`, requires `requiresExplicitNextSliceApproval: true`, preserves dual synthetic teardown markers, zero-residue assertion and reseed validation, and includes no database writes, no user creation, no prediction seeding, no service-role credential use, no scoring or resolver change, no route change and no Migration 019. Original Predictor and KO Predictor remain separate. Active migrations remain 18.
+
+
+## Stage 16A-P6A acceptance update
+
+Stage 16A-P6A — Seed write acceptance plan only is now accepted as a docs/audit/test-only no-write package. It records exact local environment names, exact later-slice write flags, exact synthetic markers, exact teardown selector, zero-residue proof and reseed validation proof while setting `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false` and `requiresExplicitNextSliceApproval: true`. It includes no database writes, no user creation, no prediction seeding, no service-role credential use, no scoring or resolver change, no route change and no Migration 019. Original Predictor and KO Predictor remain separate. Active migrations remain 18.

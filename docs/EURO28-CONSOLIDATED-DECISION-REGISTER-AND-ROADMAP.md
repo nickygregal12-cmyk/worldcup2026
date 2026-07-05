@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.4 — Stage 16A-P5 staging write preflight
+### Version 4.5 — Stage 16A-P6A seed write acceptance plan
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
@@ -16,7 +16,9 @@
 
 ## 1A. Current package note
 
-**Stage 16A-P5 Staging write preflight and teardown contract** records the local no-write preflight that a later explicitly approved staging seed write slice must satisfy. It records local environment variable names without reading or printing values, carries `canStartWrite: false` and `requiresExplicitNextSliceApproval: true`, requires dual synthetic teardown markers, zero-residue assertion and reseed validation, and still executes no Supabase writes, creates no Auth users, seeds no predictions, uses no service-role credential, changes no scoring/resolver/routes and creates no migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+**Stage 16A-P6A Seed write acceptance plan only** records the no-write acceptance plan that a later explicitly approved staging seed write slice must satisfy. It records exact local environment names, exact later-slice write flags, exact synthetic markers, exact teardown selector, exact zero-residue proof and exact reseed validation proof. It carries `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false` and `requiresExplicitNextSliceApproval: true`, and still executes no Supabase writes, creates no Auth users, seeds no predictions, uses no service-role credential, changes no scoring/resolver/routes and creates no migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
+**Stage 16A-P5 Staging write preflight and teardown contract** remains accepted as the prior no-write preflight checkpoint.
 
 **Stage 16A-P4 Seed SQL preview dry-run** remains accepted as the prior read-only SELECT preview package.
 
@@ -1147,4 +1149,26 @@ Confirmed product boundaries:
 - The generator fails closed outside Euro staging and blocks WC26 production.
 - Active migrations remain 18.
 
-Next sequenced package: a narrow staging-only seed write executor only after explicit approval. It must not combine Auth user creation, profile rows, provisional teams, predictions, leagues, corrections, scoring oracle and teardown in one oversized patch.
+Next sequenced package: Stage 16A-P6A — Seed write acceptance plan only. It must remain docs/audit/test-only and must define the exact acceptance evidence before any write-capable skeleton exists.
+
+
+## Stage 16A-P6A seed write acceptance plan only
+
+Stage 16A-P6A — Seed write acceptance plan only is accepted as a docs/audit/test-only package. It defines the exact acceptance contract for a later explicitly approved staging seed write slice before any write-capable skeleton exists.
+
+Confirmed product boundaries:
+
+- The plan records `writesDatabase: false`.
+- The plan records `canStartWrite: false`.
+- The plan records `hasWriteExecutor: false`.
+- The plan records `requiresExplicitNextSliceApproval: true`.
+- The plan records exact local environment names only and does not read or print secret values.
+- The plan records exact later-slice flags: `STAGE16A_ALLOW_STAGING_SEED_WRITE=true` and `STAGE16A_SEED_TEARDOWN_CONFIRMATION=I_UNDERSTAND_STAGE16A_SYNTHETIC_TEARDOWN_ONLY`.
+- The plan requires dual synthetic teardown markers: `@synthetic.euro28.test` and `synthetic_euro28: true`.
+- The plan requires zero-residue proof before reseed and reseed validation proof after reseed.
+- The package contains no database writes, no user creation, no prediction seeding, no service-role credential use, no scoring change, no resolver change, no route change and no Migration 019.
+- Original Predictor and KO Predictor remain separate; combined totals and blended standings remain prohibited.
+- The model fails closed outside Euro staging and blocks WC26 production and `main`.
+- Active migrations remain 18.
+
+Next sequenced package: a default-off write-capable skeleton only after explicit approval. It must not combine Auth user creation, profile rows, provisional teams, predictions, leagues, corrections, scoring oracle and teardown in one oversized patch.
