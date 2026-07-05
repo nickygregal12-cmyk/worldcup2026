@@ -169,3 +169,7 @@ npm run verify:foundation-page
 ## Next allowed work
 
 After Stage 16A-P4, the next package may prepare a narrow staging-only seed executor preflight, but the first real write path must remain separately approved and must not combine Auth user creation, profile rows, prediction rows, league rows, corrections, scoring and teardown into one oversized package.
+
+## Stage 16A-P5 follow-on
+
+16A-P5 — Staging write preflight and teardown contract is the accepted follow-on no-write preflight. It consumes the P3 manifest and P4 SQL preview evidence, records `canStartWrite: false`, `requiresExplicitNextSliceApproval: true`, local environment variable names only, dual synthetic teardown markers, zero-residue assertion and reseed validation while still avoiding database writes, Auth user creation, prediction seeding, service-role credential use and Migration 019.

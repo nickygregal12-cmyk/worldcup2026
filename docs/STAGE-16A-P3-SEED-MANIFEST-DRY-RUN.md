@@ -143,3 +143,7 @@ A sensible next slice is a local seed SQL or command manifest generator that sti
 ## Stage 16A-P4 follow-on
 
 16A-P4 — Seed SQL preview dry-run is the accepted follow-on read-only SQL preview package. It consumes this manifest to print SELECT-only evidence and still avoids database writes, Auth user creation, prediction seeding, service-role credential use and Migration 019.
+
+## Stage 16A-P5 follow-on
+
+16A-P5 — Staging write preflight and teardown contract is the accepted follow-on no-write preflight. It records `canStartWrite: false`, `requiresExplicitNextSliceApproval: true`, local environment variable names only, dual synthetic teardown markers, zero-residue assertion and reseed validation while still avoiding database writes, Auth user creation, prediction seeding, service-role credential use and Migration 019.

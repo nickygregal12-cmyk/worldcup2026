@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.3 — Stage 16A-P4 seed SQL preview dry-run
+### Version 4.4 — Stage 16A-P5 staging write preflight
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
@@ -16,7 +16,9 @@
 
 ## 1A. Current package note
 
-**Stage 16A-P4 Seed SQL preview dry-run** records the local read-only SELECT preview generator for the Stage 16A seed manifest. It produces evidence for 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases and three league shapes without executing Supabase writes, creating Auth users, seeding predictions, requiring service-role credentials, changing product components, changing scoring, changing resolver logic, changing routes or creating a migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+**Stage 16A-P5 Staging write preflight and teardown contract** records the local no-write preflight that a later explicitly approved staging seed write slice must satisfy. It records local environment variable names without reading or printing values, carries `canStartWrite: false` and `requiresExplicitNextSliceApproval: true`, requires dual synthetic teardown markers, zero-residue assertion and reseed validation, and still executes no Supabase writes, creates no Auth users, seeds no predictions, uses no service-role credential, changes no scoring/resolver/routes and creates no migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
+**Stage 16A-P4 Seed SQL preview dry-run** remains accepted as the prior read-only SELECT preview package.
 
 **Stage 16A-P3 seed manifest dry-run** records the local manifest dry-run before any staging write path exists. It plans 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases, three league shapes, correction marker and dual-marker teardown selectors. It creates no seeded data, requires no service-role credentials, changes no product component, scoring rule, resolver or route, and keeps active migrations remain 18 and no Migration 019 is created.
 
@@ -1128,3 +1130,21 @@ Confirmed product boundaries:
 - Future teardown must preserve the seed → validate → teardown → zero residue → reseed sequence and must require both reserved synthetic markers.
 
 Next sequenced package: a narrow staging-only implementation preflight or generator, not the full seeded cast in one batch.
+
+## Stage 16A-P5 staging write preflight and teardown contract
+
+Stage 16A-P5 — Staging write preflight and teardown contract is accepted as a no-write preflight package. It prepares the local acceptance contract for a later explicitly approved staging seed write slice.
+
+Confirmed product boundaries:
+
+- The preflight records `canStartWrite: false`.
+- The preflight records `requiresExplicitNextSliceApproval: true`.
+- The preflight records local environment variable names only and does not read or print secret values.
+- The preflight requires dual synthetic teardown markers: `@synthetic.euro28.test` and `synthetic_euro28: true`.
+- The preflight requires zero-residue assertion and reseed validation.
+- The package contains no database writes, no user creation, no prediction seeding, no service-role credential use, no scoring change, no resolver change, no route change and no Migration 019.
+- Original Predictor and KO Predictor remain separate; combined totals and blended standings remain prohibited.
+- The generator fails closed outside Euro staging and blocks WC26 production.
+- Active migrations remain 18.
+
+Next sequenced package: a narrow staging-only seed write executor only after explicit approval. It must not combine Auth user creation, profile rows, provisional teams, predictions, leagues, corrections, scoring oracle and teardown in one oversized patch.

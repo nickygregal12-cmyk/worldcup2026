@@ -1,5 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.46 — Stage 16A-P5 staging write preflight
+
+Stage 16A-P5 — Staging write preflight and teardown contract is accepted as a no-write preflight package. It records local environment variable names without reading or printing values, sets `canStartWrite: false`, requires `requiresExplicitNextSliceApproval: true`, preserves dual synthetic teardown markers, zero-residue assertion and reseed validation, and does not execute Supabase writes, create Auth users, seed predictions, use service-role credentials, change scoring, change resolver logic, change UI routes or create a database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.45 — Stage 16A-P4 seed SQL preview dry-run
 
 Stage 16A-P4 — Seed SQL preview dry-run is accepted as a read-only SELECT preview package. It consumes the Stage 16A-P3 manifest dry-run and provides local SQL evidence for 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases and three league shapes. It does not execute Supabase writes, create Auth users, seed predictions, require service-role credentials, change scoring, change resolver logic, change UI routes or create a database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
@@ -482,3 +486,23 @@ Active migrations remain 18. Migration 019 is not created.
 | --- | --- | --- | --- |
 | Admin control-room cosmetic restyle | COMPLETE / PUSHED / DEPLOYED | Deployed at `64f2f3e`. Protected Admin shell, hero, section navigation, role chips, summary cards, guardrail banner and audit filter pills adopt the approved Admin prototype visual language using semantic tokens only. Admin services, roles, RPCs, audit records, Tournament Picks readiness and migration count remain unchanged. | 13G-ADMIN-1 |
 
+## Stage 16A-P5 — Staging write preflight and teardown contract
+
+Status: complete in development as a no-write preflight package.
+
+Stage 16A-P5 records the staging write preflight and teardown contract before any staging write executor exists. The package validates the preflight locally and prints a safe JSON report only. It does not create Auth users, write Supabase data, seed predictions, create leagues, run scoring, use or read service-role credentials or create a database migration.
+
+Confirmed decisions:
+
+1. The preflight consumes the Stage 16A-P3 manifest dry-run and Stage 16A-P4 SQL preview evidence.
+2. The preflight sets `canStartWrite: false`.
+3. The preflight requires `requiresExplicitNextSliceApproval: true`.
+4. The preflight records required local environment variable names without reading or printing values.
+5. Future teardown must require both the reserved synthetic email domain and the synthetic metadata marker.
+6. Future acceptance must prove zero-residue teardown and clean reseed validation.
+7. The generator fails closed against WC26 production and non-Euro project references.
+8. The package has no database writes, no user creation and no prediction seeding.
+9. Original Predictor and KO Predictor remain separate; no combined totals or blended standings are approved.
+10. Active migrations remain 18 and no Migration 019 is created.
+
+Next sequenced package: a narrow staging-only seed write executor only after explicit approval.
