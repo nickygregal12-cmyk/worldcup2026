@@ -1215,3 +1215,7 @@ Stage PRODUCT-GATE-DECISIONS-1 records the next signup/tournament decision rows:
 Stage RULES-1B-SIGNUP-GATE-STATUS makes the remaining public-signup gates visible on the Rules Hub. Future agents must preserve that this is visibility only: support contact, capacity/tier, email confirmation, privacy region and name moderation remain open owner/implementation gates until a later approved slice closes them. Do not treat the visible panel as permission to open wider signups.
 
 Scope guard: docs/audit-only. Do not add Supabase writes, Auth users, prediction seeding, service-role credential use/read/print, scoring changes, resolver changes, UI route changes or a migration under this stage. Active migrations remain 18 and Migration 019 must not exist.
+
+## Stage PUBLIC-SIGNUP-READINESS-1 — Public signup readiness model
+
+Stage PUBLIC-SIGNUP-READINESS-1 centralises the app's wider public-signup readiness answer. Future agents must preserve `src/auth/publicSignupReadiness.js` as the source for the Rules Hub signup-gate panel while the gate is open. Do not infer that visible signup-gate copy means public registration is open. Wider public signups remain closed until support contact, capacity/tier, email confirmation, privacy region and name moderation are explicitly closed by later approved stages. This stage has no Supabase writes, no Auth-user creation, no service-role credential use/read/print, no scoring/resolver/route change and no Migration 019.

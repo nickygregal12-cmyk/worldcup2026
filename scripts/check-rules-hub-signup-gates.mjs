@@ -20,6 +20,7 @@ const requireText = (file, text, reason) => {
 }
 
 const model = 'src/tournament/tournamentPageModel.js'
+const readinessModel = 'src/auth/publicSignupReadiness.js'
 const overview = 'src/tournament/TournamentOverview.jsx'
 const styles = 'src/tournament/TournamentOverview.module.css'
 const stageDoc = 'docs/STAGE-RULES-1B-SIGNUP-GATE-STATUS.md'
@@ -30,7 +31,7 @@ const ledger = 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md'
 const agentRules = 'docs/EURO28-AGENT-RULES-AND-ROADMAP.md'
 const pkg = 'package.json'
 
-for (const file of [model, overview, styles, stageDoc, rulesDoc, roadmap, register, ledger, agentRules, pkg]) {
+for (const file of [model, readinessModel, overview, styles, stageDoc, rulesDoc, roadmap, register, ledger, agentRules, pkg]) {
   if (!fs.existsSync(path.join(root, file))) errors.push(`${file} is missing.`)
 }
 
@@ -42,18 +43,19 @@ const gateItems = [
   'Name moderation',
 ]
 for (const item of gateItems) {
-  requireText(model, item, 'the rules model must expose the open signup gate')
+  requireText(readinessModel, item, 'the readiness model must expose the open signup gate')
   requireText(stageDoc, item, 'the stage document must record the visible gate')
 }
 
 const modelMarkers = [
   'signupGateStatus',
-  'eyebrow:',
-  'badge:',
-  'items:',
+  'buildPublicSignupReadiness()',
 ]
 for (const marker of modelMarkers) {
-  requireText(model, marker, 'the model must keep public signup status explicit')
+  requireText(model, marker, 'the rules model must consume the central public signup readiness state')
+}
+for (const marker of ['eyebrow:', 'badge:', 'items:', 'isOpenForPublic: false']) {
+  requireText(readinessModel, marker, 'the readiness model must keep public signup status explicit')
 }
 
 const renderMarkers = [

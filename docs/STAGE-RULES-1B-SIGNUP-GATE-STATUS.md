@@ -101,3 +101,7 @@ Browser acceptance requires:
 - Confirm it clearly says public registration is not open yet / still has owner gates.
 - Confirm the page still explains Original Predictor and KO Predictor separately.
 - Confirm no signup behaviour, route or prediction state changes.
+
+## Later alignment
+
+Stage PUBLIC-SIGNUP-READINESS-1 later moved the panel data source into a central public-signup readiness model. The visible Rules Hub panel remains the same gate-status surface, but future changes to the open/closed signup answer must use that shared model rather than adding another local list.

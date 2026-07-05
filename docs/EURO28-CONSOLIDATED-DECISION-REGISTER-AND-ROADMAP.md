@@ -4,6 +4,8 @@
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
+**Stage PUBLIC-SIGNUP-READINESS-1** centralises the current wider-public-registration answer in `src/auth/publicSignupReadiness.js`. The Rules Hub now consumes that model for its public-signup gate panel, and tests/audit prove public signups remain closed while support contact, capacity and tiers, email confirmation, privacy region and name moderation remain open. This stage does not open or close any signup flow, does not select a support address, capacity number, tier, email-confirmation setting, data region or blocked-word list, and does not implement admin rename controls. It is model/test/docs/audit-only with no Supabase writes, no Auth users, no prediction seeding, no service-role credential use/read/print, no scoring/resolver changes, no route change and no migration. Active migrations remain 18 and no Migration 019 is created.
+
 **Stage RULES-1B-SIGNUP-GATE-STATUS** makes the unresolved public-signup gates visible on the `#/how-to-play` Rules Hub. The panel lists support contact, capacity and tiers, email confirmation, privacy region and name moderation as still-open owner/implementation gates. It deliberately does not open wide signups or invent owner choices: no support address, capacity number, Supabase/Netlify tier, auth-email budget, email-confirmation setting, data region or blocked-word list is selected. This package is UI/model/docs/audit-only with no Supabase writes, no Auth users, no prediction seeding, no service-role credential use/read/print, no scoring/resolver changes, no new route and no migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
 
 ## 1. Current return point
@@ -29,6 +31,13 @@
 **Stage 16A-P4 Seed SQL preview dry-run** remains accepted as the prior read-only SELECT preview package.
 
 **Stage 16A-P3 seed manifest dry-run** records the local manifest dry-run before any staging write path exists. It plans 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases, three league shapes, correction marker and dual-marker teardown selectors. It creates no seeded data, requires no service-role credentials, changes no product component, scoring rule, resolver or route, and keeps active migrations remain 18 and no Migration 019 is created.
+
+
+## 2D. Stage PUBLIC-SIGNUP-READINESS-1 — Public signup readiness model
+
+Stage PUBLIC-SIGNUP-READINESS-1 records a central application model for the current wider public-signup state. The current state is not open: support contact, capacity and tiers, email confirmation, privacy region and name moderation remain open gates. The Rules Hub consumes the same model, so the visible signup-gate panel and the app readiness answer cannot drift apart.
+
+No owner choice is invented in this stage. It does not change Auth settings, open signups, close signups, create users, seed predictions, use service-role credentials, change scoring, change resolver behaviour, add a route or create a migration.
 
 ## 2. Existing confirmed product decisions
 

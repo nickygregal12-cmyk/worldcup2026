@@ -1,3 +1,4 @@
+import { buildPublicSignupReadiness } from '../auth/publicSignupReadiness.js'
 import { EURO_SCORING_CONFIG, SCORING_CONFIG_STATUS } from '../config/scoringConfig.js'
 import { TOURNAMENT_CONFIG } from '../config/tournament.js'
 
@@ -79,19 +80,7 @@ export function buildHowToPlayPageModel(foundation, scoring = EURO_SCORING_CONFI
       Object.freeze({ label: 'Audited corrections', title: 'Result fixes are recalculated cleanly', detail: 'Official result corrections are admin-controlled, audited and replacement-based so totals can be rebuilt without double-counting.' }),
       Object.freeze({ label: 'Privacy basics', title: 'Only predictor data is stored', detail: 'The app stores account identity, display name, predictions, leagues and operational audit evidence needed to run the game.' }),
     ]),
-    signupGateStatus: Object.freeze({
-      eyebrow: 'Before public signups',
-      title: 'Public registration still has owner gates',
-      badge: 'Not open yet',
-      detail: 'The rules hub is visible now, but wider signups must wait until the remaining trust, privacy, support and capacity decisions are closed.',
-      items: Object.freeze([
-        Object.freeze({ label: 'Support contact', status: 'Owner decision', detail: 'Choose the dedicated scalable contact for help, deletion requests and scoring questions.' }),
-        Object.freeze({ label: 'Capacity and tiers', status: 'Owner decision', detail: 'Record the planning number, hosting capacity and account-email budget.' }),
-        Object.freeze({ label: 'Email confirmation', status: 'Owner decision', detail: 'Record whether confirmation is on or off before registration opens beyond the trusted test group.' }),
-        Object.freeze({ label: 'Privacy region', status: 'Owner decision', detail: 'Confirm the data-hosting region before publishing the privacy note.' }),
-        Object.freeze({ label: 'Name moderation', status: 'Implementation gate', detail: 'Add blocked-word checks and admin rename proof for player and league names.' }),
-      ]),
-    }),
+    signupGateStatus: buildPublicSignupReadiness(),
     competitions: Object.freeze([
       Object.freeze({
         title: 'Original Predictor',

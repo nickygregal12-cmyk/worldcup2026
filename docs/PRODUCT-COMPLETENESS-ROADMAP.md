@@ -68,6 +68,7 @@ widely) or [GATE: tournament] (must exist before the first ball is kicked) or
 
 - Stage PRODUCT-GATE-DECISIONS-1 — CLOSED: decision-register rows now record items 1 (tie-breaks), 5 (moderation policy), 7 (capacity planning + tier decision) and 9 (email confirmation) as explicit owner/implementation gates without inventing unresolved owner choices.
 - RULES-1B signup gate status — CLOSED: the Rules Hub now visibly lists the remaining public-signup blockers (support contact, capacity/tier, email confirmation, privacy region and name moderation) without closing them or inventing owner choices.
+- PUBLIC-SIGNUP-READINESS-1 — CLOSED: the open signup gates now have one central app model consumed by the Rules Hub, and wider public registration remains explicitly closed until every gate is closed.
 - RULES-1 stage: unchanged scope, contact line now uses the item-6 channel once selected.
 - Before opening signups beyond the WC26 group: items 2, 5, 6, 7, 9, 12 done.
 - Before matchday 1: items 1 (resolver), 8, 11.
