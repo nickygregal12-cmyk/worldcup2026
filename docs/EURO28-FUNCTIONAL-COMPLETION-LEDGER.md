@@ -1,5 +1,13 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.40 — Stage 13G Admin control-room cosmetic restyle
+
+Stage 13G-ADMIN-1 adopts the approved Admin prototype visual language as a cosmetic-only restyle of the protected control room. Existing Admin routes, permissions, RPCs, audit behaviour, Tournament Picks readiness, scoring and database contracts remain unchanged. Active migrations remain 18 and no Migration 019 is created.
+
+### Version 1.39 — Stage 13G Account destination rebuild
+
+Stage 13G-ACCOUNT-1 rebuilds the signed-in Account destination with identity, quick stats, security/preferences, leagues shortcut, danger zone, one-time guest transfer dialog and Original-only pre-lock clear action. Active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.38 — Stage 13G-B Tournament / How to Play split
 
 Stage 13G-B-TOURNAMENT-1 implements the Tournament/How to Play split: `#/tournament` now owns football facts and `#/how-to-play` owns predictor mechanics. Canonical tournament facts are corrected in `TOURNAMENT_CONFIG` and the Stage 1 model doc. Active migrations remain 18 and no Migration 019 is created.
@@ -73,8 +81,8 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 |---|---|---|---|
 | Server result entry/corrections/recalculation | ✅ FUNCTIONAL | Revision-safe and audit-logged | — |
 | Admin invisible to non-admins | ✅ FUNCTIONAL | Server-authorised discovery and direct-route gate accepted in Stage 13F-E | — |
-| Admin UI fit for purpose | 🟠 PARTIAL | Stage 13G-A route-integrity slice fixes Admin section destinations and removes the Home fall-through. Remaining central configuration and shared interaction primitive work stays scheduled. | 13G-A |
-| Admin cosmetic reference restyle | 🕓 SCHEDULED | Adopt the Admin prototype visual language in a cosmetic-only batch after scope is frozen; no owner/results-admin boundary, Admin operation, audit or Tournament Picks readiness contract may change. | 13G-ADMIN-1 |
+| Admin UI fit for purpose | ✅ FUNCTIONAL | Stage 13G-A route integrity fixed protected section destinations and Stage 13G-ADMIN-1 adopts the approved cosmetic control-room reference without changing Admin powers or data contracts. | — |
+| Admin cosmetic reference restyle | ✅ FUNCTIONAL | Stage 13G-ADMIN-1 restyles the protected control-room shell, hero, section navigation, status cards, guardrail banner and audit filter pills using semantic tokens only. No owner/results-admin boundary, Admin operation, audit or Tournament Picks readiness contract changes. | — |
 | Admin section destinations and deep links | ✅ FUNCTIONAL | Canonical section registry and query-addressed `#/admin?section=...` destinations keep every section inside the protected Admin route, including invalid-section recovery. | — |
 | Staging Time & Phase controls | ✅ FUNCTIONAL | Owner-only audited shared clock, preset phases, custom time and site-wide warning accepted with approved Migration 016 | — |
 | Profile curation | ✅ FUNCTIONAL | Stage 13E owner editing | — |
@@ -85,7 +93,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Tournament-pick Admin readiness home | ✅ FUNCTIONAL | One control-room section renders total goals, top scorer and highest-scoring team plus the Stage 17A dependency, with no fake outcome controls | — |
 | Operational readiness summary | ✅ FUNCTIONAL | One read-only presentation groups fixture, participant, result, scoring, Team Profile and safeguard evidence from Migration 018 | — |
 | Admin audit filters and detail | ✅ FUNCTIONAL | Read-only category filters expose up to 200 append-only events with actor, target, match, before/after and scoring-run detail | — |
-| Complete Admin operations backbone | 🟠 PARTIAL | K0/K1 operations, K3 role boundaries and Stage 13G-A section routing are proven. Central config/shared primitives remain Stage 13G-A; Tournament Picks executable outcomes remain Stage 17A. | 13G-A |
+| Complete Admin operations backbone | ✅ FUNCTIONAL | K0/K1 operations, K3 role boundaries, Stage 13G-A section routing and Stage 13G-ADMIN-1 presentation fit are proven. Tournament Picks executable outcomes remain correctly scheduled for Stage 17A. | — |
 
 ## Section D — Architecture and enforcement
 
@@ -404,3 +412,10 @@ Active migrations remain 18. Migration 019 is not created.
 | Item | Status | Evidence | Stage |
 | --- | --- | --- | --- |
 | Account destination rebuild | IMPLEMENTED / LOCAL ACCEPTANCE REQUIRED | Rebuilds signed-in Account with identity, quick stats, security/preferences, leagues shortcut and danger zone. Guest transfer moves to a one-time post sign-in/sign-up dialog. `Clear my predictions` is Original-only, pre-lock only and uses the existing atomic save boundary. | 13G-ACCOUNT-1 |
+
+
+## Stage 13G-ADMIN-1 — Admin control-room cosmetic restyle
+
+| Item | Status | Evidence | Stage |
+| --- | --- | --- | --- |
+| Admin control-room cosmetic restyle | IMPLEMENTED / LOCAL ACCEPTANCE REQUIRED | Protected Admin shell, hero, section navigation, role chips, summary cards, guardrail banner and audit filter pills adopt the approved Admin prototype visual language using semantic tokens only. Admin services, roles, RPCs, audit records, Tournament Picks readiness and migration count remain unchanged. | 13G-ADMIN-1 |

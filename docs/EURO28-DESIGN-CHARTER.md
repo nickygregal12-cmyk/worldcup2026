@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.10 — destination reference split recorded
+### Version 1.11 — destination reference split recorded
 
 > **Authority:** This document governs how the Euro 2028 Predictor looks and feels. The Consolidated Decision Register governs product rules. The Agent Rules govern build process. A visual deviation must be proposed here before it ships.
 
@@ -311,3 +311,8 @@ Compliance by absence is part of the charter: no score inputs, no method control
 ## Stage 13G-ACCOUNT-1 Account destination note
 
 Account follows the Stage 13G destination reference pattern: useful signed-in state first, no persistent guest-transfer card, calm security/preferences rows and destructive actions isolated in a danger zone. Coming-soon notification rows must not imply active notification functionality.
+
+
+## Stage 13G-ADMIN-1 — Admin control-room cosmetic restyle — CONFIRMED
+
+Stage 13G-ADMIN-1 Admin control-room cosmetic restyle uses the approved Admin prototype as a cosmetic reference for shell hierarchy, compact section navigation, role/metadata chips, status cards, high-impact guardrail copy and audit filter pills. The adoption is visual only: Admin authorisation, section routing, operation contracts, audit records, Tournament Picks readiness and database boundaries are not product-design variables and must not be loosened for presentation polish. Active migrations remain 18 and Migration 019 must not be created for this cosmetic stage.

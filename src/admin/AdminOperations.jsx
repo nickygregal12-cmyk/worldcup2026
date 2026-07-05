@@ -193,14 +193,14 @@ export default function AdminOperations({ client, reference, hash = '#/admin' })
   }
 
   return (
-    <section className={`foundation-panel foundation-admin ${styles.page}`} aria-labelledby="stage13fk2-admin-heading">
+    <section className={`foundation-panel foundation-admin ${styles.page}`} aria-labelledby="stage13fk2-admin-heading" data-stage13g-admin-control-room="prototype-restyle">
       <header className={styles.hero}>
         <div className={styles.heroCopy}>
           <span className="foundation-kicker">Tournament control room</span>
           <h2 id="stage13fk2-admin-heading">Euro 2028 operations</h2>
           <p>One authorised workspace for readiness, fixture scheduling, official results, scoring recovery, safeguards, content and audit evidence.</p>
           <div className={styles.heroMeta}>
-            <span className={styles.metaChip}>Role: {humaniseAdminValue(data.access.adminRole)}</span>
+            <span className={`${styles.metaChip} ${styles.roleChip}`}>Role: {humaniseAdminValue(data.access.adminRole)}</span>
             <span className={styles.metaChip}>Protected Euro staging</span>
             <span className={styles.metaChip}>Migration 018 active</span>
             <span className={styles.metaChip}>Section: {activeDestination.label}</span>
@@ -222,6 +222,11 @@ export default function AdminOperations({ client, reference, hash = '#/admin' })
       {invalidSection && (
         <p className={styles.routeRecovery} role="status">Unknown admin section requested. Staying inside the protected control room and showing Overview.</p>
       )}
+
+      <p className={styles.guardrail} data-admin-prototype-guardrail>
+        <strong>High-impact actions stay audited and note-gated.</strong>
+        <span> Fixture edits, result corrections, grace controls and scoring recovery keep their existing server-authorised safeguards.</span>
+      </p>
 
       {action.message && <p className={styles.actionMessage} data-state={action.status} role="status" aria-live="polite">{action.message}</p>}
 

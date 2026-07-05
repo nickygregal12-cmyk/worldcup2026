@@ -1035,3 +1035,10 @@ Acceptance must include `npm run audit:stage13g-bracket-responsive-wallchart`, t
 ## Stage 13G-ACCOUNT-1 — Account destination rebuild
 
 Next-agent checkpoint: Account has been rebuilt as a focused signed-in destination. Preserve the one-time guest-transfer dialog placement, the corrected keep/start-fresh copy, the Original-only pre-lock clear action and the no-Migration-019 boundary. Do not merge later Admin or Match Centre work into this batch.
+
+
+## Stage 13G-ADMIN-1 — Admin control-room cosmetic restyle
+
+Next-agent checkpoint: Admin has been restyled as a cosmetic-only protected control-room destination. Preserve the existing Admin route gate, section registry, owner/results-admin boundaries, note gates, confirmation behaviour, append-only audit model, Tournament Picks readiness contract and no-Migration-019 boundary. Do not merge Match Centre work into this batch.
+
+Acceptance must include `npm run audit:stage13g-admin-control-room-restyle`, existing Admin control-room audits, route integrity, frontend architecture, lint, tests, build, full check and deployed foundation verification.

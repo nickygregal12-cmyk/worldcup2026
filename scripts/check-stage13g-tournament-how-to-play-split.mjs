@@ -110,7 +110,7 @@ for (const marker of [
 }
 
 for (const [file, markers] of Object.entries({
-  'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md': ['Stage 13G-B-TOURNAMENT-1', '`#/how-to-play`', 'Account, Admin and Match Centre remain later focused batches'],
+  'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md': ['Stage 13G-B-TOURNAMENT-1', '`#/how-to-play`', 'Match Centre remains a later focused batch'],
   'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md': ['Tournament/How to Play split', 'Dedicated `#/how-to-play` destination', 'Canonical tournament facts'],
   'docs/EURO28-AGENT-RULES-AND-ROADMAP.md': ['Stage 13G-B-TOURNAMENT-1', '`#/tournament` is the football facts destination', '`#/how-to-play` is the predictor mechanics destination'],
   'docs/EURO28-DESIGN-CHARTER.md': ['Tournament, How to Play', 'How to Play is a separate mechanics lookup destination'],

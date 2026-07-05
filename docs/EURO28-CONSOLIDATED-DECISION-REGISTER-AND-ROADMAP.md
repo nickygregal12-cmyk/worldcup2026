@@ -1010,7 +1010,7 @@ Scope boundaries: no venue meta-line implementation, no score-stepper implementa
 
 This docs/audit package records the approved `euro28-tournament-page-prototype.html`, `euro28-how-to-play-page-prototype.html`, `euro28-account-page-prototype.html`, `euro28-admin-page-prototype.html` and `euro28-match-centre-page-prototype.html` artefacts under `docs/reference-prototypes/`, together with the build-agent reference brief. The artefacts are adopted as information-architecture, copy-register and data-source-discipline references only, not as pixel-perfect code to port.
 
-Stage 13G-B-TOURNAMENT-1 is now the scoped implementation task for the split destinations: `#/tournament` is Tournament facts and `#/how-to-play` is predictor mechanics. It amends existing Stage 13G-B in place and corrects confirmed tournament dates, host nations and venues in the canonical source of truth. Account, Admin and Match Centre remain later focused batches and must not be bundled into the Tournament split without explicit acceptance.
+Stage 13G-B-TOURNAMENT-1 is now the scoped implementation task for the split destinations: `#/tournament` is Tournament facts and `#/how-to-play` is predictor mechanics. It amends existing Stage 13G-B in place and corrects confirmed tournament dates, host nations and venues in the canonical source of truth. Account and Admin are now implemented as later focused batches; Match Centre remains a later focused batch and must not be bundled into unrelated work without explicit acceptance.
 
 Constraints: docs/audit only in this package; no UI rebuild, route implementation, config correction, scoring change, resolver change, Supabase write or migration. Active migrations remain 18 and Migration 019 is not created.
 
@@ -1038,3 +1038,10 @@ The stale-pick rule is implemented as presentation plus state handling: ties who
 ## Stage 13G-ACCOUNT-1 — Account destination rebuild
 
 Stage 13G-ACCOUNT-1 implements the approved Account reference destination as a standalone batch after Stage 13G-B-TOURNAMENT-1. The signed-in Account page now carries identity, read-only prediction/league stats, security/preferences, leagues navigation and a danger zone. Guest transfer no longer appears as a persistent Account card; it is a one-time post sign-in/sign-up dialog using the corrected `Keep your predictions from this device?` wording. `Clear my predictions` is scoped to Original Predictor group scores and bracket picks only, hidden after the central lock and implemented without Migration 019.
+
+
+## Stage 13G-ADMIN-1 — Admin control-room cosmetic restyle
+
+Stage 13G-ADMIN-1 adopts the approved Admin prototype visual language for the protected control room only. It restyles the Admin shell, hero, section navigation, metadata chips, operational summary, guardrail warning and audit filter pills with the Euro semantic token system. It does not change Admin route protection, owner/results-admin roles, service calls, RPCs, scoring, resolver logic, append-only audit evidence, Tournament Picks readiness, Supabase writes or migrations. Active migrations remain 18 and Migration 019 is not created.
+
+Next focused destination after this stage should be Match Centre group-match upgrade unless a higher-priority defect is found.

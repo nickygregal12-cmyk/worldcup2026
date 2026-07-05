@@ -38,7 +38,7 @@ No sixth mobile position is introduced.
 | Match Centre | `#/match-centre?match=<number>`; alias `#/match` | Contextual | Contextual | Fixture, result, bracket, points and comparison rows | Everything about one match |
 | Account | `#/account` | Header/More | Header/More | Guest conversion prompts | Authentication, recovery and profile |
 | Tournament & how to play | `#/tournament` and `#/how-to-play` | More/footer | More/footer | Home rules | Tournament facts, venues, format and complete rules guide |
-| Admin | restricted `#/admin` | Authorised More | Authorised More | No ordinary-user entry | Tournament operations |
+| Admin | restricted `#/admin` | Authorised More | Authorised More | No ordinary-user entry | Protected tournament operations; Stage 13G-ADMIN-1 cosmetic restyle only |
 | Not found | explicit recovery state | Invalid direct link only | Invalid direct link only | — | Explain invalid link and return safely |
 
 Aliases are compatibility routes only. They never create duplicate navigation choices.
@@ -184,3 +184,6 @@ The intended player-name activation destination is a dedicated Player Overview, 
 ## Stage 13G-ACCOUNT-1 Account update
 
 `#/account` is the real Account destination and renders `src/auth/AccountAccess.jsx`. The signed-in state owns identity, quick stats, security/preferences, leagues shortcut and danger-zone actions. Legacy `src/pages/Profile.jsx` is retired as unreachable WC26 code.
+
+
+Stage 13G-ADMIN-1 Admin control-room cosmetic restyle preserves the restricted Admin access model. The change is cosmetic presentation only: protected routing, permission checks, section destinations and operation contracts remain unchanged. Active migrations remain 18 and Migration 019 is not created.
