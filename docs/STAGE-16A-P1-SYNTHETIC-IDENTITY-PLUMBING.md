@@ -107,4 +107,4 @@ Active migrations remain 18 and Migration 019 must not exist.
 
 ## Next package
 
-The next package should be **16A-P2 — Staging-effective database time** unless deliberately re-sequenced. The full seeded-cast implementation should still wait until both P1 and P2 are complete.
+Stage 16A-P2 — Staging-effective database time is the next precondition after P1. Once P2 is accepted, the full seeded-cast implementation should still be split into small staging-only slices rather than delivered as one oversized batch.

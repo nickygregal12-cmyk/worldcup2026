@@ -1,5 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.43 — Stage 16A-P2 staging-effective database time
+
+Stage 16A-P2 — Staging-effective database time is accepted as a guarded planning, model and audit package for staging-effective database time. It records the resettable privacy, simulated-lock, release, correction-review and final-state phase catalogue that later seeded acceptance must use through the existing Time & Phase control. It explicitly does not apply the irreversible real global prediction lock, does not create users, does not seed predictions, does not change scoring, does not change resolver logic and creates no database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.42 — Stage 13G Match Centre reference adoption
 
 Stage 13G-MATCH-CENTRE-REF is accepted as a docs/audit-only reference-adoption package. It records the group-fixture Match Centre decisions, including Match Centre group-match reference adoption markers for `Live projection`, `Final`, `resolveGroupTable` and read-only bracket-point preview, wires `audit:stage13g-match-centre-reference-adoption` into `npm run check`, keeps Stage 13G-MATCH-CENTRE-1 as the separate implementation slice, and preserves active migrations at 18 with no Migration 019.

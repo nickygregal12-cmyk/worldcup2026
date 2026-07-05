@@ -172,3 +172,7 @@ Stage 16A can close only when there is recorded evidence for:
 The next implementation package should be **16A-P1 — Privacy-safe synthetic identity plumbing** or **16A-P2 — staging-effective database time**, not the full seeded cast in one oversized batch.
 
 The full seeded-cast implementation should not begin until both preconditions are either completed or deliberately re-sequenced in the governing documents.
+
+## Stage 16A-P2 acceptance update
+
+Stage 16A-P2 — Staging-effective database time is now accepted as a guarded planning, model and audit package. It proves that Stage 16A seeded acceptance must use the existing Time & Phase control for privacy, simulated-lock, release, correction-review and final-state evidence. The irreversible real global prediction lock is not applied. The package remains Euro-staging-only, blocks WC26 production, changes no product component, scoring rule, resolver, route or database policy, and creates no Migration 019.

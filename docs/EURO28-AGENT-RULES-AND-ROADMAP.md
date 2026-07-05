@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.26 — Stage 13G Match Centre reference adoption
+### Version 4.27 — Stage 16A-P2 staging-effective database time
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -1073,3 +1073,9 @@ Read `docs/STAGE-13G-HANDOVER-20260705.md` and `docs/NEXT-CHAT-PROMPT-STAGE-13G-
 3. UI-copy hygiene once all named audit files are available.
 
 For Match Centre, projections are screen-only and must never write to persisted bracket predictions, standings or scores. For Player destinations, reuse existing H2H, points and insight engines. For copy hygiene, never hardcode user-facing prose into audit marker lists; use shared named constants for copy that audits must locate.
+
+## Stage 16A-P2 staging-effective database time — accepted process guard
+
+Stage 16A-P2 — Staging-effective database time is a guarded planning, model and audit package. It records that later seeded acceptance must exercise privacy, simulated-lock, release, correction-review and final-state evidence through the existing Time & Phase control. It must not apply the irreversible real global prediction lock, must remain Euro-staging-only, must block WC26 production, must not create users or seed predictions, must not change scoring/resolver/UI routes and must create no Migration 019. Original Predictor and KO Predictor evidence remain separate.
+
+The next Stage 16A package may start a small seeded-cast implementation slice only after preserving the same staging-only, no-secret, teardown-safe and no-combined-points boundaries.

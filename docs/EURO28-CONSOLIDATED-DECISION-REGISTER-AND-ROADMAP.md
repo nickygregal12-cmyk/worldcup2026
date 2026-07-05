@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.0 — Stage 16A scope alignment and launch gates
+### Version 4.1 — Stage 16A-P2 staging-effective database time
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
@@ -16,7 +16,7 @@
 
 ## 1A. Current package note
 
-**Stage 16A scope alignment** records the launch gates for the staging seeded acceptance cast. Stage 16A-S0 is not a seeding implementation. It confirms 16A-P1 and 16A-P2 as the next separately guarded preconditions, keeps the full provisional-team/persona/league/correction rehearsal in later implementation slices, and keeps active migrations remain 18 and no Migration 019 is created.
+**Stage 16A-P2 staging-effective database time** records the resettable phase catalogue that later seeded acceptance must use to exercise privacy, simulated-lock, release, correction-review and final-state evidence through the existing Time & Phase control. It applies no irreversible real global prediction lock, creates no seeded data, changes no product component, scoring rule, resolver or route, and keeps active migrations remain 18 and no Migration 019 is created.
 
 ## 2. Existing confirmed product decisions
 
@@ -685,6 +685,23 @@ Confirmed decisions:
 7. The package adds `audit:stage16a-p1-synthetic-identity` to `npm run check`; active migrations remain 18 and no Migration 019 is created.
 
 Next sequenced package: Stage 16A-P2 — Staging-effective database time, unless deliberately re-sequenced before the full seeded-cast implementation.
+
+## Stage 16A-P2 — Staging-effective database time
+
+Status: complete in development as a guarded planning, model and audit package.
+
+Stage 16A-P2 records the effective-time contract for the seeded acceptance window before any data seeding implementation begins. Later Stage 16A scripts must use the existing Time & Phase control to exercise privacy, simulated-lock, release, correction-review and final read-only states. The package blocks WC26 production, remains Euro-staging-only and explicitly does not apply the irreversible real global prediction lock.
+
+Confirmed decisions:
+
+1. The phase catalogue is resettable and uses existing `TIME_PHASE_PRESETS`.
+2. Simulated post-lock evidence is permitted only through the existing Time & Phase control; it is not the real global prediction-lock operation.
+3. The package creates no users, seeds no predictions, changes no fixture/result/scoring/league/tournament-pick data and creates no database migration.
+4. Original Predictor and KO Predictor evidence remain competition-scoped in every phase case.
+5. WC26 production remains fail-closed and Euro staging remains the only permitted project.
+6. Active migrations remain 18 and no Migration 019 is created.
+
+Next sequenced package: a small Stage 16A seeded-cast implementation slice, not the full provisional-team, persona, league, scoring-oracle, correction and teardown package in one batch.
 
 
 
