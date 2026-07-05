@@ -316,3 +316,9 @@ Account follows the Stage 13G destination reference pattern: useful signed-in st
 ## Stage 13G-ADMIN-1 — Admin control-room cosmetic restyle — CONFIRMED
 
 Stage 13G-ADMIN-1 Admin control-room cosmetic restyle uses the approved Admin prototype as a cosmetic reference for shell hierarchy, compact section navigation, role/metadata chips, status cards, high-impact guardrail copy and audit filter pills. The adoption is visual only: Admin authorisation, section routing, operation contracts, audit records, Tournament Picks readiness and database boundaries are not product-design variables and must not be loosened for presentation polish. Active migrations remain 18 and Migration 019 must not be created for this cosmetic stage.
+
+## Stage 13G handover design checkpoint
+
+Tournament/How to Play, Account and Admin now follow the Stage 13G destination-reference pattern. Match Centre and Player View remain contextual destinations, not permanent bottom-nav items. User-facing surfaces carry zero admin, dev or build-internal language and never echo spec/decision-doc prose verbatim. Copy is written for the player reading it, not lifted from the requirement that produced it.
+
+Match Centre group-match projections, when built, must be labelled as projections and must not alter the saved Original Bracket or blend predicted and live bracket contexts. Player View, Head-to-head and Points Breakdown must preserve Original/KO separation and reuse the existing comparison and points engines.

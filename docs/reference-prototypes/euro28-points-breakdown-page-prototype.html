@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Points breakdown — Euro 2028 Predictor (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#173A66; --brand-strong:#0E2A4F; --accent:#0EA5E9; --on-accent:#FFFFFF;
+  --surface-page:#F6F8FB; --surface-raised:#FFFFFF; --surface-sunken:#EAEEF4;
+  --text-primary:#0F1726; --text-secondary:#3E4A5E; --text-muted:#69758A;
+  --border:#D9E0EA;
+  --state-success:#15803D; --state-success-bg:#DCFCE7;
+  --state-partial:#B45309; --state-partial-bg:#FEF3C7;
+  --joker:#B8860B; --joker-bg:#FEF9E7;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --shadow-1:0 1px 2px rgba(15,23,38,.06);
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --brand:#1C4275; --brand-strong:#173A66; --accent:#38BDF8; --on-accent:#0A0F1C;
+  --surface-page:#0A0F1C; --surface-raised:#131B2C; --surface-sunken:#070B14;
+  --text-primary:#EEF2F8; --text-secondary:#B4C0D2; --text-muted:#7B8799;
+  --border:#22304A;
+  --state-success:#4ADE80; --state-success-bg:#122D1D;
+  --state-partial:#FBBF24; --state-partial-bg:#2B2410;
+  --joker:#FACC15; --joker-bg:#2B2410;
+  --shadow-1:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--surface-page);color:var(--text-primary);font-family:var(--font-body);font-size:16px;line-height:1.5}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button,a{font:inherit;cursor:pointer;color:inherit;background:none;border:none;padding:0;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+.num{font-variant-numeric:tabular-nums}
+svg{display:block}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.app{max-width:560px;margin:0 auto;padding:12px 12px 40px}
+@media(min-width:900px){.app{max-width:760px}}
+.hdr{background:var(--brand);color:#EEF2F8;border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;min-height:56px}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:18px}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(255,255,255,.14)}
+.ctx{margin-top:12px;font-size:12px;font-weight:500;padding:7px 12px;border-radius:var(--radius-sm);display:flex;align-items:center;gap:7px;background:var(--surface-sunken);color:var(--text-secondary)}
+/* ===== player strip ===== */
+.pstrip{display:flex;align-items:center;gap:12px;margin-top:12px}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--brand);color:#EEF2F8;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:16px;flex:none}
+.pstrip h1{font-size:18px}
+.pstrip span{display:block;font-size:12px;color:var(--text-muted);margin-top:1px}
+/* ===== tabs ===== */
+.tabs{display:flex;gap:4px;background:var(--surface-sunken);border-radius:999px;padding:3px;width:fit-content;margin-top:14px}
+.tabs button{min-height:36px;padding:0 18px;border-radius:999px;font-size:13.5px;font-weight:500;color:var(--text-muted)}
+.tabs button[aria-selected="true"]{background:var(--surface-raised);color:var(--text-primary);box-shadow:var(--shadow-1)}
+.separation-note{margin-top:8px;font-size:11.5px;color:var(--text-muted)}
+/* ===== summary ===== */
+.card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-top:12px;box-shadow:var(--shadow-1)}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:4px}
+.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.summary-grid .stat{background:var(--surface-sunken);border-radius:var(--radius-sm);padding:12px;text-align:center}
+.summary-grid .stat strong{display:block;font-family:var(--font-display);font-weight:700;font-size:20px}
+.summary-grid .stat span{display:block;font-size:10.5px;color:var(--text-muted);margin-top:3px}
+.badge{font-size:11px;font-weight:500;padding:3px 10px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.b-info{background:var(--surface-sunken);color:var(--text-secondary)}
+.b-success{background:var(--state-success-bg);color:var(--state-success)}
+.b-joker{background:var(--joker-bg);color:var(--joker)}
+.b-partial{background:var(--state-partial-bg);color:var(--state-partial)}
+/* ===== stage group ===== */
+.stage-head{display:flex;justify-content:space-between;align-items:baseline;margin:18px 0 8px}
+.stage-head:first-of-type{margin-top:4px}
+.stage-head h3{font-size:14px}
+.stage-head strong{font-family:var(--font-display);font-weight:700;font-size:14px}
+.matchrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border)}
+.matchrow:first-child{border-top:none}
+.matchrow .fixture{flex:1;min-width:0}
+.matchrow .fixture strong{display:block;font-size:13.5px;font-weight:500}
+.matchrow .fixture span{display:block;font-size:11.5px;color:var(--text-muted);margin-top:1px}
+.matchrow .pred{flex:none;text-align:right;font-size:12.5px;color:var(--text-secondary);width:64px}
+.matchrow .breakdown{flex:none;text-align:right}
+.matchrow .breakdown strong{display:block;font-family:var(--font-display);font-weight:700;font-size:14.5px}
+.matchrow .breakdown span{display:block;font-size:10.5px;color:var(--text-muted);margin-top:1px}
+.corrected-note{display:flex;gap:7px;align-items:flex-start;background:var(--state-partial-bg);color:var(--state-partial);border-radius:var(--radius-sm);padding:8px 10px;margin-top:8px;font-size:11.5px}
+/* ===== bracket milestones ===== */
+.milestone{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--border)}
+.milestone:first-child{border-top:none}
+.milestone img{width:22px;height:22px;border-radius:50%;flex:none}
+.milestone .who{flex:1;font-size:13.5px;font-weight:500}
+.milestone .stage{flex:none;font-size:11.5px;color:var(--text-muted);width:110px}
+.milestone .pts{flex:none;font-family:var(--font-display);font-weight:700;font-size:14.5px;text-align:right;width:56px}
+.proto{margin-top:24px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:11.5px;color:var(--text-muted)}
+.variant{display:none}
+.variant.active{display:block}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs>
+<g id="i-alert"><path d="M12 8v5M12 16.5h.01M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-sun"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+</defs></svg>
+
+<div class="app">
+  <header class="hdr">
+    <h1 class="wordmark">Euro 2028</h1>
+    <button class="icon-btn" id="themeBtn" aria-label="Switch to dark mode"><svg width="18" height="18"><use href="#i-moon" id="themeIcon"/></svg></button>
+  </header>
+
+  <div class="ctx">Player · Points breakdown</div>
+
+  <div class="pstrip">
+    <span class="avatar">N</span>
+    <div><h1>Nicky</h1><span>Overall rank #2 · 118 pts</span></div>
+  </div>
+
+  <nav class="tabs" role="tablist" aria-label="Competition">
+    <button role="tab" aria-selected="true" data-tab="original">Original Predictor</button>
+    <button role="tab" aria-selected="false" data-tab="ko">KO Predictor</button>
+  </nav>
+  <p class="separation-note">Original and KO Predictor points never combine — this page always shows one competition's total at a time.</p>
+
+  <!-- ===== ORIGINAL PREDICTOR ===== -->
+  <div class="variant active" id="tab-original">
+    <div class="card">
+      <span class="eyebrow">Total — Original Predictor</span>
+      <div class="summary-grid">
+        <div class="stat"><strong>118</strong><span>Total points</span></div>
+        <div class="stat"><strong>88</strong><span>Match points</span></div>
+        <div class="stat"><strong>30</strong><span>Bracket points</span></div>
+      </div>
+      <p class="separation-note" style="margin-top:10px">29 of 36 group matches scored so far.</p>
+    </div>
+
+    <div class="card">
+      <div class="stage-head"><h3>Group C</h3><strong class="num">44 pts</strong></div>
+      <div class="matchrow">
+        <div class="fixture"><strong>Spain 2–0 Wales</strong><span>Predicted 2–0</span></div>
+        <div class="pred">Exact</div>
+        <div class="breakdown"><strong class="num">60</strong><span>30 × 2 <span class="badge b-joker" style="padding:1px 6px;font-size:9px">Joker</span></span></div>
+      </div>
+      <div class="matchrow">
+        <div class="fixture"><strong>Sweden 1–1 Finland</strong><span>Predicted 2–1</span></div>
+        <div class="pred">Outcome</div>
+        <div class="breakdown"><strong class="num">10</strong><span>Correct outcome</span></div>
+      </div>
+      <div class="matchrow">
+        <div class="fixture"><strong>Spain 0–0 Sweden</strong><span>Predicted 1–0</span></div>
+        <div class="pred">Missed</div>
+        <div class="breakdown"><strong class="num">0</strong><span>No points</span></div>
+      </div>
+      <div class="corrected-note"><svg width="13" height="13"><use href="#i-alert"/></svg><span>Wales v Finland's result was corrected after review — your points above already reflect the corrected score.</span></div>
+    </div>
+
+    <div class="card">
+      <div class="stage-head"><h3>Bracket progression</h3><strong class="num">30 pts</strong></div>
+      <div class="milestone"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/es.svg" alt=""><span class="who">Spain</span><span class="stage">Round of 16</span><span class="pts num">10</span></div>
+      <div class="milestone"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/es.svg" alt=""><span class="who">Spain</span><span class="stage">Quarter-final</span><span class="pts num">15</span></div>
+      <div class="milestone"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt=""><span class="who">France</span><span class="stage">Round of 16</span><span class="pts num">5<span style="display:block;font-size:9px;color:var(--text-muted)">half — outcome only</span></span></div>
+    </div>
+  </div>
+
+  <!-- ===== KO PREDICTOR ===== -->
+  <div class="variant" id="tab-ko">
+    <div class="card">
+      <span class="eyebrow">Total — KO Predictor</span>
+      <div class="summary-grid">
+        <div class="stat"><strong>0</strong><span>Total points</span></div>
+        <div class="stat"><strong>0</strong><span>Advancing picks</span></div>
+        <div class="stat"><strong>0</strong><span>Method picks</span></div>
+      </div>
+      <p class="separation-note" style="margin-top:10px">KO Predictor opens once the real knockout draw is known — nothing scored yet.</p>
+    </div>
+  </div>
+
+  <div class="proto">Prototype — built directly against the real <code>normalisePointsBreakdown</code> shape in <code>resultModel.js</code>: <code>matchPoints</code>, <code>bracketPoints</code>, <code>totalPoints</code>, per-match <code>exactScorePoints</code>/<code>correctOutcomePoints</code>/<code>jokerBonus</code>/<code>corrected</code>, and per-milestone <code>bracketBreakdown</code> rows. This is the same data the existing <code>PointsBreakdown</code> component in <code>ResultsPresentation.jsx</code> already renders elsewhere — this page reuses that component rather than re-deriving the shape, at route <code>#/player/:userId/points</code>.</div>
+</div>
+
+<script>
+document.querySelectorAll('.tabs [role="tab"]').forEach(t=>t.addEventListener('click',function(){
+  document.querySelectorAll('.tabs [role="tab"]').forEach(x=>x.setAttribute('aria-selected','false'));
+  this.setAttribute('aria-selected','true');
+  document.querySelectorAll('.variant').forEach(v=>v.classList.remove('active'));
+  document.getElementById('tab-'+this.dataset.tab).classList.add('active');
+}));
+let dark=false;
+document.getElementById('themeBtn').addEventListener('click',function(){
+  dark=!dark;
+  if(dark) document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme');
+  document.getElementById('themeIcon').setAttribute('href',dark?'#i-sun':'#i-moon');
+  this.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+});
+</script>
+</body>
+</html>

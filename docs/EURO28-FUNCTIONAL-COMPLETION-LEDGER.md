@@ -1,5 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.41 — Stage 13G handover and next-reference alignment
+
+Records the post-Admin handover state after `64f2f3e`, adds the expanded Stage 13G prompt and new references for guest-transfer modal, Head-to-head page, Points Breakdown page and spec-echo audit, and schedules Match Centre, Player destinations and UI-copy hygiene as separate next batches. Active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.40 — Stage 13G Admin control-room cosmetic restyle
 
 Stage 13G-ADMIN-1 adopts the approved Admin prototype visual language as a cosmetic-only restyle of the protected control room. Existing Admin routes, permissions, RPCs, audit behaviour, Tournament Picks readiness, scoring and database contracts remain unchanged. Active migrations remain 18 and no Migration 019 is created.
@@ -45,11 +49,11 @@ Stage 13G-B-TOURNAMENT-1 implements the Tournament/How to Play split: `#/tournam
 | Head-to-head comparison | ✅ FUNCTIONAL | League and overall tables open one shared, competition-scoped surface aligning all 51 Original positions or all 15 KO fixtures with same/different/private/not-saved states | — |
 | Tappable player identity | ✅ FUNCTIONAL | One accessible `PlayerIdentity` primitive is used by league standings, overall leaderboards and comparison headers; self identity remains non-interactive | — |
 | Match Centre/per-match stats | ✅ FUNCTIONAL | Dedicated fixture route, previous/next navigation, canonical state, Home/Results entry, separate Original/KO views, Overall/private-league scopes, community distribution and points-on-the-line rows accepted in Stage 13F-C | — |
-| Match Centre group-match upgrade | 🕓 SCHEDULED | Adopt the Match Centre reference in a later focused batch so group matches gain group-impact context, live comparison and points-on-the-line content while knockout bracket impact remains KO-only. | 13G-B-MATCHCENTRE-1 |
+| Match Centre group-match upgrade | 🕓 SCHEDULED | Reference decisions are now recorded for conditional competition tabs, live/final group impact, read-only bracket-point preview and group-specific prediction comparison. Implementation remains separate and must preserve knockout panel behaviour. | 13G-MATCH-CENTRE-REF / 13G-MATCH-CENTRE-1 |
 | Bracket Health | ✅ FUNCTIONAL | Immutable Original bracket compared with canonical known fixtures, round health, route conflicts, secured/remaining points, unresolved-original fallback and Match Centre links accepted in Stage 13F-D | — |
 | Tournament-pick contract | ✅ FUNCTIONAL | Contract only: approved Original-only set is total tournament goals, top scorer and highest-scoring team; 20 points each; nearest-total ties and official joint winners receive full points; one global lock; no joker; no KO points. The audit proves this contract and Admin readiness, not a player-facing entry surface. | — |
 | Tournament-pick persistence and player-facing UI | 🟠 PARTIAL | Admin readiness and the contract exist, but ordinary players cannot yet enter total goals, top scorer or highest-scoring team. Build the player surface inside the Original Predictor journey, lock it at the global lock, score via the central ruleset and show the live race on Home during the tournament. Moving this earlier than Stage 17A requires explicit schedule acceptance. | 13G-C / 17A re-approval |
-| Player insight engine and points storytelling | 🟠 PARTIAL | Canonical insight data, lifecycle copy and H2H engines exist, but the accepted product shape is not the current inline strip. Player-name activation must open a dedicated player view with overview, predictions, bracket/tables, dedicated H2H and dedicated points-breakdown destinations, plus informative pre-lock placeholders. | 13G-C |
+| Player insight engine and points storytelling | 🟠 PARTIAL | Canonical insight data, lifecycle copy and H2H engines exist, but the accepted product shape is not the current inline strip. Player-name activation must open a dedicated player view with overview, predictions, bracket/tables, dedicated H2H and dedicated points-breakdown destinations, plus informative pre-lock placeholders. The new H2H and Points Breakdown prototypes are recorded as references; implementation remains scheduled. | 13G-PLAYER-DESTINATIONS-REF / 13G-PLAYER-1 |
 | Provisional team seeding and zero-code-change rehearsal | 🕓 SCHEDULED | Guarded 24-team staging seed, replace/confirm mode and Stage 17 zero-code-change rehearsal | 16A |
 | Synthetic identities and deterministic persona catalogue | ✅ FUNCTIONAL | Stage 16A-P1 defines the Privacy-safe synthetic identity plumbing local catalogue, exactly nineteen deterministic personas, reserved `@synthetic.euro28.test` emails, required `synthetic_euro28: true` metadata, dual-marker teardown guard and Euro-staging/WC26 fail-closed project boundary. No user creation, no database writes, no UI exposure and no Migration 019. | 16A-P1 |
 | Synthetic prediction and scenario oracle | 🕓 SCHEDULED | Independent precomputed points at every Time & Phase preset, including correction replacement | 16A |
@@ -69,9 +73,9 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Guest resolver | ✅ FUNCTIONAL | Same canonical slot-reference resolver | — |
 | Guest Groups/Original browser persistence | ✅ FUNCTIONAL | Local browser storage exists and survives signup on the same browser/domain | — |
 | Guest KO access and persistence | ✅ FUNCTIONAL | Available real KO fixtures save in separate browser storage; sign-in preserves the local draft and confirmed account transfer never affects Original Predictor data | — |
-| Guest-to-account transfer | 🟠 PARTIAL | The import engine exists, but the accepted flow is now a dominant one-tap signup prompt using `importGuestPredictionBundle()`: primary action imports predictions to the account and secondary action starts fresh. Signed-in users must never see “browser draft” language. | 13G-C |
+| Guest-to-account transfer | ✅ FUNCTIONAL | Stage 13G-ACCOUNT-1 moves guest transfer to a one-time post sign-in/sign-up keep/start-fresh dialog. It preserves the safe transfer engine, uses device wording and keeps Original/KO guest drafts separate. | — |
 | Signup encouragement | ✅ FUNCTIONAL | Progress-aware account prompts appear in Original and KO guest journeys; Account detects saved browser predictions and offers the safe transfer action | — |
-| Account destination rebuild | 🕓 SCHEDULED | Adopt the Account reference in a later focused batch: useful signed-in Account header/stats, one-time post-sign-in device-prediction modal, scoped clear-Original-predictions danger action before lock, security/preferences rows and confirmed retirement path for dead legacy Profile code. | 13G-ACCOUNT-1 |
+| Account destination rebuild | ✅ FUNCTIONAL | Stage 13G-ACCOUNT-1 is complete/deployed at `734ad9b`: useful signed-in Account header/stats, one-time post-sign-in device-prediction modal, scoped Original-only clear action before lock, security/preferences rows and retired legacy `src/pages/Profile.jsx`. | — |
 | Manual JSON file controls | 🚫 REJECTED | Removed from the live journey; dormant recovery components were deleted in Stage 13F-H | — |
 | Lucky Dip | ✅ FUNCTIONAL | Groups-only local weighted score generation; fill-empty and confirmed replace-all modes preserve jokers and clear stale bracket picks | — |
 
@@ -191,6 +195,7 @@ Intended model: guests use Groups, Original Bracket and KO Predictor when open; 
 | Stage 13G-C1 guest import prompt | ✅ FUNCTIONAL | Signed-in guest import now uses the accepted one-tap prompt, device-only copy, Import predictions to my account and Start fresh actions while preserving separate Original Predictor and KO Predictor import boundaries. | — |
 | Home theme compliance sweep | 🕓 SCHEDULED | Audit every Home element in light and dark themes and fix through semantic tokens. | 13G-E |
 | Debug/developer strip removal | 🕓 SCHEDULED | Version strings, row counters and lock mechanics such as account autosave/debug strips must not be user-facing copy. | 13G-H1 |
+| User-facing copy hygiene and spec-echo audits | 🕓 SCHEDULED | New reference records the need for banned-vocabulary and spec-echo guards. Only `check-user-facing-spec-echo.mjs` was uploaded in this handover; wire the full audit only once the copy-hygiene script and policy file are also present. | 13G-UI-HYGIENE-1 |
 | Signed-in copy and signup import flow | 🕓 SCHEDULED | Signed-in users never see “browser draft”; signup shows one dominant import prompt with Import to account / Start fresh choices. | 13G-C |
 | Joker design-system element | 🕓 SCHEDULED | Replace hard-coded `J` circle with a gold design-system special-action/multiplier joker element using central scoring values and accessible states. | 13G-C |
 | Bracket slot long-name resilience | 🕓 SCHEDULED | Fix advance/selected controls overlapping team names inside the slot primitive and add long-name baselines. | 13G-C |
@@ -411,11 +416,11 @@ Active migrations remain 18. Migration 019 is not created.
 
 | Item | Status | Evidence | Stage |
 | --- | --- | --- | --- |
-| Account destination rebuild | IMPLEMENTED / LOCAL ACCEPTANCE REQUIRED | Rebuilds signed-in Account with identity, quick stats, security/preferences, leagues shortcut and danger zone. Guest transfer moves to a one-time post sign-in/sign-up dialog. `Clear my predictions` is Original-only, pre-lock only and uses the existing atomic save boundary. | 13G-ACCOUNT-1 |
+| Account destination rebuild | COMPLETE / PUSHED / DEPLOYED | Deployed at `734ad9b`. Signed-in Account has identity, quick stats, security/preferences, leagues shortcut and danger zone. Guest transfer is one-time after sign-in/sign-up. `Clear my predictions` is Original-only, pre-lock only and uses the existing atomic save boundary. | 13G-ACCOUNT-1 |
 
 
 ## Stage 13G-ADMIN-1 — Admin control-room cosmetic restyle
 
 | Item | Status | Evidence | Stage |
 | --- | --- | --- | --- |
-| Admin control-room cosmetic restyle | IMPLEMENTED / LOCAL ACCEPTANCE REQUIRED | Protected Admin shell, hero, section navigation, role chips, summary cards, guardrail banner and audit filter pills adopt the approved Admin prototype visual language using semantic tokens only. Admin services, roles, RPCs, audit records, Tournament Picks readiness and migration count remain unchanged. | 13G-ADMIN-1 |
+| Admin control-room cosmetic restyle | COMPLETE / PUSHED / DEPLOYED | Deployed at `64f2f3e`. Protected Admin shell, hero, section navigation, role chips, summary cards, guardrail banner and audit filter pills adopt the approved Admin prototype visual language using semantic tokens only. Admin services, roles, RPCs, audit records, Tournament Picks readiness and migration count remain unchanged. | 13G-ADMIN-1 |

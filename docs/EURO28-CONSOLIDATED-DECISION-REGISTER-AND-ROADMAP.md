@@ -1045,3 +1045,28 @@ Stage 13G-ACCOUNT-1 implements the approved Account reference destination as a s
 Stage 13G-ADMIN-1 adopts the approved Admin prototype visual language for the protected control room only. It restyles the Admin shell, hero, section navigation, metadata chips, operational summary, guardrail warning and audit filter pills with the Euro semantic token system. It does not change Admin route protection, owner/results-admin roles, service calls, RPCs, scoring, resolver logic, append-only audit evidence, Tournament Picks readiness, Supabase writes or migrations. Active migrations remain 18 and Migration 019 is not created.
 
 Next focused destination after this stage should be Match Centre group-match upgrade unless a higher-priority defect is found.
+
+## Stage 13G handover and next-reference alignment — 2026-07-05
+
+After `64f2f3e`, Tournament/How to Play, Account and Admin are complete, pushed and deployed. The expanded uploaded brief is recorded under `docs/reference-prototypes/euro28-stage13g-expanded-agent-prompt.md`; the earlier `euro28-tournament-split-agent-prompt.md` reference is refreshed to the same current brief.
+
+New reference artefacts now recorded:
+
+- guest-transfer modal prototype;
+- dedicated Head-to-head page prototype;
+- dedicated Points Breakdown page prototype;
+- spec-echo audit script reference.
+
+The next stages remain separate: Match Centre group-match upgrade, Player View/dedicated sub-destinations, and UI-copy hygiene. Do not bundle these into one patch. `src/pages/Profile.jsx` is already retired; broader legacy `src/pages/` retirement remains a future audited cleanup and must not be claimed complete until zero live imports are proved.
+
+### Match Centre reference decisions
+
+The next Match Centre stage must preserve the existing shell and knockout panel, while adding group-specific behaviour: group fixtures show only Original Predictor, carry live/final group-impact state, reuse the canonical resolver for live projections, show read-only projected/confirmed bracket-point preview, and replace “points on the line” with this match’s prediction comparison. No storage write, scoring change, resolver rewrite or migration is expected.
+
+### Player destination reference decisions
+
+The Player View implementation remains scheduled. It must create a dedicated player view plus real Head-to-head and Points Breakdown destinations, reuse existing H2H and points-breakdown engines, rewire league-row entry to the player destination, and keep Original/KO separation. The ledger must remain partial until all three destinations and the league-row rewire are live.
+
+### UI-copy hygiene reference decisions
+
+The spec-echo audit reference is recorded, but the expanded brief’s companion files `check-user-facing-copy-hygiene.mjs` and `user-facing-copy-hygiene-policy.mjs` were not present in the upload. Do not wire a broken audit into `npm run check`; record or attach the missing files first.

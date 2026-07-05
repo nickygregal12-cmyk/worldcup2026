@@ -30,3 +30,9 @@ The clear action is available only before the central Original Predictor lock as
 - No Account route change.
 - No push-notification implementation.
 - Account/Admin/Match Centre later batches remain separate.
+
+## Deployed close-out
+
+Closed at `734ad9b Rebuild Stage 13G account destination` on `euro28-development`. Post-deploy `npm run verify:foundation-page` passed. Active migrations remain 18 and no Migration 019 was created.
+
+The expanded 2026-07-05 prompt repeats the guest-transfer modal requirement; this is already implemented by this stage as a one-time post sign-in/sign-up keep/start-fresh dialog. The visual modal prototype is now recorded under `docs/reference-prototypes/euro28-guest-transfer-modal-prototype.html` for future comparison, not as a new Account rebuild request.

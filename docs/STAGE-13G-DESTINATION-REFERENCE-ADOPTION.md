@@ -136,3 +136,15 @@ It does:
 After this docs/audit package is committed and pushed, the next single implementation task is:
 
 `13G-B-TOURNAMENT-1 — Tournament / How to Play split and canonical tournament fact correction`
+
+## 2026-07-05 expanded-reference addendum
+
+The expanded prompt supersedes the earlier five-destination prompt as the current cross-stage reference. It repeats completed Tournament/How to Play, Account and Admin scope, and adds or clarifies:
+
+- guest-transfer modal visual reference;
+- Match Centre group-match decisions;
+- Head-to-head and Points Breakdown page prototypes;
+- UI-copy/spec-echo audit reference;
+- future audited retirement of remaining legacy `src/pages/` files.
+
+Completed code stages are not reopened by this addendum. Any remaining work must be separated into its own reference/adoption or implementation stage.

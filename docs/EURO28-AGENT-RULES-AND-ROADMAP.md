@@ -1042,3 +1042,15 @@ Next-agent checkpoint: Account has been rebuilt as a focused signed-in destinati
 Next-agent checkpoint: Admin has been restyled as a cosmetic-only protected control-room destination. Preserve the existing Admin route gate, section registry, owner/results-admin boundaries, note gates, confirmation behaviour, append-only audit model, Tournament Picks readiness contract and no-Migration-019 boundary. Do not merge Match Centre work into this batch.
 
 Acceptance must include `npm run audit:stage13g-admin-control-room-restyle`, existing Admin control-room audits, route integrity, frontend architecture, lint, tests, build, full check and deployed foundation verification.
+
+## Stage 13G handover checkpoint — after Admin restyle
+
+Current deployed head before the handover-docs package is `64f2f3e Restyle Stage 13G admin control room`. Tournament/How to Play, Account and Admin are complete/deployed; active migrations remain 18 and no Migration 019 exists.
+
+Read `docs/STAGE-13G-HANDOVER-20260705.md` and `docs/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md` before starting the next chat. The next work must be one scoped stage only:
+
+1. Match Centre reference adoption / group-match implementation;
+2. Player View, Head-to-head and Points Breakdown destinations;
+3. UI-copy hygiene once all named audit files are available.
+
+For Match Centre, projections are screen-only and must never write to persisted bracket predictions, standings or scores. For Player destinations, reuse existing H2H, points and insight engines. For copy hygiene, never hardcode user-facing prose into audit marker lists; use shared named constants for copy that audits must locate.

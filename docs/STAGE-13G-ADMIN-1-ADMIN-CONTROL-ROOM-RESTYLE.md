@@ -36,3 +36,9 @@ Required local gates:
 ## Close-out rule
 
 The stage can be closed only after deployment verification confirms the app shell still passes with 18 active migrations and no inherited WC26 bundle activation.
+
+## Deployed close-out and legacy note
+
+Closed at `64f2f3e Restyle Stage 13G admin control room` on `euro28-development`. Post-deploy `npm run verify:foundation-page` passed. Active migrations remain 18 and no Migration 019 was created.
+
+The expanded 2026-07-05 prompt also calls out `src/pages/AdminPanel.jsx` as dead WC26 legacy. This cosmetic Admin stage did not delete it; broader `src/pages/` retirement is recorded as a future audited cleanup tied to Player View / legacy-pages consolidation. Do not claim the full legacy-pages cleanup complete until every file in `src/pages/` is proved unreferenced or safely removed.
