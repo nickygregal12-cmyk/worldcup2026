@@ -45,12 +45,12 @@ export function buildResultsLifecycle({ lifecycle, liveSnapshot }) {
     [RESULT_LIFECYCLE_STATE.PRE_TOURNAMENT]: {
       tone: 'info',
       title: 'Results open when the tournament starts',
-      body: 'Fixtures are ready, but scores, live tables and the live bracket stay quiet until canonical result records arrive.',
+      body: 'Fixtures are ready, but scores, live tables and the live bracket stay quiet until official result records arrive.',
     },
     [RESULT_LIFECYCLE_STATE.LIVE]: {
       tone: 'danger',
       title: 'Live results are moving now',
-      body: 'The feed, tables and Match Centre use canonical live records only. Predictions remain in their own competition contexts.',
+      body: 'The feed, tables and Match Centre use official live records only. Predictions remain in their own competition contexts.',
     },
     [RESULT_LIFECYCLE_STATE.REVIEW]: {
       tone: 'warning',
@@ -60,7 +60,7 @@ export function buildResultsLifecycle({ lifecycle, liveSnapshot }) {
     [RESULT_LIFECYCLE_STATE.COMPLETED]: {
       tone: 'safe',
       title: 'Tournament results are complete',
-      body: 'All canonical results have been confirmed. Corrections still show their revision trail where applicable.',
+      body: 'All official results have been confirmed. Corrections still show their revision trail where applicable.',
     },
     [RESULT_LIFECYCLE_STATE.QUIET]: {
       tone: 'info',
@@ -92,7 +92,7 @@ export function buildLeaderboardLifecycle({ competitionKey, lifecycle, leaderboa
     return Object.freeze({
       tone: 'info',
       title: isKo ? 'KO leaderboard waits for real knockout fixtures' : 'Leaderboard waits for scored results',
-      body: isKo ? 'The KO Predictor table remains empty until real knockout matches are known and scored.' : 'Original Predictor standings will start once canonical results produce points.',
+      body: isKo ? 'The KO Predictor table remains empty until real knockout matches are known and scored.' : 'Original Predictor standings will start once official results produce points.',
       scoredRows,
       locked,
     })

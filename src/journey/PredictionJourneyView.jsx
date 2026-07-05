@@ -79,11 +79,11 @@ export default function PredictionJourneyView({
         </div>
       </div>
 
-      <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor lifecycle">
+      <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor timing">
         <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}>
           <span>Prediction lock</span>
           <strong>{surfaceLifecycle.lockLabel}</strong>
-          <small>{surfaceLifecycle.provisional ? 'Using central provisional Euro 2028 config' : `Source: ${surfaceLifecycle.source}`}</small>
+          <small>{surfaceLifecycle.provisional ? 'Using the current provisional Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small>
         </article>
         <article className={lifecycleStyles.card}>
           <span>Groups</span>
@@ -162,7 +162,7 @@ export default function PredictionJourneyView({
               {summary.groupComplete < 36 && (
                 <div className="journey-warning-box">
                   <strong>Complete all 36 group scores to unlock the predicted bracket.</strong>
-                  <p>The same canonical group-table and best-third resolver is used for guest, account and future live contexts.</p>
+                  <p>The same official group-table and best-third rules are used for guest, account and future live views.</p>
                 </div>
               )}
               {summary.preview.diagnostics.length > 0 && (

@@ -140,7 +140,7 @@ export default function MatchCentre({ client, reference, lifecycle, requestedMat
           <Community impact={data.impact} />
           <Card className={styles.panel} as="section">
             <div className={styles.panelHeading}><div><span className="page-eyebrow">Points on the line</span><h3>{data.impact.memberCount} player{data.impact.memberCount === 1 ? '' : 's'} in this scope</h3></div><Badge tone="info">Maximum available</Badge></div>
-            <p>Rows show the maximum currently available from the saved selection, using the canonical Euro scoring configuration. Protected predictions stay hidden.</p>
+            <p>Rows show what the saved selection can still earn under the current Euro scoring rules. Protected predictions stay hidden.</p>
             {data.impact.lines.length === 0 ? <p>No players are available in this scope.</p> : <ol className={styles.playerList}>{data.impact.lines.map(line => <PlayerLine key={line.userId} line={line} />)}</ol>}
           </Card>
         </>

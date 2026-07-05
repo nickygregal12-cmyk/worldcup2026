@@ -65,7 +65,7 @@ function readyState({ aggregatesVisible = false, partial = false, tournamentErro
         results: [{ matchId: 'match-1', state: 'completed', outcome: 'W', homeLabel: 'Scotland', awayLabel: 'Team A2', score: '2–1', stageLabel: 'Group A' }],
         nextFixture: { homeLabel: 'Team A3', awayLabel: 'Scotland', scheduledDate: '2028-06-17' },
       },
-      errors: partial ? ['Canonical result read failed'] : [],
+      errors: partial ? ['Official result read failed'] : [],
     },
   }
 }

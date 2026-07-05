@@ -42,9 +42,9 @@ export default function KoPredictorMatchCentre({
 
 
       {lifecycleStatus && (
-        <div className={`${lifecycleStyles.lifecycle} ${lifecycleStyles[lifecycleStatus.tone] ?? ''}`} aria-label="KO Predictor lifecycle">
+        <div className={`${lifecycleStyles.lifecycle} ${lifecycleStyles[lifecycleStatus.tone] ?? ''}`} aria-label="KO Predictor timing">
           <div>
-            <span>KO lifecycle</span>
+            <span>KO timing</span>
             <strong>{lifecycleStatus.title}</strong>
             <small>{lifecycleStatus.detail}</small>
           </div>

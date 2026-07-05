@@ -29,7 +29,7 @@ describe('teamProfileModel', () => {
     expect(result.predictions.eligiblePredictionCount).toBeNull()
   })
 
-  it('derives current group position, canonical results and the next fixture from app-owned data', () => {
+  it('derives current group position, official results and the next fixture from app-owned data', () => {
     const live = buildLiveTournamentSnapshot({ reference: VISUAL_STAGE13D_REFERENCE, resultRows: VISUAL_STAGE13D_RESULT_ROWS })
     const teamId = VISUAL_STAGE13D_REFERENCE.groups[0].teams[1].teamId
     const result = buildTeamTournamentSummary({ reference: VISUAL_STAGE13D_REFERENCE, liveSnapshot: live, tournamentTeamId: teamId })

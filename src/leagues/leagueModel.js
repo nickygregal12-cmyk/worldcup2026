@@ -207,7 +207,7 @@ export function buildLeagueRaceSummary(rows, competitionKey) {
       currentLabel: current ? `${formatOrdinal(current.rank)} before scoring` : 'Your row is not available yet',
       leaderLabel: 'No scored leader',
       gapLabel: 'No points scored yet',
-      copy: 'The race summary will switch to leader gap context once canonical results create points.',
+      copy: 'The race summary will show the gap to the leader once official results create points.',
       memberCount: raceRows.length,
       leaderName: null,
       leaderPoints: 0,
@@ -308,7 +308,7 @@ export function buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle,
       label: summary?.state === 'active' ? 'Scoring live' : 'Released, waiting results',
       copy: summary?.state === 'active'
         ? 'Original points are from group predictions and the pre-tournament bracket only.'
-        : 'Original selections are visible, but standings will move once canonical results are scored.',
+        : 'Original selections are visible, but standings will move once official results are scored.',
     })
   }
 

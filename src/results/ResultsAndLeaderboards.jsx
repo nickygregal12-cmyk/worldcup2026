@@ -138,11 +138,11 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
         <div>
           <span className="foundation-kicker">{isLeaderboards ? 'Separate competition standings' : 'Live tournament'}</span>
           <h2 id="euro28-results-heading">{title}</h2>
-          <p>{isLeaderboards ? 'View every ranked player and your points breakdown. Original and KO Predictor totals never combine.' : 'Canonical live data never blends with predicted brackets.'}</p>
+          <p>{isLeaderboards ? 'View every ranked player and your points breakdown. Original and KO Predictor totals never combine.' : 'Live results never blend with predicted brackets.'}</p>
         </div>
       </div>
 
-      {state.status === 'loading' && !state.data && <p className="foundation-empty-copy">Loading {isLeaderboards ? 'competition tables' : 'canonical results'}…</p>}
+      {state.status === 'loading' && !state.data && <p className="foundation-empty-copy">Loading {isLeaderboards ? 'competition tables' : 'official results'}…</p>}
       {state.status === 'error' && !state.data && <p className="foundation-warning-text">{state.error}</p>}
       {state.status === 'loading' && state.data && <p className="foundation-empty-copy">Updating available sections…</p>}
       {state.error && state.data && <p className="foundation-warning-text">Refresh failed. The last available data remains visible: {state.error}</p>}
@@ -151,7 +151,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
       {state.data && !isLeaderboards && (
         <>
           <StatusBar tone={resultsLifecycle.tone} title={resultsLifecycle.title}>{resultsLifecycle.body}</StatusBar>
-          <SectionError section={state.data.sections.live} fallback="Canonical results could not be loaded." />
+          <SectionError section={state.data.sections.live} fallback="Official results could not be loaded." />
           {summary && (
             <div className="foundation-result-summary">
               <div><strong>{summary.confirmedMatches}</strong><span>confirmed</span></div>
@@ -167,7 +167,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
                 <article className="foundation-results-card">
                   <span className="foundation-kicker">Live context</span>
                   <h3>Live group tables</h3>
-                  <p>Calculated only from canonical live and confirmed group results.</p>
+                  <p>Calculated only from live and confirmed group results.</p>
                   <div className="foundation-live-groups">
                     {groups.map(([groupCode, table]) => <GroupTable key={groupCode} groupCode={groupCode} table={table} reference={reference} />)}
                   </div>
@@ -175,7 +175,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
                 <article className="foundation-results-card">
                   <span className="foundation-kicker">Live context · not your bracket</span>
                   <h3>Live knockout bracket</h3>
-                  <p>All 15 canonical positions are shown. Unresolved participants remain honestly marked TBC.</p>
+                  <p>All 15 positions are shown. Unresolved participants stay marked TBC.</p>
                   <LiveBracket rounds={bracketRounds} />
                 </article>
               </div>

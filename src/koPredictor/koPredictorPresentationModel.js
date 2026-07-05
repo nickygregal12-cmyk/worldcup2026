@@ -53,7 +53,7 @@ export function buildKoPredictorLifecycleStatus(reference, lifecycle, summary) {
       title: 'KO Predictor waits for real fixtures',
       detail: 'Unresolved knockout matches stay hidden until both teams are confirmed.',
       progressLabel: '0 real knockout fixtures available',
-      boundaryLabel: lockedOriginal ? 'Original Predictor lock does not open KO Predictor fixtures early' : 'Original Predictor lifecycle remains separate',
+      boundaryLabel: lockedOriginal ? 'Original Predictor lock does not open KO Predictor fixtures early' : 'Original Predictor timing remains separate',
     })
   }
 

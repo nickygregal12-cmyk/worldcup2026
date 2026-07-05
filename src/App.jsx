@@ -161,7 +161,7 @@ export default function App() {
   } else if (route === APP_ROUTE.RESULTS) {
     content = (
       <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Live tournament" title="Results" description="Canonical scores, live group tables and the live knockout bracket." />
+        <PageIntro eyebrow="Live tournament" title="Results" description="Official scores, live group tables and the live knockout bracket." />
         <ResultsAndLeaderboards view="results" client={activeClient} reference={appData.guestReference} lifecycle={lifecycle} />
       </div>
     )

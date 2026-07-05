@@ -84,7 +84,7 @@ export default function AccountDashboard({ client, reference, session, profile, 
 
   return (
     <section className={styles.dashboard}>
-      <ConfirmDialog open={signOutConfirmOpen} title="Sign out of Euro 2028 Predictor?" confirmLabel="Sign out" cancelLabel="Stay signed in" tone="danger" busy={busy} onConfirm={confirmSignOut} onCancel={() => setSignOutConfirmOpen(false)}>Guest predictions saved on this device stay here. Account predictions already saved to staging remain attached to your account.</ConfirmDialog>
+      <ConfirmDialog open={signOutConfirmOpen} title="Sign out of Euro 2028 Predictor?" confirmLabel="Sign out" cancelLabel="Stay signed in" tone="danger" busy={busy} onConfirm={confirmSignOut} onCancel={() => setSignOutConfirmOpen(false)}>Guest predictions saved on this device stay here. Predictions already saved to your account stay with your account.</ConfirmDialog>
       <ConfirmDialog open={clearConfirmOpen} title="Clear your Original Predictor predictions?" confirmLabel="Clear predictions" cancelLabel="Keep predictions" tone="danger" busy={busy} onConfirm={confirmClearPredictions} onCancel={() => setClearConfirmOpen(false)}>This clears your saved group scores and pre-tournament bracket picks only. It cannot be undone. Your leagues, account details and KO Predictor entries are not changed.</ConfirmDialog>
       {showGuestTransfer && reference && <GuestAccountTransfer client={client} reference={reference} userId={session.user.id} asDialog open={showGuestTransfer} onClose={() => setGuestTransferRequested(false)} onComplete={() => { setGuestTransferRequested(false); refreshDashboard() }} />}
 

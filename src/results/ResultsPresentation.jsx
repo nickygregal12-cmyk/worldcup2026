@@ -132,7 +132,7 @@ function ResultFeedSection({ title, rows, open = false, empty }) {
 export function ResultsFeed({ feed }) {
   return (
     <article className="foundation-results-card foundation-results-card--full">
-      <span className="foundation-kicker">Canonical result records</span>
+      <span className="foundation-kicker">Official result records</span>
       <h3>Fixtures and results</h3>
       <p>Live scores, confirmed results and corrections are kept separate from every prediction context.</p>
       <div className="foundation-result-feed">

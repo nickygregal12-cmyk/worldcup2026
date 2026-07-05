@@ -55,10 +55,10 @@ export async function loadCanonicalTournamentSnapshot(client, reference) {
     .select(RESULT_COLUMNS)
     .eq('tournament_id', reference.tournamentId)
     .order('match_number')
-  throwForError('Canonical result read failed', response.error)
+  throwForError('Official result read failed', response.error)
   return buildLiveTournamentSnapshot({
     reference,
-    resultRows: parseExternal(canonicalResultRowsSchema, response.data ?? [], 'Canonical results response'),
+    resultRows: parseExternal(canonicalResultRowsSchema, response.data ?? [], 'Official results response'),
   })
 }
 
@@ -116,7 +116,7 @@ export async function loadOverallHeadToHead(client, {
 }
 
 export async function loadResultsAndLeaderboards(client, reference) {
-  if (!client) throw new Error('The Euro staging database client is unavailable.')
+  if (!client) throw new Error('Euro 2028 data could not be loaded right now.')
   if (!reference?.tournamentId) throw new Error('The Euro tournament reference is unavailable.')
 
   const [liveResult, sessionResult] = await Promise.allSettled([

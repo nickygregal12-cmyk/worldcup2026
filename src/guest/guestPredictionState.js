@@ -190,7 +190,7 @@ export function validateGuestPredictionState(state, reference) {
   if (!state || typeof state !== 'object') return { valid: false, errors: ['guest state is required'] }
   if (state.version !== GUEST_PREDICTION_STATE_VERSION) errors.push('guest state version is unsupported')
   if (state.context !== GUEST_PREDICTION_CONTEXT) errors.push('guest state context must be guest')
-  if (state.resolverVersion !== GUEST_RESOLVER_VERSION) errors.push('guest state resolver version is unsupported')
+  if (state.resolverVersion !== GUEST_RESOLVER_VERSION) errors.push('This saved prediction file is from an older version. Start a fresh prediction to keep everything accurate.')
   if (state.tournamentId !== reference?.tournamentId) errors.push('guest state tournament does not match the reference')
   if (state.tournamentCode !== reference?.tournamentCode) errors.push('guest state tournament code does not match the reference')
   if (state.referenceVersion !== reference?.referenceVersion) errors.push('guest state reference version does not match')

@@ -90,7 +90,7 @@ describe('Stage 13D result service', () => {
     const data = await loadResultsAndLeaderboards(client, reference())
     expect(data.status).toBe('partial')
     expect(data.live).toBeNull()
-    expect(data.sections.live.error).toContain('Canonical result read failed')
+    expect(data.sections.live.error).toContain('Official result read failed')
     expect(data.sections.originalLeaderboard.status).toBe('ready')
   })
 

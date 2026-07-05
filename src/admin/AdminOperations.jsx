@@ -114,7 +114,7 @@ export default function AdminOperations({ client, reference, hash = '#/admin' })
     if (activeSection === ADMIN_SECTION.RESULTS) {
       return (
         <section className={`${styles.section} ${styles.matchArea}`} id="admin-results" aria-labelledby="admin-results-heading" data-admin-section="results">
-          <div className={styles.sectionHeader}><div><h3 id="admin-results-heading">Result operations</h3><p>Record canonical results, update match state and run explicit single-match recovery.</p></div></div>
+          <div className={styles.sectionHeader}><div><h3 id="admin-results-heading">Result operations</h3><p>Record official results, update match state and run explicit single-match recovery.</p></div></div>
           <AdminMatchOperations client={client} tournamentId={reference.tournamentId} matches={matches} features={features} actionStatus={action.status} runAction={runAction} />
         </section>
       )

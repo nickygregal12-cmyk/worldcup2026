@@ -84,7 +84,7 @@ export default function TournamentOverview({ foundation }) {
         <div>
           <Badge tone="info">Tournament</Badge>
           <h1>{model.heading}</h1>
-          <p>Hosts, venues, dates, format and group slots from the canonical Euro 2028 tournament model.</p>
+          <p>Hosts, venues, dates, format and group slots for Euro 2028.</p>
         </div>
         <LinkButton href="#/how-to-play" variant="secondary" icon="info">How to play</LinkButton>
       </section>
@@ -137,7 +137,7 @@ export default function TournamentOverview({ foundation }) {
       <Card as="section">
         <div className="home-section-heading">
           <div><span className="page-eyebrow">Certainty</span><h2>What is confirmed now</h2></div>
-          <Badge tone="info">Canonical source</Badge>
+          <Badge tone="info">Tournament source</Badge>
         </div>
         <p className={styles.sectionCopy}><strong>{model.certainty.confirmed}.</strong> {model.certainty.provisional}</p>
       </Card>
@@ -190,7 +190,7 @@ export function HowToPlayOverview({ foundation }) {
       <Card as="section">
         <div className="home-section-heading">
           <div><span className="page-eyebrow">Locks</span><h2>When choices close</h2></div>
-          <Badge tone="warning">Central lifecycle</Badge>
+          <Badge tone="warning">Tournament timing</Badge>
         </div>
         <div className={styles.lockList}>
           {model.locks.map(lock => (

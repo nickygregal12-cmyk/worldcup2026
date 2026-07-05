@@ -97,7 +97,7 @@ export function buildPlayerInsightLifecycle({ competitionKey, lifecycle, insight
       label: scored ? 'Original points only' : 'Released after global lock',
       copy: scored
         ? 'Original Predictor points come from the 36 group scores and the winner-only pre-tournament bracket. KO Predictor points never combine here.'
-        : 'Original Predictor selections are released after the global lock; canonical point evidence appears once results are scored.',
+        : 'Original Predictor picks appear after the global lock; point evidence appears once results are scored.',
     })
   }
 

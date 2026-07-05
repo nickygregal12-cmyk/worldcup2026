@@ -45,7 +45,7 @@ async function bundlesForMembers(loader, members) {
 }
 
 export async function loadMatchCentre(client, { reference, requestedMatchNumber, competitionKey, leagueId = null }) {
-  if (!client) throw new Error('The Euro staging database client is unavailable.')
+  if (!client) throw new Error('Euro 2028 data could not be loaded right now.')
   if (!reference?.tournamentId) throw new Error('The Euro tournament reference is unavailable.')
 
   const [liveSnapshot, currentSession] = await Promise.all([

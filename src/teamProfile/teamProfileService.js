@@ -17,7 +17,7 @@ async function readProfileContent(client, tournamentId, tournamentTeamId) {
 }
 
 export async function loadTeamProfileSheet(client, { reference, team }) {
-  if (!client) throw new Error('The Euro staging database client is unavailable.')
+  if (!client) throw new Error('Euro 2028 data could not be loaded right now.')
   const tournamentTeamId = team?.tournamentTeamId ?? team?.teamId
   if (!reference?.tournamentId || !tournamentTeamId) throw new Error('The team profile reference is unavailable.')
 

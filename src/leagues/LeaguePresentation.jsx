@@ -9,8 +9,8 @@ function competitionName(competitionKey) {
 export function LeagueLifecycleBanner({ lifecycleState }) {
   if (!lifecycleState) return null
   return (
-    <aside className="foundation-lifecycle-card" aria-label="League lifecycle">
-      <span className="foundation-kicker">League lifecycle</span>
+    <aside className="foundation-lifecycle-card" aria-label="League timing">
+      <span className="foundation-kicker">League timing</span>
       <strong>{lifecycleState.headline}</strong>
       <p>{lifecycleState.originalCopy}</p>
       <p>{lifecycleState.koCopy}</p>

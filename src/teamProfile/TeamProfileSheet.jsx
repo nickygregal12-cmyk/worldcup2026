@@ -60,7 +60,7 @@ function TournamentForm({ tournament }) {
             <span>{result.state === 'live' ? 'Live' : result.outcome ?? 'Result'}</span>
             <div><strong>{result.homeLabel} {result.score ?? '–'} {result.awayLabel}</strong><small>{result.stageLabel}</small></div>
           </article>
-        )) : <p className="team-profile-note">No canonical tournament results yet.</p>}
+        )) : <p className="team-profile-note">No official tournament results yet.</p>}
       </div>
 
       <div className="team-profile-next">
@@ -162,7 +162,7 @@ export default function TeamProfileSheet({ open, state, lifecycle = null, onClos
 
           <CuratedFacts curated={data.profile.curated} />
           {data.tournament.status === 'error'
-            ? <section className="team-profile-section team-profile-empty"><h3>Tournament data unavailable</h3><p>Canonical results and the current group position could not be loaded.</p></section>
+            ? <section className="team-profile-section team-profile-empty"><h3>Tournament data unavailable</h3><p>Official results and the current group position could not be loaded.</p></section>
             : <TournamentForm tournament={data.tournament} />}
           <PredictionSection predictions={data.profile.predictions} lifecycle={lifecycle} />
         </div>

@@ -19,7 +19,7 @@ function throwForError(label, error) {
 }
 
 export async function loadEuroApp(client) {
-  if (!client) throw new Error('The Euro staging database client is unavailable.')
+  if (!client) throw new Error('Euro 2028 data could not be loaded right now.')
 
   const tournamentResult = await client
     .from('tournaments')

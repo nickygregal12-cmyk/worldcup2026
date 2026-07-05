@@ -174,7 +174,7 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
           <p>
             {heroPrompt}
           </p>
-          <div className={homeStyles.lifecycleStrip} aria-label="Euro 2028 lifecycle">
+          <div className={homeStyles.lifecycleStrip} aria-label="Euro 2028 timing">
             <div><span>Prediction lock</span><strong>{dashboard.lifecycle.predictionLockCountdown}</strong><small>{formatDateTime(dashboard.lifecycle.predictionLockAt)}</small></div>
             <div><span>Tournament starts</span><strong>{dashboard.lifecycle.tournamentStartCountdown}</strong><small>{formatDateTime(dashboard.lifecycle.tournamentStartAt)}</small></div>
             <div><span>KO Predictor</span><strong>{dashboard.koReadiness.open ? `${dashboard.koReadiness.available} ready` : 'Later'}</strong><small>{dashboard.koReadiness.label}</small></div>

@@ -89,14 +89,14 @@ export function buildMatchCentreLifecycle({ fixture, competitionKey, lifecycle }
     return Object.freeze({
       tone: 'danger',
       title: 'This fixture is live',
-      body: `${competitionLabel} selections use the current fixture release rules while canonical scores remain separate from prediction totals.`,
+      body: `${competitionLabel} picks follow the current fixture release rules while official scores stay separate from prediction totals.`,
     })
   }
   if (fixture.state === 'review') {
     return Object.freeze({
       tone: 'warning',
       title: 'Result review is active',
-      body: 'Scores may be visible, but scoring should wait for the confirmed or corrected canonical result.',
+      body: 'Scores may be visible, but points wait for the confirmed or corrected official result.',
     })
   }
   if (fixture.state === 'completed') {
@@ -117,7 +117,7 @@ export function buildMatchCentreLifecycle({ fixture, competitionKey, lifecycle }
     return Object.freeze({
       tone: 'info',
       title: 'Fixture is scheduled',
-      body: 'Match Centre is ready, but prediction visibility still follows the central tournament lifecycle and privacy gates.',
+      body: 'Match Centre is ready, but prediction visibility still follows the tournament timing and privacy gates.',
     })
   }
   return Object.freeze({

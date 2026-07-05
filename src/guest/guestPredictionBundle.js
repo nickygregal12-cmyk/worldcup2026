@@ -107,7 +107,7 @@ export function importGuestPredictionBundle(input, reference, currentState, { no
   if (bundle.version !== GUEST_PREDICTION_BUNDLE_VERSION) throw new TypeError('Guest prediction bundle version is unsupported')
   if (bundle.context !== GUEST_PREDICTION_CONTEXT || bundle.competition !== 'original') throw new TypeError('Only original guest prediction bundles can be imported')
   if (bundle.stateVersion !== GUEST_PREDICTION_STATE_VERSION) throw new TypeError('Guest state version is unsupported')
-  if (bundle.resolverVersion !== GUEST_RESOLVER_VERSION) throw new TypeError('Guest bundle resolver version is unsupported')
+  if (bundle.resolverVersion !== GUEST_RESOLVER_VERSION) throw new TypeError('This saved prediction file is from an older version. Start a fresh prediction to keep everything accurate.')
   if (bundle.tournament?.id !== reference.tournamentId || bundle.tournament?.code !== reference.tournamentCode) throw new TypeError('Guest bundle belongs to a different tournament')
   if (bundle.tournament?.referenceVersion !== reference.referenceVersion) throw new TypeError('Guest bundle uses a different tournament reference version')
 

@@ -34,7 +34,7 @@ function Source({ label, points }) {
 function SourceGrid({ insight }) {
   const original = insight.competitionKey === 'original'
   return (
-    <div className={styles.sourceGrid} aria-label="Canonical point sources">
+    <div className={styles.sourceGrid} aria-label="Point sources">
       <Source label="Exact scores" points={insight.sources.exactScore} />
       <Source label="Correct outcomes" points={insight.sources.correctOutcome} />
       {original ? (
@@ -163,7 +163,7 @@ export default function PlayerInsight({
 
       {section?.status !== 'loading' && <p className={styles.lifecycleNote}><strong>{lifecycleNote.label}</strong><span>{lifecycleNote.copy}</span></p>}
 
-      {section?.status === 'loading' && <p className={styles.state}>Loading canonical point evidence…</p>}
+      {section?.status === 'loading' && <p className={styles.state}>Loading point evidence…</p>}
       {section?.status === 'error' && <p className={`${styles.state} ${styles.error}`.trim()} role="alert">{section.error}</p>}
       {section?.status === 'ready' && insight.state === 'protected' && (
         <>
@@ -174,14 +174,14 @@ export default function PlayerInsight({
       {section?.status === 'ready' && insight.state === 'unscored' && (
         <>
           <StoryGrid insight={insight} />
-          <p className={styles.state}>No canonical points have been recorded for this competition yet.</p>
+          <p className={styles.state}>No points have been recorded for this competition yet.</p>
         </>
       )}
       {section?.status === 'ready' && insight.state === 'scored' && (
         <>
           <StoryGrid insight={insight} />
           <div className={styles.sectionHeading}>
-            <div><span>How the total was earned</span><strong>Canonical scoring rows only</strong></div>
+            <div><span>How the total was earned</span><strong>Scoring rows only</strong></div>
             <small>{insight.statistics.scoredMatches} processed match{insight.statistics.scoredMatches === 1 ? '' : 'es'}</small>
           </div>
           <SourceGrid insight={insight} />
