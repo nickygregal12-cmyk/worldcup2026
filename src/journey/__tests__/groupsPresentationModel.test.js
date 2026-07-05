@@ -42,6 +42,17 @@ describe('groups presentation model', () => {
     expect(GROUPS_TABLE_KEY.THIRD_PLACE).toBe('third-place')
   })
 
+
+  it('treats one-sided partial score drafts as incomplete for predicted tables', () => {
+    const reference = buildGuestReference()
+    let draft = createGuestPredictionState(reference)
+    draft = updateGuestGroupPrediction(draft, { matchNumber: 1, homeScore: null, awayScore: 1 })
+    const model = buildGroupsTablesSheetModel(reference, draft)
+    const groupA = model.groups.find(group => group.code === 'A')
+    expect(groupA.table.completedMatchCount).toBe(0)
+    expect(groupA.table.incompleteMatchCount).toBe(6)
+  })
+
   it('gives grace and locks precedence over save presentation', () => {
     expect(deriveGroupMatchState({ reviewMode: false, locked: true, hasGrace: true, active: true, autosaveStatus: 'saving', context: 'account', complete: true })).toBe('grace')
     expect(deriveGroupMatchState({ reviewMode: false, locked: true, hasGrace: false, active: true, autosaveStatus: 'saving', context: 'account', complete: true })).toBe('locked')

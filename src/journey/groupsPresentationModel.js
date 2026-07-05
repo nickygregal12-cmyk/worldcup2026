@@ -13,10 +13,13 @@ export const GROUPS_TABLE_KEY = Object.freeze({
 
 function predictedMatch(match, draft) {
   const row = draft.groupPredictions[String(match.matchNumber)] ?? {}
+  const homeScore = row.homeScore ?? null
+  const awayScore = row.awayScore ?? null
+  const completeScore = homeScore != null && awayScore != null
   return {
     ...match,
-    homeScore: row.homeScore ?? null,
-    awayScore: row.awayScore ?? null,
+    homeScore: completeScore ? homeScore : null,
+    awayScore: completeScore ? awayScore : null,
   }
 }
 

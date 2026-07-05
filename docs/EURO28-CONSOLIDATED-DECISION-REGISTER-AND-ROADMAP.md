@@ -1069,6 +1069,15 @@ Status: implemented as a small presentation-only design iteration, not final vis
 
 The Groups top focus area now has a stronger premium hierarchy with summary chips and direct predicted-table access. The compact A-F rail is visually softened but remains a same-page jump control. This slice does not alter the settled By group / By date decision, predicted-table calculation, bracket feed, scoring, resolver logic, Supabase writes, service-role usage, routes or migrations. Active migrations remain 18 and Migration 019 is not created.
 
+
+## Stage 13G-GROUPS-2D — Groups Top Dock Repair
+
+Status: implemented as an immediate repair to the 2C design iteration, not final Groups visual polish.
+
+The duplicate hero summary chips are removed because they repeated information already carried by the progress bar and joker meter. The predicted-table shortcut remains, but as a compact action. The By group / By date control now carries helper copy, and the A-F rail becomes a richer group-card rail with progress text and completion meter styling. Predicted tables treat one-sided partial score drafts as incomplete, so deleting one side of a score cannot crash the Groups screen.
+
+Scope remains presentation/model/test/audit/docs only: no scoring change, no resolver change, no Supabase write, no service-role use, no route change and no migration. Active migrations remain 18 and Migration 019 is not created.
+
 ## Stage 13G-GROUPS-2B — Groups Chrome Repair
 
 Post-eye-test decision: Groups and Bracket are route-owned destinations. Do not reintroduce an in-page Groups / Bracket / Review switcher on those primary surfaces, because it duplicates the main navigation. Device-draft import banners are also retired from the prediction surface; transfer belongs to the signed-in account transfer flow. Groups page chrome should stay compact: status/lifecycle detail behind a disclosure, Lucky Dip behind a disclosure, and group switching as compact premium chips.

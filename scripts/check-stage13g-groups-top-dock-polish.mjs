@@ -15,47 +15,66 @@ function assertIncludes(file, tokens) {
   }
 }
 
+const groupsPredictor = read('src/journey/GroupsPredictor.jsx')
 assertIncludes('src/journey/GroupsPredictor.jsx', [
   'GroupsPredictorPolish.module.css',
   'polishStyles.focusIntro',
   'polishStyles.focusHeader',
+  'polishStyles.focusCopy',
   'polishStyles.focusTableButton',
-  'polishStyles.focusStats',
-  'Predicted tables',
-  'summary.groupComplete',
-  'summary.groupJokers',
+  'polishStyles.viewToggle',
+  'polishStyles.groupRail',
   'setTablesOpen(true)',
+  '<small>',
+  '<em aria-hidden="true"><i style={{ width:',
+  "{ homeScore: null, awayScore: null, jokerApplied: false }",
+])
+assert(!groupsPredictor.includes('polishStyles.focusStats'), 'Top-dock repair must not reintroduce redundant summary chips')
+assert(!groupsPredictor.includes('Groups prediction summary'), 'Top-dock repair must keep duplicate summary chip copy removed')
+
+assertIncludes('src/journey/groupsPresentationModel.js', [
+  'const completeScore = homeScore != null && awayScore != null',
+  'homeScore: completeScore ? homeScore : null',
+  'awayScore: completeScore ? awayScore : null',
 ])
 
 assertIncludes('src/journey/GroupsPredictorPolish.module.css', [
-  '.focusIntro',
-  '.focusHeader',
+  '.focusCopy',
   '.focusTableButton',
-  '.focusStats',
+  '.viewToggle button small',
+  '.groupRail button em',
+  '.groupRail button i',
   '.focusStrip::before',
   'radial-gradient',
   '.groupRail button:hover',
 ])
+assert(!read('src/journey/GroupsPredictorPolish.module.css').includes('.focusStats'), 'Top-dock repair CSS must not include redundant focusStats styling')
+
+assertIncludes('src/journey/__tests__/groupsPresentationModel.test.js', [
+  'treats one-sided partial score drafts as incomplete for predicted tables',
+  'homeScore: null',
+  'awayScore: 1',
+])
 
 assertIncludes('docs/STAGE-13G-GROUPS-2-PREMIUM-VIEW.md', [
-  'Stage 13G-GROUPS-2C',
-  'Groups Top Dock Polish',
-  'presentation-only design iteration',
+  'Stage 13G-GROUPS-2D',
+  'Groups Top Dock Repair',
+  'one-sided partial score drafts',
 ])
 
 assertIncludes('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', [
-  'Stage 13G-GROUPS-2C — Groups Top Dock Polish',
-  'No scoring, resolver, Supabase write, service-role, route or migration change',
+  'Stage 13G-GROUPS-2D — Groups Top Dock Repair',
+  'one-sided partial score drafts',
 ])
 
 assertIncludes('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md', [
-  'Stage 13G-GROUPS-2C — Groups Top Dock Polish',
-  'not final visual sign-off',
+  'Stage 13G-GROUPS-2D — Groups Top Dock Repair',
+  'not final Groups visual polish',
 ])
 
 assertIncludes('docs/EURO28-AGENT-RULES-AND-ROADMAP.md', [
-  'Stage 13G-GROUPS-2C — Groups Top Dock Polish',
-  'Do not treat this as final Groups visual polish',
+  'Stage 13G-GROUPS-2D — Groups Top Dock Repair',
+  'partial score drafts must not crash predicted tables',
 ])
 
 assertIncludes('package.json', [
@@ -66,9 +85,9 @@ assertIncludes('package.json', [
 const migrationsDir = path.join(root, 'supabase', 'migrations')
 const migrations = fs.existsSync(migrationsDir) ? fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql')) : []
 assert(migrations.length === 18, `Expected 18 active migrations, found ${migrations.length}`)
-assert(!migrations.some(name => /019/.test(name)), 'Migration 019 must not be introduced by Groups top-dock polish')
+assert(!migrations.some(name => /019/.test(name)), 'Migration 019 must not be introduced by Groups top-dock repair')
 
-console.log('Stage 13G-GROUPS-2C top-dock polish audit passed.')
-console.log('Groups: top focus area now carries premium summary chips and a predicted-tables shortcut while preserving the existing view switcher and table sheet.')
-console.log('Safety: presentation/docs/audit only; no scoring, resolver, Supabase write, service-role use, route or migration change.')
+console.log('Stage 13G-GROUPS-2D top-dock repair audit passed.')
+console.log('Groups: duplicate summary chips are removed, view controls are richer, the group rail is upgraded, and partial score drafts no longer crash predicted tables.')
+console.log('Safety: presentation/model/docs/audit/test only; no scoring, resolver, Supabase write, service-role use, route or migration change.')
 console.log('Database: active migrations remain 18; no Migration 019.')

@@ -1028,6 +1028,9 @@ The Groups predictor now uses the approved shared joker pill and five-dot joker 
 
 Stage 13G-GROUPS-2 — implemented Groups view switcher and table fast path. The settled By group / By date toggle is restored, By group remains the default, by-date tickets carry group tags, and a sticky Tables pill opens A–F plus third-place predicted tables. Future Groups work should build on this native implementation rather than re-importing prototype HTML.
 Stage 13G-GROUPS-2C — Groups Top Dock Polish: implemented a small presentation-only polish pass to the Groups top focus area and compact A-F rail. Do not treat this as final Groups visual polish, and do not use it as permission to alter scoring, resolver logic, Supabase writes, service-role usage, routes or migrations. Active migrations remain 18 and Migration 019 must not exist.
+
+
+Stage 13G-GROUPS-2D — Groups Top Dock Repair: removes the redundant top summary chips, keeps predicted-table access as a compact action, improves the By group / By date and A-F group rail presentation, and records that partial score drafts must not crash predicted tables. This remains presentation/model/test/audit/docs only: no scoring, resolver, Supabase write, service-role, route or migration change. Active migrations remain 18 and Migration 019 must not exist.
 Stage 13G-GROUPS-2B — repaired Groups page chrome after eye test. Keep Groups and Bracket route-owned; do not reintroduce the old in-page Groups / Bracket / Review switcher on those surfaces. Keep device-draft import banners off the prediction surface, keep status/lifecycle detail in a compact disclosure, keep Lucky Dip behind a slim disclosure, and keep group switching as compact premium chips.
 
 ## Stage 13G Destination Reference Adoption — accepted docs/audit checkpoint

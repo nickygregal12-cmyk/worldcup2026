@@ -131,7 +131,7 @@ export default function GroupsPredictor({
   }
 
   const renderMatchCard = match => {
-    const row = draft.groupPredictions[String(match.matchNumber)]
+    const row = draft.groupPredictions[String(match.matchNumber)] ?? { homeScore: null, awayScore: null, jokerApplied: false }
     const complete = row.homeScore != null && row.awayScore != null
     const capReached = summary.groupJokers >= summary.groupJokerCap && !row.jokerApplied
     const started = isPredictionMatchStarted(match)
@@ -184,20 +184,15 @@ export default function GroupsPredictor({
       <section className={`${viewStyles.focusStrip} ${polishStyles.focusStrip}`} aria-label="Group prediction progress">
         <div className={polishStyles.focusIntro}>
           <div className={polishStyles.focusHeader}>
-            <div>
+            <div className={polishStyles.focusCopy}>
               <span className="page-eyebrow">Group stage</span>
               <h2>{isDateView ? 'Predict by date' : 'Predict by group'}</h2>
-              <p>36 scores, five jokers and fast predicted tables.</p>
+              <p>Pick every group score, place up to five jokers, then check the live predicted tables.</p>
             </div>
             <button className={polishStyles.focusTableButton} type="button" onClick={() => setTablesOpen(true)}>
               <span aria-hidden="true">▦</span>
-              Predicted tables
+              Open predicted tables
             </button>
-          </div>
-          <div className={polishStyles.focusStats} aria-label="Groups prediction summary">
-            <span><strong>{summary.groupComplete}</strong>/36 scores</span>
-            <span><strong>{summary.groupJokers}</strong>/{summary.groupJokerCap} jokers</span>
-            <span><strong>{isDateView ? 'Date' : 'Group'}</strong> view</span>
           </div>
         </div>
         <div className={viewStyles.focusMeters}>
@@ -206,9 +201,15 @@ export default function GroupsPredictor({
         </div>
       </section>
 
-      <div className={viewStyles.viewToggle} aria-label="Choose groups prediction view">
-        <button type="button" className={!isDateView ? viewStyles.on : ''} onClick={() => setViewMode(GROUPS_VIEW_MODE.GROUP)}>By group</button>
-        <button type="button" className={isDateView ? viewStyles.on : ''} onClick={() => setViewMode(GROUPS_VIEW_MODE.DATE)}>By date</button>
+      <div className={`${viewStyles.viewToggle} ${polishStyles.viewToggle}`} aria-label="Choose groups prediction view">
+        <button type="button" className={!isDateView ? viewStyles.on : ''} onClick={() => setViewMode(GROUPS_VIEW_MODE.GROUP)}>
+          <span>By group</span>
+          <small>Group cards and table jumps</small>
+        </button>
+        <button type="button" className={isDateView ? viewStyles.on : ''} onClick={() => setViewMode(GROUPS_VIEW_MODE.DATE)}>
+          <span>By date</span>
+          <small>Fixtures in order</small>
+        </button>
       </div>
 
       <details className={viewStyles.helperDisclosure}>
@@ -235,7 +236,13 @@ export default function GroupsPredictor({
       {!isDateView ? (
         <>
           <nav className={`${viewStyles.groupRail} ${polishStyles.groupRail}`} aria-label="Jump to a group">
-            {groupProgress.map(group => <button type="button" key={group.code} className={group.isComplete ? viewStyles.railComplete : ''} onClick={() => scrollToGroup(group.code)} aria-label={`Jump to Group ${group.code}`}><span>{group.code}</span><small>{group.complete}/{group.total}</small></button>)}
+            {groupProgress.map(group => (
+              <button type="button" key={group.code} className={group.isComplete ? viewStyles.railComplete : ''} onClick={() => scrollToGroup(group.code)} aria-label={`Jump to Group ${group.code}`}>
+                <span>Group {group.code}</span>
+                <small>{group.complete}/{group.total} scores</small>
+                <em aria-hidden="true"><i style={{ width: `${Math.round((group.complete / group.total) * 100)}%` }} /></em>
+              </button>
+            ))}
           </nav>
           <div className="groups-list">
             {reference.groups.map(group => {

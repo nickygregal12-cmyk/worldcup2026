@@ -62,3 +62,18 @@ The Groups top focus area now carries a more premium hierarchy: a subtle branded
 The group rail receives a lighter premium treatment with softer glass, fuller radius and hover feedback while keeping the same A-F jump behaviour.
 
 No scoring, resolver, Supabase write, service-role, route or migration change is included. Active migrations remain 18. No Migration 019.
+
+
+## Stage 13G-GROUPS-2D — Groups Top Dock Repair
+
+This repair follows the first top-dock eye test. It keeps the slice as a design iteration, not final Groups visual polish.
+
+Changes:
+
+- Removes the redundant score/joker/view summary chips from the hero because the progress bar and joker meter already carry that information better.
+- Keeps direct predicted-table access, but as a compact action rather than a dominant full-width pill.
+- Upgrades the By group / By date control with helper copy so it reads as an intentional mode switch rather than a basic two-button tab.
+- Upgrades the A–F group rail into richer group cards with progress text and a small completion meter.
+- Treats one-sided partial score drafts as incomplete for predicted tables, so deleting only one side of a score cannot crash the Groups screen.
+
+No scoring, resolver, Supabase write, service-role, route or migration change is included. Active migrations remain 18. No Migration 019.

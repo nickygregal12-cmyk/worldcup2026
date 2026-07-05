@@ -464,6 +464,18 @@ Status: FUNCTIONAL — small presentation-only design iteration, not final visua
 - No scoring, resolver, Supabase write, service-role, route or migration change.
 - Active migrations remain 18. No Migration 019.
 
+
+## Stage 13G-GROUPS-2D — Groups Top Dock Repair
+
+Status: FUNCTIONAL — immediate eye-test and runtime repair for the 2C design iteration. It is not final Groups visual polish.
+
+- Removes duplicate hero summary chips because the score progress bar and joker meter already present the same information.
+- Retains predicted-table access as a compact top action.
+- Improves the By group / By date mode switcher and the A–F group rail presentation without changing behaviour.
+- Hardens predicted tables against one-sided partial score drafts so a deleted home or away score is treated as an incomplete match, not an application error.
+- No scoring, resolver, Supabase write, service-role, route or migration change.
+- Active migrations remain 18. No Migration 019.
+
 ## Stage 13G-GROUPS-2B — Groups Chrome Repair
 
 Status: FUNCTIONAL — post-eye-test presentation repair.
