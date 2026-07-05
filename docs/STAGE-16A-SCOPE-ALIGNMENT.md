@@ -189,3 +189,8 @@ Stage 16A-P2 — Staging-effective database time is now accepted as a guarded pl
 ## Stage 16A-P3 acceptance update
 
 Stage 16A-P3 — Seed manifest dry-run is now accepted as a manifest dry-run only package. It records 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases, three league shapes, correction marker and dual-marker teardown selectors before any staging write path exists. It includes no database writes, no user creation, no prediction seeding, no service-role credential requirement, no scoring or resolver change, no route change and no Migration 019. Original Predictor and KO Predictor remain separate.
+
+
+## Stage 16A-P4 acceptance update
+
+Stage 16A-P4 — Seed SQL preview dry-run is now accepted as a read-only SELECT preview package. It consumes the Stage 16A-P3 manifest dry-run and generates local SQL evidence for 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases and three league shapes. It includes no database writes, no user creation, no prediction seeding, no service-role credential use, no scoring or resolver change, no UI route change and no Migration 019. Original Predictor and KO Predictor remain separate. Active migrations remain 18.

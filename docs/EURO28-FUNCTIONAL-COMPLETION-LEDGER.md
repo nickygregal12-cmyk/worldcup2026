@@ -1,5 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.45 — Stage 16A-P4 seed SQL preview dry-run
+
+Stage 16A-P4 — Seed SQL preview dry-run is accepted as a read-only SELECT preview package. It consumes the Stage 16A-P3 manifest dry-run and provides local SQL evidence for 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases and three league shapes. It does not execute Supabase writes, create Auth users, seed predictions, require service-role credentials, change scoring, change resolver logic, change UI routes or create a database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.44 — Stage 16A-P3 seed manifest dry-run
 
 Stage 16A-P3 — Seed manifest dry-run is accepted as a manifest dry-run only package. It records the local dry-run seed manifest for 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases, three league shapes, correction marker and dual-marker teardown selectors before any staging write path exists. It includes no database writes, no user creation, no prediction seeding, no service-role credential requirement, no scoring or resolver changes and no database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
@@ -328,6 +332,26 @@ Status: complete in development.
 Stage 13G-C6 simplifies the default private-league shell around the compact table. The default view now leads with league selection, competition selection and rank/member/points. League code, lifecycle/privacy copy, summary cards and shared-member notes sit behind details after the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
 
 
+
+## Stage 16A-P4 — Seed SQL preview dry-run
+
+Status: complete in development as a read-only SELECT preview package.
+
+Stage 16A-P4 records the seed SQL preview before any staging write path exists. The package validates the SQL scaffold locally and generates read-only SELECT output only. It does not create Auth users, write Supabase data, seed predictions, create leagues, run scoring, use service-role credentials or create a database migration.
+
+Confirmed decisions:
+
+1. The preview consumes the Stage 16A-P3 manifest dry-run.
+2. The generated SQL starts with SELECT and contains no mutating SQL statements.
+3. The preview reports 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases and three league shapes.
+4. The preview exposes Original Predictor and KO Predictor keys separately.
+5. The generator fails closed against WC26 production and non-Euro project references.
+6. The package has no database writes, no user creation and no prediction seeding.
+7. The dry run does not require service-role credentials.
+8. Original Predictor and KO Predictor remain separate; no combined totals or blended standings are approved.
+9. Active migrations remain 18 and no Migration 019 is created.
+
+Next sequenced package: a narrow staging-only executor preflight with explicit approval before any write path exists.
 
 ## Stage 16A-P3 — Seed manifest dry-run
 

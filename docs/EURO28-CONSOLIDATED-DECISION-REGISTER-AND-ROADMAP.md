@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.2 — Stage 16A-P3 seed manifest dry-run
+### Version 4.3 — Stage 16A-P4 seed SQL preview dry-run
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
@@ -15,6 +15,8 @@
 - Original and KO Predictor totals remain permanently separate.
 
 ## 1A. Current package note
+
+**Stage 16A-P4 Seed SQL preview dry-run** records the local read-only SELECT preview generator for the Stage 16A seed manifest. It produces evidence for 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases and three league shapes without executing Supabase writes, creating Auth users, seeding predictions, requiring service-role credentials, changing product components, changing scoring, changing resolver logic, changing routes or creating a migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
 
 **Stage 16A-P3 seed manifest dry-run** records the local manifest dry-run before any staging write path exists. It plans 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases, three league shapes, correction marker and dual-marker teardown selectors. It creates no seeded data, requires no service-role credentials, changes no product component, scoring rule, resolver or route, and keeps active migrations remain 18 and no Migration 019 is created.
 
@@ -1094,6 +1096,21 @@ The Player View implementation remains scheduled. It must create a dedicated pla
 ### UI-copy hygiene reference decisions
 
 The spec-echo audit reference is recorded, but the expanded brief’s companion files `check-user-facing-copy-hygiene.mjs` and `user-facing-copy-hygiene-policy.mjs` were not present in the upload. Do not wire a broken audit into `npm run check`; record or attach the missing files first.
+
+## Stage 16A-P4 seed SQL preview dry-run
+
+Stage 16A-P4 — Seed SQL preview dry-run is accepted as a read-only SELECT preview package. It consumes the Stage 16A-P3 manifest dry-run and generates local SQL evidence only.
+
+Confirmed product boundaries:
+
+- The preview is read-only SELECT output.
+- The preview reports 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases and three league shapes.
+- The preview reports Original Predictor and KO Predictor evidence separately.
+- The package contains no database writes, no user creation, no prediction seeding, no service-role credential use, no scoring change, no resolver change, no route change and no Migration 019.
+- The generator fails closed outside Euro staging and blocks WC26 production.
+- Active migrations remain 18.
+
+Next sequenced package: a narrow staging-only executor preflight with explicit approval before any write path exists.
 
 ## Stage 16A-P3 seed manifest dry-run
 

@@ -138,3 +138,8 @@ Active migrations remain 18 and Migration 019 must not exist.
 After Stage 16A-P3, the next package may begin a narrow staging-only implementation slice. It should still avoid combining provisional teams, Auth user creation, profile writes, prediction writes, league writes, scoring oracle, correction rehearsal and teardown into one oversized package.
 
 A sensible next slice is a local seed SQL or command manifest generator that still prints planned operations and checks local environment guards before any write command exists.
+
+
+## Stage 16A-P4 follow-on
+
+16A-P4 — Seed SQL preview dry-run is the accepted follow-on read-only SQL preview package. It consumes this manifest to print SELECT-only evidence and still avoids database writes, Auth user creation, prediction seeding, service-role credential use and Migration 019.

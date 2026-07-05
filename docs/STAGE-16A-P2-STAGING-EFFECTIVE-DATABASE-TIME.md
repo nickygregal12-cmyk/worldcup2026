@@ -124,3 +124,8 @@ Active migrations remain 18 and Migration 019 must not exist.
 ## Next package
 
 With Stage 16A-P1 and Stage 16A-P2 complete, Stage 16A-P3 — Seed manifest dry-run is the seed-manifest dry-run checkpoint before any staging write path exists. The first later implementation slice should remain staging-only and should not combine provisional teams, user creation, predictions, scoring oracle, leagues, correction rehearsal and teardown in one oversized patch.
+
+
+## Stage 16A-P4 follow-on
+
+16A-P4 — Seed SQL preview dry-run is the accepted follow-on read-only SQL preview package. It preserves the resettable time-phase catalogue while avoiding database writes, user creation, prediction seeding, service-role credential use and Migration 019.
