@@ -77,7 +77,7 @@ for (const [file, content] of [
 }
 
 requireIncludes('docs/EURO28-DESIGN-CHARTER.md', charter, [
-  'Version 1.13',
+  'Version 1.14',
   'Tournament, How to Play',
   'Tournament and How to Play split — CONFIRMED',
   'football tournament reference content and predictor mechanics must not be bundled into one destination',

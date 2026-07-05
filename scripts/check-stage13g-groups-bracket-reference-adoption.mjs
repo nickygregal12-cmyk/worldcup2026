@@ -146,7 +146,7 @@ for (const marker of [
 
 for (const [label, text, markers] of [
   ['Groups prototype reference', groupsPrototype, ['Groups — Euro 2028 Predictor (Night Broadcast contract)', 'NIGHT BROADCAST CONTRACT', 'Preserved decisions', 'Joker', 'Lucky dip', 'Predicted third-place ranking', 'This changes your bracket', 'You predicted', 'mflag', 'const VEN', 'data-s=', 'Math.min(15', 'Tables fast path', 'sticky pill + slide-up sheet']],
-  ['Bracket prototype reference', bracketPrototype, ['Bracket — Euro 2028 Predictor (prototype)', 'Your predicted bracket', 'converging wall chart', 'Winner picks only — scores and jokers live in the KO Predictor', 'Re-pick — your tables changed this tie']],
+  ['Bracket prototype reference', bracketPrototype, ['Bracket — Euro 2028 Predictor (visual contract)', 'APPROVED VISUAL CONTRACT', 'proper desktop wall chart', 'Round of 16 on the outside edges', 'quarter-finals and semi-finals stepping inward', 'centred final', 'small vs treatment', 'date, time, stadium and host flag', 'winner-only', 'no score inputs', 'no method controls', 'no joker controls']],
 ]) {
   for (const marker of markers) assertIncludes(label, text, marker)
 }
@@ -178,6 +178,6 @@ if (failures.length > 0) {
 
 console.log('Euro Stage 13G-REF-2 Groups/Bracket reference adoption audit passed.')
 console.log('Groups: approved Night Broadcast contract, joker controls, tables fast path and preserved behaviour recorded.')
-console.log('Bracket: stacked/wall-chart split, slot anatomy, winner-only picking and absence controls recorded.')
+console.log('Bracket: approved Bracket G contract, proper wall chart, match detail and winner-only controls recorded.')
 console.log('Scope: docs/audit-only; no UI build, route implementation, scoring, resolver, Supabase write or migration change.')
 console.log('Database: active migrations remain 18; no Migration 019.')

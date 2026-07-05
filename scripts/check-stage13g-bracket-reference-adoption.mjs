@@ -71,11 +71,18 @@ for (const [file, content] of [
 }
 
 requireIncludes('docs/reference-prototypes/euro28-bracket-page-prototype.html', prototype, [
-  'Your predicted bracket',
-  'Winner picks only — scores and jokers live in the KO Predictor',
-  'Wall chart bracket',
-  'Re-pick — your tables changed this tie',
-  '3DEF',
+  'Bracket — Euro 2028 Predictor (visual contract)',
+  'APPROVED VISUAL CONTRACT',
+  'proper desktop wall chart',
+  'Round of 16 on the outside edges',
+  'quarter-finals and semi-finals stepping inward',
+  'centred final',
+  'small vs treatment',
+  'date, time, stadium and host flag',
+  'winner-only',
+  'no score inputs',
+  'no method controls',
+  'no joker controls',
 ])
 
 requireIncludes('package.json', packageJson, [
@@ -96,9 +103,9 @@ if (errors.length) {
   process.exit(1)
 }
 
-console.log('Euro Stage 13G-BRACKET-REF Original Bracket reference audit passed.')
-console.log('Reference: stacked <900px and converging wall chart ≥900px recorded.')
+console.log('Euro Stage 13G-BRACKET-REF approved Original Bracket visual contract audit passed.')
+console.log('Reference: approved Bracket G with stacked mobile and proper ≥900px wall chart recorded.')
 console.log('Contract change: charter v1.8 wall chart moved from backlog into Stage 13G.')
-console.log('Sign-off: no connector lines first, share-card follow-on, single 900px breakpoint.')
+console.log('Sign-off: match details, subtle vs treatment and winner-only controls recorded; implementation remains separate.')
 console.log('Scope: docs/audit only; no UI build, scoring, resolver, Supabase write or migration change.')
 console.log('Database: active migrations remain 18; no Migration 019.')

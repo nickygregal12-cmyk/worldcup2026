@@ -135,7 +135,7 @@ for (const marker of [
 
 for (const [label, text, markers] of [
   ['Home prototype reference', homePrototype, ['Home — Euro 2028 Predictor (prototype)', 'Predict every match. Beat your mates.', 'First match', 'Predictions lock', 'KO Predictor']],
-  ['League prototype reference', leaguePrototype, ['Leagues — Euro 2028 Predictor (prototype)', 'League standings', 'KO Predictor standings arrive at the knockouts — everyone starts on zero.', 'Copy invite link', 'Delete this league']],
+  ['League prototype reference', leaguePrototype, ['Leagues — Euro 2028 Predictor (visual contract)', 'APPROVED VISUAL CONTRACT', 'compact Match Centre at the top', 'full user row clickable', 'subtle chevrons', 'movement arrows']],
 ]) {
   for (const marker of markers) assertIncludes(label, text, marker)
 }
@@ -167,6 +167,6 @@ if (failures.length > 0) {
 
 console.log('Euro Stage 13G-REF prototype adoption audit passed.')
 console.log('Home: approved reference with one-countdown and zero-KO-pre-readiness amendments recorded.')
-console.log('Leagues: approved reference recorded; pure table, no stat chips, dedicated S5 player view.')
+console.log('Leagues: approved League table D contract recorded; compact Match Centre, full-row links and movement arrows remain active.')
 console.log('Scope: docs/audit-only; no UI build, route implementation, scoring, resolver, Supabase write or migration change.')
 console.log('Database: active migrations remain 18; no Migration 019.')

@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.13 — Groups and Leagues visual contracts recorded
+### Version 1.14 — Approved page visual contracts recorded
 
 > **Authority:** This document governs how the Euro 2028 Predictor looks and feels. The Consolidated Decision Register governs product rules. The Agent Rules govern build process. A visual deviation must be proposed here before it ships.
 
@@ -290,7 +290,10 @@ Visual-contract rules:
 - Cosmetic implementation stages under an approved visual contract must be sequenced behind any recorded missing functional rows for that surface; visual polish must not jump the correctness queue.
 - The approved Groups Night Broadcast direction is the identity anchor for this programme. Groups must not be redrafted unless Nicky explicitly reopens that surface.
 - The supplied League visual contract is also approved. Leagues must not be redrafted unless Nicky explicitly reopens that surface.
-- Bracket and KO Predictor candidates from Batch 1 are not approved visual contracts until Nicky chooses a variant or approves a merged variant.
+- League table D is the approved Leagues refinement: compact Match Centre at the top, full-row clickable user rows, subtle chevrons, and movement arrows.
+- Bracket G is the approved Original Bracket visual contract: mobile stacked view, proper ≥900px wall chart, Round of 16 on outside edges, quarter-finals and semi-finals stepping inward, centre final, small slick `vs`, and date/time/stadium/host-flag match detail.
+- KO Predictor F is the approved KO Predictor visual contract: teams pending before real fixtures are known, real fixtures once ready, 90-minute score, advancing team, method and five separate KO jokers.
+- Bracket Health remains unapproved and must be redrafted separately around `your predicted route vs the real route` before any implementation.
 - Light and dark theme treatment, realistic long-content states, loading/empty/partial states and hard-case football content are part of the approval standard, not optional polish.
 
 The design-contract drafting programme is docs/reference-only until a later separately approved implementation stage. It authorises no product-code change, no route change, no scoring or resolver change, no Supabase write, no Auth configuration change and no migration. Active migrations remain 18 and Migration 019 must not be created by visual-contract work.
@@ -303,6 +306,7 @@ The design-contract drafting programme is docs/reference-only until a later sepa
 
 ## Change log
 
+- **v1.14:** Recorded Bracket G and KO Predictor F as approved visual contracts, recorded League table D as the approved Leagues refinement, and left Bracket Health unapproved for a later candidate.
 - **v1.13:** Recorded the approved League visual contract alongside the approved Groups Night Broadcast anchor; clarified that Bracket and KO Predictor remain unapproved candidates until Nicky approves a variant or merge.
 - **v1.12:** Recorded the visual-contract rule: approved self-contained HTML references become binding layout/hierarchy/state contracts, but are not code to port; one approved contract is retained per surface; Groups Night Broadcast remains the identity anchor; visual work cannot override functional decisions, signup gates, migrations, scoring, resolver or Original/KO boundaries.
 - **v1.9:** Approved the holistic Stage 13G information architecture, phase-aware More strategy, KO teaser, real-time match ordering, shared group views, canonical rules guide, global player identity activation, league invite previews and seeded coherence acceptance.
