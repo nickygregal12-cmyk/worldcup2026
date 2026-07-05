@@ -115,7 +115,7 @@ export default function PlayerHeadToHead({ state, reference, lifecycle = null, o
         <div>
           <span className={styles.kicker}>{contextName} · {competitionName(state.competitionKey)}</span>
           <h3>You v {state.otherName}</h3>
-          <p>Original and KO Predictor comparisons stay separate. Original picks release after the global lock; KO picks release fixture by fixture after each real knockout match starts. Only selections released by the existing server privacy rules are shown.</p>
+          <p>Original and KO Predictor comparisons stay separate. Original picks release after the global lock; KO picks release fixture by fixture after each real knockout match starts. You only see picks that are available for this player right now.</p>
         </div>
         <button type="button" className={styles.close} onClick={onClose}>Close comparison</button>
       </header>

@@ -89,7 +89,7 @@ export function buildPlayerInsightLifecycle({ competitionKey, lifecycle, insight
       return Object.freeze({
         state: 'original_private_until_lock',
         label: 'Original Predictor privacy',
-        copy: 'Original Predictor point evidence follows the global prediction lock. Only selections released by the existing server privacy rules are shown.',
+        copy: 'Original Predictor point evidence follows the global prediction lock. You only see picks that are available for this player right now.',
       })
     }
     return Object.freeze({

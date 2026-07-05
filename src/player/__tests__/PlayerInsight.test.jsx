@@ -52,7 +52,7 @@ describe('PlayerInsight', () => {
       />,
     )
     expect(html).toContain('Private until lock.')
-    expect(html).toContain('Only selections released by the existing server privacy rules are shown')
+    expect(html).toContain('You only see picks that are available for this player right now')
     expect(html).not.toContain('How the total was earned')
   })
 })

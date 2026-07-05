@@ -63,7 +63,7 @@ describe('teamProfileModel', () => {
     expect(preLock.copy).toContain('global Original Predictor lock')
     expect(preLock.copy).toContain('KO Predictor data is not included')
     expect(released.copy).toContain('complete Original Predictor brackets only')
-    expect(released.copy).toContain('no Original/KO points are combined')
+    expect(released.copy).toContain('KO Predictor points stay out of it')
   })
 
 })
