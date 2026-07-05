@@ -1026,7 +1026,7 @@ Next build order after this reference is recorded:
 
 The Groups predictor now uses the approved shared joker pill and five-dot joker meter. Future KO joker work must reuse the same `JokerPill` and `JokerMeter` primitives rather than introducing a separate control. The retired bare `J` circle must not return.
 
-Next recommended implementation slice: `13G-GROUPS-2 — Groups view switcher, phase default and context banner implementation`.
+Stage 13G-GROUPS-2 — implemented Groups view switcher and table fast path. The settled By group / By date toggle is restored, By group remains the default, by-date tickets carry group tags, and a sticky Tables pill opens A–F plus third-place predicted tables. Future Groups work should build on this native implementation rather than re-importing prototype HTML.
 
 ## Stage 13G Destination Reference Adoption — accepted docs/audit checkpoint
 

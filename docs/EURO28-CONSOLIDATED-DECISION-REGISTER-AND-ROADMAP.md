@@ -1062,6 +1062,17 @@ This slice implements the approved Groups joker-control decision from the refere
 
 Scope boundaries: no venue meta-line implementation, no score-stepper implementation, no view-switcher rebuild, no predicted-table rebuild, no bracket rebuild, no league or Player View rebuild, no Supabase write change, no scoring or resolver change, and no migration.
 
+
+## Stage 13G-GROUPS-2 — Groups Premium View Switcher
+
+Status: implemented.
+
+This slice records and implements that the By group / By date toggle is a restored settled Groups decision from the original reference, not a new direction. By group remains the default prediction workflow. By date lists all 36 group fixtures in scheduled order for matchday-style entry.
+
+The new product decision is the by-date context fast path: date-mode tickets carry a group tag, and a sticky Tables pill opens a slide-up sheet with A–F plus third-place rails. This keeps predicted standings one tap away from anywhere in the date list.
+
+Scope boundaries: no scoring change, no resolver change, no Supabase write, no service-role use, no new route and no migration. The sheet consumes existing predicted group-table and best-third logic only. Active migrations remain 18 and Migration 019 is not created.
+
 ## Stage 13G Destination Reference Adoption — Tournament, How to Play, Account, Admin and Match Centre
 
 This docs/audit package records the approved `euro28-tournament-page-prototype.html`, `euro28-how-to-play-page-prototype.html`, `euro28-account-page-prototype.html`, `euro28-admin-page-prototype.html` and `euro28-match-centre-page-prototype.html` artefacts under `docs/reference-prototypes/`, together with the build-agent reference brief. The artefacts are adopted as information-architecture, copy-register and data-source-discipline references only, not as pixel-perfect code to port.

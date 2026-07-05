@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { buildGuestReference } from '../../guest/__tests__/fixtures.js'
 import { createGuestPredictionState, updateGuestGroupPrediction } from '../../guest/index.js'
-import { buildGroupProgress, deriveGroupMatchState, jokerControlLabel } from '../groupsPresentationModel.js'
+import {
+  GROUPS_TABLE_KEY,
+  buildGroupDateSections,
+  buildGroupProgress,
+  buildGroupsTablesSheetModel,
+  deriveGroupMatchState,
+  jokerControlLabel,
+} from '../groupsPresentationModel.js'
 
 describe('groups presentation model', () => {
   it('summarises each group independently', () => {
@@ -11,6 +18,28 @@ describe('groups presentation model', () => {
     draft = updateGuestGroupPrediction(draft, { matchNumber: 2, homeScore: 1, awayScore: 1 })
     expect(buildGroupProgress(reference, draft)[0]).toEqual({ code: 'A', complete: 2, total: 6, isComplete: false })
     expect(buildGroupProgress(reference, draft)[1]).toEqual({ code: 'B', complete: 0, total: 6, isComplete: false })
+  })
+
+
+
+  it('groups matches into by-date sections while preserving group context', () => {
+    const reference = buildGuestReference()
+    const sections = buildGroupDateSections(reference)
+    expect(sections[0].matches[0]).toMatchObject({ groupCode: 'A' })
+    expect(sections.flatMap(section => section.matches)).toHaveLength(36)
+  })
+
+  it('builds the groups table sheet model with group and third-place rails', () => {
+    const reference = buildGuestReference()
+    let draft = createGuestPredictionState(reference)
+    for (const match of reference.groupMatches) {
+      draft = updateGuestGroupPrediction(draft, { matchNumber: match.matchNumber, homeScore: match.matchNumber % 3, awayScore: match.matchNumber % 2 })
+    }
+    const model = buildGroupsTablesSheetModel(reference, draft)
+    expect(model.groups.map(group => group.code)).toEqual(['A', 'B', 'C', 'D', 'E', 'F'])
+    expect(model.groups[0].table.rows).toHaveLength(4)
+    expect(model.bestThird.ranking).toHaveLength(6)
+    expect(GROUPS_TABLE_KEY.THIRD_PLACE).toBe('third-place')
   })
 
   it('gives grace and locks precedence over save presentation', () => {

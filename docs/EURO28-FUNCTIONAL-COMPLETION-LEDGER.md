@@ -453,6 +453,16 @@ Active migrations remain 18. No Migration 019.
 | Disabled-at-cap treatment | FUNCTIONAL | When the five-group-joker cap is reached, unarmed joker pills render disabled with explicit state text. |
 | Scope boundary | FUNCTIONAL | No venue meta-line, score-stepper, bracket, league, Player View, scoring, resolver, Supabase or migration change is included. |
 
+
+## Stage 13G-GROUPS-2 — Groups Premium View Switcher
+
+| Ledger row | Status | Evidence |
+| --- | --- | --- |
+| By group / By date view switcher | FUNCTIONAL | The Groups predictor restores the settled By group / By date toggle. By group remains the default, and By date lists all 36 group fixtures in date order. |
+| Group context in by-date mode | FUNCTIONAL | By-date match tickets carry a visible group tag, so a player can see which table the fixture affects. |
+| Tables fast path in by-date mode | FUNCTIONAL | A sticky Tables pill opens a slide-up predicted-tables sheet with A–F and third-place rails. |
+| Scope boundary | FUNCTIONAL | Presentation/model/docs/audit only. No scoring, resolver, Supabase write, service-role use, route or migration change is included. Active migrations remain 18; no Migration 019. |
+
 ## Stage 13G-BRACKET-REF — Original Bracket Reference Adoption
 
 | Ledger row | Status | Record |
