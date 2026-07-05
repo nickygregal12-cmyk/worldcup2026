@@ -6,7 +6,7 @@ import { buildCanonicalResultFeed, buildLeaderboardLifecycle, buildLiveBracketRo
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { GroupTable, Leaderboard, LiveBracket, ResultsFeed, SectionError } from './ResultsPresentation.jsx'
 import { buildStandingComparison } from '../leagues/leagueModel.js'
-import { PlayerHeadToHead, PlayerInsight, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
+import { PlayerHeadToHead, PlayerInsight, PLAYER_COMPARISON_CONTEXT, openPlayerView } from '../player/index.js'
 import { RESULTS_PAGE_VIEW } from './resultsAccess.js'
 import styles from './ResultsAccess.module.css'
 
@@ -116,6 +116,10 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
   const selectedLeaderboard = selectedIsOriginal ? state.data?.sections.originalLeaderboard : state.data?.sections.koLeaderboard
   const selectedPoints = selectedIsOriginal ? state.data?.sections.originalPoints : state.data?.sections.koPoints
   const resultCompetitionKey = selectedIsOriginal ? RESULT_COMPETITION.ORIGINAL : RESULT_COMPETITION.KO_PREDICTOR
+  const openLeaderboardPlayerView = row => {
+    if (!row?.userId) return
+    openPlayerView({ userId: row.userId, competitionKey: resultCompetitionKey })
+  }
   const selectedLeaderboardRows = useMemo(() => selectedLeaderboard?.data ?? [], [selectedLeaderboard])
   const selectedLeaderboardLifecycle = useMemo(() => buildLeaderboardLifecycle({
     competitionKey: resultCompetitionKey,
@@ -205,6 +209,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
               note={selectedIsOriginal ? 'Groups + original bracket' : 'Real knockout matches only'}
               currentUserId={state.data.currentUserId}
               onCompare={row => compareOverall(row, resultCompetitionKey)}
+              onOpenPlayer={openLeaderboardPlayerView}
             />
             <PlayerInsight
               title="Your points story"

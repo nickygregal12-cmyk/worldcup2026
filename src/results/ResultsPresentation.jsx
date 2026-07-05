@@ -6,7 +6,7 @@ export function SectionError({ section, fallback }) {
   return <p className="foundation-warning-text">{section.error ?? fallback}</p>
 }
 
-export function Leaderboard({ title, section, note, currentUserId, onCompare }) {
+export function Leaderboard({ title, section, note, currentUserId, onCompare, onOpenPlayer }) {
   const rows = section?.data ?? []
   return (
     <article className="foundation-results-card">
@@ -28,9 +28,12 @@ export function Leaderboard({ title, section, note, currentUserId, onCompare }) 
               <PlayerIdentity
                 player={row}
                 isCurrentUser={row.userId === currentUserId}
-                onActivate={row.userId === currentUserId ? null : onCompare}
-                meta={row.userId === currentUserId ? null : 'Open comparison'}
+                onActivate={onOpenPlayer}
+                meta={row.userId === currentUserId ? 'Open your player view' : 'Open player view'}
               />
+              {row.userId !== currentUserId && onCompare && (
+                <button type="button" className="foundation-secondary-button" onClick={() => onCompare(row)}>Compare</button>
+              )}
               <span className="foundation-leaderboard-score"><strong>{row.totalPoints}</strong> pts</span>
             </li>
           ))}

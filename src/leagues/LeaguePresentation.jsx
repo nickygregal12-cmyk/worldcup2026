@@ -162,7 +162,7 @@ export function LeagueSummaryCard({ title, summary, section }) {
   )
 }
 
-export function StandingsTable({ rows, selectedUserId, onCompare }) {
+export function StandingsTable({ rows, selectedUserId, onOpenPlayer, onCompare }) {
   const raceRows = buildLeagueRaceRows(rows)
   const hasScoring = raceRows.some(row => row.scoredMatchCount > 0 || row.totalPoints > 0)
   return (
@@ -196,9 +196,12 @@ export function StandingsTable({ rows, selectedUserId, onCompare }) {
                   <PlayerIdentity
                     player={row}
                     isCurrentUser={row.isCurrentUser}
-                    onActivate={row.isCurrentUser ? null : onCompare}
+                    onActivate={onOpenPlayer}
                     meta={memberMeta}
                   />
+                  {!row.isCurrentUser && onCompare && (
+                    <button type="button" className="foundation-secondary-button" onClick={() => onCompare(row)}>Compare</button>
+                  )}
                 </td>
                 <td data-label="Pts"><strong>{row.totalPoints}</strong></td>
               </tr>

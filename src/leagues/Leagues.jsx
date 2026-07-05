@@ -3,7 +3,7 @@ import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, load
 import { buildLeagueLifecycleState, buildStandingComparison, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { CompetitionLifecycleNote, CompetitionTabs, LeagueActionConfirmation, LeagueCodeDisclosure, LeagueCompetitionHeading, LeagueDetailDestination, LeagueKoReadinessCard, LeagueLifecycleBanner, LeaguePicker, LeagueSecondaryDetails, LeagueSummaryCard, StandingsTable } from './LeaguePresentation.jsx'
-import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT } from '../player/index.js'
+import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT, openPlayerView } from '../player/index.js'
 
 function messageForError(error) {
   const message = error instanceof Error ? error.message : String(error)
@@ -260,6 +260,8 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const activeSummary = effectiveCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.summaries.original : activeOverview?.summaries.koPredictor
   const leagueListLoading = ['idle', 'loading'].includes(leagueListStatus)
 
+  const openMemberPlayerView = row => row?.userId && openPlayerView({ userId: row.userId, competitionKey: effectiveCompetitionKey })
+
   useEffect(() => {
     if (competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR && !koLeagueReady) {
       setCompetitionKey(LEAGUE_COMPETITION.ORIGINAL)
@@ -362,7 +364,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                 {activeSection?.status === 'error' && <p className="foundation-warning-text">{activeSection.error}</p>}
                 {(overview.status === 'loading' || overviewLoading) && <p className="foundation-empty-copy">Refreshing standings…</p>}
                 {overview.status !== 'loading' && !overviewLoading && activeSection?.status === 'ready' && standings.length === 0 && <p className="foundation-empty-copy">No league members were returned.</p>}
-                {standings.length > 0 && <StandingsTable rows={standings} selectedUserId={comparisonMemberId} onCompare={row => compareMember(row, effectiveCompetitionKey)} />}
+                {standings.length > 0 && <StandingsTable rows={standings} selectedUserId={comparisonMemberId} onOpenPlayer={openMemberPlayerView} onCompare={row => compareMember(row, effectiveCompetitionKey)} />}
 
                 {activeOverview && (
                   <LeagueSecondaryDetails title="League details">
