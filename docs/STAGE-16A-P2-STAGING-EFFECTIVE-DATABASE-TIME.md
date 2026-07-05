@@ -123,4 +123,4 @@ Active migrations remain 18 and Migration 019 must not exist.
 
 ## Next package
 
-With Stage 16A-P1 and Stage 16A-P2 complete, the next Stage 16A package can start the guarded seeded-cast implementation in small slices. The first implementation slice should remain staging-only and should not combine provisional teams, user creation, predictions, scoring oracle, leagues, correction rehearsal and teardown in one oversized patch.
+With Stage 16A-P1 and Stage 16A-P2 complete, Stage 16A-P3 — Seed manifest dry-run is the seed-manifest dry-run checkpoint before any staging write path exists. The first later implementation slice should remain staging-only and should not combine provisional teams, user creation, predictions, scoring oracle, leagues, correction rehearsal and teardown in one oversized patch.

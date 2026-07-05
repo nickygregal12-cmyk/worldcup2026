@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.1 — Stage 16A-P2 staging-effective database time
+### Version 4.2 — Stage 16A-P3 seed manifest dry-run
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
@@ -16,7 +16,7 @@
 
 ## 1A. Current package note
 
-**Stage 16A-P2 staging-effective database time** records the resettable phase catalogue that later seeded acceptance must use to exercise privacy, simulated-lock, release, correction-review and final-state evidence through the existing Time & Phase control. It applies no irreversible real global prediction lock, creates no seeded data, changes no product component, scoring rule, resolver or route, and keeps active migrations remain 18 and no Migration 019 is created.
+**Stage 16A-P3 seed manifest dry-run** records the local manifest dry-run before any staging write path exists. It plans 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases, three league shapes, correction marker and dual-marker teardown selectors. It creates no seeded data, requires no service-role credentials, changes no product component, scoring rule, resolver or route, and keeps active migrations remain 18 and no Migration 019 is created.
 
 ## 2. Existing confirmed product decisions
 
@@ -1094,3 +1094,20 @@ The Player View implementation remains scheduled. It must create a dedicated pla
 ### UI-copy hygiene reference decisions
 
 The spec-echo audit reference is recorded, but the expanded brief’s companion files `check-user-facing-copy-hygiene.mjs` and `user-facing-copy-hygiene-policy.mjs` were not present in the upload. Do not wire a broken audit into `npm run check`; record or attach the missing files first.
+
+## Stage 16A-P3 seed manifest dry-run
+
+Stage 16A-P3 — Seed manifest dry-run is accepted as a manifest dry-run only package. It records the local seed-manifest shape before any staging write path exists.
+
+Confirmed product boundaries:
+
+- The manifest contains 24 provisional team slots across six groups.
+- The manifest consumes 19 synthetic personas from Stage 16A-P1.
+- The manifest consumes 11 resettable time-phase cases from Stage 16A-P2.
+- The manifest records large, tiny, multi-league and no-league league evidence without creating league rows.
+- The manifest records correction and teardown evidence only as dry-run selectors.
+- The package contains no database writes, no user creation, no prediction seeding, no service-role credential requirement, no scoring change, no resolver change, no route change and no Migration 019.
+- Original Predictor and KO Predictor remain separate; combined totals and blended standings remain prohibited.
+- Future teardown must preserve the seed → validate → teardown → zero residue → reseed sequence and must require both reserved synthetic markers.
+
+Next sequenced package: a narrow staging-only implementation preflight or generator, not the full seeded cast in one batch.

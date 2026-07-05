@@ -107,4 +107,4 @@ Active migrations remain 18 and Migration 019 must not exist.
 
 ## Next package
 
-Stage 16A-P2 — Staging-effective database time is the next precondition after P1. Once P2 is accepted, the full seeded-cast implementation should still be split into small staging-only slices rather than delivered as one oversized batch.
+Stage 16A-P2 — Staging-effective database time is the next precondition after P1. Stage 16A-P3 — Seed manifest dry-run is the seed-manifest dry-run checkpoint after P2. Once P2 and P3 are accepted, the full seeded-cast implementation should still be split into small staging-only slices rather than delivered as one oversized batch.

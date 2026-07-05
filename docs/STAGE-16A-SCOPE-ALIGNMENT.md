@@ -68,6 +68,14 @@ It must allow Euro staging to exercise privacy, lock and release phases without 
 
 It must remain staging-only and must not change production tournament time semantics.
 
+### 16A-P3 — Seed manifest dry-run
+
+This precondition is approved before any staging write path exists.
+
+It records the dry-run seed manifest only: 24 provisional team slots, 19 synthetic personas, three league shapes, 11 resettable time-phase cases, correction marker and dual-marker teardown selectors.
+
+It must remain manifest dry-run only, with no database writes, no user creation, no prediction seeding, no service-role credential requirement, no scoring or resolver changes and no Migration 019.
+
 ### 16A-D1 — Provisional teams
 
 The seeded provisional team dataset must contain exactly 24 teams.
@@ -169,10 +177,15 @@ Stage 16A can close only when there is recorded evidence for:
 
 ## Next package after this scope lock
 
-The next implementation package should be **16A-P1 — Privacy-safe synthetic identity plumbing** or **16A-P2 — staging-effective database time**, not the full seeded cast in one oversized batch.
+The next implementation package after P1/P2/P3 should be a narrow staging-only implementation slice, not the full seeded cast in one oversized batch.
 
-The full seeded-cast implementation should not begin until both preconditions are either completed or deliberately re-sequenced in the governing documents.
+The full seeded-cast implementation should not begin until all three preconditions are either completed or deliberately re-sequenced in the governing documents.
 
 ## Stage 16A-P2 acceptance update
 
 Stage 16A-P2 — Staging-effective database time is now accepted as a guarded planning, model and audit package. It proves that Stage 16A seeded acceptance must use the existing Time & Phase control for privacy, simulated-lock, release, correction-review and final-state evidence. The irreversible real global prediction lock is not applied. The package remains Euro-staging-only, blocks WC26 production, changes no product component, scoring rule, resolver, route or database policy, and creates no Migration 019.
+
+
+## Stage 16A-P3 acceptance update
+
+Stage 16A-P3 — Seed manifest dry-run is now accepted as a manifest dry-run only package. It records 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases, three league shapes, correction marker and dual-marker teardown selectors before any staging write path exists. It includes no database writes, no user creation, no prediction seeding, no service-role credential requirement, no scoring or resolver change, no route change and no Migration 019. Original Predictor and KO Predictor remain separate.

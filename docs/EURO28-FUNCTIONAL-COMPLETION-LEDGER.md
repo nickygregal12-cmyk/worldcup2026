@@ -1,5 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.44 — Stage 16A-P3 seed manifest dry-run
+
+Stage 16A-P3 — Seed manifest dry-run is accepted as a manifest dry-run only package. It records the local dry-run seed manifest for 24 provisional team slots, 19 synthetic personas, 11 resettable time-phase cases, three league shapes, correction marker and dual-marker teardown selectors before any staging write path exists. It includes no database writes, no user creation, no prediction seeding, no service-role credential requirement, no scoring or resolver changes and no database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.43 — Stage 16A-P2 staging-effective database time
 
 Stage 16A-P2 — Staging-effective database time is accepted as a guarded planning, model and audit package for staging-effective database time. It records the resettable privacy, simulated-lock, release, correction-review and final-state phase catalogue that later seeded acceptance must use through the existing Time & Phase control. It explicitly does not apply the irreversible real global prediction lock, does not create users, does not seed predictions, does not change scoring, does not change resolver logic and creates no database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
@@ -323,6 +327,27 @@ Status: complete in development.
 
 Stage 13G-C6 simplifies the default private-league shell around the compact table. The default view now leads with league selection, competition selection and rank/member/points. League code, lifecycle/privacy copy, summary cards and shared-member notes sit behind details after the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
 
+
+
+## Stage 16A-P3 — Seed manifest dry-run
+
+Status: complete in development as a manifest dry-run only package.
+
+Stage 16A-P3 records the seed manifest before any staging write path exists. The package validates the planned cast and evidence groups locally but does not create Auth users, write Supabase data, seed predictions, create leagues, run scoring, use service-role credentials or create a database migration.
+
+Confirmed decisions:
+
+1. The dry-run manifest contains exactly 24 provisional team slots across six groups.
+2. The manifest consumes the Stage 16A-P1 set of exactly 19 synthetic personas.
+3. The manifest consumes the Stage 16A-P2 set of 11 resettable time-phase cases.
+4. The manifest records large, tiny, multi-league and no-league evidence without creating league rows.
+5. Every operation is dry-run only with no database writes, no user creation and no prediction seeding.
+6. The dry run does not require service-role credentials.
+7. Original Predictor and KO Predictor remain separate; no combined totals or blended standings are approved.
+8. The future teardown sequence remains seed → validate → teardown → zero residue → reseed and must require both synthetic markers.
+9. Active migrations remain 18 and no Migration 019 is created.
+
+Next sequenced package: a narrow staging-only implementation preflight or generator, not the full provisional-team, persona, league, scoring-oracle, correction and teardown package in one batch.
 
 ## Stage 13G-REF — Home and League reference prototype adoption
 
