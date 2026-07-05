@@ -16,7 +16,7 @@
 
 .lifecycleStrip span,
 .lifecycleStrip small {
-  color: var(--surface-inverse-soft);
+  color: var(--text-on-brand);
   font-size: 0.72rem;
 }
 

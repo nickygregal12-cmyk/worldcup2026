@@ -76,7 +76,7 @@ a {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-md);
   background: var(--text-strong);
-  color: var(--surface-raised);
+  color: var(--text-on-brand);
   font-weight: 800;
   text-decoration: none;
   transform: translateY(-180%);
@@ -711,7 +711,7 @@ a {
 .home-hero__content > p {
   max-width: 41rem;
   margin: 0;
-  color: var(--surface-inverse-soft);
+  color: var(--text-on-brand);
   font-size: clamp(0.98rem, 2vw, 1.08rem);
   line-height: 1.65;
 }
@@ -775,7 +775,7 @@ a {
 
 .home-tournament-card > div small,
 .home-tournament-card > p {
-  color: var(--surface-inverse-soft);
+  color: var(--text-on-brand);
 }
 
 .home-tournament-card > p {
