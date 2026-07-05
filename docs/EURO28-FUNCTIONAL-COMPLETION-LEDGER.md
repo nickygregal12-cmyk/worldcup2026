@@ -454,6 +454,16 @@ Active migrations remain 18. No Migration 019.
 | Scope boundary | FUNCTIONAL | No venue meta-line, score-stepper, bracket, league, Player View, scoring, resolver, Supabase or migration change is included. |
 
 
+## Stage 13G-GROUPS-2C — Groups Top Dock Polish
+
+Status: FUNCTIONAL — small presentation-only design iteration, not final visual polish.
+
+- Adds a more premium Groups top focus treatment with summary chips and a predicted-tables shortcut.
+- Keeps the existing By group / By date switcher and slide-up predicted tables model intact.
+- Lightly improves the compact A-F group rail treatment without changing its behaviour.
+- No scoring, resolver, Supabase write, service-role, route or migration change.
+- Active migrations remain 18. No Migration 019.
+
 ## Stage 13G-GROUPS-2B — Groups Chrome Repair
 
 Status: FUNCTIONAL — post-eye-test presentation repair.

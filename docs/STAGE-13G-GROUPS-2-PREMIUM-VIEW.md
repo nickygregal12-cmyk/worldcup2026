@@ -52,3 +52,13 @@ Repair decision:
 - The group jump rail is restyled as compact premium chips rather than large block buttons.
 
 This is a presentation/chrome repair only. It does not change scoring, resolver logic, saved prediction contracts, Supabase writes, service-role usage, routes or migrations.
+
+## Stage 13G-GROUPS-2C — Groups Top Dock Polish
+
+This is a presentation-only design iteration after the Groups chrome repair. It is not final visual sign-off.
+
+The Groups top focus area now carries a more premium hierarchy: a subtle branded edge, compact summary chips for scores/jokers/view mode, and a direct predicted-tables shortcut. The existing By group / By date switcher, date-mode sticky Tables pill and slide-up predicted tables sheet remain the same underlying experience.
+
+The group rail receives a lighter premium treatment with softer glass, fuller radius and hover feedback while keeping the same A-F jump behaviour.
+
+No scoring, resolver, Supabase write, service-role, route or migration change is included. Active migrations remain 18. No Migration 019.

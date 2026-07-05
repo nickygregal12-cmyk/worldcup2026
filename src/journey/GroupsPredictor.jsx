@@ -15,6 +15,7 @@ import {
 import { EURO_LUCKY_DIP_MODE } from './euroLuckyDip.js'
 import actionStyles from './GroupsPredictorActions.module.css'
 import viewStyles from './GroupsPredictor.module.css'
+import polishStyles from './GroupsPredictorPolish.module.css'
 
 function formatMatchDate(dateValue) {
   if (!dateValue) return 'Date to be confirmed'
@@ -180,11 +181,24 @@ export default function GroupsPredictor({
 
   return (
     <div className="groups-predictor">
-      <section className={viewStyles.focusStrip} aria-label="Group prediction progress">
-        <div>
-          <span className="page-eyebrow">Group stage</span>
-          <h2>{isDateView ? 'Predict by date' : 'Predict by group'}</h2>
-          <p>36 scores, five jokers and fast predicted tables.</p>
+      <section className={`${viewStyles.focusStrip} ${polishStyles.focusStrip}`} aria-label="Group prediction progress">
+        <div className={polishStyles.focusIntro}>
+          <div className={polishStyles.focusHeader}>
+            <div>
+              <span className="page-eyebrow">Group stage</span>
+              <h2>{isDateView ? 'Predict by date' : 'Predict by group'}</h2>
+              <p>36 scores, five jokers and fast predicted tables.</p>
+            </div>
+            <button className={polishStyles.focusTableButton} type="button" onClick={() => setTablesOpen(true)}>
+              <span aria-hidden="true">▦</span>
+              Predicted tables
+            </button>
+          </div>
+          <div className={polishStyles.focusStats} aria-label="Groups prediction summary">
+            <span><strong>{summary.groupComplete}</strong>/36 scores</span>
+            <span><strong>{summary.groupJokers}</strong>/{summary.groupJokerCap} jokers</span>
+            <span><strong>{isDateView ? 'Date' : 'Group'}</strong> view</span>
+          </div>
         </div>
         <div className={viewStyles.focusMeters}>
           <ProgressBar value={summary.groupComplete} max={36} label="Group predictions completed" />
@@ -220,7 +234,7 @@ export default function GroupsPredictor({
 
       {!isDateView ? (
         <>
-          <nav className={viewStyles.groupRail} aria-label="Jump to a group">
+          <nav className={`${viewStyles.groupRail} ${polishStyles.groupRail}`} aria-label="Jump to a group">
             {groupProgress.map(group => <button type="button" key={group.code} className={group.isComplete ? viewStyles.railComplete : ''} onClick={() => scrollToGroup(group.code)} aria-label={`Jump to Group ${group.code}`}><span>{group.code}</span><small>{group.complete}/{group.total}</small></button>)}
           </nav>
           <div className="groups-list">
