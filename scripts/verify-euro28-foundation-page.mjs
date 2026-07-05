@@ -87,7 +87,7 @@ for (const text of [
   'groups_primary',
   'ko_early_access',
   'ko_primary',
-  'Predict all 36 scores',
+  'focusStrip',
   'Review progress',
   'Joker applied',
   'Saved on this device',
