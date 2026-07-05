@@ -16,6 +16,8 @@ const model = fs.readFileSync('src/matchCentre/matchCentreModel.js', 'utf8')
 const service = fs.readFileSync('src/matchCentre/matchCentreService.js', 'utf8')
 const home = fs.readFileSync('src/home/HomeDashboard.jsx', 'utf8')
 const results = fs.readFileSync('src/results/ResultsPresentation.jsx', 'utf8')
+const homeModel = fs.readFileSync('src/home/homeDashboardModel.js', 'utf8')
+
 const checks = [
   [route.includes("MATCH_CENTRE: 'match-centre'"), 'dedicated Match Centre route'],
   [route.includes('matchCentreParamsFromHash'), 'safe fixture/competition/scope query parsing'],
@@ -24,7 +26,7 @@ const checks = [
   [model.includes('RESULT_COMPETITION'), 'competition boundary'],
   [service.includes('get_member_predictions_after_lock'), 'server-authorised overall prediction reads'],
   [service.includes('getLeagueMemberPredictions'), 'server-authorised league prediction reads'],
-  [home.includes('#/match-centre?match='), 'Home Match Centre entry'],
+  [(home.includes('matchHub.href') && homeModel.includes('#/match-centre?match=')), 'Home Match Centre entry'],
   [results.includes('#/match-centre?match='), 'Results Match Centre entry'],
 ]
 for (const [ok, label] of checks) if (!ok) throw new Error(`Stage 13F-C audit failed: ${label}`)

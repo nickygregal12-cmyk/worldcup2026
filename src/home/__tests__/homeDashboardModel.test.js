@@ -148,6 +148,45 @@ describe('Home dashboard model', () => {
     expect(dashboard.lifecycle.phase).toBe('live')
     expect(dashboard.live.nextMatch.matchNumber).toBe(2)
     expect(dashboard.live.nextMatch.displayStatus).toBe('live')
+    expect(dashboard.live.matchHub).toEqual(expect.objectContaining({
+      matchNumber: 2,
+      state: 'live',
+      href: '#/match-centre?match=2&competition=original',
+      cta: 'Open live Match Centre',
+    }))
+  })
+
+  it('routes the next knockout fixture into KO Predictor Match Centre context', () => {
+    const dashboard = makeDashboard({
+      results: {
+        live: {
+          summary: { liveMatches: 0, confirmedMatches: 36 },
+          results: Array.from({ length: 36 }, (_, index) => ({
+            matchNumber: index + 1,
+            status: 'completed',
+          })),
+        },
+      },
+    })
+
+    expect(dashboard.live.nextMatch.matchNumber).toBe(37)
+    expect(dashboard.live.matchHub).toEqual(expect.objectContaining({
+      matchNumber: 37,
+      state: 'upcoming',
+      href: '#/match-centre?match=37&competition=ko_predictor',
+      cta: 'Open Match Centre',
+    }))
+  })
+
+  it('hides the match hub when live result data is unavailable', () => {
+    const dashboard = makeDashboard({
+      sectionErrors: {
+        results: 'Results request failed',
+      },
+    })
+
+    expect(dashboard.live.dataAvailable).toBe(false)
+    expect(dashboard.live.matchHub).toBeNull()
   })
 
 })

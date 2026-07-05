@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
 import { GUEST_STATE_UPDATED_EVENT } from '../predictions/predictionSaveConfig.js'
-import { Badge, Button, Card, Icon, LinkButton, ProgressBar, StatusBar } from '../design-system/index.jsx'
+import { Badge, Button, Card, Icon, LinkButton, ProgressBar, StatusBar, TeamLabel } from '../design-system/index.jsx'
 import { loadHomeDashboard } from './homeDashboardService.js'
 import styles from './HomeAccess.module.css'
 import homeStyles from './HomeDashboard.module.css'
@@ -158,7 +158,7 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
   const firstName = dashboard.displayName?.split(' ')[0]
   const originalLocked = dashboard.lifecycle.phase !== 'build'
   const koOpen = dashboard.koReadiness.open
-  const next = dashboard.live.nextMatch
+  const matchHub = dashboard.live.matchHub
   const heroPrompt = dashboard.signedIn
     ? 'Your Original Predictor and KO Predictor are tracked separately, with their own points, jokers and leaderboards.'
     : dashboard.original.totalComplete > 0
@@ -245,16 +245,25 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
       <section className="home-lower-grid">
         <Card className="home-live" as="article">
           <div className="home-section-heading">
-            <div><span className="page-eyebrow">Today’s match hub</span><h2>{dashboard.live.liveMatches > 0 ? `${dashboard.live.liveMatches} match${dashboard.live.liveMatches === 1 ? '' : 'es'} live` : next ? 'Next match to watch' : 'Waiting for kick-off'}</h2></div>
+            <div><span className="page-eyebrow">Today’s match hub</span><h2>{dashboard.live.liveMatches > 0 ? `${dashboard.live.liveMatches} match${dashboard.live.liveMatches === 1 ? '' : 'es'} live` : matchHub ? matchHub.title : 'Waiting for kick-off'}</h2></div>
             <Badge tone={dashboard.live.liveMatches > 0 ? 'danger' : 'neutral'}>{dashboard.live.confirmedMatches}/{dashboard.live.totalMatches} final</Badge>
           </div>
           {!dashboard.live.dataAvailable ? (
             <StatusBar tone="warning" title="Live tournament data unavailable">No result has been shown as zero or final.</StatusBar>
-          ) : next ? (
+          ) : matchHub ? (
             <div className="home-next-match">
-              <Icon name="clock" />
-              <div><strong>Match {next.matchNumber}</strong><span>{next.displayStatus === 'live' ? 'Live now' : formatDate(next.scheduledDate)}</span><small className={homeStyles.nextMatchHint}>Open the Match Centre for live context, prediction impact and league swings.</small></div>
-              <LinkButton href={`#/match-centre?match=${next.matchNumber}`} variant="ghost" size="small">Match Centre<Icon name="chevron" size={16} /></LinkButton>
+              <Icon name={matchHub.state === 'live' ? 'results' : 'clock'} />
+              <div className={homeStyles.matchHubBody}>
+                <strong>{matchHub.stageLabel} · Match {matchHub.matchNumber}</strong>
+                <span>{matchHub.timeLabel} · {formatDateTime(matchHub.scheduledDate)}</span>
+                <div className={homeStyles.matchHubTeams} aria-label="Match teams">
+                  <TeamLabel team={matchHub.home} label={matchHub.home.label} unresolved={matchHub.home.unresolved} compact />
+                  <span>v</span>
+                  <TeamLabel team={matchHub.away} label={matchHub.away.label} unresolved={matchHub.away.unresolved} compact />
+                </div>
+                <small className={homeStyles.nextMatchHint}>{matchHub.note}</small>
+              </div>
+              <LinkButton href={matchHub.href} variant="ghost" size="small">{matchHub.cta}<Icon name="chevron" size={16} /></LinkButton>
             </div>
           ) : <p>All tournament matches are complete.</p>}
         </Card>

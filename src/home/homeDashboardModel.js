@@ -75,6 +75,64 @@ function lifecyclePhase(lifecycle, now) {
   }
   return { key: 'build', label: 'Build your predictor', tone: 'safe' }
 }
+
+function homeStageLabel(match) {
+  if (match?.groupCode) return `Group ${match.groupCode}`
+  if (match?.matchNumber <= 36) return 'Group stage'
+  if (match?.matchNumber <= 44) return 'Round of 16'
+  if (match?.matchNumber <= 48) return 'Quarter-finals'
+  if (match?.matchNumber <= 50) return 'Semi-finals'
+  return 'Final'
+}
+
+function homeTeam(reference, teamId, fallback) {
+  if (!teamId) {
+    return Object.freeze({
+      id: null,
+      label: fallback,
+      isoCode: null,
+      unresolved: true,
+    })
+  }
+  const team = reference?.teamsById?.[teamId] ?? {}
+  return Object.freeze({
+    id: teamId,
+    label: team.label ?? team.slotCode ?? fallback,
+    isoCode: team.fifaCode ?? team.isoCode ?? null,
+    unresolved: Boolean(team.isProvisional || !team.actualTeamId),
+  })
+}
+
+function matchCentreCompetition(matchNumber) {
+  return Number(matchNumber) > 36 ? 'ko_predictor' : 'original'
+}
+
+export function buildHomeMatchHub({ reference, match, dataAvailable }) {
+  if (!dataAvailable || !match) return null
+
+  const matchNumber = Number(match.matchNumber)
+  const competition = matchCentreCompetition(matchNumber)
+  const live = match.displayStatus === 'live'
+  const home = homeTeam(reference, match.homeTeamId, matchNumber > 36 ? 'Home slot unresolved' : 'Home team TBC')
+  const away = homeTeam(reference, match.awayTeamId, matchNumber > 36 ? 'Away slot unresolved' : 'Away team TBC')
+
+  return Object.freeze({
+    matchNumber,
+    state: live ? 'live' : 'upcoming',
+    tone: live ? 'danger' : 'info',
+    title: live ? `Match ${matchNumber} is live` : `Match ${matchNumber} is next`,
+    timeLabel: live ? 'Live now' : 'Next to watch',
+    stageLabel: homeStageLabel(match),
+    scheduledDate: match.kickoffAt ?? match.scheduledDate ?? null,
+    home,
+    away,
+    href: `#/match-centre?match=${matchNumber}&competition=${competition}`,
+    cta: live ? 'Open live Match Centre' : 'Open Match Centre',
+    note: competition === 'original'
+      ? 'Group fixtures open with Original Predictor context first.'
+      : 'Knockout fixtures open with KO Predictor context first.',
+  })
+}
 function nextMatch(reference, live) {
   const resultByMatch = new Map((live?.results ?? []).map(result => [result.matchNumber, result]))
   const matches = [...reference.groupMatches, ...reference.knockoutMatches]
@@ -112,6 +170,13 @@ export function buildHomeDashboard({
   const originalStory = leaderboardStory(results, 'original', userId)
   const koStory = leaderboardStory(results, 'koPredictor', userId)
   const live = results?.live ?? null
+  const activeOrNextMatch = nextMatch(reference, live)
+  const liveDataAvailable = !sectionErrors.results
+  const matchHub = buildHomeMatchHub({
+    reference,
+    match: activeOrNextMatch,
+    dataAvailable: liveDataAvailable,
+  })
 
   return Object.freeze({
     signedIn,
@@ -179,8 +244,9 @@ export function buildHomeDashboard({
       liveMatches: Number(live?.summary?.liveMatches ?? 0),
       confirmedMatches: Number(live?.summary?.confirmedMatches ?? 0),
       totalMatches: reference.groupMatches.length + reference.knockoutMatches.length,
-      nextMatch: nextMatch(reference, live),
-      dataAvailable: !sectionErrors.results,
+      nextMatch: activeOrNextMatch,
+      matchHub,
+      dataAvailable: liveDataAvailable,
     }),
     sectionErrors: Object.freeze({ ...sectionErrors }),
     hasPartialFailure: Object.keys(sectionErrors).length > 0,

@@ -1,0 +1,75 @@
+import fs from 'node:fs'
+import process from 'node:process'
+
+const errors = []
+const fail = message => errors.push(message)
+const read = file => fs.readFileSync(file, 'utf8')
+const exists = file => fs.existsSync(file)
+
+const model = read('src/home/homeDashboardModel.js')
+const view = read('src/home/HomeDashboard.jsx')
+const styles = read('src/home/HomeDashboard.module.css')
+const tests = read('src/home/__tests__/homeDashboardModel.test.js')
+const pkg = JSON.parse(read('package.json'))
+
+for (const marker of [
+  'export function buildHomeMatchHub',
+  'matchCentreCompetition',
+  "competition === 'original'",
+  "'ko_predictor'",
+  'matchHub,',
+]) {
+  if (!model.includes(marker)) fail(`Home model missing ${marker}`)
+}
+
+for (const marker of [
+  'dashboard.live.matchHub',
+  'matchHub.href',
+  'matchHub.cta',
+  'matchHubTeams',
+  'TeamLabel',
+]) {
+  if (!view.includes(marker)) fail(`Home view missing ${marker}`)
+}
+
+for (const marker of [
+  'matchHubBody',
+  'matchHubTeams',
+]) {
+  if (!styles.includes(marker)) fail(`Home styles missing ${marker}`)
+}
+
+for (const marker of [
+  'routes the next knockout fixture into KO Predictor Match Centre context',
+  '#/match-centre?match=2&competition=original',
+  '#/match-centre?match=37&competition=ko_predictor',
+  'hides the match hub when live result data is unavailable',
+]) {
+  if (!tests.includes(marker)) fail(`Home matchday tests missing ${marker}`)
+}
+
+if (pkg.scripts?.['audit:stage13g-home-matchday-implementation'] !== 'node scripts/check-stage13g-home-matchday-implementation.mjs') {
+  fail('package.json missing audit:stage13g-home-matchday-implementation')
+}
+
+if (!pkg.scripts?.check?.includes('npm run audit:stage13g-home-matchday-implementation')) {
+  fail('check script does not include audit:stage13g-home-matchday-implementation')
+}
+
+if (exists('supabase/migrations')) {
+  const migrations = fs.readdirSync('supabase/migrations').filter(file => file.endsWith('.sql')).sort()
+  if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
+  if (migrations.some(file => file.includes('019'))) fail('Stage 13G-HOME-MATCHDAY-1 must not create Migration 019')
+}
+
+if (errors.length > 0) {
+  console.error(`Stage 13G-HOME-MATCHDAY-1 audit failed with ${errors.length} issue(s):`)
+  for (const message of errors) console.error(`- ${message}`)
+  process.exit(1)
+}
+
+console.log('Stage 13G-HOME-MATCHDAY-1 audit passed.')
+console.log('Home: match hub now carries fixture, teams, status and Match Centre route.')
+console.log('Boundary: group fixtures open Original context; knockout fixtures open KO Predictor context.')
+console.log('Safety: read-only presentation only; no scoring, resolver, Supabase write or migration change.')
+console.log('Database: active migrations remain 18; no Migration 019.')
