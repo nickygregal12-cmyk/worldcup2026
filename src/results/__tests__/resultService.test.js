@@ -148,6 +148,6 @@ describe('Stage 13D result service', () => {
   })
 
   it('rejects an unavailable client before any data read', async () => {
-    await expect(loadResultsAndLeaderboards(null, reference())).rejects.toThrow('staging database client is unavailable')
+    await expect(loadResultsAndLeaderboards(null, reference())).rejects.toThrow('Euro 2028 data could not be loaded right now')
   })
 })

@@ -57,7 +57,7 @@ if (summaryGridIndex === -1 || summaryGridIndex < detailsIndex) {
 }
 
 if (leaguesPage.includes('<LeagueLifecycleBanner lifecycleState={leagueLifecycle} />\n\n      {notice')) {
-  fail('League lifecycle banner must not render as a top-level default block')
+  fail('League timing banner must not render as a top-level default block')
 }
 
 for (const forbidden of [

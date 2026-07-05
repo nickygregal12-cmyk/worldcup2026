@@ -55,7 +55,7 @@ for (const marker of ['Community percentages are private', 'Your prediction', 'T
 
 const service = read('src/teamProfile/teamProfileService.js')
 if (!service.includes("client.rpc('get_team_profile_sheet'")) fail('Team profile content must use the privacy-safe RPC')
-if (!service.includes('loadCanonicalTournamentSnapshot')) fail('Team tournament form must use app-owned canonical results')
+if (!service.includes('loadCanonicalTournamentSnapshot')) fail('Team tournament form must use app-owned official results')
 
 const admin = read('src/admin/AdminTeamProfiles.jsx')
 for (const marker of ['Curated team facts', 'only the tournament owner can edit it', 'saveAdminTeamProfile']) {

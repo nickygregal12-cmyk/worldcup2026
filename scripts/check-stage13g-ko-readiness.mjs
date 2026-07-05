@@ -39,7 +39,7 @@ if (!leagueUi.includes('koReadiness') || !leagueUi.includes('koLeagueReady') || 
 if (!leaguePresentation.includes('LeagueKoReadinessCard') || !leaguePresentation.includes('disabled={disabled}')) fail('League presentation does not disable pre-readiness KO table access')
 if (!leagueTests.includes('keeps KO league tables waiting when the tournament has started but KO readiness is closed')) fail('League KO-readiness test is missing')
 if (!homeAudit.includes('shared KO readiness signal')) fail('Home lifecycle audit still checks the retired local KO-readiness helper')
-if (!leagueAudit.includes('koReadiness={koReadiness}') || !leagueAudit.includes('LeagueKoReadinessCard')) fail('League lifecycle audit does not enforce shared KO-readiness adoption')
+if (!leagueAudit.includes('koReadiness={koReadiness}') || !leagueAudit.includes('LeagueKoReadinessCard')) fail('League timing audit does not enforce shared KO-readiness adoption')
 if (!roadmap.includes('Stage 13G-B KO-readiness signal close-out')) fail('Roadmap missing KO-readiness close-out entry')
 if (!register.includes('Stage 13G-B KO-readiness signal close-out')) fail('Decision register missing KO-readiness close-out entry')
 if (!ledger.includes('v1.30') || !ledger.includes('Home, Navigation and Leagues now consume one shared KO-readiness model')) fail('Ledger KO-readiness close-out is missing')

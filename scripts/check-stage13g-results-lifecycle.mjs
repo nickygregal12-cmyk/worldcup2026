@@ -46,7 +46,7 @@ if (latest !== '202607030018_euro28_complete_admin_operations.sql') fail(`unexpe
 
 console.log('Stage 13G-B results lifecycle audit passed.')
 console.log('Results surface: central pre-tournament, live, review, quiet and complete lifecycle state')
-console.log('Leaderboards: Original and KO Predictor lifecycle copy remains competition-scoped')
-console.log('Match Centre: fixture-level live/review/completed/unresolved KO lifecycle state')
+console.log('Leaderboards: Original and KO Predictor timing copy remains competition-scoped')
+console.log('Match Centre: fixture-level live/review/completed/unresolved KO timing state')
 console.log(`Active migrations: ${migrationFiles.length}`)
 console.log(`Latest migration: ${latest}`)

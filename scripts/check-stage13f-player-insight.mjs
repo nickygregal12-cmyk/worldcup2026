@@ -59,7 +59,7 @@ if (/groupPosition|combinedPoints|combinedTotal/.test(model)) fail('Player insig
 const view = read('src/player/PlayerInsight.jsx')
 for (const marker of [
   'How the total was earned',
-  'Canonical scoring rows only',
+  'Scoring rows only',
   'Behind leader',
   'Points by matchday',
   'Original bracket progression',

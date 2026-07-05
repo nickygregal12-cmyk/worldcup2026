@@ -27,23 +27,23 @@ for (const file of requiredFiles) {
 }
 
 const journeyModel = read('src/journey/predictionJourneyModel.js')
-if (!journeyModel.includes('buildOriginalPredictionLifecycle')) fail('Original Predictor lifecycle model is missing')
+if (!journeyModel.includes('buildOriginalPredictionLifecycle')) fail('Original Predictor timing model is missing')
 if (!journeyModel.includes('KO Predictor is a separate real-fixture competition')) fail('Original/KO boundary label is missing')
 
 const journeyView = read('src/journey/PredictionJourneyView.jsx')
-if (!journeyView.includes('lifecycleStyles.lifecycle')) fail('Original Predictor lifecycle cards are not rendered')
+if (!journeyView.includes('lifecycleStyles.lifecycle')) fail('Original Predictor timing cards are not rendered')
 if (!journeyView.includes('Winner-only picks; no bracket jokers')) fail('Original bracket lifecycle copy is missing')
 
 const koModel = read('src/koPredictor/koPredictorPresentationModel.js')
-if (!koModel.includes('buildKoPredictorLifecycleStatus')) fail('KO lifecycle model is missing')
+if (!koModel.includes('buildKoPredictorLifecycleStatus')) fail('KO timing model is missing')
 if (!koModel.includes('Original Predictor lock does not open KO Predictor fixtures early')) fail('KO closed-state boundary copy is missing')
 
 const koView = read('src/koPredictor/KoPredictorMatchCentre.jsx')
-if (!koView.includes('lifecycleStyles.lifecycle')) fail('KO lifecycle strip is not rendered')
-if (!koView.includes('KO Predictor lifecycle')) fail('KO lifecycle aria label is missing')
+if (!koView.includes('lifecycleStyles.lifecycle')) fail('KO timing strip is not rendered')
+if (!koView.includes('KO Predictor timing')) fail('KO timing aria label is missing')
 
 const app = read('src/App.jsx')
-if (!app.includes('tournament={appData.tournament}')) fail('KO Predictor does not receive central tournament lifecycle input')
+if (!app.includes('tournament={appData.tournament}')) fail('KO Predictor does not receive tournament timing input')
 
 const pkg = JSON.parse(read('package.json'))
 if (!pkg.scripts?.['audit:prediction-lifecycle']) fail('package.json missing audit:prediction-lifecycle')
