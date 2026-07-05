@@ -6,7 +6,7 @@
 
 ## 1. Current return point
 
-- Expected Git commit before this scope package: `3f41826` — **Compact Stage 13G league shell**.
+- Expected Git commit before this scope package: `8651127` — **Compact Stage 13G league shell**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
 - Active migration count: **18**, aligned locally and on Euro staging.
 - Stages 1–12, 13A–13E, 14, 14B, Stage 13F, Stage 13G-R0, Stage 13G-A, Stage 13G-B lifecycle slices, Stage 13G-C league simplification through C6 and Stage 13G destination reference adoption are accepted at the package level recorded in the ledger.
