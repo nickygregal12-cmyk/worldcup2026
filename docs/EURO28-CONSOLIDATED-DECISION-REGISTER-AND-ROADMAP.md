@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.5 — Stage 16A-P6A seed write acceptance plan
+### Version 4.6 — Product completeness register alignment
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
@@ -16,7 +16,9 @@
 
 ## 1A. Current package note
 
-**Stage 16A-P6A Seed write acceptance plan only** records the no-write acceptance plan that a later explicitly approved staging seed write slice must satisfy. It records exact local environment names, exact later-slice write flags, exact synthetic markers, exact teardown selector, exact zero-residue proof and exact reseed validation proof. It carries `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false` and `requiresExplicitNextSliceApproval: true`, and still executes no Supabase writes, creates no Auth users, seeds no predictions, uses no service-role credential, changes no scoring/resolver/routes and creates no migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+**Product completeness register alignment** records the scale-driven signup and tournament gates that must be closed before Euro 2028 registration is opened widely or before matchday one. It adds the product completeness roadmap, records RULES-1 as a signup gate, records moderation, scalable support, capacity planning, email confirmation, privacy/deletion, load reality-check and uptime/error monitoring gates, and keeps owner choices explicit where values are not yet selected. This package is docs/audit-only: no Supabase writes, no Auth users, no prediction seeding, no service-role credential use/read/print, no scoring/resolver/route changes and no migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
+**Stage 16A-P6A Seed write acceptance plan only** remains accepted as the prior no-write acceptance-plan checkpoint.
 
 **Stage 16A-P5 Staging write preflight and teardown contract** remains accepted as the prior no-write preflight checkpoint.
 
@@ -56,6 +58,37 @@
 | External results API | Deferred; manual operation remains authoritative and the fallback |
 | App name | **Euro 2028 Predictor** |
 | Extra tournament picks | Original Predictor only: total tournament goals, top scorer and highest-scoring team; 20 points each; global lock; no joker; no KO points; nearest-total ties and official joint winners receive full points |
+
+## 2A. Product completeness gates for wider Euro 2028 scale
+
+Euro 2028 is now planned as a larger semi-public predictor rather than only a friends-and-family league. The consolidated product completeness roadmap is recorded in `docs/PRODUCT-COMPLETENESS-ROADMAP.md`; the following entries are binding gates until superseded by a later owner decision.
+
+### Signup gates
+
+These items must be complete before registration is opened beyond the trusted WC26-style group:
+
+| Gate | Decision | Owning follow-on |
+|---|---|---|
+| RULES-1 | Required. Public rules/trust page must render scoring from central config/constants where practical and must publish tie-breaks, correction policy, support contact, privacy note and deletion path. | Stage RULES-1 |
+| Display-name and league-name moderation | Required. Minimum viable policy is admin rename power for any player/league, a small blocked-word check at registration and league creation, and published wording that inappropriate names may be changed. | Moderation signup gate |
+| Support channel | Required. A dedicated scalable support contact is enough, but the exact channel/address is an owner decision and must be recorded before RULES-1 closes. | RULES-1 contact line |
+| Capacity planning | Required. Planning range is 650–1,300 users, reflecting 10–20× WC26. The exact planning number, Supabase/Netlify tier and auth email budget remain owner decisions before wide signups. | Capacity decision register row |
+| Email confirmation | Required decision before wide signups. Recommendation is ON for stranger-scale registration, but the final on/off choice must be recorded. | Signup auth policy row |
+| Privacy note and deletion path | Required. The public note must state stored data, hosting/Supabase data region once confirmed, and how to request deletion. | RULES-1 privacy section |
+
+### Tournament gates
+
+These items must be complete before the first Euro 2028 match:
+
+| Gate | Decision | Owning follow-on |
+|---|---|---|
+| Tie-break ladders | Required. Final standings and leaderboard tie-break ladders must be published and resolver-backed before scoring matters. | Tie-break/final standings stage |
+| Load reality-check | Required. Stage 16A seeded data must exercise the owner-selected planning number against leaderboards, Match Centre and league pages; pagination/performance work must be scoped if large tables are slow. | Stage 16A load rehearsal |
+| Uptime and error monitoring | Required. UptimeRobot or equivalent plus real error reporting must reach the owner before matchday one. | Operations/observability gate |
+
+### Scheduled, not launch-blocking
+
+The offline player lifecycle, unknown-route fallback verification and growth mechanics remain scheduled. They are important, but they do not block the first wider-signup gate unless a later decision moves them.
 
 ## 3. Scoring model
 

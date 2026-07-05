@@ -1,5 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.48 — Product completeness register alignment
+
+Product completeness register alignment is accepted as a docs/audit-only scale-gate package. It records the consolidated product completeness roadmap, moves RULES-1, moderation, scalable support, capacity planning, email confirmation, privacy/deletion, tie-break ladders, load reality-check and uptime/error monitoring into explicit signup/tournament gates, and keeps owner-specific values as recorded decisions before wide signups. It does not execute Supabase writes, create Auth users, seed predictions, use or read service-role credentials, change scoring, change resolver logic, change UI routes or create a database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.47 — Stage 16A-P6A seed write acceptance plan
 
 Stage 16A-P6A — Seed write acceptance plan only is accepted as a docs/audit/test-only no-write package. It records exact local environment names, exact later-slice write flags, exact synthetic markers, exact teardown selector, exact zero-residue proof and exact reseed validation proof while carrying `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false` and `requiresExplicitNextSliceApproval: true`. It does not execute Supabase writes, create Auth users, seed predictions, use or read service-role credentials, change scoring, change resolver logic, change UI routes or create a database migration. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
@@ -535,3 +539,26 @@ Confirmed decisions:
 13. Active migrations remain 18 and no Migration 019 is created.
 
 Next sequenced package: a default-off write-capable skeleton only after explicit approval.
+
+
+## Product completeness register alignment
+
+Status: complete in development as a docs/audit-only decision-alignment package.
+
+This slice records Euro 2028 scale gates before wider registration and before matchday one. It adds `docs/PRODUCT-COMPLETENESS-ROADMAP.md`, adds `docs/STAGE-PRODUCT-COMPLETENESS-REGISTER-ALIGNMENT.md`, and wires a product-completeness audit into the local gate chain.
+
+Confirmed decisions:
+
+1. RULES-1 is a signup gate and must include scoring, tie-breaks, correction policy, support contact, privacy note and deletion path.
+2. Display-name and league-name moderation is a signup gate with admin rename power, blocked-word checks and published policy wording.
+3. A scalable support channel is a signup gate; the exact channel/address remains an owner decision before RULES-1 closes.
+4. Capacity planning is a signup gate; the planning range is 650–1,300 users and the exact number/tier/auth-email budget remains an owner decision before wide signups.
+5. Email confirmation is a signup-gate decision; recommendation is ON, but the owner must record ON/OFF before wide signups.
+6. Privacy note and deletion path are signup gates; Supabase data region must be confirmed before publication.
+7. Tie-break ladders, load reality-check and uptime/error monitoring are tournament gates before the first Euro 2028 match.
+8. Offline player lifecycle, unknown-route fallback and growth mechanics remain scheduled follow-ons.
+9. This package has no database writes, no user creation and no prediction seeding.
+10. Original Predictor and KO Predictor remain separate; no combined totals or blended standings are approved.
+11. Active migrations remain 18 and no Migration 019 is created.
+
+Next sequenced package: RULES-1 or a narrow owner-decision register update for support channel, capacity and email confirmation.

@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.31 — Stage 16A-P6A seed write acceptance plan
+### Version 4.32 — Product completeness register alignment
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -430,6 +430,31 @@ After browser coverage:
 - delete snapshot and Daily Question code;
 - remove the final compatibility bridge and legacy allowlist;
 - never modify `main`.
+
+## 9A. Product completeness gates before wider Euro 2028 scale
+
+The product completeness roadmap is now a governing planning reference for moving Euro 2028 from a WC26-sized friends-and-family audience toward a larger semi-public audience.
+
+### Signup gate sequence
+
+Before registration is opened widely, the roadmap requires:
+
+1. RULES-1 public rules/trust page, including scoring, tie-breaks, correction policy, support contact, privacy note and deletion path.
+2. Display-name and league-name moderation: admin rename power, blocked-word check and published policy.
+3. Scalable support channel, with the exact contact line recorded before RULES-1 closes.
+4. Capacity decision: exact planning number, Supabase/Netlify tier and auth email budget. Current planning range is 650–1,300 users.
+5. Email confirmation decision, recommended on but owner-recorded either way.
+6. Privacy note and deletion path, including Supabase data-region confirmation before publication.
+
+### Tournament gate sequence
+
+Before the first ball is kicked, the roadmap requires:
+
+1. Final tie-break ladders and resolver-backed final-standings handling.
+2. Stage 16A load reality-check at the chosen planning number against leaderboards, Match Centre and league pages.
+3. Uptime monitoring and owner-visible error reporting.
+
+Offline player lifecycle, unknown-route fallback and growth mechanics remain scheduled follow-ons unless a later owner decision promotes them to a gate. These entries are docs/audit-only in this alignment package: no Supabase writes, no service-role credential use/read/print, no scoring/resolver/route change and no Migration 019.
 
 ## Stage 16 — Staging-seeded lifecycle simulation
 
