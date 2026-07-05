@@ -1,3 +1,119 @@
+.focusStrip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.75fr);
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--surface-raised), var(--surface-soft));
+  box-shadow: var(--shadow-1);
+}
+.focusStrip h2 {
+  margin: var(--space-1) 0;
+  font-size: var(--text-xl);
+}
+.focusStrip p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.focusMeters {
+  display: grid;
+  gap: var(--space-3);
+}
+.helperDisclosure {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
+}
+.helperDisclosure summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 3.25rem;
+  padding: 0 var(--space-4);
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.helperDisclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.helperDisclosure summary span {
+  color: var(--brand);
+  font-size: var(--text-xs);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.helperDisclosure summary strong {
+  color: var(--text-primary);
+}
+
+.helperDisclosure summary small {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.helperDisclosure[open] summary {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.groupRail {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-2));
+  z-index: 5;
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding: var(--space-2);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  background: var(--surface-glass);
+  box-shadow: var(--shadow-1);
+  backdrop-filter: blur(16px);
+  scrollbar-width: none;
+}
+
+.groupRail::-webkit-scrollbar {
+  display: none;
+}
+
+.groupRail button {
+  flex: 1 0 5.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 2.55rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.groupRail button span {
+  font: 800 var(--text-base)/1 var(--font-display);
+}
+
+.groupRail .railComplete {
+  border-color: var(--state-success-border);
+  background: color-mix(in srgb, var(--state-success-soft) 70%, var(--surface-raised));
+  color: var(--state-success);
+}
+
+.groupRail small {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
 .viewToggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -248,6 +364,25 @@
 }
 
 @media (max-width: 40rem) {
+  .groupRail {
+    top: var(--space-2);
+  }
+
+  .groupRail button {
+    flex-basis: 4.75rem;
+  }
+
+  .focusStrip {
+    grid-template-columns: 1fr;
+    padding: var(--space-4);
+  }
+
+  .helperDisclosure summary {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-block: var(--space-3);
+  }
+
   .dateSection {
     padding: var(--space-3);
   }

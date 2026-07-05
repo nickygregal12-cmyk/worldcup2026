@@ -11,7 +11,7 @@ import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { browserStorage, messageForError, readGuestReview, writeGuestReview } from './predictionJourneyRuntime.js'
 import { resolveTournamentLifecycle } from '../config/index.js'
 
-export default function PredictionJourney({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, fixtureDraft = null }) {
+export default function PredictionJourney({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, surface = initialView, fixtureDraft = null }) {
   const guestStorage = useMemo(() => createGuestPredictionStorage({
     storage: browserStorage(),
     reference,
@@ -348,7 +348,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
       {...{
         reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
         accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
-        view, setView, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
+        view, setView, surface, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
         updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
       }}
     />

@@ -36,10 +36,13 @@ for (const marker of [
 const journeyView = read('src/journey/PredictionJourneyView.jsx')
 for (const marker of [
   'GuestAccountPrompt',
-  'Keep editing this saved device draft',
-  'Add completed draft to account',
   'onLuckyDip={runLuckyDip}',
+  'compactSurface',
+  'statusDisclosure',
 ]) if (!journeyView.includes(marker)) fail(`Original guest presentation is missing: ${marker}`)
+for (const retired of ['Keep editing this saved device draft', 'Add completed draft to account']) {
+  if (journeyView.includes(retired)) fail(`Live prediction journey still exposes retired device-draft chrome: ${retired}`)
+}
 for (const forbidden of ['Export JSON', 'Import JSON', 'guest-import-button']) {
   if (journeyView.includes(forbidden)) fail(`Live prediction journey still exposes development file UX: ${forbidden}`)
 }
@@ -90,7 +93,7 @@ if (errors.length) {
 }
 
 console.log('Euro Stage 13F-A guest-journey audit passed.')
-console.log('Original guest draft: remains editable after sign-in until a confirmed account transfer')
+console.log('Original guest draft: device-saving remains active; large transfer chrome stays out of the route-owned Groups/Bracket workspace')
 console.log('KO guest draft: browser-persisted and transferable without combining competitions')
 console.log('Signup conversion: no ordinary JSON file controls and no development-stage copy')
 console.log('Lucky Dip: local score generation, no odds, no automatic jokers and stale bracket clearing')

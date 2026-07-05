@@ -180,13 +180,13 @@ export default function GroupsPredictor({
 
   return (
     <div className="groups-predictor">
-      <section className="groups-overview" aria-label="Group prediction progress">
-        <div className="groups-overview__copy">
+      <section className={viewStyles.focusStrip} aria-label="Group prediction progress">
+        <div>
           <span className="page-eyebrow">Group stage</span>
-          <h2>Predict all 36 scores</h2>
-          <p>Every score saves automatically. Add up to {summary.groupJokerCap} jokers before each selected match starts.</p>
+          <h2>{isDateView ? 'Predict by date' : 'Predict by group'}</h2>
+          <p>36 scores, five jokers and fast predicted tables.</p>
         </div>
-        <div className="groups-overview__progress">
+        <div className={viewStyles.focusMeters}>
           <ProgressBar value={summary.groupComplete} max={36} label="Group predictions completed" />
           <JokerMeter value={summary.groupJokers} max={summary.groupJokerCap} multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER} label="group jokers selected" />
         </div>
@@ -197,13 +197,16 @@ export default function GroupsPredictor({
         <button type="button" className={isDateView ? viewStyles.on : ''} onClick={() => setViewMode(GROUPS_VIEW_MODE.DATE)}>By date</button>
       </div>
 
-      <section className={actionStyles.actions} aria-label="Lucky Dip group score helper">
-        <div><span className="page-eyebrow">Lucky Dip</span><h3>Need a starting point?</h3><p>Generate realistic group scores locally. Lucky Dip never uses odds and never changes your jokers.</p></div>
-        <div className={actionStyles.buttons}>
-          <Button variant="secondary" onClick={() => onLuckyDip(EURO_LUCKY_DIP_MODE.EMPTY)} disabled={luckyDipDisabled}>Fill empty scores</Button>
-          <Button variant="secondary" onClick={() => setReplaceOpen(true)} disabled={luckyDipDisabled}>Replace all scores</Button>
+      <details className={viewStyles.helperDisclosure}>
+        <summary><span>Lucky Dip</span><strong>Need a starting point?</strong><small>Optional local helper</small></summary>
+        <div className={actionStyles.actions} aria-label="Lucky Dip group score helper">
+          <div><p>Generate realistic group scores locally. Lucky Dip never uses odds and never changes your jokers.</p></div>
+          <div className={actionStyles.buttons}>
+            <Button variant="secondary" onClick={() => onLuckyDip(EURO_LUCKY_DIP_MODE.EMPTY)} disabled={luckyDipDisabled}>Fill empty scores</Button>
+            <Button variant="secondary" onClick={() => setReplaceOpen(true)} disabled={luckyDipDisabled}>Replace all scores</Button>
+          </div>
         </div>
-      </section>
+      </details>
 
       <Dialog open={replaceOpen} title="Replace every group score?" onClose={() => setReplaceOpen(false)}>
         <div className={actionStyles.dialog}>
@@ -217,8 +220,8 @@ export default function GroupsPredictor({
 
       {!isDateView ? (
         <>
-          <nav className="groups-jump" aria-label="Jump to a group">
-            {groupProgress.map(group => <button type="button" key={group.code} className={group.isComplete ? 'is-complete' : ''} onClick={() => scrollToGroup(group.code)}><span>Group {group.code}</span><small>{group.complete}/{group.total}</small></button>)}
+          <nav className={viewStyles.groupRail} aria-label="Jump to a group">
+            {groupProgress.map(group => <button type="button" key={group.code} className={group.isComplete ? viewStyles.railComplete : ''} onClick={() => scrollToGroup(group.code)} aria-label={`Jump to Group ${group.code}`}><span>{group.code}</span><small>{group.complete}/{group.total}</small></button>)}
           </nav>
           <div className="groups-list">
             {reference.groups.map(group => {

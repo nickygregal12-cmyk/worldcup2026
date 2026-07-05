@@ -6,6 +6,7 @@ import { OriginalBracketHealth } from '../bracketHealth/index.js'
 import GroupsPredictor from './GroupsPredictor.jsx'
 import PredictionReview from './PredictionReview.jsx'
 import lifecycleStyles from './PredictionLifecycle.module.css'
+import chromeStyles from './PredictionJourneyChrome.module.css'
 import { EURO28_PREDICTION_JOURNEY_VERSION, PREDICTION_AUTOSAVE_STATE, PREDICTION_JOURNEY_VIEW } from './predictionJourneyConfig.js'
 
 function AutosaveBadge({ context, status, revision, savedAt }) {
@@ -13,7 +14,7 @@ function AutosaveBadge({ context, status, revision, savedAt }) {
   if (context === 'guest') {
     label = 'Saved on this device'
   } else if (context === 'guest-transfer') {
-    label = 'Device draft · ready to transfer'
+    label = 'Saved on this device'
   } else if (status === PREDICTION_AUTOSAVE_STATE.SAVING) {
     label = 'Saving…'
   } else if (status === PREDICTION_AUTOSAVE_STATE.DIRTY) {
@@ -43,97 +44,76 @@ function AutosaveBadge({ context, status, revision, savedAt }) {
 
 export default function PredictionJourneyView({
   reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
-  accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
-  view, setView, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
+  guestTouched, busy, view, setView, surface, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
   updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
 }) {
+  const compactSurface = surface === PREDICTION_JOURNEY_VIEW.GROUPS || surface === PREDICTION_JOURNEY_VIEW.BRACKET
   return (
     <section className="foundation-panel prediction-journey" aria-labelledby="prediction-journey-title">
-      <div className="foundation-section-heading prediction-journey__heading">
-        <div>
-          <span className="foundation-kicker">Original Predictor</span>
-          <h2 id="prediction-journey-title">Predict the full Euro 2028 tournament</h2>
-          <p className="foundation-panel-copy">
-            Group scores drive one canonical winner-only bracket. This original competition is completely separate from the real-match KO Predictor and its points.
-          </p>
-        </div>
-        <AutosaveBadge
-          context={context}
-          status={autosaveStatus}
-          revision={accountBundle?.revision ?? 0}
-          savedAt={savedAt}
-        />
-      </div>
-
-      <div className="journey-progress">
-        <div>
-          <strong>{summary.totalComplete}/51</strong>
-          <span>predictions complete</span>
-        </div>
-        <div className="journey-progress__bar" aria-hidden="true">
-          <span style={{ width: `${Math.round((summary.totalComplete / 51) * 100)}%` }} />
-        </div>
-        <div>
-          <span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved device draft' : 'Guest workspace'}</span>
-          <strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong>
-        </div>
-      </div>
-
-      <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor timing">
-        <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}>
-          <span>Prediction lock</span>
-          <strong>{surfaceLifecycle.lockLabel}</strong>
-          <small>{surfaceLifecycle.provisional ? 'Using the current provisional Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small>
-        </article>
-        <article className={lifecycleStyles.card}>
-          <span>Groups</span>
-          <strong>{surfaceLifecycle.groupsLabel}</strong>
-          <small>Scores and five group-stage jokers only</small>
-        </article>
-        <article className={lifecycleStyles.card}>
-          <span>Original bracket</span>
-          <strong>{surfaceLifecycle.bracketLabel}</strong>
-          <small>Winner-only picks; no bracket jokers</small>
-        </article>
-        <article className={lifecycleStyles.card}>
-          <span>Competition boundary</span>
-          <strong>{surfaceLifecycle.koBoundaryLabel}</strong>
-          <small>Original points never mix with KO Predictor points</small>
-        </article>
-      </div>
-
-      {guestTransferMode && accountRows === 0 && (
-        <div className="journey-import-strip">
-          <div>
-            <strong>Device draft: {guestSummary.totalComplete}/51 complete</strong>
-            <span>Keep editing this saved device draft. Once all 51 selections are complete, one tap imports it into your account.</span>
+      {compactSurface && <h2 id="prediction-journey-title" className="sr-only">Original Predictor workspace</h2>}
+      {compactSurface ? (
+        <details className={chromeStyles.statusDisclosure}>
+          <summary>
+            <div className={chromeStyles.statusTitle}>
+              <span className={chromeStyles.statusKicker}>Original Predictor</span>
+              <strong>{surface === PREDICTION_JOURNEY_VIEW.GROUPS ? 'Group scores workspace' : 'Bracket picks workspace'}</strong>
+            </div>
+            <span className={chromeStyles.statusCount}>{summary.totalComplete}/51 complete</span>
+            <AutosaveBadge context={context} status={autosaveStatus} revision={accountBundle?.revision ?? 0} savedAt={savedAt} />
+          </summary>
+          <div className={chromeStyles.statusPanel}>
+            <div className="journey-progress">
+              <div><strong>{summary.totalComplete}/51</strong><span>predictions complete</span></div>
+              <div className="journey-progress__bar" aria-hidden="true"><span style={{ width: `${Math.round((summary.totalComplete / 51) * 100)}%` }} /></div>
+              <div><span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved on this device' : 'Guest workspace'}</span><strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong></div>
+            </div>
+            <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor timing">
+              <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Using the current provisional Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
+              <article className={lifecycleStyles.card}><span>Groups</span><strong>{surfaceLifecycle.groupsLabel}</strong><small>Scores and five group-stage jokers only</small></article>
+              <article className={lifecycleStyles.card}><span>Original bracket</span><strong>{surfaceLifecycle.bracketLabel}</strong><small>Winner-only picks; no bracket jokers</small></article>
+              <article className={lifecycleStyles.card}><span>Competition boundary</span><strong>{surfaceLifecycle.koBoundaryLabel}</strong><small>Original points never mix with KO Predictor points</small></article>
+            </div>
           </div>
-          <button type="button" onClick={importGuestDraft} disabled={!canImportGuest || busy}>
-            {busy ? 'Adding…' : 'Add completed draft to account'}
-          </button>
-        </div>
+        </details>
+      ) : (
+        <>
+          <div className="foundation-section-heading prediction-journey__heading">
+            <div className={chromeStyles.statusTitle}>
+              <span className="foundation-kicker">Original Predictor</span>
+              <h2 id="prediction-journey-title">Predict the full Euro 2028 tournament</h2>
+              <p className="foundation-panel-copy">Group scores drive the winner-only bracket. This original competition is completely separate from the real-match KO Predictor and its points.</p>
+            </div>
+            <AutosaveBadge context={context} status={autosaveStatus} revision={accountBundle?.revision ?? 0} savedAt={savedAt} />
+          </div>
+          <div className="journey-progress">
+            <div><strong>{summary.totalComplete}/51</strong><span>predictions complete</span></div>
+            <div className="journey-progress__bar" aria-hidden="true"><span style={{ width: `${Math.round((summary.totalComplete / 51) * 100)}%` }} /></div>
+            <div><span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved on this device' : 'Guest workspace'}</span><strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong></div>
+          </div>
+          <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor timing">
+            <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Using the current provisional Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
+            <article className={lifecycleStyles.card}><span>Groups</span><strong>{surfaceLifecycle.groupsLabel}</strong><small>Scores and five group-stage jokers only</small></article>
+            <article className={lifecycleStyles.card}><span>Original bracket</span><strong>{surfaceLifecycle.bracketLabel}</strong><small>Winner-only picks; no bracket jokers</small></article>
+            <article className={lifecycleStyles.card}><span>Competition boundary</span><strong>{surfaceLifecycle.koBoundaryLabel}</strong><small>Original points never mix with KO Predictor points</small></article>
+          </div>
+        </>
       )}
-
 
       {!signedIn && <GuestAccountPrompt completed={guestTouched} total={51} label="Original Predictor selections started" />}
 
-      <nav className="journey-tabs" aria-label="Prediction sections">
-        {[
-          [PREDICTION_JOURNEY_VIEW.GROUPS, 'Groups', `${summary.groupComplete}/36`],
-          [PREDICTION_JOURNEY_VIEW.BRACKET, 'Bracket', `${summary.bracketComplete}/15`],
-          [PREDICTION_JOURNEY_VIEW.REVIEW, 'Review', summary.canSubmit ? 'Ready' : `${summary.remaining} left`],
-        ].map(([value, label, note]) => (
-          <button
-            type="button"
-            key={value}
-            className={view === value ? 'journey-tab journey-tab--active' : 'journey-tab'}
-            onClick={() => setView(value)}
-          >
-            <span>{label}</span>
-            <small>{note}</small>
-          </button>
-        ))}
-      </nav>
+      {!compactSurface && (
+        <nav className="journey-tabs" aria-label="Prediction sections">
+          {[
+            [PREDICTION_JOURNEY_VIEW.GROUPS, 'Groups', `${summary.groupComplete}/36`],
+            [PREDICTION_JOURNEY_VIEW.BRACKET, 'Bracket', `${summary.bracketComplete}/15`],
+            [PREDICTION_JOURNEY_VIEW.REVIEW, 'Review', summary.canSubmit ? 'Ready' : `${summary.remaining} left`],
+          ].map(([value, label, note]) => (
+            <button type="button" key={value} className={view === value ? 'journey-tab journey-tab--active' : 'journey-tab'} onClick={() => setView(value)}>
+              <span>{label}</span><small>{note}</small>
+            </button>
+          ))}
+        </nav>
+      )}
 
       {sessionLoading || accountLoading ? (
         <div className="foundation-state" role="status">Loading prediction workspace…</div>

@@ -34,3 +34,21 @@ By-date mode is useful for matchday flow, but it removes the player's immediate 
 No scoring, resolver, Supabase write or migration change is included. The implementation consumes existing group table and best-third calculation helpers only. Original Predictor and KO Predictor remain separate. Predicted and live contexts do not blend.
 
 Active migrations remain 18. No Migration 019.
+
+## Stage 13G-GROUPS-2B — Groups Chrome Repair
+
+Post-deploy eye test found three presentation regressions:
+
+- the Groups page still exposed the old internal Groups / Bracket / Review section switcher, which duplicated the main navigation;
+- the old device-draft import strip still appeared on the prediction surface;
+- the top of the Groups page carried too much explanatory chrome before the actual match cards.
+
+Repair decision:
+
+- Groups and Bracket are route-owned Groups and Bracket destinations. The internal section switcher is hidden on those surfaces so the main navigation owns movement between Groups and Bracket.
+- The old device-draft import strip is retired from the prediction surface. Device transfer remains handled by the signed-in account transfer flow, not by a large in-page banner.
+- Prediction status, lock, bracket and competition-boundary copy move into a compact disclosure.
+- Lucky Dip moves behind a slim disclosure so it remains available without dominating the page.
+- The group jump rail is restyled as compact premium chips rather than large block buttons.
+
+This is a presentation/chrome repair only. It does not change scoring, resolver logic, saved prediction contracts, Supabase writes, service-role usage, routes or migrations.

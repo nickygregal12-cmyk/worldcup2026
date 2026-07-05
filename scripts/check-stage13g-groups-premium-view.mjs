@@ -34,9 +34,15 @@ assertIncludes('src/journey/GroupsPredictor.jsx', [
   'setTablesOpen(true)',
   'GROUPS_TABLE_KEY.THIRD_PLACE',
   'Predicted third-place ranking',
+  'helperDisclosure',
+  'focusStrip',
 ])
 
 assertIncludes('src/journey/GroupsPredictor.module.css', [
+  '.focusStrip',
+  '.helperDisclosure',
+  '.groupRail',
+  '.railComplete',
   '.viewToggle',
   '.dateView',
   '.groupTag',
@@ -44,6 +50,28 @@ assertIncludes('src/journey/GroupsPredictor.module.css', [
   '.sheet',
   '.sheetRail',
   '.qualifies',
+])
+
+assertIncludes('src/journey/PredictionJourneyView.jsx', [
+  'compactSurface',
+  'chromeStyles.statusDisclosure',
+  'chromeStyles.statusPanel',
+  '!compactSurface && (',
+  'Saved on this device',
+])
+
+assert(!read('src/journey/PredictionJourneyView.jsx').includes('journey-import-strip'), 'Prediction journey must not render the old device-draft import strip on Groups/Bracket surfaces')
+assert(!read('src/journey/PredictionJourneyView.jsx').includes('Device draft:'), 'Device draft banner copy must stay retired')
+assertIncludes('src/journey/PredictionJourneyChrome.module.css', [
+  '.statusDisclosure',
+  '.statusPanel',
+  '.statusCount',
+])
+
+assertIncludes('src/App.jsx', [
+  'groups-page--focused',
+  'surface="groups"',
+  'surface="bracket"',
 ])
 
 assertIncludes('src/journey/__tests__/groupsPresentationModel.test.js', [
@@ -58,6 +86,8 @@ assertIncludes('docs/STAGE-13G-GROUPS-2-PREMIUM-VIEW.md', [
   'sticky Tables pill',
   'slide-up sheet',
   'A–F + third-place rail',
+  'Stage 13G-GROUPS-2B',
+  'route-owned Groups and Bracket destinations',
   'No scoring, resolver, Supabase write or migration change',
 ])
 
@@ -65,15 +95,18 @@ assertIncludes('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', [
   'Stage 13G-GROUPS-2 — Groups Premium View Switcher',
   'By group / By date view switcher',
   'Tables fast path in by-date mode',
+  'Stage 13G-GROUPS-2B — Groups Chrome Repair',
 ])
 
 assertIncludes('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md', [
   'Stage 13G-GROUPS-2 — Groups Premium View Switcher',
   'the By group / By date toggle is a restored settled Groups decision',
+  'Stage 13G-GROUPS-2B — Groups Chrome Repair',
 ])
 
 assertIncludes('docs/EURO28-AGENT-RULES-AND-ROADMAP.md', [
   'Stage 13G-GROUPS-2 — implemented Groups view switcher and table fast path',
+  'Stage 13G-GROUPS-2B — repaired Groups page chrome',
 ])
 
 assertIncludes('package.json', [
@@ -87,6 +120,6 @@ assert(migrations.length === 18, `Expected 18 active migrations, found ${migrati
 assert(!migrations.some(name => /019/.test(name)), 'Migration 019 must not be introduced by Stage 13G-GROUPS-2')
 
 console.log('Stage 13G-GROUPS-2 premium view audit passed.')
-console.log('Groups: By group / By date switcher restored, by-date tickets carry group tags and the sticky Tables fast path opens A-F plus third-place tables.')
+console.log('Groups: By group / By date switcher restored, by-date tickets carry group tags, the sticky Tables fast path opens A-F plus third-place tables, and route-owned chrome keeps Groups focused.')
 console.log('Safety: presentation/model/docs only; no scoring, resolver, Supabase write, service-role use or migration change.')
 console.log('Database: active migrations remain 18; no Migration 019.')

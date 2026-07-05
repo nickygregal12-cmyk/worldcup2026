@@ -1063,6 +1063,12 @@ This slice implements the approved Groups joker-control decision from the refere
 Scope boundaries: no venue meta-line implementation, no score-stepper implementation, no view-switcher rebuild, no predicted-table rebuild, no bracket rebuild, no league or Player View rebuild, no Supabase write change, no scoring or resolver change, and no migration.
 
 
+## Stage 13G-GROUPS-2B — Groups Chrome Repair
+
+Post-eye-test decision: Groups and Bracket are route-owned destinations. Do not reintroduce an in-page Groups / Bracket / Review switcher on those primary surfaces, because it duplicates the main navigation. Device-draft import banners are also retired from the prediction surface; transfer belongs to the signed-in account transfer flow. Groups page chrome should stay compact: status/lifecycle detail behind a disclosure, Lucky Dip behind a disclosure, and group switching as compact premium chips.
+
+Scope remains presentation-only: no scoring, resolver, Supabase write, service-role, route or migration change. Active migrations remain 18 with no Migration 019.
+
 ## Stage 13G-GROUPS-2 — Groups Premium View Switcher
 
 Status: implemented.

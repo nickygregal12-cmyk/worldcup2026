@@ -454,6 +454,18 @@ Active migrations remain 18. No Migration 019.
 | Scope boundary | FUNCTIONAL | No venue meta-line, score-stepper, bracket, league, Player View, scoring, resolver, Supabase or migration change is included. |
 
 
+## Stage 13G-GROUPS-2B — Groups Chrome Repair
+
+Status: FUNCTIONAL — post-eye-test presentation repair.
+
+- Retires the old in-page Groups / Bracket / Review section switcher on route-owned Groups and Bracket surfaces.
+- Retires the old device-draft import strip from the prediction surface; account transfer remains the signed-in transfer flow.
+- Moves top prediction status and lifecycle detail into a compact disclosure.
+- Keeps Lucky Dip behind a slim disclosure so it does not dominate the Groups page.
+- Restyles the group rail as compact premium chips.
+- No scoring, resolver, Supabase write, service-role, route or migration change.
+- Active migrations remain 18. No Migration 019.
+
 ## Stage 13G-GROUPS-2 — Groups Premium View Switcher
 
 | Ledger row | Status | Evidence |

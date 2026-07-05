@@ -118,16 +118,15 @@ export default function App() {
     content = <HomeDashboard client={activeClient} foundation={appData} sessionState={activeSession} />
   } else if (route === APP_ROUTE.PREDICT) {
     content = (
-      <div className="content-stack groups-page">
-        <PageIntro eyebrow="Original Predictor" title="Predict the group stage" description="Enter all 36 group scores, place up to five jokers and review your progress at any time." badge={{ tone: lifecycle.locked ? 'warning' : 'safe', label: lifecycle.locked ? 'Locked' : lifecycle.provisional ? 'Open · provisional lock set' : 'Open' }} />
-        <PredictionJourney key={`groups-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="groups" />
+      <div className="content-stack groups-page groups-page--focused">
+        <PredictionJourney key={`groups-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="groups" surface="groups" />
       </div>
     )
   } else if (route === APP_ROUTE.BRACKET) {
     content = (
       <div className="content-stack knockout-page">
         <PageIntro eyebrow="Original Predictor" title="Your pre-tournament bracket" description="Choose the team that advances from every predicted knockout match. Scores and jokers do not apply here." />
-        <PredictionJourney key={`bracket-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="bracket" />
+        <PredictionJourney key={`bracket-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="bracket" surface="bracket" />
       </div>
     )
   } else if (route === APP_ROUTE.KO_PREDICTOR) {

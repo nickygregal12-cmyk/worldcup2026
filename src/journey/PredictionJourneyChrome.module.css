@@ -1,0 +1,67 @@
+.statusDisclosure {
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
+}
+
+.statusDisclosure summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 1rem;
+  align-items: center;
+  min-height: 3.75rem;
+  padding: 0 1rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.statusDisclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.statusTitle {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.statusKicker {
+  color: var(--accent-strong);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.statusDisclosure summary strong {
+  color: var(--text-primary);
+}
+
+.statusCount {
+  color: var(--text-strong);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.statusDisclosure[open] summary {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.statusPanel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+@media (max-width: 760px) {
+  .statusDisclosure summary {
+    grid-template-columns: 1fr;
+    align-items: start;
+    padding-block: 0.85rem;
+  }
+
+  .statusDisclosure :global(.journey-autosave) {
+    justify-items: start;
+  }
+}
