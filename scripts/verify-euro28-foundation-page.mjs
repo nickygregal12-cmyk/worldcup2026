@@ -114,7 +114,7 @@ for (const text of [
   'Advancing teams',
   'Points story',
   'How the total was earned',
-  'Canonical scoring rows only',
+  'Scoring rows only',
   'get_player_competition_points',
   'Community percentages are private',
   'Tournament so far',
