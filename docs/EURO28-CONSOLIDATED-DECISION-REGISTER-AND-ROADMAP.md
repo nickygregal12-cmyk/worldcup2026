@@ -6,7 +6,7 @@
 
 ## 1. Current return point
 
-- Expected Git commit before this scope package: `8651127` — **Compact Stage 13G league shell**.
+- Expected Git commit before this scope package: `06d5218` — **Compact Stage 13G league shell**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
 - Active migration count: **18**, aligned locally and on Euro staging.
 - Stages 1–12, 13A–13E, 14, 14B, Stage 13F, Stage 13G-R0, Stage 13G-A, Stage 13G-B lifecycle slices, Stage 13G-C league simplification through C6 and Stage 13G destination reference adoption are accepted at the package level recorded in the ledger.
@@ -1048,7 +1048,7 @@ Next focused destination after this stage should be Match Centre group-match upg
 
 ## Stage 13G handover and next-reference alignment — 2026-07-05
 
-After `64f2f3e`, Tournament/How to Play, Account and Admin are complete, pushed and deployed. The expanded uploaded brief is recorded under `docs/reference-prototypes/euro28-stage13g-expanded-agent-prompt.md`; the earlier `euro28-tournament-split-agent-prompt.md` reference is refreshed to the same current brief.
+After `06d5218`, Tournament/How to Play, Account and Admin are complete, pushed and deployed. The expanded uploaded brief is recorded under `docs/reference-prototypes/euro28-stage13g-expanded-agent-prompt.md`; the earlier `euro28-tournament-split-agent-prompt.md` reference is refreshed to the same current brief.
 
 New reference artefacts now recorded:
 

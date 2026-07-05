@@ -2,7 +2,7 @@
 
 Date: 2026-07-05  
 Branch: `euro28-development`  
-Latest deployed commit before this handover package: `64f2f3e Restyle Stage 13G admin control room`  
+Latest deployed commit before this handover package: `06d5218 Restyle Stage 13G admin control room`  
 Development site: `https://euro28-predictor-dev.netlify.app`
 
 ## Closed since the previous handover
@@ -14,9 +14,9 @@ These stages are complete, committed, pushed and deployed:
 | `3eac133` | Stage 13G destination reference adoption | Recorded Tournament, How to Play, Account, Admin and Match Centre references. |
 | `94934dd` | Stage 13G-B-TOURNAMENT-1 | Split `#/tournament` and `#/how-to-play`; corrected confirmed tournament facts in config/docs. |
 | `734ad9b` | Stage 13G-ACCOUNT-1 | Rebuilt signed-in Account; one-time keep/start-fresh guest transfer dialog; Original-only clear action; retired `src/pages/Profile.jsx`. |
-| `64f2f3e` | Stage 13G-ADMIN-1 | Restyled protected Admin control room only; preserved Admin contracts, roles, RPCs and audits. |
+| `06d5218` | Stage 13G-ADMIN-1 | Restyled protected Admin control room only; preserved Admin contracts, roles, RPCs and audits. |
 
-Post-deploy `npm run verify:foundation-page` passed after `64f2f3e`. Active migrations remain 18. There is no Migration 019.
+Post-deploy `npm run verify:foundation-page` passed after `06d5218`. Active migrations remain 18. There is no Migration 019.
 
 ## New files reviewed in this handover
 

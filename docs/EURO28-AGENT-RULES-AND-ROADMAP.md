@@ -55,7 +55,7 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 13F-J: player insight and points storytelling accepted at `f7f2fb5`; Migration 017 applied; 74 test files and 363 tests passed.
 - Stage 13F-K0/K1: Admin scope and Migration 018 database contract accepted through `0e4d5b7`; 18 migrations are aligned and 50 local plus 50 linked pgTAP tests passed.
 - Stage 13F-K2: Euro control-room implementation accepted at `c4342f1`; 78 test files and 376 tests passed, all six responsive theme baselines were accepted and deployed verification passed.
-- Stage 13F-K3 and Stage 13G-A/B/C/H docs/tooling/product-alignment packages are recorded through the current ledger; the latest known completed product commit before Stage 16A-S0 is `2e6f79b Compact Stage 13G league shell`.
+- Stage 13F-K3 and Stage 13G-A/B/C/H docs/tooling/product-alignment packages are recorded through the current ledger; the latest known completed product commit before Stage 16A-S0 is `06d5218 Compact Stage 13G league shell`.
 - Stage 16A-S0 is recorded as a scope-alignment package. Stage 13G-MATCH-CENTRE-REF is the current accepted docs/audit-only checkpoint for Match Centre group-fixture behaviour; active migrations remain 18 and no Migration 019 is created.
 
 # Delivery sequence
@@ -1064,7 +1064,7 @@ Completion gate: this reference stage does not make Match Centre group-match upg
 
 ## Stage 13G handover checkpoint — after Admin restyle
 
-Current deployed head before the handover-docs package is `64f2f3e Restyle Stage 13G admin control room`. Tournament/How to Play, Account and Admin are complete/deployed; active migrations remain 18 and no Migration 019 exists.
+Current deployed head before the handover-docs package is `06d5218 Restyle Stage 13G admin control room`. Tournament/How to Play, Account and Admin are complete/deployed; active migrations remain 18 and no Migration 019 exists.
 
 Read `docs/STAGE-13G-HANDOVER-20260705.md` and `docs/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md` before starting the next chat. The next work must be one scoped stage only:
 
