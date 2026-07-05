@@ -82,7 +82,7 @@ if (!charter.includes('DECIDED — Share Card')) fail('Design Charter has not se
 const comparisonView = read('src/player/PlayerHeadToHead.jsx')
 for (const marker of [
   'Original and KO Predictor comparisons stay separate.',
-  'Only selections released by the existing server privacy rules are shown.',
+  'You only see picks that are available for this player right now.',
   'Comparison protected',
   'Same selection',
   'Different selection',
