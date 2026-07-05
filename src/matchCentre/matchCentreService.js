@@ -1,9 +1,9 @@
 import { getLeagueMemberPredictions, getLeagueStandings, getMyLeagues } from '../leagues/leagueService.js'
-import { normaliseLeaderboard } from '../results/resultModel.js'
+import { normaliseLeaderboard, RESULT_COMPETITION } from '../results/resultModel.js'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { parseExternal } from '../contracts/externalValidation.js'
 import { leaderboardRowsSchema, sharedPredictionBundleSchema } from '../contracts/externalSchemas.js'
-import { buildFixtureImpact, buildMatchCentreNavigation, defaultMatchNumber } from './matchCentreModel.js'
+import { buildFixtureImpact, buildGroupMatchCentreContext, buildMatchCentreNavigation, defaultMatchNumber } from './matchCentreModel.js'
 
 function throwForError(label, error) {
   if (error) throw new Error(`${label}: ${error.message}`)
@@ -54,6 +54,7 @@ export async function loadMatchCentre(client, { reference, requestedMatchNumber,
   ])
   const matchNumber = Number(requestedMatchNumber) || defaultMatchNumber(reference, liveSnapshot)
   const navigation = buildMatchCentreNavigation({ reference, liveSnapshot, matchNumber })
+  const safeCompetitionKey = navigation.current.matchNumber <= 36 ? RESULT_COMPETITION.ORIGINAL : competitionKey
   const userId = currentSession?.user?.id ?? null
 
   if (!userId) {
@@ -63,8 +64,9 @@ export async function loadMatchCentre(client, { reference, requestedMatchNumber,
       navigation,
       scopes: Object.freeze([]),
       selectedScope: 'overall',
-      competitionKey,
+      competitionKey: safeCompetitionKey,
       impact: null,
+      groupContext: buildGroupMatchCentreContext({ fixture: navigation.current, liveSnapshot, impact: null }),
     })
   }
 
@@ -75,16 +77,16 @@ export async function loadMatchCentre(client, { reference, requestedMatchNumber,
   ])
   const selectedLeague = leagues.find(league => league.id === leagueId) ?? null
   const members = selectedLeague
-    ? await getLeagueStandings(client, { leagueId: selectedLeague.id, competitionKey })
-    : await overallStandings(client, reference.tournamentId, competitionKey)
+    ? await getLeagueStandings(client, { leagueId: selectedLeague.id, competitionKey: safeCompetitionKey })
+    : await overallStandings(client, reference.tournamentId, safeCompetitionKey)
   const bundleLoader = selectedLeague
-    ? memberUserId => getLeagueMemberPredictions(client, { leagueId: selectedLeague.id, memberUserId, competitionKey })
-    : memberUserId => overallBundle(client, reference.tournamentId, memberUserId, competitionKey)
+    ? memberUserId => getLeagueMemberPredictions(client, { leagueId: selectedLeague.id, memberUserId, competitionKey: safeCompetitionKey })
+    : memberUserId => overallBundle(client, reference.tournamentId, memberUserId, safeCompetitionKey)
   const bundlesByUserId = await bundlesForMembers(bundleLoader, members)
   const impact = buildFixtureImpact({
     members,
     bundlesByUserId,
-    competitionKey,
+    competitionKey: safeCompetitionKey,
     matchNumber: navigation.current.matchNumber,
     reference,
     currentUserId: userId,
@@ -96,7 +98,8 @@ export async function loadMatchCentre(client, { reference, requestedMatchNumber,
     navigation,
     scopes,
     selectedScope: selectedLeague?.id ?? 'overall',
-    competitionKey,
+    competitionKey: safeCompetitionKey,
     impact,
+    groupContext: buildGroupMatchCentreContext({ fixture: navigation.current, liveSnapshot, impact }),
   })
 }

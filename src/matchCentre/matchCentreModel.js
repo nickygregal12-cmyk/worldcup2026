@@ -61,6 +61,7 @@ function fixtureFromMatch(reference, liveSnapshot, match) {
   return Object.freeze({
     matchId: match.matchId,
     matchNumber: match.matchNumber,
+    groupCode: match.groupCode ?? null,
     stageLabel: stageLabel(match),
     scheduledDate: match.scheduledDate ?? null,
     kickoffAt: match.kickoffAt ?? null,
@@ -238,6 +239,104 @@ export function buildFixtureImpact({ members, bundlesByUserId, competitionKey, m
     community: freezeRows(communityRows),
   })
 }
+
+function normaliseProjectedGroupRows(groupTable) {
+  const sourceRows = groupTable?.rows ?? groupTable?.table ?? groupTable?.standings ?? []
+  return freezeRows(sourceRows.map((row, index) => ({
+    key: row.teamId ?? row.tournamentTeamId ?? row.id ?? `row-${index + 1}`,
+    rank: Number(row.rank ?? row.position ?? index + 1),
+    teamId: row.teamId ?? row.tournamentTeamId ?? row.id ?? null,
+    label: row.label ?? row.teamLabel ?? row.name ?? row.teamName ?? 'Team TBC',
+    played: Number(row.played ?? row.playedCount ?? row.matchesPlayed ?? 0),
+    points: Number(row.points ?? 0),
+    goalDifference: Number(row.goalDifference ?? row.goal_difference ?? row.gd ?? 0),
+    goalsFor: Number(row.goalsFor ?? row.goals_for ?? row.gf ?? 0),
+  })))
+}
+
+function fixtureScoreValue(fixture) {
+  if (!fixture?.score) return null
+  const [home, away] = String(fixture.score).split('–').map(value => Number(value))
+  if (!Number.isInteger(home) || !Number.isInteger(away)) return null
+  return { home, away }
+}
+
+function outcomeFor(home, away) {
+  if (home > away) return 'home'
+  if (away > home) return 'away'
+  return 'draw'
+}
+
+function groupPredictionStatus(line, fixture) {
+  const score = fixtureScoreValue(fixture)
+  const predicted = line?.score ? String(line.score).split('–').map(value => Number(value)) : []
+  const predictedHome = predicted[0]
+  const predictedAway = predicted[1]
+
+  if (!score || !Number.isInteger(predictedHome) || !Number.isInteger(predictedAway)) {
+    return 'waiting'
+  }
+
+  if (predictedHome === score.home && predictedAway === score.away) return 'exact'
+  if (outcomeFor(predictedHome, predictedAway) === outcomeFor(score.home, score.away)) return 'outcome'
+  return 'different'
+}
+
+function buildGroupPredictionRows({ impact, fixture }) {
+  const lines = impact?.lines ?? []
+  return freezeRows(lines.map(line => ({
+    userId: line.userId,
+    displayName: line.displayName,
+    isCurrentUser: line.isCurrentUser,
+    rank: line.rank,
+    totalPoints: line.totalPoints,
+    visibility: line.visibility,
+    reason: line.reason,
+    score: line.score,
+    jokerApplied: line.jokerApplied,
+    maximumPoints: line.maximumPoints,
+    status: groupPredictionStatus(line, fixture),
+  })))
+}
+
+function summariseGroupPredictionRows(rows) {
+  const visibleRows = rows.filter(row => row.visibility === 'visible')
+  return Object.freeze({
+    visibleCount: visibleRows.length,
+    exactCount: visibleRows.filter(row => row.status === 'exact').length,
+    outcomeCount: visibleRows.filter(row => row.status === 'outcome').length,
+    differentCount: visibleRows.filter(row => row.status === 'different').length,
+    waitingCount: visibleRows.filter(row => row.status === 'waiting').length,
+  })
+}
+
+export function buildGroupMatchCentreContext({ fixture, liveSnapshot, impact }) {
+  if (!fixture || Number(fixture.matchNumber) > 36) return null
+
+  const groupTable = fixture.groupCode ? liveSnapshot?.groups?.[fixture.groupCode] ?? null : null
+  const predictionRows = buildGroupPredictionRows({ impact, fixture })
+
+  return Object.freeze({
+    fixtureKind: 'group',
+    groupCode: fixture.groupCode ?? null,
+    state: fixture.state,
+    projection: Object.freeze({
+      groupCode: fixture.groupCode ?? null,
+      completedMatchCount: Number(groupTable?.completedMatchCount ?? 0),
+      rows: normaliseProjectedGroupRows(groupTable),
+      note: fixture.state === 'completed'
+        ? 'Final group context shows how the result affected the table.'
+        : fixture.state === 'live'
+          ? 'Live group context shows how the table is moving right now.'
+          : 'Group context will update when scores arrive.',
+    }),
+    predictionComparison: Object.freeze({
+      rows: predictionRows,
+      summary: summariseGroupPredictionRows(predictionRows),
+    }),
+  })
+}
+
 
 export function defaultMatchNumber(reference, liveSnapshot) {
   const all = [...reference.groupMatches, ...reference.knockoutMatches].sort((left, right) => left.matchNumber - right.matchNumber)

@@ -68,6 +68,75 @@ function Community({ impact }) {
   )
 }
 
+function statusLabel(status) {
+  if (status === 'exact') return 'matching exact score'
+  if (status === 'outcome') return 'matching outcome'
+  if (status === 'different') return 'different right now'
+  return 'waiting for score'
+}
+
+function GroupProjection({ context }) {
+  if (!context?.projection) return null
+  return (
+    <Card className={styles.panel} as="section">
+      <div className={styles.panelHeading}>
+        <div><span className="page-eyebrow">Group impact</span><h3>Group {context.groupCode ?? '—'} projection</h3></div>
+        <Badge tone={context.state === 'live' ? 'danger' : context.state === 'completed' ? 'safe' : 'info'}>{context.state}</Badge>
+      </div>
+      <p>{context.projection.note}</p>
+      {context.projection.rows.length === 0 ? (
+        <p>Group table context will appear once this fixture has live or confirmed result data.</p>
+      ) : (
+        <div className={styles.projectionTable} role="table" aria-label={`Group ${context.groupCode} projected table`}>
+          {context.projection.rows.map(row => (
+            <div key={row.key} className={styles.projectionRow} role="row">
+              <span role="cell">#{row.rank}</span>
+              <strong role="cell">{row.label}</strong>
+              <span role="cell">{row.points} pts</span>
+              <small role="cell">P{row.played} · GD {row.goalDifference}</small>
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+function GroupPredictionComparison({ context }) {
+  if (!context?.predictionComparison) return null
+  const summary = context.predictionComparison.summary
+  return (
+    <Card className={styles.panel} as="section">
+      <div className={styles.panelHeading}>
+        <div><span className="page-eyebrow">This match</span><h3>Prediction comparison</h3></div>
+        <Badge tone="info">{summary.visibleCount} visible</Badge>
+      </div>
+      <p>Group-match rows compare released saved scores against the current fixture score without changing scoring records.</p>
+      {context.predictionComparison.rows.length === 0 ? (
+        <p>No players are available in this scope.</p>
+      ) : (
+        <ol className={styles.playerList}>
+          {context.predictionComparison.rows.map(line => (
+            <li key={line.userId} className={`${styles.playerLine} ${line.isCurrentUser ? styles.current : ''}`}>
+              <PlayerIdentity player={line} isCurrentUser={line.isCurrentUser} />
+              <span className={styles.rank}>#{line.rank || '—'} · {line.totalPoints} pts</span>
+              {line.visibility === 'visible' ? (
+                <div className={styles.selection}>
+                  <strong>{line.score ?? 'Saved score unavailable'}</strong>
+                  <span>{statusLabel(line.status)}</span>
+                  {line.jokerApplied && <Badge tone="warning">Joker</Badge>}
+                </div>
+              ) : <p className={styles.protected}>{line.reason}</p>}
+              <strong className={styles.points}>{line.maximumPoints > 0 ? `Up to ${line.maximumPoints} pts` : 'No points available'}</strong>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Card>
+  )
+}
+
+
 function PlayerLine({ line }) {
   return (
     <li className={`${styles.playerLine} ${line.isCurrentUser ? styles.current : ''}`}>
@@ -96,7 +165,7 @@ export default function MatchCentre({ client, reference, lifecycle, requestedMat
     try {
       const data = await loadMatchCentre(client, { reference, requestedMatchNumber, competitionKey, leagueId })
       setState({ status: 'ready', data, error: null })
-      setHashParams({ matchNumber: data.navigation.current.matchNumber, competitionKey, leagueId: data.selectedScope })
+      setHashParams({ matchNumber: data.navigation.current.matchNumber, competitionKey: data.competitionKey, leagueId: data.selectedScope })
     } catch (error) {
       setState({ status: 'error', data: null, error: error instanceof Error ? error.message : String(error) })
     }
@@ -105,12 +174,15 @@ export default function MatchCentre({ client, reference, lifecycle, requestedMat
   useEffect(() => { void Promise.resolve().then(load) }, [load])
   const data = state.data
   const currentMatchNumber = data?.navigation?.current?.matchNumber ?? requestedMatchNumber
+  const isGroupFixture = Number(currentMatchNumber) <= 36
+  const selectedCompetitionKey = data?.competitionKey ?? competitionKey
+  const competitionOptions = isGroupFixture ? COMPETITION_OPTIONS.slice(0, 1) : COMPETITION_OPTIONS
   const scopeOptions = useMemo(() => data?.scopes ?? [], [data])
   const matchLifecycle = useMemo(() => buildMatchCentreLifecycle({
     fixture: data?.navigation?.current,
-    competitionKey,
+    competitionKey: selectedCompetitionKey,
     lifecycle,
-  }), [competitionKey, data, lifecycle])
+  }), [selectedCompetitionKey, data, lifecycle])
 
   if (state.status === 'loading' && !data) return <div className={styles.loading} role="status">Loading Match Centre…</div>
   if (state.status === 'error') return <StatusBar tone="danger" title="Match Centre could not load" action={<Button variant="secondary" size="small" icon="refresh" onClick={load}>Try again</Button>}>{state.error}</StatusBar>
@@ -126,7 +198,7 @@ export default function MatchCentre({ client, reference, lifecycle, requestedMat
       <StatusBar tone={matchLifecycle.tone} title={matchLifecycle.title}>{matchLifecycle.body}</StatusBar>
 
       <Card className={styles.controls} as="section">
-        <Tabs label="Match Centre competition" value={competitionKey} options={COMPETITION_OPTIONS} onChange={value => { setCompetitionKey(value); setLeagueId('overall') }} />
+        <Tabs label="Match Centre competition" value={selectedCompetitionKey} options={competitionOptions} onChange={value => { setCompetitionKey(value); setLeagueId('overall') }} />
         {data.signedIn && scopeOptions.length > 0 && (
           <SelectField label="Viewing" value={data.selectedScope} onChange={setLeagueId} options={scopeOptions.map(scope => ({ value: scope.id, label: scope.label }))} />
         )}
@@ -136,14 +208,21 @@ export default function MatchCentre({ client, reference, lifecycle, requestedMat
       {!data.signedIn ? (
         <StatusBar tone="info" title="Sign in to see points impact" action={<LinkButton href="#/account" size="small">Account</LinkButton>}>Fixture information remains public, but player predictions follow the existing privacy gates.</StatusBar>
       ) : (
-        <>
-          <Community impact={data.impact} />
-          <Card className={styles.panel} as="section">
-            <div className={styles.panelHeading}><div><span className="page-eyebrow">Points on the line</span><h3>{data.impact.memberCount} player{data.impact.memberCount === 1 ? '' : 's'} in this scope</h3></div><Badge tone="info">Maximum available</Badge></div>
-            <p>Rows show what the saved selection can still earn under the current Euro scoring rules. Protected predictions stay hidden.</p>
-            {data.impact.lines.length === 0 ? <p>No players are available in this scope.</p> : <ol className={styles.playerList}>{data.impact.lines.map(line => <PlayerLine key={line.userId} line={line} />)}</ol>}
-          </Card>
-        </>
+        isGroupFixture ? (
+          <>
+            <GroupProjection context={data.groupContext} />
+            <GroupPredictionComparison context={data.groupContext} />
+          </>
+        ) : (
+          <>
+            <Community impact={data.impact} />
+            <Card className={styles.panel} as="section">
+              <div className={styles.panelHeading}><div><span className="page-eyebrow">Points on the line</span><h3>{data.impact.memberCount} player{data.impact.memberCount === 1 ? '' : 's'} in this scope</h3></div><Badge tone="info">Maximum available</Badge></div>
+              <p>Rows show what the saved selection can still earn under the current Euro scoring rules. Protected predictions stay hidden.</p>
+              {data.impact.lines.length === 0 ? <p>No players are available in this scope.</p> : <ol className={styles.playerList}>{data.impact.lines.map(line => <PlayerLine key={line.userId} line={line} />)}</ol>}
+            </Card>
+          </>
+        )
       )}
     </div>
   )
