@@ -1,8 +1,9 @@
 # Stage 13G handover — destination builds closed and next scope alignment
+Current deployed head: `8ee70ec`
 
 Date: 2026-07-05  
 Branch: `euro28-development`  
-Latest deployed commit before this handover package: `06d5218 Restyle Stage 13G admin control room`  
+Latest deployed commit before this handover package: `64f2f3e Restyle Stage 13G admin control room`  
 Development site: `https://euro28-predictor-dev.netlify.app`
 
 ## Closed since the previous handover

@@ -34,7 +34,7 @@ const CODE_SHAPE = /[{}<>=()_/$]/
 // Ratchet cap — the frozen-marker count recorded when this meta-audit was
 // introduced. The count must NEVER rise, and the cap must be lowered in the
 // same commit whenever remediation reduces the count (same discipline as the
-// eslint-disable governance caps). The healthy end state is 0.
+// lint-bypass governance caps). The healthy end state is 0.
 const MAX_FROZEN_MARKERS = 83
 
 // Exceptions must name the audit file, the exact literal and a reason.
