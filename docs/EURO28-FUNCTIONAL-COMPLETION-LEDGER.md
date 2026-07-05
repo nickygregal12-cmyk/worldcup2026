@@ -607,6 +607,14 @@ Confirmed decisions:
 
 Next sequenced package: RULES-1 or a narrow owner-decision register update for support channel, capacity and email confirmation.
 
+## Stage PRODUCT-UNKNOWN-ROUTE-1 — Unknown route fallback
+
+Status: complete in development as a scheduled product-completeness recovery slice.
+
+Unknown `#/...` app hashes now render a friendly recovery surface rather than silently falling through to Home. The surface explains that the requested screen is not available, reassures the user that predictions have not been changed, and offers direct links to Home, Groups and How to play. Existing Admin section recovery is unchanged: invalid `#/admin?section=...` values remain inside the protected Admin route and recover to overview.
+
+This package is UI/test/docs/audit only. It does not write Supabase data, create users, seed predictions, use or read service-role credentials, change scoring, change resolver logic or create a migration. Active migrations remain 18 and no Migration 019 is created.
+
 
 ## Stage RULES-1A — Rules hub UI upgrade — CLOSED-PENDING-LOCAL-GATES
 

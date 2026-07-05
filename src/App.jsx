@@ -14,12 +14,13 @@ import Leagues from './leagues/Leagues.jsx'
 import HomeDashboard from './home/HomeDashboard.jsx'
 import TournamentOverview, { HowToPlayOverview } from './tournament/TournamentOverview.jsx'
 import EuroAppShell from './app/EuroAppShell.jsx'
-import { APP_ROUTE, leaderboardCompetitionFromHash, matchCentreParamsFromHash, playerViewParamsFromHash } from './app/appRoutes.js'
+import { APP_ROUTE, isKnownAppHash, leaderboardCompetitionFromHash, matchCentreParamsFromHash, playerViewParamsFromHash } from './app/appRoutes.js'
 import { deriveNavigationLifecycle } from './app/navigationLifecycle.js'
 import { buildKoReadiness } from './app/koReadiness.js'
 import { useHashLocation } from './app/useHashRoute.js'
+import { UNKNOWN_ROUTE_COPY } from './app/unknownRouteCopy.js'
 import { useTheme } from './app/useTheme.js'
-import { Badge, Button, Card } from './design-system/index.jsx'
+import { Badge, Button, Card, LinkButton } from './design-system/index.jsx'
 import TeamProfileProvider from './teamProfile/TeamProfileProvider.jsx'
 import { StagingTimeBanner, useTournamentTimeControl } from './timePhase/index.js'
 import { loadEuroApp } from './runtime/loadEuroApp.js'
@@ -56,6 +57,31 @@ function AppLoadError({ message, onRetry }) {
         <h1>Euro 2028 Predictor could not load</h1>
         <p>{message}</p>
         <Button icon="refresh" onClick={onRetry}>Try again</Button>
+      </Card>
+    </div>
+  )
+}
+
+function UnknownDestination({ requestedHash }) {
+  const requested = requestedHash || '#/'
+  return (
+    <div className="content-stack legacy-page">
+      <PageIntro
+        eyebrow={UNKNOWN_ROUTE_COPY.eyebrow}
+        title={UNKNOWN_ROUTE_COPY.title}
+        description={`${UNKNOWN_ROUTE_COPY.description} ${UNKNOWN_ROUTE_COPY.predictionsSafe}`}
+        badge={{ tone: 'warning', label: UNKNOWN_ROUTE_COPY.badge }}
+      />
+      <Card className="empty-state">
+        <Badge tone="warning">{UNKNOWN_ROUTE_COPY.label}</Badge>
+        <h2>{UNKNOWN_ROUTE_COPY.heading}</h2>
+        <p>{UNKNOWN_ROUTE_COPY.requestedPrefix} <code>{requested}</code></p>
+        <p>{UNKNOWN_ROUTE_COPY.guidance}</p>
+        <div className="button-row">
+          <LinkButton href="#/" icon="home">{UNKNOWN_ROUTE_COPY.homeAction}</LinkButton>
+          <LinkButton href="#/groups" variant="secondary" icon="predict">{UNKNOWN_ROUTE_COPY.groupsAction}</LinkButton>
+          <LinkButton href="#/how-to-play" variant="ghost" icon="info">{UNKNOWN_ROUTE_COPY.rulesAction}</LinkButton>
+        </div>
       </Card>
     </div>
   )
@@ -109,12 +135,15 @@ export default function App() {
   if (state.status === 'error' || !state.data) return <AppLoadError message={state.error} onRetry={refresh} />
 
   const appData = state.data
+  const unknownDestinationRequested = hashLocation.hash.startsWith('#/') && !isKnownAppHash(hashLocation.hash)
   const koReadiness = buildKoReadiness(appData.guestReference)
   const navigation = deriveNavigationLifecycle(appData.guestReference, { koReadiness })
   const lifecycle = resolveTournamentLifecycle(appData.tournament)
 
   let content
-  if (route === APP_ROUTE.HOME) {
+  if (unknownDestinationRequested) {
+    content = <UnknownDestination requestedHash={hashLocation.hash} />
+  } else if (route === APP_ROUTE.HOME) {
     content = <HomeDashboard client={activeClient} foundation={appData} sessionState={activeSession} />
   } else if (route === APP_ROUTE.PREDICT) {
     content = (

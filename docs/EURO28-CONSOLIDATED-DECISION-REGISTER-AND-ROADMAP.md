@@ -88,7 +88,13 @@ These items must be complete before the first Euro 2028 match:
 
 ### Scheduled, not launch-blocking
 
-The offline player lifecycle, unknown-route fallback verification and growth mechanics remain scheduled. They are important, but they do not block the first wider-signup gate unless a later decision moves them.
+The offline player lifecycle and growth mechanics remain scheduled. They are important, but they do not block the first wider-signup gate unless a later decision moves them. Unknown-route fallback is closed by Stage PRODUCT-UNKNOWN-ROUTE-1.
+
+## 2B. Stage PRODUCT-UNKNOWN-ROUTE-1 — Unknown route fallback
+
+Unknown app hashes such as `#/not-a-route` now render a friendly recovery surface instead of silently falling through to Home. The fallback tells the user that the requested screen is not available, confirms predictions have not been changed, and offers direct safe actions to Home, Groups and How to play. Invalid Admin sections remain protected Admin-route recovery and continue to resolve to the Admin overview section.
+
+This slice is UI/test/docs/audit only: no Supabase writes, no Auth users, no prediction seeding, no service-role credential use/read/print, no scoring change, no resolver change and no migration. Active migrations remain 18 and no Migration 019 is created.
 
 ## 3. Scoring model
 

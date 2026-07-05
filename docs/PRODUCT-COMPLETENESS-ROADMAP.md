@@ -22,8 +22,7 @@ widely) or [GATE: tournament] (must exist before the first ball is kicked) or
    claim-flow prototype exists, zero user-facing surface. Confirm the roadmap
    covers create → score → visible in leagues → claim, so it is not bolted onto
    finished league pages.
-4. **Unknown-route fallback** [SCHEDULED, verify-first]. Confirm what #/nonsense
-   renders; add a friendly not-found → Home if blank.
+4. **Unknown-route fallback — CLOSED** [SCHEDULED]. Stage PRODUCT-UNKNOWN-ROUTE-1 confirms unknown `#/...` hashes now render a friendly recovery surface with safe links to Home, Groups and How to play instead of silently falling through to Home.
 
 ## C. New items driven by scale (the friends-league assumptions that break)
 

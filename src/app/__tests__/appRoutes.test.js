@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ADMIN_SECTIONS, APP_ROUTE, adminSectionFromHash, destinationForRoute, hasInvalidAdminSection, leaderboardCompetitionFromHash, LEADERBOARD_COMPETITION, matchCentreParamsFromHash, normaliseHashPath, routeFromHash } from '../appRoutes.js'
+import { ADMIN_SECTIONS, APP_ROUTE, adminSectionFromHash, destinationForRoute, hasInvalidAdminSection, isKnownAppHash, leaderboardCompetitionFromHash, LEADERBOARD_COMPETITION, matchCentreParamsFromHash, normaliseHashPath, routeFromHash } from '../appRoutes.js'
 
 describe('Euro app routes', () => {
   it('normalises hashes without depending on a server-side router', () => {
@@ -59,7 +59,9 @@ describe('Euro app routes', () => {
     expect(hasInvalidAdminSection('#/admin?section=not-a-section')).toBe(true)
   })
 
-  it('falls back safely to Home for unknown destinations', () => {
+  it('identifies unknown app destinations while keeping the route fallback safe', () => {
+    expect(isKnownAppHash('#/not-a-route')).toBe(false)
+    expect(isKnownAppHash('#/groups')).toBe(true)
     expect(routeFromHash('#/not-a-route')).toBe(APP_ROUTE.HOME)
     expect(destinationForRoute('not-a-route').key).toBe(APP_ROUTE.HOME)
   })

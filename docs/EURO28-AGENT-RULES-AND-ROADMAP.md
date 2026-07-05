@@ -454,7 +454,9 @@ Before the first ball is kicked, the roadmap requires:
 2. Stage 16A load reality-check at the chosen planning number against leaderboards, Match Centre and league pages.
 3. Uptime monitoring and owner-visible error reporting.
 
-Offline player lifecycle, unknown-route fallback and growth mechanics remain scheduled follow-ons unless a later owner decision promotes them to a gate. These entries are docs/audit-only in this alignment package: no Supabase writes, no service-role credential use/read/print, no scoring/resolver/route change and no Migration 019.
+Offline player lifecycle and growth mechanics remain scheduled follow-ons unless a later owner decision promotes them to a gate. Unknown-route fallback is closed by Stage PRODUCT-UNKNOWN-ROUTE-1. These entries are docs/audit-only in this alignment package: no Supabase writes, no service-role credential use/read/print, no scoring/resolver/route change and no Migration 019.
+
+Stage PRODUCT-UNKNOWN-ROUTE-1 adds the friendly not-found recovery for unknown `#/...` app hashes. Future agents must preserve the behaviour: unknown app hashes explain that the screen is unavailable, reassure users that predictions have not changed, and offer safe links to Home, Groups and How to play. Invalid Admin sections must remain protected Admin-route recovery, not public not-found recovery. The slice has no Supabase writes, no scoring/resolver change and no Migration 019.
 
 ## Stage 16 — Staging-seeded lifecycle simulation
 
