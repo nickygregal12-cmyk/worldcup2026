@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Euro 2028 KO Predictor Contract C</title>
+<style>
+:root{
+  --brand:#173A66;--brand-2:#0B2442;--accent:#0EA5E9;--accent-2:#38BDF8;--gold:#F4C430;--ink:#0F172A;--muted:#64748B;--paper:#F4F8FC;--card:#FFFFFF;--line:#D8E3EF;--soft:#EAF5FF;--good:#12805C;--warn:#B7791F;--danger:#B42318;--shadow:0 20px 60px rgba(11,36,66,.16);--radius:24px;color-scheme:light;
+}
+[data-theme="dark"]{--brand:#081A31;--brand-2:#030B16;--accent:#38BDF8;--accent-2:#7DD3FC;--gold:#FACC15;--ink:#F8FAFC;--muted:#A8B3C7;--paper:#06111F;--card:#0D1D34;--line:#213D5E;--soft:#0B2A49;--good:#5EEAD4;--warn:#FBBF24;--danger:#FCA5A5;--shadow:0 22px 80px rgba(0,0,0,.4);color-scheme:dark;}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}body{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(circle at top left,rgba(56,189,248,.20),transparent 28rem),var(--paper);color:var(--ink);line-height:1.45;padding:28px 18px 52px}h1,h2,h3,p{margin:0}h1,h2,h3{font-family:"Space Grotesk",Inter,system-ui,sans-serif;letter-spacing:-.03em}button{font:inherit;color:inherit}.num{font-variant-numeric:tabular-nums}.page{max-width:1220px;margin:0 auto}.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}.brand{display:flex;align-items:center;gap:12px}.mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--brand),var(--accent));box-shadow:0 14px 34px rgba(14,165,233,.28);display:grid;place-items:center;color:white;font-weight:950}.brand strong{display:block;font-family:"Space Grotesk",Inter,sans-serif;font-size:20px}.brand span{display:block;font-size:12px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.12em}.toggle{border:1px solid var(--line);background:var(--card);border-radius:999px;min-height:44px;padding:0 16px;font-weight:850;box-shadow:var(--shadow)}.layout-note{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px 16px;margin:0 0 22px;color:var(--muted);box-shadow:0 8px 30px rgba(11,36,66,.08)}.compare{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}.column-title{font-size:13px;font-weight:950;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;margin:0 0 10px}.frame{width:430px;max-width:100%;margin:0 auto;background:linear-gradient(180deg,rgba(14,165,233,.16),transparent 260px),var(--card);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;border-radius:36px}.screen{padding:16px 14px 22px}.hero{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:white;border-radius:26px;padding:20px;position:relative;overflow:hidden}.hero:after{content:"";position:absolute;right:-70px;top:-80px;width:190px;height:190px;border-radius:999px;background:radial-gradient(circle,rgba(56,189,248,.44),transparent 68%)}.hero small{font-weight:950;letter-spacing:.14em;text-transform:uppercase;color:#BEEBFF}.hero h1{font-size:30px;line-height:.98;margin-top:8px}.hero p{color:#D8F3FF;margin-top:10px}.pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.pill{display:inline-flex;align-items:center;gap:7px;min-height:32px;border-radius:999px;border:1px solid rgba(255,255,255,.28);padding:0 11px;font-size:12px;font-weight:850;background:rgba(255,255,255,.10);backdrop-filter:blur(8px)}.panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px;box-shadow:0 10px 32px rgba(11,36,66,.08)}.muted{color:var(--muted)}.micro{font-size:12px;color:var(--muted)}.section{margin-top:14px}.source{font-size:10px;font-weight:950;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}.state{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;border-radius:999px;padding:6px 9px;background:var(--soft);color:var(--accent);white-space:nowrap}.state.warn{background:rgba(251,191,36,.15);color:var(--warn)}.state.good{background:rgba(18,128,92,.15);color:var(--good)}.state.gold{background:rgba(250,204,21,.18);color:var(--gold)}.state.danger{background:rgba(180,35,24,.12);color:var(--danger)}.health{display:grid;gap:8px;margin-top:12px}.health-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;border:1px solid var(--line);border-radius:16px;padding:10px;background:linear-gradient(180deg,rgba(14,165,233,.05),transparent),var(--card)}.dot{width:12px;height:12px;border-radius:50%;background:var(--muted)}.dot.warn{background:var(--warn)}.dot.good{background:var(--good)}.lock-card{border:1px dashed var(--line);border-radius:22px;padding:16px;background:rgba(14,165,233,.055);margin-top:14px}.lock-card h2{font-size:22px}.placeholder-list{display:grid;gap:10px;margin-top:12px}.placeholder{border:1px dashed var(--line);border-radius:16px;padding:11px;background:var(--paper);display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--muted)}.team{display:flex;align-items:center;gap:9px;min-width:0}.flag{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--soft);border:1px solid var(--line);font-size:16px;flex:none}.name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:950}.fixture-card{border:1px solid var(--line);border-radius:24px;padding:14px;background:var(--card);box-shadow:0 10px 32px rgba(11,36,66,.08)}.match-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.score-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}.team-block{min-width:0}.team-block.right{text-align:right}.team-block.right .team{justify-content:flex-end}.score-box{min-width:92px;border-radius:20px;padding:10px;background:linear-gradient(180deg,rgba(14,165,233,.12),transparent),var(--paper);border:1px solid var(--line);text-align:center}.score-digits{font-family:"Space Grotesk";font-size:30px;font-weight:950;letter-spacing:-.05em}.stepper{display:flex;justify-content:center;gap:6px;margin-top:6px}.stepper button{width:32px;height:30px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-weight:950}.choice-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.choice{border:1px solid var(--line);border-radius:16px;padding:10px;background:var(--paper);font-weight:900;text-align:center}.choice.active{border-color:var(--accent);box-shadow:inset 0 0 0 2px rgba(14,165,233,.18);color:var(--accent);background:var(--soft)}.method{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}.method span{border:1px solid var(--line);border-radius:999px;padding:8px 4px;text-align:center;font-weight:950;font-size:12px;background:var(--card)}.method span.active{background:var(--accent);border-color:var(--accent);color:white}.joker-dock{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;border-radius:20px;background:linear-gradient(135deg,rgba(250,204,21,.22),rgba(14,165,233,.08));border:1px solid rgba(250,204,21,.44);margin-top:12px}.joker-dots{display:flex;gap:5px}.joker-dots span{width:13px;height:13px;border-radius:50%;border:1px solid var(--gold);background:transparent}.joker-dots span.used{background:var(--gold)}.round-tabs{display:flex;gap:8px;overflow:auto;padding-bottom:2px;margin-top:14px}.round-tabs span{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-weight:950;background:var(--card);font-size:12px}.round-tabs span.active{background:var(--brand);border-color:var(--brand);color:white}.status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}.status-grid .panel{padding:11px}.bottom-note{margin-top:14px;border:1px solid var(--line);border-radius:18px;padding:11px 12px;background:rgba(255,255,255,.55);font-size:12px;color:var(--muted)}[data-theme="dark"] .bottom-note{background:rgba(13,29,52,.55)}.timeline{display:grid;gap:10px;margin-top:14px}.timeline-item{display:grid;grid-template-columns:auto 1fr;gap:10px;border:1px solid var(--line);border-radius:18px;padding:11px;background:var(--card)}.timeline-no{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--accent);font-weight:950}.nav-preview{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;background:rgba(255,255,255,.78);border:1px solid var(--line);border-radius:24px;padding:8px;margin-top:14px;backdrop-filter:blur(18px)}[data-theme="dark"] .nav-preview{background:rgba(13,29,52,.78)}.nav-preview span{text-align:center;border-radius:16px;padding:8px 2px;font-size:11px;font-weight:850;color:var(--muted)}.nav-preview span.active{background:var(--soft);color:var(--accent)}.nav-preview span.home{background:var(--accent);color:white;transform:translateY(-8px);box-shadow:0 10px 25px rgba(14,165,233,.35)}@media(max-width:960px){.compare{grid-template-columns:1fr;gap:28px}.frame{width:430px}}@media(max-width:520px){body{padding-inline:10px}.score-row{grid-template-columns:1fr}.score-box{order:3}.team-block.right{text-align:left}.team-block.right .team{justify-content:flex-start}.choice-row,.status-grid{grid-template-columns:1fr}.hero h1{font-size:28px}}
+</style>
+</head>
+<body>
+<!--
+  BATCH 1 APPROVAL STATUS: CANDIDATE ONLY. This file is not an approved visual contract yet.
+  Groups and Leagues are approved anchors; Bracket and KO Predictor remain
+  unapproved until Nicky picks or approves a merged variant.
+-->
+
+<!--
+Preserved decisions:
+- Visual language follows the approved Groups Night Broadcast contract; Groups itself is not redrafted in this candidate.
+- KO Predictor is separate from the Original Predictor and has separate points, standings and winner.
+- KO Predictor must not be playable until real knockout fixtures are known.
+- Groups remains primary until all group results and all eight Round of 16 pairings are display-ready.
+- Bracket health/readiness is a gate/check only; it must not blend predicted and live bracket contexts.
+- Once real fixtures are ready, KO Predictor uses those real fixtures with 90-minute score, advancing team, method and five separate KO jokers.
+- Original Bracket remains winner-only and is not edited from this KO Predictor surface.
+- Original and KO points never combine.
+- Bottom navigation shown here is preview chrome only; it does not approve any app-wide navigation change.
+Proposed decisions: none. This candidate shows before/after readiness states within the existing recorded behaviour.
+-->
+<div class="page">
+  <div class="topbar">
+    <div class="brand"><div class="mark">KO</div><div><strong>Euro 2028 Predictor</strong><span>KO Predictor contract C</span></div></div>
+    <button class="toggle" data-theme-toggle>Dark preview</button>
+  </div>
+  <p class="layout-note">Variant C redrafts KO Predictor as a two-state contract: the unavailable state before groups finish, and the playable state after real teams are known and the bracket-health gate has passed. The bottom-nav sample is only prototype chrome; the current app-wide bottom nav remains unchanged.</p>
+
+  <div class="compare">
+    <section>
+      <h2 class="column-title">Before groups finish</h2>
+      <div class="frame"><div class="screen">
+        <section class="hero">
+          <small>KO Predictor</small>
+          <h1>Unlocks when the real bracket is ready</h1>
+          <p>Keep making Group predictions for now. This competition opens only after the real Round of 16 pairings are confirmed.</p>
+          <div class="pill-row"><span class="pill">Separate KO race</span><span class="pill">No playable fixtures yet</span><span class="pill">Jokers reserved: 5</span></div>
+        </section>
+
+        <section class="section panel">
+          <span class="source">Readiness check</span>
+          <h2>Bracket health is waiting on real results</h2>
+          <div class="health">
+            <div class="health-row"><span class="dot warn"></span><div><strong>Group results incomplete</strong><p class="micro">Live tables are still changing.</p></div><span class="state warn">Waiting</span></div>
+            <div class="health-row"><span class="dot warn"></span><div><strong>Round of 16 pairings not final</strong><p class="micro">Eight confirmed fixtures are required.</p></div><span class="state warn">Waiting</span></div>
+            <div class="health-row"><span class="dot"></span><div><strong>KO Predictor controls</strong><p class="micro">Hidden until the real fixture exists.</p></div><span class="state">Locked</span></div>
+          </div>
+        </section>
+
+        <section class="lock-card">
+          <span class="state warn">Not open yet</span>
+          <h2>Nothing to predict here yet</h2>
+          <p class="micro">The Original Bracket stays separate. This page will not ask you to predict placeholder winners or guessed paths.</p>
+          <div class="placeholder-list">
+            <div class="placeholder"><span>Match 73</span><strong>Real teams pending</strong></div>
+            <div class="placeholder"><span>Match 74</span><strong>Real teams pending</strong></div>
+            <div class="placeholder"><span>Quarter-finals</span><strong>Hidden</strong></div>
+          </div>
+        </section>
+
+        <section class="timeline">
+          <div class="timeline-item"><div class="timeline-no">1</div><div><strong>Finish Groups</strong><p class="micro">Group results settle live tables and third-place ranking.</p></div></div>
+          <div class="timeline-item"><div class="timeline-no">2</div><div><strong>Bracket health passes</strong><p class="micro">All eight Round of 16 pairings are available and safe to show.</p></div></div>
+          <div class="timeline-item"><div class="timeline-no">3</div><div><strong>KO Predictor opens</strong><p class="micro">Real fixtures become playable with separate KO scoring.</p></div></div>
+        </section>
+
+        <div class="bottom-note"><strong>Navigation note:</strong> the current app bottom nav should stay as-is. This mock only frames the KO page state.</div>
+      </div></div>
+    </section>
+
+    <section>
+      <h2 class="column-title">After real teams are known</h2>
+      <div class="frame"><div class="screen">
+        <section class="hero">
+          <small>KO Predictor</small>
+          <h1>Round of 16 is live</h1>
+          <p>Make separate KO picks using the confirmed fixtures. Your Original Predictor score stays separate.</p>
+          <div class="pill-row"><span class="pill">8 playable R16 ties</span><span class="pill">KO points only</span><span class="pill">5 jokers</span></div>
+        </section>
+
+        <div class="status-grid">
+          <div class="panel"><span class="source">Health</span><h2>Passed</h2><p class="micro">real bracket safe</p></div>
+          <div class="panel"><span class="source">Saved</span><h2 class="num">6/8</h2><p class="micro">R16 picks</p></div>
+          <div class="panel"><span class="source">Jokers</span><h2 class="num">2/5</h2><p class="micro">armed</p></div>
+        </div>
+
+        <section class="section panel">
+          <span class="source">Readiness check</span>
+          <h2>Real teams confirmed</h2>
+          <div class="health">
+            <div class="health-row"><span class="dot good"></span><div><strong>Group results complete</strong><p class="micro">Live tables are final for allocation.</p></div><span class="state good">Done</span></div>
+            <div class="health-row"><span class="dot good"></span><div><strong>Round of 16 pairings ready</strong><p class="micro">All eight fixtures are now real.</p></div><span class="state good">Ready</span></div>
+          </div>
+        </section>
+
+        <div class="round-tabs"><span class="active">R16</span><span>QF pending</span><span>SF pending</span><span>Final pending</span></div>
+
+        <article class="fixture-card section">
+          <div class="match-top"><div><span class="source">Match 73 · confirmed</span><h2>First knockout pick</h2></div><span class="state gold">Joker armed</span></div>
+          <div class="score-row">
+            <div class="team-block"><div class="team"><span class="flag">🇧🇦</span><span class="name">Bosnia and Herzegovina</span></div><p class="micro">Runner-up Group A</p></div>
+            <div class="score-box"><div class="score-digits num">2–1</div><div class="stepper"><button>−</button><button>+</button></div></div>
+            <div class="team-block right"><div class="team"><span class="flag">🇲🇰</span><span class="name">North Macedonia</span></div><p class="micro">Runner-up Group B</p></div>
+          </div>
+          <div class="choice-row"><div class="choice active">Bosnia and Herzegovina advance</div><div class="choice">North Macedonia advance</div></div>
+          <div class="method"><span class="active">90</span><span>ET</span><span>Pens</span></div>
+          <div class="joker-dock"><strong>Joker doubles this KO match</strong><div class="joker-dots"><span class="used"></span><span class="used"></span><span></span><span></span><span></span></div></div>
+        </article>
+
+        <article class="fixture-card section">
+          <div class="match-top"><div><span class="source">Match 74 · confirmed</span><h2>Saved without joker</h2></div><span class="state good">Saved</span></div>
+          <div class="score-row">
+            <div class="team-block"><div class="team"><span class="flag">🇪🇸</span><span class="name">Spain</span></div><p class="micro">Winner Group E</p></div>
+            <div class="score-box"><div class="score-digits num">3–2</div><div class="stepper"><button>−</button><button>+</button></div></div>
+            <div class="team-block right"><div class="team"><span class="flag">🏴</span><span class="name">Scotland</span></div><p class="micro">Third-place route</p></div>
+          </div>
+          <div class="choice-row"><div class="choice active">Spain advance</div><div class="choice">Scotland advance</div></div>
+          <div class="method"><span>90</span><span class="active">ET</span><span>Pens</span></div>
+          <div class="joker-dock"><strong>Joker unused</strong><span class="state">Can move before kick-off</span></div>
+        </article>
+
+        <div class="bottom-note"><strong>Boundary:</strong> Original points and KO points are shown separately only. This page does not edit the Original Bracket.</div>
+        <nav class="nav-preview" aria-label="Preview navigation only"><span>Groups</span><span class="active">KO</span><span class="home">Home</span><span>Leagues</span><span>More</span></nav>
+      </div></div>
+    </section>
+  </div>
+</div>
+</body>
+<script>
+(function(){
+  const btn=document.querySelector('[data-theme-toggle]');
+  const root=document.documentElement;
+  btn?.addEventListener('click',()=>{
+    const dark=root.getAttribute('data-theme')==='dark';
+    root.setAttribute('data-theme',dark?'light':'dark');
+    btn.textContent=dark?'Dark preview':'Light preview';
+  });
+})();
+</script>
+</html>

@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.33 — Product gate decisions register
+### Version 4.35 — Approved visual anchors recorded
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -1223,3 +1223,14 @@ Stage PUBLIC-SIGNUP-READINESS-1 centralises the app's wider public-signup readin
 ## Stage OWNER-SIGNUP-DECISIONS-1 — Public signup owner decision pass
 
 Stage OWNER-SIGNUP-DECISIONS-1 records the signup owner choices in docs and `src/auth/publicSignupReadiness.js`: Contact admin support wording, 250 users, 20 leagues, current low-cost/free planning, email confirmation ON, conservative privacy wording with no specific region claim, blocked racist/discriminatory/anti-immigrant/sectarian/abusive/inflammatory names, and no permanent invite-only requirement once moderation and remaining safety checks are complete. Future agents must preserve that public registration remains closed after this stage. Do not add Auth config changes, signup opening, Supabase writes, service-role credential use/read/print, scoring/resolver/route changes or Migration 019 under this stage.
+
+
+## Stage DESIGN-CONTRACTS-BATCH-0 — Visual-contract rule recording
+
+Stage DESIGN-CONTRACTS-BATCH-0 records the visual-contract rule before the all-main-pages design drafting programme begins. Future agents must treat approved files in `docs/reference-prototypes/` as binding visual contracts for layout, hierarchy, page composition, state coverage and Night Broadcast identity treatment, while also treating those files as reference artefacts only. Do not port prototype HTML, inline CSS, fake JavaScript, demo toggles, CDN fonts, sample datasets, local storage or hardcoded states into production code.
+
+The design-contract programme must proceed in batches. Each batch first produces candidate HTML references and a summary, then stops for Nicky's approval. After approval, exactly one contract file per surface is retained; old references are superseded rather than accumulated. Any proposed visual treatment that requires an unrecorded behaviour, route, data contract, scoring rule, resolver change, signup state, moderation action or Auth change must be flagged in the batch summary and must not be implemented silently.
+
+The approved Groups Night Broadcast direction is the identity anchor and must not be redrafted unless Nicky explicitly reopens it. The supplied League design is also approved and must not be redrafted unless Nicky explicitly reopens Leagues. Batch 1 still contains Bracket plus KO Predictor candidates only; none of the Bracket or KO Predictor candidates are approved until Nicky chooses a variant or approves a merge. Bracket candidates must cover the mobile stacked view and the ≥900px converging wall chart. Admin remains last.
+
+Scope guard: docs/reference only until later approved implementation packages. Do not modify `src/`, `supabase/`, migrations or tests in the drafting programme. Do not change product behaviour, routes, copy in active app code, scoring, resolver logic, Auth config, signup state, Supabase writes, service-role credential use/read/print or Migration 019 under this stage. Active migrations remain 18, Original Predictor and KO Predictor remain separate, and predicted/live bracket contexts must never blend.

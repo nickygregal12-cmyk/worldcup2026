@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.11 — destination reference split recorded
+### Version 1.13 — Groups and Leagues visual contracts recorded
 
 > **Authority:** This document governs how the Euro 2028 Predictor looks and feels. The Consolidated Decision Register governs product rules. The Agent Rules govern build process. A visual deviation must be proposed here before it ships.
 
@@ -273,6 +273,28 @@ Each Stage 13 batch stores baselines in `docs/design-baselines/` at:
 
 The staging preview remains the sign-off surface for future palette refinements. A palette change is a token edit plus charter version bump, not a component rewrite.
 
+
+## 12A. Visual contracts — CONFIRMED
+
+A visual contract is an approved, self-contained HTML reference prototype stored under `docs/reference-prototypes/` and recorded in this Charter, the Decision Register and the Functional Completion Ledger. It is binding for layout, hierarchy, visual treatment, state coverage and page-level composition, but it is not production code and must not be ported directly into `src/`.
+
+Visual-contract rules:
+
+- Candidate prototype files are explorations until Nicky approves one variant or an explicitly merged variant.
+- Once approved, exactly one contract file is retained per surface; approved files supersede older references rather than accumulating alternatives.
+- Product implementation must rebuild the approved contract natively in the Euro design system using real components, semantic tokens, scoped CSS Modules and existing models/contracts.
+- Prototype HTML, inline CSS, sample JavaScript, hardcoded sample data, demo toggles, CDN fonts, local switches and fake storage are reference-only and must not be imported into the app.
+- Every candidate file must list preserved functional decisions in an HTML comment at the top before page markup.
+- A visual idea that requires an unrecorded behaviour, scoring rule, route, data read/write, moderation rule or auth change must be flagged as a proposed decision in the batch summary and must not be silently designed as accepted.
+- Visual contracts never override the Consolidated Decision Register, database contracts, scoring contracts, resolver contracts, privacy gates, public-signup gates or the Original/KO competition boundary.
+- Cosmetic implementation stages under an approved visual contract must be sequenced behind any recorded missing functional rows for that surface; visual polish must not jump the correctness queue.
+- The approved Groups Night Broadcast direction is the identity anchor for this programme. Groups must not be redrafted unless Nicky explicitly reopens that surface.
+- The supplied League visual contract is also approved. Leagues must not be redrafted unless Nicky explicitly reopens that surface.
+- Bracket and KO Predictor candidates from Batch 1 are not approved visual contracts until Nicky chooses a variant or approves a merged variant.
+- Light and dark theme treatment, realistic long-content states, loading/empty/partial states and hard-case football content are part of the approval standard, not optional polish.
+
+The design-contract drafting programme is docs/reference-only until a later separately approved implementation stage. It authorises no product-code change, no route change, no scoring or resolver change, no Supabase write, no Auth configuration change and no migration. Active migrations remain 18 and Migration 019 must not be created by visual-contract work.
+
 ## 13. Deferred design decisions
 
 - Final app mark or wordmark treatment beyond the confirmed name.
@@ -281,6 +303,8 @@ The staging preview remains the sign-off surface for future palette refinements.
 
 ## Change log
 
+- **v1.13:** Recorded the approved League visual contract alongside the approved Groups Night Broadcast anchor; clarified that Bracket and KO Predictor remain unapproved candidates until Nicky approves a variant or merge.
+- **v1.12:** Recorded the visual-contract rule: approved self-contained HTML references become binding layout/hierarchy/state contracts, but are not code to port; one approved contract is retained per surface; Groups Night Broadcast remains the identity anchor; visual work cannot override functional decisions, signup gates, migrations, scoring, resolver or Original/KO boundaries.
 - **v1.9:** Approved the holistic Stage 13G information architecture, phase-aware More strategy, KO teaser, real-time match ordering, shared group views, canonical rules guide, global player identity activation, league invite previews and seeded coherence acceptance.
 - **v1.0:** Fresh identity proposed; green/lime palette and typography provisional.
 - **v1.1:** Blue direction confirmed; colours centralised and intentionally adjustable; app name confirmed; five-position navigation fixed; Lucide and typography confirmed.
