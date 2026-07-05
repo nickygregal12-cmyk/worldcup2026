@@ -30,7 +30,7 @@ for (const marker of [
   'buildLeagueRaceSummary',
   'pre_scoring',
   'Race starts when members appear',
-  'The race summary will switch to leader gap context',
+  'The race summary will show the gap to the leader',
 ]) {
   if (!model.includes(marker)) fail(`leagueModel.js missing marker: ${marker}`)
 }

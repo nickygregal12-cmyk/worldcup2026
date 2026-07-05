@@ -108,7 +108,7 @@ for (const text of [
   'One member list, two separate competitions',
   'Open a member row for the detailed comparison',
   'Fixtures and results',
-  'Canonical result records',
+  'Official result records',
   'Live context · not your bracket',
   'Original bracket progression',
   'Advancing teams',
@@ -133,7 +133,7 @@ console.log('Euro 2028 app-shell verification passed.')
 console.log(`Site: ${siteUrl}`)
 console.log('Public experience: Stage 13F-J player insight plus Stage 14 observability, Stage 13E team profiles and Stage 13D journeys')
 console.log('Stage 13D leagues, shared predictions, canonical results and separate points remain active beneath Stage 14')
-console.log('Player insight: canonical point sources, rank gaps and privacy-safe Original/KO evidence')
+console.log('Player insight: point sources, rank gaps and privacy-safe Original/KO evidence')
 console.log('Runtime health: read-only Netlify endpoint and hourly validated heartbeat')
 console.log('Error recovery: root boundary and optional Sentry-compatible browser/function reporting')
 console.log('Validation: active Euro Supabase, RPC and health boundaries use Zod-backed parsing')
