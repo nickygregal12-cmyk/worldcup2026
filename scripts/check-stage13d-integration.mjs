@@ -28,7 +28,7 @@ assert(leagueService.includes('Promise.allSettled'), 'League overview must prese
 assert(leagueService.includes('LEAGUE_COMPETITION.ORIGINAL'), 'League overview must request Original standings explicitly')
 assert(leagueService.includes('LEAGUE_COMPETITION.KO_PREDICTOR'), 'League overview must request KO standings explicitly')
 assert(leaguesPage.includes('Your Original and KO Predictor tables stay separate, so each race is easy to follow.'), 'League page must state the competition boundary')
-assert(leaguesPage.includes('Only selections released by the existing server privacy rules are shown.'), 'Member comparison must explain server-authorised visibility')
+assert(leaguesPage.includes('You only see picks that are available for this player right now.'), 'Member comparison must explain server-authorised visibility')
 assert(productApp.includes('reference={appData.guestReference}'), 'League journey must receive the canonical public reference')
 
 for (const required of [
