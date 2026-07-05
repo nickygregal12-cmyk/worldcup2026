@@ -6,6 +6,7 @@ export const APP_ROUTE = Object.freeze({
   LEAGUES: 'leagues',
   RESULTS: 'results',
   MATCH_CENTRE: 'match-centre',
+  PLAYER: 'player',
   LEADERBOARDS: 'leaderboards',
   ACCOUNT: 'account',
   TOURNAMENT: 'tournament',
@@ -78,6 +79,8 @@ const ROUTE_BY_PATH = new Map([
   ['/results', APP_ROUTE.RESULTS],
   ['/match-centre', APP_ROUTE.MATCH_CENTRE],
   ['/match', APP_ROUTE.MATCH_CENTRE],
+  ['/player', APP_ROUTE.PLAYER],
+  ['/player-view', APP_ROUTE.PLAYER],
   ['/leaderboards', APP_ROUTE.LEADERBOARDS],
   ['/standings', APP_ROUTE.LEADERBOARDS],
   ['/rankings', APP_ROUTE.LEADERBOARDS],
@@ -139,6 +142,15 @@ export function knownInternalHashes() {
 
 export function destinationForRoute(routeKey) {
   return APP_DESTINATIONS.find(destination => destination.key === routeKey) ?? APP_DESTINATIONS[0]
+}
+
+export function playerViewParamsFromHash(hashValue = '') {
+  const params = hashSearchParams(hashValue)
+  const competition = params.get('competition') === 'ko_predictor' ? 'ko_predictor' : 'original'
+  return Object.freeze({
+    userId: params.get('user') || params.get('member') || null,
+    competition,
+  })
 }
 
 export function matchCentreParamsFromHash(hashValue = '') {

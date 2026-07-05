@@ -5,6 +5,7 @@ import PredictionJourney from './journey/PredictionJourney.jsx'
 import KoPredictor from './koPredictor/KoPredictor.jsx'
 import ResultsAndLeaderboards from './results/ResultsAndLeaderboards.jsx'
 import MatchCentre from './matchCentre/MatchCentre.jsx'
+import PlayerView from './player/PlayerView.jsx'
 import AdminOperations from './admin/AdminOperations.jsx'
 import AdminRouteGate from './admin/AdminRouteGate.jsx'
 import { ADMIN_VISIBILITY_STATUS } from './admin/adminVisibilityModel.js'
@@ -13,7 +14,7 @@ import Leagues from './leagues/Leagues.jsx'
 import HomeDashboard from './home/HomeDashboard.jsx'
 import TournamentOverview, { HowToPlayOverview } from './tournament/TournamentOverview.jsx'
 import EuroAppShell from './app/EuroAppShell.jsx'
-import { APP_ROUTE, leaderboardCompetitionFromHash, matchCentreParamsFromHash } from './app/appRoutes.js'
+import { APP_ROUTE, leaderboardCompetitionFromHash, matchCentreParamsFromHash, playerViewParamsFromHash } from './app/appRoutes.js'
 import { deriveNavigationLifecycle } from './app/navigationLifecycle.js'
 import { buildKoReadiness } from './app/koReadiness.js'
 import { useHashLocation } from './app/useHashRoute.js'
@@ -141,6 +142,20 @@ export default function App() {
       <div className="content-stack legacy-page">
         <PageIntro eyebrow="Private competitions" title="Your leagues" description="One member list, two separate competitions." />
         <Leagues client={activeClient} tournamentId={appData.tournament.id} reference={appData.guestReference} lifecycle={lifecycle} koReadiness={koReadiness} />
+      </div>
+    )
+  } else if (route === APP_ROUTE.PLAYER) {
+    const playerView = playerViewParamsFromHash(hashLocation.hash)
+    content = (
+      <div className="content-stack legacy-page">
+        <PageIntro eyebrow="Player View" title="Player predictions" description="Open released picks, bracket context and predicted table evidence without combining competitions." />
+        <PlayerView
+          client={activeClient}
+          reference={appData.guestReference}
+          lifecycle={lifecycle}
+          memberUserId={playerView.userId}
+          initialCompetition={playerView.competition}
+        />
       </div>
     )
   } else if (route === APP_ROUTE.MATCH_CENTRE) {

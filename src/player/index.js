@@ -3,3 +3,7 @@ export { buildAlignedPlayerComparison, PLAYER_COMPARISON_CONTEXT } from './playe
 export { default as PlayerInsight } from './PlayerInsight.jsx'
 export { buildPlayerInsight } from './playerInsightModel.js'
 export { loadPlayerInsightPair, readPlayerCompetitionPoints } from './playerInsightService.js'
+
+export { default as PlayerView } from './PlayerView.jsx'
+export { buildPlayerView } from './playerViewModel.js'
+export { loadPlayerView } from './playerViewService.js'
