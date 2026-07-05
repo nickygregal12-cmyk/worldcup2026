@@ -4,6 +4,8 @@
 
 Stage RULES-1B-SIGNUP-GATE-STATUS is accepted as a UI/model/docs/audit-only Rules Hub follow-on. The `#/how-to-play` page now visibly lists the unresolved public-signup gates: support contact, capacity and tiers, email confirmation, privacy region and name moderation. The slice does not open public registration and does not invent owner choices. No support address, capacity number, tier, email-confirmation setting, data region or blocked-word list is selected. No Supabase writes, Auth users, prediction seeds, service-role credential use/read/print, scoring changes, resolver changes, new routes or database migration are introduced. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
 
+Stage OWNER-SIGNUP-DECISIONS-1 is accepted as a model/test/docs/audit-only owner-decision pass. It records Contact admin support wording, an initial 250-user and 20-league public cap, current low-cost/free hosting/account-email planning with a review before capacity increases, email confirmation ON, simple privacy wording with no specific data-region claim until confirmed, moderation checks for racist, discriminatory, anti-immigrant, sectarian, abusive and inflammatory names, and a decision not to keep public registration invite-only once moderation and remaining safety checks are complete. Public registration remains closed. No signup flow is opened, no Auth configuration is changed, no Supabase writes, Auth users, prediction seeds, service-role credential use/read/print, scoring changes, resolver changes, route changes or database migration are introduced. Original Predictor and KO Predictor remain separate, active migrations remain 18 and no Migration 019 is created.
+
 Stage PUBLIC-SIGNUP-READINESS-1 is accepted as a model/test/docs/audit-only product-completeness slice. The app now has one central public-signup readiness model consumed by the Rules Hub gate panel. Wider public registration remains explicitly not open while support contact, capacity and tiers, email confirmation, privacy region and name moderation are still open. No signup flow is opened or closed, no Auth configuration is changed, no support address, capacity number, tier, email-confirmation setting, data region or blocked-word list is selected, and no admin rename controls are implemented. No Supabase writes, Auth users, prediction seeds, service-role credential use/read/print, scoring changes, resolver changes, route changes or database migration are introduced. Active migrations remain 18 and no Migration 019 is created.
 
 
@@ -602,10 +604,10 @@ Confirmed decisions:
 
 1. RULES-1 is a signup gate and must include scoring, tie-breaks, correction policy, support contact, privacy note and deletion path.
 2. Display-name and league-name moderation is a signup gate with admin rename power, blocked-word checks and published policy wording.
-3. A scalable support channel is a signup gate; the exact channel/address remains an owner decision before RULES-1 closes.
-4. Capacity planning is a signup gate; the planning range is 650–1,300 users and the exact number/tier/auth-email budget remains an owner decision before wide signups.
-5. Email confirmation is a signup-gate decision; recommendation is ON, but the owner must record ON/OFF before wide signups.
-6. Privacy note and deletion path are signup gates; Supabase data region must be confirmed before publication.
+3. A scalable support channel is a signup gate; Stage OWNER-SIGNUP-DECISIONS-1 records generic Contact admin wording.
+4. Capacity planning is a signup gate; Stage OWNER-SIGNUP-DECISIONS-1 records an initial cap of 250 users and 20 leagues, planned against the current low-cost/free setup until hosting, Supabase Auth and email limits are reviewed.
+5. Email confirmation is a signup-gate decision; Stage OWNER-SIGNUP-DECISIONS-1 records ON for public registration.
+6. Privacy note and deletion path are signup gates; Stage OWNER-SIGNUP-DECISIONS-1 records simple data-use wording with no specific data-region claim until the actual project region is confirmed.
 7. Tie-break ladders, load reality-check and uptime/error monitoring are tournament gates before the first Euro 2028 match.
 8. Offline player lifecycle, unknown-route fallback and growth mechanics remain scheduled follow-ons.
 9. This package has no database writes, no user creation and no prediction seeding.
@@ -629,4 +631,8 @@ RULES-1A upgrades the existing `#/how-to-play` destination into a visible rules 
 
 ## Stage PUBLIC-SIGNUP-READINESS-1 — Public signup readiness model
 
-Accepted. The public-signup readiness model is centralised, tested and audited. The Rules Hub consumes it. Wider public registration remains closed until every explicit signup gate is closed by later approved stages.
+Accepted. The public-signup readiness model is centralised, tested and audited. The Rules Hub consumes it. Stage OWNER-SIGNUP-DECISIONS-1 now records the owner choices in that model. Wider public registration remains closed until every explicit implementation and acceptance gate is closed by later approved stages.
+
+## Stage OWNER-SIGNUP-DECISIONS-1 — Public signup owner decision pass
+
+Accepted. The signup owner decisions are recorded without opening public registration. The remaining work before public signup is implementation and acceptance, especially name and league moderation.

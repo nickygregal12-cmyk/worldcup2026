@@ -16,25 +16,20 @@ The Rules Hub now exposes these still-open items:
 
 | Gate | Status shown | Meaning |
 |---|---|---|
-| Support contact | Owner decision | Choose the dedicated scalable contact for help, deletion requests and scoring questions. |
-| Capacity and tiers | Owner decision | Record the planning number, Supabase tier, Netlify tier and auth-email budget. |
-| Email confirmation | Owner decision | Record whether confirmation is on or off before registration opens beyond the trusted test group. |
-| Privacy region | Owner decision | Confirm the Supabase data region before publishing the privacy note. |
-| Name moderation | Implementation gate | Add blocked-word checks and admin rename proof for player and league names. |
+| Support contact | Decision recorded | Use generic Contact admin wording for help, deletion requests and scoring questions. |
+| Capacity and tiers | Decision recorded | Start with 250 users and 20 leagues, planning against the current low-cost/free setup until limits are reviewed. |
+| Email confirmation | Decision recorded | Email confirmation is required before public registration is opened. |
+| Privacy region | Decision recorded | Publish simple data-use wording without a specific region claim until the project region is confirmed. |
+| Name moderation | Safety check needed | Add blocked-name checks and admin rename proof for player and league names. |
+| Registration mode | Decision recorded | Public registration does not need to stay invite-only once moderation and remaining checks are complete. |
 
 ## Not changed in this stage
 
-No owner choice is invented here.
+No owner choice was invented by RULES-1B.
 
-No support address is selected.
+Stage OWNER-SIGNUP-DECISIONS-1 later recorded the owner choices without opening registration.
 
-No capacity number is selected.
-
-No Supabase or Netlify tier is selected.
-
-No email-confirmation setting is changed.
-
-No blocked-word list is implemented.
+No blocked-word enforcement is implemented here.
 
 No signup flow is opened or closed.
 
@@ -104,4 +99,4 @@ Browser acceptance requires:
 
 ## Later alignment
 
-Stage PUBLIC-SIGNUP-READINESS-1 later moved the panel data source into a central public-signup readiness model. The visible Rules Hub panel remains the same gate-status surface, but future changes to the open/closed signup answer must use that shared model rather than adding another local list.
+Stage PUBLIC-SIGNUP-READINESS-1 later moved the panel data source into a central public-signup readiness model. Stage OWNER-SIGNUP-DECISIONS-1 later recorded the owner choices in that model while keeping public registration closed. Future changes to the open/closed signup answer must use that shared model rather than adding another local list.

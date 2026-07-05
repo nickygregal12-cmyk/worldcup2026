@@ -27,31 +27,29 @@ widely) or [GATE: tournament] (must exist before the first ball is kicked) or
 ## C. New items driven by scale (the friends-league assumptions that break)
 
 5. **Display-name and league-name moderation** [GATE: signups]. Current
-   validation is length-only. Minimum viable: (a) admin can rename any player
-   and any league from the control room; (b) a small blocked-word check at
-   registration and league creation; (c) the rules page states names may be
-   changed if inappropriate. Full pre-approval queues are NOT needed — rename
-   power plus a stated policy covers a league of strangers.
-6. **Support channel that scales** [GATE: signups]. "Message Nicky in the group
-   chat" does not survive strangers. Decide the channel (dedicated email address
-   is enough) and use it as the RULES-1 contact line. Expect the busiest days to
-   be lock day and matchday 1.
-7. **Capacity decision** [GATE: signups]. Pick a planning number (suggest: plan
-   for 10–20x WC26, so 650–1,300). Against that number, before opening signups:
-   Supabase tier limits (connections, row reads at kickoff spikes, auth emails),
-   Netlify bandwidth, and auth email sending limits (Supabase built-in email is
-   heavily rate-limited — a custom SMTP provider is usually required beyond
-   trivial volume; this catches EVERYONE who scales signups). Record the chosen
-   tier/budget as a Register decision.
+   validation is length-only. The owner decision is to block racist,
+   discriminatory, anti-immigrant, sectarian, abusive and inflammatory names.
+   Minimum viable: (a) admin can rename any player and any league from the
+   control room; (b) a blocked-word check at registration and league creation;
+   (c) the rules page states names may be changed if inappropriate. Full
+   pre-approval queues are NOT needed — rename power plus a stated policy
+   covers a league of strangers.
+6. **Support channel that scales** [GATE: signups]. The recorded contact line is
+   generic Contact admin wording for help, scoring questions and deletion
+   requests. The public site should not expose a personal email unless approved
+   later. Expect the busiest days to be lock day and matchday 1.
+7. **Capacity decision** [GATE: signups]. The recorded initial public cap is
+   250 users and 20 leagues. Plan against the current low-cost/free setup first.
+   Before increasing capacity, review hosting, Supabase Auth and email limits,
+   including account-email sending limits.
 8. **Load reality-check** [GATE: tournament]. Seed synthetic users at the
    planning number (the 16A synthetic-identity plumbing makes this cheap) and
    open the leaderboards, Match Centre and league pages against staging. Fix
    what is slow; add pagination to leaderboards if needed (a 1,300-row table is
    not a 65-row table). One evening of work that prevents matchday-1 meltdown.
-9. **Email confirmation on signup** [GATE: signups, decision]. With strangers,
-   confirm-your-email stops typo'd and throwaway addresses from occupying
-   display names and league slots. Costs signup friction; recommend ON given
-   scale, decided in the Register either way.
+9. **Email confirmation on signup** [GATE: signups, decision]. The recorded
+   owner decision is ON for public registration. With strangers, confirm-your-email
+   reduces typo and throwaway accounts occupying display names and league slots.
 10. **Growth mechanics** [SCHEDULED, mostly exists]. Guest-first journey already
     lets a stranger try before signing up — a genuine advantage; keep it sacred
     in every stage. Confirm invite links / public-league join flow are on the
@@ -61,16 +59,19 @@ widely) or [GATE: tournament] (must exist before the first ball is kicked) or
     The runbook's UptimeRobot item plus confirming the observability layer
     reports real production errors somewhere Nicky actually sees.
 12. **Privacy weight increases** [GATE: signups]. The RULES-1 privacy note and
-    deletion path stop being polish: strangers' emails at scale, UK. Confirm
-    Supabase data region while writing the note.
+    deletion path stop being polish. The recorded wording covers account, display
+    name, league membership, predictions, scores and support/deletion request
+    information. Do not make a specific data-region claim until the actual
+    project region is confirmed.
 
 ## D. Suggested sequencing
 
 - Stage PRODUCT-GATE-DECISIONS-1 — CLOSED: decision-register rows now record items 1 (tie-breaks), 5 (moderation policy), 7 (capacity planning + tier decision) and 9 (email confirmation) as explicit owner/implementation gates without inventing unresolved owner choices.
 - RULES-1B signup gate status — CLOSED: the Rules Hub now visibly lists the remaining public-signup blockers (support contact, capacity/tier, email confirmation, privacy region and name moderation) without closing them or inventing owner choices.
 - PUBLIC-SIGNUP-READINESS-1 — CLOSED: the open signup gates now have one central app model consumed by the Rules Hub, and wider public registration remains explicitly closed until every gate is closed.
-- RULES-1 stage: unchanged scope, contact line now uses the item-6 channel once selected.
-- Before opening signups beyond the WC26 group: items 2, 5, 6, 7, 9, 12 done.
+- OWNER-SIGNUP-DECISIONS-1 — CLOSED: the owner decisions are now recorded for Contact admin support wording, 250 users, 20 leagues, current low-cost/free planning, email confirmation ON, conservative privacy wording, moderation policy and not staying invite-only after moderation is ready. Public registration still remains closed.
+- RULES-1 stage: unchanged scope, contact line uses the recorded Contact admin wording.
+- Before opening signups beyond the WC26 group: items 2, 5 implementation, 6, 7, 9, 12 done.
 - Before matchday 1: items 1 (resolver), 8, 11.
 - Everything else: normal ledger flow.
 

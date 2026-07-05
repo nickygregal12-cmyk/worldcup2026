@@ -441,10 +441,10 @@ Before registration is opened widely, the roadmap requires:
 
 1. RULES-1 public rules/trust page, including scoring, tie-breaks, correction policy, support contact, privacy note and deletion path.
 2. Display-name and league-name moderation: admin rename power, blocked-word check and published policy.
-3. Scalable support channel, with the exact contact line recorded before RULES-1 closes.
-4. Capacity decision: exact planning number, Supabase/Netlify tier and auth email budget. Current planning range is 650–1,300 users.
-5. Email confirmation decision, recommended on but owner-recorded either way.
-6. Privacy note and deletion path, including Supabase data-region confirmation before publication.
+3. Scalable support channel: use generic Contact admin wording unless a later owner-approved contact replaces it.
+4. Capacity decision: initial public cap is 250 users and 20 leagues, planned against the current low-cost/free setup until hosting, Supabase Auth and email limits are reviewed.
+5. Email confirmation decision: ON for public registration.
+6. Privacy note and deletion path: use simple data-use wording and do not claim a specific data region until the actual project region is confirmed.
 
 ### Tournament gate sequence
 
@@ -1210,12 +1210,16 @@ The existing `#/how-to-play` route has been upgraded into the rules hub. Future 
 
 ## Stage PRODUCT-GATE-DECISIONS-1 — Product gate decisions register
 
-Stage PRODUCT-GATE-DECISIONS-1 records the next signup/tournament decision rows: tie-break ladders, display-name and league-name moderation, capacity planning and email confirmation. Future agents must preserve that no owner choice is invented in this stage: exact capacity number, Supabase/Netlify tier, auth-email budget and final email-confirmation setting remain owner decisions before wide signups. Tie-break and moderation implementation remain later scoped stages.
+Stage PRODUCT-GATE-DECISIONS-1 records the next signup/tournament decision rows: tie-break ladders, display-name and league-name moderation, capacity planning and email confirmation. Stage OWNER-SIGNUP-DECISIONS-1 later records the signup owner choices. Tie-break and moderation implementation remain later scoped stages.
 
-Stage RULES-1B-SIGNUP-GATE-STATUS makes the remaining public-signup gates visible on the Rules Hub. Future agents must preserve that this is visibility only: support contact, capacity/tier, email confirmation, privacy region and name moderation remain open owner/implementation gates until a later approved slice closes them. Do not treat the visible panel as permission to open wider signups.
+Stage RULES-1B-SIGNUP-GATE-STATUS makes the remaining public-signup gates visible on the Rules Hub. Stage OWNER-SIGNUP-DECISIONS-1 later records the owner choices, but future agents must not treat the visible panel or recorded choices as permission to open wider signups.
 
 Scope guard: docs/audit-only. Do not add Supabase writes, Auth users, prediction seeding, service-role credential use/read/print, scoring changes, resolver changes, UI route changes or a migration under this stage. Active migrations remain 18 and Migration 019 must not exist.
 
 ## Stage PUBLIC-SIGNUP-READINESS-1 — Public signup readiness model
 
-Stage PUBLIC-SIGNUP-READINESS-1 centralises the app's wider public-signup readiness answer. Future agents must preserve `src/auth/publicSignupReadiness.js` as the source for the Rules Hub signup-gate panel while the gate is open. Do not infer that visible signup-gate copy means public registration is open. Wider public signups remain closed until support contact, capacity/tier, email confirmation, privacy region and name moderation are explicitly closed by later approved stages. This stage has no Supabase writes, no Auth-user creation, no service-role credential use/read/print, no scoring/resolver/route change and no Migration 019.
+Stage PUBLIC-SIGNUP-READINESS-1 centralises the app's wider public-signup readiness answer. Future agents must preserve `src/auth/publicSignupReadiness.js` as the source for the Rules Hub signup-gate panel while the gate is open. Do not infer that visible signup-gate copy means public registration is open. Wider public signups remain closed until the recorded decisions and their implementation gates are accepted by later approved stages. This stage has no Supabase writes, no Auth-user creation, no service-role credential use/read/print, no scoring/resolver/route change and no Migration 019.
+
+## Stage OWNER-SIGNUP-DECISIONS-1 — Public signup owner decision pass
+
+Stage OWNER-SIGNUP-DECISIONS-1 records the signup owner choices in docs and `src/auth/publicSignupReadiness.js`: Contact admin support wording, 250 users, 20 leagues, current low-cost/free planning, email confirmation ON, conservative privacy wording with no specific region claim, blocked racist/discriminatory/anti-immigrant/sectarian/abusive/inflammatory names, and no permanent invite-only requirement once moderation and remaining safety checks are complete. Future agents must preserve that public registration remains closed after this stage. Do not add Auth config changes, signup opening, Supabase writes, service-role credential use/read/print, scoring/resolver/route changes or Migration 019 under this stage.

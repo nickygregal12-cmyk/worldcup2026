@@ -10,21 +10,24 @@ The Rules Hub consumes that model for the public-signup gate panel.
 
 Wider public registration is not open yet.
 
-## Open signup gates
+Follow-on Stage OWNER-SIGNUP-DECISIONS-1 has now recorded the owner choices for support, capacity, hosting/email planning, email confirmation, privacy wording, moderation policy and invite-only status. The owner choices are now recorded, but implementation and acceptance gates still keep public registration closed.
 
-The following gates remain open:
+## Signup gates after OWNER-SIGNUP-DECISIONS-1
+
+The following gates are still tracked by the central model:
 
 - Support contact
 - Capacity and tiers
 - Email confirmation
 - Privacy region
 - Name moderation
+- Registration mode
 
-These are still owner or implementation decisions.
+The owner decisions are now recorded by Stage OWNER-SIGNUP-DECISIONS-1. Public registration still remains closed because moderation and operational acceptance have not been implemented and accepted.
 
-This stage does not select a support email, capacity number, hosting tier, account-email budget, email-confirmation setting, data region or blocked-word list.
+This readiness stage did not select those values itself. The follow-on stage records them without opening signup.
 
-This stage does not implement admin rename controls.
+Admin rename controls and blocked-name enforcement still require a later implementation stage.
 
 ## Scope
 
@@ -81,7 +84,7 @@ Browser acceptance:
 
 - #/how-to-play still loads.
 - The public-signup status panel still appears.
-- It still lists support contact, capacity and tiers, email confirmation, privacy region and name moderation.
+- It lists support contact, capacity and tiers, email confirmation, privacy region, name moderation and registration mode.
 - It still says wider public registration is not open yet.
 - No signup behaviour has changed.
 - Original Predictor and KO Predictor are still explained separately.
