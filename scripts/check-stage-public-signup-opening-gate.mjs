@@ -40,7 +40,7 @@ const readiness = buildPublicSignupReadiness()
 if (readiness.isOpenForPublic !== false) errors.push('The central readiness model must keep wider public registration closed in this gate.')
 if (readiness.implementation?.publicRegistrationOpened !== false) errors.push('Implementation status must keep the public opening flag false in this gate.')
 if (readiness.ownerDecisions?.moderation?.clientPreAuthGuardImplemented !== true) errors.push('Display-name moderation must remain recorded as implemented before this opening gate can pass.')
-if (readiness.ownerDecisions?.initialCapacity?.userCap !== 250) errors.push('The recorded public signup user capacity guardrail must remain 250 unless replaced by an owner decision.')
+if (readiness.ownerDecisions?.initialCapacity?.userCap !== 50) errors.push('The recorded public signup user capacity guardrail must be 50 after the external settings replacement decision.')
 if (readiness.ownerDecisions?.initialCapacity?.leagueCap !== 20) errors.push('The recorded public signup league capacity guardrail must remain 20 unless replaced by an owner decision.')
 
 const gateMarkers = [
@@ -65,7 +65,7 @@ const checklistMarkers = [
   'Email confirmation is ON',
   'return URLs point to the Euro 2028 development or launch deployment, not WC26',
   'support/contact route is ready for public users',
-  '250 users and 20 leagues',
+  '50 users and 20 leagues before the branded email sender is added',
   'Display-name moderation is active before the account is created',
   'display-name availability check remains before account creation',
   'Privacy wording is conservative',

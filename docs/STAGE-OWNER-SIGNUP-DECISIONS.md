@@ -15,7 +15,7 @@ This stage does not implement moderation, does not open signup, and does not cha
 | Gate | Decision recorded |
 |---|---|
 | Support contact | Use generic **Contact admin** wording for help, scoring questions and deletion requests. The public surface should not expose a personal email address unless separately approved. |
-| Initial capacity | Plan the first public phase against **250 users** and **20 leagues**. |
+| Initial capacity | Plan the first public phase against **50 users** and **20 leagues** before branded email sending; use **100 users** as the post-email-sender target after review. |
 | Hosting/account-email tier | Plan against the **current low-cost/free setup** at first. Review hosting, Supabase Auth and email limits before increasing capacity. |
 | Email confirmation | **Email confirmation is ON** for public registration. |
 | Privacy/data-region wording | Use simple privacy wording covering account, display name, league membership, predictions, scores and support/deletion request information. Make **no specific data-region claim** until the actual project region is confirmed. |
@@ -98,3 +98,7 @@ Browser acceptance:
 - Confirm the panel records Contact admin, 250 users, 20 leagues, email confirmation, privacy wording, moderation and registration-mode decisions.
 - Confirm no public signup flow has opened.
 - Confirm Original Predictor and KO Predictor remain described as separate competitions.
+
+## Capacity replacement after external settings check
+
+The first public opening cap is now 50 users and 20 leagues before branded email sending is added. The post-email-sender target is 100 users and 20 leagues, with a review point at 75 users or 15 leagues.

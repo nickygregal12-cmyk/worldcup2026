@@ -29,7 +29,7 @@ Before a future stage can open wider public registration, the owner must confirm
 1. Email confirmation is ON for the Euro 2028 account flow.
 2. Sign-up, sign-in and password-recovery return URLs point to the Euro 2028 development or launch deployment, not WC26.
 3. The support/contact route is ready for public users.
-4. The opening capacity is acceptable at 250 users and 20 leagues unless the owner records a replacement capacity decision.
+4. The opening capacity is acceptable at 50 users and 20 leagues before the branded email sender is added unless the owner records a replacement capacity decision.
 5. Display-name moderation is active before the account is created.
 6. The display-name availability check remains before account creation.
 7. Privacy wording is conservative and does not claim an unconfirmed data region.

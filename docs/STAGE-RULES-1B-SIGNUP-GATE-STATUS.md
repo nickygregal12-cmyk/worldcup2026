@@ -17,7 +17,7 @@ The Rules Hub now exposes these still-open items:
 | Gate | Status shown | Meaning |
 |---|---|---|
 | Support contact | Decision recorded | Use generic Contact admin wording for help, deletion requests and scoring questions. |
-| Capacity and tiers | Decision recorded | Start with 250 users and 20 leagues, planning against the current low-cost/free setup until limits are reviewed. |
+| Capacity and tiers | Decision recorded | Start with 50 users and 20 leagues before the branded email sender is added, planning against the current low-cost/free setup until limits are reviewed. |
 | Email confirmation | Decision recorded | Email confirmation is required before public registration is opened. |
 | Privacy region | Decision recorded | Publish simple data-use wording without a specific region claim until the project region is confirmed. |
 | Name moderation | Safety check needed | Add blocked-name checks and admin rename proof for player and league names. |

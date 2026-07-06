@@ -58,8 +58,14 @@ if (readiness.badge !== 'Not open yet') {
 if (decisions?.supportContact?.decision !== 'Contact admin') {
   errors.push('Support contact decision must be Contact admin.')
 }
-if (decisions?.initialCapacity?.userCap !== 250 || decisions?.initialCapacity?.leagueCap !== 20) {
-  errors.push('Initial capacity decision must be 250 users and 20 leagues.')
+if (decisions?.initialCapacity?.userCap !== 50 || decisions?.initialCapacity?.leagueCap !== 20) {
+  errors.push('Initial capacity decision must be 50 users and 20 leagues after the external settings check replacement decision.')
+}
+if (decisions?.initialCapacity?.targetAfterEmailSenderUserCap !== 100) {
+  errors.push('Post-email-sender target capacity must be 100 users.')
+}
+if (decisions?.initialCapacity?.reviewPoint?.userCount !== 75 || decisions?.initialCapacity?.reviewPoint?.leagueCount !== 15) {
+  errors.push('Capacity review point must be 75 users and 15 leagues.')
 }
 if (decisions?.emailConfirmation?.requiredForPublicRegistration !== true) {
   errors.push('Email confirmation must be required for public registration.')
@@ -74,8 +80,9 @@ if (decisions?.inviteOnly?.publicOpeningStillBlocked !== true) {
 const modelMarkers = [
   'PUBLIC_SIGNUP_OWNER_DECISIONS',
   'Contact admin',
-  'userCap: 250',
+  'userCap: 50',
   'leagueCap: 20',
+  'targetAfterEmailSenderUserCap: 100',
   'low-cost/free',
   'requiredForPublicRegistration: true',
   'stayInviteOnlyUntilModeration: false',
@@ -90,8 +97,11 @@ for (const marker of modelMarkers) {
 const decisionMarkers = [
   'OWNER-SIGNUP-DECISIONS-1',
   'Contact admin',
-  '250 users',
+  '50 users',
   '20 leagues',
+  '100 users',
+  '75 users',
+  '15 leagues',
   'current low-cost/free setup',
   'Review hosting, Supabase Auth and email limits before increasing capacity',
   'Email confirmation is ON',
@@ -156,6 +166,6 @@ if (errors.length > 0) {
 }
 
 console.log('Stage OWNER-SIGNUP-DECISIONS-1 owner signup-decision audit passed.')
-console.log('Decisions: Contact admin, 250 users, 20 leagues, low-cost/free planning, email confirmation ON, conservative privacy wording and moderation policy recorded.')
+console.log('Decisions: Contact admin, 50 users, 20 leagues, post-email-sender 100 user target, low-cost/free planning, email confirmation ON, conservative privacy wording and moderation policy recorded.')
 console.log('Readiness: wider public registration remains closed until later implementation gates close.')
 console.log('Database: active migrations remain 18; no Migration 019.')

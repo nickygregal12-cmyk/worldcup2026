@@ -40,7 +40,7 @@ const readiness = buildPublicSignupReadiness()
 if (readiness.isOpenForPublic !== false) errors.push('The central readiness model must keep wider public registration closed in this controlled-open runbook stage.')
 if (readiness.implementation?.publicRegistrationOpened !== false) errors.push('Implementation status must keep the public opening flag false in this controlled-open runbook stage.')
 if (readiness.ownerDecisions?.moderation?.clientPreAuthGuardImplemented !== true) errors.push('Display-name moderation must remain implemented before this controlled-open runbook can pass.')
-if (readiness.ownerDecisions?.initialCapacity?.userCap !== 250) errors.push('The recorded public signup user capacity guardrail must remain 250 unless replaced by an owner decision.')
+if (readiness.ownerDecisions?.initialCapacity?.userCap !== 50) errors.push('The recorded public signup user capacity guardrail must be 50 after the external settings replacement decision.')
 if (readiness.ownerDecisions?.initialCapacity?.leagueCap !== 20) errors.push('The recorded public signup league capacity guardrail must remain 20 unless replaced by an owner decision.')
 
 const controlledOpenMarkers = [
@@ -52,7 +52,7 @@ const controlledOpenMarkers = [
   'display-name moderation remains before account creation',
   'display-name availability remains before account creation',
   'support/contact route remains visible for public users',
-  'initial capacity remains 250 users and 20 leagues unless replaced by an owner decision',
+  'initial capacity is replaced by the external settings check: 50 users and 20 leagues before branded email sending, then 100 users after email delivery is reviewed',
   'public registration remains closed until the owner completes the external opening action',
   'no Supabase Auth dashboard/config change in the patch',
   'No Migration 019',
@@ -69,7 +69,7 @@ const runbookMarkers = [
   'Confirm the support/contact route is visible from public-facing help or rules surfaces',
   'Confirm display-name moderation blocks abusive, discriminatory and inflammatory names before account creation',
   'Confirm display-name availability is checked before account creation',
-  'Confirm the first opening remains within 250 users and 20 leagues',
+  'Confirm the first opening remains within 50 users and 20 leagues before the branded email sender is added',
   'Confirm no service-role key, admin secret or private credential is exposed to the browser',
   'Confirm WC26 production remains blocked',
   'Record explicit owner approval for the opening action',
@@ -100,7 +100,7 @@ for (const file of [register, ledger, agentRules, roadmap, batchOrder]) {
   requireText(file, 'display-name moderation remains before account creation', 'live docs must carry moderation marker')
   requireText(file, 'display-name availability remains before account creation', 'live docs must carry availability marker')
   requireText(file, 'support/contact route remains visible for public users', 'live docs must carry support route marker')
-  requireText(file, 'initial capacity remains 250 users and 20 leagues unless replaced by an owner decision', 'live docs must carry capacity marker')
+  requireText(file, 'initial capacity is replaced by the external settings check: 50 users and 20 leagues before branded email sending, then 100 users after email delivery is reviewed', 'live docs must carry capacity marker')
   requireText(file, 'public registration remains closed until the owner completes the external opening action', 'live docs must preserve the closed signup state')
   requireText(file, 'Migration 019', 'live docs must preserve migration boundary')
 }
@@ -129,6 +129,6 @@ if (errors.length > 0) {
 }
 
 console.log('Stage STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 audit passed.')
-console.log('Signup: controlled opening runbook, owner approval, external account checks, capacity, support and moderation confirmations recorded.')
+console.log('Signup: controlled opening runbook, owner approval, external account checks, replacement capacity, support and moderation confirmations recorded.')
 console.log('Safety: docs/audit-only; public registration remains closed with no Auth config, Supabase, scoring, resolver, fake-result, league-write or migration change.')
 console.log('Database: active migrations remain 18; no Migration 019.')

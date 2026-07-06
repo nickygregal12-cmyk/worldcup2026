@@ -54,7 +54,7 @@ The support/contact-admin flow should give a calm route for users who need help 
 
 ## Capacity and privacy target
 
-The first public readiness target is small and controlled: 250 users and 20 leagues. This is a launch planning guardrail, not a promise of unlimited scale.
+The first public readiness target is small and controlled: 50 users and 20 leagues before the branded email sender is added. This is a launch planning guardrail, not a promise of unlimited scale.
 
 Privacy wording must stay conservative. It can explain account data, display name, league membership, predictions, scores and support/deletion request information, but it must not invent exact data-region or retention claims.
 

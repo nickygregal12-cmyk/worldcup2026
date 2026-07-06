@@ -7,7 +7,7 @@ const PUBLIC_SIGNUP_GATE_ITEMS = Object.freeze([
   Object.freeze({
     label: 'Capacity and tiers',
     status: 'Decision recorded',
-    detail: 'The first public phase is capped at 250 users and 20 leagues. Any increase needs a hosting and email-limit review first.',
+    detail: 'Before a branded email sender is added, keep the first public phase to 50 users and 20 leagues. The next target is 100 users after email delivery is reviewed.',
   }),
   Object.freeze({
     label: 'Email confirmation',
@@ -37,13 +37,18 @@ export const PUBLIC_SIGNUP_OWNER_DECISIONS = Object.freeze({
     internalRouting: 'Owner-managed admin contact, without publishing a personal address by default.',
   }),
   initialCapacity: Object.freeze({
-    userCap: 250,
+    userCap: 50,
     leagueCap: 20,
     reviewBeforeIncrease: true,
+    targetAfterEmailSenderUserCap: 100,
+    reviewPoint: Object.freeze({
+      userCount: 75,
+      leagueCount: 15,
+    }),
   }),
   hostingAndEmailTier: Object.freeze({
     decision: 'Plan against the current low-cost/free setup initially.',
-    review: 'Review hosting, account email and service limits before increasing capacity.',
+    review: 'Use a branded email sender before increasing beyond the first small public phase.',
   }),
   emailConfirmation: Object.freeze({
     requiredForPublicRegistration: true,
@@ -78,7 +83,7 @@ export const PUBLIC_SIGNUP_IMPLEMENTATION = Object.freeze({
     'Euro 2028 account return links have been checked.',
     'Public users have a clear way to contact admin.',
     'The privacy note avoids promising a storage region until it is confirmed.',
-    'Capacity will be reviewed before the app goes beyond 250 users or 20 leagues.',
+    'A branded email sender is needed before the app moves beyond the first small public phase.',
   ]),
 })
 

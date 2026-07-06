@@ -18,7 +18,7 @@ STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 records:
 - display-name moderation remains before account creation;
 - display-name availability remains before account creation;
 - support/contact route remains visible for public users;
-- initial capacity remains 250 users and 20 leagues unless replaced by an owner decision;
+- initial capacity remains 50 users and 20 leagues before the branded email sender is added unless replaced by an owner decision;
 - public registration remains closed until the owner completes the external opening action;
 - no Supabase Auth dashboard/config change in the patch;
 - No Migration 019 unless a real schema/read-contract gap is proved and approved.
@@ -33,7 +33,7 @@ Before a later stage may claim public signup is open, the owner must complete th
 4. Confirm the support/contact route is visible from public-facing help or rules surfaces.
 5. Confirm display-name moderation blocks abusive, discriminatory and inflammatory names before account creation.
 6. Confirm display-name availability is checked before account creation.
-7. Confirm the first opening remains within 250 users and 20 leagues, or record a replacement capacity decision.
+7. Confirm the first opening remains within 50 users and 20 leagues before the branded email sender is added, or record a replacement capacity decision.
 8. Confirm no service-role key, admin secret or private credential is exposed to the browser.
 9. Confirm WC26 production remains blocked.
 10. Record explicit owner approval for the opening action.
@@ -51,3 +51,5 @@ Original Predictor and KO Predictor remain separate. Predicted brackets and live
 ## Follow-on rule
 
 The next stage may only change app-side public signup status or external opening behaviour after the owner confirms the runbook. Do not infer approval from this document, from previous readiness stages or from a successful audit run.
+
+Capacity marker: initial capacity is replaced by the external settings check: 50 users and 20 leagues before branded email sending, then 100 users after email delivery is reviewed.

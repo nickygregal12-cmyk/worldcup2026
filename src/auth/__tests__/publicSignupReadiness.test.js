@@ -29,7 +29,7 @@ describe('public signup readiness', () => {
     ])
 
     expect(readiness.items.find(item => item.label === 'Support contact')?.detail).toContain('Contact admin')
-    expect(readiness.items.find(item => item.label === 'Capacity and tiers')?.detail).toContain('250 users and 20 leagues')
+    expect(readiness.items.find(item => item.label === 'Capacity and tiers')?.detail).toContain('50 users and 20 leagues')
     expect(readiness.items.find(item => item.label === 'Email confirmation')?.detail).toContain('will be required')
     expect(readiness.items.find(item => item.label === 'Name moderation')?.detail).toContain('sectarian')
     expect(readiness.items.find(item => item.label === 'Registration mode')?.detail).toContain('does not need to stay invite-only')
@@ -40,7 +40,8 @@ describe('public signup readiness', () => {
 
     expect(decisions).toBe(PUBLIC_SIGNUP_OWNER_DECISIONS)
     expect(decisions.supportContact.decision).toBe('Contact admin')
-    expect(decisions.initialCapacity).toMatchObject({ userCap: 250, leagueCap: 20 })
+    expect(decisions.initialCapacity).toMatchObject({ userCap: 50, leagueCap: 20, targetAfterEmailSenderUserCap: 100 })
+    expect(decisions.initialCapacity.reviewPoint).toMatchObject({ userCount: 75, leagueCount: 15 })
     expect(decisions.hostingAndEmailTier.decision).toContain('low-cost/free')
     expect(decisions.emailConfirmation.requiredForPublicRegistration).toBe(true)
     expect(decisions.privacy.regionClaim).toContain('Do not publish a specific data-region claim')
