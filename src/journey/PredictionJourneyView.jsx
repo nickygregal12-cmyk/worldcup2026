@@ -7,7 +7,8 @@ import GroupsPredictor from './GroupsPredictor.jsx'
 import PredictionReview from './PredictionReview.jsx'
 import lifecycleStyles from './PredictionLifecycle.module.css'
 import chromeStyles from './PredictionJourneyChrome.module.css'
-import { EURO28_PREDICTION_JOURNEY_VERSION, PREDICTION_AUTOSAVE_STATE, PREDICTION_JOURNEY_VIEW } from './predictionJourneyConfig.js'
+import { PREDICTION_AUTOSAVE_STATE, PREDICTION_JOURNEY_VIEW } from './predictionJourneyConfig.js'
+import { PREDICTION_ACCOUNT_SAVE_UNAVAILABLE, PREDICTION_AUTOSAVE_NOTICE, PREDICTION_BRACKET_JOKERS_COPY, PREDICTION_GROUP_JOKERS_COPY, PREDICTION_LOCK_NOTICE, PREDICTION_SAVE_CHECK_COPY } from './predictionJourneyCopy.js'
 
 function AutosaveBadge({ context, status, revision, savedAt }) {
   let label = 'Ready'
@@ -204,20 +205,20 @@ export default function PredictionJourneyView({
 
       {!lockConfigured && (
         <p className="guest-notice guest-notice--warning">
-          Account autosave is intentionally blocked until the prediction lock is configured. Guest device saving still works.
+          {PREDICTION_ACCOUNT_SAVE_UNAVAILABLE}
         </p>
       )}
       {lifecycle?.provisional && (
         <p className="guest-notice guest-notice--safe">
-          Account autosave is enabled from the central provisional Euro 2028 lock configuration. This does not apply the irreversible tournament lock.
+          {PREDICTION_AUTOSAVE_NOTICE} {PREDICTION_LOCK_NOTICE}
         </p>
       )}
       {notice && <p className={`guest-notice guest-notice--${notice.tone}`} role="status">{notice.message}</p>}
 
       <div className="journey-footer-meta">
-        <span>{EURO28_PREDICTION_JOURNEY_VERSION}</span>
-        <span>5 group jokers · no bracket jokers</span>
-        <span>{summary.savableRows} rows currently valid for atomic saving</span>
+        <span>{PREDICTION_GROUP_JOKERS_COPY}</span>
+        <span>{PREDICTION_BRACKET_JOKERS_COPY}</span>
+        <span>{PREDICTION_SAVE_CHECK_COPY}</span>
       </div>
     </section>
   )

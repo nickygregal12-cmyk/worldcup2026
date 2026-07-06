@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { PREDICTION_AUTOSAVE_NOTICE } from '../src/journey/predictionJourneyCopy.js'
 
 const root = process.cwd()
 const read = file => fs.readFileSync(path.join(root, file), 'utf8')
@@ -22,7 +23,9 @@ if (!tournament.includes("predictionLockAt: import.meta.env.VITE_PREDICTION_LOCK
 if (!tournament.includes("tournamentStartAt: import.meta.env.VITE_TOURNAMENT_START_AT || '2028-06-09T20:00:00.000Z'")) fail('Central provisional tournament start fallback is missing')
 if (!lifecycle.includes('resolveTournamentLifecycle') || !lifecycle.includes('CENTRAL_PROVISIONAL')) fail('Tournament lifecycle resolver is missing central provisional source handling')
 if (!journey.includes('resolveTournamentLifecycle(tournament)')) fail('PredictionJourney must derive lock state from the lifecycle resolver')
-if (!view.includes('Account autosave is enabled from the central provisional Euro 2028 lock configuration')) fail('Autosave unblock notice is missing')
+if (!view.includes('PREDICTION_AUTOSAVE_NOTICE')) fail('Player-facing autosave copy constant is missing')
+if (!PREDICTION_AUTOSAVE_NOTICE.includes('save automatically')) fail('Player-facing autosave notice constant is missing the save message')
+if (view.includes('central provisional Euro 2028 lock configuration') || view.includes('irreversible tournament lock') || view.includes('atomic saving')) fail('Internal lock/save-contract language must not appear in the prediction journey UI')
 if (!design.includes('export function ConfirmDialog') || !design.includes('export function SelectField')) fail('Shared confirmation and selector primitives are missing')
 if (!account.includes('ConfirmDialog') || !account.includes('Sign out of Euro 2028 Predictor?')) fail('Sign-out must use the shared confirmation dialog')
 if (!leagues.includes('SelectField') || leagues.includes('<select value={selectedId')) fail('League pickers must use the design-system selector groundwork')

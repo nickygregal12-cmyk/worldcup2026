@@ -1,8 +1,10 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.13 — Groups Night Broadcast contract adoption slice
+### Version 4.14 — Groups player-facing copy repair
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
+
+**Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS-COPY-REPAIR** is accepted as a focused repair after the Groups Night Broadcast slice. It removes internal lifecycle/config/save-contract wording from the live Groups/Prediction Journey UI and replaces it with player-facing autosave, lock, joker and tables wording. The Groups audit and shared-primitives audit now enforce that terms such as `central provisional Euro 2028 lock configuration`, `irreversible tournament lock`, `euro28-prediction-journey-v3` and `atomic saving` do not appear on the live Groups journey. This is a copy/audit/docs repair only with no scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change; active migrations remain 18 and no Migration 019 is created.
 
 **Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS** implements the first Groups slice under `STAGE-CORE-PAGE-ADOPTION-1`. The live Groups surface now adopts the approved Night Broadcast visual language natively, exposes guardrail chips for privacy/tables/jokers, and surfaces the shared predicted-tables and third-place components in the by-group flow while preserving the existing by-group/by-date switcher and sticky Tables path. This does not close the full STAGE-CORE-PAGE-ADOPTION-1 row: Original Bracket G and KO Predictor F remain pending. It makes no scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change; active migrations remain 18 and no Migration 019 is created.
 

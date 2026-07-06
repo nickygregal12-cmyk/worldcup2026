@@ -1,8 +1,12 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.37 — Groups Night Broadcast contract adoption slice
+### Version 4.38 — Groups player-facing copy repair
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
+
+### Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS-COPY-REPAIR
+
+The Groups adoption slice passed tooling but the eye test caught internal lifecycle/config/save-contract copy on the live player surface. Future visual-contract adoption work must treat product language as part of acceptance, not just banned-word/spec-echo compliance. Player-facing UI must not expose internal contract names, save-row counts, staging lock configuration details or audit-oriented implementation labels.
 
 ### Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS
 

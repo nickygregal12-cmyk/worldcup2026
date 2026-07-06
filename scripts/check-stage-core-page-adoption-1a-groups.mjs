@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { GROUPS_DATE_TABLES_COPY, PREDICTION_AUTOSAVE_NOTICE, PREDICTION_BRACKET_JOKERS_COPY, PREDICTION_GROUP_JOKERS_COPY, PREDICTION_LOCK_NOTICE, PREDICTION_SAVE_CHECK_COPY } from '../src/journey/predictionJourneyCopy.js'
 
 const root = process.cwd()
 const read = file => fs.readFileSync(path.join(root, file), 'utf8')
@@ -27,7 +28,7 @@ assertIncludes('src/journey/GroupsPredictor.jsx', [
   'tablesModel.groups.find(item => item.code === group.code)?.table',
   'tablesModel.bestThird.ranking',
   'Original Bracket',
-  'sticky Tables pill',
+  'GROUPS_DATE_TABLES_COPY',
 ])
 
 assertIncludes('src/journey/GroupsPredictorPolish.module.css', [
@@ -68,6 +69,49 @@ assertIncludes('package.json', [
   'audit:stage-core-page-adoption-1a-groups',
   'scripts/check-stage-core-page-adoption-1a-groups.mjs',
 ])
+
+
+const publicUiFiles = [
+  'src/journey/GroupsPredictor.jsx',
+  'src/journey/PredictionJourneyView.jsx',
+]
+const forbiddenPublicCopy = [
+  'central provisional Euro 2028 lock configuration',
+  'irreversible tournament lock',
+  'euro28-prediction-journey-v3',
+  'atomic saving',
+  'Group tags keep context on every ticket',
+  'sticky Tables pill',
+]
+for (const file of publicUiFiles) {
+  const content = read(file)
+  for (const token of forbiddenPublicCopy) {
+    assert(!content.includes(token), `${file} must not expose internal product copy: ${token}`)
+  }
+}
+
+assertIncludes('src/journey/PredictionJourneyView.jsx', [
+  'PREDICTION_AUTOSAVE_NOTICE',
+  'PREDICTION_LOCK_NOTICE',
+  'PREDICTION_GROUP_JOKERS_COPY',
+  'PREDICTION_BRACKET_JOKERS_COPY',
+  'PREDICTION_SAVE_CHECK_COPY',
+])
+
+const groupsContent = read('src/journey/GroupsPredictor.jsx')
+assert(groupsContent.includes('GROUPS_DATE_TABLES_COPY'), 'Groups date helper must use the shared player-facing copy constant')
+assert(GROUPS_DATE_TABLES_COPY.includes('Tap Tables'), 'Groups date helper constant must keep the Tables action clear')
+const journeyContent = read('src/journey/PredictionJourneyView.jsx')
+for (const token of [
+  PREDICTION_AUTOSAVE_NOTICE,
+  PREDICTION_LOCK_NOTICE,
+  PREDICTION_GROUP_JOKERS_COPY,
+  PREDICTION_BRACKET_JOKERS_COPY,
+  PREDICTION_SAVE_CHECK_COPY,
+]) {
+  assert(token && token.length > 10, `Shared prediction journey copy constant is unexpectedly short: ${token}`)
+}
+assert(journeyContent.includes('PREDICTION_AUTOSAVE_NOTICE'), 'Prediction journey must render the shared autosave copy constant')
 
 const forbiddenSource = ['src/resolver/', 'supabase/migrations/202607']
 for (const token of forbiddenSource) {

@@ -1,5 +1,9 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.57 — Groups player-facing copy repair
+
+Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS-COPY-REPAIR is accepted as a focused repair after the first Groups adoption slice. It removes internal lifecycle/config/save-contract wording from the player-facing Groups journey, replaces it with plain autosave, lock, joker and tables wording, and extends audit coverage so the internal terms cannot reappear on the live Groups/Prediction Journey UI. No scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change is introduced. Active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.56 — Groups Night Broadcast contract adoption slice
 
 Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS is accepted as the first implementation slice under `STAGE-CORE-PAGE-ADOPTION-1`. It rebuilds the live Groups surface toward the approved Night Broadcast contract using native React/CSS only, adds the contract guardrail chips, live predicted-table preview cards and best-third preview, and keeps the existing by-group/by-date switcher, sticky Tables fast path, joker controls, save/lock/grace behaviour and shared predicted-tables/third-place model. This does not close the full `STAGE-CORE-PAGE-ADOPTION-1` row because Original Bracket G and KO Predictor F remain pending slices. No scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change is introduced. Active migrations remain 18 and no Migration 019 is created.

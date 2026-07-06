@@ -16,6 +16,7 @@ import { EURO_LUCKY_DIP_MODE } from './euroLuckyDip.js'
 import actionStyles from './GroupsPredictorActions.module.css'
 import viewStyles from './GroupsPredictor.module.css'
 import polishStyles from './GroupsPredictorPolish.module.css'
+import { GROUPS_DATE_TABLES_COPY } from './predictionJourneyCopy.js'
 
 function formatMatchDate(dateValue) {
   if (!dateValue) return 'Date to be confirmed'
@@ -301,7 +302,7 @@ export default function GroupsPredictor({
         </>
       ) : (
         <section className={viewStyles.dateView} aria-label="Group matches by date">
-          <div className={viewStyles.dateIntro}><span className="page-eyebrow">By date</span><h3>All group fixtures in matchday order</h3><p>Group tags keep context on every ticket. Use the sticky Tables pill for a one-tap standings check from anywhere in the date list.</p></div>
+          <div className={viewStyles.dateIntro}><span className="page-eyebrow">By date</span><h3>All group fixtures in matchday order</h3><p>{GROUPS_DATE_TABLES_COPY}</p></div>
           {dateSections.map(section => <section className={viewStyles.dateSection} key={section.key}><header><strong>{section.label}</strong><span>{formatMatchDate(section.date)}</span></header><div className="group-match-list">{section.matches.map(renderMatchCard)}</div></section>)}
           <button className={viewStyles.tablesPill} type="button" onClick={() => setTablesOpen(true)}>▦ Tables</button>
         </section>

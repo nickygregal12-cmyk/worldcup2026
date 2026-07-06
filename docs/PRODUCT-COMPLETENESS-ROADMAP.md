@@ -7,6 +7,8 @@ item below is tagged [GATE: signups] (must exist before opening registration
 widely) or [GATE: tournament] (must exist before the first ball is kicked) or
 [SCHEDULED] (ledger item, no gate).
 
+Current repair note: `STAGE-CORE-PAGE-ADOPTION-1A-GROUPS-COPY-REPAIR` is accepted. Core-page adoption must pass the Nicky eye test for player-facing wording as well as automated copy audits; internal lifecycle/config/save-contract terms must not appear on live player surfaces.
+
 ## A. Already decided and specced (pointers — no further decision needed)
 
 1. **Tie-break ladders** — CONFIRMED, see DECISION-DRAFT-TIEBREAKS.md. Register

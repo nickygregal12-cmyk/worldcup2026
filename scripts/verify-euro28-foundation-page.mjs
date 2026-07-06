@@ -1,4 +1,5 @@
 import process from 'node:process'
+import { PREDICTION_AUTOSAVE_NOTICE, PREDICTION_BRACKET_JOKERS_COPY } from '../src/journey/predictionJourneyCopy.js'
 
 const siteUrl = (process.env.EURO28_SITE_URL || 'https://euro28-predictor-dev.netlify.app').replace(/\/$/, '')
 const assert = (condition, message) => { if (!condition) throw new Error(message) }
@@ -92,7 +93,8 @@ for (const text of [
   'Joker applied',
   'Saved on this device',
   'Provisional',
-  'euro28-prediction-journey-v3',
+  PREDICTION_AUTOSAVE_NOTICE,
+  PREDICTION_BRACKET_JOKERS_COPY,
   'Predicted context',
   'Your permanent pre-tournament bracket',
   'Pick only who advances',

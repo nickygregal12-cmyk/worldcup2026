@@ -1,0 +1,7 @@
+export const GROUPS_DATE_TABLES_COPY = 'Each match card shows its group. Tap Tables any time to check the standings.'
+export const PREDICTION_AUTOSAVE_NOTICE = 'Your account picks save automatically while you edit.'
+export const PREDICTION_LOCK_NOTICE = 'Group-stage predictions lock before the tournament starts.'
+export const PREDICTION_GROUP_JOKERS_COPY = '5 group jokers available'
+export const PREDICTION_BRACKET_JOKERS_COPY = 'No jokers on the original bracket'
+export const PREDICTION_SAVE_CHECK_COPY = 'Your completed picks are checked before saving'
+export const PREDICTION_ACCOUNT_SAVE_UNAVAILABLE = 'Account saving is temporarily unavailable. Your device draft still saves here.'
