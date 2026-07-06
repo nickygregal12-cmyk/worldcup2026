@@ -1289,3 +1289,12 @@ Key guardrails:
 This stage did not change runtime scoring or resolver behaviour. Any future runtime alignment must be explicit, safe, audited and separate from unrelated UI work.
 
 <!-- group goals correction marker: group goals are auto-calculated only. -->
+
+
+### STAGE-ENTRY-AND-REVIEW-JOURNEY-1 — Entry and Review journey contract
+
+Recorded after `STAGE-RULES-SCORING-LOCK-1` as the governing contract for Home clarity, Review Picks, Welcome and Invite/Join. The stage locks the progress-aware CTA ladder, Review completion blockers, no wrong-state flicker requirement, unresolved in-group tiebreaker prompt, best-third prompt, bracket invalidation warning, joker confirmation modal, calculated-only group-goals display, locked prediction snapshot and invite/join states.
+
+Scope is docs/audit-only. It does not change runtime UI, routes, scoring, resolver, Supabase, Auth, result-entry or migrations. Active migrations remain 18 and Migration 019 is not created.
+
+Agent rule: do not implement Home, Review Picks, Welcome or Invite/Join from memory. Use `docs/ENTRY-AND-REVIEW-JOURNEY-CONTRACT.md` as the target. Review Picks is not complete by row counts alone; blockers include resolver prompts, stale bracket state, joker-on-incomplete-score and save/import state. Preserve no wrong-state flicker and keep Original/KO separate.

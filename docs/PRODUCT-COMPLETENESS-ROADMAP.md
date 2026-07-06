@@ -124,3 +124,12 @@ The locked target includes:
 - final tied-rank ladders.
 
 This recording stage has no Supabase writes, no scoring engine change, no resolver change and no migration. Active migrations remain 18 and Migration 019 is not created.
+
+
+### STAGE-ENTRY-AND-REVIEW-JOURNEY-1 — Entry and Review journey contract
+
+Recorded after `STAGE-RULES-SCORING-LOCK-1` as the governing contract for Home clarity, Review Picks, Welcome and Invite/Join. The stage locks the progress-aware CTA ladder, Review completion blockers, no wrong-state flicker requirement, unresolved in-group tiebreaker prompt, best-third prompt, bracket invalidation warning, joker confirmation modal, calculated-only group-goals display, locked prediction snapshot and invite/join states.
+
+Scope is docs/audit-only. It does not change runtime UI, routes, scoring, resolver, Supabase, Auth, result-entry or migrations. Active migrations remain 18 and Migration 019 is not created.
+
+Next implementation target: convert the recorded contract into the actual entry journey once the code patch is explicitly scoped. The implementation must keep `#/review` and `#/welcome` as preferred destinations or route-equivalent states, and must pass the new `audit:entry-review-journey`.

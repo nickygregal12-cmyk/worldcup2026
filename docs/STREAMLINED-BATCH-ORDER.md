@@ -227,3 +227,12 @@ Implementation of user prompts and Review completion remains Batch 2: `STAGE-ENT
 Any runtime scoring/config alignment needed to make the locked contract live must be explicit and must not be hidden inside unrelated UI work.
 
 Migration 019 boundary marker for STAGE-RULES-SCORING-LOCK-1: active migrations remain 18 and Migration 019 is not created.
+
+
+## Batch 2 detail — STAGE-ENTRY-AND-REVIEW-JOURNEY-1
+
+Locked contract now recorded in `docs/STAGE-ENTRY-AND-REVIEW-JOURNEY-1.md` and `docs/ENTRY-AND-REVIEW-JOURNEY-CONTRACT.md`.
+
+Implementation must cover Home clarity, Review Picks, Welcome, Invite/Join, no wrong-state flicker, progress-aware CTA model, auto-calculated group-goals display, unresolved in-group tiebreaker prompt, best-third prompt, bracket invalidation, joker confirmation and locked prediction snapshot.
+
+Migration 019 remains unapproved unless a real schema/read-contract gap is proved and approved.
