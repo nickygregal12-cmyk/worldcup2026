@@ -22,7 +22,7 @@ const PUBLIC_SIGNUP_GATE_ITEMS = Object.freeze([
   Object.freeze({
     label: 'Name moderation',
     status: 'Implementation recorded',
-    detail: 'Name checks for racist, discriminatory, anti-immigrant, sectarian, abusive and inflammatory wording are enforced before the Auth sign-up call; public opening still waits for external Auth/config checks.',
+    detail: 'Name checks for racist, discriminatory, anti-immigrant, sectarian, abusive and inflammatory wording are enforced before an account is created; public opening still waits for external account and safety checks.',
   }),
   Object.freeze({
     label: 'Registration mode',
@@ -64,22 +64,21 @@ export const PUBLIC_SIGNUP_OWNER_DECISIONS = Object.freeze({
   }),
 })
 
-
 export const PUBLIC_SIGNUP_IMPLEMENTATION = Object.freeze({
   stage: 'STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1',
   publicRegistrationOpened: false,
   implementedGuards: Object.freeze([
-    'client-side pre-Auth display-name moderation',
-    'existing display-name availability RPC check before Auth sign-up',
-    'email confirmation success copy after Auth sign-up returns no session',
-    'support/contact-admin and privacy gate copy remains visible in the Rules Hub',
+    'Display names are checked for abusive or discriminatory wording before an account can be created.',
+    'Display-name availability is checked before the account is created.',
+    'Players are told to confirm their email after starting account creation.',
+    'The Rules Hub still shows how to get support and what data the predictor uses.',
   ]),
   externalChecksStillRequired: Object.freeze([
-    'Supabase Auth email confirmation setting confirmed in the Euro staging project',
-    'Euro 2028 redirect URLs confirmed in Supabase Auth settings',
-    'support/contact-admin destination confirmed for public users',
-    'privacy wording confirmed without an unsupported data-region claim',
-    'capacity monitoring confirmed before exceeding 250 users or 20 leagues',
+    'Email confirmation has been checked in the live account setup.',
+    'Euro 2028 account return links have been checked.',
+    'Public users have a clear way to contact admin.',
+    'The privacy note avoids promising a storage region until it is confirmed.',
+    'Capacity will be reviewed before the app goes beyond 250 users or 20 leagues.',
   ]),
 })
 

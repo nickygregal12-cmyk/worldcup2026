@@ -57,8 +57,12 @@ describe('public signup readiness', () => {
     expect(readiness.implementation).toBe(PUBLIC_SIGNUP_IMPLEMENTATION)
     expect(readiness.implementation.stage).toBe('STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1')
     expect(readiness.implementation.publicRegistrationOpened).toBe(false)
-    expect(readiness.implementation.implementedGuards).toContain('client-side pre-Auth display-name moderation')
-    expect(readiness.implementation.externalChecksStillRequired).toContain('Supabase Auth email confirmation setting confirmed in the Euro staging project')
+    expect(readiness.implementation.implementedGuards).toContain(
+      'Display names are checked for abusive or discriminatory wording before an account can be created.',
+    )
+    expect(readiness.implementation.externalChecksStillRequired).toContain(
+      'Email confirmation has been checked in the live account setup.',
+    )
     expect(readiness.ownerDecisions.moderation.clientPreAuthGuardImplemented).toBe(true)
   })
 
