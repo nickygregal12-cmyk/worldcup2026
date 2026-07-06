@@ -95,7 +95,7 @@ Browser acceptance:
 
 - Open `#/how-to-play`.
 - Confirm the public-signup panel still says wider public registration is not open yet.
-- Confirm the panel records Contact admin, 250 users, 20 leagues, email confirmation, privacy wording, moderation and registration-mode decisions.
+- Confirm the panel records Contact admin, 50 users / 20 leagues before SMTP, 100 users / 20 leagues after SMTP review, email confirmation, privacy wording, moderation and registration-mode decisions.
 - Confirm no public signup flow has opened.
 - Confirm Original Predictor and KO Predictor remain described as separate competitions.
 

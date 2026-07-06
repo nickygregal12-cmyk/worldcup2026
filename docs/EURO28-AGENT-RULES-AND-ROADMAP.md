@@ -1349,7 +1349,7 @@ Scope is docs/audit-only. It does not change runtime UI, routes, Auth configurat
 
 Public signup remains closed until implementation gates are complete. This stage is readiness recording only; it must not be treated as permission to open registration, change Supabase Auth settings or publish a public signup form.
 
-Implementation must use `docs/PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-CONTRACT.md` as the target, preserve email confirmation ON expectations, keep capacity guardrails at 250 users / 20 leagues until explicitly changed, and complete display-name moderation expectations before claiming public signup readiness.
+Implementation must use `docs/PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-CONTRACT.md` as the target, preserve email confirmation ON expectations, keep capacity guardrails at 50 users / 20 leagues before SMTP and 100 users / 20 leagues after email delivery is reviewed, and complete display-name moderation expectations before claiming public signup readiness.
 
 STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-1 marker record: public signup gates mapped to owner decisions; email confirmation ON expectations; support/contact-admin flow; 250-user / 20-league capacity guardrails; conservative privacy wording; display-name moderation expectations; low-cost/free hosting assumptions; exact “still closed until implementation” wording; explicit checks before any Auth config change; public signup remains closed until implementation gates are complete; Migration 019 remains blocked.
 
@@ -1372,13 +1372,13 @@ STAGE-PUBLIC-SIGNUP-OPENING-GATE-1 marker record: final pre-open checklist for p
 
 ## Stage STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1
 
-STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 records the controlled public signup opening runbook, owner approval must be explicit, current and recorded, opening-gate checklist must be satisfied before any public opening, email confirmation must be checked in the external account settings, account redirect URLs must return to the Euro 2028 app, not WC26, display-name moderation remains before account creation, display-name availability remains before account creation, support/contact route remains visible for public users, initial capacity remains 250 users and 20 leagues unless replaced by an owner decision, public registration remains closed until the owner completes the external opening action, and no Supabase Auth dashboard/config change in the patch.
+STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 records the controlled public signup opening runbook, owner approval must be explicit, current and recorded, opening-gate checklist must be satisfied before any public opening, email confirmation must be checked in the external account settings, account redirect URLs must return to the Euro 2028 app, not WC26, display-name moderation remains before account creation, display-name availability remains before account creation, support/contact route remains visible for public users, initial capacity remains 50 users and 20 leagues before SMTP, with 100 users and 20 leagues as the post-SMTP target, unless replaced by a later owner decision, public registration remains closed until the owner completes the external opening action, and no Supabase Auth dashboard/config change in the patch.
 
 Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, browser writes, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 18 and Migration 019 is not created.
 
 A later opening stage may only change app-side public signup status or external opening behaviour after the owner confirms the controlled-open runbook. This stage must not be treated as permission to open public registration.
 
-STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 marker record: controlled public signup opening runbook; owner approval must be explicit, current and recorded; opening-gate checklist must be satisfied before any public opening; email confirmation must be checked in the external account settings; account redirect URLs must return to the Euro 2028 app, not WC26; display-name moderation remains before account creation; display-name availability remains before account creation; support/contact route remains visible for public users; initial capacity remains 250 users and 20 leagues unless replaced by an owner decision; public registration remains closed until the owner completes the external opening action; Migration 019 remains blocked.
+STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 marker record: controlled public signup opening runbook; owner approval must be explicit, current and recorded; opening-gate checklist must be satisfied before any public opening; email confirmation must be checked in the external account settings; account redirect URLs must return to the Euro 2028 app, not WC26; display-name moderation remains before account creation; display-name availability remains before account creation; support/contact route remains visible for public users; initial capacity remains 50 users and 20 leagues before SMTP, with 100 users and 20 leagues as the post-SMTP target, unless replaced by a later owner decision; public registration remains closed until the owner completes the external opening action; Migration 019 remains blocked.
 
 ## STAGE-PUBLIC-SIGNUP-EXTERNAL-SETTINGS-CHECK-1 — CLOSED / RECORDED
 
@@ -1388,3 +1388,13 @@ This stage replaces the earlier 250-user planning figure for the first opening p
 
 
 Capacity marker: initial capacity is replaced by the external settings check: 50 users and 20 leagues before branded email sending, then 100 users after email delivery is reviewed.
+
+## STAGE-PUBLIC-SIGNUP-SMTP-READINESS-1 — CLOSED / RECORDED
+
+STAGE-PUBLIC-SIGNUP-SMTP-READINESS-1 records custom SMTP as the next public-signup blocker. Custom SMTP is the next public-signup blocker. Custom SMTP must be configured before branded public email templates are relied on. SMTP sender address must be approved before public opening. SMTP reply-to/support destination must be approved before public opening. Confirm sign-up email template must be checked after SMTP is configured. Reset password email template must be checked after SMTP is configured. Invite or magic-link email template must be checked if enabled. Auth email templates must not mention WC26. Auth email templates should mention Euro 2028 Predictor or stay generic. No SMTP secrets may be committed. No SMTP password, token, API key or provider secret may be printed in logs. Email confirmation remains ON. Public registration remains closed.
+
+Pre-SMTP capacity remains 50 users / 20 leagues. Post-SMTP target remains 100 users / 20 leagues. Post-SMTP review point remains 75 users / 15 leagues. Capacity must be reviewed before increasing beyond the post-SMTP target.
+
+This stage is docs/audit-only. It does not configure SMTP, does not edit external Auth settings, does not open signups, does not create users, does not write profile rows, does not seed predictions, does not write league data and does not publish service-role credentials. No runtime route, Auth configuration, Supabase schema, RPC, RLS, service-role, browser write, scoring, resolver, result-entry, fake-result write, league-write or migration change is included. Active migrations remain 18. Migration 019 is not created. WC26 production remains blocked. Original Predictor and KO Predictor remain separate.
+
+SMTP readiness marker: custom SMTP is the next public-signup blocker; pre-SMTP capacity remains 50 users / 20 leagues; post-SMTP target remains 100 users / 20 leagues; post-SMTP review point remains 75 users / 15 leagues; public registration remains closed; Migration 019 remains blocked.

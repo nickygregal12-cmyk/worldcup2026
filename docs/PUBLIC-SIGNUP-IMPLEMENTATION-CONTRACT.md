@@ -22,7 +22,7 @@ The account creation path must reject display names that match blocked public-si
 - Euro 2028 redirect URLs confirmed in Supabase Auth settings
 - support/contact-admin destination confirmed for public users
 - privacy wording confirmed without an unsupported data-region claim
-- capacity monitoring confirmed before exceeding 250 users or 20 leagues
+- capacity monitoring confirmed before exceeding 50 users or 20 leagues before SMTP, or 100 users after email delivery is reviewed
 
 ## Hard safety boundary
 
