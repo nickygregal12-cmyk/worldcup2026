@@ -21,8 +21,8 @@ const PUBLIC_SIGNUP_GATE_ITEMS = Object.freeze([
   }),
   Object.freeze({
     label: 'Name moderation',
-    status: 'Safety check needed',
-    detail: 'Name checks for racist, discriminatory, anti-immigrant, sectarian, abusive and inflammatory wording must be live before wider registration opens.',
+    status: 'Implementation recorded',
+    detail: 'Name checks for racist, discriminatory, anti-immigrant, sectarian, abusive and inflammatory wording are enforced before the Auth sign-up call; public opening still waits for external Auth/config checks.',
   }),
   Object.freeze({
     label: 'Registration mode',
@@ -55,11 +55,32 @@ export const PUBLIC_SIGNUP_OWNER_DECISIONS = Object.freeze({
   moderation: Object.freeze({
     approach: 'Block racist, discriminatory, anti-immigrant, sectarian, abusive and inflammatory display names and league names.',
     implementationRequiredBeforeOpening: true,
+    clientPreAuthGuardImplemented: true,
+    blockedExample: 'stop the boats',
   }),
   inviteOnly: Object.freeze({
     stayInviteOnlyUntilModeration: false,
     publicOpeningStillBlocked: true,
   }),
+})
+
+
+export const PUBLIC_SIGNUP_IMPLEMENTATION = Object.freeze({
+  stage: 'STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1',
+  publicRegistrationOpened: false,
+  implementedGuards: Object.freeze([
+    'client-side pre-Auth display-name moderation',
+    'existing display-name availability RPC check before Auth sign-up',
+    'email confirmation success copy after Auth sign-up returns no session',
+    'support/contact-admin and privacy gate copy remains visible in the Rules Hub',
+  ]),
+  externalChecksStillRequired: Object.freeze([
+    'Supabase Auth email confirmation setting confirmed in the Euro staging project',
+    'Euro 2028 redirect URLs confirmed in Supabase Auth settings',
+    'support/contact-admin destination confirmed for public users',
+    'privacy wording confirmed without an unsupported data-region claim',
+    'capacity monitoring confirmed before exceeding 250 users or 20 leagues',
+  ]),
 })
 
 export const PUBLIC_SIGNUP_READINESS = Object.freeze({
@@ -69,6 +90,7 @@ export const PUBLIC_SIGNUP_READINESS = Object.freeze({
   isOpenForPublic: false,
   detail: 'The required choices are recorded, but wider registration must wait until the moderation and operational checks are finished.',
   ownerDecisions: PUBLIC_SIGNUP_OWNER_DECISIONS,
+  implementation: PUBLIC_SIGNUP_IMPLEMENTATION,
   items: PUBLIC_SIGNUP_GATE_ITEMS,
 })
 

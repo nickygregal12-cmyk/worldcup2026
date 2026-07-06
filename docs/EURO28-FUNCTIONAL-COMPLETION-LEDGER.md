@@ -758,3 +758,8 @@ Implementation must use `docs/PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-CONTRACT.md
 
 STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-1 marker record: public signup gates mapped to owner decisions; email confirmation ON expectations; support/contact-admin flow; 250-user / 20-league capacity guardrails; conservative privacy wording; display-name moderation expectations; low-cost/free hosting assumptions; exact “still closed until implementation” wording; explicit checks before any Auth config change; public signup remains closed until implementation gates are complete; Migration 019 remains blocked.
 
+
+
+## Stage STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1 — IMPLEMENTATION GUARD RECORDED
+
+The first public-signup implementation slice is recorded: client-side pre-Auth display-name moderation now protects the account creation path before Supabase Auth is called, while the existing display-name availability RPC check remains in place. Public registration remains closed until external Auth/config checks are confirmed. Active migrations remain 18 and no Migration 019 is created.

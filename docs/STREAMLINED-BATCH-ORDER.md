@@ -307,3 +307,8 @@ Implementation must use `docs/PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-CONTRACT.md
 
 STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-1 marker record: public signup gates mapped to owner decisions; email confirmation ON expectations; support/contact-admin flow; 250-user / 20-league capacity guardrails; conservative privacy wording; display-name moderation expectations; low-cost/free hosting assumptions; exact “still closed until implementation” wording; explicit checks before any Auth config change; public signup remains closed until implementation gates are complete; Migration 019 remains blocked.
 
+
+
+## STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1
+
+Closed-scope implementation guard: client-side pre-Auth display-name moderation and public signup launch checks are recorded without opening public registration; public registration remains closed until external Auth/config checks are confirmed. Follow-on work must confirm external Auth/config settings before any true opening.

@@ -66,6 +66,19 @@ describe('Euro authentication service', () => {
     })
   })
 
+
+  it('rejects moderated names before Auth sign-up', async () => {
+    const client = createClient()
+
+    await expect(signUpWithEmail(client, {
+      email: 'nicky@example.com',
+      password: 'password123',
+      displayName: 'Stop the boats',
+      redirectTo: 'https://example.test/',
+    })).rejects.toThrow('mixed football audience')
+    expect(client.auth.signUp).not.toHaveBeenCalled()
+  })
+
   it('rejects registration before Auth when a name is unavailable', async () => {
     const client = createClient()
     client.rpc.mockResolvedValueOnce({ data: false, error: null })

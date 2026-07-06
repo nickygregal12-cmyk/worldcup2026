@@ -1,6 +1,6 @@
 import {
   normaliseEmail,
-  validateDisplayName,
+  validatePublicSignupDisplayName,
   validateEmail,
   validatePassword,
 } from './authValidation.js'
@@ -26,7 +26,7 @@ export function buildAuthRedirectUrl(mode = null) {
 
 export async function checkDisplayNameAvailability(client, displayName) {
   requireClient(client)
-  const validatedName = throwValidation(validateDisplayName(displayName))
+  const validatedName = throwValidation(validatePublicSignupDisplayName(displayName))
   const { data, error } = await client.rpc('is_display_name_available', {
     candidate: validatedName,
   })
@@ -44,7 +44,7 @@ export async function signUpWithEmail(client, {
   requireClient(client)
   const validatedEmail = throwValidation(validateEmail(email))
   const validatedPassword = throwValidation(validatePassword(password))
-  const validatedName = throwValidation(validateDisplayName(displayName))
+  const validatedName = throwValidation(validatePublicSignupDisplayName(displayName))
 
   const available = await checkDisplayNameAvailability(client, validatedName)
   if (!available) throw new Error('That display name is already in use.')
@@ -119,7 +119,7 @@ export async function loadOwnProfile(client) {
 
 export async function updateOwnDisplayName(client, displayName) {
   requireClient(client)
-  const validatedName = throwValidation(validateDisplayName(displayName))
+  const validatedName = throwValidation(validatePublicSignupDisplayName(displayName))
   const { data, error } = await client.rpc('update_my_profile_display_name', {
     candidate: validatedName,
   })

@@ -6,6 +6,7 @@ import {
   validateEmail,
   validatePassword,
   validatePasswordConfirmation,
+  validatePublicSignupDisplayName,
 } from '../authValidation.js'
 
 describe('Euro authentication validation', () => {
@@ -24,6 +25,12 @@ describe('Euro authentication validation', () => {
   it('rejects short and unsupported display names', () => {
     expect(validateDisplayName('ab').valid).toBe(false)
     expect(validateDisplayName('Bad<Name').valid).toBe(false)
+  })
+
+  it('moderates public signup display names before account creation', () => {
+    expect(validatePublicSignupDisplayName('Friendly Player').valid).toBe(true)
+    expect(validatePublicSignupDisplayName('Stop the boats').valid).toBe(false)
+    expect(validatePublicSignupDisplayName('Stop the boats').error).toBe('Choose a display name suitable for a mixed football audience.')
   })
 
   it('normalises email addresses to lower case', () => {

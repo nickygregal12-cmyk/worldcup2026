@@ -11,7 +11,7 @@ import {
   updateOwnDisplayName,
   updatePassword,
 } from './euroAuthService.js'
-import { validateDisplayName, validateEmail, validatePassword, validatePasswordConfirmation } from './authValidation.js'
+import { validateEmail, validatePassword, validatePasswordConfirmation, validatePublicSignupDisplayName } from './authValidation.js'
 import { ACCOUNT_STATS_DEFAULT, buildAccountLifecycle } from './accountAccessModel.js'
 import { clearMyOriginalPredictions, loadAccountDashboard } from './accountAccessService.js'
 
@@ -125,7 +125,7 @@ export default function AccountAccess({ client, reference, tournament = null, li
   const submitRegistration = event => {
     event.preventDefault()
     run(async () => {
-      const nameCheck = validateDisplayName(displayName); const emailCheck = validateEmail(email)
+      const nameCheck = validatePublicSignupDisplayName(displayName); const emailCheck = validateEmail(email)
       const passwordCheck = validatePassword(password); const confirmationCheck = validatePasswordConfirmation(password, confirmation)
       if (!nameCheck.valid) throw new Error(nameCheck.error)
       if (!emailCheck.valid) throw new Error(emailCheck.error)

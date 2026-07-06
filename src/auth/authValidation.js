@@ -33,6 +33,34 @@ export function validateDisplayName(value) {
   return { valid: true, value: normalised, error: null }
 }
 
+
+export const PUBLIC_SIGNUP_DISPLAY_NAME_MODERATION_MESSAGE = 'Choose a display name suitable for a mixed football audience.'
+
+const PUBLIC_SIGNUP_BLOCKED_DISPLAY_NAME_PATTERNS = Object.freeze([
+  /stop\s+the\s+boats/iu,
+  /send\s+them\s+back/iu,
+  /white\s+power/iu,
+  /sectarian/iu,
+  /racist/iu,
+])
+
+export function validatePublicSignupDisplayName(value) {
+  const base = validateDisplayName(value)
+  if (!base.valid) return base
+
+  const normalised = base.value
+  const hasBlockedLanguage = PUBLIC_SIGNUP_BLOCKED_DISPLAY_NAME_PATTERNS.some(pattern => pattern.test(normalised))
+  if (hasBlockedLanguage) {
+    return {
+      valid: false,
+      value: normalised,
+      error: PUBLIC_SIGNUP_DISPLAY_NAME_MODERATION_MESSAGE,
+    }
+  }
+
+  return base
+}
+
 export function normaliseEmail(value) {
   return String(value ?? '').trim().toLowerCase()
 }
