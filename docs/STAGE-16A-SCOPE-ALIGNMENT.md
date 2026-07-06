@@ -203,3 +203,7 @@ Stage 16A-P5 — Staging write preflight and teardown contract is now accepted a
 ## Stage 16A-P6A acceptance update
 
 Stage 16A-P6A — Seed write acceptance plan only is now accepted as a docs/audit/test-only no-write package. It records exact local environment names, exact later-slice write flags, exact synthetic markers, exact teardown selector, zero-residue proof and reseed validation proof while setting `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false` and `requiresExplicitNextSliceApproval: true`. It includes no database writes, no user creation, no prediction seeding, no service-role credential use, no scoring or resolver change, no route change and no Migration 019. Original Predictor and KO Predictor remain separate. Active migrations remain 18.
+
+## Stage 16A-P6B acceptance update
+
+Stage 16A-P6B — Seed write executor preparation only is now accepted as a no-write preparation, model, test, audit and documentation package. It records future executor module structure, blocked P6B write command names, the future P6C enablement sequence, dual-marker teardown, zero-residue proof and reseed proof while setting `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false` and `requiresExplicitNextSliceApproval: true`. It includes no database writes, no user creation, no prediction seeding, no service-role credential use, no scoring or resolver change, no route change and no Migration 019. Original Predictor and KO Predictor remain separate. Active migrations remain 18.

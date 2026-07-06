@@ -364,3 +364,9 @@ SMTP readiness marker: custom SMTP is the next public-signup blocker; pre-SMTP c
 - Migration 019 is not created.
 - WC26 production remains blocked.
 
+
+## Stage 16A-P6B — Seed write executor preparation only
+
+Stage 16A-P6B sits after P6A and before any future P6C write-capable executor. It is no-write preparation only.
+
+It may record planned executor modules and blocked command names. It must keep `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false`, no database writes, no user creation, no prediction seeding, no service-role credential use and no Migration 019.

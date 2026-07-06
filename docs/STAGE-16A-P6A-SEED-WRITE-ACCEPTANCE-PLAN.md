@@ -247,3 +247,7 @@ npm run verify:foundation-page
 After Stage 16A-P6A, a later package may consider a default-off write-capable skeleton only if Nicky/Jenna explicitly approves that future slice.
 
 That later package must still fail closed by default, must not commit or print service-role credentials, must not touch WC26 production/main, and must not bundle the entire seed, scoring, correction and teardown workflow into one oversized package.
+
+## Stage 16A-P6B forward pointer
+
+16A-P6B — Seed write executor preparation only is the next no-write preparation slice after this acceptance plan. It may record planned executor modules and blocked command names, but it must remain no-write preparation with `writesDatabase: false`, `canStartWrite: false`, `hasWriteExecutor: false`, no database writes, no user creation, no prediction seeding and no Migration 019.

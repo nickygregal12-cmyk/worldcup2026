@@ -1410,3 +1410,23 @@ SMTP readiness marker: custom SMTP is the next public-signup blocker; pre-SMTP c
 - Migration 019 is not created.
 - WC26 production remains blocked.
 
+
+## Stage 16A-P6B agent rule
+
+Stage 16A-P6B — Seed write executor preparation only is a no-write preparation boundary. Agents may edit only docs, local model/test/audit files and package script wiring for the preparation contract.
+
+Required markers:
+
+```text
+Stage 16A-P6B
+Seed write executor preparation only
+writesDatabase: false
+canStartWrite: false
+hasWriteExecutor: false
+no database writes
+no user creation
+no prediction seeding
+no Migration 019
+```
+
+Agents must not create a write executor, expose a `stage16a:p6b` write command, read service-role credentials, print env values, touch Supabase schema/RPC/RLS/service-role policy, alter scoring, alter resolver logic or combine Original Predictor and KO Predictor.
