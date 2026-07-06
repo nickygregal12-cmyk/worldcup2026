@@ -1,11 +1,21 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.53 — Locked surfaces and v9 planning recorded
+### Version 1.55 — Core-page contract adoption scheduled
+
+Stage `SCHEDULE-CORE-PAGE-CONTRACT-ADOPTION-1` is accepted as a docs-only sequencing fix. It inserts `STAGE-CORE-PAGE-ADOPTION-1` and `STAGE-CORE-PAGE-ADOPTION-2` into the v9+ order, hardens the tournament-readiness gate against approved contracts silently remaining unbuilt, and supersedes the old pre-v9 scheduled adoption rows by reference. The current approved visual-contract inventory is 20 HTML files in `docs/reference-prototypes/`. This package makes no `src/`, `supabase/`, test, audit, reference-prototype, scoring, resolver, Auth, service-role, fake-result-write or migration change. Active migrations remain 18 and no Migration 019 is created.
+
+| Order | Stage | Status | Purpose |
+|---:|---|---:|---|
+| 5A | STAGE-CORE-PAGE-ADOPTION-1 | PLANNED | Groups, Original Bracket and KO Predictor rebuilt natively to approved contracts; Groups consumes shared predicted-tables and third-place components, with missing bracket coherence/predicted tables/shared third-place rows as prerequisites or scoped slices. |
+| 5B | STAGE-CORE-PAGE-ADOPTION-2 | PLANNED | Results and Leaderboards rebuilt to approved contracts; Results includes behaviour-tested live knockout projection and Match Centre navigation from every result card; Leaderboards is cosmetic-only. |
+| 11 | STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1 | PLANNED | Readiness cannot be accepted until all 20 approved visual contracts are implemented on live surfaces or explicitly deferred with a recorded reason and owner. |
+
+### Version 1.53 — Approved visual anchors recorded
 
 Stage DESIGN-CONTRACTS-APPROVAL-1 is accepted as a docs/reference-only visual-contract approval record. Groups remains approved as the Night Broadcast identity anchor in `docs/reference-prototypes/euro28-groups-page-prototype.html`; Leagues / League table D is approved in `docs/reference-prototypes/euro28-league-page-prototype.html`; Original Bracket G is approved in `docs/reference-prototypes/euro28-bracket-page-prototype.html`; and KO Predictor F is approved in `docs/reference-prototypes/euro28-ko-predictor-contract.html`. Bracket Health is now approved only as the Health tab inside the Bracket page. No `src/`, `supabase/`, test or migration change is introduced; no route, scoring, resolver, Auth, signup, Supabase write or service-role credential use/read/print change is introduced. Original Predictor and KO Predictor remain separate, predicted/live bracket contexts never blend, active migrations remain 18 and no Migration 019 is created.
 
 
-### Version 1.53 — CONTRACTS-REF-LOCKED-SURFACES-3
+### Version 1.54 — CONTRACTS-REF-LOCKED-SURFACES-3
 
 Stage `CONTRACTS-REF-LOCKED-SURFACES-3` is accepted as a docs/reference-only recording stage for the v9 locked design and planning pack. It records the approved visual-contract inventory, corrected one-reference-per-surface install map, Home/missing-surface brief, streamlined remaining batch order, contextual return rule, final design sweep checklist, candidate team pool brief, Admin Scenario Runner brief, simulation safety guidelines, unresolved group tiebreaker prompt and Edge-Case Rules Addendum.
 
@@ -30,12 +40,14 @@ This stage makes no `src/`, `supabase/`, test, migration, scoring, resolver, Aut
 | 3 | STAGE-MORE-ACCOUNT-TRUST-1 | PLANNED | More, Account, Support, Privacy, Settings, About and signup trust surfaces. |
 | 4 | STAGE-LEAGUE-SETUP-AND-INVITES-1 | PLANNED | Create league, join league, invite-code states, privacy, empty/member states and post-auth continuation. |
 | 5 | STAGE-TOURNAMENT-STORY-SURFACES-1 | PLANNED | Prediction Trends, Activity and Match Centre trends. |
+| 5A | STAGE-CORE-PAGE-ADOPTION-1 | PLANNED | Groups, Original Bracket and KO Predictor rebuilt natively to approved contracts; Groups shared predicted-tables and third-place prerequisites remain explicit. |
+| 5B | STAGE-CORE-PAGE-ADOPTION-2 | PLANNED | Results and Leaderboards rebuilt to approved contracts; Results carries live knockout projection and Match Centre navigation behaviour tests. |
 | 6 | STAGE-LEAGUE-MANAGEMENT-1 | PLANNED | League Settings / Manage League and after-lock league-join copy. |
-| 6 | STAGE-CONTEXTUAL-SURFACES-1 | PLANNED | Bracket Health, Team Profile, Shared States and contextual return. |
-| 7 | STAGE-CANDIDATE-TEAM-POOL-1 | PLANNED | Candidate team pool and draw-slot assignment. |
-| 8 | STAGE-ADMIN-SCENARIO-RUNNER-1 | PLANNED | Fake clock + simulated results with strict simulation safety. |
-| 9 | STAGE-LEGACY-REFERENCE-CLEANUP-1 | PLANNED | Legacy/reference cleanup after replacements exist. |
-| 10 | STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1 | PLANNED | Full tournament, load, scoring and readiness acceptance. |
+| 7 | STAGE-CONTEXTUAL-SURFACES-1 | PLANNED | Bracket Health, Team Profile, Shared States and contextual return. |
+| 8 | STAGE-CANDIDATE-TEAM-POOL-1 | PLANNED | Candidate team pool and draw-slot assignment. |
+| 9 | STAGE-ADMIN-SCENARIO-RUNNER-1 | PLANNED | Fake clock + simulated results with strict simulation safety. |
+| 10 | STAGE-LEGACY-REFERENCE-CLEANUP-1 | PLANNED | Legacy/reference cleanup after replacements exist. |
+| 11 | STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1 | PLANNED | Full tournament, load, scoring, readiness acceptance and the 20-contract implementation/defer-with-owner gate. |
 
 
 Stage DESIGN-CONTRACTS-BATCH-0 is accepted as a docs/reference-only governance package. It records that approved self-contained HTML files in `docs/reference-prototypes/` become binding visual contracts for layout, hierarchy, composition, state coverage and Night Broadcast identity treatment, while remaining reference artefacts that must be rebuilt natively in the Euro design system. It creates no product behaviour and no approved page implementation by itself. Candidate design batches must stop for Nicky approval, then retain exactly one contract per surface. Groups remains the approved Night Broadcast anchor and is not redrafted. Batch 1 is Bracket plus KO Predictor, with Admin last. No `src/`, `supabase/`, test or migration change is introduced; no route, scoring, resolver, Auth, signup, Supabase write or service-role credential use/read/print change is introduced. Original Predictor and KO Predictor remain separate, predicted/live bracket contexts never blend, active migrations remain 18 and no Migration 019 is created.
@@ -463,7 +475,7 @@ Reference artefacts: `euro28-groups-page-prototype.html` and `euro28-bracket-pag
 
 | Ledger row | Status | Record |
 | --- | ---: | --- |
-| 13G Groups reference prototype adoption | SCHEDULED | Approved Groups prototype adopted as behavioural, hierarchy and copy spec; rebuild natively and do not port prototype code. |
+| 13G Groups reference prototype adoption | SUPERSEDED / SCHEDULED | Superseded by `STAGE-CORE-PAGE-ADOPTION-1` in the v9+ order; approved Groups prototype remains binding and must be rebuilt natively, not ported. |
 | S3.1 Joker control | AMENDED / CLOSED | Bare `J` circle retired; joker pill uses star icon, `Joker` label and `2×` when armed; disabled at cap. |
 | Groups joker meter | SCHEDULED | Five-dot gold JOKER METER in page controls; same pattern in Groups and KO. |
 | S3.3 Groups view switcher | AMENDED / CLOSED | `By group | By date` segmented control; by group while predicting and by date once play begins. |
@@ -472,7 +484,7 @@ Reference artefacts: `euro28-groups-page-prototype.html` and `euro28-bracket-pag
 | Part 1.3 bracket coherence | AMENDED / CLOSED | Warning-once and FLAG-FOR-RE-PICK; stale picks visibly flagged, never silently kept or dropped. |
 | Match card meta line | AMENDED / SCHEDULED | Every card carries date · venue with host-country circle flag · group; values live centrally with fixture data and reuse existing circle-flag assets. |
 | Score steppers | AMENDED / SCHEDULED | Desktop-only at ≥640px; clamp 0–15; blank increments from zero; same save/coherence/table flow as typed entry; accessibility resolution required. |
-| 13G Original Bracket reference prototype adoption | SCHEDULED | Approved Bracket prototype adopted for stacked mobile and desktop wall-chart layouts. |
+| 13G Original Bracket reference prototype adoption | SUPERSEDED / SCHEDULED | Superseded by `STAGE-CORE-PAGE-ADOPTION-1` in the v9+ order; approved Bracket G contract remains binding. |
 | Charter v1.8 wall chart | CONTRACT CHANGE / MOVED INTO 13G | Converging wall chart moves from backlog into 13G scope. |
 | Original Bracket control absence | TEST REQUIRED | No score inputs, no method controls and no joker controls anywhere on Original Bracket. |
 

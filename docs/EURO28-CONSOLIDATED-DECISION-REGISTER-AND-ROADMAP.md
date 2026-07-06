@@ -1,8 +1,10 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.11 — Approved visual anchors recorded
+### Version 4.12 — Core-page contract adoption scheduled
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
+
+**Stage SCHEDULE-CORE-PAGE-CONTRACT-ADOPTION-1** is accepted as a docs-only sequencing fix. It inserts `STAGE-CORE-PAGE-ADOPTION-1` and `STAGE-CORE-PAGE-ADOPTION-2` into the v9+ order so the approved Groups, Original Bracket, KO Predictor, Results and Leaderboards visual contracts cannot silently remain unbuilt. It also hardens `STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1` so every approved visual contract in `docs/reference-prototypes/` must be implemented on its live surface or explicitly deferred with a recorded reason and owner before readiness can be accepted. The current countable inventory is 20 approved HTML contracts. This stage is docs-only and makes no `src/`, `supabase/`, test, audit, reference-prototype, scoring, resolver, Auth, service-role, fake-result-write or migration change; active migrations remain 18 and no Migration 019 is created.
 
 **Stage CONTRACTS-REF-LOCKED-SURFACES-3** records the v9 locked design and planning package into live repo docs. It installs the approved reference contracts for Results, Leaderboards, Offline Player Claim, Bracket Health, Team Profile Sheet and Shared States into `docs/reference-prototypes/`, preserves the archived v9 pack under `docs/design-workshop/locked-design-docs-v9/`, and records the streamlined remaining batch order. Bracket Health is now approved only as the Health tab inside the Bracket page, not as a standalone bottom-nav item. This package is docs/reference-only: no `src/`, `supabase/`, test, migration, scoring, resolver, Auth, official-result-entry or fake-result-write implementation is included; active migrations remain 18 and no Migration 019 is created. Original Predictor and KO Predictor remain separate, predicted/live brackets never blend, and WC26 production remains fail-closed.
 
@@ -861,7 +863,7 @@ This package includes an idempotent application script that restores the marker 
 
 | Ledger row | Status | Record |
 | --- | ---: | --- |
-| 13G Groups reference prototype adoption | SCHEDULED | Approved Groups prototype adopted as behavioural, hierarchy and copy spec; rebuild natively and do not port prototype code. |
+| 13G Groups reference prototype adoption | SUPERSEDED / SCHEDULED | Superseded by `STAGE-CORE-PAGE-ADOPTION-1` in the v9+ order; approved Groups prototype remains binding and must be rebuilt natively, not ported. |
 | S3.1 Joker control | AMENDED / CLOSED | The bare `J` circle is retired. The joker control is a pill with star icon, `Joker` label and `2×` when armed. Gold fill and gold card border appear when on. Disabled treatment appears at cap. |
 | Groups joker meter | SCHEDULED | A five-dot gold JOKER METER sits in the page controls. The same meter pattern is used everywhere jokers exist, including Groups and KO. |
 | S3.3 Groups view switcher | AMENDED / CLOSED | `By group | By date` uses the design-system segmented control. Phase defaults follow the recorded rule: by group while predicting, by date once play begins. |
@@ -1305,6 +1307,8 @@ Future work should follow this grouped order unless Nicky explicitly re-sequence
 3. STAGE-MORE-ACCOUNT-TRUST-1
 4. STAGE-LEAGUE-SETUP-AND-INVITES-1
 5. STAGE-TOURNAMENT-STORY-SURFACES-1
+5A. STAGE-CORE-PAGE-ADOPTION-1
+5B. STAGE-CORE-PAGE-ADOPTION-2
 6. STAGE-LEAGUE-MANAGEMENT-1
 7. STAGE-CONTEXTUAL-SURFACES-1
 8. STAGE-CANDIDATE-TEAM-POOL-1
@@ -1312,6 +1316,13 @@ Future work should follow this grouped order unless Nicky explicitly re-sequence
 10. STAGE-LEGACY-REFERENCE-CLEANUP-1
 11. STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1
 ```
+
+Inserted core-page adoption stages:
+
+- `STAGE-CORE-PAGE-ADOPTION-1` — Groups, Original Bracket and KO Predictor rebuilt natively to approved contracts. This stage is cosmetic-plus-recorded-interactions under the visual-contract rule and must make zero functional change beyond what each contract records. Existing behaviour tests pass unmodified or the agent stops and reports. The Groups adoption consumes the shared predicted-tables and third-place components; if the missing Original bracket coherence, predicted group standings or shared third-place-table rows are not FUNCTIONAL when the stage starts, they are prerequisites and must land first or within this stage as their own slices.
+- `STAGE-CORE-PAGE-ADOPTION-2` — Results and Leaderboards rebuilt to approved contracts. Results carries two recorded functional additions and therefore needs behaviour tests: live knockout projection via `resolveGroupTable` and the third-place allocator under the existing no-second-calculator rule, with the projection → confirmed → real-result state model; and Match Centre navigation from every result card. Leaderboards is cosmetic-only against its approved contract.
+
+Readiness gate amendment: `STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1` cannot be accepted until every approved visual contract in `docs/reference-prototypes/` is either implemented on its live surface or explicitly deferred with a recorded reason and owner. The current approved visual-contract inventory count is 20 HTML files.
 
 ### Rules and trust decisions carried forward
 

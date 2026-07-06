@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.35 — Approved visual anchors recorded
+### Version 4.36 — Core-page contract adoption scheduled
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
 
@@ -33,6 +33,8 @@ The v9 package is now recorded in live docs. Future work must follow the grouped
 3. STAGE-MORE-ACCOUNT-TRUST-1
 4. STAGE-LEAGUE-SETUP-AND-INVITES-1
 5. STAGE-TOURNAMENT-STORY-SURFACES-1
+5A. STAGE-CORE-PAGE-ADOPTION-1
+5B. STAGE-CORE-PAGE-ADOPTION-2
 6. STAGE-LEAGUE-MANAGEMENT-1
 7. STAGE-CONTEXTUAL-SURFACES-1
 8. STAGE-CANDIDATE-TEAM-POOL-1
@@ -54,6 +56,10 @@ Carry-forward rules:
 - Unresolved predicted group and best-third-place ties must prompt only after supported calculable score-derived tiebreakers fail. They award no extra points and do not alter official tables.
 - Candidate teams are not confirmed public participants until officially qualified/drawn and deliberately assigned.
 - Fake clock plus fake scores must never become the official result source of truth. If simulation source separation cannot be guaranteed, Scenario Runner must remain preview-only.
+
+Core-page visual contracts are now scheduled explicitly. `STAGE-CORE-PAGE-ADOPTION-1` covers Groups, Original Bracket and KO Predictor. `STAGE-CORE-PAGE-ADOPTION-2` covers Results and Leaderboards. These stages are PLANNED, not FUNCTIONAL, and must rebuild approved contracts natively in the Euro design system rather than porting prototype code.
+
+Tournament readiness cannot be accepted while an approved visual contract in `docs/reference-prototypes/` is silently unbuilt. The current countable approved visual-contract inventory is 20 HTML files; each must be implemented on its live surface or explicitly deferred with a recorded reason and owner before readiness acceptance.
 
 
 ## 2. Completion rule
@@ -845,7 +851,7 @@ This package includes an idempotent application script that restores the marker 
 
 | Ledger row | Status | Record |
 | --- | ---: | --- |
-| 13G Groups reference prototype adoption | SCHEDULED | Approved Groups prototype adopted as behavioural, hierarchy and copy spec; rebuild natively and do not port prototype code. |
+| 13G Groups reference prototype adoption | SUPERSEDED / SCHEDULED | Superseded by `STAGE-CORE-PAGE-ADOPTION-1` in the v9+ order; approved Groups prototype remains binding and must be rebuilt natively, not ported. |
 | S3.1 Joker control | AMENDED / CLOSED | The bare `J` circle is retired. The joker control is a pill with star icon, `Joker` label and `2×` when armed. Gold fill and gold card border appear when on. Disabled treatment appears at cap. |
 | Groups joker meter | SCHEDULED | A five-dot gold JOKER METER sits in the page controls. The same meter pattern is used everywhere jokers exist, including Groups and KO. |
 | S3.3 Groups view switcher | AMENDED / CLOSED | `By group | By date` uses the design-system segmented control. Phase defaults follow the recorded rule: by group while predicting, by date once play begins. |

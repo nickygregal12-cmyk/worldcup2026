@@ -1,6 +1,6 @@
 # Approved visual-contract inventory — locked set v2
 
-This inventory records the approved/confirmed visual contracts after the design workshop.
+This inventory records the approved/confirmed visual contracts after the design workshop. The current countable approved visual-contract inventory is 20 HTML files in `docs/reference-prototypes/`.
 
 The visual-contract rule remains:
 

@@ -95,16 +95,18 @@ The v9 recording stage replaces the long fragmented remaining-jobs list with gro
 3. STAGE-MORE-ACCOUNT-TRUST-1
 4. STAGE-LEAGUE-SETUP-AND-INVITES-1
 5. STAGE-RESULTS-AND-SCORING-TRUST-1
+5A. STAGE-CORE-PAGE-ADOPTION-1
+5B. STAGE-CORE-PAGE-ADOPTION-2
 6. STAGE-TOURNAMENT-STORY-SURFACES-1
 7. STAGE-LEAGUE-MANAGEMENT-1
-7. STAGE-CONTEXTUAL-SURFACES-1
-8. STAGE-CANDIDATE-TEAM-POOL-1
-9. STAGE-ADMIN-SCENARIO-RUNNER-1
-10. STAGE-LEGACY-REFERENCE-CLEANUP-1
-11. STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1
+8. STAGE-CONTEXTUAL-SURFACES-1
+9. STAGE-CANDIDATE-TEAM-POOL-1
+10. STAGE-ADMIN-SCENARIO-RUNNER-1
+11. STAGE-LEGACY-REFERENCE-CLEANUP-1
+12. STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1
 ```
 
-Batch 1 must lock scoring, tiebreaks, group-goals auto-calculation, KO scoring examples and non-standard match-state scoring rules. Batch 2 must handle Home/Review/Welcome/Join together, including unresolved tie prompts, bracket invalidation, joker confirmation and the locked prediction snapshot. Batch 7 and Batch 8 remain separate because candidate-team assignment and simulated results are data/safety-critical. Batch 10 closes with load, no-flicker, scoring and full-tournament readiness acceptance.
+Batch 1 must lock scoring, tiebreaks, group-goals auto-calculation, KO scoring examples and non-standard match-state scoring rules. Batch 2 must handle Home/Review/Welcome/Join together, including unresolved tie prompts, bracket invalidation, joker confirmation and the locked prediction snapshot. Core-page contract adoption stages 5A and 5B are now explicit so approved Groups, Original Bracket, KO Predictor, Results and Leaderboards contracts cannot silently remain unbuilt. Batches 9 and 10 remain separate because candidate-team assignment and simulated results are data/safety-critical. Tournament readiness closes with load, no-flicker, scoring, full-tournament readiness acceptance and a countable approved-contract inventory check: every approved visual contract in `docs/reference-prototypes/` is implemented or explicitly deferred with a recorded reason and owner.
 
 ## Stage STAGE-RULES-SCORING-LOCK-1 — scoring/tiebreak tournament gate recorded
 

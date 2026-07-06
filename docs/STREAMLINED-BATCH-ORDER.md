@@ -11,6 +11,8 @@
 4.5. STAGE-RESULTS-AND-SCORING-TRUST-1
 4.75. STAGE-ADMIN-OPS-TRUST-1
 5. STAGE-LEAGUE-MANAGEMENT-1
+5A. STAGE-CORE-PAGE-ADOPTION-1
+5B. STAGE-CORE-PAGE-ADOPTION-2
 6. STAGE-CONTEXTUAL-SURFACES-1
 7. STAGE-CANDIDATE-TEAM-POOL-1
 8. STAGE-ADMIN-SCENARIO-RUNNER-1
@@ -103,6 +105,27 @@ Add League Settings / Manage League as a contextual owner sheet/surface.
 
 Start with safe supported actions only.
 
+## Batch 5A — STAGE-CORE-PAGE-ADOPTION-1
+
+Rebuild the core prediction pages to the approved installed contracts:
+
+- Groups from `docs/reference-prototypes/euro28-groups-page-prototype.html`;
+- Original Bracket G from `docs/reference-prototypes/euro28-bracket-page-prototype.html`;
+- KO Predictor F from `docs/reference-prototypes/euro28-ko-predictor-contract.html`.
+
+This is cosmetic-plus-recorded-interactions under the visual-contract rule. It must not change scoring, resolver behaviour, saved-prediction contracts, Supabase reads/writes or Auth. Contracts must be rebuilt natively in the Euro design system and never ported as prototype HTML/CSS/JS. Existing behaviour tests must pass unmodified; if they do not, the agent stops and reports the conflict. Eyes-on side-by-side acceptance is required for each section in light and dark themes.
+
+Groups adoption consumes the shared predicted-tables and third-place components. If the missing Original bracket coherence, predicted group standings or shared third-place-table rows are not FUNCTIONAL when this stage starts, they are prerequisites and must land first or within this stage as their own slices.
+
+## Batch 5B — STAGE-CORE-PAGE-ADOPTION-2
+
+Rebuild Results and Leaderboards to their approved installed contracts:
+
+- Results from `docs/reference-prototypes/euro28-results-page-prototype.html`;
+- Leaderboards from `docs/reference-prototypes/euro28-leaderboards-page-prototype.html`.
+
+Results carries two recorded functional additions and therefore needs behaviour tests, not just style hooks: live knockout projection through the existing `resolveGroupTable` and third-place allocator path under the no-second-calculator rule, with the projection → confirmed → real-result state model; and Match Centre navigation from every result card. Leaderboards is cosmetic-only against its approved contract, preserving separate Original and KO standings, shared ranks and the tie-break footnote.
+
 ## Batch 6 — STAGE-CONTEXTUAL-SURFACES-1
 
 Group Bracket Health, Team Profile, Shared States and contextual return.
@@ -141,6 +164,8 @@ Final integrated acceptance:
 
 - 250-user / 20-league load check;
 - full tournament flow;
+- every approved visual contract in `docs/reference-prototypes/` is either implemented on its live surface or explicitly deferred with a recorded reason and owner;
+- current approved visual-contract inventory: 20 HTML files;
 - fake clock/scenario validation;
 - no-flicker verification;
 - Original/KO separation;
