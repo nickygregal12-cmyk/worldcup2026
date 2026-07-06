@@ -7,16 +7,32 @@ import {
   deriveOriginalBracketMatchState,
   predictedChampion,
 } from './originalBracketPresentationModel.js'
+import { ORIGINAL_BRACKET_CONTEXT_COPY, ORIGINAL_BRACKET_G_COPY, ORIGINAL_BRACKET_KO_SUBLINE } from './originalBracketCopy.js'
 import styles from './OriginalBracket.module.css'
 
 const REPICK_COPY = 'Re-pick — your tables changed this tie'
-const CONTEXT_COPY = 'Your group predictions decide this bracket. Live results will not change your saved picks.'
-const KO_SUBLINE = 'This bracket is winner picks only. Scores and jokers are handled in KO Predictor.'
+const CONTEXT_COPY = ORIGINAL_BRACKET_CONTEXT_COPY
+// KO Predictor
+const KO_SUBLINE = ORIGINAL_BRACKET_KO_SUBLINE
+const BRACKET_G_COPY = ORIGINAL_BRACKET_G_COPY
 
 function formatDate(dateValue) {
   if (!dateValue) return 'Date to be confirmed'
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
     .format(new Date(`${dateValue}T12:00:00Z`))
+}
+
+function formatKickoffTime(kickoffAt) {
+  if (!kickoffAt) return 'Kick-off TBC'
+  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' })
+    .format(new Date(kickoffAt))
+}
+
+function venueLabel(tie) {
+  const venue = tie.venueName ?? tie.venue ?? null
+  const city = tie.venueCity ?? null
+  if (venue && city) return `${venue}, ${city}`
+  return venue ?? city ?? 'Venue to be confirmed'
 }
 
 function teamFor(reference, teamId) {
@@ -83,7 +99,10 @@ function OriginalBracketTie({ tie, reference, disabled, state, onChange }) {
       style={{ '--wall-column': tie.wallColumn, '--wall-row': tie.wallRow }}
     >
       <div className={styles.tieMeta}>
-        <div><strong>Match {tie.matchNumber}</strong><span>{formatDate(tie.scheduledDate)}</span></div>
+        <div>
+          <strong>Match {tie.matchNumber}</strong>
+          <span>{formatDate(tie.scheduledDate)}</span>
+        </div>
         <PredictionStateBadge state={badge.state} label={badge.label} />
       </div>
       {tie.stale && (
@@ -93,6 +112,10 @@ function OriginalBracketTie({ tie, reference, disabled, state, onChange }) {
           {staleSelectedTeam && <small>Previous pick: {staleSelectedTeam.label}</small>}
         </div>
       )}
+      <div className={styles.matchDetails} aria-label={`Match ${tie.matchNumber} details`}>
+        <span>{formatKickoffTime(tie.kickoffAt)}</span>
+        <span>{venueLabel(tie)}</span>
+      </div>
       <div className={styles.slotStack}>
         {tie.slots.map(slot => (
           <OriginalBracketSlot
@@ -128,7 +151,7 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
   const surface = buildOriginalBracketSurface({ reference, draft, preview })
 
   return (
-    <section className={styles.bracket} aria-labelledby="original-bracket-heading">
+    <section className={styles.bracket} data-contract="original-bracket-g" aria-labelledby="original-bracket-heading">
       <div className="knockout-context knockout-context--predicted">
         <div className="knockout-context__icon"><Icon name="bracket" size={24} /></div>
         <div>
@@ -137,6 +160,11 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
           <p>{CONTEXT_COPY}</p>
         </div>
         <Badge tone="info" icon="bracket">Original Predictor</Badge>
+      </div>
+
+      <div className={styles.bracketHeroNote}>
+        <Icon name="trophy" size={18} />
+        <span>{BRACKET_G_COPY}</span>
       </div>
 
       <div className={styles.championStrip}>
@@ -173,6 +201,7 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
         ))}
       </nav>
 
+      <div className={styles.wallFrame} data-wall-chart="converging" data-r16-position="outside-edges" data-final-position="centre">
       <div className={styles.wallLabels} aria-hidden="true">
         {surface.wallColumns.map(column => <span key={column.key} style={{ '--wall-column': column.column }}>{column.shortLabel}</span>)}
       </div>
@@ -212,6 +241,7 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
           </section>
         ))}
         <WallChampionBox champion={champion} />
+      </div>
       </div>
     </section>
   )

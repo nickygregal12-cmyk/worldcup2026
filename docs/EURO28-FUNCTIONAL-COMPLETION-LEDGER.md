@@ -1,3 +1,5 @@
+Stage `STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET` is accepted as the Original Bracket G live adoption slice. It upgrades the live Original Bracket surface with native Bracket G contract markers, a reinforced wall-chart frame, plain match detail chips, stacked mobile preservation, outside-edge R16 desktop columns and centred final placement. The Original Bracket remains winner-only with no score inputs, method controls or bracket jokers. This leaves KO Predictor F as the remaining `STAGE-CORE-PAGE-ADOPTION-1` slice. No scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change is introduced; active migrations remain 18 and no Migration 019 is created.
+
 Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair. It removes remaining internal/spec-style copy from player-facing surfaces before the next core-page adoption slice and adds a new audit gate to keep those phrases out of the live UI. No scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change is introduced. Active migrations remain 18 and no Migration 019 is created.
 
 # EURO 2028 PREDICTOR
@@ -16,7 +18,7 @@ Stage `SCHEDULE-CORE-PAGE-CONTRACT-ADOPTION-1` is accepted as a docs-only sequen
 
 | Order | Stage | Status | Purpose |
 |---:|---|---:|---|
-| 5A | STAGE-CORE-PAGE-ADOPTION-1 | PARTIAL | Groups Night Broadcast contract adoption slice is implemented; Original Bracket and KO Predictor remain planned. Groups consumes shared predicted-tables and third-place components, with missing bracket coherence/predicted tables/shared third-place rows as prerequisites or scoped slices. |
+| 5A | STAGE-CORE-PAGE-ADOPTION-1 | PARTIAL | Groups Night Broadcast and Original Bracket G adoption slices are implemented; KO Predictor F remains planned. Groups consumes shared predicted-tables and third-place components, and Original Bracket remains winner-only with a native wall-chart surface. |
 | 5B | STAGE-CORE-PAGE-ADOPTION-2 | PLANNED | Results and Leaderboards rebuilt to approved contracts; Results includes behaviour-tested live knockout projection and Match Centre navigation from every result card; Leaderboards is cosmetic-only. |
 | 11 | STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1 | PLANNED | Readiness cannot be accepted until all 20 approved visual contracts are implemented on live surfaces or explicitly deferred with a recorded reason and owner. |
 

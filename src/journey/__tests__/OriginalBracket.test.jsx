@@ -18,10 +18,12 @@ function renderBracket(draft = VISUAL_BRACKET_DRAFT) {
 describe('OriginalBracket', () => {
   it('renders a predicted winner-only bracket without score, method or joker controls', () => {
     const html = renderBracket()
+    expect(html).toContain('data-contract="original-bracket-g"')
     expect(html).toContain('Your bracket')
     expect(html).toContain('Your pre-tournament bracket')
     expect(html).toContain('Your group predictions decide this bracket. Live results will not change your saved picks.')
     expect(html).toContain('This bracket is winner picks only. Scores and jokers are handled in KO Predictor.')
+    expect(html).toContain('Pick every knockout winner before the tournament starts')
     expect((html.match(/KO Predictor/g) ?? [])).toHaveLength(1)
     expect(html).toContain('No bracket jokers')
     expect(html).toContain('Pick the team that goes through')
@@ -35,10 +37,15 @@ describe('OriginalBracket', () => {
 
   it('shows source references and the single wall-chart surface contract', () => {
     const html = renderBracket()
+    expect(html).toContain('data-wall-chart="converging"')
+    expect(html).toContain('data-r16-position="outside-edges"')
+    expect(html).toContain('data-final-position="centre"')
     expect(html).toContain('aria-label="Wall chart bracket"')
     expect(html).toContain('data-slot-source="1A"')
     expect(html).toContain('data-slot-source="3ABCD"')
     expect(html).toContain('data-slot-source="W39"')
+    expect(html).toContain('Kick-off TBC')
+    expect(html).toContain('Venue to be confirmed')
     expect(html).toContain('Champion')
 
     const emptyBracketDraft = {

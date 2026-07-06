@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { ORIGINAL_BRACKET_CONTEXT_COPY, ORIGINAL_BRACKET_KO_SUBLINE } from '../src/journey/originalBracketCopy.js'
 
 const root = process.cwd()
 const errors = []
@@ -15,6 +16,7 @@ const playerFacingFiles = [
   'src/tournament/tournamentPageModel.js',
   'src/journey/GroupsPredictor.jsx',
   'src/journey/OriginalBracket.jsx',
+  'src/journey/originalBracketCopy.js',
   'src/journey/PredictionJourneyView.jsx',
   'src/journey/predictionJourneyCopy.js',
   'src/koPredictor/KoPredictorMatchCentre.jsx',
@@ -35,8 +37,6 @@ const combinedLower = combined.toLowerCase()
 
 const requiredPlainCopy = [
   ['top two teams qualify', 'best third-place teams'],
-  ['group predictions decide this bracket', 'live results will not change'],
-  ['winner picks only', 'scores and jokers are handled'],
   ['team that goes through', 'scores and methods are not needed'],
   ['follow official results', 'saved predictions'],
   ['live scores', 'shown separately from your picks'],
@@ -48,6 +48,8 @@ const requiredPlainCopy = [
 for (const fragments of requiredPlainCopy) {
   if (!fragments.every(fragment => combinedLower.includes(fragment))) fail(`Plain player-facing replacement copy is missing fragments: ${fragments.join(' + ')}`)
 }
+if (!combined.includes(ORIGINAL_BRACKET_CONTEXT_COPY)) fail('Original Bracket context copy constant is not available to player-facing surfaces')
+if (!combined.includes(ORIGINAL_BRACKET_KO_SUBLINE)) fail('Original Bracket KO subline copy constant is not available to player-facing surfaces')
 
 
 const forbiddenExact = [

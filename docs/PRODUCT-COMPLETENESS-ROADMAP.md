@@ -1,3 +1,5 @@
+Current adoption note: `STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET` is accepted. Original Bracket G is now adopted on the live Original Bracket surface as a winner-only wall chart, while KO Predictor F remains the next core-page adoption slice.
+
 Current repair note: `STAGE-PLAYER-FACING-COPY-SWEEP-2` is required before the next visual adoption slice. Player-facing surfaces must read like normal app copy rather than implementation/spec copy, while keeping Original Predictor and KO Predictor separation clear.
 
 # Euro 2028 Predictor — product completeness roadmap (consolidated, 2026-07-05)

@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { ORIGINAL_BRACKET_CONTEXT_COPY, ORIGINAL_BRACKET_KO_SUBLINE } from '../src/journey/originalBracketCopy.js'
 
 const root = process.cwd()
 const errors = []
@@ -34,13 +35,13 @@ for (const marker of [
   'OriginalBracketTie',
   'WallChampionBox',
   'buildOriginalBracketSurface',
-  'group predictions decide this bracket',
-  'winner picks only',
   'Re-pick — your tables changed this tie',
   'bracket-team-choice__action',
   'aria-label="Wall chart bracket"',
 ]) if (!component.includes(marker)) fail(`OriginalBracket component is missing marker: ${marker}`)
 
+if (!ORIGINAL_BRACKET_CONTEXT_COPY.includes('group predictions decide this bracket')) fail('Original bracket context copy constant must keep the predicted-bracket explanation')
+if (!ORIGINAL_BRACKET_KO_SUBLINE.includes('winner picks only')) fail('Original bracket KO subline constant must keep winner-only wording')
 if ((component.match(/KO Predictor/g) ?? []).length !== 1) fail('OriginalBracket component must contain exactly one KO Predictor mention')
 for (const forbidden of ['ScoreInput', 'decisionMethod', 'jokerApplied', 'ko-method', 'ko-joker-button']) {
   if (component.includes(forbidden)) fail(`OriginalBracket component must not contain ${forbidden}`)

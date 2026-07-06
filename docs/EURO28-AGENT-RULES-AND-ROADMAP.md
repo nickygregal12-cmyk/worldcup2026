@@ -1,3 +1,7 @@
+### Stage STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET
+
+Original Bracket G adoption slice is implemented as native React/CSS only. The live Original Bracket carries the approved Bracket G wall-chart contract, keeps stacked mobile below 900px, reinforces the converging wall chart at 900px and above, keeps Round of 16 columns on the outside edges and the final centred, and remains strictly winner-only. It adds no score inputs, method controls or bracket jokers. Original Predictor and KO Predictor remain separate, no scoring/resolver/Supabase/Auth/service-role/fake-result/league-write change is introduced, active migrations remain 18 and no Migration 019 is created.
+
 ### Stage STAGE-PLAYER-FACING-COPY-SWEEP-2
 
 Accepted as a broad player-facing copy repair before continuing to `STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET`. It rewrites remaining internal/spec-style UI phrases found by manual review across Groups, Original Bracket, Results, Leaderboards, Account, How to Play and KO Predictor surfaces. It adds `audit:player-facing-copy-sweep-2` to `npm run check` so terms such as `Predicted context`, `Scoring boundary`, `model feeds`, `prediction context`, `live UI`, `stored here`, `never blended` and similar implementation language cannot remain on the active player-facing roots. Copy/docs/audit only; no scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change. Active migrations remain 18 and no Migration 019 is created.
