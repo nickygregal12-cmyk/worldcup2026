@@ -69,10 +69,10 @@ export default function PredictionJourneyView({
               <div><span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved on this device' : 'Guest workspace'}</span><strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong></div>
             </div>
             <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor timing">
-              <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Using the current Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
+              <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Current Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
               <article className={lifecycleStyles.card}><span>Groups</span><strong>{surfaceLifecycle.groupsLabel}</strong><small>Scores and five group-stage jokers only</small></article>
               <article className={lifecycleStyles.card}><span>Original bracket</span><strong>{surfaceLifecycle.bracketLabel}</strong><small>Winner-only picks; no bracket jokers</small></article>
-              <article className={lifecycleStyles.card}><span>Competition boundary</span><strong>{surfaceLifecycle.koBoundaryLabel}</strong><small>Original points never mix with KO Predictor points</small></article>
+              <article className={lifecycleStyles.card}><span>Separate points</span><strong>{surfaceLifecycle.koBoundaryLabel}</strong><small>Original Predictor and KO Predictor keep separate points</small></article>
             </div>
           </div>
         </details>
@@ -82,7 +82,7 @@ export default function PredictionJourneyView({
             <div className={chromeStyles.statusTitle}>
               <span className="foundation-kicker">Original Predictor</span>
               <h2 id="prediction-journey-title">Predict the full Euro 2028 tournament</h2>
-              <p className="foundation-panel-copy">Group scores drive the winner-only bracket. This original competition is completely separate from the real-match KO Predictor and its points.</p>
+              <p className="foundation-panel-copy">Group scores drive the winner-only bracket. This competition has its own picks and points, separate from KO Predictor.</p>
             </div>
             <AutosaveBadge context={context} status={autosaveStatus} revision={accountBundle?.revision ?? 0} savedAt={savedAt} />
           </div>
@@ -92,10 +92,10 @@ export default function PredictionJourneyView({
             <div><span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved on this device' : 'Guest workspace'}</span><strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong></div>
           </div>
           <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor timing">
-            <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Using the current Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
+            <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Current Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
             <article className={lifecycleStyles.card}><span>Groups</span><strong>{surfaceLifecycle.groupsLabel}</strong><small>Scores and five group-stage jokers only</small></article>
             <article className={lifecycleStyles.card}><span>Original bracket</span><strong>{surfaceLifecycle.bracketLabel}</strong><small>Winner-only picks; no bracket jokers</small></article>
-            <article className={lifecycleStyles.card}><span>Competition boundary</span><strong>{surfaceLifecycle.koBoundaryLabel}</strong><small>Original points never mix with KO Predictor points</small></article>
+            <article className={lifecycleStyles.card}><span>Separate points</span><strong>{surfaceLifecycle.koBoundaryLabel}</strong><small>Original Predictor and KO Predictor keep separate points</small></article>
           </div>
         </>
       )}

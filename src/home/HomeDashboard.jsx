@@ -269,13 +269,13 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
         </Card>
 
         <Card className="home-rules" as="article">
-          <div className="home-section-heading"><div><span className="page-eyebrow">Scoring at a glance</span><h2>One ruleset everywhere</h2></div><LinkButton href="#/tournament" variant="ghost" size="small">Full rules</LinkButton></div>
+          <div className="home-section-heading"><div><span className="page-eyebrow">Scoring at a glance</span><h2>How points work</h2></div><LinkButton href="#/tournament" variant="ghost" size="small">Full rules</LinkButton></div>
           <div className="home-rules__grid">
             <div><strong>{EURO_SCORING_CONFIG.match.EXACT_SCORE}</strong><span>Exact score</span></div>
             <div><strong>{EURO_SCORING_CONFIG.match.CORRECT_OUTCOME}</strong><span>Correct outcome</span></div>
             <div><strong>{EURO_SCORING_CONFIG.joker.MULTIPLIER}×</strong><span>Joker multiplier</span></div>
           </div>
-          <small>Original and KO Predictor totals are never combined.</small>
+          <small>Original and KO Predictor have separate leaderboards.</small>
         </Card>
       </section>
     </div>

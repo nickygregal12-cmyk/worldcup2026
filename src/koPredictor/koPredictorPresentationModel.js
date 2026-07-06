@@ -51,9 +51,9 @@ export function buildKoPredictorLifecycleStatus(reference, lifecycle, summary) {
       key: 'waiting-for-fixtures',
       tone: 'neutral',
       title: 'KO Predictor waits for real fixtures',
-      detail: 'Unresolved knockout matches stay hidden until both teams are confirmed.',
+      detail: 'Knockout matches appear once both teams are confirmed.',
       progressLabel: '0 real knockout fixtures available',
-      boundaryLabel: lockedOriginal ? 'Original Predictor lock does not open KO Predictor fixtures early' : 'Original Predictor timing remains separate',
+      boundaryLabel: lockedOriginal ? 'KO Predictor fixtures open only when real teams are known' : 'KO Predictor opens on its own schedule',
     })
   }
 
@@ -63,6 +63,6 @@ export function buildKoPredictorLifecycleStatus(reference, lifecycle, summary) {
     title: `${available} real knockout fixture${available === 1 ? '' : 's'} available`,
     detail: 'Predict the 90-minute score, advancing team and method only after real fixtures exist.',
     progressLabel: `${complete}/${total} available KO predictions complete`,
-    boundaryLabel: 'KO Predictor points, jokers and standings remain separate from the Original Predictor',
+    boundaryLabel: 'KO Predictor has its own points, jokers and standings',
   })
 }

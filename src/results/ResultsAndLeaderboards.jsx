@@ -133,7 +133,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
     rank: null,
     totalPoints: selectedPoints?.data?.totalPoints ?? 0,
   }
-  const title = isLeaderboards ? 'Full competition leaderboards' : 'Results, live tables and live bracket'
+  const title = isLeaderboards ? 'Full competition leaderboards' : 'Results, tables and live bracket'
 
   return (
     <section className="foundation-panel foundation-results" aria-labelledby="euro28-results-heading">
@@ -142,7 +142,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
         <div>
           <span className="foundation-kicker">{isLeaderboards ? 'Separate competition standings' : 'Live tournament'}</span>
           <h2 id="euro28-results-heading">{title}</h2>
-          <p>{isLeaderboards ? 'View every ranked player and your points breakdown. Original and KO Predictor totals never combine.' : 'Live results never blend with predicted brackets.'}</p>
+          <p>{isLeaderboards ? 'View every ranked player and your points breakdown. Original and KO Predictor have separate leaderboards.' : 'Follow official results without changing your saved predictions.'}</p>
         </div>
       </div>
 
@@ -169,7 +169,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
               <ResultsFeed feed={feed} />
               <div className="foundation-results-grid">
                 <article className="foundation-results-card">
-                  <span className="foundation-kicker">Live context</span>
+                  <span className="foundation-kicker">Live standings</span>
                   <h3>Live group tables</h3>
                   <p>Calculated only from live and confirmed group results.</p>
                   <div className="foundation-live-groups">
@@ -177,9 +177,9 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
                   </div>
                 </article>
                 <article className="foundation-results-card">
-                  <span className="foundation-kicker">Live context · not your bracket</span>
-                  <h3>Live knockout bracket</h3>
-                  <p>All 15 positions are shown. Unresolved participants stay marked TBC.</p>
+                  <span className="foundation-kicker">Live bracket · separate from your picks</span>
+                  <h3>Knockout bracket</h3>
+                  <p>All 15 knockout matches are shown. Teams still to be decided stay marked TBC.</p>
                   <LiveBracket rounds={bracketRounds} />
                 </article>
               </div>

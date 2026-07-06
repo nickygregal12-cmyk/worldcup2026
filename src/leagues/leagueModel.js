@@ -188,7 +188,7 @@ export function buildLeagueRaceSummary(rows, competitionKey) {
       currentLabel: 'Join or invite members',
       leaderLabel: 'No leader',
       gapLabel: 'Race starts when members appear',
-      copy: `${competitionLabel} race context will appear after this league has members.`,
+      copy: `${competitionLabel} race summary will appear after this league has members.`,
       memberCount: 0,
       leaderName: null,
       leaderPoints: 0,
@@ -235,8 +235,8 @@ export function buildLeagueRaceSummary(rows, competitionKey) {
     leaderLabel: `${leader?.displayName ?? 'Leader'} · ${leader?.totalPoints ?? 0} pts`,
     gapLabel: current ? current.gapToLeaderLabel : 'Sign in row unavailable',
     copy: current
-      ? 'Small race context sits above the table so the league reads like a contest before you scan every row.'
-      : 'The table is active, but your own row was not returned in this league response.',
+      ? 'The race summary shows the leader, your rank and the gap before the full table.'
+      : 'The table is active, but your own row is not available yet.',
     memberCount: raceRows.length,
     leaderName: leader?.displayName ?? null,
     leaderPoints: leader?.totalPoints ?? 0,
@@ -324,7 +324,7 @@ export function buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle,
     state: summary?.state === 'active' ? 'scoring' : 'fixture_release',
     label: summary?.state === 'active' ? 'KO scoring live' : 'Fixture-by-fixture release',
     copy: summary?.state === 'active'
-      ? 'KO points are from real knockout fixtures only and never combine with Original Predictor totals.'
+      ? 'KO points are from real knockout fixtures only. Original Predictor points are shown separately.'
       : 'KO selections release only for fixtures that have individually started.',
   })
 }

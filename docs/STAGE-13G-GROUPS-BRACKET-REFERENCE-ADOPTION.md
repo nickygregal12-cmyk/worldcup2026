@@ -120,8 +120,8 @@ Tests must cover warning-once behaviour, re-derivation after group edits and fla
 | Pick mechanics | SCHEDULED | Tap-to-advance, winner-only. Changing an upstream pick clears only downstream picks that are no longer fed; surviving picks persist. |
 | Re-pick presentation | SCHEDULED | A tie whose stored pick no longer matches either feeding slot receives partial/amber treatment and the flag `Re-pick — your tables changed this tie`. |
 | Champion strip and champion box | SCHEDULED | Champion strip at top and centred champion box on the wall chart. |
-| KO mention compliance | AMENDED | The strip sub-line `Winner picks only — scores and jokers live in the KO Predictor` is the page's only KO Predictor mention. |
-| Predicted context banner | SCHEDULED | Banner wording: `Your predicted bracket — built from your predicted tables, never blended with live results`. |
+| KO mention compliance | AMENDED | The strip sub-line `winner picks only — scores and jokers are handled in the KO Predictor` is the page's only KO Predictor mention. |
+| Predicted context banner | SCHEDULED | Banner wording: `Your group predictions decide this bracket. Live results will not change your saved picks.`. |
 | Original Bracket control absence | TEST REQUIRED | Assert that no score inputs, no method controls and no joker controls exist anywhere on the Original Bracket. |
 
 ## Original Bracket — delta list current vs reference
@@ -188,9 +188,9 @@ Original Bracket pick mechanics remain tap-to-advance and winner-only. Changing 
 
 If a stored pick no longer matches either feeding slot after group-table re-derivation, the tie shows the approved partial/amber treatment with the flag: `Re-pick — your tables changed this tie`. The pick is never silently kept and never silently dropped.
 
-The page includes a champion strip at the top and, in the wall-chart layout, a centred champion box. The approved strip sub-line is: `Winner picks only — scores and jokers live in the KO Predictor`. This is the Original Bracket page's only KO Predictor mention.
+The page includes a champion strip at the top and, in the wall-chart layout, a centred champion box. The approved strip sub-line is: `winner picks only — scores and jokers are handled in the KO Predictor`. This is the Original Bracket page's only KO Predictor mention.
 
-The predicted-context banner wording is approved as: `Your predicted bracket — built from your predicted tables, never blended with live results`. A live bracket, when present, may use the same primitives only under its own distinct live-context banner.
+The predicted-context banner wording is approved as: `Your group predictions decide this bracket. Live results will not change your saved picks.`. A live bracket, when present, may use the same primitives only under its own distinct live-context banner.
 
 Original Bracket compliance is enforced by absence: no score inputs, no method controls and no joker controls may exist anywhere on this page.
 
@@ -239,4 +239,4 @@ Contract changes flagged:
 
 Next single task after this package: `13G-GROUPS-1 — joker pill, shared joker meter and disabled-at-cap tests`.
 
-Audit phrase locks: Stage 13G-REF-2; Groups decisions 9 and 10; euro28-groups-page-prototype.html; euro28-bracket-page-prototype.html; star icon; Joker label; 2×; five-dot gold JOKER METER; bare J circle is retired; By group | By date; third-place ranking across all six groups; Calculated live from your predictions; This changes your bracket; FLAG-FOR-RE-PICK; Lucky Dip; fills only blank scores in the current group; You predicted; date · venue with the host country; host-country circle flag; fixture data; ≥640px; clamp 0–15; blank as zero; pointer-only exemption; autosave pill; privacy context banner; zero dev text; below 900px; ≥900px; converging wall chart; ONE state, ONE set of tie/slot primitives; 1B; 2A; 3DEF; dashed placeholder chips; tap-to-advance; winner-only; downstream picks that are no longer fed; Re-pick — your tables changed this tie; Winner picks only — scores and jokers live in the KO Predictor; built from your predicted tables, never blended with live results; no score inputs; no method controls; no joker controls; without connector lines; share-card rendering lands in its own follow-on batch; 900px single breakpoint; active migrations remain 18; no Migration 019.
+Audit phrase locks: Stage 13G-REF-2; Groups decisions 9 and 10; euro28-groups-page-prototype.html; euro28-bracket-page-prototype.html; star icon; Joker label; 2×; five-dot gold JOKER METER; bare J circle is retired; By group | By date; third-place ranking across all six groups; Calculated live from your predictions; This changes your bracket; FLAG-FOR-RE-PICK; Lucky Dip; fills only blank scores in the current group; You predicted; date · venue with the host country; host-country circle flag; fixture data; ≥640px; clamp 0–15; blank as zero; pointer-only exemption; autosave pill; privacy context banner; zero dev text; below 900px; ≥900px; converging wall chart; ONE state, ONE set of tie/slot primitives; 1B; 2A; 3DEF; dashed placeholder chips; tap-to-advance; winner-only; downstream picks that are no longer fed; Re-pick — your tables changed this tie; winner picks only — scores and jokers are handled in the KO Predictor; group predictions decide this bracket; live results will not change your saved picks; no score inputs; no method controls; no joker controls; without connector lines; share-card rendering lands in its own follow-on batch; 900px single breakpoint; active migrations remain 18; no Migration 019.

@@ -1,3 +1,5 @@
+Current repair note: `STAGE-PLAYER-FACING-COPY-SWEEP-2` is required before the next visual adoption slice. Player-facing surfaces must read like normal app copy rather than implementation/spec copy, while keeping Original Predictor and KO Predictor separation clear.
+
 # Euro 2028 Predictor — product completeness roadmap (consolidated, 2026-07-05)
 
 Context that reshapes priorities: WC26's ~65 users was a test. Euro 2028 targets

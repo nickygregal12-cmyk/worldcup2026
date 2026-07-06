@@ -34,8 +34,8 @@ for (const marker of [
   'OriginalBracketTie',
   'WallChampionBox',
   'buildOriginalBracketSurface',
-  'Your predicted bracket — built from your predicted tables, never blended with live results',
-  'Winner picks only — scores and jokers live in the KO Predictor',
+  'group predictions decide this bracket',
+  'winner picks only',
   'Re-pick — your tables changed this tie',
   'bracket-team-choice__action',
   'aria-label="Wall chart bracket"',
@@ -78,7 +78,7 @@ for (const marker of [
 if (css.includes('@media (max-width') || css.includes('connector')) fail('OriginalBracket module must keep a single 900px breakpoint and no connector-line styling')
 
 for (const marker of [
-  'Winner picks only — scores and jokers live in the KO Predictor',
+  'winner picks only',
   'toHaveLength(1)',
   'data-slot-source="1A"',
   'data-slot-source="3ABCD"',
@@ -130,6 +130,6 @@ if (errors.length) {
 
 console.log('Euro Stage 13G-BRACKET-1 responsive wall-chart audit passed.')
 console.log('Layout: stacked vertical below 900px; converging wall chart at 900px and above.')
-console.log('Primitives: one OriginalBracketTie and OriginalBracketSlot set feeds both arrangements.')
+console.log('Primitives: one OriginalBracketTie and OriginalBracketSlot set powers both arrangements.')
 console.log('Safety: Original Bracket remains winner-only with no score inputs, method controls or joker controls.')
 console.log('Database: active migrations remain 18; no Migration 019.')

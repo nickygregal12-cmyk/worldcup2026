@@ -327,9 +327,9 @@ The centred Home circle sits slightly above the bar's top line, but all five ite
 
 The Original Bracket now has an accepted Stage 13G responsive contract: below 900px it uses the vertical stacked layout with per-round pick counters, and at ≥900px it uses the converging wall chart with R16 outer wings, inward QF/SF columns, final and champion centred. This brings the charter v1.8 wall-chart decision forward from backlog into Stage 13G and is recorded as a contract change.
 
-The Bracket must use one state and one set of tie/slot primitives across both arrangements. Slot source codes such as `1B`, `2A` and `3DEF` are visible. Original Bracket remains winner-only and tap-to-advance. The only KO Predictor mention on this page is: `Winner picks only — scores and jokers live in the KO Predictor`.
+The Bracket must use one state and one set of tie/slot primitives across both arrangements. Slot source codes such as `1B`, `2A` and `3DEF` are visible. Original Bracket remains winner-only and tap-to-advance. The only KO Predictor mention on this page is: `winner picks only — scores and jokers are handled in the KO Predictor`.
 
-The predicted-context banner is: `Your predicted bracket — built from your predicted tables, never blended with live results`.
+The predicted-context banner is: `Your group predictions decide this bracket. Live results will not change your saved picks.`.
 
 Compliance by absence is part of the charter: no score inputs, no method controls and no joker controls on Original Bracket. First implementation proceeds without connector lines, with share-card image rendering deferred to its own batch, and with a single 900px breakpoint.
 

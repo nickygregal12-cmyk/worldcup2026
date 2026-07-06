@@ -10,8 +10,8 @@ import {
 import styles from './OriginalBracket.module.css'
 
 const REPICK_COPY = 'Re-pick — your tables changed this tie'
-const CONTEXT_COPY = 'Your predicted bracket — built from your predicted tables, never blended with live results'
-const KO_SUBLINE = 'Winner picks only — scores and jokers live in the KO Predictor'
+const CONTEXT_COPY = 'Your group predictions decide this bracket. Live results will not change your saved picks.'
+const KO_SUBLINE = 'This bracket is winner picks only. Scores and jokers are handled in KO Predictor.'
 
 function formatDate(dateValue) {
   if (!dateValue) return 'Date to be confirmed'
@@ -132,8 +132,8 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
       <div className="knockout-context knockout-context--predicted">
         <div className="knockout-context__icon"><Icon name="bracket" size={24} /></div>
         <div>
-          <span>Predicted context</span>
-          <h2 id="original-bracket-heading">Your permanent pre-tournament bracket</h2>
+          <span>Your bracket</span>
+          <h2 id="original-bracket-heading">Your pre-tournament bracket</h2>
           <p>{CONTEXT_COPY}</p>
         </div>
         <Badge tone="info" icon="bracket">Original Predictor</Badge>
@@ -159,9 +159,9 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
           <small>The final winner becomes your predicted champion.</small>
         </article>
         <article className="knockout-summary-card">
-          <span>Scoring boundary</span>
-          <strong>0 bracket jokers</strong>
-          <small>Pick only who advances. No scores or methods are stored here.</small>
+          <span>Bracket picks</span>
+          <strong>No bracket jokers</strong>
+          <small>Pick the team that goes through. Scores and methods are not needed here.</small>
         </article>
       </div>
 

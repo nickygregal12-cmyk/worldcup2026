@@ -31,8 +31,8 @@ The new contract is:
 | Original Bracket pick mechanics | ACCEPTED / TEST REQUIRED | Tap-to-advance, winner-only. Upstream changes clear only downstream picks no longer fed; surviving picks persist. |
 | Original Bracket re-pick presentation | ACCEPTED / TEST REQUIRED | Stale stored pick gets amber/partial flag: `Re-pick — your tables changed this tie`. |
 | Original Bracket champion treatment | ACCEPTED / SCHEDULED | Champion strip and centred wall-chart champion box. Empty prompt: `Pick through to the final`. |
-| Original Bracket KO mention | ACCEPTED / COPY LOCKED | Only KO Predictor mention: `Winner picks only — scores and jokers live in the KO Predictor`. |
-| Original Bracket predicted-context banner | ACCEPTED / COPY LOCKED | `Your predicted bracket — built from your predicted tables, never blended with live results`. |
+| Original Bracket KO mention | ACCEPTED / COPY LOCKED | Only KO Predictor mention: `winner picks only — scores and jokers are handled in the KO Predictor`. |
+| Original Bracket predicted-context banner | ACCEPTED / COPY LOCKED | `Your group predictions decide this bracket. Live results will not change your saved picks.`. |
 | Original Bracket compliance by absence | ACCEPTED / AUDIT REQUIRED | No score inputs, no method controls and no joker controls anywhere on Original Bracket. |
 | Connector lines | SIGNED OFF / WITHOUT LINES | First 13G Bracket build ships without connector lines; revisit only after visual/share review proves need. |
 | Share-card rendering | SIGNED OFF / FOLLOW-ON | Share-card image rendering lands in its own batch after interactive bracket acceptance. |
@@ -80,7 +80,7 @@ The empty prompt is:
 
 The champion strip sub-line is:
 
-`Winner picks only — scores and jokers live in the KO Predictor`
+`winner picks only — scores and jokers are handled in the KO Predictor`
 
 This is the page's only KO Predictor mention.
 
@@ -88,7 +88,7 @@ This is the page's only KO Predictor mention.
 
 The Original Bracket predicted-context banner copy is locked as:
 
-`Your predicted bracket — built from your predicted tables, never blended with live results`
+`Your group predictions decide this bracket. Live results will not change your saved picks.`
 
 The live bracket may later use the same primitives under its own distinct banner. It must never reuse this predicted-context banner.
 

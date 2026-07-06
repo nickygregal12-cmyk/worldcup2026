@@ -36,7 +36,7 @@ if (!journeyView.includes('Winner-only picks; no bracket jokers')) fail('Origina
 
 const koModel = read('src/koPredictor/koPredictorPresentationModel.js')
 if (!koModel.includes('buildKoPredictorLifecycleStatus')) fail('KO timing model is missing')
-if (!koModel.includes('Original Predictor lock does not open KO Predictor fixtures early')) fail('KO closed-state boundary copy is missing')
+if (!koModel.includes('real teams are known')) fail('KO closed-state boundary copy is missing')
 
 const koView = read('src/koPredictor/KoPredictorMatchCentre.jsx')
 if (!koView.includes('lifecycleStyles.lifecycle')) fail('KO timing strip is not rendered')

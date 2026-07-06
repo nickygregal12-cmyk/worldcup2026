@@ -85,7 +85,7 @@ function GroupProjection({ context }) {
       </div>
       <p>{context.projection.note}</p>
       {context.projection.rows.length === 0 ? (
-        <p>Group table context will appear once this fixture has live or confirmed result data.</p>
+        <p>Group-table detail will appear once this match has live or confirmed result data.</p>
       ) : (
         <div className={styles.projectionTable} role="table" aria-label={`Group ${context.groupCode} projected table`}>
           {context.projection.rows.map(row => (
@@ -202,7 +202,7 @@ export default function MatchCentre({ client, reference, lifecycle, requestedMat
         {data.signedIn && scopeOptions.length > 0 && (
           <SelectField label="Viewing" value={data.selectedScope} onChange={setLeagueId} options={scopeOptions.map(scope => ({ value: scope.id, label: scope.label }))} />
         )}
-        <small>Original and KO Predictor information remain separate. This screen never combines their points.</small>
+        <small>Original and KO Predictor information stays separate. Each competition keeps its own points.</small>
       </Card>
 
       {!data.signedIn ? (

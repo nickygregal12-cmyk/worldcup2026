@@ -116,7 +116,7 @@ function GroupsContractTablePreview({ table, groupCode, onOpen }) {
         <button type="button" onClick={onOpen}>Open all tables</button>
       </header>
       <GroupTable table={table} />
-      <p>Top two qualify. The same shared table model feeds the third-place ranking and your Original Bracket.</p>
+      <p>The top two teams qualify automatically. The best third-place teams can also reach the knockouts.</p>
     </aside>
   )
 }
@@ -132,7 +132,7 @@ function GroupsContractThirdPlacePreview({ ranking = [], onOpen }) {
         <button type="button" onClick={onOpen}>View ranking</button>
       </header>
       <GroupTable rows={ranking.slice(0, 4)} bestThird />
-      <p>The best four third-placed teams stay in your tournament path. This preview uses the same live ranking as the tables sheet.</p>
+      <p>The four best third-placed teams can still qualify. Open the ranking to see who is on course.</p>
     </aside>
   )
 }
@@ -311,7 +311,7 @@ export default function GroupsPredictor({
       <GroupsTablesSheet model={tablesModel} open={tablesOpen} selectedKey={selectedTableKey} onSelect={setSelectedTableKey} onClose={() => setTablesOpen(false)} />
 
       <section className="groups-next-step">
-        <div><span className="page-eyebrow">Next step</span><h3>{summary.groupComplete === 36 ? 'Your group predictions are complete' : `${36 - summary.groupComplete} group scores left`}</h3><p>{summary.groupComplete === 36 ? 'Your predicted tables now feed the permanent pre-tournament bracket.' : 'You can leave and return at any time. Completed scores remain saved.'}</p></div>
+        <div><span className="page-eyebrow">Next step</span><h3>{summary.groupComplete === 36 ? 'Your group predictions are complete' : `${36 - summary.groupComplete} group scores left`}</h3><p>{summary.groupComplete === 36 ? 'Your group tables are ready for the bracket.' : 'You can leave and return at any time. Completed scores remain saved.'}</p></div>
         <Button variant="secondary" icon="check" onClick={onOpenReview}>Review progress</Button>
       </section>
     </div>

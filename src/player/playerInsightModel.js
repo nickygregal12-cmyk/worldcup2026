@@ -96,7 +96,7 @@ export function buildPlayerInsightLifecycle({ competitionKey, lifecycle, insight
       state: scored ? 'original_scoring' : 'original_released_waiting_results',
       label: scored ? 'Original points only' : 'Released after global lock',
       copy: scored
-        ? 'Original Predictor points come from the 36 group scores and the winner-only pre-tournament bracket. KO Predictor points never combine here.'
+        ? 'Original Predictor points come from the 36 group scores and the winner-only pre-tournament bracket. KO Predictor points are shown separately.'
         : 'Original Predictor picks appear after the global lock; point evidence appears once results are scored.',
     })
   }
@@ -113,7 +113,7 @@ export function buildPlayerInsightLifecycle({ competitionKey, lifecycle, insight
     state: scored ? 'ko_scoring' : 'ko_fixture_release',
     label: scored ? 'KO points only' : 'Fixture-by-fixture release',
     copy: scored
-      ? 'KO Predictor points come from real knockout fixtures only. Original Predictor points never combine here.'
+      ? 'KO Predictor points come from real knockout fixtures only. Original Predictor points are shown separately.'
       : 'KO Predictor point evidence releases only for real knockout fixtures that have individually started.',
   })
 }

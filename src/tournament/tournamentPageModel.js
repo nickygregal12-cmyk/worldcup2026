@@ -67,7 +67,7 @@ export function buildHowToPlayPageModel(foundation, scoring = EURO_SCORING_CONFI
   const scoringStatusLabel = scoring.status === SCORING_CONFIG_STATUS.LOCKED ? 'Locked scoring' : 'Provisional scoring'
   return Object.freeze({
     heading: 'Rules, scoring and trust',
-    intro: 'Everything a new player needs before signing up: how the two competitions work, what scores points, when picks lock, how corrections are handled and what data the app stores.',
+    intro: 'A simple guide to the two competitions, scoring, lock times, result corrections and account privacy.',
     status: scoringStatusLabel,
     heroStats: Object.freeze([
       Object.freeze({ label: 'Group picks', value: String(totals.groupMatches), note: 'Original Predictor score predictions' }),
@@ -76,9 +76,9 @@ export function buildHowToPlayPageModel(foundation, scoring = EURO_SCORING_CONFI
       Object.freeze({ label: 'Jokers', value: `${scoring.joker.GROUP_STAGE_CAP} + ${scoring.joker.KO_PREDICTOR_CAP}`, note: `${scoring.joker.MULTIPLIER}× multiplier, never on Original Bracket` }),
     ]),
     trustCards: Object.freeze([
-      Object.freeze({ label: 'Separate competitions', title: 'Original and KO points never combine', detail: 'Original Predictor standings stay separate from KO Predictor standings, points and winners.' }),
+      Object.freeze({ label: 'Separate competitions', title: 'Original and KO points stay separate', detail: 'Original Predictor and KO Predictor each have their own standings, points and winners.' }),
       Object.freeze({ label: 'Result corrections', title: 'Result fixes are recalculated cleanly', detail: 'If an official result changes, the affected tables are rebuilt from the corrected result so points are not counted twice.' }),
-      Object.freeze({ label: 'Privacy basics', title: 'Only predictor data is stored', detail: 'The app stores the account, display name, predictions and league details needed to run the game.' }),
+      Object.freeze({ label: 'Privacy basics', title: 'Only game information is used', detail: 'The app uses your account, display name, predictions and league details to run the game.' }),
     ]),
     signupGateStatus: buildPublicSignupReadiness(),
     competitions: Object.freeze([

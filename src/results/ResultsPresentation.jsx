@@ -135,9 +135,9 @@ function ResultFeedSection({ title, rows, open = false, empty }) {
 export function ResultsFeed({ feed }) {
   return (
     <article className="foundation-results-card foundation-results-card--full">
-      <span className="foundation-kicker">Official result records</span>
+      <span className="foundation-kicker">Official results</span>
       <h3>Fixtures and results</h3>
-      <p>Live scores, confirmed results and corrections are kept separate from every prediction context.</p>
+      <p>Live scores, confirmed results and corrections are shown separately from your picks.</p>
       <div className="foundation-result-feed">
         <ResultFeedSection title="Live now" rows={feed.sections.live} open empty="No matches are live." />
         <ResultFeedSection title="Needs confirmation or review" rows={feed.sections.review} open={feed.sections.review.length > 0} empty="No results need review." />

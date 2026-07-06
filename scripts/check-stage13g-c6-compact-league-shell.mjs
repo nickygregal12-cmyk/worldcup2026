@@ -36,7 +36,7 @@ for (const marker of [
 
 for (const marker of [
   'Private leagues',
-  'Track each competition separately with a compact points table.',
+  'Track Original Predictor',
   'LeagueCodeDisclosure',
   'LeagueSecondaryDetails',
   'StandingsTable rows={standings}',
@@ -113,7 +113,7 @@ if (failures.length > 0) {
 }
 
 console.log('Euro Stage 13G-C6 compact league shell audit passed.')
-console.log('Default: selector, competition toggle and compact points table.')
+console.log('Default: selector, competition toggle and focused points table.')
 console.log('Secondary: league code, lifecycle copy and summaries live behind details.')
 console.log('Boundary: Original Predictor and KO Predictor remain separate.')
 console.log('Database: active migrations remain 18; no Migration 019.')

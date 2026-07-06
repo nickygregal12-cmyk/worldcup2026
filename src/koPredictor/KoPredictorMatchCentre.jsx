@@ -33,11 +33,11 @@ export default function KoPredictorMatchCentre({
       <div className="knockout-context knockout-context--real">
         <div className="knockout-context__icon"><Icon name="trophy" size={24} /></div>
         <div>
-          <span>Real fixture context</span>
+          <span>Real knockout fixtures</span>
           <h2 id="ko-match-centre-heading">KO Predictor match centre</h2>
-          <p>This is a separate competition using the real knockout fixtures. Predict the 90-minute score, who advances and how.</p>
+          <p>Predict real knockout matches here: the 90-minute score, who goes through and how the tie is decided.</p>
         </div>
-        <Badge tone="warning" icon="trophy">Separate competition</Badge>
+        <Badge tone="warning" icon="trophy">KO Predictor</Badge>
       </div>
 
 

@@ -81,7 +81,7 @@ function fixtureFromMatch(reference, liveSnapshot, match) {
 
 export function buildMatchCentreLifecycle({ fixture, competitionKey, lifecycle }) {
   if (!fixture) {
-    return Object.freeze({ tone: 'info', title: 'Match Centre is preparing', body: 'Fixture context will appear once the tournament reference has loaded.' })
+    return Object.freeze({ tone: 'info', title: 'Match Centre is preparing', body: 'Fixture details will appear once the tournament has loaded.' })
   }
   const isKo = Number(fixture.matchNumber) > 36
   const competitionLabel = competitionKey === RESULT_COMPETITION.KO_PREDICTOR ? 'KO Predictor' : 'Original Predictor'
@@ -104,7 +104,7 @@ export function buildMatchCentreLifecycle({ fixture, competitionKey, lifecycle }
     return Object.freeze({
       tone: 'safe',
       title: 'Fixture completed',
-      body: 'Confirmed result context and maximum points are shown without combining Original and KO Predictor totals.',
+      body: 'Confirmed result details and maximum points are shown with Original and KO Predictor kept separate.',
     })
   }
   if (isKo && !fixture.participantsResolved) {

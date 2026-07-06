@@ -31,14 +31,14 @@ const koCentre = read('src/koPredictor/KoPredictorMatchCentre.jsx')
 for (const required of ['hasActivePredictionGrace', 'isPredictionMatchStarted', '<OriginalBracket']) {
   if (!original.includes(required)) fail(`original journey is missing: ${required}`)
 }
-for (const required of ['Your permanent pre-tournament bracket', 'Pick only who advances', '0 bracket jokers']) {
+for (const required of ['Your pre-tournament bracket', 'team that goes through', 'No bracket jokers']) {
   if (!bracket.includes(required)) fail(`original bracket is missing: ${required}`)
 }
 if (!groups.includes('group jokers selected')) fail('Groups predictor is missing: group jokers selected')
 for (const required of ['saveMyKoPredictionBundle', '<KoPredictorMatchCentre']) {
   if (!ko.includes(required)) fail(`KO Predictor controller is missing: ${required}`)
 }
-for (const required of ['Real fixture context', 'KO jokers', 'Your KO points', '90-minute score']) {
+for (const required of ['Real knockout fixtures', 'KO jokers', 'Your KO points', '90-minute score']) {
   if (!koCentre.includes(required)) fail(`KO Predictor match centre is missing: ${required}`)
 }
 
@@ -53,7 +53,7 @@ if (errors.length) {
 console.log('Euro prediction journey audit passed.')
 console.log(`Journey: ${EURO28_PREDICTION_JOURNEY_VERSION}`)
 console.log('Original views: groups, winner-only bracket and review')
-console.log(`Account autosave: atomic RPC after ${PREDICTION_AUTOSAVE_DELAY_MS} ms`)
+console.log(`Account autosave: saved account picks update after ${PREDICTION_AUTOSAVE_DELAY_MS} ms`)
 console.log('Global lock: scores/bracket freeze; future group jokers remain movable until their match starts')
 console.log('KO Predictor: separate real-match workspace, points, rank, method and five jokers')
 console.log(`Active migrations: ${migrations.length}`)

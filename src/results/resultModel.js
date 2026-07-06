@@ -45,22 +45,22 @@ export function buildResultsLifecycle({ lifecycle, liveSnapshot }) {
     [RESULT_LIFECYCLE_STATE.PRE_TOURNAMENT]: {
       tone: 'info',
       title: 'Results open when the tournament starts',
-      body: 'Fixtures are ready, but scores, live tables and the live bracket stay quiet until official result records arrive.',
+      body: 'Fixtures are ready, but scores, live tables and the live bracket stay quiet until official results arrive.',
     },
     [RESULT_LIFECYCLE_STATE.LIVE]: {
       tone: 'danger',
       title: 'Live results are moving now',
-      body: 'The feed, tables and Match Centre use official live records only. Predictions remain in their own competition contexts.',
+      body: 'The feed, tables and Match Centre use official results. Your saved predictions stay unchanged.',
     },
     [RESULT_LIFECYCLE_STATE.REVIEW]: {
       tone: 'warning',
       title: 'Some scores need confirmation or review',
-      body: 'Visible scores remain separate from final scoring until the result status is confirmed or corrected by Admin.',
+      body: 'Visible scores are checked before final points are updated.',
     },
     [RESULT_LIFECYCLE_STATE.COMPLETED]: {
       tone: 'safe',
       title: 'Tournament results are complete',
-      body: 'All official results have been confirmed. Corrections still show their revision trail where applicable.',
+      body: 'All official results have been confirmed. Any later corrections will be shown clearly.',
     },
     [RESULT_LIFECYCLE_STATE.QUIET]: {
       tone: 'info',

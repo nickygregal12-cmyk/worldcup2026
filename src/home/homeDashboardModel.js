@@ -129,8 +129,8 @@ export function buildHomeMatchHub({ reference, match, dataAvailable }) {
     href: `#/match-centre?match=${matchNumber}&competition=${competition}`,
     cta: live ? 'Open live Match Centre' : 'Open Match Centre',
     note: competition === 'original'
-      ? 'Group fixtures open with Original Predictor context first.'
-      : 'Knockout fixtures open with KO Predictor context first.',
+      ? 'Group fixtures open in Original Predictor first.'
+      : 'Knockout fixtures open in KO Predictor first.',
   })
 }
 function nextMatch(reference, live) {

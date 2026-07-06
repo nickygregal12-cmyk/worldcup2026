@@ -128,7 +128,7 @@ describe('player insight model', () => {
     expect(original.copy).toContain('global prediction lock')
     expect(original.copy).toContain('You only see picks that are available for this player right now')
     expect(ko.copy).toContain('real knockout fixtures only')
-    expect(ko.copy).toContain('Original Predictor points never combine')
+    expect(ko.copy).toContain('Original Predictor points are shown separately')
   })
 
 })

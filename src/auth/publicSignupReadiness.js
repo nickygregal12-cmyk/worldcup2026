@@ -17,7 +17,7 @@ const PUBLIC_SIGNUP_GATE_ITEMS = Object.freeze([
   Object.freeze({
     label: 'Privacy wording',
     status: 'Ready for later',
-    detail: 'The privacy note will explain what predictor data is stored, without making promises that have not been confirmed yet.',
+    detail: 'The privacy note will explain what account and prediction information the game uses.',
   }),
   Object.freeze({
     label: 'Name moderation',

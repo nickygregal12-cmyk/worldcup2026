@@ -41,8 +41,8 @@ requireIncludes('docs/STAGE-13G-BRACKET-REFERENCE-ADOPTION.md', doc, [
   'clears only downstream picks that are no longer fed',
   'Re-pick — your tables changed this tie',
   'Pick through to the final',
-  'Winner picks only — scores and jokers live in the KO Predictor',
-  'Your predicted bracket — built from your predicted tables, never blended with live results',
+  'winner picks only',
+  'group predictions decide this bracket',
   'score inputs',
   'method controls',
   'joker controls',
@@ -65,8 +65,8 @@ for (const [file, content] of [
     'contract change',
     'converging wall chart',
     '900px',
-    'Winner picks only — scores and jokers live in the KO Predictor',
-    'never blended with live results',
+    'winner picks only',
+    'Live results will not change your saved picks.',
   ])
 }
 

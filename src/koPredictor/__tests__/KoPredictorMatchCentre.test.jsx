@@ -14,7 +14,7 @@ describe('KoPredictorMatchCentre', () => {
         <KoPredictorMatchCentre reference={VISUAL_KO_REFERENCE} draft={draft} summary={summariseKoPredictor(VISUAL_KO_REFERENCE, draft)} standing={VISUAL_KO_STANDING} signedIn saveState="dirty" onChange={() => {}} onSave={() => {}} />
       </TeamProfileContext.Provider>,
     )
-    expect(html).toContain('Real fixture context')
+    expect(html).toContain('Real knockout fixtures')
     expect(html).toContain('90-minute score')
     expect(html).toContain('Team to advance')
     expect(html).toContain('How the tie is decided')

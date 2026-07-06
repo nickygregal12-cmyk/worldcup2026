@@ -290,7 +290,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
         <div>
           <span className="foundation-kicker">Private leagues</span>
           <h2 id="euro28-leagues-heading">Private leagues</h2>
-          <p>Track each competition separately with a compact points table. Your Original and KO Predictor tables stay separate, so each race is easy to follow.</p>
+          <p>Track Original Predictor and KO Predictor separately. Each table has its own points race.</p>
         </div>
       </div>
 

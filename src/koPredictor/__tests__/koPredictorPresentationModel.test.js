@@ -29,7 +29,7 @@ describe('KO Predictor presentation model', () => {
 
     expect(status.key).toBe('waiting-for-fixtures')
     expect(status.title).toBe('KO Predictor waits for real fixtures')
-    expect(status.boundaryLabel).toContain('does not open KO Predictor fixtures early')
+    expect(status.boundaryLabel).toContain('KO Predictor fixtures open only when real teams are known')
   })
 
   it('summarises available KO fixtures without mixing Original points', () => {
@@ -41,7 +41,7 @@ describe('KO Predictor presentation model', () => {
 
     expect(status.key).toBe('ready-for-review')
     expect(status.progressLabel).toBe('1/1 available KO predictions complete')
-    expect(status.boundaryLabel).toContain('separate from the Original Predictor')
+    expect(status.boundaryLabel).toContain('own points, jokers and standings')
   })
 
   it('summarises only resolved fixtures by round', () => {

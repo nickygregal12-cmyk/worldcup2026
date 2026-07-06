@@ -27,7 +27,7 @@ for (const required of [
 assert(leagueService.includes('Promise.allSettled'), 'League overview must preserve partial competition-table failures')
 assert(leagueService.includes('LEAGUE_COMPETITION.ORIGINAL'), 'League overview must request Original standings explicitly')
 assert(leagueService.includes('LEAGUE_COMPETITION.KO_PREDICTOR'), 'League overview must request KO standings explicitly')
-assert(leaguesPage.includes('Your Original and KO Predictor tables stay separate, so each race is easy to follow.'), 'League page must state the competition boundary')
+assert(leaguesPage.includes('Track Original Predictor') && leaguesPage.includes('own points race'), 'League page must state the competition boundary')
 assert(leaguesPage.includes('You only see picks that are available for this player right now.'), 'Member comparison must explain server-authorised visibility')
 assert(productApp.includes('reference={appData.guestReference}'), 'League journey must receive the canonical public reference')
 
@@ -38,8 +38,8 @@ for (const required of [
 ]) assert(resultModel.includes(`export function ${required}`), `Missing result presentation model: ${required}`)
 
 assert(resultService.includes('Promise.allSettled'), 'Results loading must preserve partial section failures')
-assert(resultsPage.includes('Live context · not your bracket'), 'Live bracket must identify its canonical live context')
-assert(resultsPage.includes('Original and KO Predictor totals never combine.'), 'Results page must state the competition boundary')
+assert(resultsPage.includes('Live bracket') && resultsPage.includes('separate from your picks'), 'Live bracket must identify itself as separate from saved picks')
+assert(resultsPage.includes('Original and KO Predictor') && resultsPage.includes('separate leaderboards'), 'Results page must state the competition boundary')
 assert(resultsPage.includes('Recalculated from corrected result revision'), 'Points presentation must expose corrected-result recalculation')
 
 for (const source of [leagueService, leaguesPage, resultService, resultsPage]) {

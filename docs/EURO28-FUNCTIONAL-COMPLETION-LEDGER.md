@@ -1,3 +1,5 @@
+Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair. It removes remaining internal/spec-style copy from player-facing surfaces before the next core-page adoption slice and adds a new audit gate to keep those phrases out of the live UI. No scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change is introduced. Active migrations remain 18 and no Migration 019 is created.
+
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
 ### Version 1.57 — Groups player-facing copy repair
@@ -574,7 +576,7 @@ Status: FUNCTIONAL — post-eye-test presentation repair.
 | Original Bracket slot anatomy | ACCEPTED / SCHEDULED | Source code visible, resolved slots tappable, picked success/tick, unresolved dashed placeholders. |
 | Original Bracket pick mechanics | ACCEPTED / TEST REQUIRED | Tap-to-advance winner-only; selective downstream clearing; surviving picks persist. |
 | Re-pick presentation | ACCEPTED / TEST REQUIRED | `Re-pick — your tables changed this tie` amber/partial treatment. |
-| Champion and context copy | ACCEPTED / COPY LOCKED | Champion strip/box plus approved KO sub-line `Winner picks only — scores and jokers live in the KO Predictor` and predicted-context banner `Your predicted bracket — built from your predicted tables, never blended with live results`. |
+| Champion and context copy | ACCEPTED / COPY LOCKED | Champion strip/box plus approved KO sub-line `winner picks only — scores and jokers are handled in the KO Predictor` and predicted-context banner `Your group predictions decide this bracket. Live results will not change your saved picks.`. |
 | Original Bracket controls absence | ACCEPTED / AUDIT REQUIRED | No score inputs, method controls or joker controls. |
 | Connector lines | SIGNED OFF / WITHOUT LINES | First implementation ships without connector lines. |
 | Share-card rendering | SIGNED OFF / FOLLOW-ON | Dedicated export surface in later batch; not first Bracket implementation. |

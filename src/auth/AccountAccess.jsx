@@ -162,7 +162,7 @@ export default function AccountAccess({ client, reference, tournament = null, li
     })
   }
 
-  const confirmSignOut = () => run(async () => { await signOut(client); setSignOutConfirmOpen(false); setNotice({ tone: 'safe', message: 'Signed out. Guest predictions saved on this device were not removed.' }) })
+  const confirmSignOut = () => run(async () => { await signOut(client); setSignOutConfirmOpen(false); setNotice({ tone: 'safe', message: 'Signed out. Guest predictions on this device were not removed.' }) })
   const requestPasswordChange = () => run(async () => { await requestPasswordReset(client, { email: emailAddress }); setNotice({ tone: 'safe', message: 'Password reset email requested. Check your inbox and spam folder.' }) })
   const confirmClearPredictions = () => run(async () => {
     if (!accountLifecycle.clearPredictionsAvailable) throw new Error('The Original Predictor is already locked.')

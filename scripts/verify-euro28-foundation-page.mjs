@@ -95,11 +95,11 @@ for (const text of [
   'Provisional',
   PREDICTION_AUTOSAVE_NOTICE,
   PREDICTION_BRACKET_JOKERS_COPY,
-  'Predicted context',
-  'Your permanent pre-tournament bracket',
-  'Pick only who advances',
-  '0 bracket jokers',
-  'Real fixture context',
+  'Your bracket',
+  'Your pre-tournament bracket',
+  'Pick the team that goes through',
+  'No bracket jokers',
+  'Real knockout fixtures',
   'KO Predictor match centre',
   '90-minute score',
   'Penalty shoot-out score is never predicted',
@@ -144,7 +144,7 @@ console.log('Groups: 36 mobile-first score cards with local flags, explicit stat
 console.log('Review: saved predictions count whether submitted or not')
 console.log('Knockout controls: 90-minute score, advancing team, method and five separate KO jokers')
 console.log('Navigation: Groups stays primary until all group results and eight Round of 16 pairings are ready')
-console.log('Competition boundary: Original and KO points remain separate; predicted and live brackets never blend')
+console.log('Competition boundary: Original and KO points remain separate; live results do not change saved brackets')
 console.log('Admin controls: fixture scheduling, full reconciliation, readiness, Tournament Picks hand-off and append-only audit detail are role-controlled')
 console.log('Team profile sources: curated admin facts, app-owned tournament data and privacy-gated Original Predictor aggregates')
 console.log('External result APIs: deferred')

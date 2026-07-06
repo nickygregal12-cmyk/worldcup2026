@@ -27,10 +27,10 @@ for (const file of requiredFiles) if (!exists(file)) fail(`Stage 13C file is mis
 
 const bracket = read('src/journey/OriginalBracket.jsx')
 for (const marker of [
-  'Predicted context',
-  'Your permanent pre-tournament bracket',
-  'Pick only who advances',
-  '0 bracket jokers',
+  'Your bracket',
+  'Your pre-tournament bracket',
+  'team that goes through',
+  'No bracket jokers',
   'Original Predictor',
   'TeamLabel',
 ]) if (!bracket.includes(marker)) fail(`Original bracket is missing: ${marker}`)
@@ -52,7 +52,7 @@ if (!journey.includes('<OriginalBracket')) fail('Prediction journey does not ren
 
 const ko = read('src/koPredictor/KoPredictorMatchCentre.jsx')
 for (const marker of [
-  'Real fixture context',
+  'Real knockout fixtures',
   'KO Predictor match centre',
   '90-minute score',
   'Penalty shoot-out score is never predicted',
@@ -97,11 +97,11 @@ for (const marker of ['.knockout-context--predicted', '.knockout-context--real',
 }
 
 const originalTest = read('src/journey/__tests__/OriginalBracket.test.jsx')
-for (const marker of ['Predicted context', '0 bracket jokers', "not.toContain('90-minute score')"]) {
+for (const marker of ['Your bracket', 'No bracket jokers', "not.toContain('90-minute score')"]) {
   if (!originalTest.includes(marker)) fail(`Original bracket component test is missing: ${marker}`)
 }
 const koTest = read('src/koPredictor/__tests__/KoPredictorMatchCentre.test.jsx')
-for (const marker of ['Real fixture context', '90-minute score', 'Team to advance', 'How the tie is decided']) {
+for (const marker of ['Real knockout fixtures', '90-minute score', 'Team to advance', 'How the tie is decided']) {
   if (!koTest.includes(marker)) fail(`KO match-centre component test is missing: ${marker}`)
 }
 
@@ -135,7 +135,7 @@ if (errors.length) {
 }
 
 console.log('Euro Stage 13C knockout-experience audit passed.')
-console.log('Original bracket: permanent predicted context, winner-only picks and zero jokers')
+console.log('Original bracket: pre-tournament winner-only picks and no jokers')
 console.log('KO Predictor: real fixtures, 90-minute scores, advancing team, method and five separate jokers')
 console.log('Competition totals: Original Predictor and KO Predictor remain separate')
 console.log('Unresolved knockout fixtures: hidden')
