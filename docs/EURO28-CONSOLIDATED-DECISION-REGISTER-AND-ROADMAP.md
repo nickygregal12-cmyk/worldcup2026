@@ -1339,3 +1339,46 @@ Future work should follow this grouped order unless Nicky explicitly re-sequence
 
 - `STAGE-CANDIDATE-TEAM-POOL-1` remains a future admin/data stage: official draw slots A1–F4 stay stable; candidate/qualified teams are assigned to slots later by Admin; assignment changes display identity only and must not rewrite predictions, scores, jokers, bracket picks or Review state.
 - `STAGE-ADMIN-SCENARIO-RUNNER-1` remains a future safety-critical staging/admin tool. Fake clock plus fake scores may simulate the tournament for testing, but simulated results must never become the official result source of truth, must be ignored by normal scoring and must not pollute real leaderboards, Bracket Health, Prediction Trends or public Results in normal mode.
+
+## Stage STAGE-RULES-SCORING-LOCK-1 — Rules/scoring lock
+
+Status: recorded as the locked product rules target before the Entry/Review journey stage.
+
+This stage supersedes earlier provisional scoring notes in the decision register with the locked product target recorded in `docs/RULES-SCORING-LOCKED-CONTRACT.md` and `docs/STAGE-RULES-SCORING-LOCK-1.md`.
+
+Locked Original Predictor scoring:
+
+- correct group match result: 3 points;
+- correct group match score: 5 total, not cumulative;
+- correct exact group position: 2 points per team;
+- all 4 group positions correct in one group: +5 bonus;
+- correct team in Round of 16: 8 points per team;
+- correct team in Quarter-final: 12 points per team;
+- correct team in Semi-final: 15 points per team;
+- correct team in Final: 20 points per team;
+- correct Champion: +25 bonus;
+- exact calculated group-goals total: 25 points;
+- calculated group-goals total within 5: 15 points;
+- calculated group-goals total within 10: 5 points;
+- correct top scorer: 30 points.
+
+Locked KO Predictor scoring:
+
+- correct 90-minute score: 10 total, not cumulative;
+- correct advancing team without exact score: 5 points;
+- correct 90-minute result: 5 points for draw/advancement edge cases;
+- correct method of advancement: +3, requiring correct advancing team;
+- correct first-goal time bracket: +3 provisional/API-dependent.
+
+Locked edge-case decisions:
+
+- group goals are auto-calculated only from the 36 group-score predictions and are not manually editable;
+- unresolved in-group prediction ties prompt the user to Change scores or Pick positions;
+- unresolved best-third prediction ties prompt the user to Change scores or Pick positions where qualification or bracket placement is affected;
+- selected tied-team/third-place order does not award points and must not affect official real tables;
+- bracket picks affected by later group-score edits must be marked for review;
+- joker application should use a confirmation modal and correct competition-specific allowance;
+- delayed, postponed, suspended, abandoned, replay-required and result-pending matches do not score until the official result state is valid;
+- final Original and KO Predictor tied ranks use separate ladders and never combine competitions.
+
+Boundary: this stage records the product contract. It does not update runtime scoring, Supabase schema, migrations, resolver behaviour, official result entry, Auth, RLS or fake-result writes. Active migrations remain 18 and Migration 019 is not created.

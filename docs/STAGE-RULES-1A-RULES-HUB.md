@@ -65,3 +65,17 @@ After deploy, open `#/how-to-play` in light and dark theme and confirm:
 3. the policy cards are readable on mobile;
 4. the tie-break panel clearly says it remains a tournament gate; and
 5. no new route or sign-up behaviour has appeared.
+
+## STAGE-RULES-SCORING-LOCK-1 follow-on wording target
+
+The Rules Hub must eventually align with the locked scoring/rules target in `docs/RULES-SCORING-LOCKED-CONTRACT.md`.
+
+Important changes from earlier provisional wording:
+
+- group goals are auto-calculated only and are not manually editable;
+- correct score and correct result are not cumulative;
+- unresolved in-group and best-third predicted ties should ask the user to Change scores or Pick positions;
+- delayed/postponed/suspended/abandoned/replay/result-pending matches do not score until official result state is valid;
+- Original Predictor and KO Predictor scoring/tiebreaks remain separate.
+
+This doc note does not change the active Rules Hub implementation. UI wording alignment remains a later scoped implementation task.

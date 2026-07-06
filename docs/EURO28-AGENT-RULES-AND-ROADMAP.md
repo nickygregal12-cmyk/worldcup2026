@@ -1269,3 +1269,23 @@ The design-contract programme must proceed in batches. Each batch first produces
 The approved Groups Night Broadcast direction is the identity anchor and must not be redrafted unless Nicky explicitly reopens it. The approved Leagues / League table D contract is also binding and must not be redrafted unless Nicky explicitly reopens Leagues. Bracket G is approved as the Original Bracket visual contract, including the proper ≥900px desktop wall chart with Round of 16 on the outside edges, quarter-finals and semi-finals stepping inward, a centred final, small slick `vs`, and date/time/stadium/host-flag match detail. KO Predictor F is approved as the KO Predictor visual contract, with teams pending before readiness and real fixtures once ready. Bracket Health remains unapproved and must not be implemented until separately approved. Admin remains last.
 
 Scope guard: docs/reference only until later approved implementation packages. Do not modify `src/`, `supabase/`, migrations or tests in the drafting programme. Do not change product behaviour, routes, copy in active app code, scoring, resolver logic, Auth config, signup state, Supabase writes, service-role credential use/read/print or Migration 019 under this stage. Active migrations remain 18, Original Predictor and KO Predictor remain separate, and predicted/live bracket contexts must never blend.
+
+## STAGE-RULES-SCORING-LOCK-1 guardrail
+
+The locked scoring/rules target is now recorded in `docs/RULES-SCORING-LOCKED-CONTRACT.md` and `docs/STAGE-RULES-SCORING-LOCK-1.md`.
+
+Future agents must treat those files as the product target for scoring explanations, Review completion, Prediction Trends, scoring displays and tournament-readiness acceptance.
+
+Key guardrails:
+
+- Do not reintroduce manual group-goals editing. Group goals are auto-calculated only from the 36 group-score predictions.
+- Do not award extra points for unresolved tie ordering. It only records intended predicted order after score-derived tiebreakers fail.
+- Do not let predicted-table manual orders alter official real result tables.
+- Do not combine Original Predictor and KO Predictor points or tiebreaks.
+- Do not enable API-dependent extras such as first-goal bracket or per-goal top-scorer points unless reliable official/API data can confirm them automatically.
+- Do not score delayed, postponed, suspended, abandoned, replay-required or result-pending matches until the official result state is valid.
+- Do not create Migration 019 unless a genuine schema/read-contract gap is proved and Nicky explicitly approves it.
+
+This stage did not change runtime scoring or resolver behaviour. Any future runtime alignment must be explicit, safe, audited and separate from unrelated UI work.
+
+<!-- group goals correction marker: group goals are auto-calculated only. -->

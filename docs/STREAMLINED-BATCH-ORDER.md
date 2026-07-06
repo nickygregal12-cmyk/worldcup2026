@@ -206,3 +206,24 @@ Add:
 
 - delayed/postponed/suspended/abandoned/replay/result-pending match-state acceptance;
 - no scoring until official result state is valid.
+
+## STAGE-RULES-SCORING-LOCK-1 outcome
+
+Batch 1 is now recorded as the locked product rules/scoring target.
+
+It locks:
+
+- Original Predictor scoring values;
+- KO Predictor scoring values and edge-case examples;
+- group goals auto-calculated only;
+- unresolved in-group tiebreaker resolver rule;
+- best third-place resolver rule;
+- final tied-rank display rules;
+- delayed/postponed/suspended/abandoned/replay/result-pending match-state scoring rules;
+- How to Play wording target.
+
+Implementation of user prompts and Review completion remains Batch 2: `STAGE-ENTRY-AND-REVIEW-JOURNEY-1`.
+
+Any runtime scoring/config alignment needed to make the locked contract live must be explicit and must not be hidden inside unrelated UI work.
+
+Migration 019 boundary marker for STAGE-RULES-SCORING-LOCK-1: active migrations remain 18 and Migration 019 is not created.

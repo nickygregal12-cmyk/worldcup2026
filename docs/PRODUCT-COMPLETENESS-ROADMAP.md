@@ -103,3 +103,24 @@ The v9 recording stage replaces the long fragmented remaining-jobs list with gro
 ```
 
 Batch 1 must lock scoring, tiebreaks, group-goals auto-calculation, KO scoring examples and non-standard match-state scoring rules. Batch 2 must handle Home/Review/Welcome/Join together, including unresolved tie prompts, bracket invalidation, joker confirmation and the locked prediction snapshot. Batch 7 and Batch 8 remain separate because candidate-team assignment and simulated results are data/safety-critical. Batch 10 closes with load, no-flicker, scoring and full-tournament readiness acceptance.
+
+## Stage STAGE-RULES-SCORING-LOCK-1 — scoring/tiebreak tournament gate recorded
+
+The tournament gate for rules/scoring/tiebreak clarity is now recorded as a locked product target.
+
+Before public/tournament readiness, implementation must still make the live app, Rules Hub, Review, scoring displays and acceptance checks match `docs/RULES-SCORING-LOCKED-CONTRACT.md`.
+
+The locked target includes:
+
+- Original Predictor scoring values;
+- KO Predictor scoring values and examples;
+- group goals auto-calculated only;
+- unresolved in-group and best-third resolver prompts;
+- bracket invalidation after group-score edits;
+- joker confirmation;
+- locked prediction snapshot;
+- league-after-lock rule;
+- delayed/postponed/suspended/abandoned/replay/result-pending match-state scoring rules;
+- final tied-rank ladders.
+
+This recording stage has no Supabase writes, no scoring engine change, no resolver change and no migration. Active migrations remain 18 and Migration 019 is not created.

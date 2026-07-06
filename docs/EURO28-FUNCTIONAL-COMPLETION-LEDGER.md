@@ -673,3 +673,26 @@ Accepted. The public-signup readiness model is centralised, tested and audited. 
 ## Stage OWNER-SIGNUP-DECISIONS-1 — Public signup owner decision pass
 
 Accepted. The signup owner decisions are recorded without opening public registration. The remaining work before public signup is implementation and acceptance, especially name and league moderation.
+
+## STAGE-RULES-SCORING-LOCK-1 — Rules, scoring and tournament truth lock
+
+Status: complete as a docs/audit recording stage.
+
+This stage records the locked product scoring and rules contract before the Entry/Review journey stage. It adds `docs/STAGE-RULES-SCORING-LOCK-1.md`, adds `docs/RULES-SCORING-LOCKED-CONTRACT.md`, updates the decision register, agent rules, product roadmap and streamlined batch order, and wires `audit:rules-scoring-lock` into `npm run check`.
+
+Recorded decisions:
+
+1. Original Predictor scoring is locked to 3/5 group match scoring, 2-per-position group table scoring, +5 all-four group bonus, 8/12/15/20 bracket milestone scoring, +25 champion bonus, 25/15/5 calculated group-goals bands and 30 correct top scorer.
+2. KO Predictor scoring is locked to 10 exact 90-minute score, 5 advancing team, 5 correct 90-minute result edge cases, +3 method requiring correct advancing team and +3 first-goal bracket as provisional/API-dependent.
+3. Correct score and correct result are not cumulative.
+4. Group goals are auto-calculated only from the 36 group-score predictions and are not manually editable.
+5. Unresolved in-group prediction ties and unresolved best-third ties prompt the user to Change scores or Pick positions after score-derived tiebreakers fail.
+6. Manual unresolved-tie choices award no points and do not affect official real tables.
+7. Bracket invalidation after group-score edits, joker confirmation, locked prediction snapshot and league-after-lock rules are recorded for the next journey/league stages.
+8. Non-standard match states do not score until the official result state is valid.
+9. Final tied-rank ladders are recorded separately for Original Predictor and KO Predictor.
+10. Active migrations remain 18, Migration 019 is not created, and no runtime scoring/resolver/Supabase/Auth/RLS/result-entry change is included.
+
+Next streamlined stage: `STAGE-ENTRY-AND-REVIEW-JOURNEY-1`, after any explicitly approved runtime scoring alignment needed to make the locked contract live.
+
+<!-- group goals correction marker: group goals are auto-calculated only. -->

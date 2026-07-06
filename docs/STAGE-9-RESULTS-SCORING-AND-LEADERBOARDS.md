@@ -79,3 +79,11 @@ Stage 9 does not add:
 - member prediction comparison;
 - an external results provider;
 - final official Euro 2028 tie-break regulations.
+
+## STAGE-RULES-SCORING-LOCK-1 supersession note
+
+The Stage 9 scoring values documented above describe the then-active provisional scoring implementation.
+
+The later locked product target is now recorded in `docs/RULES-SCORING-LOCKED-CONTRACT.md` and `docs/STAGE-RULES-SCORING-LOCK-1.md`.
+
+Do not treat this Stage 9 historical document as the final scoring source when planning future UI, Review, Prediction Trends or acceptance work.
