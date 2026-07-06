@@ -1,8 +1,41 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
-### Version 1.52 — Approved visual anchors recorded
+### Version 1.53 — Locked surfaces and v9 planning recorded
 
-Stage DESIGN-CONTRACTS-APPROVAL-1 is accepted as a docs/reference-only visual-contract approval record. Groups remains approved as the Night Broadcast identity anchor in `docs/reference-prototypes/euro28-groups-page-prototype.html`; Leagues / League table D is approved in `docs/reference-prototypes/euro28-league-page-prototype.html`; Original Bracket G is approved in `docs/reference-prototypes/euro28-bracket-page-prototype.html`; and KO Predictor F is approved in `docs/reference-prototypes/euro28-ko-predictor-contract.html`. Bracket Health remains unapproved. No `src/`, `supabase/`, test or migration change is introduced; no route, scoring, resolver, Auth, signup, Supabase write or service-role credential use/read/print change is introduced. Original Predictor and KO Predictor remain separate, predicted/live bracket contexts never blend, active migrations remain 18 and no Migration 019 is created.
+Stage DESIGN-CONTRACTS-APPROVAL-1 is accepted as a docs/reference-only visual-contract approval record. Groups remains approved as the Night Broadcast identity anchor in `docs/reference-prototypes/euro28-groups-page-prototype.html`; Leagues / League table D is approved in `docs/reference-prototypes/euro28-league-page-prototype.html`; Original Bracket G is approved in `docs/reference-prototypes/euro28-bracket-page-prototype.html`; and KO Predictor F is approved in `docs/reference-prototypes/euro28-ko-predictor-contract.html`. Bracket Health is now approved only as the Health tab inside the Bracket page. No `src/`, `supabase/`, test or migration change is introduced; no route, scoring, resolver, Auth, signup, Supabase write or service-role credential use/read/print change is introduced. Original Predictor and KO Predictor remain separate, predicted/live bracket contexts never blend, active migrations remain 18 and no Migration 019 is created.
+
+
+### Version 1.53 — CONTRACTS-REF-LOCKED-SURFACES-3
+
+Stage `CONTRACTS-REF-LOCKED-SURFACES-3` is accepted as a docs/reference-only recording stage for the v9 locked design and planning pack. It records the approved visual-contract inventory, corrected one-reference-per-surface install map, Home/missing-surface brief, streamlined remaining batch order, contextual return rule, final design sweep checklist, candidate team pool brief, Admin Scenario Runner brief, simulation safety guidelines, unresolved group tiebreaker prompt and Edge-Case Rules Addendum.
+
+Reference prototypes newly installed in `docs/reference-prototypes/`:
+
+- `euro28-results-page-prototype.html`.
+- `euro28-leaderboards-page-prototype.html`.
+- `euro28-offline-player-claim-prototype.html`.
+- `euro28-bracket-health-prototype.html`.
+- `euro28-team-profile-sheet-prototype.html`.
+- `euro28-shared-states-prototype.html`.
+
+Bracket Health is now approved only as the Health tab inside the Bracket page. Results and Leaderboards are separate destinations. Offline Player Claim, Team Profile Sheet and Shared States are approved visual/interaction references. Group goals are now recorded as auto-calculated only. Unresolved in-group and best-third-place prediction ties must prompt the user only after calculable score-derived tiebreakers fail.
+
+This stage makes no `src/`, `supabase/`, test, migration, scoring, resolver, Auth, official-result-entry, service-role or fake-result-write implementation change. Active migrations remain 18 and no Migration 019 is created. Original Predictor and KO Predictor remain separate, predicted/live brackets never blend and WC26 production remains fail-closed.
+
+| Order | Stage | Status | Purpose |
+|---:|---|---:|---|
+| 0 | CONTRACTS-REF-LOCKED-SURFACES-3 | ✅ ACCEPTED | Record v9 docs, approved references, edge-case rules and streamlined batch order. |
+| 1 | STAGE-RULES-SCORING-LOCK-1 | PLANNED | Lock scoring, tiebreaks, group-goals auto-calculation, KO edge-case examples and match-state scoring rules. |
+| 2 | STAGE-ENTRY-AND-REVIEW-JOURNEY-1 | PLANNED | Home, Review, Welcome, Invite/Join, unresolved tie prompts, bracket invalidation, joker modal and locked snapshot. |
+| 3 | STAGE-MORE-ACCOUNT-TRUST-1 | PLANNED | More, Account, Support, Privacy, Settings, About and signup trust surfaces. |
+| 4 | STAGE-TOURNAMENT-STORY-SURFACES-1 | PLANNED | Prediction Trends, Activity and Match Centre trends. |
+| 5 | STAGE-LEAGUE-MANAGEMENT-1 | PLANNED | League Settings / Manage League and after-lock league-join copy. |
+| 6 | STAGE-CONTEXTUAL-SURFACES-1 | PLANNED | Bracket Health, Team Profile, Shared States and contextual return. |
+| 7 | STAGE-CANDIDATE-TEAM-POOL-1 | PLANNED | Candidate team pool and draw-slot assignment. |
+| 8 | STAGE-ADMIN-SCENARIO-RUNNER-1 | PLANNED | Fake clock + simulated results with strict simulation safety. |
+| 9 | STAGE-LEGACY-REFERENCE-CLEANUP-1 | PLANNED | Legacy/reference cleanup after replacements exist. |
+| 10 | STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1 | PLANNED | Full tournament, load, scoring and readiness acceptance. |
+
 
 Stage DESIGN-CONTRACTS-BATCH-0 is accepted as a docs/reference-only governance package. It records that approved self-contained HTML files in `docs/reference-prototypes/` become binding visual contracts for layout, hierarchy, composition, state coverage and Night Broadcast identity treatment, while remaining reference artefacts that must be rebuilt natively in the Euro design system. It creates no product behaviour and no approved page implementation by itself. Candidate design batches must stop for Nicky approval, then retain exactly one contract per surface. Groups remains the approved Night Broadcast anchor and is not redrafted. Batch 1 is Bracket plus KO Predictor, with Admin last. No `src/`, `supabase/`, test or migration change is introduced; no route, scoring, resolver, Auth, signup, Supabase write or service-role credential use/read/print change is introduced. Original Predictor and KO Predictor remain separate, predicted/live bracket contexts never blend, active migrations remain 18 and no Migration 019 is created.
 

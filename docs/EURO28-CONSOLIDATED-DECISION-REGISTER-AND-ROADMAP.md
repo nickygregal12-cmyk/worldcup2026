@@ -4,7 +4,9 @@
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
-**Stage DESIGN-CONTRACTS-APPROVAL-1** records the approved visual contracts for Groups, Leagues / League table D, Original Bracket G and KO Predictor F. `docs/reference-prototypes/euro28-groups-page-prototype.html` remains the approved Groups Night Broadcast identity anchor. `docs/reference-prototypes/euro28-league-page-prototype.html` is the approved League table D contract. `docs/reference-prototypes/euro28-bracket-page-prototype.html` is the approved Bracket G contract with the proper desktop wall chart, outside-edge Round of 16 columns, inward quarter-final/semi-final progression, centred final, slick `vs`, and date/time/stadium/host-flag match detail. `docs/reference-prototypes/euro28-ko-predictor-contract.html` is the approved KO Predictor F contract, with pending teams before real fixtures and playable real fixtures once ready. Bracket Health remains unapproved and must not be implemented until separately approved. This package is docs/reference/audit-only with no `src/`, `supabase/`, test or migration change, no route/scoring/resolver/Auth/signup change, no Supabase write, no service-role credential use/read/print, active migrations remain 18 and no Migration 019 is created. Original Predictor and KO Predictor remain separate, and predicted/live bracket contexts must never blend.
+**Stage CONTRACTS-REF-LOCKED-SURFACES-3** records the v9 locked design and planning package into live repo docs. It installs the approved reference contracts for Results, Leaderboards, Offline Player Claim, Bracket Health, Team Profile Sheet and Shared States into `docs/reference-prototypes/`, preserves the archived v9 pack under `docs/design-workshop/locked-design-docs-v9/`, and records the streamlined remaining batch order. Bracket Health is now approved only as the Health tab inside the Bracket page, not as a standalone bottom-nav item. This package is docs/reference-only: no `src/`, `supabase/`, test, migration, scoring, resolver, Auth, official-result-entry or fake-result-write implementation is included; active migrations remain 18 and no Migration 019 is created. Original Predictor and KO Predictor remain separate, predicted/live brackets never blend, and WC26 production remains fail-closed.
+
+**Stage DESIGN-CONTRACTS-APPROVAL-1** records the approved visual contracts for Groups, Leagues / League table D, Original Bracket G and KO Predictor F. `docs/reference-prototypes/euro28-groups-page-prototype.html` remains the approved Groups Night Broadcast identity anchor. `docs/reference-prototypes/euro28-league-page-prototype.html` is the approved League table D contract. `docs/reference-prototypes/euro28-bracket-page-prototype.html` is the approved Bracket G contract with the proper desktop wall chart, outside-edge Round of 16 columns, inward quarter-final/semi-final progression, centred final, slick `vs`, and date/time/stadium/host-flag match detail. `docs/reference-prototypes/euro28-ko-predictor-contract.html` is the approved KO Predictor F contract, with pending teams before real fixtures and playable real fixtures once ready. Bracket Health is now separately approved only as the Health tab inside the Bracket page and must not be implemented as a standalone bottom-nav destination. This package is docs/reference/audit-only with no `src/`, `supabase/`, test or migration change, no route/scoring/resolver/Auth/signup change, no Supabase write, no service-role credential use/read/print, active migrations remain 18 and no Migration 019 is created. Original Predictor and KO Predictor remain separate, and predicted/live bracket contexts must never blend.
 
 **Stage DESIGN-CONTRACTS-BATCH-0** records the visual-contract rule for the all-main-pages design drafting programme. Approved self-contained HTML files in `docs/reference-prototypes/` become binding visual contracts for layout, hierarchy, composition, state coverage and Night Broadcast identity treatment, but remain reference artefacts only and must be rebuilt natively in the Euro design system. Candidate batches must stop for Nicky approval; after approval, one contract per surface supersedes older references rather than accumulating alternatives. Functional decisions remain sacred: visual contracts cannot invent behaviours, scoring rules, routes, resolver logic, data reads/writes, signup state, Auth settings or moderation powers. Groups is already approved as the Night Broadcast identity anchor and must not be redrafted unless explicitly reopened. Batch 1 is Bracket plus KO Predictor; Admin remains last. This package is docs/reference-only with no `src/`, `supabase/`, test or migration change, no product-code change, no Supabase writes, no service-role credential use/read/print, no scoring/resolver/route/Auth/signup change, active migrations remain 18 and no Migration 019 is created. Original Predictor and KO Predictor remain separate, and predicted/live bracket contexts must never blend.
 
@@ -1273,3 +1275,67 @@ Next sequenced package: a default-off write-capable skeleton only after explicit
 ### Stage RULES-1A — Rules hub UI upgrade
 
 `#/how-to-play` is now the product rules hub rather than a minimal mechanics page. It surfaces scoring from the central scoring constants, keeps Original Predictor and KO Predictor separate, explains lock timing, corrections, name policy, privacy/deletion expectations, support-contact status and the tie-break tournament gate. The remaining RULES-1 signup decisions are still owner-owned: support contact, Supabase data region, email confirmation and capacity/tier. This rules hub slice is UI/model/docs/audit-only with no Supabase writes, no scoring/resolver changes, no route change and no migration.
+
+
+## CONTRACTS-REF-LOCKED-SURFACES-3 — v9 locked surfaces and planning record
+
+Stage `CONTRACTS-REF-LOCKED-SURFACES-3` records the v9 package as the current source of truth for visual-contract references, missing-surface planning, edge-case rules and remaining-stage sequencing.
+
+### Approved visual contracts now recorded
+
+The approved reference library now includes the already recorded Groups, Leagues / League table D, Original Bracket G and KO Predictor F contracts, plus the newly installed approved contracts for:
+
+- Results — official/live data only, with Groups, Tables and Knockouts tabs; every result opens Match Centre; Leaderboards remain separate.
+- Leaderboards — separate player-standings destination; Original and KO Predictor standings remain separate; every row opens Player View.
+- Offline Player Claim — code-based league-admin claim flow, one-way, preserving predictions, jokers, points and history.
+- Bracket Health — approved only as the Health tab inside the Bracket page; it compares saved Original Bracket predictions against live/real route health without mutating picks.
+- Team Profile Sheet — objective/app-owned team context only; no squad/player/odds content; community expectation stats only after lock.
+- Shared States — More menu, shimmer loading, calm error, unknown route, invite/join and privacy placeholders.
+
+Home B, Match Centre A, Player View A, Points Breakdown A, Account B, Tournament Overview A, How to Play / Rules Hub A and Admin Control Room A remain approved visual contracts at their existing reference filenames.
+
+### Streamlined remaining batch order
+
+Future work should follow this grouped order unless Nicky explicitly re-sequences it:
+
+```text
+0. CONTRACTS-REF-LOCKED-SURFACES-3
+1. STAGE-RULES-SCORING-LOCK-1
+2. STAGE-ENTRY-AND-REVIEW-JOURNEY-1
+3. STAGE-MORE-ACCOUNT-TRUST-1
+4. STAGE-TOURNAMENT-STORY-SURFACES-1
+5. STAGE-LEAGUE-MANAGEMENT-1
+6. STAGE-CONTEXTUAL-SURFACES-1
+7. STAGE-CANDIDATE-TEAM-POOL-1
+8. STAGE-ADMIN-SCENARIO-RUNNER-1
+9. STAGE-LEGACY-REFERENCE-CLEANUP-1
+10. STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1
+```
+
+### Rules and trust decisions carried forward
+
+- Final standings tie-break ladders are separate for Original Predictor and KO Predictor. Original final standings use closest total goals, most exact group-stage scores, most correct group-stage results/outcomes, knockout accuracy cascade, then shared position. KO final standings use most exact KO scorelines, most correct KO outcomes, then shared position.
+- Results and Leaderboards stay separate. Results is official/live data only; Leaderboards owns player standings.
+- Home must answer “What should I do now?”, show one Original Predictor countdown before the tournament and show zero KO Predictor presence before KO readiness.
+- Dynamic pages must not flash the wrong CTA, lock state, account state, guest state, competition state or navigation action while resolving. Use neutral shimmer/skeleton states until canonical state is known.
+- Contextual surfaces opened from known origins must return to that origin. Do not add permanent nav items to solve return paths.
+- Review Picks is needed at `/#review` as the final Original Predictor completion checklist and becomes read-only after lock.
+- Prediction Trends is approved at `/#prediction-trends`, appears only after Original Predictor lock and remains Original Predictor-first, with KO Predictor trends only as clearly labelled secondary content.
+- Support and Privacy remain public-signup gates. Public registration remains closed until moderation, support/deletion, email confirmation, capacity and privacy gates are implemented and accepted.
+
+### Resolver and prediction-flow edge cases
+
+- If completed predicted group scores leave teams tied after all supported score-derived tiebreakers, the app must prompt the user to either change scores or pick the intended order. The choice records intended predicted order only; it awards no extra points and never overrides calculable tiebreakers.
+- If two or more third-place teams are tied across groups after all supported calculable rules and the tie affects qualification or bracket placement, the app must prompt the user to change scores or pick the intended third-place ranking order.
+- If group-score edits after Original Bracket creation change predicted qualifiers or paths, affected bracket sections must be marked for review rather than silently preserving stale picks.
+- Applying a group-stage or KO Predictor joker should use a confirmation modal explaining the doubling effect and the remaining competition-specific allowance. Group-stage and KO Predictor jokers remain separate; Original pre-tournament bracket picks do not use jokers.
+- Group goals are auto-calculated only from the 36 group-score predictions. Review must not allow manual group-goals editing.
+- The Original Predictor lock should preserve an auditable locked prediction snapshot including lock timestamp, group match predictions, jokers, manual tiebreak choices, Original Bracket picks, champion, top scorer, calculated group-goals total and league context where relevant.
+- Joining a league after lock should not remove or reduce valid points if the user submitted valid predictions before the deadline, subject to normal league visibility/membership rules.
+- KO Predictor scoring must include explicit edge-case examples before implementation.
+- Delayed, postponed, suspended, abandoned, replay-required and result-pending match states must not score until the official result state is valid.
+
+### Future admin/data stages
+
+- `STAGE-CANDIDATE-TEAM-POOL-1` remains a future admin/data stage: official draw slots A1–F4 stay stable; candidate/qualified teams are assigned to slots later by Admin; assignment changes display identity only and must not rewrite predictions, scores, jokers, bracket picks or Review state.
+- `STAGE-ADMIN-SCENARIO-RUNNER-1` remains a future safety-critical staging/admin tool. Fake clock plus fake scores may simulate the tournament for testing, but simulated results must never become the official result source of truth, must be ignored by normal scoring and must not pollute real leaderboards, Bracket Health, Prediction Trends or public Results in normal mode.

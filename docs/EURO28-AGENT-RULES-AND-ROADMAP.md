@@ -20,6 +20,41 @@
 - Migration 018 is applied and aligned locally and on Euro staging. Stage 13F-K3 is acceptance/tooling only and must retain exactly 18 migrations with no Migration 019.
 - Every batch updates the Functional Completion Ledger in the same commit.
 
+
+
+## CONTRACTS-REF-LOCKED-SURFACES-3 — v9 sequencing and safety rules
+
+The v9 package is now recorded in live docs. Future work must follow the grouped remaining-batch order unless Nicky explicitly re-sequences it:
+
+```text
+0. CONTRACTS-REF-LOCKED-SURFACES-3
+1. STAGE-RULES-SCORING-LOCK-1
+2. STAGE-ENTRY-AND-REVIEW-JOURNEY-1
+3. STAGE-MORE-ACCOUNT-TRUST-1
+4. STAGE-TOURNAMENT-STORY-SURFACES-1
+5. STAGE-LEAGUE-MANAGEMENT-1
+6. STAGE-CONTEXTUAL-SURFACES-1
+7. STAGE-CANDIDATE-TEAM-POOL-1
+8. STAGE-ADMIN-SCENARIO-RUNNER-1
+9. STAGE-LEGACY-REFERENCE-CLEANUP-1
+10. STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1
+```
+
+Do not split work into tiny stages where the same files, routes or journeys are repeatedly edited.
+
+Carry-forward rules:
+
+- All new pages must use the approved Euro 2028 design system and the installed reference prototypes.
+- Dynamic pages must not show wrong-state flicker. Use neutral shimmer/skeleton states where canonical state is unknown.
+- Contextual routes, sheets, modals and detail surfaces opened from a known origin must provide a clear return to that origin.
+- Results and Leaderboards are separate. Results is official/live data; Leaderboards is standings.
+- Bracket Health is approved as a Health tab inside Bracket only.
+- Group goals are auto-calculated only. Do not implement manual group-goals editing unless Nicky explicitly reopens the decision.
+- Unresolved predicted group and best-third-place ties must prompt only after supported calculable score-derived tiebreakers fail. They award no extra points and do not alter official tables.
+- Candidate teams are not confirmed public participants until officially qualified/drawn and deliberately assigned.
+- Fake clock plus fake scores must never become the official result source of truth. If simulation source separation cannot be guaranteed, Scenario Runner must remain preview-only.
+
+
 ## 2. Completion rule
 
 A stage closes only when every approved ledger row in its scope is:

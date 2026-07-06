@@ -356,3 +356,16 @@ Tournament/How to Play, Account and Admin now follow the Stage 13G destination-r
 
 Match Centre group-match projections, when built, must be labelled as projections and must not alter the saved Original Bracket or blend predicted and live bracket contexts. Player View, Head-to-head and Points Breakdown must preserve Original/KO separation and reuse the existing comparison and points engines.
 
+
+
+## 15. Locked visual contracts and dynamic behaviour — CONFIRMED
+
+`CONTRACTS-REF-LOCKED-SURFACES-3` records the current v9 approved reference library. The installed visual contracts cover Groups, Leagues, Original Bracket, KO Predictor, Home, Match Centre, Player View, Points Breakdown, Account, Tournament Overview, How to Play / Rules Hub, Admin Control Room, Results, Leaderboards, Offline Player Claim, Bracket Health, Team Profile Sheet and Shared States.
+
+Every page must feel like the same Euro 2028 Predictor product. Content may change by destination, but chrome, hierarchy, card language, type scale, Night Broadcast tone, semantic token usage and interaction affordances must stay coherent.
+
+A page matching the visual reference is not enough if it briefly shows the wrong CTA, lock state, account state, guest warning, competition state or navigation action before settling. Dynamic pages must either render the correct state immediately or show a neutral shimmer/skeleton/settling state until canonical state is known.
+
+Every contextual route, sheet, modal or detail surface opened from a known origin must provide a clear way back to that origin. This applies to click-through journeys, not ordinary bottom-nav movement.
+
+The reference library must keep one approved visual contract per surface. If a later candidate supersedes an existing surface, it replaces the existing reference file at that surface's existing filename. New filenames are allowed only for genuinely new surfaces.

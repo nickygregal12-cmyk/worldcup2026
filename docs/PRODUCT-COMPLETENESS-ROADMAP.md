@@ -82,3 +82,24 @@ notification emails, and social features beyond the existing roadmap — all
 real ideas, none load-bearing for launch, all cuttable under the
 function-before-polish rule. Listed so future sessions do not re-raise them
 as overlooked.
+
+
+## D. v9 streamlined remaining product batches
+
+The v9 recording stage replaces the long fragmented remaining-jobs list with grouped batches. Use this order unless Nicky explicitly re-sequences it:
+
+```text
+0. CONTRACTS-REF-LOCKED-SURFACES-3
+1. STAGE-RULES-SCORING-LOCK-1
+2. STAGE-ENTRY-AND-REVIEW-JOURNEY-1
+3. STAGE-MORE-ACCOUNT-TRUST-1
+4. STAGE-TOURNAMENT-STORY-SURFACES-1
+5. STAGE-LEAGUE-MANAGEMENT-1
+6. STAGE-CONTEXTUAL-SURFACES-1
+7. STAGE-CANDIDATE-TEAM-POOL-1
+8. STAGE-ADMIN-SCENARIO-RUNNER-1
+9. STAGE-LEGACY-REFERENCE-CLEANUP-1
+10. STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1
+```
+
+Batch 1 must lock scoring, tiebreaks, group-goals auto-calculation, KO scoring examples and non-standard match-state scoring rules. Batch 2 must handle Home/Review/Welcome/Join together, including unresolved tie prompts, bracket invalidation, joker confirmation and the locked prediction snapshot. Batch 7 and Batch 8 remain separate because candidate-team assignment and simulated results are data/safety-critical. Batch 10 closes with load, no-flicker, scoring and full-tournament readiness acceptance.
