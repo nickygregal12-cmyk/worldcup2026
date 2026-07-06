@@ -111,7 +111,7 @@ for (const text of [
   'Open a member row for the detailed comparison',
   'Fixtures and results',
   'Official results',
-  'Live context · not your bracket',
+  'Follow official results without changing your saved predictions',
   'Original bracket progression',
   'Advancing teams',
   'Points story',
