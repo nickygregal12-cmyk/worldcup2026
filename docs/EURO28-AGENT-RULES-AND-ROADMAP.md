@@ -1358,3 +1358,14 @@ STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-1 marker record: public signup gate
 ### Stage STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1
 
 Future agents must preserve this implementation boundary: client-side pre-Auth display-name moderation is implemented for public signup, the existing availability RPC check remains before Auth sign-up, and public registration remains closed until the external Auth/config checks are confirmed. Do not treat this stage as an instruction to change Supabase Auth dashboard settings, open wider registration, add service-role credentials, add Supabase writes, alter scoring/resolvers, write fake results, create league writes or create Migration 019.
+
+
+## Stage STAGE-PUBLIC-SIGNUP-OPENING-GATE-1
+
+STAGE-PUBLIC-SIGNUP-OPENING-GATE-1 records the final pre-open checklist for public signup, visible “registration still closed / opening soon” state, explicit owner approval requirement before opening registration, confirmation that email confirmation is ON, confirmation redirect URLs are correct, confirmation capacity limits are acceptable, confirmation support/contact route is ready, confirmation display-name moderation is active, no Supabase Auth dashboard/config change in the patch and public registration remains closed.
+
+Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, browser writes, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 18 and Migration 019 is not created.
+
+A later opening stage may only proceed after explicit owner approval. This gate must not be treated as permission to open public registration.
+
+STAGE-PUBLIC-SIGNUP-OPENING-GATE-1 marker record: final pre-open checklist for public signup; visible “registration still closed / opening soon” state; explicit owner approval requirement before opening registration; confirmation that email confirmation is ON; confirmation redirect URLs are correct; confirmation capacity limits are acceptable; confirmation support/contact route is ready; confirmation display-name moderation is active; public registration remains closed; Migration 019 remains blocked.
