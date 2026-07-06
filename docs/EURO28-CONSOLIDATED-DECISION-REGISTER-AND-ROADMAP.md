@@ -1,8 +1,10 @@
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.12 — Core-page contract adoption scheduled
+### Version 4.13 — Groups Night Broadcast contract adoption slice
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
+
+**Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS** implements the first Groups slice under `STAGE-CORE-PAGE-ADOPTION-1`. The live Groups surface now adopts the approved Night Broadcast visual language natively, exposes guardrail chips for privacy/tables/jokers, and surfaces the shared predicted-tables and third-place components in the by-group flow while preserving the existing by-group/by-date switcher and sticky Tables path. This does not close the full STAGE-CORE-PAGE-ADOPTION-1 row: Original Bracket G and KO Predictor F remain pending. It makes no scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change; active migrations remain 18 and no Migration 019 is created.
 
 **Stage SCHEDULE-CORE-PAGE-CONTRACT-ADOPTION-1** is accepted as a docs-only sequencing fix. It inserts `STAGE-CORE-PAGE-ADOPTION-1` and `STAGE-CORE-PAGE-ADOPTION-2` into the v9+ order so the approved Groups, Original Bracket, KO Predictor, Results and Leaderboards visual contracts cannot silently remain unbuilt. It also hardens `STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1` so every approved visual contract in `docs/reference-prototypes/` must be implemented on its live surface or explicitly deferred with a recorded reason and owner before readiness can be accepted. The current countable inventory is 20 approved HTML contracts. This stage is docs-only and makes no `src/`, `supabase/`, test, audit, reference-prototype, scoring, resolver, Auth, service-role, fake-result-write or migration change; active migrations remain 18 and no Migration 019 is created.
 

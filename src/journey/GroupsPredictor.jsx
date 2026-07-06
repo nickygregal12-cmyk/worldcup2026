@@ -101,6 +101,41 @@ function GroupsTablesSheet({ model, open, selectedKey, onSelect, onClose }) {
   )
 }
 
+
+function GroupsContractTablePreview({ table, groupCode, onOpen }) {
+  if (!table) return null
+
+  return (
+    <aside className={polishStyles.contractTablePreview} aria-label={`Live predicted Group ${groupCode} table preview`}>
+      <header>
+        <div>
+          <span className="page-eyebrow">Live table</span>
+          <strong>Predicted Group {groupCode}</strong>
+        </div>
+        <button type="button" onClick={onOpen}>Open all tables</button>
+      </header>
+      <GroupTable table={table} />
+      <p>Top two qualify. The same shared table model feeds the third-place ranking and your Original Bracket.</p>
+    </aside>
+  )
+}
+
+function GroupsContractThirdPlacePreview({ ranking = [], onOpen }) {
+  return (
+    <aside className={polishStyles.contractThirdPreview} aria-label="Best third-place live preview">
+      <header>
+        <div>
+          <span className="page-eyebrow">Bracket feed</span>
+          <strong>Best third-place race</strong>
+        </div>
+        <button type="button" onClick={onOpen}>View ranking</button>
+      </header>
+      <GroupTable rows={ranking.slice(0, 4)} bestThird />
+      <p>The best four third-placed teams stay in your tournament path. This preview uses the same live ranking as the tables sheet.</p>
+    </aside>
+  )
+}
+
 export default function GroupsPredictor({
   reference,
   draft,
@@ -181,18 +216,23 @@ export default function GroupsPredictor({
 
   return (
     <div className="groups-predictor">
-      <section className={`${viewStyles.focusStrip} ${polishStyles.focusStrip}`} aria-label="Group prediction progress">
+      <section className={`${viewStyles.focusStrip} ${polishStyles.focusStrip} ${polishStyles.nightContract}`} data-contract="night-broadcast-groups" aria-label="Group prediction progress">
         <div className={polishStyles.focusIntro}>
           <div className={polishStyles.focusHeader}>
             <div className={polishStyles.focusCopy}>
               <span className="page-eyebrow">Group stage</span>
               <h2>{isDateView ? 'Predict by date' : 'Predict by group'}</h2>
-              <p>Pick every group score, place up to five jokers, then check the live predicted tables.</p>
+              <p>Pick every group score, place up to five jokers, then watch the live tables shape your Original Bracket.</p>
             </div>
             <button className={polishStyles.focusTableButton} type="button" onClick={() => setTablesOpen(true)}>
               <span aria-hidden="true">▦</span>
               Open predicted tables
             </button>
+          </div>
+          <div className={polishStyles.contractMeta} aria-label="Groups contract guardrails">
+            <span>Private until lock</span>
+            <span>Live tables</span>
+            <span>Five 2× jokers</span>
           </div>
         </div>
         <div className={viewStyles.focusMeters}>
@@ -252,14 +292,16 @@ export default function GroupsPredictor({
                 <section className="group-section" id={`group-${group.code}`} key={group.code} aria-labelledby={`group-${group.code}-title`}>
                   <header className="group-section__header"><div><span className="page-eyebrow">Original Predictor</span><h3 id={`group-${group.code}-title`}>Group {group.code}</h3></div><PredictionStateBadge state={progress.isComplete ? 'complete' : 'empty'} label={`${progress.complete}/${progress.total} complete`} /></header>
                   <div className="group-match-list">{matches.map(renderMatchCard)}</div>
+                  <GroupsContractTablePreview table={tablesModel.groups.find(item => item.code === group.code)?.table} groupCode={group.code} onOpen={() => openTable(group.code)} />
                 </section>
               )
             })}
           </div>
+          <GroupsContractThirdPlacePreview ranking={tablesModel.bestThird.ranking} onOpen={() => openTable(GROUPS_TABLE_KEY.THIRD_PLACE)} />
         </>
       ) : (
         <section className={viewStyles.dateView} aria-label="Group matches by date">
-          <div className={viewStyles.dateIntro}><span className="page-eyebrow">By date</span><h3>All group fixtures in matchday order</h3><p>Group tags keep context on every ticket. Use the Tables pill for a one-tap standings check from anywhere in the date list.</p></div>
+          <div className={viewStyles.dateIntro}><span className="page-eyebrow">By date</span><h3>All group fixtures in matchday order</h3><p>Group tags keep context on every ticket. Use the sticky Tables pill for a one-tap standings check from anywhere in the date list.</p></div>
           {dateSections.map(section => <section className={viewStyles.dateSection} key={section.key}><header><strong>{section.label}</strong><span>{formatMatchDate(section.date)}</span></header><div className="group-match-list">{section.matches.map(renderMatchCard)}</div></section>)}
           <button className={viewStyles.tablesPill} type="button" onClick={() => setTablesOpen(true)}>▦ Tables</button>
         </section>

@@ -1,8 +1,12 @@
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.36 — Core-page contract adoption scheduled
+### Version 4.37 — Groups Night Broadcast contract adoption slice
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
+
+### Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS
+
+Groups contract adoption slice is implemented as native React/CSS only. It may be used as the precedent for the remaining core-page adoption slices: preserve functional behaviour first, do not port prototype HTML, keep Original and KO Predictor boundaries intact, and stop if existing behaviour tests require product reinterpretation.
 
 ## 1. Non-negotiable working rules
 

@@ -1,12 +1,16 @@
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.56 — Groups Night Broadcast contract adoption slice
+
+Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS is accepted as the first implementation slice under `STAGE-CORE-PAGE-ADOPTION-1`. It rebuilds the live Groups surface toward the approved Night Broadcast contract using native React/CSS only, adds the contract guardrail chips, live predicted-table preview cards and best-third preview, and keeps the existing by-group/by-date switcher, sticky Tables fast path, joker controls, save/lock/grace behaviour and shared predicted-tables/third-place model. This does not close the full `STAGE-CORE-PAGE-ADOPTION-1` row because Original Bracket G and KO Predictor F remain pending slices. No scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change is introduced. Active migrations remain 18 and no Migration 019 is created.
+
 ### Version 1.55 — Core-page contract adoption scheduled
 
 Stage `SCHEDULE-CORE-PAGE-CONTRACT-ADOPTION-1` is accepted as a docs-only sequencing fix. It inserts `STAGE-CORE-PAGE-ADOPTION-1` and `STAGE-CORE-PAGE-ADOPTION-2` into the v9+ order, hardens the tournament-readiness gate against approved contracts silently remaining unbuilt, and supersedes the old pre-v9 scheduled adoption rows by reference. The current approved visual-contract inventory is 20 HTML files in `docs/reference-prototypes/`. This package makes no `src/`, `supabase/`, test, audit, reference-prototype, scoring, resolver, Auth, service-role, fake-result-write or migration change. Active migrations remain 18 and no Migration 019 is created.
 
 | Order | Stage | Status | Purpose |
 |---:|---|---:|---|
-| 5A | STAGE-CORE-PAGE-ADOPTION-1 | PLANNED | Groups, Original Bracket and KO Predictor rebuilt natively to approved contracts; Groups consumes shared predicted-tables and third-place components, with missing bracket coherence/predicted tables/shared third-place rows as prerequisites or scoped slices. |
+| 5A | STAGE-CORE-PAGE-ADOPTION-1 | PARTIAL | Groups Night Broadcast contract adoption slice is implemented; Original Bracket and KO Predictor remain planned. Groups consumes shared predicted-tables and third-place components, with missing bracket coherence/predicted tables/shared third-place rows as prerequisites or scoped slices. |
 | 5B | STAGE-CORE-PAGE-ADOPTION-2 | PLANNED | Results and Leaderboards rebuilt to approved contracts; Results includes behaviour-tested live knockout projection and Match Centre navigation from every result card; Leaderboards is cosmetic-only. |
 | 11 | STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1 | PLANNED | Readiness cannot be accepted until all 20 approved visual contracts are implemented on live surfaces or explicitly deferred with a recorded reason and owner. |
 
