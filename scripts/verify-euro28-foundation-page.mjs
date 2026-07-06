@@ -110,7 +110,7 @@ for (const text of [
   'One member list, two separate competitions',
   'Open a member row for the detailed comparison',
   'Fixtures and results',
-  'Official result records',
+  'Official results',
   'Live context · not your bracket',
   'Original bracket progression',
   'Advancing teams',
