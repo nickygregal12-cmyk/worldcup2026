@@ -236,3 +236,6 @@ Locked contract now recorded in `docs/STAGE-ENTRY-AND-REVIEW-JOURNEY-1.md` and `
 Implementation must cover Home clarity, Review Picks, Welcome, Invite/Join, no wrong-state flicker, progress-aware CTA model, auto-calculated group-goals display, unresolved in-group tiebreaker prompt, best-third prompt, bracket invalidation, joker confirmation and locked prediction snapshot.
 
 Migration 019 remains unapproved unless a real schema/read-contract gap is proved and approved.
+
+STAGE-MORE-ACCOUNT-TRUST-1 marker record: Support route/content; admin-only link visibility; Public signup remains closed until implementation gates are complete; Migration 019 remains blocked.
+

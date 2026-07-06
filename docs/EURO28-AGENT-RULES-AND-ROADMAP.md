@@ -1298,3 +1298,6 @@ Recorded after `STAGE-RULES-SCORING-LOCK-1` as the governing contract for Home c
 Scope is docs/audit-only. It does not change runtime UI, routes, scoring, resolver, Supabase, Auth, result-entry or migrations. Active migrations remain 18 and Migration 019 is not created.
 
 Agent rule: do not implement Home, Review Picks, Welcome or Invite/Join from memory. Use `docs/ENTRY-AND-REVIEW-JOURNEY-CONTRACT.md` as the target. Review Picks is not complete by row counts alone; blockers include resolver prompts, stale bracket state, joker-on-incomplete-score and save/import state. Preserve no wrong-state flicker and keep Original/KO separate.
+
+STAGE-MORE-ACCOUNT-TRUST-1 marker record: Support route/content; admin-only link visibility; Public signup remains closed until implementation gates are complete; Migration 019 remains blocked.
+
