@@ -31,13 +31,14 @@ The v9 package is now recorded in live docs. Future work must follow the grouped
 1. STAGE-RULES-SCORING-LOCK-1
 2. STAGE-ENTRY-AND-REVIEW-JOURNEY-1
 3. STAGE-MORE-ACCOUNT-TRUST-1
-4. STAGE-TOURNAMENT-STORY-SURFACES-1
-5. STAGE-LEAGUE-MANAGEMENT-1
-6. STAGE-CONTEXTUAL-SURFACES-1
-7. STAGE-CANDIDATE-TEAM-POOL-1
-8. STAGE-ADMIN-SCENARIO-RUNNER-1
-9. STAGE-LEGACY-REFERENCE-CLEANUP-1
-10. STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1
+4. STAGE-LEAGUE-SETUP-AND-INVITES-1
+5. STAGE-TOURNAMENT-STORY-SURFACES-1
+6. STAGE-LEAGUE-MANAGEMENT-1
+7. STAGE-CONTEXTUAL-SURFACES-1
+8. STAGE-CANDIDATE-TEAM-POOL-1
+9. STAGE-ADMIN-SCENARIO-RUNNER-1
+10. STAGE-LEGACY-REFERENCE-CLEANUP-1
+11. STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1
 ```
 
 Do not split work into tiny stages where the same files, routes or journeys are repeatedly edited.
@@ -1300,4 +1301,16 @@ Scope is docs/audit-only. It does not change runtime UI, routes, scoring, resolv
 Agent rule: do not implement Home, Review Picks, Welcome or Invite/Join from memory. Use `docs/ENTRY-AND-REVIEW-JOURNEY-CONTRACT.md` as the target. Review Picks is not complete by row counts alone; blockers include resolver prompts, stale bracket state, joker-on-incomplete-score and save/import state. Preserve no wrong-state flicker and keep Original/KO separate.
 
 STAGE-MORE-ACCOUNT-TRUST-1 marker record: Support route/content; admin-only link visibility; Public signup remains closed until implementation gates are complete; Migration 019 remains blocked.
+
+### STAGE-LEAGUE-SETUP-AND-INVITES-1 — League Setup and Invites contract
+
+Recorded after `STAGE-MORE-ACCOUNT-TRUST-1` as the governing contract for the create league flow, join league flow, invite-code states, invalid/expired/full league states, league privacy explanation, empty league states, member list clarity, post-signup/post-login league continuation and league share/invite copy.
+
+Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, league membership writes, scoring, resolver, result-entry or migrations. Active migrations remain 18 and Migration 019 is not created.
+
+Public signup remains closed until implementation gates are complete. Join codes do not bypass signup/auth gates, joining a league after lock should not remove valid pre-deadline prediction points, and league membership does not combine Original and KO points.
+
+Implementation must use `docs/LEAGUE-SETUP-AND-INVITES-CONTRACT.md` as the target, preserve Original Predictor and KO Predictor standings as separate competitions, and cover all invite-code states before claiming the flow complete.
+
+STAGE-LEAGUE-SETUP-AND-INVITES-1 marker record: create league flow; join league flow; invite-code states; invalid/expired/full league states; league privacy explanation; post-signup/post-login league continuation; league share/invite copy; Public signup remains closed until implementation gates are complete; Migration 019 remains blocked.
 
