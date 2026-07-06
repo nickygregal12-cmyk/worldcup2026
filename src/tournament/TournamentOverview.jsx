@@ -220,7 +220,7 @@ function PolicyCard({ policy }) {
           <span className="page-eyebrow">Player trust</span>
           <h2>{policy.title}</h2>
         </div>
-        <Badge tone={policy.badge === 'Audited' ? 'safe' : policy.badge === 'Owner decision' ? 'warning' : 'info'}>{policy.badge}</Badge>
+        <Badge tone={policy.badge === 'Official results' ? 'safe' : policy.badge === 'Support' ? 'warning' : 'info'}>{policy.badge}</Badge>
       </div>
       <p>{policy.detail}</p>
       <ul className="content-list">

@@ -234,3 +234,15 @@ Pre-SMTP capacity remains 50 users / 20 leagues. Post-SMTP target remains 100 us
 This stage is docs/audit-only. It does not configure SMTP, does not edit external Auth settings, does not open signups, does not create users, does not write profile rows, does not seed predictions, does not write league data and does not publish service-role credentials. No runtime route, Auth configuration, Supabase schema, RPC, RLS, service-role, browser write, scoring, resolver, result-entry, fake-result write, league-write or migration change is included. Active migrations remain 18. Migration 019 is not created. WC26 production remains blocked. Original Predictor and KO Predictor remain separate.
 
 SMTP readiness marker: custom SMTP is the next public-signup blocker; pre-SMTP capacity remains 50 users / 20 leagues; post-SMTP target remains 100 users / 20 leagues; post-SMTP review point remains 75 users / 15 leagues; public registration remains closed; Migration 019 remains blocked.
+
+## FINAL-DESIGN-CONTENT-SWEEP-1 — final design/content sweep
+
+- FINAL-DESIGN-CONTENT-SWEEP-1
+- Design/content sweep marker: player-facing copy must read like finished product copy
+- Signup opening and SMTP remain parked for future launch readiness
+- Rules Hub, Tournament overview, account messaging, Match Centre and Team Profile copy are polished before seeded-team testing.
+- Admin Control Room may keep operational wording because it is a protected admin surface.
+- Active migrations remain 18.
+- Migration 019 is not created.
+- WC26 production remains blocked.
+

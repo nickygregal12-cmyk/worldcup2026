@@ -144,7 +144,7 @@ export function buildTeamProfileLifecycle({ lifecycle, predictions } = {}) {
     return Object.freeze({
       state: 'original_aggregates_private_until_lock',
       label: 'Original Predictor privacy',
-      copy: 'Community prediction percentages unlock after the global Original Predictor lock. The Team Profile uses Original Predictor bracket aggregates only; KO Predictor data is not included and no Original/KO points are combined.',
+      copy: 'Community prediction percentages unlock after the Original Predictor closes. Team profiles use Original Predictor bracket picks only; KO Predictor data stays separate.',
     })
   }
 
@@ -158,7 +158,7 @@ export function buildTeamProfileLifecycle({ lifecycle, predictions } = {}) {
 
   return Object.freeze({
     state: 'original_aggregates_server_protected',
-    label: 'Server privacy gate',
+    label: 'Prediction privacy',
     copy: 'Community prediction percentages remain hidden until the authorised read model releases them. This view only uses Original Predictor team picks, so KO Predictor points stay out of it.',
   })
 }

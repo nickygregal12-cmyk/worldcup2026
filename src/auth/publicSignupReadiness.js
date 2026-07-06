@@ -1,33 +1,33 @@
 const PUBLIC_SIGNUP_GATE_ITEMS = Object.freeze([
   Object.freeze({
     label: 'Support contact',
-    status: 'Decision recorded',
-    detail: 'Help, scoring questions and deletion requests will use a simple Contact admin line. A personal address should not be published unless approved later.',
+    status: 'Ready for later',
+    detail: 'Help, scoring questions and deletion requests will use a simple contact line before accounts are opened more widely.',
   }),
   Object.freeze({
     label: 'Capacity and tiers',
-    status: 'Decision recorded',
-    detail: 'Before a branded email sender is added, keep the first public phase to 50 users and 20 leagues. The next target is 100 users after email delivery is reviewed.',
+    status: 'Ready for later',
+    detail: 'The first public phase is planned as a small opening: 50 users and 20 leagues, with a later target of 100 users after email delivery is reviewed.',
   }),
   Object.freeze({
     label: 'Email confirmation',
-    status: 'Decision recorded',
+    status: 'Ready for later',
     detail: 'Email confirmation will be required for public registration.',
   }),
   Object.freeze({
-    label: 'Privacy region',
-    status: 'Decision recorded',
-    detail: 'The privacy note should explain the predictor data stored and avoid naming a data region until that region is confirmed.',
+    label: 'Privacy wording',
+    status: 'Ready for later',
+    detail: 'The privacy note will explain what predictor data is stored, without making promises that have not been confirmed yet.',
   }),
   Object.freeze({
     label: 'Name moderation',
-    status: 'Implementation recorded',
-    detail: 'Name checks for racist, discriminatory, anti-immigrant, sectarian, abusive and inflammatory wording are enforced before an account is created; public opening still waits for external account and safety checks.',
+    status: 'Ready for later',
+    detail: 'Names are checked before an account is created, so racist, discriminatory, sectarian, abusive or inflammatory wording is blocked early.',
   }),
   Object.freeze({
     label: 'Registration mode',
-    status: 'Decision recorded',
-    detail: 'Public registration does not need to stay invite-only once moderation and the remaining safety checks are finished.',
+    status: 'Ready for later',
+    detail: 'Accounts can open more widely later, once the remaining launch checks are complete.',
   }),
 ])
 
@@ -89,10 +89,10 @@ export const PUBLIC_SIGNUP_IMPLEMENTATION = Object.freeze({
 
 export const PUBLIC_SIGNUP_READINESS = Object.freeze({
   eyebrow: 'Before public signups',
-  title: 'Public registration still has safety checks',
-  badge: 'Not open yet',
+  title: 'Accounts are closed for now',
+  badge: 'Closed for now',
   isOpenForPublic: false,
-  detail: 'The required choices are recorded, but wider registration must wait until the moderation and operational checks are finished.',
+  detail: 'The app is staying closed while the tournament is still a long way off. The account flow is ready to review again closer to launch.',
   ownerDecisions: PUBLIC_SIGNUP_OWNER_DECISIONS,
   implementation: PUBLIC_SIGNUP_IMPLEMENTATION,
   items: PUBLIC_SIGNUP_GATE_ITEMS,

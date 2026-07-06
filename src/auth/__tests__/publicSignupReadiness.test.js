@@ -11,8 +11,8 @@ describe('public signup readiness', () => {
     const readiness = buildPublicSignupReadiness()
 
     expect(readiness.isOpenForPublic).toBe(false)
-    expect(readiness.badge).toBe('Not open yet')
-    expect(readiness.title).toBe('Public registration still has safety checks')
+    expect(readiness.badge).toBe('Closed for now')
+    expect(readiness.title).toBe('Accounts are closed for now')
   })
 
   it('lists the signup readiness gates with the recorded owner decisions', () => {
@@ -23,16 +23,16 @@ describe('public signup readiness', () => {
       'Support contact',
       'Capacity and tiers',
       'Email confirmation',
-      'Privacy region',
+      'Privacy wording',
       'Name moderation',
       'Registration mode',
     ])
 
-    expect(readiness.items.find(item => item.label === 'Support contact')?.detail).toContain('Contact admin')
+    expect(readiness.items.find(item => item.label === 'Support contact')?.detail).toContain('contact line')
     expect(readiness.items.find(item => item.label === 'Capacity and tiers')?.detail).toContain('50 users and 20 leagues')
     expect(readiness.items.find(item => item.label === 'Email confirmation')?.detail).toContain('will be required')
     expect(readiness.items.find(item => item.label === 'Name moderation')?.detail).toContain('sectarian')
-    expect(readiness.items.find(item => item.label === 'Registration mode')?.detail).toContain('does not need to stay invite-only')
+    expect(readiness.items.find(item => item.label === 'Registration mode')?.detail).toContain('open more widely later')
   })
 
   it('records the owner decisions without opening signups', () => {

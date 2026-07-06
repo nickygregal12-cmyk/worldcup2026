@@ -118,7 +118,7 @@ export function buildMatchCentreLifecycle({ fixture, competitionKey, lifecycle }
     return Object.freeze({
       tone: 'info',
       title: 'Fixture is scheduled',
-      body: 'Match Centre is ready, but prediction visibility still follows the tournament timing and privacy gates.',
+      body: 'Match Centre is ready, but prediction visibility still follows the tournament timing and privacy rules.',
     })
   }
   return Object.freeze({

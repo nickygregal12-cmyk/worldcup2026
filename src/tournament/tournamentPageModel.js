@@ -77,8 +77,8 @@ export function buildHowToPlayPageModel(foundation, scoring = EURO_SCORING_CONFI
     ]),
     trustCards: Object.freeze([
       Object.freeze({ label: 'Separate competitions', title: 'Original and KO points never combine', detail: 'Original Predictor standings stay separate from KO Predictor standings, points and winners.' }),
-      Object.freeze({ label: 'Audited corrections', title: 'Result fixes are recalculated cleanly', detail: 'Official result corrections are admin-controlled, audited and replacement-based so totals can be rebuilt without double-counting.' }),
-      Object.freeze({ label: 'Privacy basics', title: 'Only predictor data is stored', detail: 'The app stores account identity, display name, predictions, leagues and operational audit evidence needed to run the game.' }),
+      Object.freeze({ label: 'Result corrections', title: 'Result fixes are recalculated cleanly', detail: 'If an official result changes, the affected tables are rebuilt from the corrected result so points are not counted twice.' }),
+      Object.freeze({ label: 'Privacy basics', title: 'Only predictor data is stored', detail: 'The app stores the account, display name, predictions and league details needed to run the game.' }),
     ]),
     signupGateStatus: buildPublicSignupReadiness(),
     competitions: Object.freeze([
@@ -129,18 +129,18 @@ export function buildHowToPlayPageModel(foundation, scoring = EURO_SCORING_CONFI
     policies: Object.freeze([
       Object.freeze({
         title: 'Corrections policy',
-        badge: 'Audited',
-        detail: 'If an official result is corrected, the admin control room records the correction reason and recalculates the affected standings from the corrected official result.',
+        badge: 'Official results',
+        detail: 'If an official result is corrected, the affected standings are recalculated from the updated official result.',
         bullets: Object.freeze([
           'Original Predictor and KO Predictor totals are recalculated separately.',
-          'Correction history remains visible to admins for evidence.',
-          'External result APIs remain deferred, so official values are controlled through the admin flow.',
+          'Correction history is kept so any scoring change can be checked.',
+          'Official values are entered through the organiser tools until live result feeds are added.',
         ]),
       }),
       Object.freeze({
         title: 'Name policy',
-        badge: 'Signup gate',
-        detail: 'Display names and league names are for a mixed audience. Inappropriate names may be changed by the organiser, and blocked-word checks are a required signup gate before wide registration.',
+        badge: 'Account names',
+        detail: 'Display names and league names are for a mixed audience. Inappropriate names may be blocked or changed by the organiser.',
         bullets: Object.freeze([
           'Use a name other players will recognise.',
           'Do not use abusive, misleading or impersonation-style names.',
@@ -149,18 +149,18 @@ export function buildHowToPlayPageModel(foundation, scoring = EURO_SCORING_CONFI
       }),
       Object.freeze({
         title: 'Privacy and deletion',
-        badge: 'Signup gate',
-        detail: 'The app stores the minimum data needed to run accounts, predictions, leagues and scoring evidence. A public deletion route and confirmed data-hosting region must be recorded before wide signups.',
+        badge: 'Account privacy',
+        detail: 'The app stores the minimum data needed to run accounts, predictions, leagues and scoring.',
         bullets: Object.freeze([
-          'Stored data includes email, display name, saved predictions, league membership and admin audit evidence.',
+          'Stored data includes email, display name, saved predictions and league membership.',
           'Guest predictions stay on this device until you choose to save them to an account.',
-          'Deletion requests will use the support contact recorded before public registration opens.',
+          'Deletion requests will use the support contact shown before accounts open more widely.',
         ]),
       }),
       Object.freeze({
         title: 'Support contact',
-        badge: 'Owner decision',
-        detail: 'For the current closed/dev stage, use the organiser channel that invited you. A dedicated scalable support contact is required before RULES-1 closes for wider signups.',
+        badge: 'Support',
+        detail: 'For now, use the organiser channel that invited you. A dedicated support contact will be shown before accounts open more widely.',
         bullets: Object.freeze([
           'Expected busy periods are lock day and matchday one.',
           'Support should cover account access, deletion requests and scoring questions.',
@@ -170,15 +170,15 @@ export function buildHowToPlayPageModel(foundation, scoring = EURO_SCORING_CONFI
     ]),
     tieBreaks: Object.freeze({
       title: 'Tie-break ladder',
-      status: 'Tournament gate',
-      detail: 'The final tie-break ladder is recorded as a tournament gate and must be published before the first ball is kicked. Until then, leaderboard order is treated as provisional when players are tied on points.',
+      status: 'Before kick-off',
+      detail: 'The final tie-break ladder will be published before the first ball is kicked. Until then, tied players may share the same rank or appear in a temporary order.',
       steps: Object.freeze(['Points remain the primary ranking value.', 'Final tie-break wording is published before tournament scoring matters.', 'Final standings must match the published ladder.']),
     }),
     faqs: Object.freeze([
       Object.freeze({ question: 'Do Original and KO Predictor points combine?', answer: 'No. They are separate competitions with separate points, standings and winners.' }),
       Object.freeze({ question: 'Can I put jokers on my Original Bracket?', answer: `No. The Original Bracket is winner-only and has ${scoring.joker.ORIGINAL_BRACKET_CAP} jokers.` }),
       Object.freeze({ question: 'When can I see other people’s predictions?', answer: 'Original Predictor comparisons unlock after the global tournament lock. KO Predictor comparisons unlock fixture by fixture.' }),
-      Object.freeze({ question: 'What happens if a score is entered wrong?', answer: 'Admins correct the official result with an audit note, then standings are recalculated from the corrected source.' }),
+      Object.freeze({ question: 'What happens if a score is entered wrong?', answer: 'The organiser corrects the official result, then standings are recalculated from the corrected score.' }),
     ]),
     scoringStatus: scoring.status,
   })

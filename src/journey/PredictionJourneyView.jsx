@@ -68,7 +68,7 @@ export default function PredictionJourneyView({
               <div><span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved on this device' : 'Guest workspace'}</span><strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong></div>
             </div>
             <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor timing">
-              <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Using the current provisional Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
+              <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Using the current Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
               <article className={lifecycleStyles.card}><span>Groups</span><strong>{surfaceLifecycle.groupsLabel}</strong><small>Scores and five group-stage jokers only</small></article>
               <article className={lifecycleStyles.card}><span>Original bracket</span><strong>{surfaceLifecycle.bracketLabel}</strong><small>Winner-only picks; no bracket jokers</small></article>
               <article className={lifecycleStyles.card}><span>Competition boundary</span><strong>{surfaceLifecycle.koBoundaryLabel}</strong><small>Original points never mix with KO Predictor points</small></article>
@@ -91,7 +91,7 @@ export default function PredictionJourneyView({
             <div><span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved on this device' : 'Guest workspace'}</span><strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong></div>
           </div>
           <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor timing">
-            <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Using the current provisional Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
+            <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Using the current Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
             <article className={lifecycleStyles.card}><span>Groups</span><strong>{surfaceLifecycle.groupsLabel}</strong><small>Scores and five group-stage jokers only</small></article>
             <article className={lifecycleStyles.card}><span>Original bracket</span><strong>{surfaceLifecycle.bracketLabel}</strong><small>Winner-only picks; no bracket jokers</small></article>
             <article className={lifecycleStyles.card}><span>Competition boundary</span><strong>{surfaceLifecycle.koBoundaryLabel}</strong><small>Original points never mix with KO Predictor points</small></article>

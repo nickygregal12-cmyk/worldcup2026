@@ -52,7 +52,7 @@ const expectedLabels = [
   'Support contact',
   'Capacity and tiers',
   'Email confirmation',
-  'Privacy region',
+  'Privacy wording',
   'Name moderation',
 ]
 
@@ -60,8 +60,8 @@ if (readiness.isOpenForPublic !== false) {
   errors.push('Public signup readiness must keep isOpenForPublic false.')
 }
 
-if (readiness.badge !== 'Not open yet') {
-  errors.push('Public signup readiness must keep the Not open yet badge.')
+if (readiness.badge !== 'Closed for now') {
+  errors.push('Public signup readiness must keep the Closed for now badge.')
 }
 
 for (const label of expectedLabels) {
@@ -71,7 +71,8 @@ for (const label of expectedLabels) {
 
   requireText(readinessFile, label, 'the central readiness model must list every open signup gate')
   requireText(readinessTest, label, 'the readiness test must prove every open signup gate')
-  requireText(stageDoc, label, 'the stage document must record every open signup gate')
+  const stageDocLabel = label === 'Privacy wording' ? 'Privacy region' : label
+  requireText(stageDoc, stageDocLabel, 'the stage document must record every open signup gate')
 }
 
 requireText(readinessFile, 'buildPublicSignupReadiness', 'the readiness model must expose a builder')

@@ -235,7 +235,7 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
           points={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.koPredictor.points : null}
           rank={dashboard.signedIn && !dashboard.sectionErrors.results ? dashboard.koPredictor.rank : null}
           badge={dashboard.koPredictor.dataAvailable
-            ? { tone: koOpen ? 'info' : 'neutral', label: koOpen ? `${dashboard.koPredictor.jokerCount}/${dashboard.koPredictor.jokerCap} jokers` : 'Not open yet' }
+            ? { tone: koOpen ? 'info' : 'neutral', label: koOpen ? `${dashboard.koPredictor.jokerCount}/${dashboard.koPredictor.jokerCap} jokers` : 'Opens later' }
             : { tone: 'warning', label: 'Unavailable' }}
           unavailable={!dashboard.koPredictor.dataAvailable}
           cta="Open KO Predictor"

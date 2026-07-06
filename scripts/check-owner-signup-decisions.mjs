@@ -52,8 +52,8 @@ const decisions = readiness.ownerDecisions
 if (readiness.isOpenForPublic !== false) {
   errors.push('Owner decisions must not open wider public registration.')
 }
-if (readiness.badge !== 'Not open yet') {
-  errors.push('Public signup readiness must keep the Not open yet badge.')
+if (readiness.badge !== 'Closed for now') {
+  errors.push('Public signup readiness must keep the Closed for now badge.')
 }
 if (decisions?.supportContact?.decision !== 'Contact admin') {
   errors.push('Support contact decision must be Contact admin.')

@@ -82,7 +82,7 @@ describe('TeamProfileSheet', () => {
     expect(html).toContain('Your prediction')
     expect(html).toContain('Community percentages are private')
     expect(html).toContain('Original Predictor privacy')
-    expect(html).toContain('KO Predictor data is not included')
+    expect(html).toContain('KO Predictor data stays separate')
     expect(html).not.toContain('25%')
   })
 

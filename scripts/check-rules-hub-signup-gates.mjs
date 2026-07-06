@@ -39,7 +39,7 @@ const gateItems = [
   'Support contact',
   'Capacity and tiers',
   'Email confirmation',
-  'Privacy region',
+  'privacy',
   'Name moderation',
 ]
 for (const item of gateItems) {
