@@ -1,5 +1,6 @@
 export const APP_ROUTE = Object.freeze({
   HOME: 'home',
+  WELCOME: 'welcome',
   PREDICT: 'predict',
   BRACKET: 'bracket',
   KO_PREDICTOR: 'ko-predictor',
@@ -68,6 +69,7 @@ const ROUTE_BY_PATH = new Map([
   ['', APP_ROUTE.HOME],
   ['/', APP_ROUTE.HOME],
   ['/home', APP_ROUTE.HOME],
+  ['/welcome', APP_ROUTE.WELCOME],
   ['/groups', APP_ROUTE.PREDICT],
   ['/predict', APP_ROUTE.PREDICT],
   ['/predictions', APP_ROUTE.PREDICT],

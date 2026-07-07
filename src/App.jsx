@@ -12,6 +12,7 @@ import { ADMIN_VISIBILITY_STATUS } from './admin/adminVisibilityModel.js'
 import { useAdminVisibility } from './admin/useAdminVisibility.js'
 import Leagues from './leagues/Leagues.jsx'
 import HomeDashboard from './home/HomeDashboard.jsx'
+import Welcome from './welcome/Welcome.jsx'
 import TournamentOverview, { HowToPlayOverview } from './tournament/TournamentOverview.jsx'
 import EuroAppShell from './app/EuroAppShell.jsx'
 import { APP_ROUTE, isKnownAppHash, leaderboardCompetitionFromHash, matchCentreParamsFromHash, playerViewParamsFromHash } from './app/appRoutes.js'
@@ -145,6 +146,8 @@ export default function App() {
     content = <UnknownDestination requestedHash={hashLocation.hash} />
   } else if (route === APP_ROUTE.HOME) {
     content = <HomeDashboard client={activeClient} foundation={appData} sessionState={activeSession} />
+  } else if (route === APP_ROUTE.WELCOME) {
+    content = <Welcome theme={theme} />
   } else if (route === APP_ROUTE.PREDICT) {
     content = (
       <div className="content-stack groups-page groups-page--focused">
@@ -246,6 +249,17 @@ export default function App() {
   }
 
   const teamProfileReference = appData.guestReference
+
+  // Welcome is a focused, single-path screen with no persistent navigation, per its
+  // approved contract — it renders its own minimal header instead of the full app shell.
+  if (route === APP_ROUTE.WELCOME) {
+    return (
+      <TeamProfileProvider client={activeClient} reference={teamProfileReference} lifecycle={lifecycle}>
+        <StagingTimeBanner state={timeState} />
+        {content}
+      </TeamProfileProvider>
+    )
+  }
 
   return (
     <TeamProfileProvider client={activeClient} reference={teamProfileReference} lifecycle={lifecycle}>

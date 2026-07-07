@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Welcome — Euro 2028 Predictor (prototype)</title>
+<!-- DRAFT VISUAL CONTRACT CANDIDATE — Welcome page. Not yet approved; pending review. Preserved
+     decisions under review: warm one-time headline, no generic filler; exactly three plain-language
+     basics (predict, score, compare) with no scoring depth or lock-time detail; one unmistakable
+     primary CTA to the Groups predictor entry point; one clearly secondary, lower-weight link to How
+     to Play; no feature tour, settings, admin content, leagues explainer or scoring breakdown; no
+     persistent bottom navigation on this screen — a single focused path, not a browsable destination.
+     Preview chrome only; not production code to port. See docs/STAGE-WELCOME-PAGE-CONTRACT.md. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#173A66; --brand-strong:#0E2A4F; --accent:#0EA5E9; --on-accent:#FFFFFF;
+  --surface-page:#F6F8FB; --surface-raised:#FFFFFF; --surface-sunken:#EAEEF4;
+  --text-primary:#0F1726; --text-secondary:#3E4A5E; --text-muted:#69758A;
+  --border:#D9E0EA;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --shadow-1:0 1px 2px rgba(15,23,38,.06);
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --brand:#1C4275; --brand-strong:#173A66; --accent:#38BDF8; --on-accent:#0A0F1C;
+  --surface-page:#0A0F1C; --surface-raised:#131B2C; --surface-sunken:#070B14;
+  --text-primary:#EEF2F8; --text-secondary:#B4C0D2; --text-muted:#7B8799;
+  --border:#22304A;
+  --shadow-1:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--surface-page);color:var(--text-primary);font-family:var(--font-body);font-size:16px;line-height:1.5}
+h1,h2{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer;color:inherit;background:none;border:none;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+svg{display:block}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.app{max-width:560px;margin:0 auto;padding:12px 12px 40px;min-height:100vh;display:flex;flex-direction:column}
+.hdr{background:var(--brand);color:#EEF2F8;border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;min-height:56px;flex:none}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:18px}
+.icon-btn{width:44px;height:44px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(255,255,255,.14)}
+
+/* ===== welcome — the entire page is this one card; nothing competes with it ===== */
+.welcome{flex:1;display:flex;flex-direction:column;justify-content:center;margin-top:14px}
+.welcome-card{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px 22px 26px;box-shadow:var(--shadow-1);text-align:center}
+.eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.welcome-card h1{font-size:27px;line-height:1.2;margin:10px auto 8px;max-width:19ch}
+.welcome-card .lede{font-size:14.5px;color:var(--text-secondary);margin:0 auto;max-width:36ch}
+
+.steps{display:flex;gap:8px;margin:24px 0 26px;text-align:left}
+.step{flex:1;background:var(--surface-sunken);border-radius:var(--radius-md);padding:12px 10px}
+.step .n{width:26px;height:26px;margin:0 0 8px;border-radius:50%;background:var(--brand);color:#EEF2F8;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:13px}
+.step .t{font-size:13px;font-weight:600;display:block}
+.step .s{font-size:11.5px;color:var(--text-muted);display:block;margin-top:2px;line-height:1.35}
+
+/* primary action — unmistakable: full width, filled, largest touch target on the page */
+.btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;font-size:15.5px;font-weight:600;border-radius:var(--radius-md);padding:0 22px;min-height:52px;border:1px solid var(--accent);background:var(--accent);color:var(--on-accent)}
+
+/* secondary action — deliberately quiet: text link, no button chrome, muted colour, smaller type */
+.secondary-link{display:inline-flex;align-items:center;gap:5px;margin-top:18px;font-size:13px;font-weight:500;color:var(--text-muted);text-decoration:none;min-height:44px}
+.secondary-link svg{width:13px;height:13px;flex:none}
+.secondary-link:hover{color:var(--text-secondary)}
+
+.proto{margin-top:24px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:11.5px;color:var(--text-muted);flex:none}
+@media(min-width:640px){
+  .welcome-card{padding:40px 36px 32px}
+  .welcome-card h1{font-size:32px}
+}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs>
+<g id="i-chev-r"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+<g id="i-sun"><circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+<g id="i-moon"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+</defs></svg>
+
+<div class="app">
+  <header class="hdr">
+    <h1 class="wordmark">Euro 2028</h1>
+    <button class="icon-btn" id="themeBtn" aria-label="Switch to dark mode"><svg width="18" height="18"><use href="#i-moon" id="themeIcon"/></svg></button>
+  </header>
+
+  <!-- ===== the whole page: greet, orient in three lines, one obvious next step ===== -->
+  <main class="welcome">
+    <section class="welcome-card">
+      <span class="eyebrow">You're in</span>
+      <h1>Let's get your predictions started</h1>
+      <p class="lede">Three quick things before your first pick.</p>
+
+      <div class="steps">
+        <div class="step">
+          <span class="n">1</span>
+          <span class="t">Predict</span>
+          <span class="s">Call every group score, then pick your bracket winners.</span>
+        </div>
+        <div class="step">
+          <span class="n">2</span>
+          <span class="t">Score</span>
+          <span class="s">Earn points for every result you get right.</span>
+        </div>
+        <div class="step">
+          <span class="n">3</span>
+          <span class="t">Compare</span>
+          <span class="s">Track your rank against mates in private leagues.</span>
+        </div>
+      </div>
+
+      <button class="btn-primary" id="startBtn">Start your predictions</button>
+      <a class="secondary-link" href="#" id="rulesLink">Want the full rules first? Read How to Play<svg><use href="#i-chev-r"/></svg></a>
+    </section>
+  </main>
+
+  <div class="proto">Prototype — "Start your predictions" opens the Groups predictor entry point; "Read How to Play" opens the How to Play destination. No bottom navigation is shown here on purpose: this is a focused, single-path screen shown right after first sign-in, not a persistent browsable destination. See docs/STAGE-WELCOME-PAGE-CONTRACT.md for scope, exclusions and the open "shown once vs. reachable again" question.</div>
+</div>
+
+<script>
+document.getElementById('startBtn').addEventListener('click', () => {
+  alert('Prototype — routes to the Groups predictor entry point in the real app.');
+});
+document.getElementById('rulesLink').addEventListener('click', event => {
+  event.preventDefault();
+  alert('Prototype — routes to the How to Play destination in the real app.');
+});
+let dark=false;
+document.getElementById('themeBtn').addEventListener('click',function(){
+  dark=!dark;
+  if(dark) document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.removeAttribute('data-theme');
+  document.getElementById('themeIcon').setAttribute('href',dark?'#i-sun':'#i-moon');
+  this.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');
+});
+</script>
+</body>
+</html>

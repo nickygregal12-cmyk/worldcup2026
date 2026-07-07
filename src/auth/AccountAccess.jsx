@@ -14,6 +14,36 @@ import {
 import { validateEmail, validatePassword, validatePasswordConfirmation, validatePublicSignupDisplayName } from './authValidation.js'
 import { ACCOUNT_STATS_DEFAULT, buildAccountLifecycle } from './accountAccessModel.js'
 import { clearMyOriginalPredictions, loadAccountDashboard } from './accountAccessService.js'
+import { buildGuestAccountTransferSummary } from '../guest/guestAccountTransferModel.js'
+import { createGuestPredictionStorage } from '../guest/guestPredictionStorage.js'
+import { createGuestKoPredictionStorage } from '../guest/guestKoPredictionStorage.js'
+
+// Mirrors the same local-only check GuestAccountTransfer itself uses to decide whether it has
+// anything to show (hasOriginal/hasKo depend only on touched device rows, not account state).
+// Read-only reuse of existing guest-module exports — no guest file is modified.
+function hasLocalGuestData(reference) {
+  if (typeof window === 'undefined' || !reference) return false
+  try {
+    const originalStorage = createGuestPredictionStorage({ storage: window.localStorage, reference })
+    const koStorage = createGuestKoPredictionStorage({ storage: window.localStorage, reference })
+    const originalLoaded = originalStorage.load()
+    const koLoaded = koStorage.load()
+    const summary = buildGuestAccountTransferSummary({
+      reference,
+      originalState: originalLoaded.status === 'ready' ? originalLoaded.state : null,
+      koState: koLoaded.status === 'ready' ? koLoaded.state : null,
+      accountOriginal: null,
+      accountKo: null,
+    })
+    return summary.hasOriginal || summary.hasKo
+  } catch {
+    return false
+  }
+}
+
+function goToWelcome() {
+  if (typeof window !== 'undefined') window.location.hash = '#/welcome'
+}
 
 function initialMode() {
   if (typeof window === 'undefined') return 'login'
@@ -57,15 +87,17 @@ export default function AccountAccess({ client, reference, tournament = null, li
   }
 
   const refreshDashboard = useCallback(async () => {
-    if (!client || !reference?.tournamentId || !session?.user?.id) return
+    if (!client || !reference?.tournamentId || !session?.user?.id) return null
     setDashboard(previous => ({ ...previous, status: 'loading' }))
     try {
       const nextDashboard = await loadAccountDashboard(client, { tournamentId: reference.tournamentId, userId: session.user.id })
       setDashboard({ status: nextDashboard.errors.length ? 'partial' : 'ready', ...nextDashboard })
       if (nextDashboard.errors.length) setNotice({ tone: 'danger', message: `Account stats partially loaded: ${nextDashboard.errors.join(' ')}` })
+      return nextDashboard
     } catch (error) {
       setDashboard({ status: 'error', stats: ACCOUNT_STATS_DEFAULT, predictionBundle: null })
       setNotice({ tone: 'danger', message: messageForError(error) })
+      return null
     }
   }, [client, reference, session])
 
@@ -131,9 +163,15 @@ export default function AccountAccess({ client, reference, tournament = null, li
       if (!emailCheck.valid) throw new Error(emailCheck.error)
       if (!passwordCheck.valid) throw new Error(passwordCheck.error)
       if (!confirmationCheck.valid) throw new Error(confirmationCheck.error)
-      const result = await signUpWithEmail(client, { email, password, displayName, redirectTo: buildAuthRedirectUrl() })
+      const result = await signUpWithEmail(client, { email, password, displayName, redirectTo: `${buildAuthRedirectUrl()}#/welcome` })
       setPassword(''); setConfirmation('')
-      if (result.session) setGuestTransferRequested(true)
+      if (result.session) {
+        setGuestTransferRequested(true)
+        // A brand-new account with nothing saved on this device has no guest-transfer decision
+        // to make, so Welcome shows immediately. Otherwise the redirect waits for that flow to
+        // finish (finishGuestTransferFlow), so a real transfer opportunity is never skipped.
+        if (!hasLocalGuestData(reference)) goToWelcome()
+      }
       setNotice({ tone: 'safe', message: result.session ? 'Account created and signed in. Saved predictions on this device can be kept after sign-up.' : 'Account created. Check your email to confirm it before signing in.' })
     })
   }
@@ -171,10 +209,20 @@ export default function AccountAccess({ client, reference, tournament = null, li
     setNotice({ tone: 'safe', message: `Original Predictor cleared. Saved rows now: ${result.savedPredictionCount}.` })
   })
 
+  // Runs once the guest-transfer dialog is done, however it ended (transferred, started fresh,
+  // or dismissed). Welcome only shows if the account genuinely still has zero saved predictions —
+  // a player who kept their transferred picks does not need the "let's get started" screen.
+  const finishGuestTransferFlow = async () => {
+    setGuestTransferRequested(false)
+    const nextDashboard = await refreshDashboard()
+    const stillHasNoPredictions = (nextDashboard?.stats?.groupPredictionsSaved ?? 0) === 0
+    if (stillHasNoPredictions) goToWelcome()
+  }
+
   if (loadingSession) return <section className="foundation-panel auth-foundation" aria-busy="true"><span className="foundation-kicker">Euro account</span><h2>Checking your session…</h2></section>
 
   if (session?.user && !isRecovery) {
-    return <AccountDashboard client={client} reference={reference} session={session} profile={profile} profileName={profileName} setProfileName={setProfileName} emailAddress={emailAddress} busy={busy} notice={notice} dashboard={dashboard} accountLifecycle={accountLifecycle} signOutConfirmOpen={signOutConfirmOpen} setSignOutConfirmOpen={setSignOutConfirmOpen} clearConfirmOpen={clearConfirmOpen} setClearConfirmOpen={setClearConfirmOpen} guestTransferRequested={guestTransferRequested} setGuestTransferRequested={setGuestTransferRequested} refreshDashboard={refreshDashboard} submitProfile={submitProfile} confirmSignOut={confirmSignOut} confirmClearPredictions={confirmClearPredictions} requestPasswordChange={requestPasswordChange} />
+    return <AccountDashboard client={client} reference={reference} session={session} profile={profile} profileName={profileName} setProfileName={setProfileName} emailAddress={emailAddress} busy={busy} notice={notice} dashboard={dashboard} accountLifecycle={accountLifecycle} signOutConfirmOpen={signOutConfirmOpen} setSignOutConfirmOpen={setSignOutConfirmOpen} clearConfirmOpen={clearConfirmOpen} setClearConfirmOpen={setClearConfirmOpen} guestTransferRequested={guestTransferRequested} onGuestTransferComplete={finishGuestTransferFlow} submitProfile={submitProfile} confirmSignOut={confirmSignOut} confirmClearPredictions={confirmClearPredictions} requestPasswordChange={requestPasswordChange} />
   }
 
   return <AccountSignInForms mode={mode} setMode={setMode} notice={notice} busy={busy} email={email} setEmail={setEmail} password={password} setPassword={setPassword} confirmation={confirmation} setConfirmation={setConfirmation} displayName={displayName} setDisplayName={setDisplayName} submitLogin={submitLogin} submitRegistration={submitRegistration} submitResetRequest={submitResetRequest} submitNewPassword={submitNewPassword} isRecovery={isRecovery} />
