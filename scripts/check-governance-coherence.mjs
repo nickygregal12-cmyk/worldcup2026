@@ -74,9 +74,15 @@ for (const file of currentStateDocs) {
   }
 }
 
-const forbiddenNext = String(actualCount + 1).padStart(3, '0')
-if (migrationFiles.some(name => name.includes(forbiddenNext))) {
-  fail(`A migration numbered ${forbiddenNext} exists but governing docs still declare ${actualCount} active migrations.`)
+// Compare the trailing 4-digit sequence number only -- a raw filename substring check
+// false-positives on dates that happen to contain the target digits (e.g. "202607020014"
+// contains "020" from its date portion, with no connection to migration numbering).
+const forbiddenNext = actualCount + 1
+if (migrationFiles.some(name => {
+  const match = name.match(/^\d{8}(\d{4})_/)
+  return match && Number(match[1]) === forbiddenNext
+})) {
+  fail(`A migration numbered ${String(forbiddenNext).padStart(4, '0')} exists but governing docs still declare ${actualCount} active migrations.`)
 }
 
 // ── 2. Header version is the highest version in each governing doc ─────────

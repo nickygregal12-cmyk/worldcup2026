@@ -1,10 +1,10 @@
 ### Stage STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET
 
-Original Bracket G adoption slice is implemented as native React/CSS only. The live Original Bracket carries the approved Bracket G wall-chart contract, keeps stacked mobile below 900px, reinforces the converging wall chart at 900px and above, keeps Round of 16 columns on the outside edges and the final centred, and remains strictly winner-only. It adds no score inputs, method controls or bracket jokers. Original Predictor and KO Predictor remain separate, no scoring/resolver/Supabase/Auth/service-role/fake-result/league-write change is introduced, active migrations remain 18 and no Migration 019 is created.
+Original Bracket G adoption slice is implemented as native React/CSS only. The live Original Bracket carries the approved Bracket G wall-chart contract, keeps stacked mobile below 900px, reinforces the converging wall chart at 900px and above, keeps Round of 16 columns on the outside edges and the final centred, and remains strictly winner-only. It adds no score inputs, method controls or bracket jokers. Original Predictor and KO Predictor remain separate, no scoring/resolver/Supabase/Auth/service-role/fake-result/league-write change is introduced, active migrations remain 19 and Migration 019 is applied.
 
 ### Stage STAGE-PLAYER-FACING-COPY-SWEEP-2
 
-Accepted as a broad player-facing copy repair before continuing to `STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET`. It rewrites remaining internal/spec-style UI phrases found by manual review across Groups, Original Bracket, Results, Leaderboards, Account, How to Play and KO Predictor surfaces. It adds `audit:player-facing-copy-sweep-2` to `npm run check` so terms such as `Predicted context`, `Scoring boundary`, `model feeds`, `prediction context`, `live UI`, `stored here`, `never blended` and similar implementation language cannot remain on the active player-facing roots. Copy/docs/audit only; no scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change. Active migrations remain 18 and no Migration 019 is created.
+Accepted as a broad player-facing copy repair before continuing to `STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET`. It rewrites remaining internal/spec-style UI phrases found by manual review across Groups, Original Bracket, Results, Leaderboards, Account, How to Play and KO Predictor surfaces. It adds `audit:player-facing-copy-sweep-2` to `npm run check` so terms such as `Predicted context`, `Scoring boundary`, `model feeds`, `prediction context`, `live UI`, `stored here`, `never blended` and similar implementation language cannot remain on the active player-facing roots. Copy/docs/audit only; no scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change. Active migrations remain 19 and Migration 019 is applied.
 
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
@@ -33,7 +33,7 @@ Groups contract adoption slice is implemented as native React/CSS only. It may b
 - Do not claim acceptance without Nicky's Terminal evidence.
 - Original and KO Predictor points never combine.
 - Predicted and live brackets never blend.
-- Migration 018 is applied and aligned locally and on Euro staging. Stage 13F-K3 is acceptance/tooling only and must retain exactly 18 migrations with no Migration 019.
+- Migration 018 is applied and aligned locally and on Euro staging. Stage 13F-K3 is acceptance/tooling only and must retain exactly 19 migrations with Migration 019 applied.
 - Every batch updates the Functional Completion Ledger in the same commit.
 
 
@@ -114,7 +114,7 @@ Implemented, deployed or documented are not substitutes for functional acceptanc
 - Stage 13F-K0/K1: Admin scope and Migration 018 database contract accepted through `0e4d5b7`; 18 migrations are aligned and 50 local plus 50 linked pgTAP tests passed.
 - Stage 13F-K2: Euro control-room implementation accepted at `c4342f1`; 78 test files and 376 tests passed, all six responsive theme baselines were accepted and deployed verification passed.
 - Stage 13F-K3 and Stage 13G-A/B/C/H docs/tooling/product-alignment packages are recorded through the current ledger; the latest known completed product commit before Stage 16A-S0 is `8ee70ec Compact Stage 13G league shell`.
-- Stage 16A-S0 is recorded as a scope-alignment package. Stage 13G-MATCH-CENTRE-REF is the current accepted docs/audit-only checkpoint for Match Centre group-fixture behaviour; active migrations remain 18 and no Migration 019 is created.
+- Stage 16A-S0 is recorded as a scope-alignment package. Stage 13G-MATCH-CENTRE-REF is the current accepted docs/audit-only checkpoint for Match Centre group-fixture behaviour; active migrations remain 19 and Migration 019 is applied.
 
 # Delivery sequence
 
@@ -522,7 +522,7 @@ Stage PRODUCT-UNKNOWN-ROUTE-1 adds the friendly not-found recovery for unknown `
 
 #### Stage 16A-S0 — Stage 16A scope alignment
 
-Stage 16A-S0 is a docs/audit launch gate before implementation. It freezes the split into 16A-P1 privacy-safe synthetic identity plumbing, 16A-P2 staging-effective database time and later provisional-team/persona/league/correction/teardown slices. No component, resolver, scoring, route, database or migration implementation is included; active migrations remain 18 and no Migration 019 is created.
+Stage 16A-S0 is a docs/audit launch gate before implementation. It freezes the split into 16A-P1 privacy-safe synthetic identity plumbing, 16A-P2 staging-effective database time and later provisional-team/persona/league/correction/teardown slices. No component, resolver, scoring, route, database or migration implementation is included; active migrations remain 19 and Migration 019 is applied.
 
 This is the opening Stage 16 batch. It is staging-only and must not change the resolver, scoring rules or ordinary product navigation. No migration is permitted unless a genuine schema/read-contract gap is proved and separately packaged.
 
@@ -729,7 +729,7 @@ From checkpoint `5c9f415`, update the governing documents before the next produc
 - Dedicated player route direction is recorded for a later route build: `#/player/:userId`, `#/player/:userId/head-to-head?against=me` and `#/player/:userId/points`. H2 does not build these routes.
 - Tournament Picks player-facing entry remains a schedule decision and is not moved into H2. If moved earlier, it must stay Original-only with no jokers and no KO Predictor points.
 - Guest signup import prompt and signed-in copy sweep are the recommended next tight product build.
-- No route, component, scoring, resolver, database or migration change. Active migrations remain 18 and no Migration 019 is created.
+- No route, component, scoring, resolver, database or migration change. Active migrations remain 19 and Migration 019 is applied.
 
 
 ### Stage 13G-C1 guest import prompt — ACCEPTED
@@ -739,37 +739,37 @@ From checkpoint `5c9f415`, update the governing documents before the next produc
 - Secondary action is “Start fresh” and clears the saved device-side guest draft without writing to the database.
 - Signed-in import/account copy avoids “browser draft”, “browser copy” and “browser predictions” wording.
 - Original Predictor and KO Predictor import readiness remain separate and do not blend points, totals, jokers or leaderboards.
-- No route, scoring, resolver, league, admin, database policy or migration change. Active migrations remain 18 and no Migration 019 is created.
+- No route, scoring, resolver, league, admin, database policy or migration change. Active migrations remain 19 and Migration 019 is applied.
 
 ## Stage 13G-C2 — League race-story polish
 
 Status: complete in development.
 
-Stage 13G-C2 adopts the useful league-reference patterns natively in the Euro design system: a current-user `YOU` row anchor, top-three designed treatment and gap-to-leader race context. Rank movement is explicitly deferred until trustworthy previous-rank data exists. Original Predictor and KO Predictor standings remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
+Stage 13G-C2 adopts the useful league-reference patterns natively in the Euro design system: a current-user `YOU` row anchor, top-three designed treatment and gap-to-leader race context. Rank movement is explicitly deferred until trustworthy previous-rank data exists. Original Predictor and KO Predictor standings remain separate. No database migration was required; active migrations remain 19 and Migration 019 is applied.
 
 ## Stage 13G-C3 — League race summary strip
 
 Status: complete in development.
 
-Stage 13G-C3 adds a league race summary strip above ready standings, with you-vs-leader context, leader/current/gap labels, and explicit pre-scoring and empty-member states. Original Predictor and KO Predictor remain separate. Rank movement remains deferred until trustworthy previous-rank data exists. No database migration was required; active migrations remain 18 and Migration 019 was not created.
+Stage 13G-C3 adds a league race summary strip above ready standings, with you-vs-leader context, leader/current/gap labels, and explicit pre-scoring and empty-member states. Original Predictor and KO Predictor remain separate. Rank movement remains deferred until trustworthy previous-rank data exists. No database migration was required; active migrations remain 19 and Migration 019 is applied.
 
 ## Stage 13G-C4 — Compact league standings correction
 
 Status: complete in development.
 
-Stage 13G-C4 corrects the over-dense Stage 13G-C2/C3 league presentation. The default private-league table is now a compact running total: rank, member and points. Groups, bracket, scored-match, gap and race-summary breakdowns belong in deeper destinations such as member comparison, player insight, match centre and results. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
+Stage 13G-C4 corrects the over-dense Stage 13G-C2/C3 league presentation. The default private-league table is now a compact running total: rank, member and points. Groups, bracket, scored-match, gap and race-summary breakdowns belong in deeper destinations such as member comparison, player insight, match centre and results. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 19 and Migration 019 is applied.
 
 ## Stage 13G-C5 — League row detail destination
 
 Status: complete in development.
 
-Stage 13G-C5 preserves the compact private-league table introduced by C4. The default table remains rank, member and points. Deeper member comparison, point splits, gap context and privacy/lock copy now open through the member row detail destination below the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
+Stage 13G-C5 preserves the compact private-league table introduced by C4. The default table remains rank, member and points. Deeper member comparison, point splits, gap context and privacy/lock copy now open through the member row detail destination below the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 19 and Migration 019 is applied.
 
 ## Stage 13G-C6 — Compact league page shell
 
 Status: complete in development.
 
-Stage 13G-C6 simplifies the default private-league shell around the compact table. The default view now leads with league selection, competition selection and rank/member/points. League code, lifecycle/privacy copy, summary cards and shared-member notes sit behind details after the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 18 and Migration 019 was not created.
+Stage 13G-C6 simplifies the default private-league shell around the compact table. The default view now leads with league selection, competition selection and rank/member/points. League code, lifecycle/privacy copy, summary cards and shared-member notes sit behind details after the table. Original Predictor and KO Predictor remain separate. No database migration was required; active migrations remain 19 and Migration 019 is applied.
 
 ## Stage 16A-P1 agent rules — synthetic identity plumbing
 
@@ -846,8 +846,8 @@ Scope locks:
 - no Supabase write
 - no fixture-data implementation
 - no score-stepper UI implementation
-- no Migration 019
-- active migrations remain 18
+- no migration change in this slice
+- active migrations remain 19
 
 ## Stage 13F-K3 preservation repair
 
@@ -1056,13 +1056,13 @@ Contract changes flagged:
 - Branch target: `euro28-development`.
 - Current known pushed checkpoint before this package: `dcc5042 Record Stage 13G reference prototype adoption`.
 - Stage 16A-P1 synthetic identity plumbing was committed at `86eb8d2`.
-- Active migrations remain 18.
+- Active migrations remain 19.
 - Migration 019 must not exist.
 - This package repairs the missing Stage 13F-K3 marker `b7f50de` and records Groups/Bracket reference adoption only.
 
 Next single task after this package: `13G-GROUPS-1 — joker pill, shared joker meter and disabled-at-cap tests`.
 
-Audit phrase locks: Stage 13G-REF-2; Groups decisions 9 and 10; euro28-groups-page-prototype.html; euro28-bracket-page-prototype.html; star icon; Joker label; 2×; five-dot gold JOKER METER; bare J circle is retired; By group | By date; third-place ranking across all six groups; Calculated live from your predictions; This changes your bracket; FLAG-FOR-RE-PICK; Lucky Dip; fills only blank scores in the current group; You predicted; date · venue with the host country; host-country circle flag; fixture data; ≥640px; clamp 0–15; blank as zero; pointer-only exemption; autosave pill; privacy context banner; zero dev text; below 900px; ≥900px; converging wall chart; ONE state, ONE set of tie/slot primitives; 1B; 2A; 3DEF; dashed placeholder chips; tap-to-advance; winner-only; downstream picks that are no longer fed; Re-pick — your tables changed this tie; winner picks only — scores and jokers are handled in the KO Predictor; group predictions decide this bracket; live results will not change your saved picks; no score inputs; no method controls; no joker controls; without connector lines; share-card rendering lands in its own follow-on batch; 900px single breakpoint; active migrations remain 18; no Migration 019.
+Audit phrase locks: Stage 13G-REF-2; Groups decisions 9 and 10; euro28-groups-page-prototype.html; euro28-bracket-page-prototype.html; star icon; Joker label; 2×; five-dot gold JOKER METER; bare J circle is retired; By group | By date; third-place ranking across all six groups; Calculated live from your predictions; This changes your bracket; FLAG-FOR-RE-PICK; Lucky Dip; fills only blank scores in the current group; You predicted; date · venue with the host country; host-country circle flag; fixture data; ≥640px; clamp 0–15; blank as zero; pointer-only exemption; autosave pill; privacy context banner; zero dev text; below 900px; ≥900px; converging wall chart; ONE state, ONE set of tie/slot primitives; 1B; 2A; 3DEF; dashed placeholder chips; tap-to-advance; winner-only; downstream picks that are no longer fed; Re-pick — your tables changed this tie; winner picks only — scores and jokers are handled in the KO Predictor; group predictions decide this bracket; live results will not change your saved picks; no score inputs; no method controls; no joker controls; without connector lines; share-card rendering lands in its own follow-on batch; 900px single breakpoint; active migrations remain 19; Migration 019 is applied.
 
 ## Stage 13G-PLAYER-REF — Player View Reference Placement
 
@@ -1087,10 +1087,10 @@ Next build order after this reference is recorded:
 The Groups predictor now uses the approved shared joker pill and five-dot joker meter. Future KO joker work must reuse the same `JokerPill` and `JokerMeter` primitives rather than introducing a separate control. The retired bare `J` circle must not return.
 
 Stage 13G-GROUPS-2 — implemented Groups view switcher and table fast path. The settled By group / By date toggle is restored, By group remains the default, by-date tickets carry group tags, and a sticky Tables pill opens A–F plus third-place predicted tables. Future Groups work should build on this native implementation rather than re-importing prototype HTML.
-Stage 13G-GROUPS-2C — Groups Top Dock Polish: implemented a small presentation-only polish pass to the Groups top focus area and compact A-F rail. Do not treat this as final Groups visual polish, and do not use it as permission to alter scoring, resolver logic, Supabase writes, service-role usage, routes or migrations. Active migrations remain 18 and Migration 019 must not exist.
+Stage 13G-GROUPS-2C — Groups Top Dock Polish: implemented a small presentation-only polish pass to the Groups top focus area and compact A-F rail. Do not treat this as final Groups visual polish, and do not use it as permission to alter scoring, resolver logic, Supabase writes, service-role usage, routes or migrations. Active migrations remain 19 and Migration 019 is applied.
 
 
-Stage 13G-GROUPS-2D — Groups Top Dock Repair: removes the redundant top summary chips, keeps predicted-table access as a compact action, improves the By group / By date and A-F group rail presentation, and records that partial score drafts must not crash predicted tables. This remains presentation/model/test/audit/docs only: no scoring, resolver, Supabase write, service-role, route or migration change. Active migrations remain 18 and Migration 019 must not exist.
+Stage 13G-GROUPS-2D — Groups Top Dock Repair: removes the redundant top summary chips, keeps predicted-table access as a compact action, improves the By group / By date and A-F group rail presentation, and records that partial score drafts must not crash predicted tables. This remains presentation/model/test/audit/docs only: no scoring, resolver, Supabase write, service-role, route or migration change. Active migrations remain 19 and Migration 019 is applied.
 Stage 13G-GROUPS-2B — repaired Groups page chrome after eye test. Keep Groups and Bracket route-owned; do not reintroduce the old in-page Groups / Bracket / Review switcher on those surfaces. Keep device-draft import banners off the prediction surface, keep status/lifecycle detail in a compact disclosure, keep Lucky Dip behind a slim disclosure, and keep group switching as compact premium chips.
 
 ## Stage 13G Destination Reference Adoption — accepted docs/audit checkpoint
@@ -1111,7 +1111,7 @@ Recorded decisions: below 900px stacked layout with per-round pick counters; at 
 
 Owner sign-off for open decisions: first build proceeds without connector lines; share-card rendering lands in its own follow-on batch; one 900px breakpoint is retained with no intermediate tablet layout unless real-device review proves need.
 
-Scope: no UI build, no route implementation, no scoring change, no resolver change, no Supabase write and no migration. Active migrations remain 18 and Migration 019 must not exist.
+Scope: no UI build, no route implementation, no scoring change, no resolver change, no Supabase write and no migration. Active migrations remain 19 and Migration 019 is applied.
 
 Next single task after this docs/audit package: 13G-BRACKET-1 — Original Bracket responsive stacked/wall-chart rebuild with shared tie/slot primitives.
 
@@ -1120,7 +1120,7 @@ Next single task after this docs/audit package: 13G-BRACKET-1 — Original Brack
 
 Next-agent checkpoint: Stage 13G-BRACKET-1 now implements the approved Original Bracket stacked/wall-chart rebuild. Treat the Original Bracket as a winner-only Original Predictor surface using one `OriginalBracketTie` and one `OriginalBracketSlot` primitive set across the single 900px breakpoint. Do not reintroduce layout-specific business logic, connector lines, score inputs, method controls or joker controls.
 
-Acceptance must include `npm run audit:stage13g-bracket-responsive-wallchart`, the existing Bracket reference audit, frontend architecture audit, full check, build and deployed foundation verification. Active migrations remain 18 and Migration 019 must not be created unless a genuine schema/read-contract gap is proved.
+Acceptance must include `npm run audit:stage13g-bracket-responsive-wallchart`, the existing Bracket reference audit, frontend architecture audit, full check, build and deployed foundation verification. Active migrations remain 19; no further migration may be created unless a genuine schema/read-contract gap is proved.
 
 ## Stage 13G-ACCOUNT-1 — Account destination rebuild
 
@@ -1154,7 +1154,7 @@ Completion gate: this reference stage does not make Match Centre group-match upg
 
 ## Stage 13G handover checkpoint — after Admin restyle
 
-Current deployed head before the handover-docs package is `8ee70ec Restyle Stage 13G admin control room`. Tournament/How to Play, Account and Admin are complete/deployed; active migrations remain 18 and no Migration 019 exists.
+Current deployed head before the handover-docs package is `8ee70ec Restyle Stage 13G admin control room`. Tournament/How to Play, Account and Admin are complete/deployed; active migrations remain 19 and Migration 019 exists.
 
 Read `docs/STAGE-13G-HANDOVER-20260705.md` and `docs/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md` before starting the next chat. The next work must be one scoped stage only:
 
@@ -1206,7 +1206,7 @@ Rules to preserve:
 - Original Predictor and KO Predictor remain separate.
 - WC26 production remains fail-closed and Euro staging is the only accepted project ref.
 - The future teardown sequence remains seed → validate → teardown → zero residue → reseed and must require both synthetic markers.
-- Active migrations remain 18 and no Migration 019 is created.
+- Active migrations remain 19 and Migration 019 is applied.
 
 The next package must remain narrow. Do not combine provisional teams, Auth user creation, profile writes, predictions, leagues, scoring oracle, correction rehearsal and teardown in one patch.
 
@@ -1272,7 +1272,7 @@ Stage PRODUCT-GATE-DECISIONS-1 records the next signup/tournament decision rows:
 
 Stage RULES-1B-SIGNUP-GATE-STATUS makes the remaining public-signup gates visible on the Rules Hub. Stage OWNER-SIGNUP-DECISIONS-1 later records the owner choices, but future agents must not treat the visible panel or recorded choices as permission to open wider signups.
 
-Scope guard: docs/audit-only. Do not add Supabase writes, Auth users, prediction seeding, service-role credential use/read/print, scoring changes, resolver changes, UI route changes or a migration under this stage. Active migrations remain 18 and Migration 019 must not exist.
+Scope guard: docs/audit-only. Do not add Supabase writes, Auth users, prediction seeding, service-role credential use/read/print, scoring changes, resolver changes, UI route changes or a migration under this stage. Active migrations remain 19 and Migration 019 is applied.
 
 ## Stage PUBLIC-SIGNUP-READINESS-1 — Public signup readiness model
 
@@ -1291,7 +1291,7 @@ The design-contract programme must proceed in batches. Each batch first produces
 
 The approved Groups Night Broadcast direction is the identity anchor and must not be redrafted unless Nicky explicitly reopens it. The approved Leagues / League table D contract is also binding and must not be redrafted unless Nicky explicitly reopens Leagues. Bracket G is approved as the Original Bracket visual contract, including the proper ≥900px desktop wall chart with Round of 16 on the outside edges, quarter-finals and semi-finals stepping inward, a centred final, small slick `vs`, and date/time/stadium/host-flag match detail. KO Predictor F is approved as the KO Predictor visual contract, with teams pending before readiness and real fixtures once ready. Bracket Health remains unapproved and must not be implemented until separately approved. Admin remains last.
 
-Scope guard: docs/reference only until later approved implementation packages. Do not modify `src/`, `supabase/`, migrations or tests in the drafting programme. Do not change product behaviour, routes, copy in active app code, scoring, resolver logic, Auth config, signup state, Supabase writes, service-role credential use/read/print or Migration 019 under this stage. Active migrations remain 18, Original Predictor and KO Predictor remain separate, and predicted/live bracket contexts must never blend.
+Scope guard: docs/reference only until later approved implementation packages. Do not modify `src/`, `supabase/`, migrations or tests in the drafting programme. Do not change product behaviour, routes, copy in active app code, scoring, resolver logic, Auth config, signup state, Supabase writes, service-role credential use/read/print or Migration 019 under this stage. Active migrations remain 19, Original Predictor and KO Predictor remain separate, and predicted/live bracket contexts must never blend.
 
 ## STAGE-RULES-SCORING-LOCK-1 guardrail
 
@@ -1318,7 +1318,7 @@ This stage did not change runtime scoring or resolver behaviour. Any future runt
 
 Recorded after `STAGE-RULES-SCORING-LOCK-1` as the governing contract for Home clarity, Review Picks, Welcome and Invite/Join. The stage locks the progress-aware CTA ladder, Review completion blockers, no wrong-state flicker requirement, unresolved in-group tiebreaker prompt, best-third prompt, bracket invalidation warning, joker confirmation modal, calculated-only group-goals display, locked prediction snapshot and invite/join states.
 
-Scope is docs/audit-only. It does not change runtime UI, routes, scoring, resolver, Supabase, Auth, result-entry or migrations. Active migrations remain 18 and Migration 019 is not created.
+Scope is docs/audit-only. It does not change runtime UI, routes, scoring, resolver, Supabase, Auth, result-entry or migrations. Active migrations remain 19 and Migration 019 is applied.
 
 Agent rule: do not implement Home, Review Picks, Welcome or Invite/Join from memory. Use `docs/ENTRY-AND-REVIEW-JOURNEY-CONTRACT.md` as the target. Review Picks is not complete by row counts alone; blockers include resolver prompts, stale bracket state, joker-on-incomplete-score and save/import state. Preserve no wrong-state flicker and keep Original/KO separate.
 
@@ -1328,7 +1328,7 @@ STAGE-MORE-ACCOUNT-TRUST-1 marker record: Support route/content; admin-only link
 
 Recorded after `STAGE-MORE-ACCOUNT-TRUST-1` as the governing contract for the create league flow, join league flow, invite-code states, invalid/expired/full league states, league privacy explanation, empty league states, member list clarity, post-signup/post-login league continuation and league share/invite copy.
 
-Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, league membership writes, scoring, resolver, result-entry or migrations. Active migrations remain 18 and Migration 019 is not created.
+Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, league membership writes, scoring, resolver, result-entry or migrations. Active migrations remain 19 and Migration 019 is applied.
 
 Public signup remains closed until implementation gates are complete. Join codes do not bypass signup/auth gates, joining a league after lock should not remove valid pre-deadline prediction points, and league membership does not combine Original and KO points.
 
@@ -1342,7 +1342,7 @@ STAGE-LEAGUE-SETUP-AND-INVITES-1 marker record: create league flow; join league 
 
 Recorded after `STAGE-LEAGUE-SETUP-AND-INVITES-1` as the governing contract for results status wording, scoring explanation, correction/recalculation wording, why did I get these points? clarity, Original vs KO points separation, admin result-entry trust copy, pending/delayed/postponed/suspended/abandoned/replay states, leaderboard freshness wording and fake/simulated result separation.
 
-Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 18 and Migration 019 is not created.
+Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 19 and Migration 019 is applied.
 
 Public signup remains closed until implementation gates are complete. Result surfaces must not imply final points before official confirmation/recalculation, and simulated results must never be confused with real official results or award real points.
 
@@ -1355,7 +1355,7 @@ STAGE-RESULTS-AND-SCORING-TRUST-1 marker record: results status wording; scoring
 
 Recorded after `STAGE-RESULTS-AND-SCORING-TRUST-1` as the governing contract for admin control-room trust wording, result-entry guardrails, correction/recalculation audit explanation, fixture schedule/edit trust wording, admin roles explanation, fake/simulated scenario separation, owner-only dangerous action wording, operation history clarity and public/admin trust boundaries.
 
-Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, fixture writes, result writes, admin-operation writes, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 18 and Migration 019 is not created.
+Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, fixture writes, result writes, admin-operation writes, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 19 and Migration 019 is applied.
 
 Public signup remains closed until implementation gates are complete. Admin Scenario Runner output, fake scores, synthetic seed runs and simulated results must never be confused with official results, never award real points, never pollute production and never write to canonical official results.
 
@@ -1367,7 +1367,7 @@ STAGE-ADMIN-OPS-TRUST-1 marker record: admin control-room trust wording; result-
 
 Recorded after `STAGE-ADMIN-OPS-TRUST-1` as the governing contract for public signup gates mapped to owner decisions, email confirmation ON expectations, support/contact-admin flow, 250-user / 20-league capacity guardrails, conservative privacy wording, display-name moderation expectations, low-cost/free hosting assumptions, exact “still closed until implementation” wording and explicit checks before any Auth config change.
 
-Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, browser writes, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 18 and Migration 019 is not created.
+Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, browser writes, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 19 and Migration 019 is applied.
 
 Public signup remains closed until implementation gates are complete. This stage is readiness recording only; it must not be treated as permission to open registration, change Supabase Auth settings or publish a public signup form.
 
@@ -1386,7 +1386,7 @@ Future agents must preserve this implementation boundary: client-side pre-Auth d
 
 STAGE-PUBLIC-SIGNUP-OPENING-GATE-1 records the final pre-open checklist for public signup, visible “registration still closed / opening soon” state, explicit owner approval requirement before opening registration, confirmation that email confirmation is ON, confirmation redirect URLs are correct, confirmation capacity limits are acceptable, confirmation support/contact route is ready, confirmation display-name moderation is active, no Supabase Auth dashboard/config change in the patch and public registration remains closed.
 
-Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, browser writes, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 18 and Migration 019 is not created.
+Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, browser writes, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 19 and Migration 019 is applied.
 
 A later opening stage may only proceed after explicit owner approval. This gate must not be treated as permission to open public registration.
 
@@ -1396,7 +1396,7 @@ STAGE-PUBLIC-SIGNUP-OPENING-GATE-1 marker record: final pre-open checklist for p
 
 STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 records the controlled public signup opening runbook, owner approval must be explicit, current and recorded, opening-gate checklist must be satisfied before any public opening, email confirmation must be checked in the external account settings, account redirect URLs must return to the Euro 2028 app, not WC26, display-name moderation remains before account creation, display-name availability remains before account creation, support/contact route remains visible for public users, initial capacity remains 50 users and 20 leagues before SMTP, with 100 users and 20 leagues as the post-SMTP target, unless replaced by a later owner decision, public registration remains closed until the owner completes the external opening action, and no Supabase Auth dashboard/config change in the patch.
 
-Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, browser writes, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 18 and Migration 019 is not created.
+Scope is docs/audit-only. It does not change runtime UI, routes, Auth configuration, Supabase schema/RPC/RLS/service-role use, browser writes, scoring engine, resolver behaviour, official result entry, fake-result writes, league writes or migrations. Active migrations remain 19 and Migration 019 is applied.
 
 A later opening stage may only change app-side public signup status or external opening behaviour after the owner confirms the controlled-open runbook. This stage must not be treated as permission to open public registration.
 
@@ -1404,7 +1404,7 @@ STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 marker record: controlled public signup op
 
 ## STAGE-PUBLIC-SIGNUP-EXTERNAL-SETTINGS-CHECK-1 — CLOSED / RECORDED
 
-STAGE-PUBLIC-SIGNUP-EXTERNAL-SETTINGS-CHECK-1 records the owner-checked external settings for the controlled public signup path. Euro staging project checked: gcfdwobpnanjchcnvdco. Email confirmation: ON. New user signups: still closed. Site URL / app URL: https://euro28-predictor-dev.netlify.app. Redirect URLs include Euro dev site: yes. Redirect URLs currently include local dev URLs: yes. WC26 URLs used for Euro auth return: no. Email templates editable without SMTP: no. Email templates mention WC26: unable to edit/check fully without SMTP. Custom SMTP required before branded public email templates: yes. Initial capacity accepted before SMTP: 50 users / 20 leagues. Target capacity after SMTP: 100 users / 20 leagues. Review point after SMTP: 75 users / 15 leagues. Support/contact route required: yes. Display-name moderation required: yes. Public registration remains closed; active migrations remain 18; Migration 019 remains blocked.
+STAGE-PUBLIC-SIGNUP-EXTERNAL-SETTINGS-CHECK-1 records the owner-checked external settings for the controlled public signup path. Euro staging project checked: gcfdwobpnanjchcnvdco. Email confirmation: ON. New user signups: still closed. Site URL / app URL: https://euro28-predictor-dev.netlify.app. Redirect URLs include Euro dev site: yes. Redirect URLs currently include local dev URLs: yes. WC26 URLs used for Euro auth return: no. Email templates editable without SMTP: no. Email templates mention WC26: unable to edit/check fully without SMTP. Custom SMTP required before branded public email templates: yes. Initial capacity accepted before SMTP: 50 users / 20 leagues. Target capacity after SMTP: 100 users / 20 leagues. Review point after SMTP: 75 users / 15 leagues. Support/contact route required: yes. Display-name moderation required: yes. Public registration remains closed; active migrations remain 19; Migration 019 is applied.
 
 This stage replaces the earlier 250-user planning figure for the first opening path. Before SMTP/branded email delivery, the cap is 50 users and 20 leagues. After SMTP is configured and usage is reviewed, the next target is 100 users and 20 leagues, with review at 75 users or 15 leagues.
 
@@ -1417,7 +1417,7 @@ STAGE-PUBLIC-SIGNUP-SMTP-READINESS-1 records custom SMTP as the next public-sign
 
 Pre-SMTP capacity remains 50 users / 20 leagues. Post-SMTP target remains 100 users / 20 leagues. Post-SMTP review point remains 75 users / 15 leagues. Capacity must be reviewed before increasing beyond the post-SMTP target.
 
-This stage is docs/audit-only. It does not configure SMTP, does not edit external Auth settings, does not open signups, does not create users, does not write profile rows, does not seed predictions, does not write league data and does not publish service-role credentials. No runtime route, Auth configuration, Supabase schema, RPC, RLS, service-role, browser write, scoring, resolver, result-entry, fake-result write, league-write or migration change is included. Active migrations remain 18. Migration 019 is not created. WC26 production remains blocked. Original Predictor and KO Predictor remain separate.
+This stage is docs/audit-only. It does not configure SMTP, does not edit external Auth settings, does not open signups, does not create users, does not write profile rows, does not seed predictions, does not write league data and does not publish service-role credentials. No runtime route, Auth configuration, Supabase schema, RPC, RLS, service-role, browser write, scoring, resolver, result-entry, fake-result write, league-write or migration change is included. Active migrations remain 19. Migration 019 is not created. WC26 production remains blocked. Original Predictor and KO Predictor remain separate.
 
 SMTP readiness marker: custom SMTP is the next public-signup blocker; pre-SMTP capacity remains 50 users / 20 leagues; post-SMTP target remains 100 users / 20 leagues; post-SMTP review point remains 75 users / 15 leagues; public registration remains closed; Migration 019 remains blocked.
 
@@ -1428,7 +1428,7 @@ SMTP readiness marker: custom SMTP is the next public-signup blocker; pre-SMTP c
 - Signup opening and SMTP remain parked for future launch readiness
 - Rules Hub, Tournament overview, account messaging, Match Centre and Team Profile copy are polished before seeded-team testing.
 - Admin Control Room may keep operational wording because it is a protected admin surface.
-- Active migrations remain 18.
+- Active migrations remain 19.
 - Migration 019 is not created.
 - WC26 production remains blocked.
 
