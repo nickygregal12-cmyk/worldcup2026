@@ -128,7 +128,7 @@
   min-height: 3.25rem;
   border: 1px solid var(--accent);
   background: var(--accent);
-  color: var(--text-on-brand);
+  color: var(--hero-action-text);
   text-decoration: none;
 }
 
