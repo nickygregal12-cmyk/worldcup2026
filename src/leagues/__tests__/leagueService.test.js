@@ -15,33 +15,78 @@ function rpcClient(responses) {
 }
 
 describe('league service', () => {
-  it('loads and normalises member leagues', async () => {
+  it('loads and normalises member leagues, including a backfilled original competition', async () => {
     const client = rpcClient({
       get_my_leagues: {
         data: [{
-          league_id: 'l1', league_name: 'Family', join_code: 'ABCDEF1234',
+          league_id: 'l1', league_name: 'Family', join_code: 'ABCDEF1234', competition: 'original',
           member_role: 'owner', member_count: 3, created_at: null,
         }],
         error: null,
       },
     })
     const leagues = await getMyLeagues(client, 't1')
-    expect(leagues[0]).toMatchObject({ id: 'l1', memberCount: 3 })
+    expect(leagues[0]).toMatchObject({ id: 'l1', memberCount: 3, competition: 'original' })
     expect(client.rpc).toHaveBeenCalledWith('get_my_leagues', { p_tournament_id: 't1' })
   })
 
-  it('passes validated inputs to create and join RPCs', async () => {
+  it('passes validated inputs to create and join RPCs, including the now-required competition', async () => {
     const client = rpcClient({
       create_my_league: { data: { league_id: 'l1' }, error: null },
       join_league_by_code: { data: { league_id: 'l2' }, error: null },
     })
-    await createLeague(client, { tournamentId: 't1', name: 'Friends' })
+    await createLeague(client, { tournamentId: 't1', name: 'Friends', competition: 'original' })
+    // Joining never names a competition -- it naturally joins whichever competition the league
+    // (identified by its code) already belongs to.
     await joinLeague(client, { tournamentId: 't1', joinCode: 'ABCDEF1234' })
     expect(client.rpc).toHaveBeenNthCalledWith(1, 'create_my_league', {
-      p_tournament_id: 't1', p_name: 'Friends',
+      p_tournament_id: 't1', p_name: 'Friends', p_competition: 'original',
     })
     expect(client.rpc).toHaveBeenNthCalledWith(2, 'join_league_by_code', {
       p_tournament_id: 't1', p_join_code: 'ABCDEF1234',
+    })
+  })
+
+  it('rejects league creation without a real competition before ever calling the database', async () => {
+    const client = rpcClient({})
+    await expect(createLeague(client, { tournamentId: 't1', name: 'Friends' })).rejects.toThrow()
+    await expect(createLeague(client, { tournamentId: 't1', name: 'Friends', competition: 'both' })).rejects.toThrow()
+    expect(client.rpc).not.toHaveBeenCalled()
+  })
+
+  it('rejects KO league creation client-side before KO readiness, as defense in depth ahead of the database gate', async () => {
+    const client = rpcClient({})
+    await expect(createLeague(client, {
+      tournamentId: 't1',
+      name: 'KO Sweepstake',
+      competition: 'ko_predictor',
+      koReadiness: { earlyAccess: false, primaryReady: false },
+    })).rejects.toThrow(/KO Predictor leagues cannot be created/)
+    expect(client.rpc).not.toHaveBeenCalled()
+  })
+
+  it('allows KO league creation once earlyAccess is reached, without waiting for the stricter primaryReady', async () => {
+    const client = rpcClient({
+      create_my_league: { data: { league_id: 'l3', competition: 'ko_predictor' }, error: null },
+    })
+    await createLeague(client, {
+      tournamentId: 't1',
+      name: 'KO Sweepstake',
+      competition: 'ko_predictor',
+      koReadiness: { earlyAccess: true, primaryReady: false },
+    })
+    expect(client.rpc).toHaveBeenCalledWith('create_my_league', {
+      p_tournament_id: 't1', p_name: 'KO Sweepstake', p_competition: 'ko_predictor',
+    })
+  })
+
+  it('does not require koReadiness client-side and still calls the database, which remains the authoritative gate', async () => {
+    const client = rpcClient({
+      create_my_league: { data: { league_id: 'l4' }, error: null },
+    })
+    await createLeague(client, { tournamentId: 't1', name: 'KO Sweepstake', competition: 'ko_predictor' })
+    expect(client.rpc).toHaveBeenCalledWith('create_my_league', {
+      p_tournament_id: 't1', p_name: 'KO Sweepstake', p_competition: 'ko_predictor',
     })
   })
 

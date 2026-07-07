@@ -82,11 +82,29 @@ export function validateJoinCode(value) {
   return Object.freeze({ valid: true, value: normalised, error: null })
 }
 
+export function validateLeagueCompetition(value) {
+  if (!Object.values(LEAGUE_COMPETITION).includes(value)) {
+    return Object.freeze({ valid: false, value: null, error: 'Choose Original Predictor or KO Predictor for this league.' })
+  }
+  return Object.freeze({ valid: true, value, error: null })
+}
+
+// KO Predictor leagues may only be created once the competition itself is usable. This mirrors
+// the database gate in create_my_league (private.euro28_ko_predictor_early_access), which is the
+// authoritative check -- this is the client-side copy for early validation and defense in depth,
+// not the sole enforcement. Gated on earlyAccess (first real knockout fixture known), the same
+// boundary KO Predictor itself opens on -- not the stricter primaryReady (full readiness/nav
+// boundary) -- so a league can exist for a competition the moment players can actually use it.
+export function canCreateKoLeague(koReadiness) {
+  return Boolean(koReadiness?.earlyAccess)
+}
+
 export function normaliseLeague(row) {
   return Object.freeze({
     id: row.league_id,
     name: row.league_name,
     joinCode: row.join_code,
+    competition: row.competition,
     memberRole: row.member_role,
     memberCount: Number(row.member_count ?? 0),
     createdAt: row.created_at ?? null,
@@ -107,9 +125,12 @@ export function normaliseStanding(row) {
   })
 }
 
-export function buildLeagueCompetitionSummary(rows, competitionKey) {
+export function buildLeagueCompetitionSummary(rows, competitionKey, { leagueCompetition = null } = {}) {
   if (!Object.values(LEAGUE_COMPETITION).includes(competitionKey)) {
     throw new TypeError('Unsupported league competition')
+  }
+  if (leagueCompetition && leagueCompetition !== competitionKey) {
+    throw new TypeError('Requested competition does not match this league\'s fixed competition')
   }
 
   const standings = Array.isArray(rows) ? rows : []
@@ -167,9 +188,12 @@ export function buildLeagueRaceRows(rows) {
   }))
 }
 
-export function buildLeagueRaceSummary(rows, competitionKey) {
+export function buildLeagueRaceSummary(rows, competitionKey, { leagueCompetition = null } = {}) {
   if (!Object.values(LEAGUE_COMPETITION).includes(competitionKey)) {
     throw new TypeError('Unsupported league competition')
+  }
+  if (leagueCompetition && leagueCompetition !== competitionKey) {
+    throw new TypeError('Requested competition does not match this league\'s fixed competition')
   }
 
   const raceRows = buildLeagueRaceRows(rows)
@@ -246,6 +270,14 @@ export function buildLeagueRaceSummary(rows, competitionKey) {
   })
 }
 
+// NOTE: this still takes both an originalSummary and a koSummary for one league, which was the
+// correct shape when a league could be viewed in either competition. Leagues are now fixed to a
+// single competition at creation, so a real single-competition league only ever has meaningful
+// data for one side of this pair going forward. This is deliberately left unchanged: the current
+// caller (Leagues.jsx) still fetches and displays both sides for every league and is out of scope
+// for this change -- reshaping this function now would break that caller before its own UI update
+// lands. Simplifying this to take one summary (matching the league's fixed competition) is a
+// natural follow-up once Leagues.jsx stops dual-fetching.
 export function buildLeagueLifecycleState({ lifecycle, originalSummary, koSummary, koReadiness } = {}) {
   const originalActive = originalSummary?.state === 'active'
   const koActive = koSummary?.state === 'active'
@@ -290,9 +322,12 @@ export function buildLeagueLifecycleState({ lifecycle, originalSummary, koSummar
   })
 }
 
-export function buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle, summary, koReadiness } = {}) {
+export function buildLeagueCompetitionLifecycleCopy({ competitionKey, lifecycle, summary, koReadiness, leagueCompetition = null } = {}) {
   if (!Object.values(LEAGUE_COMPETITION).includes(competitionKey)) {
     throw new TypeError('Unsupported league competition')
+  }
+  if (leagueCompetition && leagueCompetition !== competitionKey) {
+    throw new TypeError('Requested competition does not match this league\'s fixed competition')
   }
 
   if (competitionKey === LEAGUE_COMPETITION.ORIGINAL) {
@@ -351,6 +386,9 @@ export function buildStandingComparison(rows, otherUserId) {
   })
 }
 
+// NOTE: same dual-competition shape as buildLeagueLifecycleState above, left unchanged for the
+// same reason -- the current caller still merges both competitions' member lists for one league
+// and is out of scope for this change.
 export function buildSharedLeagueMemberList(originalRows, koRows) {
   const members = new Map()
   for (const row of [...(originalRows ?? []), ...(koRows ?? [])]) {
@@ -420,10 +458,13 @@ function buildBracketJourneyRow({ match, prediction, visibility, message, refere
   }
 }
 
-export function buildSharedPredictionJourney({ bundle, reference, competitionKey }) {
+export function buildSharedPredictionJourney({ bundle, reference, competitionKey, leagueCompetition = null }) {
   if (!reference?.tournamentId) throw new TypeError('A Euro tournament reference is required')
   if (!Object.values(LEAGUE_COMPETITION).includes(competitionKey)) {
     throw new TypeError('Unsupported shared-prediction competition')
+  }
+  if (leagueCompetition && leagueCompetition !== competitionKey) {
+    throw new TypeError('Requested competition does not match this league\'s fixed competition')
   }
 
   const matchPredictions = new Map((bundle?.match_predictions ?? []).map(row => [matchNumber(row), row]))
@@ -495,7 +536,10 @@ export function buildSharedPredictionJourney({ bundle, reference, competitionKey
   })
 }
 
-export function compareSharedPredictionBundles(leftBundle, rightBundle, competitionKey) {
+export function compareSharedPredictionBundles(leftBundle, rightBundle, competitionKey, { leagueCompetition = null } = {}) {
+  if (leagueCompetition && leagueCompetition !== competitionKey) {
+    throw new TypeError('Requested competition does not match this league\'s fixed competition')
+  }
   if (!leftBundle?.visible || !rightBundle?.visible) {
     return Object.freeze({
       visible: false,

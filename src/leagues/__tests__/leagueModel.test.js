@@ -10,11 +10,13 @@ import {
   buildSharedPredictionJourney,
   buildStandingComparison,
   LEAGUE_COMPETITION,
+  canCreateKoLeague,
   compareSharedPredictionBundles,
   formatOrdinal,
   normaliseLeague,
   normaliseStanding,
   validateJoinCode,
+  validateLeagueCompetition,
   validateLeagueName,
 } from '../leagueModel.js'
 
@@ -46,15 +48,40 @@ describe('league model', () => {
     expect(validateJoinCode('ABC').valid).toBe(false)
   })
 
+  it('validates that a league creation request names a real competition', () => {
+    expect(validateLeagueCompetition('original')).toEqual({ valid: true, value: 'original', error: null })
+    expect(validateLeagueCompetition('ko_predictor')).toEqual({ valid: true, value: 'ko_predictor', error: null })
+    expect(validateLeagueCompetition('both').valid).toBe(false)
+    expect(validateLeagueCompetition(undefined).valid).toBe(false)
+  })
+
+  it('gates KO league creation on the same earlyAccess boundary KO Predictor itself opens on, not the stricter primaryReady', () => {
+    expect(canCreateKoLeague({ earlyAccess: true, primaryReady: false })).toBe(true)
+    expect(canCreateKoLeague({ earlyAccess: false, primaryReady: false })).toBe(false)
+    expect(canCreateKoLeague(null)).toBe(false)
+    expect(canCreateKoLeague(undefined)).toBe(false)
+  })
+
   it('normalises league and standings rows', () => {
     expect(normaliseLeague({
       league_id: 'league-1',
       league_name: 'Family',
       join_code: 'ABCDEF1234',
+      competition: 'original',
       member_role: 'owner',
       member_count: '4',
       created_at: '2026-01-01',
-    })).toMatchObject({ id: 'league-1', memberCount: 4, memberRole: 'owner' })
+    })).toMatchObject({ id: 'league-1', memberCount: 4, memberRole: 'owner', competition: 'original' })
+
+    expect(normaliseLeague({
+      league_id: 'league-2',
+      league_name: 'KO Sweepstake',
+      join_code: 'KOKOKOKO12',
+      competition: 'ko_predictor',
+      member_role: 'member',
+      member_count: '6',
+      created_at: '2026-01-02',
+    })).toMatchObject({ id: 'league-2', competition: 'ko_predictor' })
 
     expect(normaliseStanding({
       rank: '2',
@@ -184,6 +211,33 @@ describe('league model', () => {
       summary: { state: 'pre_competition' },
       koReadiness: { open: true, available: 1 },
     })).toMatchObject({ state: 'fixture_release', label: 'Fixture-by-fixture release' })
+  })
+
+  it('makes a mismatched competition request against a fixed-competition league impossible, without requiring every caller to pass the league record', () => {
+    const originalRows = [{ userId: 'me', displayName: 'Nicky', rank: 1, totalPoints: 10, matchPoints: 10, bracketPoints: 0, scoredMatchCount: 1, isCurrentUser: true }]
+
+    // Unaffected when the caller doesn't know the league's fixed competition (today's callers) --
+    // this is what keeps the change backward compatible.
+    expect(() => buildLeagueCompetitionSummary(originalRows, LEAGUE_COMPETITION.ORIGINAL)).not.toThrow()
+    expect(() => buildLeagueRaceSummary(originalRows, LEAGUE_COMPETITION.ORIGINAL)).not.toThrow()
+    expect(() => buildLeagueCompetitionLifecycleCopy({ competitionKey: LEAGUE_COMPETITION.ORIGINAL, lifecycle: { locked: false }, summary: { state: 'pre_competition' } })).not.toThrow()
+
+    // Passes when the request matches the league's fixed competition.
+    expect(() => buildLeagueCompetitionSummary(originalRows, LEAGUE_COMPETITION.ORIGINAL, { leagueCompetition: LEAGUE_COMPETITION.ORIGINAL })).not.toThrow()
+
+    // Throws when a caller that does know the league's fixed competition asks for the other one.
+    expect(() => buildLeagueCompetitionSummary(originalRows, LEAGUE_COMPETITION.KO_PREDICTOR, { leagueCompetition: LEAGUE_COMPETITION.ORIGINAL }))
+      .toThrow(/does not match this league/)
+    expect(() => buildLeagueRaceSummary(originalRows, LEAGUE_COMPETITION.KO_PREDICTOR, { leagueCompetition: LEAGUE_COMPETITION.ORIGINAL }))
+      .toThrow(/does not match this league/)
+    expect(() => buildLeagueCompetitionLifecycleCopy({
+      competitionKey: LEAGUE_COMPETITION.KO_PREDICTOR,
+      leagueCompetition: LEAGUE_COMPETITION.ORIGINAL,
+      lifecycle: { locked: false },
+      summary: { state: 'pre_competition' },
+    })).toThrow(/does not match this league/)
+    expect(() => compareSharedPredictionBundles({ visible: true }, { visible: true }, LEAGUE_COMPETITION.KO_PREDICTOR, { leagueCompetition: LEAGUE_COMPETITION.ORIGINAL }))
+      .toThrow(/does not match this league/)
   })
 
   it('builds a competition-scoped head-to-head standing summary', () => {

@@ -1,10 +1,12 @@
 import {
   buildLeagueCompetitionSummary,
   buildSharedLeagueMemberList,
+  canCreateKoLeague,
   compareSharedPredictionBundles,
   LEAGUE_COMPETITION,
   normaliseLeague,
   normaliseStanding,
+  validateLeagueCompetition,
 } from './leagueModel.js'
 import { parseExternal } from '../contracts/externalValidation.js'
 import { loadPlayerInsightPair } from '../player/playerInsightService.js'
@@ -38,10 +40,21 @@ export async function getMyLeagues(client, tournamentId) {
   return Object.freeze(rows.map(normaliseLeague))
 }
 
-export async function createLeague(client, { tournamentId, name }) {
+export async function createLeague(client, { tournamentId, name, competition, koReadiness = null }) {
+  const competitionCheck = validateLeagueCompetition(competition)
+  if (!competitionCheck.valid) throw new Error(competitionCheck.error)
+
+  // The database is the real gate (create_my_league rejects this server-side regardless). This is
+  // early validation and defense in depth, so it only fires when koReadiness is actually supplied --
+  // callers that don't have it yet still get a correct, authoritative answer from the RPC itself.
+  if (competitionCheck.value === LEAGUE_COMPETITION.KO_PREDICTOR && koReadiness && !canCreateKoLeague(koReadiness)) {
+    throw new Error('KO Predictor leagues cannot be created until a real knockout fixture is known.')
+  }
+
   const response = await client.rpc('create_my_league', {
     p_tournament_id: tournamentId,
     p_name: name,
+    p_competition: competitionCheck.value,
   })
   throwForError('League creation failed', response.error)
   return parseExternal(mutationResultSchema, response.data ?? null, 'League creation response')
