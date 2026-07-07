@@ -2,8 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueHeadToHead, loadLeagueOverview, readLeagueSession } from './leagueService.js'
 import { buildLeagueLifecycleState, buildStandingComparison, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { CompetitionLifecycleNote, CompetitionTabs, LeagueActionConfirmation, LeagueCodeDisclosure, LeagueCompetitionHeading, LeagueDetailDestination, LeagueKoReadinessCard, LeagueLifecycleBanner, LeaguePicker, LeagueSecondaryDetails, LeagueSummaryCard, StandingsTable } from './LeaguePresentation.jsx'
+import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
+import { buildMatchCentreNavigation, defaultMatchNumber } from '../matchCentre/matchCentreModel.js'
+import {
+  LeagueActionsCard,
+  LeagueDetailDestination,
+  LeagueHero,
+  LeagueManagePanel,
+  LeagueNotice,
+  LeagueStandingsPanel,
+  MiniMatchStrip,
+} from './LeaguePresentation.jsx'
 import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT, openPlayerView } from '../player/index.js'
+import layoutStyles from './LeagueLayout.module.css'
 
 function messageForError(error) {
   const message = error instanceof Error ? error.message : String(error)
@@ -27,6 +38,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const [comparison, setComparison] = useState(null)
   const [comparisonMemberId, setComparisonMemberId] = useState('')
   const [pendingLeagueAction, setPendingLeagueAction] = useState(null)
+  const [liveFixture, setLiveFixture] = useState(null)
   const overviewRequests = useRef(createLatestRequestGuard())
   const comparisonRequests = useRef(createLatestRequestGuard())
   const detailRef = useRef(null)
@@ -69,11 +81,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
       setOverview({ status: data.status, data, leagueId })
     } catch (error) {
       if (!overviewRequests.current.isCurrent(requestToken)) return
-      setOverview(previous => ({
-        status: previous.data ? 'partial' : 'error',
-        data: previous.data,
-        leagueId,
-      }))
+      setOverview(previous => ({ status: previous.data ? 'partial' : 'error', data: previous.data, leagueId }))
       setNotice({ tone: 'danger', message: messageForError(error) })
     }
   }, [client, selectedLeague])
@@ -116,24 +124,10 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   }, [client])
 
   useEffect(() => {
-    if (!client || !session?.user || !tournamentId) return undefined
     let active = true
-    getMyLeagues(client, tournamentId)
-      .then(nextLeagues => {
-        if (!active) return
-        setLeagues(nextLeagues)
-        setSelectedLeagueId(previous => (
-          nextLeagues.some(league => league.id === previous) ? previous : nextLeagues[0]?.id ?? null
-        ))
-        setLeagueListStatus('ready')
-      })
-      .catch(error => {
-        if (!active) return
-        setLeagueListStatus('error')
-        setNotice({ tone: 'danger', message: messageForError(error) })
-      })
+    refreshLeagues().catch(error => { if (active) setNotice({ tone: 'danger', message: messageForError(error) }) })
     return () => { active = false }
-  }, [client, session, tournamentId])
+  }, [refreshLeagues])
 
   useEffect(() => {
     if (!client || !selectedLeague?.id) return undefined
@@ -141,6 +135,20 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     void refreshOverview()
     return () => { requestGuard.cancel() }
   }, [client, refreshOverview, selectedLeague])
+
+  // Reuses the canonical live snapshot/fixture-picking used by Home & Match Centre; no minute-level clock exists in this data.
+  useEffect(() => {
+    if (!client || !session?.user || !reference?.tournamentId) { setLiveFixture(null); return undefined }
+    let active = true
+    loadCanonicalTournamentSnapshot(client, reference)
+      .then(liveSnapshot => {
+        if (!active) return
+        const matchNumber = defaultMatchNumber(reference, liveSnapshot)
+        setLiveFixture(buildMatchCentreNavigation({ reference, liveSnapshot, matchNumber }).current)
+      })
+      .catch(() => { if (active) setLiveFixture(null) })
+    return () => { active = false }
+  }, [client, session, reference])
 
   const run = async action => {
     setNotice(null)
@@ -198,10 +206,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     })
     if (!succeeded) return
     setPendingLeagueAction(null)
-    setNotice({
-      tone: 'safe',
-      message: action === 'delete' ? `${leagueName} was deleted.` : `You left ${leagueName}.`,
-    })
+    setNotice({ tone: 'safe', message: action === 'delete' ? `${leagueName} was deleted.` : `You left ${leagueName}.` })
   }
 
   const clearComparison = () => {
@@ -214,9 +219,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     if (!selectedLeague || !session?.user) return
     const requestToken = comparisonRequests.current.begin()
     const leagueId = selectedLeague.id
-    const section = requestedCompetitionKey === LEAGUE_COMPETITION.ORIGINAL
-      ? overview.data?.sections.original
-      : overview.data?.sections.koPredictor
+    const section = requestedCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? overview.data?.sections.original : overview.data?.sections.koPredictor
     const standings = buildStandingComparison(section?.data ?? [], row.userId)
     setComparisonMemberId(row.userId)
     setComparison({
@@ -260,8 +263,6 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const activeSummary = effectiveCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.summaries.original : activeOverview?.summaries.koPredictor
   const leagueListLoading = ['idle', 'loading'].includes(leagueListStatus)
 
-  const openMemberPlayerView = row => row?.userId && openPlayerView({ userId: row.userId, competitionKey: effectiveCompetitionKey })
-
   useEffect(() => {
     if (competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR && !koLeagueReady) {
       setCompetitionKey(LEAGUE_COMPETITION.ORIGINAL)
@@ -274,121 +275,119 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     detailRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
   }, [comparison?.otherUserId])
 
-  const copyLeagueCode = async () => {
-    if (!selectedLeague?.joinCode) return
+  const copyText = async (text, successMessage) => {
     try {
-      await navigator.clipboard.writeText(selectedLeague.joinCode)
-      setNotice({ tone: 'safe', message: 'League code copied.' })
+      await navigator.clipboard.writeText(text)
+      setNotice({ tone: 'safe', message: successMessage })
     } catch {
-      setNotice({ tone: 'info', message: `League code: ${selectedLeague.joinCode}` })
+      setNotice({ tone: 'info', message: text })
     }
   }
 
+  const copyLeagueCode = () => selectedLeague?.joinCode && copyText(selectedLeague.joinCode, 'League code copied.')
+
+  const shareLeague = async () => {
+    if (!selectedLeague?.joinCode) return
+    const shareText = `Join my Euro 2028 Predictor league "${selectedLeague.name}" with code ${selectedLeague.joinCode}.`
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: selectedLeague.name, text: shareText })
+        return
+      } catch (error) {
+        if (error?.name === 'AbortError') return
+      }
+    }
+    await copyText(shareText, 'Share text copied.')
+  }
+
+  const matchStripHref = liveFixture
+    ? `#/match-centre?match=${liveFixture.matchNumber}&competition=${liveFixture.matchNumber <= 36 ? LEAGUE_COMPETITION.ORIGINAL : LEAGUE_COMPETITION.KO_PREDICTOR}${selectedLeague?.id ? `&league=${selectedLeague.id}` : ''}`
+    : null
+
   return (
-    <section className="foundation-panel foundation-leagues" aria-labelledby="euro28-leagues-heading">
-      <div className="foundation-section-heading">
-        <div>
-          <span className="foundation-kicker">Private leagues</span>
-          <h2 id="euro28-leagues-heading">Private leagues</h2>
-          <p>Track Original Predictor and KO Predictor separately. Each table has its own points race.</p>
-        </div>
+    <section className={layoutStyles.page} aria-labelledby="euro28-leagues-heading">
+      <div className={layoutStyles.sectionHeading}>
+        <span className={layoutStyles.kicker}>Private leagues</span>
+        <h2 id="euro28-leagues-heading">Private leagues</h2>
+        <p>Track Original Predictor and KO Predictor separately. Each table has its own points race.</p>
       </div>
 
-
-      {notice && <p className={`auth-notice auth-notice--${notice.tone}`}>{notice.message}</p>}
-      {loadingSession && <p className="foundation-empty-copy">Checking your league access…</p>}
+      <LeagueNotice notice={notice} />
+      {loadingSession && <p className={layoutStyles.emptyCopy}>Checking your league access…</p>}
       {!loadingSession && !session?.user && (
-        <p className="foundation-empty-copy">Sign in to create or join private leagues. Guest predictions remain browser-only and cannot enter a leaderboard.</p>
+        <p className={layoutStyles.emptyCopy}>Sign in to create or join private leagues. Guest predictions remain browser-only and cannot enter a leaderboard.</p>
       )}
 
       {!loadingSession && session?.user && (
         <>
-          <details className="foundation-league-manage" open={leagues.length === 0}>
-            <summary>Manage leagues</summary>
-            <div className="foundation-league-actions">
-              <form onSubmit={submitCreate}>
-                <span className="foundation-kicker">Create</span>
-                <h3>Start a private league</h3>
-                <label className="auth-field">
-                  <span>League name</span>
-                  <input value={createName} onChange={event => setCreateName(event.target.value)} maxLength={40} required />
-                </label>
-                <button type="submit" disabled={actionStatus === 'loading'}>Create league</button>
-              </form>
+          <LeagueManagePanel
+            open={leagues.length === 0}
+            createName={createName}
+            onCreateNameChange={setCreateName}
+            onSubmitCreate={submitCreate}
+            joinCode={joinCode}
+            onJoinCodeChange={setJoinCode}
+            onSubmitJoin={submitJoin}
+            busy={actionStatus === 'loading'}
+          />
 
-              <form onSubmit={submitJoin}>
-                <span className="foundation-kicker">Join</span>
-                <h3>Enter a league code</h3>
-                <label className="auth-field">
-                  <span>10-character code</span>
-                  <input value={joinCode} onChange={event => setJoinCode(event.target.value.toUpperCase())} maxLength={12} required />
-                </label>
-                <button type="submit" disabled={actionStatus === 'loading'}>Join league</button>
-              </form>
-            </div>
-          </details>
-
-          {leagueListLoading && <p className="foundation-empty-copy">Loading your leagues…</p>}
+          {leagueListLoading && <p className={layoutStyles.emptyCopy}>Loading your leagues…</p>}
           {!leagueListLoading && leagues.length === 0 ? (
-            <p className="foundation-empty-copy">You have not created or joined a league yet.</p>
+            <p className={layoutStyles.emptyCopy}>You have not created or joined a league yet.</p>
           ) : selectedLeague && (
             <>
-              <div className="foundation-league-toolbar">
-                <LeaguePicker leagues={leagues} selectedId={selectedLeague.id} onSelect={value => { overviewRequests.current.cancel(); setSelectedLeagueId(value); clearComparison(); setPendingLeagueAction(null) }} />
-                <CompetitionTabs value={effectiveCompetitionKey} koReadiness={koReadiness} onChange={value => { setCompetitionKey(value); clearComparison() }} />
-              </div>
+              <LeagueHero
+                league={selectedLeague}
+                leagues={leagues}
+                onSelectLeague={value => { overviewRequests.current.cancel(); setSelectedLeagueId(value); clearComparison(); setPendingLeagueAction(null) }}
+                competitionKey={effectiveCompetitionKey}
+                onCompetitionChange={value => { setCompetitionKey(value); clearComparison() }}
+                koReadiness={koReadiness}
+                currentRank={activeSummary?.currentRank ?? null}
+              />
 
-              <article className="foundation-league-card">
-                <div className="foundation-section-heading">
-                  <div>
-                    <span className="foundation-kicker">{selectedLeague.memberCount} member{selectedLeague.memberCount === 1 ? '' : 's'}</span>
-                    <h3>{selectedLeague.name}</h3>
-                    <LeagueCodeDisclosure joinCode={selectedLeague.joinCode} onCopy={copyLeagueCode} />
-                  </div>
-                  <div className="foundation-inline-actions">
-                    {selectedLeague.memberRole === 'owner' ? (
-                      <button type="button" className="foundation-danger-button" onClick={() => setPendingLeagueAction('delete')} disabled={actionStatus === 'loading'}>Delete league</button>
-                    ) : (
-                      <button type="button" className="foundation-secondary-button" onClick={() => setPendingLeagueAction('leave')} disabled={actionStatus === 'loading'}>Leave league</button>
-                    )}
+              <MiniMatchStrip fixture={liveFixture} href={matchStripHref} />
+
+              <div className={layoutStyles.layout}>
+                <div>
+                  <LeagueStandingsPanel
+                    competitionKey={effectiveCompetitionKey}
+                    overview={overview}
+                    overviewLoading={overviewLoading}
+                    activeOverview={activeOverview}
+                    activeSection={activeSection}
+                    standings={standings}
+                    comparisonMemberId={comparisonMemberId}
+                    onOpenDetail={row => compareMember(row, effectiveCompetitionKey)}
+                    leagueLifecycle={leagueLifecycle}
+                    lifecycle={lifecycle}
+                    activeSummary={activeSummary}
+                    koReadiness={koReadiness}
+                    koLeagueReady={koLeagueReady}
+                    selectedLeague={selectedLeague}
+                    pendingLeagueAction={pendingLeagueAction}
+                    actionStatus={actionStatus}
+                    onRequestAction={setPendingLeagueAction}
+                    onConfirmAction={confirmLeagueAction}
+                  />
+
+                  <div ref={detailRef}>
+                    <LeagueDetailDestination
+                      comparison={comparison}
+                      onOpenProfile={comparison?.otherUserId ? () => openPlayerView({ userId: comparison.otherUserId, competitionKey: comparison.competitionKey }) : null}
+                    >
+                      <PlayerHeadToHead state={comparison} reference={reference} lifecycle={lifecycle} onClose={clearComparison} context={PLAYER_COMPARISON_CONTEXT.LEAGUE} />
+                    </LeagueDetailDestination>
                   </div>
                 </div>
 
-                <LeagueActionConfirmation action={pendingLeagueAction} leagueName={selectedLeague.name} actionStatus={actionStatus} onConfirm={confirmLeagueAction} onCancel={() => setPendingLeagueAction(null)} />
-
-                {(overview.status === 'loading' || overviewLoading) && !overview.data && <p className="foundation-empty-copy">Loading both competition tables…</p>}
-                {activeOverview && overview.status === 'partial' && <p className="foundation-warning-text">One competition table could not be loaded. The available table remains usable.</p>}
-
-                <LeagueCompetitionHeading competitionKey={effectiveCompetitionKey} />
-
-                {activeSection?.status === 'error' && <p className="foundation-warning-text">{activeSection.error}</p>}
-                {(overview.status === 'loading' || overviewLoading) && <p className="foundation-empty-copy">Refreshing standings…</p>}
-                {overview.status !== 'loading' && !overviewLoading && activeSection?.status === 'ready' && standings.length === 0 && <p className="foundation-empty-copy">No league members were returned.</p>}
-                {standings.length > 0 && <StandingsTable rows={standings} selectedUserId={comparisonMemberId} onOpenPlayer={openMemberPlayerView} onCompare={row => compareMember(row, effectiveCompetitionKey)} />}
-
-                {activeOverview && (
-                  <LeagueSecondaryDetails title="League details">
-                    <LeagueLifecycleBanner lifecycleState={leagueLifecycle} />
-                    <CompetitionLifecycleNote competitionKey={effectiveCompetitionKey} lifecycle={lifecycle} summary={activeSummary} koReadiness={koReadiness} />
-                    <div className="foundation-league-summary-grid">
-                      <LeagueSummaryCard title="Original Predictor" summary={activeOverview.summaries.original} section={activeOverview.sections.original} />
-                      {koLeagueReady ? (
-                        <LeagueSummaryCard title="KO Predictor" summary={activeOverview.summaries.koPredictor} section={activeOverview.sections.koPredictor} />
-                      ) : (
-                        <LeagueKoReadinessCard koReadiness={koReadiness} />
-                      )}
-                    </div>
-                    <div className="foundation-shared-member-row">
-                      <p className="foundation-member-count">Shared member list: <strong>{activeOverview.members.length}</strong>. Open a member row for the detailed comparison.</p>
-                    </div>
-                  </LeagueSecondaryDetails>
-                )}
-              </article>
-
-              <div ref={detailRef}>
-                <LeagueDetailDestination comparison={comparison}>
-                  <PlayerHeadToHead state={comparison} reference={reference} lifecycle={lifecycle} onClose={clearComparison} context={PLAYER_COMPARISON_CONTEXT.LEAGUE} />
-                </LeagueDetailDestination>
+                <LeagueActionsCard
+                  joinCode={selectedLeague.joinCode}
+                  onCopyInvite={copyLeagueCode}
+                  onShareLeague={shareLeague}
+                  hasSettings={false}
+                  onOpenSettings={null}
+                />
               </div>
             </>
           )}

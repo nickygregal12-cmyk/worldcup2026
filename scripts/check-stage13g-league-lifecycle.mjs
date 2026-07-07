@@ -13,9 +13,6 @@ const required = [
   ['package.json', 'npm run audit:league-lifecycle && npm run audit:architecture'],
   ['src/App.jsx', 'koReadiness={koReadiness}'],
   ['src/leagues/Leagues.jsx', 'buildLeagueLifecycleState'],
-  ['src/leagues/Leagues.jsx', 'LeagueLifecycleBanner'],
-  ['src/leagues/Leagues.jsx', 'CompetitionLifecycleNote'],
-  ['src/leagues/Leagues.jsx', 'LeagueKoReadinessCard'],
   ['src/leagues/Leagues.jsx', 'koLeagueReady'],
   ['src/leagues/LeaguePresentation.jsx', 'buildLeagueCompetitionLifecycleCopy'],
   ['src/leagues/LeaguePresentation.jsx', 'LeagueKoReadinessCard'],
@@ -32,6 +29,18 @@ const required = [
 
 for (const [file, token] of required) {
   if (!read(file).includes(token)) fail(`${file} is missing required token: ${token}`)
+}
+
+// This composition may live in either the Leagues page component or the presentation
+// module it composes from (e.g. consolidated there to fit the architecture line cap) —
+// checking file location rather than behaviour would make this gate stale on refactors.
+const requiredInEitherLeaguesFile = ['LeagueLifecycleBanner', 'CompetitionLifecycleNote', 'LeagueKoReadinessCard']
+const leaguesComponentSource = read('src/leagues/Leagues.jsx')
+const leaguesPresentationSource = read('src/leagues/LeaguePresentation.jsx')
+for (const token of requiredInEitherLeaguesFile) {
+  if (!leaguesComponentSource.includes(token) && !leaguesPresentationSource.includes(token)) {
+    fail(`${token} is missing from both src/leagues/Leagues.jsx and src/leagues/LeaguePresentation.jsx`)
+  }
 }
 
 const migrationFiles = readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql'))

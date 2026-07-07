@@ -1,87 +1,200 @@
-/* Stage 13G-C4 compact league standings */
+/* Stage 13G-C4/C5 compact league standings + row detail, rebuilt as leader-list rows (League table D) */
 
-.rankMarker {
-  display: inline-flex;
-  min-height: 1.55rem;
-  min-width: 2.1rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  padding: 0.1rem 0.55rem;
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
-.currentUserRow {
-  outline: 2px solid currentColor;
-  outline-offset: -2px;
-}
-
-/* Stage 13G-C5 league row detail destination */
-
-.selectedRow {
-  box-shadow: inset 0 0 0 2px currentColor;
-}
-
-.detailDestination {
-  margin-top: 1rem;
-  border: 1px solid currentColor;
-  border-radius: 1rem;
-  padding: 1rem;
-}
-
-.detailDestinationHeading {
+.standingsCard {
   display: grid;
-  gap: 0.25rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-1);
 }
-
-.detailDestinationHeading small {
-  opacity: 0.78;
-}
-
-/* Stage 13G-C6 compact league page shell */
 
 .compactCompetitionHeading {
   display: flex;
   align-items: end;
   justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
+  gap: var(--space-3);
 }
 
 .compactCompetitionHeading h3 {
   margin: 0.1rem 0 0;
+  color: var(--text-strong);
 }
 
 .compactCompetitionHeading small {
-  opacity: 0.76;
+  color: var(--text-secondary);
   text-align: right;
 }
 
-.leagueCodeDisclosure,
-.secondaryDetails {
-  border: 1px solid currentColor;
-  border-radius: 0.9rem;
-  padding: 0.65rem 0.8rem;
+.leaderList {
+  display: grid;
+  gap: var(--space-2);
 }
 
-.leagueCodeDisclosure summary,
+.leaderRow {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr auto 1.5rem;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-soft);
+  text-align: left;
+}
+
+button.leaderRow {
+  cursor: pointer;
+  transition: transform var(--motion-micro) var(--ease-standard), border-color var(--motion-micro) var(--ease-standard);
+}
+
+button.leaderRow:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border-default));
+}
+
+.currentUserRow {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border-default));
+  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface-raised));
+}
+
+.selectedRow {
+  box-shadow: inset 0 0 0 2px var(--brand);
+}
+
+.rankMarker {
+  display: inline-flex;
+  min-height: 1.55rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-full);
+  padding: 0.1rem 0.4rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.rowIdentity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.points {
+  color: var(--text-strong);
+  font: 800 var(--text-lg)/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.rowGo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-full);
+  background: var(--surface-raised);
+  color: var(--text-muted);
+}
+
+button.leaderRow:hover .rowGo {
+  background: var(--accent);
+  color: var(--text-on-brand);
+}
+
+.movementChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.movementUp {
+  color: var(--state-success);
+}
+
+.movementDown {
+  color: var(--state-danger);
+}
+
+.movementIcon {
+  display: inline-flex;
+  width: 1rem;
+  height: 1rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: currentColor;
+}
+
+.movementIcon svg {
+  color: var(--surface-raised);
+}
+
+.movementUpIcon svg {
+  transform: rotate(-90deg);
+}
+
+.movementDownIcon svg {
+  transform: rotate(90deg);
+}
+
+.detailDestination {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+
+.detailDestinationHeading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.detailDestinationHeading > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.detailDestinationHeading small {
+  color: var(--text-muted);
+}
+
+.secondaryDetails {
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  padding: var(--space-2) var(--space-3);
+}
+
 .secondaryDetails summary {
   cursor: pointer;
+  color: var(--text-strong);
   font-weight: 800;
 }
 
-.secondaryDetails {
-  margin-top: 1rem;
+.dangerZone {
+  display: grid;
+  gap: var(--space-2);
 }
 
 .secondaryDetailsBody {
   display: grid;
-  gap: 1rem;
-  padding-top: 0.85rem;
+  gap: var(--space-4);
+  padding-top: var(--space-3);
 }
 
 @media (max-width: 640px) {
@@ -93,5 +206,9 @@
 
   .compactCompetitionHeading small {
     text-align: left;
+  }
+
+  .leaderRow {
+    grid-template-columns: 2rem 1fr auto 1.25rem;
   }
 }
