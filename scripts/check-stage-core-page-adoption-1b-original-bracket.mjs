@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { ORIGINAL_BRACKET_G_COPY } from '../src/journey/originalBracketCopy.js'
@@ -147,8 +148,7 @@ if (!packageJson.scripts?.['lint:foundation']?.includes('scripts/check-stage-cor
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(name => /(?:^|_)019|2026070\d0019/.test(name))) fail('Migration 019 must not exist for Original Bracket 1B')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (errors.length) {
   console.error('Stage STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET audit failed:')
@@ -159,4 +159,4 @@ if (errors.length) {
 console.log('Stage STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET audit passed.')
 console.log('Original Bracket: Bracket G markers, desktop wall chart and match detail chips are active on the live surface.')
 console.log('Safety: winner-only bracket preserved; no scores, methods, jokers, scoring, resolver, Supabase write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

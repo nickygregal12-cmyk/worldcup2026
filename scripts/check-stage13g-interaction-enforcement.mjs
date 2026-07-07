@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { ACTIVE_UI_ROOTS, FOUNDATION_CLASS_RATCHET_CAP } from './architecture-policy.mjs'
@@ -23,8 +24,7 @@ const activeFiles = ACTIVE_UI_ROOTS.flatMap(listFiles)
 const activeText = activeFiles.map(file => [file, read(file)])
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
 
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(file => file.includes('019'))) fail('Migration 019 must not exist in this Stage 13G-A enforcement slice')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 const nativeSelectViolations = activeText.filter(([file, text]) => {
   if (file === 'src/design-system/index.jsx') return false

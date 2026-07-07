@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -102,8 +103,7 @@ if (!packageJson.scripts['lint:foundation'].includes('scripts/check-stage13g-c1-
 }
 
 const migrationFiles = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrationFiles.length !== 18) fail(`C1 must not change migration count; found ${migrationFiles.length}`)
-if (migrationFiles.some(name => /(?:^|_)019|202607030019/.test(name))) fail('C1 must not create Migration 019')
+if (migrationSequenceError(migrationFiles)) fail(migrationSequenceError(migrationFiles))
 
 if (errors.length) {
   console.error('Euro Stage 13G-C1 guest keep prompt audit failed:')
@@ -115,4 +115,4 @@ console.log('Euro Stage 13G-C1 guest keep prompt audit passed.')
 console.log('Prompt: accepted import/start-fresh wording is present.')
 console.log('Copy: signed-in import surfaces use device wording, not browser-draft wording.')
 console.log('Competition boundary: Original Predictor and KO Predictor import readiness remains separate.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrationFiles.length} active migrations, sequentially numbered with no gaps.`)

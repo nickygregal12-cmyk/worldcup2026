@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -41,9 +42,7 @@ requireText('docs/STAGE-13G-R0-CANONICAL-RECONCILIATION.md', [
 ])
 
 const migrations = fs.readdirSync(path.join(root, 'supabase', 'migrations')).filter((name) => name.endsWith('.sql')).sort()
-if (migrations.length !== 18) throw new Error(`Expected 18 migrations, found ${migrations.length}`)
-if (!migrations.at(-1)?.startsWith('202607030018_')) throw new Error(`Unexpected latest migration: ${migrations.at(-1)}`)
-if (migrations.some((name) => name.includes('019'))) throw new Error('Migration 019 must not exist')
+if (migrationSequenceError(migrations)) throw new Error(migrationSequenceError(migrations))
 
 console.log('Stage 13G-R0 documentation reconciliation checks passed.')
 console.log(`Active migrations: ${migrations.length}`)

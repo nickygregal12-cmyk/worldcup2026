@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -81,8 +82,7 @@ if (!packageJson.scripts['lint:foundation'].includes('scripts/check-stage13g-h2-
 }
 
 const migrationFiles = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrationFiles.length !== 18) fail(`H2 must not change migration count; found ${migrationFiles.length}`)
-if (migrationFiles.some(name => /(?:^|_)019|202607030019/.test(name))) fail('H2 must not create Migration 019')
+if (migrationSequenceError(migrationFiles)) fail(migrationSequenceError(migrationFiles))
 
 const deployableAssetRoots = ['public', 'src/assets']
 const bannedAssetName = /(?:uefa.*euro.*2028.*logo|euro.*2028.*logo|uefa.*logo).*\.(?:svg|png|jpe?g|webp)$/i
@@ -110,4 +110,4 @@ console.log('Euro Stage 13G-H2 product alignment audit passed.')
 console.log('Official UEFA EURO 2028 logo: not approved as a deployable app asset without recorded permission.')
 console.log('Leagues reference patterns: evaluated as adopt-improved/adapt/drop before build.')
 console.log('Next product build: guest import prompt and signed-in copy sweep recommended.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrationFiles.length} active migrations, sequentially numbered with no gaps.`)

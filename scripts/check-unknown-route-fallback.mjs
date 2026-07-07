@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // Unknown-route fallback audit — scheduled product-completeness route recovery.
 //
 // This guard proves that unknown app hashes no longer silently fall through to
@@ -50,8 +51,7 @@ requireText(ledger, 'Stage PRODUCT-UNKNOWN-ROUTE-1', 'the functional ledger must
 requireText(agentRules, 'Stage PRODUCT-UNKNOWN-ROUTE-1', 'future agents must preserve the route recovery behaviour')
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}.`)
-if (migrations.some(name => name.includes('019'))) errors.push('Migration 019 exists but this slice must not create it.')
+if (migrationSequenceError(migrations)) errors.push(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`Unknown-route fallback audit failed with ${errors.length} issue(s):\n`)
@@ -62,4 +62,4 @@ if (errors.length > 0) {
 console.log('Stage PRODUCT-UNKNOWN-ROUTE-1 unknown-route fallback audit passed.')
 console.log('Routes: unknown app hashes render a friendly recovery surface instead of silently falling through to Home.')
 console.log('Safety: UI/test/docs/audit only; no scoring, resolver, Supabase write, service-role use or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

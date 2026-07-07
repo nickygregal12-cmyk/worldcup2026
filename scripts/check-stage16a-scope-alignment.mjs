@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
 const failures = []
@@ -77,6 +78,14 @@ for (const key of personaKeys) {
   if (!agentRules.includes(key)) fail(`Agent Rules missing persona key: ${key}`)
 }
 
+const migrations = existsSync('supabase/migrations')
+  ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
+  : []
+// The current migration count is a live fact, not a stage-specific historical claim -- checking
+// a frozen "18" here would put this audit permanently at odds with governance-coherence the
+// moment a genuine new migration is approved (as happened with Migration 019).
+const migrationCountMarker = `active migrations remain ${migrations.length} and Migration 019 is applied`
+
 for (const [file, text] of Object.entries({
   'Decision Register': register,
   'Functional Completion Ledger': ledger,
@@ -88,7 +97,7 @@ for (const [file, text] of Object.entries({
     '16A-P1',
     '16A-P2',
     'No component, resolver, scoring, route, database or migration implementation is included',
-    'active migrations remain 18 and no Migration 019 is created',
+    migrationCountMarker,
   ]) {
     if (!text.includes(marker)) fail(`${file} missing Stage 16A scope marker: ${marker}`)
   }
@@ -106,12 +115,7 @@ if (!packageJson.scripts?.['lint:foundation']?.includes('scripts/check-stage16a-
   fail('lint:foundation must include the Stage 16A scope audit script')
 }
 
-const migrations = existsSync('supabase/migrations')
-  ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
-  : []
-
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(name => /(?:^|_)019|2026070\d0019/.test(name))) fail('Migration 019 must not exist for Stage 16A scope alignment')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (failures.length > 0) {
   console.error('Euro Stage 16A scope alignment audit failed:')
@@ -123,4 +127,4 @@ console.log('Euro Stage 16A scope alignment audit passed.')
 console.log('Scope: docs/audit-only launch gate; no seeding implementation in this package.')
 console.log('Boundaries: Euro staging only; WC26 production fails closed; no secrets committed.')
 console.log('Competitions: Original Predictor and KO Predictor remain separate.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

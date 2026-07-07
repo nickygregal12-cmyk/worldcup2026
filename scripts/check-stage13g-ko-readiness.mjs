@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -45,8 +46,7 @@ if (!register.includes('Stage 13G-B KO-readiness signal close-out')) fail('Decis
 if (!ledger.includes('v1.30') || !ledger.includes('Home, Navigation and Leagues now consume one shared KO-readiness model')) fail('Ledger KO-readiness close-out is missing')
 
 const migrationFiles = readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
-if (migrationFiles.length !== 18) fail(`Expected 18 active migrations, found ${migrationFiles.length}`)
-if (migrationFiles.some(file => file.includes('019'))) fail('Migration 019 must not exist for KO-readiness close-out')
+if (migrationSequenceError(migrationFiles)) fail(migrationSequenceError(migrationFiles))
 
 console.log('Stage 13G-B KO-readiness audit passed.')
 console.log('Shared signal: Home, Navigation and Leagues consume buildKoReadiness')

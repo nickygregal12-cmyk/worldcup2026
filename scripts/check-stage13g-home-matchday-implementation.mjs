@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import process from 'node:process'
 
@@ -56,11 +57,10 @@ if (!pkg.scripts?.check?.includes('npm run audit:stage13g-home-matchday-implemen
   fail('check script does not include audit:stage13g-home-matchday-implementation')
 }
 
-if (exists('supabase/migrations')) {
-  const migrations = fs.readdirSync('supabase/migrations').filter(file => file.endsWith('.sql')).sort()
-  if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-  if (migrations.some(file => file.includes('019'))) fail('Stage 13G-HOME-MATCHDAY-1 must not create Migration 019')
-}
+const migrations = exists('supabase/migrations')
+  ? fs.readdirSync('supabase/migrations').filter(file => file.endsWith('.sql')).sort()
+  : []
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`Stage 13G-HOME-MATCHDAY-1 audit failed with ${errors.length} issue(s):`)
@@ -72,4 +72,4 @@ console.log('Stage 13G-HOME-MATCHDAY-1 audit passed.')
 console.log('Home: match hub now carries fixture, teams, status and Match Centre route.')
 console.log('Boundary: group fixtures open Original context; knockout fixtures open KO Predictor context.')
 console.log('Safety: read-only presentation only; no scoring, resolver, Supabase write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

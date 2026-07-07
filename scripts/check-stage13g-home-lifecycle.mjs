@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -14,8 +15,7 @@ const styles = read('src/home/HomeDashboard.module.css')
 const packageJson = JSON.parse(read('package.json'))
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
 
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(file => file.includes('019'))) fail('Migration 019 must not exist in this Stage 13G-B Home slice')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 if (!lifecycle.includes('validStartTimestamp') || !lifecycle.includes('hasExplicitTime')) fail('Lifecycle resolver must keep date-only tournament starts from overriding central precise start config')
 if (!lifecycleTest.includes("starts_on: '2028-06-09'") || !lifecycleTest.includes("2028-06-09T20:00:00.000Z")) fail('Config-to-surface lifecycle test for central tournament start is missing')
 if (!model.includes('resolveTournamentLifecycle(tournament, now)')) fail('Home model must derive lifecycle from the central resolver')

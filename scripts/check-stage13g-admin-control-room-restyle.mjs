@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -101,8 +102,7 @@ if (!packageJson.scripts['lint:foundation'].includes('scripts/check-stage13g-adm
 
 const migrationDir = path.join(root, 'supabase/migrations')
 const migrations = fs.readdirSync(migrationDir).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) fail(`Admin cosmetic restyle must not change migration count; found ${migrations.length}`)
-if (migrations.some(name => /(?:^|_)019|202607030019/.test(name))) fail('Admin cosmetic restyle must not create Migration 019')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (errors.length) {
   console.error('Euro Stage 13G-ADMIN-1 control-room restyle audit failed:')
@@ -113,4 +113,4 @@ if (errors.length) {
 console.log('Euro Stage 13G-ADMIN-1 control-room restyle audit passed.')
 console.log('Admin shell: hero, section navigation, role chips, status cards, guardrail banner and audit filter pills use approved reference patterns.')
 console.log('Safety: Admin route gate, section registry, permissions, RPCs, audit evidence and Tournament Picks readiness remain unchanged.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

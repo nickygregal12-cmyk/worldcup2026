@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -40,9 +41,7 @@ if (!stageDoc.includes('No database migration') || !stageDoc.includes('no Migrat
 
 const migrationFiles = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
 const latest = migrationFiles.sort().at(-1)
-if (migrationFiles.length !== 18) fail(`expected 18 active migrations, found ${migrationFiles.length}`)
-if (migrationFiles.some(name => name.includes('019'))) fail('Migration 019 must not exist for Stage 13G-B results lifecycle')
-if (latest !== '202607030018_euro28_complete_admin_operations.sql') fail(`unexpected latest migration ${latest}`)
+if (migrationSequenceError(migrationFiles)) fail(migrationSequenceError(migrationFiles))
 
 console.log('Stage 13G-B results lifecycle audit passed.')
 console.log('Results surface: central pre-tournament, live, review, quiet and complete lifecycle state')

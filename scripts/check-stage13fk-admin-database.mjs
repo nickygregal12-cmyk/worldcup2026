@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 
 const root = process.cwd()
 const errors = []
@@ -137,11 +138,9 @@ const migrations = fs.readdirSync(path.join(root, 'supabase/migrations'))
   .filter(file => file.endsWith('.sql'))
   .sort()
 
-if (migrations.length !== 18) {
-  fail(`Stage 13F-K1 requires exactly 18 active migration files, found ${migrations.length}`)
-}
-if (migrations.at(-1) !== '202607030018_euro28_complete_admin_operations.sql') {
-  fail('Migration 018 is not the latest active migration')
+const sequenceError = migrationSequenceError(migrations)
+if (sequenceError) {
+  fail(sequenceError)
 }
 
 if (errors.length) {
@@ -155,4 +154,4 @@ console.log('Fixtures: owner-only date, kick-off, venue and schedule status with
 console.log('Scoring: owner-only whole-tournament replacement reconciliation with separate competition totals')
 console.log('Readiness: fixture, participant, result, scoring, profile, safeguard and Tournament Picks dependency evidence')
 console.log('Audit: append-only fixture before/after and reconciliation runs; Team Profile and Time & Phase values preserved')
-console.log(`Database: ${migrations.length} active migrations; Migration 018 is the latest contract`)
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps`)

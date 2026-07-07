@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // Owner signup-decision audit — records owner choices without opening registration.
 //
 // This guard proves OWNER-SIGNUP-DECISIONS-1 stays model/docs/audit only. It
@@ -156,8 +157,7 @@ for (const marker of safetyMarkers) {
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}.`)
-if (migrations.some(name => name.includes('019'))) errors.push('Migration 019 exists but this stage must not create it.')
+if (migrationSequenceError(migrations)) errors.push(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`Owner signup-decision audit failed with ${errors.length} issue(s):\n`)
@@ -168,4 +168,4 @@ if (errors.length > 0) {
 console.log('Stage OWNER-SIGNUP-DECISIONS-1 owner signup-decision audit passed.')
 console.log('Decisions: Contact admin, 50 users, 20 leagues, post-email-sender 100 user target, low-cost/free planning, email confirmation ON, conservative privacy wording and moderation policy recorded.')
 console.log('Readiness: wider public registration remains closed until later implementation gates close.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

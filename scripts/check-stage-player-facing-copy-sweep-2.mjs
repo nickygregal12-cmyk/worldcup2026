@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { ORIGINAL_BRACKET_CONTEXT_COPY, ORIGINAL_BRACKET_KO_SUBLINE } from '../src/journey/originalBracketCopy.js'
@@ -95,8 +96,7 @@ for (const forbidden of ['ScoreInput', 'decisionMethod', 'jokerApplied', 'ko-met
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(name => /(?:^|_)019|2026070\d0019/.test(name))) fail('Migration 019 must not exist for player-facing copy sweep')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 const packageJson = JSON.parse(read('package.json'))
 if (packageJson.scripts?.['audit:player-facing-copy-sweep-2'] !== 'node scripts/check-stage-player-facing-copy-sweep-2.mjs') {
@@ -116,4 +116,4 @@ console.log('Stage PLAYER-FACING-COPY-SWEEP-2 audit passed.')
 console.log('Copy: player-facing surfaces use plain language instead of spec/internal wording.')
 console.log('Boundary: Original Predictor and KO Predictor remain separate without implementation copy.')
 console.log('Safety: copy/docs/audit only; no scoring, resolver, Supabase write, Auth or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

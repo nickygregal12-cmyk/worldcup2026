@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // STAGE-LEAGUE-SETUP-AND-INVITES-1 audit — League setup and invites contract.
 //
 // This guard is intentionally docs/audit-only. It verifies that create league,
@@ -102,8 +103,7 @@ if (!pkg.scripts?.['lint:foundation']?.includes('scripts/check-stage-league-setu
 
 const migrationsDir = path.join(root, 'supabase/migrations')
 const migrations = fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}.`)
-if (migrations.some(name => name.includes('019'))) errors.push('Migration 019 exists but this stage must not create it.')
+if (migrationSequenceError(migrations)) errors.push(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`STAGE-LEAGUE-SETUP-AND-INVITES-1 audit failed with ${errors.length} issue(s):\n`)
@@ -114,4 +114,4 @@ if (errors.length > 0) {
 console.log('Stage STAGE-LEAGUE-SETUP-AND-INVITES-1 audit passed.')
 console.log('Leagues: create flow, join flow, invite-code states, privacy copy, empty/member states and post-auth continuation recorded.')
 console.log('Safety: docs/audit-only; no runtime UI, route, Auth, Supabase, league-write, scoring, resolver, result-entry or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

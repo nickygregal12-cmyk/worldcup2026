@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1 audit — first public signup implementation guard.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -87,8 +88,7 @@ if (!pkg.scripts?.['lint:foundation']?.includes('scripts/check-stage-public-sign
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}.`)
-if (migrations.some(name => name.includes('019'))) errors.push('Migration 019 exists but this stage must not create it.')
+if (migrationSequenceError(migrations)) errors.push(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1 audit failed with ${errors.length} issue(s):\n`)
@@ -99,4 +99,4 @@ if (errors.length > 0) {
 console.log('Stage STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1 audit passed.')
 console.log('Signup: client-side pre-Auth display-name moderation is implemented and availability RPC remains before Auth sign-up.')
 console.log('Safety: public registration remains closed; no Supabase Auth dashboard/config, schema, RPC, RLS, service-role, scoring, resolver, fake-result, league-write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

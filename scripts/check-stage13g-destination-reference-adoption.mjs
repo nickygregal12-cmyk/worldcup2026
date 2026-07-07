@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -103,11 +104,10 @@ requireIncludes('docs/STAGE-13G-B-TOURNAMENT-HOW-TO-PLAY-SPLIT.md', implementati
 ])
 
 const migrationsDir = path.join(repo, 'supabase', 'migrations')
-if (fs.existsSync(migrationsDir)) {
-  const active = fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  if (active.length !== 18) errors.push(`Expected 18 active migrations, found ${active.length}`)
-  if (active.some((name) => name.includes('019'))) errors.push('Migration 019 must not exist for Stage 13G destination reference adoption')
-}
+const active = fs.existsSync(migrationsDir)
+  ? fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
+  : []
+if (migrationSequenceError(active)) errors.push(migrationSequenceError(active))
 
 if (errors.length) {
   console.error('Euro Stage 13G destination reference adoption audit failed:')
@@ -119,4 +119,4 @@ console.log('Euro Stage 13G destination reference adoption audit passed.')
 console.log('References: Tournament, How to Play, Account, Admin and Match Centre prototypes are recorded.')
 console.log('Sequencing: 13G-B-TOURNAMENT-1 is the scoped Part A implementation; Account/Admin/Match Centre remain later focused batches.')
 console.log('Scope guard: reference artefacts remain recorded and no migration is introduced by the later implementation slice.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${active.length} active migrations, sequentially numbered with no gaps.`)

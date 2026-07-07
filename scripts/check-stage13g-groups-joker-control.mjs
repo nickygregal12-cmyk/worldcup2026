@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 
 const root = process.cwd()
 const read = file => fs.readFileSync(path.join(root, file), 'utf8')
@@ -83,11 +84,10 @@ assertIncludes('package.json', [
 
 const migrationsDir = path.join(root, 'supabase', 'migrations')
 const migrations = fs.existsSync(migrationsDir) ? fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql')) : []
-assert(migrations.length === 18, `Expected 18 active migrations, found ${migrations.length}`)
-assert(!migrations.some(name => /019/.test(name)), 'Migration 019 must not be introduced by Stage 13G-GROUPS-1')
+assert(!migrationSequenceError(migrations), migrationSequenceError(migrations))
 
 console.log('Euro Stage 13G-GROUPS-1 joker-control audit passed.')
 console.log('Groups: shared JokerPill, five-dot JokerMeter and disabled cap treatment are active.')
 console.log('Retired: bare J circle no longer renders from the Groups predictor surface.')
 console.log('Scope: no venue meta line, score stepper implementation, bracket rebuild, Supabase write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
 const failures = []
@@ -28,7 +29,6 @@ for (const marker of [
   'Groups and Original Bracket Reference Prototype Adoption',
   'euro28-groups-page-prototype.html',
   'euro28-bracket-page-prototype.html',
-  'active migrations remain 18',
   'Migration 019',
   'no UI build',
   'no route implementation',
@@ -44,6 +44,22 @@ for (const marker of [
     'Functional Completion Ledger': ledger,
     'Agent Rules': agentRules,
   })) assertIncludes(label, text, marker)
+}
+
+// The spec is a frozen historical record of this stage's own completion and keeps its original
+// "18" marker; Decision Register, Ledger and Agent Rules are governing docs that must always
+// reflect the live migration count (see check-governance-coherence.mjs).
+assertIncludes('Stage 13G-REF-2 spec', spec, 'active migrations remain 18')
+{
+  const migrationsForMarker = existsSync('supabase/migrations')
+    ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
+    : []
+  const liveMigrationCountMarker = `active migrations remain ${migrationsForMarker.length}`
+  for (const [label, text] of Object.entries({
+    'Decision Register': register,
+    'Functional Completion Ledger': ledger,
+    'Agent Rules': agentRules,
+  })) assertIncludes(label, text, liveMigrationCountMarker)
 }
 
 for (const marker of [
@@ -167,8 +183,7 @@ const migrations = existsSync('supabase/migrations')
   ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
   : []
 
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(name => /(?:^|_)019|2026070\d0019/.test(name))) fail('Migration 019 must not exist for Stage 13G-REF-2')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (failures.length > 0) {
   console.error('Euro Stage 13G-REF-2 Groups/Bracket reference adoption audit failed:')
@@ -180,4 +195,4 @@ console.log('Euro Stage 13G-REF-2 Groups/Bracket reference adoption audit passed
 console.log('Groups: approved Night Broadcast contract, joker controls, tables fast path and preserved behaviour recorded.')
 console.log('Bracket: approved Bracket G contract, proper wall chart, match detail and winner-only controls recorded.')
 console.log('Scope: docs/audit-only; no UI build, route implementation, scoring, resolver, Supabase write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

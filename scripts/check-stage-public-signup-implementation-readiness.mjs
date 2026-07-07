@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-1 audit — Public signup implementation readiness contract.
 //
 // This guard is intentionally docs/audit-only. It verifies that public signup
@@ -113,8 +114,7 @@ if (!pkg.scripts?.['lint:foundation']?.includes('scripts/check-stage-public-sign
 
 const migrationsDir = path.join(root, 'supabase/migrations')
 const migrations = fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}.`)
-if (migrations.some(name => name.includes('019'))) errors.push('Migration 019 exists but this stage must not create it.')
+if (migrationSequenceError(migrations)) errors.push(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-1 audit failed with ${errors.length} issue(s):\n`)
@@ -125,4 +125,4 @@ if (errors.length > 0) {
 console.log('Stage STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-1 audit passed.')
 console.log('Signup: owner-decision gates, email confirmation, support flow, capacity, privacy, moderation and pre-Auth checks recorded.')
 console.log('Safety: docs/audit-only; no runtime UI, route, Auth, Supabase, scoring, resolver, result-entry, fake-result write, league-write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

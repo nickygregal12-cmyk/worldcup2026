@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 
 const requiredFiles = [
   'docs/STAGE-13F-K3-STAGING-ACCEPTANCE-AND-CLOSE-OUT.md',
@@ -12,14 +13,8 @@ for (const file of requiredFiles) {
 }
 
 const migrations = fs.readdirSync('supabase/migrations').filter(file => file.endsWith('.sql')).sort()
-if (migrations.length !== 18) {
-  throw new Error(`Stage 13F-K3 requires exactly 18 migrations, found ${migrations.length}`)
-}
-if (migrations.some(file => file.includes('019'))) {
-  throw new Error('Stage 13F-K3 must not introduce Migration 019')
-}
-if (!migrations.at(-1)?.startsWith('202607030018_')) {
-  throw new Error(`Migration 018 must remain latest, found ${migrations.at(-1)}`)
+if (migrationSequenceError(migrations)) {
+  throw new Error(migrationSequenceError(migrations))
 }
 
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))

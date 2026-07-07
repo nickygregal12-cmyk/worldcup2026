@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -122,8 +123,7 @@ for (const marker of ['Fixture schedule operations', 'Reconcile all tournament p
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
-if (migrations.length !== 18) fail(`Stage 13F-K2 must retain exactly 18 migrations, found ${migrations.length}`)
-if (migrations.at(-1) !== '202607030018_euro28_complete_admin_operations.sql') fail('Stage 13F-K2 must not add Migration 019')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (errors.length) {
   console.error('Euro Stage 13F-K2 control-room audit failed:')

@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -125,12 +126,13 @@ if (!packageJson.scripts?.['lint:foundation']?.includes('scripts/check-stage13g-
 }
 
 const migrationsDir = path.join(root, 'supabase', 'migrations')
-if (fs.existsSync(migrationsDir)) {
-  const migrations = fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql')).sort()
-  if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}`)
-  if (migrations.some(name => /(?:^|_)019|migration[-_ ]?019/i.test(name))) errors.push('Migration 019 must not exist for Stage 13G-MATCH-CENTRE-REF')
-} else {
+const migrations = fs.existsSync(migrationsDir)
+  ? fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql')).sort()
+  : []
+if (!fs.existsSync(migrationsDir)) {
   errors.push('Missing supabase/migrations directory')
+} else if (migrationSequenceError(migrations)) {
+  errors.push(migrationSequenceError(migrations))
 }
 
 if (errors.length > 0) {
@@ -143,4 +145,4 @@ console.log('Euro Stage 13G-MATCH-CENTRE-REF reference adoption audit passed.')
 console.log('Decisions: group fixtures use Original-only tabs, live/final group impact, resolver-backed projection and this-match prediction comparison.')
 console.log('Boundary: knockout Points on the line stays unchanged; Match Centre projections are read-only and never write to saved brackets, standings or scores.')
 console.log('Sequencing: Stage 13G-MATCH-CENTRE-1 is the next implementation slice; Player destinations and UI-copy hygiene remain separate.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

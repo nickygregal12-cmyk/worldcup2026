@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import process from 'node:process'
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 
 const errors = []
 const fail = message => errors.push(message)
@@ -88,10 +89,10 @@ if (!pkg.scripts?.check?.includes('npm run audit:stage13g-player-view-implementa
   fail('check script does not include audit:stage13g-player-view-implementation')
 }
 
-if (fs.existsSync('supabase/migrations')) {
-  const migration019 = fs.readdirSync('supabase/migrations').find(name => /019|migration[-_ ]?019/i.test(name))
-  if (migration019) fail(`Stage 13G-PLAYER-1 must not create Migration 019: ${migration019}`)
-}
+const migrations = fs.existsSync('supabase/migrations')
+  ? fs.readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
+  : []
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`Stage 13G-PLAYER-1 audit failed with ${errors.length} issue(s):`)
@@ -103,4 +104,4 @@ console.log('Stage 13G-PLAYER-1 audit passed.')
 console.log('Player View: dedicated route, always-visible header and Predictions/Bracket/Tables sections are active.')
 console.log('Privacy: authorised shared-prediction reads are reused; protected picks remain hidden.')
 console.log('Boundary: Original Predictor and KO Predictor remain separate; no write path or scoring change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

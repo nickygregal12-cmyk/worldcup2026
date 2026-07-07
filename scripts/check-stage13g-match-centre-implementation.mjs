@@ -50,4 +50,3 @@ if (errors.length > 0) {
 console.log('Stage 13G-MATCH-CENTRE-1 audit passed.')
 console.log('Group fixtures: Original-only competition selector, resolver-backed group context and this-match comparison.')
 console.log('Knockout fixtures: existing Points on the line panel remains unchanged.')
-console.log('Database: active migrations remain 18; no Migration 019.')

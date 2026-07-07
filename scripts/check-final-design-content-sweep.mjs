@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // FINAL-DESIGN-CONTENT-SWEEP-1 audit — public UI content polish before seeded-team testing.
 //
 // This guard makes sure player-facing copy no longer carries internal process
@@ -57,7 +58,22 @@ for (const marker of stageMarkers) {
   requireText(contractDoc, marker, 'contract doc must preserve the sweep boundary')
 }
 
-for (const file of [register, ledger, agentRules, roadmap, batchOrder]) {
+// Decision Register, Ledger and Agent Rules are governing docs that must always reflect the
+// live migration count (see check-governance-coherence.mjs); Roadmap and Batch Order are not,
+// so they keep the frozen historical marker from when this stage actually completed.
+const migrationsDir = path.join(root, 'supabase/migrations')
+const migrations = fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql'))
+const liveMigrationCountMarker = `Active migrations remain ${migrations.length}`
+
+for (const file of [register, ledger, agentRules]) {
+  requireText(file, 'FINAL-DESIGN-CONTENT-SWEEP-1', 'live docs must record the final design/content sweep')
+  requireText(file, 'Design/content sweep marker: player-facing copy must read like finished product copy', 'live docs must record the product-copy marker')
+  requireText(file, 'Signup opening and SMTP remain parked for future launch readiness', 'live docs must park the signup thread')
+  requireText(file, liveMigrationCountMarker, 'live docs must record the current migration count')
+  requireText(file, 'Migration 019', 'live docs must preserve migration boundary')
+}
+
+for (const file of [roadmap, batchOrder]) {
   requireText(file, 'FINAL-DESIGN-CONTENT-SWEEP-1', 'live docs must record the final design/content sweep')
   requireText(file, 'Design/content sweep marker: player-facing copy must read like finished product copy', 'live docs must record the product-copy marker')
   requireText(file, 'Signup opening and SMTP remain parked for future launch readiness', 'live docs must park the signup thread')
@@ -122,10 +138,7 @@ for (const file of ['src/auth/publicSignupReadiness.js', 'src/tournament/tournam
   }
 }
 
-const migrationsDir = path.join(root, 'supabase/migrations')
-const migrations = fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}.`)
-if (migrations.some(name => name.includes('019'))) errors.push('Migration 019 exists but this stage must not create it.')
+if (migrationSequenceError(migrations)) errors.push(migrationSequenceError(migrations))
 
 const pkg = JSON.parse(read(pkgFile))
 if (pkg.scripts?.['audit:final-design-content-sweep'] !== 'node scripts/check-final-design-content-sweep.mjs') {
@@ -147,4 +160,4 @@ if (errors.length > 0) {
 console.log('Stage FINAL-DESIGN-CONTENT-SWEEP-1 audit passed.')
 console.log('Design/content: player-facing copy is polished for seeded-team testing; signup opening and SMTP remain parked.')
 console.log('Safety: presentation/copy/docs/audit only; no Auth config, Supabase, scoring, resolver, fake-result, league-write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

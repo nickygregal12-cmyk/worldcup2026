@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
 const failures = []
@@ -28,7 +29,6 @@ for (const marker of [
   'Home and League reference prototype adoption',
   'euro28-home-page-prototype.html',
   'euro28-league-page-prototype.html',
-  'Active migrations remain 18',
   'Migration 019',
 ]) {
   for (const [label, text] of Object.entries({
@@ -38,6 +38,24 @@ for (const marker of [
     'Agent Rules': agentRules,
   })) {
     assertIncludes(label, text, marker)
+  }
+}
+
+// The spec is a frozen historical record of this stage's own completion and keeps its original
+// "18" marker; Decision Register, Ledger and Agent Rules are governing docs that must always
+// reflect the live migration count (see check-governance-coherence.mjs).
+assertIncludes('Stage 13G-REF spec', spec, 'Active migrations remain 18')
+{
+  const migrationsForMarker = existsSync('supabase/migrations')
+    ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
+    : []
+  const liveMigrationCountMarker = `Active migrations remain ${migrationsForMarker.length}`
+  for (const [label, text] of Object.entries({
+    'Decision Register': register,
+    'Functional Completion Ledger': ledger,
+    'Agent Rules': agentRules,
+  })) {
+    assertIncludes(label, text, liveMigrationCountMarker)
   }
 }
 
@@ -156,8 +174,7 @@ const migrations = existsSync('supabase/migrations')
   ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
   : []
 
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(name => /(?:^|_)019|2026070\d0019/.test(name))) fail('Migration 019 must not exist for Stage 13G-REF')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (failures.length > 0) {
   console.error('Euro Stage 13G-REF prototype adoption audit failed:')
@@ -169,4 +186,4 @@ console.log('Euro Stage 13G-REF prototype adoption audit passed.')
 console.log('Home: approved reference with one-countdown and zero-KO-pre-readiness amendments recorded.')
 console.log('Leagues: approved League table D contract recorded; compact Match Centre, full-row links and movement arrows remain active.')
 console.log('Scope: docs/audit-only; no UI build, route implementation, scoring, resolver, Supabase write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

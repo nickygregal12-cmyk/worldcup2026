@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -131,8 +132,7 @@ if (!packageJson.scripts?.check?.includes('npm run audit:stage13g-tournament-how
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(name => name.includes('019'))) fail('Migration 019 must not be present in this UI/config/docs package')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (errors.length) {
   console.error('Euro Stage 13G-B Tournament/How to Play split audit failed:')
@@ -144,4 +144,4 @@ console.log('Euro Stage 13G-B Tournament/How to Play split audit passed.')
 console.log('Routes: Tournament facts and How to Play mechanics are separate More/footer destinations.')
 console.log('Facts: confirmed dates, hosts, venues, Cardiff opener and Wembley final week are centralised in TOURNAMENT_CONFIG.')
 console.log('Unconfirmed: group participants and match-specific kick-off times remain explicitly provisional.')
-console.log(`Database: active migrations remain ${migrations.length}; no Migration 019.`)
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { ORIGINAL_BRACKET_CONTEXT_COPY, ORIGINAL_BRACKET_KO_SUBLINE } from '../src/journey/originalBracketCopy.js'
@@ -129,8 +130,7 @@ if (!packageJson.scripts?.['lint:foundation']?.includes('scripts/check-stage13g-
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(name => /(?:^|_)019|2026070\d0019/.test(name))) fail('Migration 019 must not exist for Stage 13G-BRACKET-1')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (errors.length) {
   console.error('Euro Stage 13G-BRACKET-1 responsive wall-chart audit failed:')
@@ -142,4 +142,4 @@ console.log('Euro Stage 13G-BRACKET-1 responsive wall-chart audit passed.')
 console.log('Layout: stacked vertical below 900px; converging wall chart at 900px and above.')
 console.log('Primitives: one OriginalBracketTie and OriginalBracketSlot set powers both arrangements.')
 console.log('Safety: Original Bracket remains winner-only with no score inputs, method controls or joker controls.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

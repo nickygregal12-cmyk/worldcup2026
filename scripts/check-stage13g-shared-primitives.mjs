@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { PREDICTION_AUTOSAVE_NOTICE } from '../src/journey/predictionJourneyCopy.js'
@@ -17,8 +18,7 @@ const refresh = read('src/runtime/refreshPolicy.js')
 const packageJson = JSON.parse(read('package.json'))
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
 
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(file => file.includes('019'))) fail('Migration 019 must not exist in this Stage 13G-A slice')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 if (!tournament.includes("predictionLockAt: import.meta.env.VITE_PREDICTION_LOCK_AT || '2028-06-09T19:00:00.000Z'")) fail('Central provisional prediction lock fallback is missing')
 if (!tournament.includes("tournamentStartAt: import.meta.env.VITE_TOURNAMENT_START_AT || '2028-06-09T20:00:00.000Z'")) fail('Central provisional tournament start fallback is missing')
 if (!lifecycle.includes('resolveTournamentLifecycle') || !lifecycle.includes('CENTRAL_PROVISIONAL')) fail('Tournament lifecycle resolver is missing central provisional source handling')

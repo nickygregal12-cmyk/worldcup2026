@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // STAGE-RULES-SCORING-LOCK-1 audit — locked product rules/scoring target.
 //
 // This guard is intentionally docs/audit-only. It verifies that the locked
@@ -94,8 +95,7 @@ if (!pkg.scripts?.['lint:foundation']?.includes('scripts/check-stage-rules-scori
 
 const migrationsDir = path.join(root, 'supabase/migrations')
 const migrations = fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}.`)
-if (migrations.some(name => name.includes('019'))) errors.push('Migration 019 exists but this stage must not create it.')
+if (migrationSequenceError(migrations)) errors.push(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`STAGE-RULES-SCORING-LOCK-1 audit failed with ${errors.length} issue(s):\n`)
@@ -106,4 +106,4 @@ if (errors.length > 0) {
 console.log('Stage STAGE-RULES-SCORING-LOCK-1 audit passed.')
 console.log('Rules: locked scoring, group-goals auto-calculation, resolver prompts, tied-rank ladders and match-state rules recorded.')
 console.log('Safety: docs/audit-only; no runtime scoring, resolver, Supabase, Auth, result-entry or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs';
 
 const root = process.cwd();
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
@@ -24,12 +25,9 @@ for (const phrase of requiredPhrases) {
   if (!register.includes(phrase)) missing.push(`register missing: ${phrase}`);
 }
 
-if (migrations.length !== 18) {
-  missing.push(`expected 18 migrations, found ${migrations.length}`);
-}
-
-if (migrations.some((name) => name.includes('019'))) {
-  missing.push('Migration 019 must not exist for this roadmap-only amendment');
+const sequenceError = migrationSequenceError(migrations);
+if (sequenceError) {
+  missing.push(sequenceError);
 }
 
 if (missing.length) {

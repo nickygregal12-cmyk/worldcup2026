@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import {
   EURO28_STAGING_PROJECT_REF,
@@ -181,9 +182,7 @@ if (!packageJson.scripts?.['lint:foundation']?.includes('scripts/__tests__/stage
 }
 
 const migrations = existsSync('supabase/migrations') ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql')) : []
-if (migrations.length !== 18) fail(`Stage 16A-P5 expects 18 active migrations, found ${migrations.length}`)
-const migration019 = migrations.find(name => /019|migration[-_ ]?019/i.test(name))
-if (migration019) fail(`Stage 16A-P5 must not create Migration 019: ${migration019}`)
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (failures.length) {
   console.error('Euro Stage 16A-P5 write preflight audit failed:')
@@ -195,4 +194,4 @@ console.log('Euro Stage 16A-P5 staging write preflight audit passed.')
 console.log('Preflight: local env names, staging project ref, dual synthetic markers and teardown checks are modelled.')
 console.log('Safety: canStartWrite is false; no users, prediction seeds, service-role use, Supabase writes or migration change.')
 console.log('Boundary: Original Predictor and KO Predictor remain separate; WC26 production fails closed.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

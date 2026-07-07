@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 
 const root = process.cwd()
 const read = file => fs.readFileSync(path.join(root, file), 'utf8')
@@ -84,10 +85,9 @@ assertIncludes('package.json', [
 
 const migrationsDir = path.join(root, 'supabase', 'migrations')
 const migrations = fs.existsSync(migrationsDir) ? fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql')) : []
-assert(migrations.length === 18, `Expected 18 active migrations, found ${migrations.length}`)
-assert(!migrations.some(name => /019/.test(name)), 'Migration 019 must not be introduced by Groups top-dock repair')
+assert(!migrationSequenceError(migrations), migrationSequenceError(migrations))
 
 console.log('Stage 13G-GROUPS-2D top-dock repair audit passed.')
 console.log('Groups: duplicate summary chips are removed, view controls are richer, the group rail is upgraded, and partial score drafts no longer crash predicted tables.')
 console.log('Safety: presentation/model/docs/audit/test only; no scoring, resolver, Supabase write, service-role use, route or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

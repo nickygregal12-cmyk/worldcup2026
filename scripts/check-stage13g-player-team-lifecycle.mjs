@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -51,9 +52,7 @@ if (!agentRules.includes('Stage 13G-B Player Insight and Team Profile lifecycle 
 
 const migrationFiles = readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql'))
 const latest = migrationFiles.sort().at(-1)
-if (migrationFiles.length !== 18) fail(`expected 18 active migrations, found ${migrationFiles.length}`)
-if (migrationFiles.some(file => file.includes('019'))) fail('Migration 019 must not exist for Stage 13G-B player/team lifecycle')
-if (latest !== '202607030018_euro28_complete_admin_operations.sql') fail(`unexpected latest migration ${latest}`)
+if (migrationSequenceError(migrationFiles)) fail(migrationSequenceError(migrationFiles))
 
 console.log('Stage 13G-B player/team lifecycle audit passed.')
 console.log('Player Insight: central lifecycle copy with existing server privacy wording preserved')

@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
 const failures = []
@@ -75,8 +76,7 @@ if (!packageJson.scripts?.check?.includes('npm run audit:compact-league-standing
   fail('package.json check chain must include audit:compact-league-standings')
 }
 
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(name => /019/.test(name))) fail('Migration 019 must not exist for Stage 13G-C4')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (failures.length > 0) {
   console.error('Euro Stage 13G-C4 compact league standings audit failed:')
@@ -88,4 +88,4 @@ console.log('Euro Stage 13G-C4 compact league standings audit passed.')
 console.log('Table: rank, member and running total only.')
 console.log('Breakdowns: kept for deeper destinations such as member comparison and insight.')
 console.log('Boundary: Original Predictor and KO Predictor remain separate.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

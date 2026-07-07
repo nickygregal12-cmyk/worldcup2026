@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 
 const ROOT = process.cwd()
 const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8')
@@ -94,13 +95,13 @@ if (!pkg.scripts?.check?.includes('npm run audit:stage13g-player-view-reference-
 }
 
 const migrationsDir = path.join(ROOT, 'supabase', 'migrations')
-if (fs.existsSync(migrationsDir)) {
-  const migration019 = fs.readdirSync(migrationsDir).find((name) => /019|migration[-_ ]?019/i.test(name))
-  if (migration019) throw new Error(`Stage 13G-PLAYER-REF must not create Migration 019: ${migration019}`)
-}
+const migrations = fs.existsSync(migrationsDir)
+  ? fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql'))
+  : []
+if (migrationSequenceError(migrations)) throw new Error(migrationSequenceError(migrations))
 
 console.log('Euro Stage 13G-PLAYER-REF player-view reference adoption audit passed.')
 console.log('Player View: privacy placeholder, always-visible header and Predictions/Bracket/Tables IA recorded.')
 console.log('Predictions: rows, joker chips, points chips, bracket summary and predicted tables recorded.')
 console.log('Scope: docs/audit-only; no UI build, route implementation, scoring, resolver, Supabase write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

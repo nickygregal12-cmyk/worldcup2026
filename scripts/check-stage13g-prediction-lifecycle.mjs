@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -50,10 +51,8 @@ if (!pkg.scripts?.['audit:prediction-lifecycle']) fail('package.json missing aud
 if (!pkg.scripts.check.includes('npm run audit:prediction-lifecycle')) fail('npm run check does not include audit:prediction-lifecycle')
 
 const migrations = fs.readdirSync(path.join(repo, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
-if (migrations.length !== 18) fail(`expected 18 active migrations, found ${migrations.length}`)
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 const latest = migrations.at(-1)
-if (latest !== '202607030018_euro28_complete_admin_operations.sql') fail(`latest migration changed unexpectedly: ${latest}`)
-if (migrations.some(file => file.includes('019'))) fail('unexpected Migration 019 found')
 
 console.log('Stage 13G-B prediction lifecycle audit passed.')
 console.log('Original surface: central lock, group, bracket and KO-boundary lifecycle cards')

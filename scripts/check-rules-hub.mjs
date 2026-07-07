@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // Stage RULES-1A — public rules hub presentation audit.
 //
 // Scope: upgrade the existing #/how-to-play destination into a stranger-facing
@@ -112,8 +113,7 @@ if (!pkg.scripts?.['lint:foundation']?.includes('scripts/check-rules-hub.mjs')) 
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-if (migrations.some(name => name.includes('019'))) fail('Migration 019 must not be present in this UI package')
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 const forbiddenMutations = [
   'supabase.auth.admin',
@@ -140,4 +140,4 @@ if (errors.length > 0) {
 console.log('RULES-1A rules hub audit passed.')
 console.log('Destination: existing #/how-to-play route upgraded into scoring, locks, corrections, moderation, privacy and support hub.')
 console.log('Safety: read-only UI/model/docs only; no scoring, resolver, Supabase write, service-role use or migration change.')
-console.log(`Database: active migrations remain ${migrations.length}; no Migration 019.`)
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

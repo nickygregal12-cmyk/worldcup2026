@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -106,8 +107,7 @@ if (fileExists(readinessFile)) {
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}.`)
-if (migrations.some(name => name.includes('019'))) errors.push('Migration 019 exists but this stage must not create it.')
+if (migrationSequenceError(migrations)) errors.push(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`Public signup readiness audit failed with ${errors.length} issue(s):\n`)
@@ -118,4 +118,4 @@ if (errors.length > 0) {
 console.log('Stage PUBLIC-SIGNUP-READINESS-1 public signup readiness audit passed.')
 console.log('Readiness: wider public registration remains closed while explicit signup gates remain open.')
 console.log('Safety: model/test/docs/audit only; no Auth config, Supabase write, service-role use, route or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

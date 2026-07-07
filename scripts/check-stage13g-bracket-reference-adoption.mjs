@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -91,11 +92,10 @@ requireIncludes('package.json', packageJson, [
 ])
 
 const migrationsDir = path.join(repo, 'supabase', 'migrations')
-if (fs.existsSync(migrationsDir)) {
-  const active = fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
-  if (active.length !== 18) errors.push(`Expected 18 active migrations, found ${active.length}`)
-  if (active.some((name) => name.includes('019'))) errors.push('Migration 019 must not exist for Stage 13G-BRACKET-REF')
-}
+const active = fs.existsSync(migrationsDir)
+  ? fs.readdirSync(migrationsDir).filter((name) => name.endsWith('.sql')).sort()
+  : []
+if (migrationSequenceError(active)) errors.push(migrationSequenceError(active))
 
 if (errors.length) {
   console.error('Euro Stage 13G-BRACKET-REF audit failed:')
@@ -108,4 +108,4 @@ console.log('Reference: approved Bracket G with stacked mobile and proper ≥900
 console.log('Contract change: charter v1.8 wall chart moved from backlog into Stage 13G.')
 console.log('Sign-off: match details, subtle vs treatment and winner-only controls recorded; implementation remains separate.')
 console.log('Scope: docs/audit only; no UI build, scoring, resolver, Supabase write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${active.length} active migrations, sequentially numbered with no gaps.`)

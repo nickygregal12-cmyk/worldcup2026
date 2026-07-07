@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import process from 'node:process'
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 
 const errors = []
 const fail = message => errors.push(message)
@@ -54,10 +55,10 @@ if (!pkg.scripts?.check?.includes('npm run audit:stage13g-player-view-polish')) 
   fail('check script does not include audit:stage13g-player-view-polish')
 }
 
-if (fs.existsSync('supabase/migrations')) {
-  const migration019 = fs.readdirSync('supabase/migrations').find(name => /019|migration[-_ ]?019/i.test(name))
-  if (migration019) fail(`Stage 13G-PLAYER-VIEW-POLISH-1 must not create Migration 019: ${migration019}`)
-}
+const migrations = fs.existsSync('supabase/migrations')
+  ? fs.readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
+  : []
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`Stage 13G-PLAYER-VIEW-POLISH-1 audit failed with ${errors.length} issue(s):`)
@@ -68,4 +69,4 @@ if (errors.length > 0) {
 console.log('Stage 13G-PLAYER-VIEW-POLISH-1 audit passed.')
 console.log('Player View polish: header, competition context, empty states and mobile layout markers are present.')
 console.log('Boundary: presentation-only; Original and KO Predictor remain separate.')
-console.log('Database: active migrations remain unchanged; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import process from 'node:process'
 
@@ -79,11 +80,10 @@ if (!pkg.scripts?.check?.includes('npm run audit:stage13g-player-links-implement
   fail('check script does not include audit:stage13g-player-links-implementation')
 }
 
-if (exists('supabase/migrations')) {
-  const migrations = fs.readdirSync('supabase/migrations').filter(file => file.endsWith('.sql')).sort()
-  if (migrations.length !== 18) fail(`Expected 18 active migrations, found ${migrations.length}`)
-  if (migrations.some(file => file.includes('019'))) fail('Stage 13G-PLAYER-LINKS-1 must not create Migration 019')
-}
+const migrations = exists('supabase/migrations')
+  ? fs.readdirSync('supabase/migrations').filter(file => file.endsWith('.sql')).sort()
+  : []
+if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`Stage 13G-PLAYER-LINKS-1 audit failed with ${errors.length} issue(s):`)
@@ -95,4 +95,4 @@ console.log('Stage 13G-PLAYER-LINKS-1 audit passed.')
 console.log('Player rows now route to the dedicated Player View.')
 console.log('League and leaderboard comparison remains available as a separate action.')
 console.log('Original and KO Predictor links remain competition-scoped.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

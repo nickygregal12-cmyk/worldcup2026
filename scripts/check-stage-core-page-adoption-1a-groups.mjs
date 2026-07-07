@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { GROUPS_DATE_TABLES_COPY, PREDICTION_AUTOSAVE_NOTICE, PREDICTION_BRACKET_JOKERS_COPY, PREDICTION_GROUP_JOKERS_COPY, PREDICTION_LOCK_NOTICE, PREDICTION_SAVE_CHECK_COPY } from '../src/journey/predictionJourneyCopy.js'
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 
 const root = process.cwd()
 const read = file => fs.readFileSync(path.join(root, file), 'utf8')
@@ -120,10 +121,9 @@ for (const token of forbiddenSource) {
 
 const migrationsDir = path.join(root, 'supabase', 'migrations')
 const migrations = fs.existsSync(migrationsDir) ? fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql')) : []
-assert(migrations.length === 18, `Expected 18 active migrations, found ${migrations.length}`)
-assert(!migrations.some(name => /019/.test(name)), 'Migration 019 must not be introduced by Stage Core Page Adoption 1A Groups')
+assert(!migrationSequenceError(migrations), migrationSequenceError(migrations))
 
 console.log('Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS audit passed.')
 console.log('Groups: Night Broadcast contract language, live table previews, third-place preview and sticky table path are rebuilt natively on the live Groups surface.')
 console.log('Safety: presentation-only React/CSS/docs/audit slice; no scoring, resolver, Supabase write, service-role use or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

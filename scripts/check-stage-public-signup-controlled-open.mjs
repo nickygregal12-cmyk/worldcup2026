@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 audit — controlled public signup opening runbook.
 //
 // This guard is intentionally docs/audit-only. It verifies that the owner
@@ -118,8 +119,7 @@ if (!pkg.scripts?.['lint:foundation']?.includes('scripts/check-stage-public-sign
 
 const migrationsDir = path.join(root, 'supabase/migrations')
 const migrations = fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}.`)
-if (migrations.some(name => name.includes('019'))) errors.push('Migration 019 exists but this stage must not create it.')
+if (migrationSequenceError(migrations)) errors.push(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 audit failed with ${errors.length} issue(s):
@@ -131,4 +131,4 @@ if (errors.length > 0) {
 console.log('Stage STAGE-PUBLIC-SIGNUP-CONTROLLED-OPEN-1 audit passed.')
 console.log('Signup: controlled opening runbook, owner approval, external account checks, replacement capacity, support and moderation confirmations recorded.')
 console.log('Safety: docs/audit-only; public registration remains closed with no Auth config, Supabase, scoring, resolver, fake-result, league-write or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

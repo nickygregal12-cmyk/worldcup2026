@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
@@ -44,10 +45,8 @@ for (const token of requiredInEitherLeaguesFile) {
 }
 
 const migrationFiles = readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql'))
-if (migrationFiles.length !== 18) fail(`Expected 18 active migrations, found ${migrationFiles.length}`)
+if (migrationSequenceError(migrationFiles)) fail(migrationSequenceError(migrationFiles))
 const latest = migrationFiles.sort().at(-1)
-if (latest !== '202607030018_euro28_complete_admin_operations.sql') fail(`Unexpected latest migration: ${latest}`)
-if (migrationFiles.some(file => file.includes('019'))) fail('Unexpected Migration 019 present')
 
 console.log('Stage 13G-B league lifecycle audit passed.')
 console.log('Leagues: central lifecycle banner and competition-scoped privacy copy')

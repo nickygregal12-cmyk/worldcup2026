@@ -1,3 +1,4 @@
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // Product gate-decision audit — the next signup and tournament decisions stay explicit.
 //
 // This guard keeps the scale-gate decision rows visible without inventing
@@ -79,8 +80,7 @@ requireText(pkg, 'audit:product-gate-decisions', 'the audit must be reachable by
 requireText(pkg, 'check-product-gate-decisions.mjs', 'the audit script must be wired into lint/check tooling')
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql'))
-if (migrations.length !== 18) errors.push(`Expected 18 active migrations, found ${migrations.length}.`)
-if (migrations.some(name => name.includes('019'))) errors.push('Migration 019 exists but this stage must not create it.')
+if (migrationSequenceError(migrations)) errors.push(migrationSequenceError(migrations))
 
 if (errors.length > 0) {
   console.error(`Product gate-decision audit failed with ${errors.length} issue(s):
@@ -92,4 +92,4 @@ if (errors.length > 0) {
 console.log('Stage PRODUCT-GATE-DECISIONS-1 product gate-decision audit passed.')
 console.log('Gates: tie-breaks, moderation, capacity and email confirmation remain explicit owner/implementation decisions.')
 console.log('Safety: docs/audit-only; no scoring, resolver, Supabase write, service-role use, route or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

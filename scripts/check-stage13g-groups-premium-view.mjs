@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 
 const root = process.cwd()
 const read = file => fs.readFileSync(path.join(root, file), 'utf8')
@@ -116,10 +117,9 @@ assertIncludes('package.json', [
 
 const migrationsDir = path.join(root, 'supabase', 'migrations')
 const migrations = fs.existsSync(migrationsDir) ? fs.readdirSync(migrationsDir).filter(name => name.endsWith('.sql')) : []
-assert(migrations.length === 18, `Expected 18 active migrations, found ${migrations.length}`)
-assert(!migrations.some(name => /019/.test(name)), 'Migration 019 must not be introduced by Stage 13G-GROUPS-2')
+assert(!migrationSequenceError(migrations), migrationSequenceError(migrations))
 
 console.log('Stage 13G-GROUPS-2 premium view audit passed.')
 console.log('Groups: By group / By date switcher restored, by-date tickets carry group tags, the sticky Tables fast path opens A-F plus third-place tables, and route-owned chrome keeps Groups focused.')
 console.log('Safety: presentation/model/docs only; no scoring, resolver, Supabase write, service-role use or migration change.')
-console.log('Database: active migrations remain 18; no Migration 019.')
+console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)
