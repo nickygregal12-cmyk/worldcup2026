@@ -33,7 +33,7 @@ Groups contract adoption slice is implemented as native React/CSS only. It may b
 - Do not claim acceptance without Nicky's Terminal evidence.
 - Original and KO Predictor points never combine.
 - Predicted and live brackets never blend.
-- Migration 018 is applied and aligned locally and on Euro staging. Stage 13F-K3 is acceptance/tooling only and must retain exactly 19 migrations with Migration 019 applied.
+- Migrations 018 and 019 are applied and aligned locally and on Euro staging (Migration 019 pushed to staging on 2026-07-07 after a verified backup). Stage 13F-K3 was acceptance/tooling only and added no migration of its own.
 - Every batch updates the Functional Completion Ledger in the same commit.
 
 

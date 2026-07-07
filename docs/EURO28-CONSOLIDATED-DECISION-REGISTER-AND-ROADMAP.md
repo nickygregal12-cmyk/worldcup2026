@@ -30,7 +30,7 @@
 
 - Expected Git commit before this scope package: `8ee70ec` — **Compact Stage 13G league shell**.
 - Active branch: `euro28-development`; `main` remains protected WC26.
-- Active migration count: **19**, aligned locally and on Euro staging.
+- Active migration count: **19**, aligned locally and on Euro staging (Migration 019 pushed to staging on 2026-07-07 after a verified backup; backfill and new function signatures verified read-only against the live schema).
 - Stages 1–12, 13A–13E, 14, 14B, Stage 13F, Stage 13G-R0, Stage 13G-A, Stage 13G-B lifecycle slices, Stage 13G-C league simplification through C6 and Stage 13G destination reference adoption are accepted at the package level recorded in the ledger.
 - Stage 16A-S0 is a scope-alignment package before implementation. No component, resolver, scoring, route, database or migration implementation is included.
 - Migration 018 remains the latest active migration. Migration 019 has not been created.
