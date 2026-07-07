@@ -82,7 +82,9 @@ export function predictedChampion(preview, reference) {
 }
 
 export function buildOriginalBracketWallPlacement(matchNumber) {
-  return WALL_PLACEMENT[Number(matchNumber)] ?? Object.freeze({ column: 4, row: 5 })
+  const placement = WALL_PLACEMENT[Number(matchNumber)]
+  if (!placement) throw new Error(`Unknown Original Bracket wall placement for match ${matchNumber}`)
+  return placement
 }
 
 function staleMatchNumbers(preview) {
@@ -115,13 +117,11 @@ export function buildOriginalBracketSurface({ reference, draft, preview }) {
   const ties = preview.resolution.knockout.matches.map(match => {
     const row = draft.bracketPredictions[String(match.matchNumber)] ?? { advancingTeamId: null }
     const stale = staleNumbers.has(match.matchNumber)
-    const placement = buildOriginalBracketWallPlacement(match.matchNumber)
+    buildOriginalBracketWallPlacement(match.matchNumber) // throws if a knockout match has no approved wall-chart slot
     return Object.freeze({
       ...match,
       stale,
       selectedTeamId: row.advancingTeamId ?? null,
-      wallColumn: placement.column,
-      wallRow: placement.row,
       slots: Object.freeze([
         buildOriginalBracketSlot({ side: 'home', slot: match.home, teamId: match.homeTeamId, selectedTeamId: row.advancingTeamId, reference, preview, matchNumber: match.matchNumber, stale }),
         buildOriginalBracketSlot({ side: 'away', slot: match.away, teamId: match.awayTeamId, selectedTeamId: row.advancingTeamId, reference, preview, matchNumber: match.matchNumber, stale }),

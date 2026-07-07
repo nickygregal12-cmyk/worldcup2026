@@ -8,17 +8,17 @@ Live repo-control dashboard for future agents. This is not a long history file.
 | --- | --- |
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
-| Current stage | `STAGE-REPO-CONTROL-1A-AGENT-RULES-AND-DOC-AUTHORITY-MAP` |
-| Latest verified commit | `7731138 Adopt Original Bracket G contract` |
+| Current stage | `STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET-GRID-NATIVE-CONNECTORS-VERIFY-FALLBACK-AND-LAYOUT-REPAIR` |
+| Latest verified commit | `3bb3c6e Add agent control rules and project dashboard` |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
 | Active migration count | 18 |
 | Migration 019 status | Not present; blocked unless approved or a real schema/read-contract gap is proved |
-| Immediate priority | Create the durable agent-control layer first |
-| Next recommended stage | `STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET-GRID-NATIVE-CONNECTORS` targeted verification/fallback repair |
+| Immediate priority | Repair Original Bracket as a deterministic seven-lane bracket while preserving the fail-loud placement guard |
+| Next recommended stage | `STAGE-REPO-CONTROL-1B-AUDIT-AND-DOC-RETIREMENT-PLAN` after manual bracket visual review and commit approval |
 
 ## Current Blockers
 
-- Original Bracket still has a silent unknown-placement fallback.
+- Manual visual review is still required for the repaired Original Bracket wall-chart layout.
 - Public signup remains closed; SMTP/public-opening work is not approved by this stage.
 - Playwright is not currently proved installed or wired.
 
@@ -26,7 +26,7 @@ Live repo-control dashboard for future agents. This is not a long history file.
 
 - Hygiene debt exists: `.DS_Store`, `coverage/`, `supabase/.temp/`, `supabase/.branches/`, `node_modules/`, `.env.local`.
 - Audit/doc bloat needs a later controlled split, not this stage.
-- Original Bracket needs a targeted follow-up to remove or make explicit the unknown-placement fallback.
+- Original Bracket unknown wall placement now fails loudly in the working tree; seven-lane bracket layout is pending Nicky's visual review.
 
 ## Do-Not-Touch Areas
 

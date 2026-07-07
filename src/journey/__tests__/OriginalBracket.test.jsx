@@ -37,10 +37,13 @@ describe('OriginalBracket', () => {
 
   it('shows source references and the single wall-chart surface contract', () => {
     const html = renderBracket()
-    expect(html).toContain('data-wall-chart="converging"')
-    expect(html).toContain('data-r16-position="outside-edges"')
+    expect(html).toContain('data-wall-chart="seven-lanes"')
+    expect(html).toContain('data-wall-lanes="7"')
     expect(html).toContain('data-final-position="centre"')
-    expect(html).toContain('aria-label="Wall chart bracket"')
+    expect(html).toContain('aria-label="Seven-lane bracket"')
+    expect(html).toContain('data-wall-lane="r16-left"')
+    expect(html).toContain('data-wall-lane="final-centre"')
+    expect(html).toContain('data-wall-lane="r16-right"')
     expect(html).toContain('data-slot-source="1A"')
     expect(html).toContain('data-slot-source="3ABCD"')
     expect(html).toContain('data-slot-source="W39"')

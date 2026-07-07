@@ -21,8 +21,13 @@ function assertIncludes(file, markers) {
 }
 
 const component = requireFile('src/journey/OriginalBracket.jsx')
-const css = requireFile('src/journey/OriginalBracket.module.css')
+const cssShell = requireFile('src/journey/OriginalBracket.module.css')
+const cssRounds = requireFile('src/journey/OriginalBracketRounds.module.css')
+const cssTie = requireFile('src/journey/OriginalBracketTie.module.css')
+const css = [cssShell, cssRounds, cssTie].join('\n')
+const model = requireFile('src/journey/originalBracketPresentationModel.js')
 const test = requireFile('src/journey/__tests__/OriginalBracket.test.jsx')
+const modelTest = requireFile('src/journey/__tests__/originalBracketPresentationModel.test.js')
 const stageDoc = requireFile('docs/STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET.md')
 const ledger = requireFile('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const register = requireFile('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
@@ -33,6 +38,8 @@ const order = requireFile('docs/STREAMLINED-BATCH-ORDER.md')
 for (const file of [
   'src/journey/OriginalBracket.jsx',
   'src/journey/OriginalBracket.module.css',
+  'src/journey/OriginalBracketRounds.module.css',
+  'src/journey/OriginalBracketTie.module.css',
   'src/journey/__tests__/OriginalBracket.test.jsx',
   'docs/STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET.md',
 ]) if (!exists(file)) fail(`Missing Original Bracket 1B file: ${file}`)
@@ -40,12 +47,14 @@ for (const file of [
 for (const marker of [
   'data-contract="original-bracket-g"',
   'BRACKET_G_COPY',
-  'data-wall-chart="converging"',
-  'data-r16-position="outside-edges"',
+  'data-wall-chart="seven-lanes"',
+  'data-wall-lanes="7"',
+  'data-wall-lane={column.key}',
+  'column.matchNumbers.map',
   'data-final-position="centre"',
   'formatKickoffTime',
   'venueLabel',
-  'styles.matchDetails',
+  'tieStyles.matchDetails',
   'OriginalBracketTie',
   'OriginalBracketSlot',
   'WallChampionBox',
@@ -56,23 +65,49 @@ if ((component.match(/KO Predictor/g) ?? []).length !== 1) fail('OriginalBracket
 for (const forbidden of ['ScoreInput', 'decisionMethod', 'jokerApplied', 'ko-method', 'ko-joker-button', 'homeScore', 'awayScore']) {
   if (component.includes(forbidden)) fail(`OriginalBracket component must remain winner-only and not contain ${forbidden}`)
 }
+if (component.includes('WallConnectors')) fail('OriginalBracket component must not revive WallConnectors')
+if (/<path\b[^>]*\bd=["'{`]M\s/i.test(component)) fail('OriginalBracket component must not contain hardcoded SVG connector paths')
 
 for (const marker of [
   '.bracketHeroNote',
   '.wallFrame',
   '.matchDetails',
   '@media (min-width: 900px)',
-  'grid-template-columns: repeat(7',
-  'grid-column: var(--wall-column)',
-  'grid-row: var(--wall-row)',
+  'grid-template-columns: repeat(7, minmax(8.25rem, 1fr))',
+  '.laneStack',
+  'overflow-wrap: anywhere',
   '.wallChampion',
 ]) if (!css.includes(marker)) fail(`OriginalBracket CSS missing 1B marker: ${marker}`)
-if (css.includes('connector')) fail('OriginalBracket CSS must not add connector-line styling in this slice')
+
+// Connector lines are now implemented (round two of this stage): they must be anchored to each
+// card's own real box via the `data-wall-side` attribute set from the actual column key, not
+// hardcoded pixel coordinates or a fixed-position overlay `<svg>`.
+if (!css.includes('data-wall-side')) fail('OriginalBracket CSS must anchor connector lines to real card position via data-wall-side, not fixed coordinates')
+if (/<path\b[^>]*\bd=["'{`]M\s/i.test(css)) fail('OriginalBracket CSS must not contain hardcoded SVG connector paths')
+
+for (const file of [
+  'src/journey/OriginalBracket.module.css',
+  'src/journey/OriginalBracketRounds.module.css',
+  'src/journey/OriginalBracketTie.module.css',
+]) {
+  const lines = read(file).split('\n').length
+  if (lines > 400) fail(`${file} must remain under the 400-line scoped stylesheet cap (currently ${lines})`)
+}
+
+const placementFunction = model.match(/export function buildOriginalBracketWallPlacement[\s\S]*?\n}/)?.[0] ?? ''
+if (placementFunction.includes('column: 4, row: 5')) fail('Original Bracket wall placement must not silently fall back to the final-centre placement')
+if (!placementFunction.includes('throw new Error')) fail('Original Bracket wall placement must fail loudly for unknown match numbers')
+if (!placementFunction.includes('match ${matchNumber}')) fail('Unknown wall-placement error must include the match number')
+if (!modelTest.includes('fails loudly when a knockout match has no wall placement')) fail('Original Bracket presentation model test must cover unknown wall placement')
+if (!modelTest.includes('Unknown Original Bracket wall placement for match 999')) fail('Unknown wall-placement test must assert the match number appears in the error')
 
 for (const marker of [
   'data-contract="original-bracket-g"',
-  'data-wall-chart="converging"',
-  'data-r16-position="outside-edges"',
+  'data-wall-chart="seven-lanes"',
+  'data-wall-lanes="7"',
+  'data-wall-lane="r16-left"',
+  'data-wall-lane="final-centre"',
+  'data-wall-lane="r16-right"',
   'data-final-position="centre"',
   'Kick-off TBC',
   'Venue to be confirmed',
@@ -93,9 +128,10 @@ for (const [label, source] of [
 for (const marker of [
   'Original Bracket G',
   'winner-only',
-  'Round of 16 columns on the outside edges',
+  'deterministic seven-lane bracket',
   'final centred',
   'no score inputs, method controls or joker controls',
+  'Unknown wall placements now fail loudly',
   'No Migration 019',
 ]) if (!stageDoc.includes(marker)) fail(`Stage doc missing marker: ${marker}`)
 

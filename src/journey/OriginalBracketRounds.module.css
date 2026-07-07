@@ -1,0 +1,103 @@
+.rounds {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.round {
+  display: grid;
+  gap: var(--space-3);
+  scroll-margin-top: calc(var(--header-height) + 6rem);
+}
+
+.laneStack {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.roundHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 0 var(--space-1);
+}
+
+.roundHeader span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.roundHeader h3 {
+  margin: var(--space-1) 0 0;
+  color: var(--text-strong);
+}
+
+.roundHeader small {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 900px) {
+  /*
+   * The wall chart is a single unified grid (no duplicate mobile/desktop markup): each
+   * round renders in its own grid column and cards connect to the centre final via
+   * connector stubs drawn on the card itself (see OriginalBracketTie.module.css),
+   * anchored with `[data-wall-side]` so they always track the card's real position.
+   */
+  .rounds {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(8.25rem, 1fr));
+    align-items: stretch;
+    gap: var(--space-2);
+    width: min(100%, 78rem);
+    min-width: 70rem;
+    margin: 0 auto;
+  }
+
+  .rounds::before {
+    content: '';
+    position: absolute;
+    left: var(--space-4);
+    right: var(--space-4);
+    top: 50%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 35%, var(--border-strong)), transparent);
+    pointer-events: none;
+  }
+
+  .round {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+  .roundHeader {
+    display: flex;
+    min-height: 2.8rem;
+    padding: 0;
+  }
+
+  .roundHeader h3 {
+    font-size: var(--text-sm);
+  }
+
+  .roundHeader small {
+    font-size: 0.66rem;
+  }
+
+  .laneStack {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    justify-content: space-around;
+    gap: var(--space-2);
+    min-height: 0;
+  }
+}

@@ -55,6 +55,10 @@ describe('original bracket presentation model', () => {
     expect(surface.tiesByMatchNumber[45].slots.map(slot => slot.sourceCode)).toEqual(['W39', 'W37'])
   })
 
+  it('fails loudly when a knockout match has no wall placement', () => {
+    expect(() => buildOriginalBracketWallPlacement(999)).toThrow('Unknown Original Bracket wall placement for match 999')
+  })
+
   it('marks stale stored picks without silently keeping or dropping them', () => {
     const staleDraft = {
       ...VISUAL_BRACKET_DRAFT,

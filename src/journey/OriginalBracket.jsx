@@ -8,13 +8,21 @@ import {
   predictedChampion,
 } from './originalBracketPresentationModel.js'
 import { ORIGINAL_BRACKET_CONTEXT_COPY, ORIGINAL_BRACKET_G_COPY, ORIGINAL_BRACKET_KO_SUBLINE } from './originalBracketCopy.js'
-import styles from './OriginalBracket.module.css'
+import shellStyles from './OriginalBracket.module.css'
+import roundStyles from './OriginalBracketRounds.module.css'
+import tieStyles from './OriginalBracketTie.module.css'
 
 const REPICK_COPY = 'Re-pick — your tables changed this tie'
 const CONTEXT_COPY = ORIGINAL_BRACKET_CONTEXT_COPY
 // KO Predictor
 const KO_SUBLINE = ORIGINAL_BRACKET_KO_SUBLINE
 const BRACKET_G_COPY = ORIGINAL_BRACKET_G_COPY
+const ROUND_ANCHOR_BY_KEY = Object.freeze({
+  round_of_16: 'bracket-r16-left',
+  quarter_final: 'bracket-qf-left',
+  semi_final: 'bracket-sf-left',
+  final: 'bracket-final-centre',
+})
 
 function formatDate(dateValue) {
   if (!dateValue) return 'Date to be confirmed'
@@ -35,8 +43,22 @@ function venueLabel(tie) {
   return venue ?? city ?? 'Venue to be confirmed'
 }
 
+function formatWallSummary(tie) {
+  const datePart = tie.scheduledDate
+    ? new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long', timeZone: 'UTC' }).format(new Date(`${tie.scheduledDate}T12:00:00Z`))
+    : 'Date TBC'
+  const timePart = tie.kickoffAt ? formatKickoffTime(tie.kickoffAt) : null
+  return [timePart ? `${datePart} · ${timePart}` : datePart, venueLabel(tie)].join(' · ')
+}
+
 function teamFor(reference, teamId) {
   return teamId ? reference.teamsById?.[teamId] ?? null : null
+}
+
+function wallSideForColumn(columnKey) {
+  if (columnKey.endsWith('-left')) return 'left'
+  if (columnKey.endsWith('-right')) return 'right'
+  return 'centre'
 }
 
 function stateBadge(state) {
@@ -51,38 +73,36 @@ function stateBadge(state) {
 function ChampionIdentity({ champion, emptyLabel = 'Pick through to the final', compact = false }) {
   return champion
     ? <TeamLabel team={champion} compact={compact} />
-    : <strong className={styles.emptyChampion}>{emptyLabel}</strong>
+    : <strong className={shellStyles.emptyChampion}>{emptyLabel}</strong>
 }
 
 function OriginalBracketSlot({ slot, disabled, onSelect }) {
   const className = [
-    styles.slot,
+    tieStyles.slot,
     'bracket-team-choice',
-    slot.selected ? styles.slotSelected : '',
+    slot.selected ? tieStyles.slotSelected : '',
     slot.selected ? 'is-selected' : '',
-    slot.unresolved ? styles.slotUnresolved : '',
+    slot.unresolved ? tieStyles.slotUnresolved : '',
   ].filter(Boolean).join(' ')
   const actionLabel = slot.selected ? 'Selected to advance' : 'Pick to advance'
 
   return (
     <div className={className} data-slot-source={slot.sourceCode} data-slot-side={slot.side}>
-      <span className={styles.slotSource}>{slot.sourceCode}</span>
+      <span className={tieStyles.slotSource}>{slot.sourceCode}</span>
       {slot.unresolved ? (
-        <span className={styles.placeholderChip}>{slot.placeholderLabel}</span>
+        <span className={tieStyles.placeholderChip}>{slot.placeholderLabel}</span>
       ) : (
-        <>
-          <TeamLabel team={slot.team} label={slot.label} compact />
-          <button
-            type="button"
-            className={`${styles.slotAction} bracket-team-choice__action`}
-            disabled={disabled}
-            aria-pressed={slot.selected}
-            onClick={() => onSelect(slot.teamId)}
-          >
-            <span>{actionLabel}</span>
-            {slot.selected && <Icon name="check" size={15} />}
-          </button>
-        </>
+        <button
+          type="button"
+          className={`${tieStyles.slotAction} bracket-team-choice__action`}
+          disabled={disabled}
+          aria-pressed={slot.selected}
+          onClick={() => onSelect(slot.teamId)}
+        >
+          <TeamLabel team={slot.team} label={slot.label} compact profileDisabled />
+          <span className={tieStyles.slotActionText}>{actionLabel}</span>
+          {slot.selected && <Icon name="check" size={15} />}
+        </button>
       )}
     </div>
   )
@@ -93,12 +113,12 @@ function OriginalBracketTie({ tie, reference, disabled, state, onChange }) {
   const staleSelectedTeam = tie.stale ? teamFor(reference, tie.selectedTeamId) : null
   return (
     <article
-      className={`${styles.tie} ${styles[`tie${state[0].toUpperCase()}${state.slice(1)}`] ?? ''}`}
+      className={`${tieStyles.tie} ${tieStyles[`tie${state[0].toUpperCase()}${state.slice(1)}`] ?? ''}`}
       data-match-number={tie.matchNumber}
       data-stage={tie.stage}
-      style={{ '--wall-column': tie.wallColumn, '--wall-row': tie.wallRow }}
     >
-      <div className={styles.tieMeta}>
+      <p className={tieStyles.wallSummary}>{formatWallSummary(tie)}</p>
+      <div className={tieStyles.tieMeta}>
         <div>
           <strong>Match {tie.matchNumber}</strong>
           <span>{formatDate(tie.scheduledDate)}</span>
@@ -106,28 +126,31 @@ function OriginalBracketTie({ tie, reference, disabled, state, onChange }) {
         <PredictionStateBadge state={badge.state} label={badge.label} />
       </div>
       {tie.stale && (
-        <div className={styles.repickFlag} role="status">
+        <div className={tieStyles.repickFlag} role="status">
           <Icon name="alert" size={14} />
           <span>{REPICK_COPY}</span>
           {staleSelectedTeam && <small>Previous pick: {staleSelectedTeam.label}</small>}
         </div>
       )}
-      <div className={styles.matchDetails} aria-label={`Match ${tie.matchNumber} details`}>
+      <div className={tieStyles.matchDetails} aria-label={`Match ${tie.matchNumber} details`}>
         <span>{formatKickoffTime(tie.kickoffAt)}</span>
         <span>{venueLabel(tie)}</span>
       </div>
-      <div className={styles.slotStack}>
-        {tie.slots.map(slot => (
-          <OriginalBracketSlot
-            key={slot.side}
-            slot={slot}
-            disabled={disabled || slot.unresolved}
-            onSelect={teamId => onChange(tie, slot.selected ? null : teamId)}
-          />
-        ))}
+      <div className={tieStyles.slotStack}>
+        <OriginalBracketSlot
+          slot={tie.slots[0]}
+          disabled={disabled || tie.slots[0].unresolved}
+          onSelect={teamId => onChange(tie, tie.slots[0].selected ? null : teamId)}
+        />
+        <span className={tieStyles.slotVs} aria-hidden="true">vs</span>
+        <OriginalBracketSlot
+          slot={tie.slots[1]}
+          disabled={disabled || tie.slots[1].unresolved}
+          onSelect={teamId => onChange(tie, tie.slots[1].selected ? null : teamId)}
+        />
       </div>
       {tie.winnerTeamId && !tie.stale && (
-        <div className={styles.winnerLine}>
+        <div className={tieStyles.winnerLine}>
           <Icon name="chevron" size={16} /><span>{teamFor(reference, tie.winnerTeamId)?.label ?? 'Selected team'} progresses</span>
         </div>
       )}
@@ -137,7 +160,7 @@ function OriginalBracketTie({ tie, reference, disabled, state, onChange }) {
 
 function WallChampionBox({ champion }) {
   return (
-    <aside className={styles.wallChampion} aria-label="Predicted champion">
+    <aside className={tieStyles.wallChampion} aria-label="Predicted champion">
       <span>Champion</span>
       <ChampionIdentity champion={champion} emptyLabel="Pick your final" compact />
     </aside>
@@ -149,9 +172,34 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
   const champion = predictedChampion(preview, reference)
   const completed = progress.reduce((total, round) => total + round.complete, 0)
   const surface = buildOriginalBracketSurface({ reference, draft, preview })
+  const renderTie = tie => {
+    const referenceMatch = reference.knockoutMatches.find(item => item.matchNumber === tie.matchNumber)
+    const hasGrace = hasActivePredictionGrace(graceWindows, {
+      competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
+      matchId: referenceMatch?.matchId,
+    })
+    const disabled = reviewMode || (contentLocked && !hasGrace) || !tie.participantsResolved
+    const state = deriveOriginalBracketMatchState({
+      participantsResolved: tie.participantsResolved,
+      selectedTeamId: tie.stale ? null : tie.selectedTeamId,
+      disabled,
+      hasGrace,
+      stale: tie.stale,
+    })
+    return (
+      <OriginalBracketTie
+        key={tie.matchNumber}
+        tie={tie}
+        reference={reference}
+        disabled={disabled}
+        state={state}
+        onChange={onChange}
+      />
+    )
+  }
 
   return (
-    <section className={styles.bracket} data-contract="original-bracket-g" aria-labelledby="original-bracket-heading">
+    <section className={shellStyles.bracket} data-contract="original-bracket-g" aria-labelledby="original-bracket-heading">
       <div className="knockout-context knockout-context--predicted">
         <div className="knockout-context__icon"><Icon name="bracket" size={24} /></div>
         <div>
@@ -162,12 +210,12 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
         <Badge tone="info" icon="bracket">Original Predictor</Badge>
       </div>
 
-      <div className={styles.bracketHeroNote}>
+      <div className={shellStyles.bracketHeroNote}>
         <Icon name="trophy" size={18} />
         <span>{BRACKET_G_COPY}</span>
       </div>
 
-      <div className={styles.championStrip}>
+      <div className={shellStyles.championStrip}>
         <div>
           <span>Your champion</span>
           <ChampionIdentity champion={champion} />
@@ -195,53 +243,35 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
 
       <nav className="bracket-round-progress" aria-label="Bracket round progress">
         {progress.map(round => (
-          <a key={round.key} href={`#bracket-${round.key}`} className={round.isComplete ? 'is-complete' : ''}>
+          <a key={round.key} href={`#${ROUND_ANCHOR_BY_KEY[round.key] ?? `bracket-${round.key}`}`} className={round.isComplete ? 'is-complete' : ''}>
             <span>{round.shortLabel}</span><strong>{round.complete}/{round.total}</strong>
           </a>
         ))}
       </nav>
 
-      <div className={styles.wallFrame} data-wall-chart="converging" data-r16-position="outside-edges" data-final-position="centre">
-      <div className={styles.wallLabels} aria-hidden="true">
-        {surface.wallColumns.map(column => <span key={column.key} style={{ '--wall-column': column.column }}>{column.shortLabel}</span>)}
-      </div>
-
-      <div className={styles.rounds} aria-label="Wall chart bracket">
-        {surface.rounds.map(round => (
-          <section className={styles.round} id={`bracket-${round.key}`} key={round.key}>
-            <header className={styles.roundHeader}>
-              <div><span>{round.shortLabel}</span><h3>{round.label}</h3></div>
-              <small>{round.complete}/{round.total} picked</small>
-            </header>
-            {round.ties.map(tie => {
-              const referenceMatch = reference.knockoutMatches.find(item => item.matchNumber === tie.matchNumber)
-              const hasGrace = hasActivePredictionGrace(graceWindows, {
-                competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
-                matchId: referenceMatch?.matchId,
-              })
-              const disabled = reviewMode || (contentLocked && !hasGrace) || !tie.participantsResolved
-              const state = deriveOriginalBracketMatchState({
-                participantsResolved: tie.participantsResolved,
-                selectedTeamId: tie.stale ? null : tie.selectedTeamId,
-                disabled,
-                hasGrace,
-                stale: tie.stale,
-              })
-              return (
-                <OriginalBracketTie
-                  key={tie.matchNumber}
-                  tie={tie}
-                  reference={reference}
-                  disabled={disabled}
-                  state={state}
-                  onChange={onChange}
-                />
-              )
-            })}
-          </section>
-        ))}
-        <WallChampionBox champion={champion} />
-      </div>
+      <div className={shellStyles.wallFrame} data-wall-chart="seven-lanes" data-final-position="centre" data-wall-lanes="7">
+        <div className={roundStyles.rounds} aria-label="Seven-lane bracket">
+          {surface.wallColumns.map(column => (
+            <section
+              className={roundStyles.round}
+              id={`bracket-${column.key}`}
+              key={column.key}
+              data-wall-lane={column.key}
+              data-wall-column={column.column}
+              data-wall-count={column.matchNumbers.length}
+              data-wall-side={wallSideForColumn(column.key)}
+            >
+              <header className={roundStyles.roundHeader}>
+                <div><span>{column.shortLabel}</span><h3>{column.label}</h3></div>
+                <small>{column.matchNumbers.join(' / ')}</small>
+              </header>
+              <div className={roundStyles.laneStack}>
+                {column.matchNumbers.map(matchNumber => renderTie(surface.tiesByMatchNumber[matchNumber]))}
+                {column.key === 'final-centre' && <WallChampionBox champion={champion} />}
+              </div>
+            </section>
+          ))}
+        </div>
       </div>
     </section>
   )

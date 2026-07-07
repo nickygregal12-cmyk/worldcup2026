@@ -11,6 +11,8 @@ const exists = file => fs.existsSync(path.join(root, file))
 for (const file of [
   'src/journey/OriginalBracket.jsx',
   'src/journey/OriginalBracket.module.css',
+  'src/journey/OriginalBracketRounds.module.css',
+  'src/journey/OriginalBracketTie.module.css',
   'src/journey/originalBracketPresentationModel.js',
   'src/journey/predictionJourneyModel.js',
   'src/journey/__tests__/OriginalBracket.test.jsx',
@@ -20,7 +22,11 @@ for (const file of [
 ]) if (!exists(file)) fail(`Missing Stage 13G-BRACKET-1 file: ${file}`)
 
 const component = exists('src/journey/OriginalBracket.jsx') ? read('src/journey/OriginalBracket.jsx') : ''
-const css = exists('src/journey/OriginalBracket.module.css') ? read('src/journey/OriginalBracket.module.css') : ''
+const css = [
+  'src/journey/OriginalBracket.module.css',
+  'src/journey/OriginalBracketRounds.module.css',
+  'src/journey/OriginalBracketTie.module.css',
+].filter(exists).map(read).join('\n')
 const model = exists('src/journey/originalBracketPresentationModel.js') ? read('src/journey/originalBracketPresentationModel.js') : ''
 const journeyModel = exists('src/journey/predictionJourneyModel.js') ? read('src/journey/predictionJourneyModel.js') : ''
 const journey = exists('src/journey/PredictionJourney.jsx') ? read('src/journey/PredictionJourney.jsx') : ''
@@ -37,7 +43,7 @@ for (const marker of [
   'buildOriginalBracketSurface',
   'Re-pick — your tables changed this tie',
   'bracket-team-choice__action',
-  'aria-label="Wall chart bracket"',
+  'aria-label="Seven-lane bracket"',
 ]) if (!component.includes(marker)) fail(`OriginalBracket component is missing marker: ${marker}`)
 
 if (!ORIGINAL_BRACKET_CONTEXT_COPY.includes('group predictions decide this bracket')) fail('Original bracket context copy constant must keep the predicted-bracket explanation')
@@ -70,13 +76,16 @@ if (!journey.includes('clearDisconnectedBracketSelections(')) fail('PredictionJo
 for (const marker of [
   '@media (min-width: 900px)',
   'grid-template-columns: repeat(7',
-  'grid-column: var(--wall-column)',
-  'grid-row: var(--wall-row)',
+  'data-wall-side',
   '.wallChampion',
   '.placeholderChip',
   '.repickFlag',
 ]) if (!css.includes(marker)) fail(`OriginalBracket module CSS is missing marker: ${marker}`)
-if (css.includes('@media (max-width') || css.includes('connector')) fail('OriginalBracket module must keep a single 900px breakpoint and no connector-line styling')
+if (css.includes('@media (max-width')) fail('OriginalBracket module must keep a single 900px breakpoint')
+// Connector lines are anchored to each card's real box via `data-wall-side` (checked above), not
+// fixed pixel coordinates — `grid-column: var(--wall-column)` / `grid-row: var(--wall-row)` was the
+// earlier fixed-coordinate mechanism and is deliberately retired, not a regression.
+if (/<path\b[^>]*\bd=["'{`]M\s/i.test(css)) fail('OriginalBracket module CSS must not contain hardcoded SVG connector paths')
 
 for (const marker of [
   'winner picks only',
