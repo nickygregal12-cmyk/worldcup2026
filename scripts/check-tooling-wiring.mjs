@@ -28,8 +28,6 @@ const fail = message => errors.push(message)
 // Scripts intentionally kept without an npm entry. Each needs a reason.
 // Prefer deleting a dead script over listing it here.
 const RETIRED_SCRIPTS = Object.freeze([
-  { file: 'scripts/check-stage13g-r0-docs.mjs', reason: 'retired historical R0 docs audit; superseded by governance-coherence meta-audit' },
-  { file: 'scripts/check-stage13g-test-strategy-roadmap.mjs', reason: 'retired historical test-strategy roadmap audit; superseded by current check chain and governance-coherence meta-audit' },
 ])
 
 // audit:* scripts intentionally outside the `check` chain. Each needs a reason.
