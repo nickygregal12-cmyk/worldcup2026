@@ -34,6 +34,8 @@ function normaliseTeam(tournamentTeam, membership) {
     stableKey: membership.position_code,
     label: tournamentTeam.metadata?.label ?? membership.position_code,
     isoCode: tournamentTeam.metadata?.isoCode ?? tournamentTeam.metadata?.fifaCode ?? null,
+    primaryColour: tournamentTeam.metadata?.primaryColour ?? null,
+    secondaryColour: tournamentTeam.metadata?.secondaryColour ?? null,
     drawPosition: membership.draw_position,
     qualifierRank: tournamentTeam.display_order ?? null,
     isProvisional: Boolean(tournamentTeam.is_provisional),

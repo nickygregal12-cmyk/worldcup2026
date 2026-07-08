@@ -33,6 +33,10 @@ export function normaliseTeamProfilePayload(raw = {}, fallbackTeam = null) {
       qualificationStatus: team.qualification_status ?? null,
       isHost: bool(team.is_host),
       isProvisional: bool(team.is_provisional ?? fallbackTeam?.isProvisional),
+      // Team colours live in tournament_teams.metadata (see scripts/assign-team-profiles.mjs),
+      // reach the reference via guestReferenceModel.normaliseTeam, and are never hardcoded here.
+      primaryColour: team.primary_colour ?? fallbackTeam?.primaryColour ?? null,
+      secondaryColour: team.secondary_colour ?? fallbackTeam?.secondaryColour ?? null,
     }),
     curated: Object.freeze({
       status: curated.status === 'ready' ? 'ready' : 'empty',
@@ -160,6 +164,33 @@ export function buildTeamProfileLifecycle({ lifecycle, predictions } = {}) {
     state: 'original_aggregates_server_protected',
     label: 'Prediction privacy',
     copy: 'Community prediction percentages remain hidden until the authorised read model releases them. This view only uses Original Predictor team picks, so KO Predictor points stay out of it.',
+  })
+}
+
+// Relative luminance (WCAG) → pick the ink that stays legible on an arbitrary
+// team colour, in either theme. Kept as data logic (not a token) because the
+// contrasting ink depends on the per-team colour, which a fixed token cannot know.
+function readableInkFor(hex) {
+  const match = /^#?([0-9a-f]{6})$/i.exec(String(hex ?? '').trim())
+  if (!match) return '#ffffff'
+  const value = parseInt(match[1], 16)
+  const linear = shift => {
+    const channel = ((value >> shift) & 0xff) / 255
+    return channel <= 0.03928 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4
+  }
+  const luminance = 0.2126 * linear(16) + 0.7152 * linear(8) + 0.0722 * linear(0)
+  return luminance > 0.4 ? '#0b1220' : '#ffffff'
+}
+
+// Builds the per-team colour treatment for the profile sheet from Supabase data.
+// Returns null when a team has no colour yet, so un-populated teams render neutral.
+export function buildTeamColourTreatment(team) {
+  const primary = team?.primaryColour ?? null
+  if (!primary) return null
+  return Object.freeze({
+    primary,
+    secondary: team?.secondaryColour ?? null,
+    ink: readableInkFor(primary),
   })
 }
 

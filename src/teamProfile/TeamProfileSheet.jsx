@@ -1,6 +1,6 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { Badge, Button, Dialog, Icon, TeamLabel } from '../design-system/index.jsx'
-import { buildTeamProfileLifecycle, TEAM_PROFILE_MILESTONES } from './teamProfileModel.js'
+import { buildTeamColourTreatment, buildTeamProfileLifecycle, TEAM_PROFILE_MILESTONES } from './teamProfileModel.js'
 
 function formatDate(value) {
   if (!value) return 'Date to be confirmed'
@@ -147,11 +147,37 @@ export default function TeamProfileSheet({ open, state, lifecycle = null, onClos
         </div>
       )}
 
-      {data && (
+      {data && (() => {
+        const colour = buildTeamColourTreatment(data.profile.team)
+        // Colour is Supabase data applied as inline style; the accent bar + tint use the
+        // team primary, the monogram picks a contrast-safe ink, and both tint layers mix
+        // against theme surface tokens so light and dark stay legible. No colour → neutral.
+        const identityStyle = colour ? {
+          borderLeft: `4px solid ${colour.primary}`,
+          paddingLeft: 'var(--space-4)',
+          borderRadius: 'var(--radius-md)',
+          background: `color-mix(in srgb, ${colour.primary} 8%, var(--surface-raised))`,
+        } : undefined
+        return (
         <div className="team-profile-content">
-          <header className="team-profile-identity">
+          <header className="team-profile-identity" style={identityStyle}>
             <TeamLabel team={{ ...data.profile.team, teamId: data.profile.team.tournamentTeamId, label: data.profile.team.name }} profileDisabled />
             <div>
+              {colour && (
+                <span className="team-profile-colours" style={{ display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <span
+                    className="team-profile-colours__monogram"
+                    style={{ background: colour.primary, color: colour.ink, borderRadius: 'var(--radius-full)', padding: '0.15rem 0.55rem', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em' }}
+                  >{data.profile.team.isoCode ?? data.profile.team.shortName}</span>
+                  {colour.secondary && (
+                    <span
+                      className="team-profile-colours__swatch"
+                      style={{ background: colour.secondary, width: '0.9rem', height: '0.9rem', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-default)' }}
+                      aria-hidden="true"
+                    />
+                  )}
+                </span>
+              )}
               {data.profile.team.groupCode && <Badge tone="info">Group {data.profile.team.groupCode}</Badge>}
               {data.profile.team.isHost && <Badge tone="safe">Host nation</Badge>}
               {data.profile.team.isProvisional && <Badge tone="warning">Provisional data</Badge>}
@@ -166,7 +192,8 @@ export default function TeamProfileSheet({ open, state, lifecycle = null, onClos
             : <TournamentForm tournament={data.tournament} />}
           <PredictionSection predictions={data.profile.predictions} lifecycle={lifecycle} />
         </div>
-      )}
+        )
+      })()}
     </Dialog>
   )
 }

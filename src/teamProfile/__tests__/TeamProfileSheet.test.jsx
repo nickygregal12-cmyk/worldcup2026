@@ -98,6 +98,38 @@ describe('TeamProfileSheet', () => {
     expect(html).not.toContain('Community percentages are private')
   })
 
+  it('applies the Supabase-sourced team colour treatment with contrast-safe ink', () => {
+    const base = readyState()
+    const profile = normaliseTeamProfilePayload({
+      team: {
+        tournament_team_id: 'scotland',
+        name: 'Scotland',
+        short_name: 'Scotland',
+        iso_code: 'SCO',
+        group_code: 'A',
+        is_host: true,
+        primary_colour: '#1B3A6B',
+        secondary_colour: '#FFFFFF',
+      },
+      curated: { status: 'ready', ranking: 44, qualifying_route: 'route', best_euro_finish: 'Group stage', profile_revision: 1 },
+      predictions: { aggregates_visible: false, visibility_reason: 'private' },
+    })
+    const html = renderToStaticMarkup(
+      <TeamProfileSheet open state={{ ...base, data: { ...base.data, profile } }} lifecycle={{ locked: false }} onClose={() => {}} onRetry={() => {}} />,
+    )
+
+    expect(html).toContain('#1B3A6B') // team primary applied from data, not hardcoded
+    expect(html).toContain('SCO') // colour monogram
+    expect(html).toContain('color:#ffffff') // navy → white ink for contrast
+  })
+
+  it('stays colour-neutral when a team has no colour data yet', () => {
+    const html = renderToStaticMarkup(
+      <TeamProfileSheet open state={readyState()} lifecycle={{ locked: false }} onClose={() => {}} onRetry={() => {}} />,
+    )
+    expect(html).not.toContain('team-profile-colours')
+  })
+
   it('preserves available sections and explains a partial canonical-data failure', () => {
     const html = renderToStaticMarkup(
       <TeamProfileSheet open state={readyState({ partial: true, tournamentError: true })} onClose={() => {}} onRetry={() => {}} />,
