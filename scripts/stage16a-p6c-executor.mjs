@@ -212,17 +212,22 @@ function synthUserIdByKey(key) {
   return scalar(`select id from auth.users where email = ${q(`${key}@${STAGE16A_SYNTHETIC_EMAIL_DOMAIN}`)} limit 1;`)
 }
 function groupMatches() {
-  // match_number, id, scheduled_date, home team, away team (resolved slots)
+  // match_number, id, scheduled_date, home team, away team (resolved slots),
+  // plus the assigned kick-off (as an explicit UTC ISO instant, '' when unset).
+  // kickoff_at is the sanctioned per-match time (scripts/assign-kickoff-times.mjs);
+  // when present it drives the clock so the fake clock agrees with the UI/DB.
   const rows = runSql(`
     select m.match_number, m.id, m.scheduled_date,
-      hs.resolved_tournament_team_id, as_.resolved_tournament_team_id
+      hs.resolved_tournament_team_id, as_.resolved_tournament_team_id,
+      coalesce(to_char((m.kickoff_at at time zone 'UTC'), 'YYYY-MM-DD"T"HH24:MI:SS"Z"'), '')
     from public.matches m
     join public.match_slots hs on hs.match_id=m.id and hs.side='home'
     join public.match_slots as_ on as_.match_id=m.id and as_.side='away'
     where m.tournament_id='${TOURNAMENT_ID}' and m.match_number between 1 and 36
     order by m.match_number;`, { rows: true })
-  return rows.map(([num, id, date, home, away]) => ({
+  return rows.map(([num, id, date, home, away, kickoffIso]) => ({
     matchNumber: Number(num), id, scheduledDate: date, homeTeam: home, awayTeam: away,
+    kickoffAt: kickoffIso ? kickoffIso : null,
   }))
 }
 
@@ -355,7 +360,10 @@ function setClock(targetTimeIso) {
 
   const summary = { scheduled: 0, live: 0, final: 0, writes: 0 }
   for (const m of matches) {
-    const kickoff = effectiveKickoff(m.scheduledDate, m.matchNumber)
+    // Prefer the sanctioned kickoff_at from the DB (assign-kickoff-times.mjs) so
+    // the fake clock, the UI and the DB all agree on when a match is live/final.
+    // Fall back to the derived slot only when a match has no assigned kickoff_at.
+    const kickoff = m.kickoffAt ? new Date(m.kickoffAt) : effectiveKickoff(m.scheduledDate, m.matchNumber)
     const state = deriveMatchState(T, kickoff)
     const cur = current.get(m.matchNumber)
     summary[state] += 1
