@@ -1484,6 +1484,7 @@ a {
     min-height: 3.75rem;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     gap: var(--space-1);
     padding: var(--space-2) var(--space-1);
     border-radius: var(--radius-md);
@@ -1493,7 +1494,6 @@ a {
   .app-mobile-nav .app-nav-link--home {
     overflow: visible;
     color: var(--text-strong);
-    transform: translateY(calc(var(--space-3) * -1));
   }
 
   .app-nav-link__home-icon {
