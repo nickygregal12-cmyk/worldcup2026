@@ -1,8 +1,8 @@
 import layoutStyles from './LeagueLayout.module.css'
 import heroStyles from './LeagueHero.module.css'
 import raceStyles from './leagueRace.module.css'
-import { Badge, Icon, PlayerIdentity, StatusBar, TextField } from '../design-system/index.jsx'
-import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
+import { Badge, Button, Icon, PlayerIdentity, StatusBar, TextField } from '../design-system/index.jsx'
+import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, canCreateKoLeague, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
 
 function competitionName(competitionKey) {
   return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
@@ -16,14 +16,14 @@ function movementDirection(label) {
   return 'same'
 }
 
-export function LeagueLifecycleBanner({ lifecycleState }) {
+export function LeagueLifecycleBanner({ lifecycleState, competitionKey }) {
   if (!lifecycleState) return null
+  const copy = competitionKey === LEAGUE_COMPETITION.ORIGINAL ? lifecycleState.originalCopy : lifecycleState.koCopy
   return (
     <aside className={layoutStyles.summaryCard} aria-label="League timing">
       <span className={layoutStyles.kicker}>League timing</span>
       <strong>{lifecycleState.headline}</strong>
-      <small>{lifecycleState.originalCopy}</small>
-      <small>{lifecycleState.koCopy}</small>
+      <small>{copy}</small>
     </aside>
   )
 }
@@ -48,8 +48,10 @@ export function LeagueActionConfirmation({ action, leagueName, actionStatus, onC
         <p>{deleting ? 'This removes the private league for every member. Prediction and scoring records remain separate.' : 'You will lose access to this league and its member comparisons.'}</p>
       </div>
       <div className={layoutStyles.inlineActions}>
-        <button type="button" className="ui-button ui-button--danger ui-button--small" onClick={() => { void onConfirm() }} disabled={actionStatus === 'loading'}>{actionStatus === 'loading' ? 'Working…' : deleting ? 'Confirm delete' : 'Confirm leave'}</button>
-        <button type="button" className="ui-button ui-button--secondary ui-button--small" onClick={onCancel} disabled={actionStatus === 'loading'}>Cancel</button>
+        <Button type="button" variant="danger" size="small" loading={actionStatus === 'loading'} onClick={() => { void onConfirm() }}>
+          {deleting ? 'Confirm delete' : 'Confirm leave'}
+        </Button>
+        <Button type="button" variant="secondary" size="small" disabled={actionStatus === 'loading'} onClick={onCancel}>Cancel</Button>
       </div>
     </div>
   )
@@ -60,56 +62,72 @@ export function LeagueCompetitionHeading({ competitionKey }) {
   return (
     <div className={raceStyles.compactCompetitionHeading}>
       <div>
-        <span className={layoutStyles.kicker}>Standings</span>
-        <h3>{competitionName(competitionKey)}</h3>
+        <span className={layoutStyles.kicker}>{competitionName(competitionKey)}</span>
+        <h3>Standings</h3>
       </div>
-      <small>{original ? 'Groups + original bracket' : 'Real knockout fixtures'}</small>
+      <Badge tone={original ? 'info' : 'warning'}>{original ? 'League table' : 'Separate table'}</Badge>
     </div>
   )
 }
 
-export function CompetitionTabs({ value, onChange, koReadiness }) {
+export function CompetitionChoice({ value, onChange, koReadiness }) {
+  const koCreatable = canCreateKoLeague(koReadiness)
   return (
-    <div className={heroStyles.segmented} role="tablist" aria-label="League competition">
-      {Object.values(LEAGUE_COMPETITION).map(key => {
-        const disabled = key === LEAGUE_COMPETITION.KO_PREDICTOR && !koReadiness?.open
-        return (
-          <button
-            key={key}
-            type="button"
-            role="tab"
-            aria-selected={value === key}
-            disabled={disabled}
-            onClick={() => { if (!disabled) onChange(key) }}
-          >
-            {competitionName(key)}
-          </button>
-        )
-      })}
+    <div className={layoutStyles.competitionChoice}>
+      <div className={layoutStyles.competitionOptions} role="radiogroup" aria-label="League competition">
+        {Object.values(LEAGUE_COMPETITION).map(key => {
+          const disabled = key === LEAGUE_COMPETITION.KO_PREDICTOR && !koCreatable
+          return (
+            <button
+              key={key}
+              type="button"
+              role="radio"
+              aria-checked={value === key}
+              className={layoutStyles.competitionOption}
+              disabled={disabled}
+              onClick={() => { if (!disabled) onChange(key) }}
+            >
+              {competitionName(key)}
+            </button>
+          )
+        })}
+      </div>
+      {!koCreatable && <small>KO Predictor leagues open once a real knockout fixture is known.</small>}
     </div>
   )
 }
 
 export function LeaguePicker({ leagues, selectedId, onSelect }) {
   if (leagues.length <= 1) return null
+  const originalLeagues = leagues.filter(league => league.competition === LEAGUE_COMPETITION.ORIGINAL)
+  const koLeagues = leagues.filter(league => league.competition === LEAGUE_COMPETITION.KO_PREDICTOR)
+  const optionLabel = league => `${league.name} · ${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
   return (
     <label className={heroStyles.leaguePicker}>
       <span className="sr-only">Your leagues</span>
       <select value={selectedId ?? ''} onChange={event => onSelect(event.target.value)}>
-        {leagues.map(league => (
-          <option key={league.id} value={league.id}>{league.name} · {league.memberCount} member{league.memberCount === 1 ? '' : 's'}</option>
-        ))}
+        {originalLeagues.length > 0 && (
+          <optgroup label="Original Predictor">
+            {originalLeagues.map(league => <option key={league.id} value={league.id}>{optionLabel(league)}</option>)}
+          </optgroup>
+        )}
+        {koLeagues.length > 0 && (
+          <optgroup label="KO Predictor">
+            {koLeagues.map(league => <option key={league.id} value={league.id}>{optionLabel(league)}</option>)}
+          </optgroup>
+        )}
       </select>
     </label>
   )
 }
 
-export function LeagueHero({ league, leagues, onSelectLeague, competitionKey, onCompetitionChange, koReadiness, currentRank }) {
+export function LeagueHero({ league, leagues, onSelectLeague, currentRank }) {
+  const original = league.competition === LEAGUE_COMPETITION.ORIGINAL
   return (
     <section className={heroStyles.hero} aria-label={`${league.name} overview`}>
       {currentRank && <span className={heroStyles.watermark} aria-hidden="true">#{currentRank}</span>}
       <div className={heroStyles.heroBody}>
-        <span className={heroStyles.eyebrow}>Leagues · Race table</span>
+        <span className={heroStyles.eyebrow}>Leagues · {competitionName(league.competition)}</span>
         <h2>{league.name}</h2>
         <p className={heroStyles.heroHint}>
           <Icon name="info" size={14} />
@@ -117,12 +135,10 @@ export function LeagueHero({ league, leagues, onSelectLeague, competitionKey, on
         </p>
       </div>
       <div className={heroStyles.heroRow}>
-        <CompetitionTabs value={competitionKey} onChange={onCompetitionChange} koReadiness={koReadiness} />
-        <div className={heroStyles.heroControls}>
-          <span className={heroStyles.glassPill}><span className={heroStyles.glassDot} />{league.memberCount} member{league.memberCount === 1 ? '' : 's'}</span>
-          <LeaguePicker leagues={leagues} selectedId={league.id} onSelect={onSelectLeague} />
-        </div>
+        <span className={heroStyles.glassPill}><span className={heroStyles.glassDot} />{league.memberCount} member{league.memberCount === 1 ? '' : 's'}</span>
+        <LeaguePicker leagues={leagues} selectedId={league.id} onSelect={onSelectLeague} />
       </div>
+      {!original && <span className="sr-only">This is a KO Predictor league, separate from Original Predictor leagues.</span>}
     </section>
   )
 }
@@ -184,7 +200,7 @@ export function LeagueSummaryCard({ title, summary, section }) {
     <article className={layoutStyles.summaryCard}>
       <span className={layoutStyles.kicker}>{title}</span>
       <strong>{formatOrdinal(summary.currentRank)}</strong>
-      <small>{summary.gapToLeaderLabel ?? stateCopy}</small>
+      <small>{stateCopy}</small>
     </article>
   )
 }
@@ -214,6 +230,12 @@ export function LeaderList({ rows, selectedUserId, onOpenDetail }) {
           row.isCurrentUser ? raceStyles.currentUserRow : '',
           selected ? raceStyles.selectedRow : '',
         ].filter(Boolean).join(' ')
+        const rankGroup = (
+          <span className={raceStyles.rankGroup}>
+            <span className={raceStyles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
+            <MovementChip label={row.rankMovementLabel} />
+          </span>
+        )
         const identity = (
           <span className={raceStyles.rowIdentity}>
             <PlayerIdentity player={row} isCurrentUser={row.isCurrentUser} meta={row.memberRole === 'owner' ? 'League owner' : null} />
@@ -223,10 +245,9 @@ export function LeaderList({ rows, selectedUserId, onOpenDetail }) {
         if (row.isCurrentUser) {
           return (
             <div key={row.userId} className={rowClassName}>
-              <span className={raceStyles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
+              {rankGroup}
               {identity}
               <span className={raceStyles.points}>{row.totalPoints}</span>
-              <MovementChip label={row.rankMovementLabel} />
             </div>
           )
         }
@@ -239,7 +260,7 @@ export function LeaderList({ rows, selectedUserId, onOpenDetail }) {
             aria-label={`Open ${row.displayName}'s league detail`}
             onClick={() => onOpenDetail(row)}
           >
-            <span className={raceStyles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
+            {rankGroup}
             {identity}
             <span className={raceStyles.points}>{row.totalPoints}</span>
             <span className={raceStyles.rowGo} aria-hidden="true"><Icon name="chevron" size={13} /></span>
@@ -261,9 +282,9 @@ export function LeagueDetailDestination({ comparison, onOpenProfile, children })
           <small>Breakdowns open here so the league table stays as rank, member and points.</small>
         </div>
         {onOpenProfile && (
-          <button type="button" className="ui-button ui-button--secondary ui-button--small" onClick={onOpenProfile}>
+          <Button type="button" variant="secondary" size="small" onClick={onOpenProfile}>
             View full profile
-          </button>
+          </Button>
         )}
       </div>
       {children}
@@ -271,7 +292,7 @@ export function LeagueDetailDestination({ comparison, onOpenProfile, children })
   )
 }
 
-export function LeagueManagePanel({ open, createName, onCreateNameChange, onSubmitCreate, joinCode, onJoinCodeChange, onSubmitJoin, busy }) {
+export function LeagueManagePanel({ open, createName, onCreateNameChange, createCompetition, onCreateCompetitionChange, onSubmitCreate, joinCode, onJoinCodeChange, onSubmitJoin, busy, koReadiness }) {
   return (
     <details className={layoutStyles.managePanel} open={open}>
       <summary>Manage leagues</summary>
@@ -280,13 +301,14 @@ export function LeagueManagePanel({ open, createName, onCreateNameChange, onSubm
           <span className={layoutStyles.kicker}>Create</span>
           <h3>Start a private league</h3>
           <TextField label="League name" value={createName} onChange={event => onCreateNameChange(event.target.value)} maxLength={40} required />
-          <button type="submit" className="ui-button ui-button--primary" disabled={busy}>Create league</button>
+          <CompetitionChoice value={createCompetition} onChange={onCreateCompetitionChange} koReadiness={koReadiness} />
+          <Button type="submit" loading={busy}>Create league</Button>
         </form>
         <form onSubmit={onSubmitJoin}>
           <span className={layoutStyles.kicker}>Join</span>
           <h3>Enter a league code</h3>
           <TextField label="10-character code" value={joinCode} onChange={event => onJoinCodeChange(event.target.value.toUpperCase())} maxLength={12} required />
-          <button type="submit" className="ui-button ui-button--primary" disabled={busy}>Join league</button>
+          <Button type="submit" loading={busy}>Join league</Button>
         </form>
       </div>
     </details>
@@ -308,39 +330,37 @@ export function LeagueStandingsPanel({
   const loadingFirstLoad = (overview.status === 'loading' || overviewLoading) && !overview.data
   const stillRefreshing = overview.status === 'loading' || overviewLoading
   const showEmpty = !stillRefreshing && activeSection?.status === 'ready' && standings.length === 0
+  const koWaiting = competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR && !koLeagueReady
 
   return (
     <article className={raceStyles.standingsCard}>
       <LeagueCompetitionHeading competitionKey={competitionKey} />
 
-      {loadingFirstLoad && <p className={layoutStyles.emptyCopy}>Loading both competition tables…</p>}
-      {activeOverview && overview.status === 'partial' && (
-        <StatusBar tone="warning" title="One competition table could not be loaded">The available table remains usable.</StatusBar>
+      {loadingFirstLoad && <p className={layoutStyles.emptyCopy}>Loading league standings…</p>}
+      {activeOverview && overview.status === 'partial' && !koWaiting && (
+        <StatusBar tone="warning" title="This competition table could not be loaded" />
       )}
-      {activeSection?.status === 'error' && <StatusBar tone="danger" title={activeSection.error} />}
+      {activeSection?.status === 'error' && !koWaiting && <StatusBar tone="danger" title={activeSection.error} />}
       {stillRefreshing && <p className={layoutStyles.emptyCopy}>Refreshing standings…</p>}
       {showEmpty && <p className={layoutStyles.emptyCopy}>No league members were returned.</p>}
       {standings.length > 0 && <LeaderList rows={standings} selectedUserId={comparisonMemberId} onOpenDetail={onOpenDetail} />}
 
       {activeOverview && (
         <LeagueSecondaryDetails title="League details">
-          <LeagueLifecycleBanner lifecycleState={leagueLifecycle} />
+          <LeagueLifecycleBanner lifecycleState={leagueLifecycle} competitionKey={competitionKey} />
           <CompetitionLifecycleNote competitionKey={competitionKey} lifecycle={lifecycle} summary={activeSummary} koReadiness={koReadiness} />
-          <div className={layoutStyles.summaryGrid}>
-            <LeagueSummaryCard title="Original Predictor" summary={activeOverview.summaries.original} section={activeOverview.sections.original} />
-            {koLeagueReady ? (
-              <LeagueSummaryCard title="KO Predictor" summary={activeOverview.summaries.koPredictor} section={activeOverview.sections.koPredictor} />
-            ) : (
-              <LeagueKoReadinessCard koReadiness={koReadiness} />
-            )}
-          </div>
-          <p className={layoutStyles.memberRow}>Shared member list: <strong>{activeOverview.members.length}</strong>. Open a member row for the detailed comparison.</p>
+          {koWaiting ? (
+            <LeagueKoReadinessCard koReadiness={koReadiness} />
+          ) : (
+            <LeagueSummaryCard title={competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'} summary={activeSummary} section={activeSection} />
+          )}
+          <p className={layoutStyles.memberRow}>Members: <strong>{selectedLeague.memberCount}</strong>. Open a member row for the detailed comparison.</p>
           <div className={raceStyles.dangerZone}>
             <span className={layoutStyles.kicker}>Danger zone</span>
             {selectedLeague.memberRole === 'owner' ? (
-              <button type="button" className="ui-button ui-button--danger ui-button--small" onClick={() => onRequestAction('delete')} disabled={actionStatus === 'loading'}>Delete league</button>
+              <Button type="button" variant="danger" size="small" disabled={actionStatus === 'loading'} onClick={() => onRequestAction('delete')}>Delete league</Button>
             ) : (
-              <button type="button" className="ui-button ui-button--secondary ui-button--small" onClick={() => onRequestAction('leave')} disabled={actionStatus === 'loading'}>Leave league</button>
+              <Button type="button" variant="secondary" size="small" disabled={actionStatus === 'loading'} onClick={() => onRequestAction('leave')}>Leave league</Button>
             )}
             <LeagueActionConfirmation action={pendingLeagueAction} leagueName={selectedLeague.name} actionStatus={actionStatus} onConfirm={onConfirmAction} onCancel={() => onRequestAction(null)} />
           </div>

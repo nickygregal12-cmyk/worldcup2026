@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueHeadToHead, loadLeagueOverview, readLeagueSession } from './leagueService.js'
-import { buildLeagueLifecycleState, buildStandingComparison, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
+import { buildLeagueLifecycleState, buildStandingComparison, canCreateKoLeague, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { buildMatchCentreNavigation, defaultMatchNumber } from '../matchCentre/matchCentreModel.js'
@@ -29,11 +29,11 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const [leagues, setLeagues] = useState([])
   const [leagueListStatus, setLeagueListStatus] = useState('idle')
   const [selectedLeagueId, setSelectedLeagueId] = useState(null)
-  const [competitionKey, setCompetitionKey] = useState(LEAGUE_COMPETITION.ORIGINAL)
   const [overview, setOverview] = useState({ status: 'idle', data: null, leagueId: null })
   const [actionStatus, setActionStatus] = useState('idle')
   const [notice, setNotice] = useState(null)
   const [createName, setCreateName] = useState('')
+  const [createCompetition, setCreateCompetition] = useState(LEAGUE_COMPETITION.ORIGINAL)
   const [joinCode, setJoinCode] = useState('')
   const [comparison, setComparison] = useState(null)
   const [comparisonMemberId, setComparisonMemberId] = useState('')
@@ -172,8 +172,9 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
       return
     }
     run(async () => {
-      const created = await createLeague(client, { tournamentId, name: checked.value })
+      const created = await createLeague(client, { tournamentId, name: checked.value, competition: createCompetition, koReadiness })
       setCreateName('')
+      setCreateCompetition(LEAGUE_COMPETITION.ORIGINAL)
       await refreshLeagues(created.league_id)
       setNotice({ tone: 'safe', message: `${created.name} was created.` })
     })
@@ -215,8 +216,9 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     setComparisonMemberId('')
   }
 
-  const compareMember = async (row, requestedCompetitionKey = competitionKey) => {
+  const compareMember = async row => {
     if (!selectedLeague || !session?.user) return
+    const requestedCompetitionKey = selectedLeague.competition
     const requestToken = comparisonRequests.current.begin()
     const leagueId = selectedLeague.id
     const section = requestedCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? overview.data?.sections.original : overview.data?.sections.koPredictor
@@ -252,23 +254,20 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const overviewLoading = Boolean(selectedLeague?.id) && overview.leagueId !== selectedLeague.id
   const activeOverview = overviewLoading ? null : overview.data
   const koLeagueReady = Boolean(koReadiness?.open)
-  const effectiveCompetitionKey = competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR && !koLeagueReady
-    ? LEAGUE_COMPETITION.ORIGINAL
-    : competitionKey
-  const activeSection = effectiveCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.sections.original : activeOverview?.sections.koPredictor
+  const activeCompetitionKey = selectedLeague?.competition ?? LEAGUE_COMPETITION.ORIGINAL
+  const activeSection = activeCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.sections.original : activeOverview?.sections.koPredictor
   const standings = activeSection?.data ?? []
+  const activeSummary = activeCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.summaries.original : activeOverview?.summaries.koPredictor
   const leagueLifecycle = activeOverview
     ? buildLeagueLifecycleState({ lifecycle, originalSummary: activeOverview.summaries.original, koSummary: activeOverview.summaries.koPredictor, koReadiness })
     : buildLeagueLifecycleState({ lifecycle, koReadiness })
-  const activeSummary = effectiveCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.summaries.original : activeOverview?.summaries.koPredictor
   const leagueListLoading = ['idle', 'loading'].includes(leagueListStatus)
 
   useEffect(() => {
-    if (competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR && !koLeagueReady) {
-      setCompetitionKey(LEAGUE_COMPETITION.ORIGINAL)
-      clearComparison()
+    if (createCompetition === LEAGUE_COMPETITION.KO_PREDICTOR && !canCreateKoLeague(koReadiness)) {
+      setCreateCompetition(LEAGUE_COMPETITION.ORIGINAL)
     }
-  }, [competitionKey, koLeagueReady])
+  }, [createCompetition, koReadiness])
 
   useEffect(() => {
     if (!comparison?.otherUserId) return
@@ -324,11 +323,14 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
             open={leagues.length === 0}
             createName={createName}
             onCreateNameChange={setCreateName}
+            createCompetition={createCompetition}
+            onCreateCompetitionChange={setCreateCompetition}
             onSubmitCreate={submitCreate}
             joinCode={joinCode}
             onJoinCodeChange={setJoinCode}
             onSubmitJoin={submitJoin}
             busy={actionStatus === 'loading'}
+            koReadiness={koReadiness}
           />
 
           {leagueListLoading && <p className={layoutStyles.emptyCopy}>Loading your leagues…</p>}
@@ -340,9 +342,6 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                 league={selectedLeague}
                 leagues={leagues}
                 onSelectLeague={value => { overviewRequests.current.cancel(); setSelectedLeagueId(value); clearComparison(); setPendingLeagueAction(null) }}
-                competitionKey={effectiveCompetitionKey}
-                onCompetitionChange={value => { setCompetitionKey(value); clearComparison() }}
-                koReadiness={koReadiness}
                 currentRank={activeSummary?.currentRank ?? null}
               />
 
@@ -351,14 +350,14 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
               <div className={layoutStyles.layout}>
                 <div>
                   <LeagueStandingsPanel
-                    competitionKey={effectiveCompetitionKey}
+                    competitionKey={activeCompetitionKey}
                     overview={overview}
                     overviewLoading={overviewLoading}
                     activeOverview={activeOverview}
                     activeSection={activeSection}
                     standings={standings}
                     comparisonMemberId={comparisonMemberId}
-                    onOpenDetail={row => compareMember(row, effectiveCompetitionKey)}
+                    onOpenDetail={compareMember}
                     leagueLifecycle={leagueLifecycle}
                     lifecycle={lifecycle}
                     activeSummary={activeSummary}
