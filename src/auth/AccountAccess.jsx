@@ -74,6 +74,7 @@ export default function AccountAccess({ client, reference, tournament = null, li
   const [profileName, setProfileName] = useState('')
   const [signOutConfirmOpen, setSignOutConfirmOpen] = useState(false)
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false)
+  const [displayNameConfirmOpen, setDisplayNameConfirmOpen] = useState(false)
   const [guestTransferRequested, setGuestTransferRequested] = useState(false)
   const [dashboard, setDashboard] = useState({ status: 'idle', stats: ACCOUNT_STATS_DEFAULT, predictionBundle: null })
 
@@ -191,14 +192,19 @@ export default function AccountAccess({ client, reference, tournament = null, li
     })
   }
 
+  // Changing the display name asks for a plain confirmation first, since it is the name other
+  // players see on leaderboards and shared views. The save itself only runs after confirmation.
   const submitProfile = event => {
     event.preventDefault()
-    run(async () => {
-      const nextProfile = await updateOwnDisplayName(client, profileName)
-      setProfile(nextProfile); setProfileName(nextProfile.display_name)
-      setNotice({ tone: 'safe', message: 'Display name updated.' })
-    })
+    setDisplayNameConfirmOpen(true)
   }
+
+  const confirmDisplayNameChange = () => run(async () => {
+    const nextProfile = await updateOwnDisplayName(client, profileName)
+    setProfile(nextProfile); setProfileName(nextProfile.display_name)
+    setDisplayNameConfirmOpen(false)
+    setNotice({ tone: 'safe', message: 'Display name updated.' })
+  })
 
   const confirmSignOut = () => run(async () => { await signOut(client); setSignOutConfirmOpen(false); setNotice({ tone: 'safe', message: 'Signed out. Guest predictions on this device were not removed.' }) })
   const requestPasswordChange = () => run(async () => { await requestPasswordReset(client, { email: emailAddress }); setNotice({ tone: 'safe', message: 'Password reset email requested. Check your inbox and spam folder.' }) })
@@ -222,7 +228,7 @@ export default function AccountAccess({ client, reference, tournament = null, li
   if (loadingSession) return <section className="foundation-panel auth-foundation" aria-busy="true"><span className="foundation-kicker">Euro account</span><h2>Checking your session…</h2></section>
 
   if (session?.user && !isRecovery) {
-    return <AccountDashboard client={client} reference={reference} session={session} profile={profile} profileName={profileName} setProfileName={setProfileName} emailAddress={emailAddress} busy={busy} notice={notice} dashboard={dashboard} accountLifecycle={accountLifecycle} signOutConfirmOpen={signOutConfirmOpen} setSignOutConfirmOpen={setSignOutConfirmOpen} clearConfirmOpen={clearConfirmOpen} setClearConfirmOpen={setClearConfirmOpen} guestTransferRequested={guestTransferRequested} onGuestTransferComplete={finishGuestTransferFlow} submitProfile={submitProfile} confirmSignOut={confirmSignOut} confirmClearPredictions={confirmClearPredictions} requestPasswordChange={requestPasswordChange} />
+    return <AccountDashboard client={client} reference={reference} session={session} profile={profile} profileName={profileName} setProfileName={setProfileName} emailAddress={emailAddress} busy={busy} notice={notice} dashboard={dashboard} accountLifecycle={accountLifecycle} signOutConfirmOpen={signOutConfirmOpen} setSignOutConfirmOpen={setSignOutConfirmOpen} clearConfirmOpen={clearConfirmOpen} setClearConfirmOpen={setClearConfirmOpen} displayNameConfirmOpen={displayNameConfirmOpen} setDisplayNameConfirmOpen={setDisplayNameConfirmOpen} confirmDisplayNameChange={confirmDisplayNameChange} guestTransferRequested={guestTransferRequested} onGuestTransferComplete={finishGuestTransferFlow} submitProfile={submitProfile} confirmSignOut={confirmSignOut} confirmClearPredictions={confirmClearPredictions} requestPasswordChange={requestPasswordChange} />
   }
 
   return <AccountSignInForms mode={mode} setMode={setMode} notice={notice} busy={busy} email={email} setEmail={setEmail} password={password} setPassword={setPassword} confirmation={confirmation} setConfirmation={setConfirmation} displayName={displayName} setDisplayName={setDisplayName} submitLogin={submitLogin} submitRegistration={submitRegistration} submitResetRequest={submitResetRequest} submitNewPassword={submitNewPassword} isRecovery={isRecovery} />

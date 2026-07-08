@@ -77,7 +77,7 @@ export function AccountSignInForms({ mode, setMode, notice, busy, email, setEmai
   )
 }
 
-export default function AccountDashboard({ client, reference, session, profile, profileName, setProfileName, emailAddress, busy, notice, dashboard, accountLifecycle, signOutConfirmOpen, setSignOutConfirmOpen, clearConfirmOpen, setClearConfirmOpen, guestTransferRequested, onGuestTransferComplete, submitProfile, confirmSignOut, confirmClearPredictions, requestPasswordChange }) {
+export default function AccountDashboard({ client, reference, session, profile, profileName, setProfileName, emailAddress, busy, notice, dashboard, accountLifecycle, signOutConfirmOpen, setSignOutConfirmOpen, clearConfirmOpen, setClearConfirmOpen, displayNameConfirmOpen, setDisplayNameConfirmOpen, confirmDisplayNameChange, guestTransferRequested, onGuestTransferComplete, submitProfile, confirmSignOut, confirmClearPredictions, requestPasswordChange }) {
   const showGuestTransfer = shouldShowGuestTransferModal({ requested: guestTransferRequested, session, isRecovery: false })
   const displayLabel = profile?.display_name || emailAddress || 'Euro player'
   const avatarInitial = initialForDisplayName(profile?.display_name, emailAddress)
@@ -86,6 +86,7 @@ export default function AccountDashboard({ client, reference, session, profile, 
     <section className={styles.dashboard}>
       <ConfirmDialog open={signOutConfirmOpen} title="Sign out of Euro 2028 Predictor?" confirmLabel="Sign out" cancelLabel="Stay signed in" tone="danger" busy={busy} onConfirm={confirmSignOut} onCancel={() => setSignOutConfirmOpen(false)}>Any guest picks on this device stay here. Predictions already saved to your account stay with your account.</ConfirmDialog>
       <ConfirmDialog open={clearConfirmOpen} title="Clear your Original Predictor predictions?" confirmLabel="Clear predictions" cancelLabel="Keep predictions" tone="danger" busy={busy} onConfirm={confirmClearPredictions} onCancel={() => setClearConfirmOpen(false)}>This clears your saved group scores and pre-tournament bracket picks only. It cannot be undone. Your leagues, account details and KO Predictor entries are not changed.</ConfirmDialog>
+      <ConfirmDialog open={displayNameConfirmOpen} title="Change your display name?" confirmLabel="Change name" cancelLabel="Cancel" tone="info" busy={busy} onConfirm={confirmDisplayNameChange} onCancel={() => setDisplayNameConfirmOpen(false)}>Are you sure you want to change your display name to “{profileName}”? This is the name other players see on leaderboards and shared prediction views.</ConfirmDialog>
       {showGuestTransfer && reference && <GuestAccountTransfer client={client} reference={reference} userId={session.user.id} asDialog open={showGuestTransfer} onClose={onGuestTransferComplete} onComplete={onGuestTransferComplete} />}
 
       <Card className={`${styles.card} ${styles.identityCard}`} as="section" aria-labelledby="account-identity-heading">
