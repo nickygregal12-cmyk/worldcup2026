@@ -322,7 +322,8 @@ button.team-label {
 
 .group-match-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* Two cards per row only when a card is wide enough for full team names. */
+  grid-template-columns: repeat(auto-fit, minmax(min(30rem, 100%), 1fr));
   gap: var(--space-4);
 }
 
@@ -367,10 +368,14 @@ button.team-label {
   align-items: center;
   gap: var(--space-2);
 }
-
-.group-match-team--away .team-label {
-  flex-direction: row-reverse;
-  text-align: right;
+/* Prediction-row team labels stack the flag over a full-width name (home and away
+   alike) so long names use the whole column instead of collapsing beside the scores. */
+.group-match-team .team-label {
+  display: grid; justify-items: center; text-align: center; gap: var(--space-1); width: 100%; min-width: 0;
+}
+.group-match-team .team-label__copy { width: 100%; min-width: 0; justify-items: center; }
+.group-match-team .team-label__copy strong {
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; max-width: 100%;
 }
 
 .group-match-card__separator {
@@ -566,11 +571,6 @@ button.team-label {
   .team-label {
     display: grid;
     justify-items: center;
-    text-align: center;
-  }
-
-  .group-match-team--away .team-label {
-    flex-direction: initial;
     text-align: center;
   }
 
