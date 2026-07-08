@@ -114,12 +114,17 @@ function buildOriginalBracketSlot({ side, slot, teamId, selectedTeamId, referenc
 
 export function buildOriginalBracketSurface({ reference, draft, preview }) {
   const staleNumbers = staleMatchNumbers(preview)
+  const referenceByMatchNumber = new Map((reference.knockoutMatches ?? []).map(match => [match.matchNumber, match]))
   const ties = preview.resolution.knockout.matches.map(match => {
     const row = draft.bracketPredictions[String(match.matchNumber)] ?? { advancingTeamId: null }
     const stale = staleNumbers.has(match.matchNumber)
+    const referenceMatch = referenceByMatchNumber.get(match.matchNumber)
     buildOriginalBracketWallPlacement(match.matchNumber) // throws if a knockout match has no approved wall-chart slot
     return Object.freeze({
       ...match,
+      // The resolver definition carries no schedule/venue; source them from the reference row.
+      venueName: match.venueName ?? referenceMatch?.venueName ?? null,
+      venueCity: match.venueCity ?? referenceMatch?.venueCity ?? null,
       stale,
       selectedTeamId: row.advancingTeamId ?? null,
       slots: Object.freeze([

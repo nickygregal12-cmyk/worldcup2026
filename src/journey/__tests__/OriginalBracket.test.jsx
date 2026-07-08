@@ -58,6 +58,25 @@ describe('OriginalBracket', () => {
     expect(renderBracket(emptyBracketDraft)).toContain('Pick through to the final')
   })
 
+  it('renders the confirmed venue name when the reference carries it', () => {
+    const reference = {
+      ...VISUAL_GROUP_REFERENCE,
+      knockoutMatches: VISUAL_GROUP_REFERENCE.knockoutMatches.map(match => ({
+        ...match,
+        venueName: 'Wembley Stadium',
+        venueCity: 'London',
+      })),
+    }
+    const preview = resolveGuestTournamentPreview(reference, VISUAL_BRACKET_DRAFT)
+    const html = renderToStaticMarkup(
+      <TeamProfileContext.Provider value={{ openTeamProfile: () => {} }}>
+        <OriginalBracket reference={reference} draft={VISUAL_BRACKET_DRAFT} preview={preview} contentLocked={false} reviewMode={false} graceWindows={[]} onChange={() => {}} />
+      </TeamProfileContext.Provider>,
+    )
+    expect(html).toContain('Wembley Stadium, London')
+    expect(html).not.toContain('Venue to be confirmed')
+  })
+
   it('renders the exact amber re-pick flag for stale bracket selections', () => {
     const staleDraft = {
       ...VISUAL_BRACKET_DRAFT,
