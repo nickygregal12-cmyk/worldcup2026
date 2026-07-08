@@ -88,9 +88,11 @@ function OriginalBracketSlot({ slot, disabled, onSelect }) {
 
   return (
     <div className={className} data-slot-source={slot.sourceCode} data-slot-side={slot.side}>
-      <span className={tieStyles.slotSource}>{slot.sourceCode}</span>
       {slot.unresolved ? (
-        <span className={tieStyles.placeholderChip}>{slot.placeholderLabel}</span>
+        <>
+          <span className={tieStyles.slotSource}>{slot.sourceCode}</span>
+          <span className={tieStyles.placeholderChip}>{slot.placeholderLabel}</span>
+        </>
       ) : (
         <button
           type="button"
