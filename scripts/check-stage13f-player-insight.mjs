@@ -73,11 +73,13 @@ for (const marker of ['state.data.insights.current', 'state.data.insights.other'
 }
 
 const results = read('src/results/ResultsAndLeaderboards.jsx')
-const leagues = read('src/leagues/Leagues.jsx')
+// League member insight now opens inside the dedicated Player View rather than inline on the
+// Leagues page, so the league rank-story rows live in PlayerView.jsx.
+const playerView = read('src/player/PlayerView.jsx')
 const home = read('src/home/HomeDashboard.jsx')
 if (!results.includes('<PlayerInsight')) fail('Leaderboards does not render the full player-insight surface')
 if (!results.includes('standingsRows')) fail('Overall comparison does not retain rank-story rows')
-if (!leagues.includes('standingsRows')) fail('League comparison does not retain league rank-story rows')
+if (!playerView.includes('standingsRows')) fail('League player insight does not retain league rank-story rows')
 if (!home.includes('pointsBehindLeader')) fail('Home does not expose concise leader-gap storytelling')
 
 const services = [

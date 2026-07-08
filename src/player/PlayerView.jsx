@@ -1,9 +1,14 @@
 import * as React from 'react'
 
-const { useCallback, useEffect, useMemo, useState } = React
+const { useCallback, useEffect, useMemo, useRef, useState } = React
 import { Badge, Button, Card, LinkButton, PlayerIdentity, StatusBar, Tabs, TeamLabel } from '../design-system/index.jsx'
-import { LEAGUE_COMPETITION } from '../leagues/leagueModel.js'
+import { buildStandingComparison, LEAGUE_COMPETITION } from '../leagues/leagueModel.js'
+import { loadOverallHeadToHead } from '../results/resultService.js'
+import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { loadPlayerView } from './playerViewService.js'
+import PlayerHeadToHead from './PlayerHeadToHead.jsx'
+import PlayerInsight from './PlayerInsight.jsx'
+import { PLAYER_COMPARISON_CONTEXT } from './playerComparisonModel.js'
 import styles from './PlayerView.module.css'
 
 const COMPETITION_OPTIONS = [
@@ -16,6 +21,22 @@ const TAB_OPTIONS = [
   { value: 'bracket', label: 'Bracket' },
   { value: 'tables', label: 'Tables' },
 ]
+
+const POINTS_TAB = { value: 'points', label: 'Points Breakdown' }
+const HEAD_TO_HEAD_TAB = { value: 'headToHead', label: 'Head-to-Head' }
+
+// Maps the shared head-to-head load into the single-player insight section the viewed
+// member's Points Breakdown tab expects (`insights.other` is always the viewed player).
+function viewedInsightSection(comparison, currentUserId) {
+  if (!comparison) {
+    return currentUserId
+      ? { status: 'loading', data: null, error: null }
+      : { status: 'error', data: null, error: 'Sign in to open this points breakdown.' }
+  }
+  if (comparison.status === 'loading') return { status: 'loading', data: null, error: null }
+  if (comparison.status === 'error') return { status: 'error', data: null, error: comparison.error }
+  return comparison.data?.insights?.other ?? { status: 'error', data: null, error: 'Points breakdown is unavailable.' }
+}
 
 const COMPETITION_CONTEXT = {
   [LEAGUE_COMPETITION.ORIGINAL]: {
@@ -227,6 +248,8 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
   const [state, setState] = useState(() => initialData
     ? { status: 'ready', data: initialData, error: null }
     : { status: 'loading', data: null, error: null })
+  const [comparison, setComparison] = useState(null)
+  const comparisonRequests = useRef(createLatestRequestGuard())
 
   const load = useCallback(async () => {
     setState(previous => ({ ...previous, status: 'loading', error: null }))
@@ -242,11 +265,66 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
   useEffect(() => { void Promise.resolve().then(load) }, [load])
 
   const view = state.data?.view ?? null
-  const tabOptions = useMemo(() => (
-    competitionKey === LEAGUE_COMPETITION.ORIGINAL
+  const currentUserId = state.data?.currentUserId ?? null
+  const viewedUserId = state.data?.memberUserId ?? null
+  const isSelf = !currentUserId || !viewedUserId || currentUserId === viewedUserId
+  const canCompare = Boolean(currentUserId && viewedUserId && currentUserId !== viewedUserId)
+
+  const standingsRows = useMemo(
+    () => (state.data?.standingsRows ?? []).map(row => ({ ...row, isCurrentUser: row.userId === currentUserId })),
+    [state.data, currentUserId],
+  )
+
+  // Head-to-Head and Points Breakdown both draw on the same authorised comparison read
+  // (`insights.other` is the viewed player). Competition context is carried through so
+  // Original and KO Predictor stories stay separate.
+  const loadComparison = useCallback(async () => {
+    if (!client || !currentUserId || !viewedUserId || !reference?.tournamentId) {
+      comparisonRequests.current.cancel()
+      setComparison(null)
+      return
+    }
+    const requestToken = comparisonRequests.current.begin()
+    setComparison({
+      status: 'loading',
+      otherName: view?.player?.displayName ?? 'Player',
+      otherUserId: viewedUserId,
+      competitionKey,
+      standings: buildStandingComparison(standingsRows, viewedUserId),
+      standingsRows,
+      data: null,
+      error: null,
+    })
+    try {
+      const data = await loadOverallHeadToHead(client, {
+        tournamentId: reference.tournamentId,
+        currentUserId,
+        otherUserId: viewedUserId,
+        competitionKey,
+        reference,
+      })
+      if (!comparisonRequests.current.isCurrent(requestToken)) return
+      setComparison(previous => ({ ...previous, status: 'ready', data, error: null }))
+    } catch (error) {
+      if (!comparisonRequests.current.isCurrent(requestToken)) return
+      setComparison(previous => ({ ...previous, status: 'error', data: null, error: error instanceof Error ? error.message : String(error) }))
+    }
+  }, [client, competitionKey, currentUserId, reference, standingsRows, view, viewedUserId])
+
+  useEffect(() => {
+    const requestGuard = comparisonRequests.current
+    void loadComparison()
+    return () => { requestGuard.cancel() }
+  }, [loadComparison])
+
+  const tabOptions = useMemo(() => {
+    const base = competitionKey === LEAGUE_COMPETITION.ORIGINAL
       ? TAB_OPTIONS
       : TAB_OPTIONS.filter(tab => tab.value === 'predictions')
-  ), [competitionKey])
+    const extended = [...base, POINTS_TAB]
+    if (canCompare) extended.push(HEAD_TO_HEAD_TAB)
+    return extended
+  }, [competitionKey, canCompare])
 
   useEffect(() => {
     if (!tabOptions.some(tab => tab.value === activeTab)) setActiveTab('predictions')
@@ -274,6 +352,25 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
       {activeTab === 'predictions' && <PredictionsPanel view={view} />}
       {activeTab === 'bracket' && <BracketPanel view={view} />}
       {activeTab === 'tables' && <TablesPanel view={view} />}
+      {activeTab === 'points' && (
+        <PlayerInsight
+          title={isSelf ? 'Your points story' : `${view.player.displayName}'s points story`}
+          section={viewedInsightSection(comparison, currentUserId)}
+          leaderboardRows={standingsRows}
+          player={{ ...view.player, isCurrentUser: isSelf }}
+          competitionKey={competitionKey}
+          lifecycle={lifecycle}
+        />
+      )}
+      {activeTab === 'headToHead' && (
+        <PlayerHeadToHead
+          state={comparison}
+          reference={reference}
+          lifecycle={lifecycle}
+          onClose={() => setActiveTab('predictions')}
+          context={PLAYER_COMPARISON_CONTEXT.OVERALL}
+        />
+      )}
     </div>
   )
 }

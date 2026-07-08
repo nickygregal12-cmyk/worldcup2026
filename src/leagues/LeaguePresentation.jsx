@@ -218,17 +218,15 @@ function MovementChip({ label }) {
   )
 }
 
-export function LeaderList({ rows, selectedUserId, onOpenDetail }) {
+export function LeaderList({ rows, onOpenPlayer }) {
   const raceRows = buildLeagueRaceRows(rows)
   const hasScoring = raceRows.some(row => row.scoredMatchCount > 0 || row.totalPoints > 0)
   return (
     <div className={raceStyles.leaderList}>
       {raceRows.map(row => {
-        const selected = row.userId === selectedUserId
         const rowClassName = [
           raceStyles.leaderRow,
           row.isCurrentUser ? raceStyles.currentUserRow : '',
-          selected ? raceStyles.selectedRow : '',
         ].filter(Boolean).join(' ')
         const rankGroup = (
           <span className={raceStyles.rankGroup}>
@@ -257,8 +255,8 @@ export function LeaderList({ rows, selectedUserId, onOpenDetail }) {
             key={row.userId}
             type="button"
             className={rowClassName}
-            aria-label={`Open ${row.displayName}'s league detail`}
-            onClick={() => onOpenDetail(row)}
+            aria-label={`Open ${row.displayName}'s Player View`}
+            onClick={() => onOpenPlayer(row)}
           >
             {rankGroup}
             {identity}
@@ -268,27 +266,6 @@ export function LeaderList({ rows, selectedUserId, onOpenDetail }) {
         )
       })}
     </div>
-  )
-}
-
-export function LeagueDetailDestination({ comparison, onOpenProfile, children }) {
-  if (!comparison) return null
-  return (
-    <section className={raceStyles.detailDestination} aria-label="League member detail">
-      <div className={raceStyles.detailDestinationHeading}>
-        <div>
-          <span className={layoutStyles.kicker}>Member details</span>
-          <strong>{comparison.otherName ?? 'Selected member'}</strong>
-          <small>Breakdowns open here so the league table stays as rank, member and points.</small>
-        </div>
-        {onOpenProfile && (
-          <Button type="button" variant="secondary" size="small" onClick={onOpenProfile}>
-            View full profile
-          </Button>
-        )}
-      </div>
-      {children}
-    </section>
   )
 }
 
@@ -323,7 +300,7 @@ export function LeagueNotice({ notice }) {
 
 export function LeagueStandingsPanel({
   competitionKey, overview, overviewLoading, activeOverview, activeSection, standings,
-  comparisonMemberId, onOpenDetail,
+  onOpenPlayer,
   leagueLifecycle, lifecycle, activeSummary, koReadiness, koLeagueReady,
   selectedLeague, pendingLeagueAction, actionStatus, onRequestAction, onConfirmAction,
 }) {
@@ -343,7 +320,7 @@ export function LeagueStandingsPanel({
       {activeSection?.status === 'error' && !koWaiting && <StatusBar tone="danger" title={activeSection.error} />}
       {stillRefreshing && <p className={layoutStyles.emptyCopy}>Refreshing standings…</p>}
       {showEmpty && <p className={layoutStyles.emptyCopy}>No league members were returned.</p>}
-      {standings.length > 0 && <LeaderList rows={standings} selectedUserId={comparisonMemberId} onOpenDetail={onOpenDetail} />}
+      {standings.length > 0 && <LeaderList rows={standings} onOpenPlayer={onOpenPlayer} />}
 
       {activeOverview && (
         <LeagueSecondaryDetails title="League details">

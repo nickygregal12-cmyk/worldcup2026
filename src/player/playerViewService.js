@@ -69,6 +69,7 @@ export async function loadPlayerView(client, {
     currentUserId: currentSession?.user?.id ?? null,
     memberUserId: userId,
     competitionKey: safeCompetitionKey,
+    standingsRows,
     view: buildPlayerView({
       memberUserId: userId,
       displayName: predictionBundle.displayName,

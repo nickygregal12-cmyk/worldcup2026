@@ -31,17 +31,31 @@ for (const marker of [
   'openPlayerView',
   'openMemberPlayerView',
   'onOpenPlayer={openMemberPlayerView}',
-  'PlayerHeadToHead state={comparison}',
 ]) {
   if (!leagues.includes(marker)) fail(`Leagues controller missing ${marker}`)
 }
 
+// Opening a league member row now navigates straight to the Player View; there is no inline
+// comparison panel on the Leagues page anymore.
+if (leagues.includes('PlayerHeadToHead state={comparison}')) {
+  fail('Leagues controller must not render an inline head-to-head panel; member rows navigate to the Player View')
+}
+
 for (const marker of [
   'onOpenPlayer',
-  'onActivate={onOpenPlayer}',
-  'onCompare(row)',
+  'onOpenPlayer(row)',
 ]) {
   if (!leaguePresentation.includes(marker)) fail(`League standings table missing ${marker}`)
+}
+
+// The relocated head-to-head and points-breakdown surfaces are hosted by the Player View.
+const playerView = read('src/player/PlayerView.jsx')
+for (const marker of [
+  '<PlayerHeadToHead',
+  'state={comparison}',
+  '<PlayerInsight',
+]) {
+  if (!playerView.includes(marker)) fail(`Player View missing relocated comparison surface ${marker}`)
 }
 
 for (const marker of [

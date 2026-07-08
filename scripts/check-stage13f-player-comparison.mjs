@@ -39,9 +39,12 @@ for (const [name, source] of [['league standings', leaguePresentation], ['overal
   if (source.includes('foundation-member-link')) fail(`${name} still uses an ad hoc player-name button`)
 }
 
-const leagueController = read('src/leagues/Leagues.jsx')
+// League member comparison now opens inside the dedicated Player View instead of an inline
+// panel on the Leagues page; the shared H2H surface and competition-scoped rank context
+// therefore live in PlayerView.jsx. Overall leaderboard comparison remains inline.
+const playerViewController = read('src/player/PlayerView.jsx')
 const resultsController = read('src/results/ResultsAndLeaderboards.jsx')
-for (const [name, source] of [['league', leagueController], ['overall', resultsController]]) {
+for (const [name, source] of [['player view', playerViewController], ['overall', resultsController]]) {
   if (!source.includes('<PlayerHeadToHead')) fail(`${name} comparison does not use the shared H2H surface`)
   if (!source.includes('buildStandingComparison')) fail(`${name} comparison is missing competition-scoped rank and points context`)
 }

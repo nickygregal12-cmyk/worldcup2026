@@ -1,19 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueHeadToHead, loadLeagueOverview, readLeagueSession } from './leagueService.js'
-import { buildLeagueLifecycleState, buildStandingComparison, canCreateKoLeague, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
+import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueOverview, readLeagueSession } from './leagueService.js'
+import { buildLeagueLifecycleState, canCreateKoLeague, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { buildMatchCentreNavigation, defaultMatchNumber } from '../matchCentre/matchCentreModel.js'
 import {
   LeagueActionsCard,
-  LeagueDetailDestination,
   LeagueHero,
   LeagueManagePanel,
   LeagueNotice,
   LeagueStandingsPanel,
   MiniMatchStrip,
 } from './LeaguePresentation.jsx'
-import { PlayerHeadToHead, PLAYER_COMPARISON_CONTEXT, openPlayerView } from '../player/index.js'
+import { openPlayerView } from '../player/index.js'
 import layoutStyles from './LeagueLayout.module.css'
 
 function messageForError(error) {
@@ -35,13 +34,9 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const [createName, setCreateName] = useState('')
   const [createCompetition, setCreateCompetition] = useState(LEAGUE_COMPETITION.ORIGINAL)
   const [joinCode, setJoinCode] = useState('')
-  const [comparison, setComparison] = useState(null)
-  const [comparisonMemberId, setComparisonMemberId] = useState('')
   const [pendingLeagueAction, setPendingLeagueAction] = useState(null)
   const [liveFixture, setLiveFixture] = useState(null)
   const overviewRequests = useRef(createLatestRequestGuard())
-  const comparisonRequests = useRef(createLatestRequestGuard())
-  const detailRef = useRef(null)
 
   const selectedLeague = useMemo(
     () => leagues.find(league => league.id === selectedLeagueId) ?? leagues[0] ?? null,
@@ -109,10 +104,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
         setLeagues([])
         setSelectedLeagueId(null)
         setOverview({ status: 'idle', data: null, leagueId: null })
-        comparisonRequests.current.cancel()
         overviewRequests.current.cancel()
-        setComparison(null)
-        setComparisonMemberId('')
         setPendingLeagueAction(null)
       }
     })
@@ -125,6 +117,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
 
   useEffect(() => {
     let active = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- setNotice runs in a deferred promise rejection, not synchronously during the effect
     refreshLeagues().catch(error => { if (active) setNotice({ tone: 'danger', message: messageForError(error) }) })
     return () => { active = false }
   }, [refreshLeagues])
@@ -132,12 +125,14 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   useEffect(() => {
     if (!client || !selectedLeague?.id) return undefined
     const requestGuard = overviewRequests.current
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- refreshOverview only flips a loading flag before an async fetch resolves
     void refreshOverview()
     return () => { requestGuard.cancel() }
   }, [client, refreshOverview, selectedLeague])
 
   // Reuses the canonical live snapshot/fixture-picking used by Home & Match Centre; no minute-level clock exists in this data.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing the stale live fixture when preconditions drop is an intentional reset
     if (!client || !session?.user || !reference?.tournamentId) { setLiveFixture(null); return undefined }
     let active = true
     loadCanonicalTournamentSnapshot(client, reference)
@@ -202,7 +197,6 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     const succeeded = await run(async () => {
       if (action === 'delete') await deleteLeague(client, selectedLeague.id)
       else await leaveLeague(client, selectedLeague.id)
-      clearComparison()
       await refreshLeagues()
     })
     if (!succeeded) return
@@ -210,47 +204,13 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     setNotice({ tone: 'safe', message: action === 'delete' ? `${leagueName} was deleted.` : `You left ${leagueName}.` })
   }
 
-  const clearComparison = () => {
-    comparisonRequests.current.cancel()
-    setComparison(null)
-    setComparisonMemberId('')
+  // Opening a member row navigates straight to their dedicated Player View, carrying the
+  // league's fixed competition so Original and KO Predictor context is preserved.
+  const openMemberPlayerView = row => {
+    if (!row?.userId || !selectedLeague) return
+    openPlayerView({ userId: row.userId, competitionKey: selectedLeague.competition })
   }
 
-  const compareMember = async row => {
-    if (!selectedLeague || !session?.user) return
-    const requestedCompetitionKey = selectedLeague.competition
-    const requestToken = comparisonRequests.current.begin()
-    const leagueId = selectedLeague.id
-    const section = requestedCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? overview.data?.sections.original : overview.data?.sections.koPredictor
-    const standings = buildStandingComparison(section?.data ?? [], row.userId)
-    setComparisonMemberId(row.userId)
-    setComparison({
-      status: 'loading',
-      otherName: row.displayName,
-      otherUserId: row.userId,
-      competitionKey: requestedCompetitionKey,
-      leagueId,
-      standings,
-      standingsRows: (section?.data ?? []).map(candidate => ({ ...candidate, isCurrentUser: candidate.userId === session.user.id })),
-      data: null,
-      error: null,
-    })
-    try {
-      const data = await loadLeagueHeadToHead(client, {
-        leagueId,
-        currentUserId: session.user.id,
-        otherUserId: row.userId,
-        competitionKey: requestedCompetitionKey,
-        tournamentId,
-        reference,
-      })
-      if (!comparisonRequests.current.isCurrent(requestToken)) return
-      setComparison(previous => ({ ...previous, status: 'ready', data, error: null }))
-    } catch (error) {
-      if (!comparisonRequests.current.isCurrent(requestToken)) return
-      setComparison(previous => ({ ...previous, status: 'error', data: null, error: messageForError(error) }))
-    }
-  }
   const overviewLoading = Boolean(selectedLeague?.id) && overview.leagueId !== selectedLeague.id
   const activeOverview = overviewLoading ? null : overview.data
   const koLeagueReady = Boolean(koReadiness?.open)
@@ -265,14 +225,10 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
 
   useEffect(() => {
     if (createCompetition === LEAGUE_COMPETITION.KO_PREDICTOR && !canCreateKoLeague(koReadiness)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- corrects the create form when KO readiness regresses; intentional guarded reset
       setCreateCompetition(LEAGUE_COMPETITION.ORIGINAL)
     }
   }, [createCompetition, koReadiness])
-
-  useEffect(() => {
-    if (!comparison?.otherUserId) return
-    detailRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
-  }, [comparison?.otherUserId])
 
   const copyText = async (text, successMessage) => {
     try {
@@ -341,7 +297,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
               <LeagueHero
                 league={selectedLeague}
                 leagues={leagues}
-                onSelectLeague={value => { overviewRequests.current.cancel(); setSelectedLeagueId(value); clearComparison(); setPendingLeagueAction(null) }}
+                onSelectLeague={value => { overviewRequests.current.cancel(); setSelectedLeagueId(value); setPendingLeagueAction(null) }}
                 currentRank={activeSummary?.currentRank ?? null}
               />
 
@@ -356,8 +312,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                     activeOverview={activeOverview}
                     activeSection={activeSection}
                     standings={standings}
-                    comparisonMemberId={comparisonMemberId}
-                    onOpenDetail={compareMember}
+                    onOpenPlayer={openMemberPlayerView}
                     leagueLifecycle={leagueLifecycle}
                     lifecycle={lifecycle}
                     activeSummary={activeSummary}
@@ -369,15 +324,6 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                     onRequestAction={setPendingLeagueAction}
                     onConfirmAction={confirmLeagueAction}
                   />
-
-                  <div ref={detailRef}>
-                    <LeagueDetailDestination
-                      comparison={comparison}
-                      onOpenProfile={comparison?.otherUserId ? () => openPlayerView({ userId: comparison.otherUserId, competitionKey: comparison.competitionKey }) : null}
-                    >
-                      <PlayerHeadToHead state={comparison} reference={reference} lifecycle={lifecycle} onClose={clearComparison} context={PLAYER_COMPARISON_CONTEXT.LEAGUE} />
-                    </LeagueDetailDestination>
-                  </div>
                 </div>
 
                 <LeagueActionsCard
