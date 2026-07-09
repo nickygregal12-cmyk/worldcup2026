@@ -29,3 +29,8 @@ dist-ssr
 supabase/.temp/
 supabase/.branches/
 coverage/
+
+# Per-session working notes. Nothing in the repo references these by name.
+# REPORT-P6C-EXECUTOR.md predates this rule and stays tracked: .gitignore does
+# not untrack an already-tracked file, so no exception rule is needed for it.
+reports/
