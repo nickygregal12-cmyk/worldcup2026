@@ -36,6 +36,7 @@ import {
   STAGE16A_P6A_BLOCKED_BRANCHES,
   STAGE16A_P6A_ZERO_RESIDUE_TARGETS,
 } from './lib/stage16aSeedWriteAcceptancePlan.mjs'
+import { BACKUP_FORMAT_VERSION } from './lib/databaseBackup.mjs'
 
 // ---- Frozen environment facts (LOCAL) --------------------------------------
 const TOURNAMENT_ID = 'e0280000-0000-4000-8000-000000000001'
@@ -150,24 +151,75 @@ function assertContext({ requireWriteFlags = true, requireTeardownConfirmation =
 }
 
 // ---- Backup precondition ----------------------------------------------------
-// A write must not run without a fresh, checksum-verified backup of the target.
-// Reuses the repo backup layout (metadata.json + SHA256SUMS.txt under a dated
-// dir in EURO28_BACKUP_ROOT). Staging uses `npm run db:backup && db:backup:verify`;
-// LOCAL uses a local dump verified the same way (never touches staging).
-function requireFreshBackup() {
+// A write must not run without a fresh, checksum-verified backup OF THE DATABASE
+// THAT IS ABOUT TO BE WRITTEN TO. Reuses the repo backup layout
+// (backup-metadata.json + SHA256SUMS.txt under a dated dir in EURO28_BACKUP_ROOT).
+// Staging uses `npm run db:backup && db:backup:verify`; LOCAL uses `local-backup`,
+// a local dump written in the same layout (it never touches staging).
+export const BACKUP_METADATA_FILENAME = 'backup-metadata.json'
+export const BACKUP_CHECKSUMS_FILENAME = 'SHA256SUMS.txt'
+
+// Which database was this backup taken FROM?
+//
+// Local backups (written by `local-backup` below) record `target` explicitly.
+// Staging backups written by scripts/backup-database.mjs predate that field, so
+// their target is derived from the project ref they recorded. An unrecognised or
+// absent ref yields null, which never matches a requested target — fail-closed.
+export function backupTargetFromMetadata(metadata) {
+  const explicit = metadata?.target
+  if (typeof explicit === 'string' && explicit.length > 0) return explicit
+  const projectRef = metadata?.source?.projectRef
+  if (projectRef === EURO28_STAGING_PROJECT_REF) return 'staging'
+  if (projectRef === WC26_PRODUCTION_PROJECT_REF) return 'production'
+  return null
+}
+
+export function requireFreshBackup(target = process.env.STAGE16A_TARGET || 'local') {
   if (process.env.STAGE16A_SKIP_BACKUP_PRECONDITION === 'i-accept-the-risk') return { skipped: true }
   const root = process.env.EURO28_BACKUP_ROOT
   if (!root || !fs.existsSync(root)) throw new Error(`backup precondition: EURO28_BACKUP_ROOT missing or unset (${root || 'unset'})`)
-  const dirs = fs.readdirSync(root).map(name => path.join(root, name))
-    .filter(p => fs.existsSync(path.join(p, 'SHA256SUMS.txt')) && fs.existsSync(path.join(p, 'metadata.json')))
-    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)
-  if (!dirs.length) throw new Error(`backup precondition: no verified backup (metadata.json + SHA256SUMS.txt) under ${root}`)
-  const dir = dirs[0]
+
+  const candidates = fs.readdirSync(root).map(name => path.join(root, name))
+    .filter(p => fs.existsSync(path.join(p, BACKUP_CHECKSUMS_FILENAME)) && fs.existsSync(path.join(p, BACKUP_METADATA_FILENAME)))
+  if (!candidates.length) {
+    throw new Error(`backup precondition: no verified backup (${BACKUP_METADATA_FILENAME} + ${BACKUP_CHECKSUMS_FILENAME}) under ${root}`)
+  }
+
+  // Accept a backup only when its OWN recorded target matches the database this
+  // run is about to write to. Picking the most-recently-modified directory
+  // regardless of target would let a local backup satisfy a staging run.
+  const inspected = []
+  const matching = []
+  for (const dir of candidates) {
+    let backupTarget = null
+    try {
+      backupTarget = backupTargetFromMetadata(JSON.parse(fs.readFileSync(path.join(dir, BACKUP_METADATA_FILENAME), 'utf8')))
+    } catch {
+      backupTarget = null
+    }
+    inspected.push(`${path.basename(dir)} → ${backupTarget ?? 'unknown target'}`)
+    if (backupTarget === target) matching.push(dir)
+  }
+
+  if (!matching.length) {
+    throw new Error(`backup precondition: no backup of target "${target}" under ${root}.\n`
+      + `  Refusing to accept a backup of a different database as cover for a "${target}" write.\n`
+      + `  Backups found:\n    - ${inspected.join('\n    - ')}`)
+  }
+
+  const metadataMtime = dir => fs.statSync(path.join(dir, BACKUP_METADATA_FILENAME)).mtimeMs
+  matching.sort((a, b) => metadataMtime(b) - metadataMtime(a))
+  const dir = matching[0]
+
   const maxAgeMin = Number(process.env.STAGE16A_BACKUP_MAX_AGE_MIN || 360)
-  const ageMin = (Date.now() - fs.statSync(path.join(dir, 'metadata.json')).mtimeMs) / 60000
-  if (ageMin > maxAgeMin) throw new Error(`backup precondition: newest backup is ${Math.round(ageMin)}m old (> ${maxAgeMin}m)`)
-  // Re-verify checksums (self-contained integrity check).
-  const sums = fs.readFileSync(path.join(dir, 'SHA256SUMS.txt'), 'utf8').trim().split('\n').filter(Boolean)
+  const ageMin = (Date.now() - metadataMtime(dir)) / 60000
+  if (ageMin > maxAgeMin) {
+    throw new Error(`backup precondition: newest "${target}" backup is ${Math.round(ageMin)}m old (> ${maxAgeMin}m)`)
+  }
+
+  // Re-verify checksums (self-contained integrity check). SHA256SUMS.txt covers
+  // backup-metadata.json itself, so the recorded target above is tamper-evident.
+  const sums = fs.readFileSync(path.join(dir, BACKUP_CHECKSUMS_FILENAME), 'utf8').trim().split('\n').filter(Boolean)
   for (const line of sums) {
     const m = line.match(/^([0-9a-f]{64})\s+\*?(.+)$/)
     if (!m) throw new Error(`backup precondition: bad checksum line: ${line}`)
@@ -176,7 +228,7 @@ function requireFreshBackup() {
     const actual = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
     if (actual !== m[1]) throw new Error(`backup precondition: checksum mismatch for ${m[2]}`)
   }
-  return { dir, ageMin: Math.round(ageMin), files: sums.length }
+  return { dir, target, ageMin: Math.round(ageMin), files: sums.length }
 }
 
 // ---- Synthetic selectors (dual-marker) -------------------------------------
@@ -515,23 +567,44 @@ function zeroResidue() {
 }
 
 // ---- LOCAL backup (satisfies the precondition against the local DB) --------
+// Writes the repo-wide backup layout: backup-metadata.json + SHA256SUMS.txt, with
+// the checksum file covering the metadata as well as the dump (exactly as
+// scripts/backup-database.mjs does for staging). `target: 'local'` is what
+// requireFreshBackup matches against STAGE16A_TARGET.
 function makeLocalBackup() {
   const root = process.env.EURO28_BACKUP_ROOT
   if (!root) throw new Error('local-backup: EURO28_BACKUP_ROOT unset')
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const createdAt = new Date()
+  const stamp = createdAt.toISOString().replace(/[:.]/g, '-')
   const dir = path.join(root, `local-${stamp}`)
   fs.mkdirSync(dir, { recursive: true })
+
   const dump = execFileSync('docker', ['exec', '-i', LOCAL_DB_CONTAINER, 'pg_dump', '-U', 'postgres', '-d', 'postgres'],
     { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
   const dumpFile = 'local-db.sql'
-  fs.writeFileSync(path.join(dir, dumpFile), dump)
-  const sha = crypto.createHash('sha256').update(dump).digest('hex')
-  fs.writeFileSync(path.join(dir, 'SHA256SUMS.txt'), `${sha}  ${dumpFile}\n`)
-  fs.writeFileSync(path.join(dir, 'metadata.json'), JSON.stringify({
-    engine: 'pg_dump (local container)', target: 'local', createdAt: new Date().toISOString(),
+  const dumpPath = path.join(dir, dumpFile)
+  fs.writeFileSync(dumpPath, dump, { mode: 0o600 })
+
+  const sha256 = filePath => crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex')
+
+  const metadataPath = path.join(dir, BACKUP_METADATA_FILENAME)
+  fs.writeFileSync(metadataPath, `${JSON.stringify({
+    formatVersion: BACKUP_FORMAT_VERSION,
+    createdAtUtc: createdAt.toISOString(),
+    target: 'local',
+    source: { projectRef: 'local', container: LOCAL_DB_CONTAINER, branch: currentBranch() },
+    tooling: { engine: 'pg_dump (local container)' },
+    scope: { type: 'full local Docker database dump' },
+    files: { [dumpFile]: { bytes: fs.statSync(dumpPath).size, sha256: sha256(dumpPath) } },
     note: 'Stage 16A-P6C local backup precondition',
-  }, null, 2))
-  return { dir, bytes: dump.length }
+  }, null, 2)}\n`, { mode: 0o600 })
+
+  const checksumText = [dumpFile, BACKUP_METADATA_FILENAME]
+    .map(filename => `${sha256(path.join(dir, filename))}  ${filename}`)
+    .join('\n')
+  fs.writeFileSync(path.join(dir, BACKUP_CHECKSUMS_FILENAME), `${checksumText}\n`, { mode: 0o600 })
+
+  return { dir, target: 'local', bytes: dump.length }
 }
 
 // ---- CLI --------------------------------------------------------------------
@@ -551,21 +624,21 @@ function main() {
       break
     }
     case 'seed': {
-      assertContext()
-      const backup = requireFreshBackup()
+      const ctx = assertContext()
+      const backup = requireFreshBackup(ctx.target)
       seedAll()
       console.log(JSON.stringify({ seeded: true, backup, counts: counts() }, null, 2))
       break
     }
     case 'set-clock': {
-      assertContext()
-      requireFreshBackup()
+      const ctx = assertContext()
+      requireFreshBackup(ctx.target)
       console.log(JSON.stringify({ clock: setClock(arg), counts: counts() }, null, 2))
       break
     }
     case 'reset-clock': {
-      assertContext()
-      requireFreshBackup()
+      const ctx = assertContext()
+      requireFreshBackup(ctx.target)
       console.log(JSON.stringify({ clock: setClock(REAL_NOW_SENTINEL), counts: counts() }, null, 2))
       break
     }
@@ -574,8 +647,8 @@ function main() {
       break
     }
     case 'teardown': {
-      assertContext({ requireTeardownConfirmation: true })
-      requireFreshBackup()
+      const ctx = assertContext({ requireTeardownConfirmation: true })
+      requireFreshBackup(ctx.target)
       teardown()
       console.log(JSON.stringify({ teardown: true, ...zeroResidue() }, null, 2))
       break
