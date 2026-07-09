@@ -20,7 +20,10 @@ const spec = read('docs/STAGE-13G-REF-PROTOTYPE-ADOPTION.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const agentRules = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
-const homePrototype = read('docs/reference-prototypes/euro28-home-page-prototype.html')
+// Home is now governed by its v2 contract (Stage CONTRACTS-PROTOTYPE-V2-INSTALL); the v1 file is
+// retained only as `-v1-superseded` provenance and is deliberately not asserted against.
+// League was not re-drafted and keeps its original approved contract file.
+const homePrototype = read('docs/reference-prototypes/euro28-home-page-prototype-v2.html')
 const leaguePrototype = read('docs/reference-prototypes/euro28-league-page-prototype.html')
 const packageJson = JSON.parse(read('package.json') || '{}')
 
@@ -152,7 +155,23 @@ for (const marker of [
 }
 
 for (const [label, text, markers] of [
-  ['Home prototype reference', homePrototype, ['Home — Euro 2028 Predictor (prototype)', 'Predict every match. Beat your mates.', 'First match', 'Predictions lock', 'KO Predictor']],
+  // Home v2: the twin countdown grid is gone, so the v1 markers 'First match' / 'Predictions lock at
+  // first kick-off.' no longer exist. These assert what v2 actually contains: a single countdown,
+  // Groups card language on the featured match, tap-through to Match Centre, three tournament states,
+  // and the pre-tournament-only scoring link.
+  ['Home v2 prototype reference', homePrototype, [
+    'Home v2 — Euro 2028 Predictor (prototype: 3 tournament states)',
+    'ONE countdown, not two: the lock IS the first kick-off, so a single moment matters',
+    'one countdown not two (the lock IS kick-off — one moment)',
+    'Predictions lock at kick-off',
+    'featured match uses the exact Groups card language',
+    'whole match card taps through to Match Centre',
+    'Match Centre',
+    'How scoring works',
+    'Pre-tournament',
+    'Matchday (live)',
+    'Post-match',
+  ]],
   ['League prototype reference', leaguePrototype, ['Leagues — Euro 2028 Predictor (visual contract)', 'APPROVED VISUAL CONTRACT', 'compact Match Centre at the top', 'full user row clickable', 'subtle chevrons', 'movement arrows']],
 ]) {
   for (const marker of markers) assertIncludes(label, text, marker)
@@ -183,7 +202,7 @@ if (failures.length > 0) {
 }
 
 console.log('Euro Stage 13G-REF prototype adoption audit passed.')
-console.log('Home: approved reference with one-countdown and zero-KO-pre-readiness amendments recorded.')
+console.log('Home: binding v2 contract — single countdown (lock IS first kick-off), Groups card language on the featured match, tap-through to Match Centre, three tournament states.')
 console.log('Leagues: approved League table D contract recorded; compact Match Centre, full-row links and movement arrows remain active.')
 console.log('Scope: docs/audit-only; no UI build, route implementation, scoring, resolver, Supabase write or migration change.')
 console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

@@ -1,3 +1,7 @@
+### Stage CONTRACTS-PROTOTYPE-V2-INSTALL
+
+Home, Groups, KO Predictor and Original Bracket are now governed by their `-v2` reference prototypes; the v1 files are retained with a `-v1-superseded` suffix as provenance only and are never implemented against. Recorded in the Decision Register, the Design Charter (v1.15) and the Functional Completion Ledger. Docs/audit-only: no `src/`, scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change is introduced. It introduces no migration change; active migrations remain 20 and Migration 020 is applied. Active migrations remain 20 and Migration 020 is applied at the current head, corrected from the stale count of 19 that predated `202607080020_euro28_matches_venue_fk.sql`.
+
 ### Stage STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET
 
 Original Bracket G adoption slice is implemented as native React/CSS only. The live Original Bracket carries the approved Bracket G wall-chart contract, keeps stacked mobile below 900px, reinforces the converging wall chart at 900px and above, keeps Round of 16 columns on the outside edges and the final centred, and remains strictly winner-only. It adds no score inputs, method controls or bracket jokers. Original Predictor and KO Predictor remain separate, no scoring/resolver/Supabase/Auth/service-role/fake-result/league-write change is introduced, active migrations remain 19 and Migration 019 is applied.

@@ -20,8 +20,11 @@ const spec = read('docs/STAGE-13G-GROUPS-BRACKET-REFERENCE-ADOPTION.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const agentRules = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
-const groupsPrototype = read('docs/reference-prototypes/euro28-groups-page-prototype.html')
-const bracketPrototype = read('docs/reference-prototypes/euro28-bracket-page-prototype.html')
+// Groups and Original Bracket are now governed by their v2 contracts (Stage
+// CONTRACTS-PROTOTYPE-V2-INSTALL). The v1 files are retained only as `-v1-superseded` provenance
+// and are deliberately not asserted against.
+const groupsPrototype = read('docs/reference-prototypes/euro28-groups-page-prototype-v2.html')
+const bracketPrototype = read('docs/reference-prototypes/euro28-bracket-page-prototype-v2.html')
 const packageJson = JSON.parse(read('package.json') || '{}')
 
 for (const marker of [
@@ -161,8 +164,40 @@ for (const marker of [
 ]) assertIncludes('Functional Completion Ledger', ledger, marker)
 
 for (const [label, text, markers] of [
-  ['Groups prototype reference', groupsPrototype, ['Groups — Euro 2028 Predictor (Night Broadcast contract)', 'NIGHT BROADCAST CONTRACT', 'Preserved decisions', 'Joker', 'Lucky dip', 'Predicted third-place ranking', 'This changes your bracket', 'You predicted', 'mflag', 'const VEN', 'data-s=', 'Math.min(15', 'Tables fast path', 'sticky pill + slide-up sheet']],
-  ['Bracket prototype reference', bracketPrototype, ['Bracket — Euro 2028 Predictor (visual contract)', 'APPROVED VISUAL CONTRACT', 'proper desktop wall chart', 'Round of 16 on the outside edges', 'quarter-finals and semi-finals stepping inward', 'centred final', 'small vs treatment', 'date, time, stadium and host flag', 'winner-only', 'no score inputs', 'no method controls', 'no joker controls']],
+  // Groups v2: hero/watermark/context-banner are gone, so the v1 'NIGHT BROADCAST CONTRACT' banner and
+  // its single-file implementation tokens ('mflag', 'const VEN', 'Tables fast path', ...) no longer
+  // exist. These assert what v2 actually contains: the compact strip, the playing-card joker icon,
+  // always-reachable collapsible tables, the bracket flow CTA, and in-tournament score-vs-pick chips.
+  ['Groups v2 prototype reference', groupsPrototype, [
+    'Groups v2 — Euro 2028 Predictor (prototype)',
+    'COMPACT strip: view toggle · jokers · progress. Nothing else above the matches.',
+    'JOKER PLAYING CARD icon — replaces the star.',
+    'hero/watermark/context-banner removed',
+    'Tables: collapsible so the page stays about predicting. Group table + third-place ALWAYS available.',
+    'Your predicted tables',
+    'Best third-placed — from your predictions',
+    'Continue to your bracket',
+    'cards carry date · time · stadium + host flag',
+    'By group',
+    'By date',
+    'Exact +60',
+  ]],
+  // Bracket v2: mobile defaults to portrait stacked pick-a-winner cards and the wall chart becomes a
+  // reversible opt-in, so the v1 markers 'APPROVED VISUAL CONTRACT', 'proper desktop wall chart' and
+  // 'winner-only' no longer exist. These assert the v2 shape: stacked predicting state, reversible
+  // wall-chart toggle, and the Locked Bracket/Health sub-tabs carrying the Bracket Health contract.
+  ['Bracket v2 prototype reference', bracketPrototype, [
+    'Original Bracket v2 — Euro 2028 Predictor (prototype)',
+    'PREDICTING STATE — mobile stacked, tap a team to pick',
+    'WALL CHART — desktop native (≥900px) or mobile opt-in landscape',
+    'View as wall chart',
+    'Back to list',
+    'no score inputs, no joker controls',
+    'HEALTH TAB — existing approved contract, carried forward as a tab',
+    'On your path / Alive different path / Route conflict / Out categories',
+    'Points still available, by round',
+    'Your predicted bracket itself never changes.',
+  ]],
 ]) {
   for (const marker of markers) assertIncludes(label, text, marker)
 }
@@ -192,7 +227,7 @@ if (failures.length > 0) {
 }
 
 console.log('Euro Stage 13G-REF-2 Groups/Bracket reference adoption audit passed.')
-console.log('Groups: approved Night Broadcast contract, joker controls, tables fast path and preserved behaviour recorded.')
-console.log('Bracket: approved Bracket G contract, proper wall chart, match detail and winner-only controls recorded.')
+console.log('Groups: binding v2 contract — compact strip, playing-card joker icon, always-reachable collapsible tables, bracket flow CTA.')
+console.log('Bracket: binding v2 contract — stacked pick-a-winner mobile default, reversible wall-chart opt-in, Locked Bracket/Health sub-tabs.')
 console.log('Scope: docs/audit-only; no UI build, route implementation, scoring, resolver, Supabase write or migration change.')
 console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

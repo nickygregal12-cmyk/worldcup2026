@@ -78,7 +78,10 @@ for (const [file, content] of [
 }
 
 requireIncludes('docs/EURO28-DESIGN-CHARTER.md', charter, [
-  'Version 1.14',
+  // Pinned to the Charter's current header version. Stage CONTRACTS-PROTOTYPE-V2-INSTALL bumped it
+  // 1.14 -> 1.15. NOTE: this literal pin breaks on every Charter version bump; it asserts the header,
+  // not the change log (where `- **v1.14:**` survives permanently).
+  'Version 1.15',
   'Tournament, How to Play',
   'Tournament and How to Play split — CONFIRMED',
   'football tournament reference content and predictor mechanics must not be bundled into one destination',
