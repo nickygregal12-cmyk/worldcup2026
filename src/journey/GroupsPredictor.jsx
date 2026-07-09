@@ -1,6 +1,5 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { useMemo, useState } from 'react'
-import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
 import { ScoreInput, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar, JokerMeter, JokerPill, MatchCard } from '../design-system/index.jsx'
 import { hasActivePredictionGrace, isPredictionMatchStarted, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import {
@@ -208,7 +207,7 @@ export default function GroupsPredictor({
           <ScoreInput value={row.awayScore} label={`${awayTeam?.label ?? 'Away team'} score in match ${match.matchNumber}`} readOnly={scoreReadOnly} grace={hasGrace} state={state} onChange={awayScore => onChange(match, { awayScore })} />
         </>}
         note={<span>{complete ? `${row.homeScore}–${row.awayScore} predicted` : 'Enter both scores'}</span>}
-        action={<JokerPill aria-pressed={row.jokerApplied} active={row.jokerApplied} disabled={jokerDisabled} multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER} statusLabel={jokerLabel} matchLabel={`match ${match.matchNumber}`} onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })} />}
+        action={<JokerPill aria-pressed={row.jokerApplied} active={row.jokerApplied} disabled={jokerDisabled} multiplier={summary.groupJokerMultiplier} statusLabel={jokerLabel} matchLabel={`match ${match.matchNumber}`} onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })} />}
       />
     )
   }
@@ -236,7 +235,7 @@ export default function GroupsPredictor({
         </div>
         <div className={viewStyles.focusMeters}>
           <ProgressBar value={summary.groupComplete} max={36} label="Group predictions completed" />
-          <JokerMeter value={summary.groupJokers} max={summary.groupJokerCap} multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER} label="group jokers selected" />
+          <JokerMeter value={summary.groupJokers} max={summary.groupJokerCap} multiplier={summary.groupJokerMultiplier} label="group jokers selected" />
         </div>
       </section>
 

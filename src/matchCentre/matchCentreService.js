@@ -44,7 +44,7 @@ async function bundlesForMembers(loader, members) {
   }))
 }
 
-export async function loadMatchCentre(client, { reference, requestedMatchNumber, competitionKey, leagueId = null }) {
+export async function loadMatchCentre(client, { reference, requestedMatchNumber, competitionKey, leagueId = null, scoring = null }) {
   if (!client) throw new Error('Euro 2028 data could not be loaded right now.')
   if (!reference?.tournamentId) throw new Error('The Euro tournament reference is unavailable.')
 
@@ -90,6 +90,7 @@ export async function loadMatchCentre(client, { reference, requestedMatchNumber,
     matchNumber: navigation.current.matchNumber,
     reference,
     currentUserId: userId,
+    scoring,
   })
 
   return Object.freeze({

@@ -49,7 +49,7 @@ export default function PredictionJourneyView({
   reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
   guestTouched, guestTransferMode, canImportGuest, importGuestDraft, discardGuestDraft,
   busy, view, setView, surface, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
-  updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
+  updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState, scoring,
 }) {
   const compactSurface = surface === PREDICTION_JOURNEY_VIEW.GROUPS || surface === PREDICTION_JOURNEY_VIEW.BRACKET
   return (
@@ -170,6 +170,7 @@ export default function PredictionJourneyView({
               {(locked || reviewMode) && summary.bracketComplete > 0 && (
                 <OriginalBracketHealth
                   reference={reference}
+                  scoring={scoring}
                   preview={summary.preview}
                   liveSnapshot={liveBracketState?.snapshot ?? null}
                   status={liveBracketState?.status ?? 'unavailable'}

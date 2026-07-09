@@ -29,13 +29,14 @@ export function createKoPredictorDraft(reference, bundle = null) {
   return { revision: bundle?.revision ?? 0, rows }
 }
 
-export function updateKoPredictorDraft(draft, match, patch) {
+export function updateKoPredictorDraft(draft, match, patch, options = {}) {
   if (!match?.participantsResolved) throw new TypeError('The real knockout fixture is not resolved')
   const current = draft.rows[String(match.matchNumber)]
   const next = { ...current, ...patch }
   if (next.jokerApplied && !current.jokerApplied) {
+    const koJokerCap = options.koJokerCap ?? KO_PREDICTOR_JOKER_CAP
     const count = Object.values(draft.rows).filter(row => row.jokerApplied).length
-    if (count >= KO_PREDICTOR_JOKER_CAP) throw new TypeError('Only 5 KO Predictor jokers are allowed')
+    if (count >= koJokerCap) throw new TypeError(`Only ${koJokerCap} KO Predictor jokers are allowed`)
   }
   if (isScore(next.homeScore) && isScore(next.awayScore)) {
     if (next.homeScore !== next.awayScore) {
@@ -73,14 +74,14 @@ export function buildKoPredictorRows(reference, draft) {
   return rows
 }
 
-export function summariseKoPredictor(reference, draft) {
+export function summariseKoPredictor(reference, draft, scoring = null) {
   const available = reference.knockoutMatches.filter(match => match.participantsResolved).length
   const rows = buildKoPredictorRows(reference, draft)
   return {
     available,
     complete: rows.length,
     jokerCount: Object.values(draft.rows).filter(row => row.jokerApplied).length,
-    jokerCap: KO_PREDICTOR_JOKER_CAP,
+    jokerCap: scoring?.values?.joker?.KO_PREDICTOR_CAP ?? KO_PREDICTOR_JOKER_CAP,
     rows,
   }
 }

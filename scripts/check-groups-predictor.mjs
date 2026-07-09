@@ -64,7 +64,7 @@ for (const state of ['dirty', 'saving', 'saved', 'submitted', 'locked', 'grace',
 
 const groups = read('src/journey/GroupsPredictor.jsx')
 for (const marker of [
-  'viewStyles.focusStrip', 'summary.groupJokerCap', 'EURO_SCORING_CONFIG.joker.MULTIPLIER',
+  'viewStyles.focusStrip', 'summary.groupJokerCap', 'summary.groupJokerMultiplier',
   'TeamLabel', 'ScoreInput', 'PredictionStateBadge', 'hasActivePredictionGrace',
   'isPredictionMatchStarted', 'group-match-card--joker', 'aria-pressed={row.jokerApplied}',
   'Review progress', 'reference.groups.map', 'reference.groupMatches.filter',

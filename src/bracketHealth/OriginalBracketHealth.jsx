@@ -17,10 +17,10 @@ function Matchup({ reference, homeTeamId, awayTeamId, unresolved = false }) {
   )
 }
 
-export default function OriginalBracketHealth({ reference, preview, liveSnapshot, status = 'ready', error = null }) {
+export default function OriginalBracketHealth({ reference, preview, liveSnapshot, scoring = null, status = 'ready', error = null }) {
   const model = useMemo(() => status === 'ready' && liveSnapshot
-    ? buildOriginalBracketHealth({ reference, preview, liveSnapshot })
-    : null, [liveSnapshot, preview, reference, status])
+    ? buildOriginalBracketHealth({ reference, preview, liveSnapshot, scoring })
+    : null, [liveSnapshot, preview, reference, scoring, status])
   const [roundKey, setRoundKey] = useState('round_of_16')
 
   if (status === 'loading') return <div className={styles.state} role="status">Loading live bracket comparison…</div>

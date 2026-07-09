@@ -310,8 +310,12 @@ export function buildHomeDashboard({
   results,
   leagues,
   sectionErrors = {},
+  scoring = null,
   now = getNow(),
 }) {
+  // Displayed values follow the loaded database ruleset; the central config only
+  // flows here as the labelled provisional fallback (scoring.provisional carries it).
+  const scoringValues = scoring?.values ?? EURO_SCORING_CONFIG
   const userId = session?.user?.id ?? null
   const signedIn = Boolean(userId)
   const original = signedIn
@@ -383,7 +387,7 @@ export function buildHomeDashboard({
       jokerCount: signedIn
         ? (originalBundle?.predictions ?? []).filter(row => row.prediction_kind === 'group_score' && row.joker_applied).length
         : guestSummary?.groupJokers ?? 0,
-      jokerCap: EURO_SCORING_CONFIG.joker.GROUP_STAGE_CAP,
+      jokerCap: scoringValues.joker.GROUP_STAGE_CAP,
       dataAvailable: signedIn ? !sectionErrors.original : !sectionErrors.guest,
     }),
     lifecycle: Object.freeze({
@@ -420,7 +424,7 @@ export function buildHomeDashboard({
       pointsToNextScore: signedIn ? koStory.pointsToNextScore : null,
       isLeader: signedIn ? koStory.isLeader : false,
       jokerCount: signedIn ? (koBundle?.predictions ?? []).filter(row => row.joker_applied).length : 0,
-      jokerCap: EURO_SCORING_CONFIG.joker.KO_PREDICTOR_CAP,
+      jokerCap: scoringValues.joker.KO_PREDICTOR_CAP,
       dataAvailable: signedIn ? !sectionErrors.koPredictor : true,
     }),
     leagues: Object.freeze({

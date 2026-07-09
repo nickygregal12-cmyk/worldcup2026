@@ -162,22 +162,22 @@ function teamLabel(reference, teamId) {
   return reference?.teamsById?.[teamId]?.label ?? reference?.teamsById?.[teamId]?.slotCode ?? 'TBC'
 }
 
-function originalMaximum(matchNumber, prediction) {
+function originalMaximum(matchNumber, prediction, scoringValues) {
   if (matchNumber <= 36) {
-    const base = EURO_SCORING_CONFIG.match.EXACT_SCORE
-    return base * (prediction?.joker_applied ? EURO_SCORING_CONFIG.joker.MULTIPLIER : 1)
+    const base = scoringValues.match.EXACT_SCORE
+    return base * (prediction?.joker_applied ? scoringValues.joker.MULTIPLIER : 1)
   }
-  return EURO_SCORING_CONFIG.bracket[stageKey(matchNumber)] ?? 0
+  return scoringValues.bracket[stageKey(matchNumber)] ?? 0
 }
 
-function koMaximum(prediction) {
-  const base = EURO_SCORING_CONFIG.match.EXACT_SCORE
-    + EURO_SCORING_CONFIG.koPredictor.CORRECT_ADVANCING_TEAM
-    + EURO_SCORING_CONFIG.koPredictor.CORRECT_DECISION_METHOD
-  return base * (prediction?.joker_applied ? EURO_SCORING_CONFIG.joker.MULTIPLIER : 1)
+function koMaximum(prediction, scoringValues) {
+  const base = scoringValues.match.EXACT_SCORE
+    + scoringValues.koPredictor.CORRECT_ADVANCING_TEAM
+    + scoringValues.koPredictor.CORRECT_DECISION_METHOD
+  return base * (prediction?.joker_applied ? scoringValues.joker.MULTIPLIER : 1)
 }
 
-function buildMemberLine({ member, bundle, competitionKey, matchNumber, reference, currentUserId }) {
+function buildMemberLine({ member, bundle, competitionKey, matchNumber, reference, currentUserId, scoringValues }) {
   const prediction = competitionKey === RESULT_COMPETITION.ORIGINAL && matchNumber > 36
     ? bracketPrediction(bundle, matchNumber)
     : matchPrediction(bundle, matchNumber)
@@ -185,8 +185,8 @@ function buildMemberLine({ member, bundle, competitionKey, matchNumber, referenc
   const saved = Boolean(prediction)
   const advancingTeamId = prediction?.advancing_tournament_team_id ?? null
   const maximumPoints = competitionKey === RESULT_COMPETITION.ORIGINAL
-    ? originalMaximum(matchNumber, prediction)
-    : koMaximum(prediction)
+    ? originalMaximum(matchNumber, prediction, scoringValues)
+    : koMaximum(prediction, scoringValues)
 
   return {
     userId: member.userId,
@@ -205,8 +205,10 @@ function buildMemberLine({ member, bundle, competitionKey, matchNumber, referenc
   }
 }
 
-export function buildFixtureImpact({ members, bundlesByUserId, competitionKey, matchNumber, reference, currentUserId }) {
+export function buildFixtureImpact({ members, bundlesByUserId, competitionKey, matchNumber, reference, currentUserId, scoring = null }) {
   if (!Object.values(RESULT_COMPETITION).includes(competitionKey)) throw new TypeError('Unsupported Match Centre competition')
+  // Points available follow the loaded database ruleset; central config is the labelled fallback.
+  const scoringValues = scoring?.values ?? EURO_SCORING_CONFIG
   const lines = (members ?? []).map(member => buildMemberLine({
     member,
     bundle: bundlesByUserId?.[member.userId] ?? null,
@@ -214,6 +216,7 @@ export function buildFixtureImpact({ members, bundlesByUserId, competitionKey, m
     matchNumber,
     reference,
     currentUserId,
+    scoringValues,
   }))
   const visible = lines.filter(line => line.visibility === 'visible')
   const community = new Map()

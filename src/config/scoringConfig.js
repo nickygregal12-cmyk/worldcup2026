@@ -39,6 +39,73 @@ export const EURO_SCORING_CONFIG = Object.freeze({
   }),
 })
 
+export const SCORING_SOURCE = Object.freeze({
+  DATABASE: 'database',
+  CENTRAL_PROVISIONAL: 'central-provisional',
+})
+
+function integerOrNull(value) {
+  return Number.isInteger(value) ? value : null
+}
+
+/**
+ * Map a public.scoring_rulesets row into the client scoring shape. The database
+ * is what SQL scoring actually awards from, so mapped values flow to display
+ * even when they violate the agreed contract — validateScoringConfig runs on
+ * the result and its errors are surfaced, never silently corrected.
+ */
+export function mapScoringRulesetRow(row) {
+  if (!row || typeof row !== 'object') return null
+  return Object.freeze({
+    version: row.ruleset_key ?? 'unknown-ruleset',
+    status: row.status === 'locked' ? SCORING_CONFIG_STATUS.LOCKED : SCORING_CONFIG_STATUS.PROVISIONAL,
+    match: Object.freeze({
+      EXACT_SCORE: integerOrNull(row.match_exact_score_points),
+      CORRECT_OUTCOME: integerOrNull(row.match_correct_outcome_points),
+    }),
+    koPredictor: Object.freeze({
+      CORRECT_ADVANCING_TEAM: integerOrNull(row.knockout_advancing_team_points),
+      CORRECT_DECISION_METHOD: integerOrNull(row.knockout_decision_method_points),
+    }),
+    bracket: Object.freeze({
+      round_of_16: integerOrNull(row.round_of_16_team_points),
+      quarter_final: integerOrNull(row.quarter_final_team_points),
+      semi_final: integerOrNull(row.semi_final_team_points),
+      final: integerOrNull(row.finalist_points),
+      champion: integerOrNull(row.champion_points),
+    }),
+    joker: Object.freeze({
+      ENABLED: true,
+      MULTIPLIER: Number(row.joker_multiplier),
+      GROUP_STAGE_CAP: integerOrNull(row.group_stage_joker_cap),
+      // Bracket jokers do not exist in the database schema at all — zero is the
+      // structural rule, not a copied value.
+      ORIGINAL_BRACKET_CAP: 0,
+      KO_PREDICTOR_CAP: integerOrNull(row.knockout_joker_cap),
+    }),
+  })
+}
+
+/**
+ * Resolve the scoring values the app should display, with provenance — the
+ * same fail-loud pattern as resolveTournamentLifecycle's dates: database rows
+ * flow as truth; the central config only flows as a labelled provisional
+ * fallback and never masquerades as the configured ruleset.
+ */
+export function resolveActiveScoring(rulesetRow = null) {
+  const mapped = mapScoringRulesetRow(rulesetRow)
+  const values = mapped ?? EURO_SCORING_CONFIG
+  const validation = validateScoringConfig(values)
+  return Object.freeze({
+    values,
+    source: mapped ? SCORING_SOURCE.DATABASE : SCORING_SOURCE.CENTRAL_PROVISIONAL,
+    provisional: !mapped,
+    rulesetKey: mapped ? values.version : null,
+    valid: validation.valid,
+    errors: Object.freeze(validation.errors),
+  })
+}
+
 function isNonNegativeInteger(value) {
   return Number.isInteger(value) && value >= 0
 }

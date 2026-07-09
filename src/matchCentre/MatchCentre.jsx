@@ -155,7 +155,7 @@ function PlayerLine({ line }) {
   )
 }
 
-export default function MatchCentre({ client, reference, lifecycle, requestedMatchNumber = null, initialCompetition = RESULT_COMPETITION.ORIGINAL, initialLeagueId = null }) {
+export default function MatchCentre({ client, reference, lifecycle, scoring = null, requestedMatchNumber = null, initialCompetition = RESULT_COMPETITION.ORIGINAL, initialLeagueId = null }) {
   const [competitionKey, setCompetitionKey] = useState(initialCompetition)
   const [leagueId, setLeagueId] = useState(initialLeagueId ?? 'overall')
   const [state, setState] = useState({ status: 'loading', data: null, error: null })
@@ -163,7 +163,7 @@ export default function MatchCentre({ client, reference, lifecycle, requestedMat
   const load = useCallback(async () => {
     setState(previous => ({ ...previous, status: 'loading', error: null }))
     try {
-      const data = await loadMatchCentre(client, { reference, requestedMatchNumber, competitionKey, leagueId })
+      const data = await loadMatchCentre(client, { reference, requestedMatchNumber, competitionKey, leagueId, scoring })
       setState({ status: 'ready', data, error: null })
       setHashParams({ matchNumber: data.navigation.current.matchNumber, competitionKey: data.competitionKey, leagueId: data.selectedScope })
     } catch (error) {

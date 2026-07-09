@@ -340,6 +340,7 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
         reference: foundation.guestReference,
         session: sessionState.session,
         profile: sessionState.profile,
+        scoring: foundation.scoring,
       })
       setState({ status: 'ready', data, error: null })
     } catch (error) {

@@ -29,8 +29,8 @@ function sameTeams(left, right) {
   return [...left].every(value => right.has(value))
 }
 
-function pointsForStage(stage) {
-  return Number(EURO_SCORING_CONFIG.bracket?.[stage] ?? 0)
+function pointsForStage(stage, scoringValues = EURO_SCORING_CONFIG) {
+  return Number(scoringValues.bracket?.[stage] ?? 0)
 }
 
 function resultByNumber(liveSnapshot) {
@@ -163,7 +163,8 @@ function cardState({ reference, predictedMatch, liveMatch, result, eliminated, r
   }
 }
 
-export function buildOriginalBracketHealth({ reference, preview, liveSnapshot }) {
+export function buildOriginalBracketHealth({ reference, preview, liveSnapshot, scoring = null }) {
+  const scoringValues = scoring?.values ?? EURO_SCORING_CONFIG
   if (!reference?.tournamentId || !preview?.resolution?.knockout) {
     throw new TypeError('A complete original prediction and Euro reference are required')
   }
@@ -187,7 +188,7 @@ export function buildOriginalBracketHealth({ reference, preview, liveSnapshot })
     const result = results.get(predictedMatch.matchNumber) ?? null
     const routeConflict = routeConflictFor(predictedMatch, liveMatches)
     const state = cardState({ reference, predictedMatch, liveMatch, result, eliminated, routeConflict })
-    const points = pointsForStage(predictedMatch.stage)
+    const points = pointsForStage(predictedMatch.stage, scoringValues)
     const matchReference = reference.knockoutMatches.find(match => match.matchNumber === predictedMatch.matchNumber)
     return Object.freeze({
       matchNumber: predictedMatch.matchNumber,
@@ -216,7 +217,7 @@ export function buildOriginalBracketHealth({ reference, preview, liveSnapshot })
     const secured = [...predictedTeams].filter(teamId => reached.has(teamId)).length
     const out = [...predictedTeams].filter(teamId => eliminated.has(teamId)).length
     const alive = Math.max(0, predictedTeams.size - out)
-    const pointsEach = pointsForStage(stage)
+    const pointsEach = pointsForStage(stage, scoringValues)
     return Object.freeze({
       key: stage,
       label: ROUND_LABELS[stage],

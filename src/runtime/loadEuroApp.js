@@ -1,4 +1,5 @@
 import { buildGuestReferenceModel } from '../guest/guestReferenceModel.js'
+import { resolveActiveScoring } from '../config/scoringConfig.js'
 import { EURO_TOURNAMENT_CODE, summariseFoundationData } from './appModel.js'
 import { parseExternal } from '../contracts/externalValidation.js'
 import {
@@ -7,6 +8,7 @@ import {
   groupMembershipRowsSchema,
   matchRowsSchema,
   matchSlotRowsSchema,
+  scoringRulesetRowSchema,
   tournamentRowSchema,
   tournamentTeamRowsSchema,
   tournamentVenueRowsSchema,
@@ -23,12 +25,25 @@ export async function loadEuroApp(client) {
 
   const tournamentResult = await client
     .from('tournaments')
-    .select('id,code,name,short_name,edition_year,timezone,format_code,team_count,group_count,teams_per_group,best_third_qualifiers,status,is_public,is_provisional,starts_on,ends_on,prediction_lock_at,prediction_locked_at')
+    .select('id,code,name,short_name,edition_year,timezone,format_code,team_count,group_count,teams_per_group,best_third_qualifiers,status,is_public,is_provisional,starts_on,ends_on,prediction_lock_at,prediction_locked_at,active_scoring_ruleset_id')
     .eq('code', EURO_TOURNAMENT_CODE)
     .single()
 
   throwForError('Tournament read failed', tournamentResult.error)
   const tournament = parseExternal(tournamentRowSchema, tournamentResult.data, 'Tournament response')
+
+  // The active ruleset is what SQL scoring awards from; displayed values flow from it.
+  // A tournament without one resolves to the labelled central-provisional fallback.
+  let scoringRulesetRow = null
+  if (tournament.active_scoring_ruleset_id) {
+    const rulesetResult = await client
+      .from('scoring_rulesets')
+      .select('id,ruleset_key,version,status,match_exact_score_points,match_correct_outcome_points,knockout_advancing_team_points,knockout_decision_method_points,round_of_16_team_points,quarter_final_team_points,semi_final_team_points,finalist_points,champion_points,joker_multiplier,group_stage_joker_cap,knockout_joker_cap')
+      .eq('id', tournament.active_scoring_ruleset_id)
+      .maybeSingle()
+    throwForError('Scoring ruleset read failed', rulesetResult.error)
+    scoringRulesetRow = parseExternal(scoringRulesetRowSchema, rulesetResult.data, 'Scoring ruleset response')
+  }
 
   const [
     stagesResult,
@@ -96,6 +111,7 @@ export async function loadEuroApp(client) {
 
   return {
     ...summariseFoundationData(sourceRows),
+    scoring: resolveActiveScoring(scoringRulesetRow),
     guestReference: buildGuestReferenceModel(sourceRows),
   }
 }

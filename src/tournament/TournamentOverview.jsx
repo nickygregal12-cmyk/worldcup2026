@@ -254,7 +254,7 @@ function TieBreakPanel({ tieBreaks }) {
 }
 
 export function HowToPlayOverview({ foundation }) {
-  const model = buildHowToPlayPageModel(foundation)
+  const model = buildHowToPlayPageModel(foundation, foundation.scoring ?? null)
   return (
     <div className={`content-stack tournament-overview how-to-play-overview ${styles.rulesHub}`}>
       <section className={styles.rulesHero}>
@@ -269,6 +269,7 @@ export function HowToPlayOverview({ foundation }) {
         </div>
         <aside className={styles.rulesHeroPanel} aria-label="Rules snapshot">
           <Badge tone="warning">{model.status}</Badge>
+          {model.scoringNotes.map(note => <p className={styles.sectionCopy} key={note}>{note}</p>)}
           <RulesHeroStats items={model.heroStats} />
         </aside>
       </section>

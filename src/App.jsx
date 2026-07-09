@@ -151,27 +151,27 @@ export default function App() {
   } else if (route === APP_ROUTE.PREDICT) {
     content = (
       <div className="content-stack groups-page groups-page--focused">
-        <PredictionJourney key={`groups-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="groups" surface="groups" />
+        <PredictionJourney key={`groups-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} scoring={appData.scoring} initialView="groups" surface="groups" />
       </div>
     )
   } else if (route === APP_ROUTE.BRACKET) {
     content = (
       <div className="content-stack knockout-page">
         <PageIntro eyebrow="Original Predictor" title="Your pre-tournament bracket" description="Choose the team that advances from every predicted knockout match. Scores and jokers do not apply here." />
-        <PredictionJourney key={`bracket-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="bracket" surface="bracket" />
+        <PredictionJourney key={`bracket-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} scoring={appData.scoring} initialView="bracket" surface="bracket" />
       </div>
     )
   } else if (route === APP_ROUTE.REVIEW) {
     content = (
       <div className="content-stack">
-        <PredictionJourney key={`review-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="review" surface="review" />
+        <PredictionJourney key={`review-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} scoring={appData.scoring} initialView="review" surface="review" />
       </div>
     )
   } else if (route === APP_ROUTE.KO_PREDICTOR) {
     content = (
       <div className="content-stack knockout-page">
         <PageIntro eyebrow="Separate competition" title="KO Predictor" description="Predict each real knockout fixture once its participants are confirmed." />
-        <KoPredictor client={activeClient} reference={appData.guestReference} tournament={appData.tournament} />
+        <KoPredictor client={activeClient} reference={appData.guestReference} tournament={appData.tournament} scoring={appData.scoring} />
       </div>
     )
   } else if (route === APP_ROUTE.LEAGUES) {
@@ -203,6 +203,7 @@ export default function App() {
         <MatchCentre
           client={activeClient}
           reference={appData.guestReference}
+          scoring={appData.scoring}
           requestedMatchNumber={matchCentre.matchNumber}
           initialCompetition={matchCentre.competition}
           initialLeagueId={matchCentre.leagueId}

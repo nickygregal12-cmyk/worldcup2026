@@ -27,7 +27,7 @@ export function readGuestDashboardSummary(reference, storage = globalThis.localS
   }
 }
 
-export async function loadHomeDashboard({ client, tournament, reference, session, profile }) {
+export async function loadHomeDashboard({ client, tournament, reference, session, profile, scoring = null }) {
   if (!client) throw new Error('The Euro dashboard client is unavailable.')
   const signedIn = Boolean(session?.user?.id)
   const guest = readGuestDashboardSummary(reference)
@@ -63,5 +63,6 @@ export async function loadHomeDashboard({ client, tournament, reference, session
     results,
     leagues,
     sectionErrors: errors,
+    scoring,
   })
 }

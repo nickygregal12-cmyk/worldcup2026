@@ -68,13 +68,15 @@ export function createPredictionJourneyDraft(reference, accountBundle = null, { 
   }
 }
 
-export function updatePredictionJourneyGroup(draft, input, options) {
+export function updatePredictionJourneyGroup(draft, input, options = {}) {
   const nextJoker = input?.jokerApplied
   if (nextJoker === true) {
+    // The cap mirrors the database ruleset when loaded; central config is the labelled fallback.
+    const groupJokerCap = options.groupJokerCap ?? EURO_SCORING_CONFIG.joker.GROUP_STAGE_CAP
     const currentCount = Object.values(draft.groupPredictions).filter(row => row.jokerApplied).length
     const current = draft.groupPredictions?.[String(input.matchNumber)]
-    if (!current?.jokerApplied && currentCount >= EURO_SCORING_CONFIG.joker.GROUP_STAGE_CAP) {
-      throw new TypeError(`Only ${EURO_SCORING_CONFIG.joker.GROUP_STAGE_CAP} group-stage jokers are allowed`)
+    if (!current?.jokerApplied && currentCount >= groupJokerCap) {
+      throw new TypeError(`Only ${groupJokerCap} group-stage jokers are allowed`)
     }
   }
   return updateGuestGroupPrediction(draft, input, options)
@@ -174,7 +176,8 @@ export function buildPredictionJourneyRows(reference, draft) {
   return rows
 }
 
-export function summarisePredictionJourney(reference, draft) {
+export function summarisePredictionJourney(reference, draft, scoring = null) {
+  const scoringValues = scoring?.values ?? EURO_SCORING_CONFIG
   const preview = resolveGuestTournamentPreview(reference, draft)
   const rows = buildPredictionJourneyRows(reference, draft)
   const groupJokers = Object.values(draft.groupPredictions).filter(row => row.jokerApplied).length
@@ -188,7 +191,8 @@ export function summarisePredictionJourney(reference, draft) {
     totalComplete: preview.completeness.overall.complete,
     remaining: preview.completeness.overall.remaining,
     groupJokers,
-    groupJokerCap: EURO_SCORING_CONFIG.joker.GROUP_STAGE_CAP,
+    groupJokerCap: scoringValues.joker.GROUP_STAGE_CAP,
+    groupJokerMultiplier: scoringValues.joker.MULTIPLIER,
   }
 }
 

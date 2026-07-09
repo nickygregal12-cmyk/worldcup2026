@@ -22,7 +22,7 @@ function browserStorage() {
   }
 }
 
-export default function KoPredictor({ client, reference, tournament = {}, fixtureBundle, fixtureStanding }) {
+export default function KoPredictor({ client, reference, tournament = {}, scoring = null, fixtureBundle, fixtureStanding }) {
   const fixtureMode = fixtureBundle !== undefined
   const guestStorage = useMemo(() => createGuestKoPredictionStorage({ storage: browserStorage(), reference }), [reference])
   const [session, setSession] = useState(() => fixtureMode ? { user: { id: 'visual-user' } } : null)
@@ -44,7 +44,7 @@ export default function KoPredictor({ client, reference, tournament = {}, fixtur
   const guestTransferMode = !fixtureMode && signedIn && accountRows === 0 && guestTouched > 0
   const storageContext = fixtureMode || (signedIn && !guestTransferMode) ? 'account' : guestTransferMode ? 'guest-transfer' : 'guest'
   const draft = storageContext === 'account' ? accountDraft : guestDraft
-  const summary = useMemo(() => summariseKoPredictor(reference, draft), [reference, draft])
+  const summary = useMemo(() => summariseKoPredictor(reference, draft, scoring), [reference, draft, scoring])
   const lifecycle = useMemo(() => resolveTournamentLifecycle(tournament), [tournament])
   const lifecycleStatus = useMemo(() => buildKoPredictorLifecycleStatus(reference, lifecycle, summary), [reference, lifecycle, summary])
 
@@ -91,7 +91,7 @@ export default function KoPredictor({ client, reference, tournament = {}, fixtur
   function change(match, patch) {
     try {
       if (storageContext === 'account') {
-        setAccountDraft(current => updateKoPredictorDraft(current, match, patch))
+        setAccountDraft(current => updateKoPredictorDraft(current, match, patch, { koJokerCap: summary.jokerCap }))
         setSaveState('dirty')
       } else {
         const next = updateGuestKoPredictionState(guestDraft, reference, match, patch)

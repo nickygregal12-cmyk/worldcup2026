@@ -12,7 +12,7 @@ import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { browserStorage, messageForError, readGuestReview, writeGuestReview } from './predictionJourneyRuntime.js'
 import { resolveTournamentLifecycle } from '../config/index.js'
 
-export default function PredictionJourney({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, surface = initialView, fixtureDraft = null }) {
+export default function PredictionJourney({ client, reference, tournament, scoring = null, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, surface = initialView, fixtureDraft = null }) {
   const guestStorage = useMemo(() => createGuestPredictionStorage({
     storage: browserStorage(),
     reference,
@@ -42,7 +42,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
 
   const signedIn = Boolean(session?.user)
   const accountRows = accountBundle?.predictions?.length ?? 0
-  const guestSummary = useMemo(() => summarisePredictionJourney(reference, guestDraft), [guestDraft, reference])
+  const guestSummary = useMemo(() => summarisePredictionJourney(reference, guestDraft, scoring), [guestDraft, reference, scoring])
   const guestTouched = useMemo(() => countTouchedOriginalRows(guestDraft), [guestDraft])
   // `guestTransferMode` is an OFFER flag only. It must never select the storage target: doing so
   // deadlocked signed-in accounts with zero saved rows (see predictionStoragePolicy.js).
@@ -54,7 +54,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
   const savesToAccount = writesToAccount(storagePolicy)
   const context = savesToAccount ? 'account' : 'guest'
   const draft = savesToAccount ? accountDraft : guestDraft
-  const summary = useMemo(() => summarisePredictionJourney(reference, draft), [reference, draft])
+  const summary = useMemo(() => summarisePredictionJourney(reference, draft, scoring), [reference, draft, scoring])
   const reviewMode = savesToAccount ? Boolean(accountBundle?.submittedAt) : guestReview
   const lifecycle = useMemo(() => resolveTournamentLifecycle(tournament), [tournament])
   const lockConfigured = lifecycle.lockConfigured
@@ -235,7 +235,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
     applyDraftUpdate(current => updatePredictionJourneyGroup(current, {
       matchNumber: match.matchNumber,
       ...patch,
-    }))
+    }, { groupJokerCap: summary.groupJokerCap }))
   }
 
   function updateBracket(match, advancingTeamId) {
@@ -267,7 +267,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
     setBusy(true)
     setNotice(null)
     try {
-      const guestSummary = summarisePredictionJourney(reference, guestDraft)
+      const guestSummary = summarisePredictionJourney(reference, guestDraft, scoring)
       if (!guestSummary.canSubmit) throw new Error('Complete all 51 device predictions before importing them to the account.')
       const result = await importGuestDraftToAccount(client, {
         reference,
@@ -378,7 +378,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
         reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
         accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft, discardGuestDraft,
         view, setView, surface, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
-        updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
+        updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState, scoring,
       }}
     />
   )

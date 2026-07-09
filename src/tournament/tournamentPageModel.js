@@ -62,13 +62,24 @@ export function buildTournamentPageModel(foundation, config = TOURNAMENT_CONFIG)
   })
 }
 
-export function buildHowToPlayPageModel(foundation, scoring = EURO_SCORING_CONFIG) {
+export function buildHowToPlayPageModel(foundation, scoringState = null) {
   const totals = foundation.totals
+  // Displayed point values follow the loaded database ruleset. Without one the
+  // central config flows as a labelled fallback — the note below says so out loud.
+  const scoring = scoringState?.values ?? EURO_SCORING_CONFIG
   const scoringStatusLabel = scoring.status === SCORING_CONFIG_STATUS.LOCKED ? 'Locked scoring' : 'Provisional scoring'
+  const scoringNotes = []
+  if (!scoringState || scoringState.provisional) {
+    scoringNotes.push('Point values shown are the central provisional defaults — no tournament scoring ruleset is configured yet.')
+  }
+  if (scoringState && !scoringState.valid) {
+    scoringNotes.push('The configured scoring ruleset does not satisfy the agreed Euro scoring contract. Values shown are what the database will award.')
+  }
   return Object.freeze({
     heading: 'Rules, scoring and trust',
     intro: 'A simple guide to the two competitions, scoring, lock times, result corrections and account privacy.',
     status: scoringStatusLabel,
+    scoringNotes: Object.freeze(scoringNotes),
     heroStats: Object.freeze([
       Object.freeze({ label: 'Group picks', value: String(totals.groupMatches), note: 'Original Predictor score predictions' }),
       Object.freeze({ label: 'Original bracket', value: String(totals.knockoutMatches), note: 'Winner-only pre-tournament ties' }),

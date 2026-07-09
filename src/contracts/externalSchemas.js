@@ -11,6 +11,12 @@ export const tournamentRowSchema = z.object({
   name: z.string().min(1),
 }).passthrough()
 
+export const scoringRulesetRowSchema = z.object({
+  id,
+  ruleset_key: z.string().min(1),
+  status: z.string().min(1),
+}).passthrough().nullable()
+
 export const foundationStageRowsSchema = z.array(z.object({ id, code: z.string().min(1), sequence: numeric }).passthrough())
 export const foundationGroupRowsSchema = z.array(z.object({ id, code: z.string().min(1), sequence: numeric }).passthrough())
 export const tournamentTeamRowsSchema = z.array(z.object({ id, slot_code: z.string().min(1) }).passthrough())
