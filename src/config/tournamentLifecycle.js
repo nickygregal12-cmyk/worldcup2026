@@ -45,7 +45,12 @@ export function resolveTournamentLifecycle(tournament = {}, now = getNow()) {
     predictionLockedAt: lockedAt,
     tournamentStartAt,
     source,
-    lockConfigured: Boolean(predictionLockAt),
+    // Database-backed only, mirroring the SQL save guard (which raises when both
+    // prediction_lock_at and prediction_locked_at are NULL). The central-provisional
+    // fallback keeps a labelled display date flowing but never counts as configured,
+    // so account saving fails loud client-side instead of erroring at the database.
+    lockConfigured: Boolean(lockedAt || databaseLockAt),
+    startConfigured: Boolean(validTimestamp(tournament.starts_on)),
     locked: Boolean(lockedAt || (predictionLockAt && currentTime >= new Date(predictionLockAt))),
     provisional: source === TOURNAMENT_LIFECYCLE_SOURCE.CENTRAL_PROVISIONAL,
   })

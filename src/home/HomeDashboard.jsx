@@ -52,7 +52,7 @@ function useCountdown(lockAt, initial) {
   return parts
 }
 
-function CountdownHero({ lockAt, countdown, openingMatch }) {
+function CountdownHero({ lockAt, countdown, openingMatch, provisional = false }) {
   const live = useCountdown(lockAt, countdown)
   const title = openingMatch && !openingMatch.home.unresolved && !openingMatch.away.unresolved
     ? `${openingMatch.home.label} v ${openingMatch.away.label} · Match ${openingMatch.matchNumber}`
@@ -83,6 +83,7 @@ function CountdownHero({ lockAt, countdown, openingMatch }) {
       <p className={styles.countSub}>
         {formatKickoffDateTime(lockAt)}
         {openingMatch?.venueName ? ` · ${openingMatch.venueName}` : ''}
+        {provisional ? ' · Provisional — kick-off time not confirmed' : ''}
       </p>
     </section>
   )
@@ -204,7 +205,7 @@ function PreTournament({ dashboard }) {
 
   return (
     <>
-      <CountdownHero lockAt={home.lockAt} countdown={home.countdown} openingMatch={home.openingMatch} />
+      <CountdownHero lockAt={home.lockAt} countdown={home.countdown} openingMatch={home.openingMatch} provisional={dashboard.lifecycle.provisional} />
 
       <Card className={styles.card} as="section">
         <div className={styles.cardRow}>
