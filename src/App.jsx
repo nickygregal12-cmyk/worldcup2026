@@ -161,6 +161,12 @@ export default function App() {
         <PredictionJourney key={`bracket-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="bracket" surface="bracket" />
       </div>
     )
+  } else if (route === APP_ROUTE.REVIEW) {
+    content = (
+      <div className="content-stack">
+        <PredictionJourney key={`review-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="review" surface="review" />
+      </div>
+    )
   } else if (route === APP_ROUTE.KO_PREDICTOR) {
     content = (
       <div className="content-stack knockout-page">

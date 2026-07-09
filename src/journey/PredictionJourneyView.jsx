@@ -190,8 +190,6 @@ export default function PredictionJourneyView({
               busy={busy}
               onSubmit={submitReview}
               onEdit={editPredictions}
-              onOpenGroups={() => setView(PREDICTION_JOURNEY_VIEW.GROUPS)}
-              onOpenBracket={() => setView(PREDICTION_JOURNEY_VIEW.BRACKET)}
             />
           )}
         </>
