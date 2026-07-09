@@ -29,6 +29,7 @@ export function Leaderboard({ title, section, note, currentUserId, onCompare, on
                 player={row}
                 isCurrentUser={row.userId === currentUserId}
                 onActivate={onOpenPlayer}
+                actionLabel={row.userId === currentUserId ? 'Open your player view' : `Open ${row.displayName}'s player view`}
                 meta={row.userId === currentUserId ? 'Open your player view' : 'Open player view'}
               />
               {row.userId !== currentUserId && onCompare && (

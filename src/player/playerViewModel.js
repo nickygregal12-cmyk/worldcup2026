@@ -9,7 +9,7 @@ function freezeRows(rows) {
   return Object.freeze(rows.map(row => Object.freeze(row)))
 }
 
-function playerFromRows(rows, memberUserId, fallbackName) {
+function playerFromRows(rows, memberUserId, fallbackName, isSelf = false) {
   const row = rows.find(item => item.userId === memberUserId) ?? null
   return Object.freeze({
     userId: memberUserId,
@@ -17,7 +17,7 @@ function playerFromRows(rows, memberUserId, fallbackName) {
     rank: row?.rank ?? null,
     totalPoints: Number(row?.totalPoints ?? 0),
     scoredMatchCount: Number(row?.scoredMatchCount ?? 0),
-    isCurrentUser: Boolean(row?.isCurrentUser),
+    isCurrentUser: isSelf || Boolean(row?.isCurrentUser),
   })
 }
 
@@ -90,7 +90,18 @@ function buildPredictedTables(journey) {
   })))
 }
 
-function buildPrivacyState({ journey, competitionKey, lifecycle }) {
+function buildPrivacyState({ journey, competitionKey, lifecycle, isSelf }) {
+  // You always see your own picks in full, so the pre-release copy never applies to yourself.
+  if (isSelf) {
+    return Object.freeze({
+      state: 'released',
+      title: 'Your own predictions',
+      copy: competitionKey === LEAGUE_COMPETITION.ORIGINAL
+        ? 'This is your own player view, so your Original Predictor picks are always shown in full. Other players only see them after the global prediction lock.'
+        : 'This is your own player view, so your KO Predictor picks are always shown in full. Other players see each pick after its fixture starts.',
+    })
+  }
+
   const hasReleasedRows = [...(journey.matches ?? []), ...(journey.bracket ?? [])]
     .some(row => row.visibility === 'visible')
 
@@ -140,10 +151,11 @@ export function buildPlayerView({
   competitionKey,
   reference,
   lifecycle = null,
+  isSelf = false,
 }) {
   if (!SUPPORTED_COMPETITIONS.has(competitionKey)) throw new TypeError('Unsupported player view competition')
-  const journey = buildSharedPredictionJourney({ bundle: predictionBundle, reference, competitionKey })
-  const player = playerFromRows(standingsRows, memberUserId, displayName ?? journey.displayName)
+  const journey = buildSharedPredictionJourney({ bundle: predictionBundle, reference, competitionKey, viewerIsOwner: isSelf })
+  const player = playerFromRows(standingsRows, memberUserId, displayName ?? journey.displayName, isSelf)
   const predictionRows = buildPredictionRows(journey)
   const bracketRows = competitionKey === LEAGUE_COMPETITION.ORIGINAL ? buildBracketRows(journey) : Object.freeze([])
   const predictedTables = competitionKey === LEAGUE_COMPETITION.ORIGINAL ? buildPredictedTables(journey) : Object.freeze([])
@@ -151,7 +163,7 @@ export function buildPlayerView({
   return Object.freeze({
     competitionKey,
     player,
-    release: buildPrivacyState({ journey, competitionKey, lifecycle }),
+    release: buildPrivacyState({ journey, competitionKey, lifecycle, isSelf }),
     tabs: Object.freeze(['predictions', 'bracket', 'tables']),
     predictions: predictionRows,
     bracket: bracketRows,

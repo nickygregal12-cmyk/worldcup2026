@@ -267,7 +267,7 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
   const view = state.data?.view ?? null
   const currentUserId = state.data?.currentUserId ?? null
   const viewedUserId = state.data?.memberUserId ?? null
-  const isSelf = !currentUserId || !viewedUserId || currentUserId === viewedUserId
+  const isSelf = state.data?.isSelf ?? Boolean(currentUserId && viewedUserId && currentUserId === viewedUserId)
   const canCompare = Boolean(currentUserId && viewedUserId && currentUserId !== viewedUserId)
 
   const standingsRows = useMemo(

@@ -17,7 +17,9 @@ export default function PlayerIdentity({
   className = '',
 }) {
   const displayName = String(player?.displayName ?? 'Player').trim() || 'Player'
-  const interactive = typeof onActivate === 'function' && !isCurrentUser
+  // Your own name is just as clickable as anyone else's: callers that offer an
+  // activation are offering it for every row, including the current user's.
+  const interactive = typeof onActivate === 'function'
   const content = (
     <>
       <span className={styles.avatar} aria-hidden="true">{initialsForName(displayName)}</span>
@@ -39,7 +41,7 @@ export default function PlayerIdentity({
         type="button"
         className={classes}
         onClick={() => onActivate(player)}
-        aria-label={actionLabel ?? `Compare predictions with ${displayName}`}
+        aria-label={actionLabel ?? (isCurrentUser ? 'Open your player view' : `Compare predictions with ${displayName}`)}
         data-player-identity-trigger="true"
       >
         {content}

@@ -458,7 +458,10 @@ function buildBracketJourneyRow({ match, prediction, visibility, message, refere
   }
 }
 
-export function buildSharedPredictionJourney({ bundle, reference, competitionKey, leagueCompetition = null }) {
+// `viewerIsOwner` marks the journey as the viewer reading back their own saved picks. Nothing
+// is hidden from you about yourself: the pre-release gates below exist to stop players seeing
+// each other's picks early, which is not a concern when the viewer and the player are the same.
+export function buildSharedPredictionJourney({ bundle, reference, competitionKey, leagueCompetition = null, viewerIsOwner = false }) {
   if (!reference?.tournamentId) throw new TypeError('A Euro tournament reference is required')
   if (!Object.values(LEAGUE_COMPETITION).includes(competitionKey)) {
     throw new TypeError('Unsupported shared-prediction competition')
@@ -472,15 +475,16 @@ export function buildSharedPredictionJourney({ bundle, reference, competitionKey
 
   if (competitionKey === LEAGUE_COMPETITION.ORIGINAL) {
     const privateMessage = bundle?.reason ?? 'Original predictions remain private until the tournament prediction lock.'
+    const shared = viewerIsOwner || Boolean(bundle?.visible)
     const matches = reference.groupMatches.map(match => {
       const prediction = matchPredictions.get(match.matchNumber)
-      const visibility = !bundle?.visible ? 'private' : prediction ? 'visible' : 'not_saved'
+      const visibility = !shared ? 'private' : prediction ? 'visible' : 'not_saved'
       const message = visibility === 'private' ? privateMessage : visibility === 'not_saved' ? 'No saved prediction.' : null
       return buildMatchJourneyRow({ match, prediction, visibility, message, reference })
     })
     const bracket = reference.knockoutMatches.map(match => {
       const prediction = bracketPredictions.get(match.matchNumber)
-      const visibility = !bundle?.visible ? 'private' : prediction ? 'visible' : 'not_saved'
+      const visibility = !shared ? 'private' : prediction ? 'visible' : 'not_saved'
       const message = visibility === 'private' ? privateMessage : visibility === 'not_saved' ? 'No saved bracket selection.' : null
       return buildBracketJourneyRow({ match, prediction, visibility, message, reference })
     })
@@ -489,10 +493,10 @@ export function buildSharedPredictionJourney({ bundle, reference, competitionKey
     return Object.freeze({
       competitionKey,
       displayName: bundle?.display_name ?? 'Member',
-      visible: Boolean(bundle?.visible),
-      reason: bundle?.reason ?? null,
-      releaseState: bundle?.visible ? 'released_after_global_lock' : 'private_until_global_lock',
-      releaseCopy: bundle?.visible
+      visible: shared,
+      reason: shared ? null : bundle?.reason ?? null,
+      releaseState: shared ? 'released_after_global_lock' : 'private_until_global_lock',
+      releaseCopy: shared
         ? 'Original Predictor selections are released together after the global lock.'
         : 'Original Predictor selections stay private until the global prediction lock.',
       visibleMatchCount: matches.filter(row => row.visibility === 'visible').length,
@@ -509,11 +513,11 @@ export function buildSharedPredictionJourney({ bundle, reference, competitionKey
   const matches = reference.knockoutMatches.map(match => {
     const prediction = matchPredictions.get(match.matchNumber)
     const definitelyStarted = STARTED_MATCH_STATUSES.has(match.status)
-    const visibility = prediction ? 'visible' : definitelyStarted ? 'not_saved' : 'private'
+    const visibility = prediction ? 'visible' : (viewerIsOwner || definitelyStarted) ? 'not_saved' : 'private'
     const message = visibility === 'private'
       ? 'This selection becomes available after the fixture starts.'
       : visibility === 'not_saved'
-        ? 'No saved prediction was returned for this started fixture.'
+        ? viewerIsOwner ? 'No saved prediction.' : 'No saved prediction was returned for this started fixture.'
         : null
     return buildMatchJourneyRow({ match, prediction, visibility, message, reference })
   })
@@ -521,8 +525,8 @@ export function buildSharedPredictionJourney({ bundle, reference, competitionKey
   return Object.freeze({
     competitionKey,
     displayName: bundle?.display_name ?? 'Member',
-    visible: matches.some(row => row.visibility === 'visible'),
-    reason: bundle?.reason ?? null,
+    visible: viewerIsOwner || matches.some(row => row.visibility === 'visible'),
+    reason: viewerIsOwner ? null : bundle?.reason ?? null,
     releaseState: matches.some(row => row.visibility === 'visible') ? 'fixture_release_started' : 'fixture_release_waiting',
     releaseCopy: 'KO Predictor selections release fixture by fixture after each real knockout match starts.',
     visibleMatchCount: matches.filter(row => row.visibility === 'visible').length,

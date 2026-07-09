@@ -1,3 +1,4 @@
+import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import layoutStyles from './LeagueLayout.module.css'
 import heroStyles from './LeagueHero.module.css'
 import raceStyles from './leagueRace.module.css'
@@ -240,22 +241,12 @@ export function LeaderList({ rows, onOpenPlayer }) {
           </span>
         )
 
-        if (row.isCurrentUser) {
-          return (
-            <div key={row.userId} className={rowClassName}>
-              {rankGroup}
-              {identity}
-              <span className={raceStyles.points}>{row.totalPoints}</span>
-            </div>
-          )
-        }
-
         return (
           <button
             key={row.userId}
             type="button"
             className={rowClassName}
-            aria-label={`Open ${row.displayName}'s Player View`}
+            aria-label={row.isCurrentUser ? 'Open your Player View' : `Open ${row.displayName}'s Player View`}
             onClick={() => onOpenPlayer(row)}
           >
             {rankGroup}
