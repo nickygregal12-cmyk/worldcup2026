@@ -11,7 +11,7 @@ describe('tournament configuration', () => {
 
   it('uses the central provisional Euro start date instead of the legacy WC26 fallback', () => {
     expect(DATES.TOURNAMENT_START).toBeInstanceOf(Date)
-    expect(DATES.TOURNAMENT_START.toISOString()).toBe('2028-06-09T20:00:00.000Z')
+    expect(DATES.TOURNAMENT_START.toISOString()).toBe('2028-06-09T19:00:00.000Z')
   })
 
   it('records confirmed Euro 2028 dates, hosts and venues centrally', () => {

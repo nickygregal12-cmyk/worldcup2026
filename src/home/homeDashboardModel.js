@@ -61,6 +61,134 @@ function countdownLabel(targetIso, now) {
   return `${Math.max(1, totalHours)} hour${totalHours === 1 ? '' : 's'}`
 }
 
+export const HOME_STATE = Object.freeze({
+  PRE: 'pre',
+  LIVE: 'live',
+  POST: 'post',
+})
+
+const LIVE_MATCH_STATUSES = new Set(['live', 'paused'])
+
+/** Days/hours/minutes remaining, for the single pre-tournament countdown. */
+export function countdownParts(targetIso, now) {
+  if (!targetIso) return null
+  const target = new Date(targetIso)
+  const current = now instanceof Date ? now : new Date(now)
+  const diffMs = target.getTime() - current.getTime()
+  if (!Number.isFinite(diffMs) || diffMs <= 0) return null
+  const totalMinutes = Math.floor(diffMs / 60000)
+  return Object.freeze({
+    days: Math.floor(totalMinutes / 1440),
+    hours: Math.floor((totalMinutes % 1440) / 60),
+    minutes: totalMinutes % 60,
+  })
+}
+
+/** Calendar day in tournament time, so "today" means today in the UK. */
+function londonDayKey(value) {
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(String(value).includes('T') ? value : `${value}T12:00:00Z`)
+  if (Number.isNaN(date.getTime())) return null
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(date)
+}
+
+function matchInstant(match) {
+  return match?.kickoffAt ?? match?.scheduledDate ?? null
+}
+
+/**
+ * The three Home states, layered on top of resolveTournamentLifecycle rather
+ * than re-deriving the tournament phase from scratch. The lifecycle owns the
+ * pre-tournament boundary (predictions lock at the first kick-off, so that one
+ * moment ends the pre state). Whether the current day is mid-football or done
+ * for the day is a day-scoped question the lifecycle does not answer, so it is
+ * resolved here from today's fixtures and their results.
+ */
+export function resolveHomeState({ lifecycle, today, now }) {
+  const current = now instanceof Date ? now : new Date(now)
+  const lockAt = lifecycle.predictionLockAt ? new Date(lifecycle.predictionLockAt) : null
+  if (!lockAt || current < lockAt) return HOME_STATE.PRE
+  if (today.live.length > 0) return HOME_STATE.LIVE
+  if (today.upcoming.length > 0) return HOME_STATE.LIVE
+  if (today.completed.length > 0) return HOME_STATE.POST
+  return HOME_STATE.LIVE
+}
+
+function partitionToday({ matches, resultByMatch, now }) {
+  const todayKey = londonDayKey(now)
+  const live = []
+  const upcoming = []
+  const completed = []
+
+  for (const match of matches) {
+    if (londonDayKey(matchInstant(match)) !== todayKey) continue
+    const status = resultByMatch.get(match.matchNumber)?.status
+    if (LIVE_MATCH_STATUSES.has(status)) live.push(match)
+    else if (status === 'completed') completed.push(match)
+    else upcoming.push(match)
+  }
+
+  return Object.freeze({ live, upcoming, completed })
+}
+
+/** Next day that has any fixture at all, for the post-match "Tomorrow" teaser. */
+function nextDayTeaser({ matches, now }) {
+  const todayKey = londonDayKey(now)
+  const future = matches
+    .filter(match => {
+      const key = londonDayKey(matchInstant(match))
+      return key && todayKey && key > todayKey
+    })
+    .sort((left, right) => String(matchInstant(left)).localeCompare(String(matchInstant(right))))
+
+  if (future.length === 0) return null
+  const dayKey = londonDayKey(matchInstant(future[0]))
+  const sameDay = future.filter(match => londonDayKey(matchInstant(match)) === dayKey)
+
+  return Object.freeze({
+    dayKey,
+    matchCount: sameDay.length,
+    firstKickoffAt: matchInstant(sameDay[0]),
+  })
+}
+
+function predictedScoreLabel(bundle, matchId) {
+  const row = (bundle?.predictions ?? []).find(entry => (
+    entry.prediction_kind === 'group_score' &&
+    entry.match_id === matchId &&
+    Number.isInteger(entry.home_score_90) &&
+    Number.isInteger(entry.away_score_90)
+  ))
+  return row ? `${row.home_score_90}–${row.away_score_90}` : null
+}
+
+/**
+ * A read-only match card for Home. `minute` and per-match points are absent
+ * from the result columns, so this deliberately carries neither rather than
+ * inventing them.
+ */
+export function buildHomeMatchCard({ reference, match, result, originalBundle }) {
+  if (!match) return null
+  const matchNumber = Number(match.matchNumber)
+  const status = result?.status ?? null
+  const state = LIVE_MATCH_STATUSES.has(status) ? 'live' : status === 'completed' ? 'completed' : 'upcoming'
+  const hasScore = Number.isInteger(result?.home_score_90) && Number.isInteger(result?.away_score_90)
+
+  return Object.freeze({
+    matchNumber,
+    matchId: match.matchId,
+    state,
+    stageLabel: homeStageLabel(match),
+    venueName: match.venueName ?? null,
+    kickoffAt: matchInstant(match),
+    home: homeTeam(reference, match.homeTeamId, 'Home team TBC'),
+    away: homeTeam(reference, match.awayTeamId, 'Away team TBC'),
+    scoreLabel: hasScore ? `${result.home_score_90} – ${result.away_score_90}` : null,
+    predictedScore: predictedScoreLabel(originalBundle, match.matchId),
+    href: `#/match-centre?match=${matchNumber}&competition=${matchCentreCompetition(matchNumber)}`,
+  })
+}
+
 function lifecyclePhase(lifecycle, now) {
   const current = now instanceof Date ? now : new Date(now)
   const start = lifecycle.tournamentStartAt ? new Date(lifecycle.tournamentStartAt) : null
@@ -178,6 +306,19 @@ export function buildHomeDashboard({
     dataAvailable: liveDataAvailable,
   })
 
+  const allMatches = [...reference.groupMatches, ...reference.knockoutMatches]
+    .sort((left, right) => left.matchNumber - right.matchNumber)
+  const resultByMatch = new Map((live?.results ?? []).map(result => [result.matchNumber, result]))
+  const today = partitionToday({ matches: allMatches, resultByMatch, now })
+  const homeState = resolveHomeState({ lifecycle, today, now })
+  const toCard = match => buildHomeMatchCard({
+    reference,
+    match,
+    result: resultByMatch.get(match.matchNumber) ?? null,
+    originalBundle,
+  })
+  const openingMatch = allMatches[0] ?? null
+
   return Object.freeze({
     signedIn,
     displayName: profile?.display_name ?? session?.user?.email?.split('@')[0] ?? null,
@@ -221,6 +362,17 @@ export function buildHomeDashboard({
       tournamentStartCountdown: countdownLabel(lifecycle.tournamentStartAt, now),
       source: lifecycle.source,
       provisional: lifecycle.provisional,
+    }),
+    home: Object.freeze({
+      state: homeState,
+      // One countdown, one moment: predictions lock at the first kick-off.
+      countdown: countdownParts(lifecycle.predictionLockAt, now),
+      lockAt: lifecycle.predictionLockAt,
+      openingMatch: openingMatch ? toCard(openingMatch) : null,
+      liveMatches: Object.freeze(today.live.map(toCard)),
+      upcomingMatches: Object.freeze(today.upcoming.map(toCard)),
+      completedMatches: Object.freeze(today.completed.map(toCard)),
+      tomorrow: nextDayTeaser({ matches: allMatches, now }),
     }),
     koReadiness: ko,
     koPredictor: Object.freeze({

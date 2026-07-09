@@ -113,9 +113,29 @@ describe('Home dashboard model', () => {
 
     expect(dashboard.lifecycle.phase).toBe('build')
     expect(dashboard.lifecycle.predictionLockAt).toBe('2028-06-09T19:00:00.000Z')
-    expect(dashboard.lifecycle.tournamentStartAt).toBe('2028-06-09T20:00:00.000Z')
     expect(dashboard.lifecycle.predictionLockCountdown).toContain('707 days')
-    expect(dashboard.lifecycle.tournamentStartCountdown).toContain('707 days')
+  })
+
+  it('locks predictions at the first kick-off, so both timestamps are one moment', () => {
+    const dashboard = makeDashboard()
+
+    expect(dashboard.lifecycle.tournamentStartAt).toBe(dashboard.lifecycle.predictionLockAt)
+    expect(dashboard.lifecycle.tournamentStartAt).toBe('2028-06-09T19:00:00.000Z')
+  })
+
+  it('exposes a single countdown to the lock moment before the tournament', () => {
+    const dashboard = makeDashboard({ now: new Date('2028-06-07T17:30:00Z') })
+
+    expect(dashboard.home.state).toBe('pre')
+    expect(dashboard.home.lockAt).toBe('2028-06-09T19:00:00.000Z')
+    expect(dashboard.home.countdown).toEqual({ days: 2, hours: 1, minutes: 30 })
+  })
+
+  it('drops the countdown once the lock moment has passed', () => {
+    const dashboard = makeDashboard({ now: new Date('2028-06-09T19:00:01Z') })
+
+    expect(dashboard.home.state).not.toBe('pre')
+    expect(dashboard.home.countdown).toBeNull()
   })
 
   it('surfaces a central KO readiness signal for Home instead of re-deriving copy locally', () => {
@@ -176,6 +196,64 @@ describe('Home dashboard model', () => {
       href: '#/match-centre?match=37&competition=ko_predictor',
       cta: 'Open Match Centre',
     }))
+  })
+
+  it('treats a day with a match in play as the live state', () => {
+    const dashboard = makeDashboard({
+      now: new Date('2028-06-12T19:30:00Z'),
+      reference: {
+        ...reference,
+        groupMatches: [
+          { matchNumber: 1, matchId: 'm1', kickoffAt: '2028-06-12T19:00:00Z' },
+          { matchNumber: 2, matchId: 'm2', kickoffAt: '2028-06-12T21:00:00Z' },
+        ],
+      },
+      results: { live: { summary: {}, results: [{ matchNumber: 1, status: 'live' }] } },
+    })
+
+    expect(dashboard.home.state).toBe('live')
+    expect(dashboard.home.liveMatches.map(card => card.matchNumber)).toEqual([1])
+    expect(dashboard.home.upcomingMatches.map(card => card.matchNumber)).toEqual([2])
+    expect(dashboard.home.liveMatches[0].href).toBe('#/match-centre?match=1&competition=original')
+  })
+
+  it('switches to the post-match state once the day’s football is finished', () => {
+    const dashboard = makeDashboard({
+      now: new Date('2028-06-12T22:30:00Z'),
+      reference: {
+        ...reference,
+        groupMatches: [
+          { matchNumber: 1, matchId: 'm1', kickoffAt: '2028-06-12T19:00:00Z' },
+          { matchNumber: 2, matchId: 'm2', kickoffAt: '2028-06-13T14:00:00Z' },
+          { matchNumber: 3, matchId: 'm3', kickoffAt: '2028-06-13T17:00:00Z' },
+        ],
+      },
+      results: {
+        live: {
+          summary: {},
+          results: [{ matchNumber: 1, status: 'completed', home_score_90: 2, away_score_90: 0 }],
+        },
+      },
+    })
+
+    expect(dashboard.home.state).toBe('post')
+    expect(dashboard.home.completedMatches[0].scoreLabel).toBe('2 – 0')
+    expect(dashboard.home.tomorrow).toEqual(expect.objectContaining({ matchCount: 2 }))
+  })
+
+  it('carries no live minute or per-match points, which have no data source', () => {
+    const dashboard = makeDashboard({
+      now: new Date('2028-06-12T19:30:00Z'),
+      reference: {
+        ...reference,
+        groupMatches: [{ matchNumber: 1, matchId: 'm1', kickoffAt: '2028-06-12T19:00:00Z' }],
+      },
+      results: { live: { summary: {}, results: [{ matchNumber: 1, status: 'live' }] } },
+    })
+
+    const card = dashboard.home.liveMatches[0]
+    expect(card).not.toHaveProperty('minute')
+    expect(card).not.toHaveProperty('pointsEarned')
   })
 
   it('hides the match hub when live result data is unavailable', () => {

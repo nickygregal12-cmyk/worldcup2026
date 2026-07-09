@@ -11,6 +11,7 @@ import './design/tokens.css'
 import './design/typography.css'
 import './styles/feature-compat.css'
 import './styles/app.css'
+import './styles/match-card.css'
 import './styles/groups-predictor.css'
 import './styles/knockout-experiences.css'
 

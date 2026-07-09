@@ -1,7 +1,7 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { useMemo, useState } from 'react'
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
-import { ScoreInput, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar, JokerMeter, JokerPill } from '../design-system/index.jsx'
+import { ScoreInput, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar, JokerMeter, JokerPill, MatchCard } from '../design-system/index.jsx'
 import { hasActivePredictionGrace, isPredictionMatchStarted, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import {
   GROUPS_TABLE_KEY,
@@ -191,27 +191,25 @@ export default function GroupsPredictor({
     const jokerLabel = jokerControlLabel({ applied: row.jokerApplied, disabled: jokerDisabled, capReached, started, reviewMode })
 
     return (
-      <article className={`group-match-card${row.jokerApplied ? ' group-match-card--joker' : ''}`} key={match.matchId} data-match-number={match.matchNumber}>
-        <header className="group-match-card__header">
-          <div><strong>Match {match.matchNumber}</strong><span>{formatMatchDate(match.scheduledDate)}</span></div>
-          {isDateView
-            ? <button className={viewStyles.groupTag} type="button" onClick={() => openTable(match.groupCode)}>Group {match.groupCode}</button>
-            : <PredictionStateBadge state={state} />}
-        </header>
-
-        <div className="group-match-card__prediction">
-          <div className="group-match-team group-match-team--home"><TeamLabel team={homeTeam} compact /></div>
+      <MatchCard
+        key={match.matchId}
+        className={`group-match-card${row.jokerApplied ? ' group-match-card--joker' : ''}`}
+        lineClassName="group-match-card__prediction"
+        data-match-number={match.matchNumber}
+        meta={<><strong>Match {match.matchNumber}</strong><span>{formatMatchDate(match.scheduledDate)}</span></>}
+        badge={isDateView
+          ? <button className={viewStyles.groupTag} type="button" onClick={() => openTable(match.groupCode)}>Group {match.groupCode}</button>
+          : <PredictionStateBadge state={state} />}
+        home={<TeamLabel team={homeTeam} compact />}
+        away={<TeamLabel team={awayTeam} compact />}
+        centre={<>
           <ScoreInput value={row.homeScore} label={`${homeTeam?.label ?? 'Home team'} score in match ${match.matchNumber}`} readOnly={scoreReadOnly} grace={hasGrace} state={state} onChange={homeScore => onChange(match, { homeScore })} />
           <span className="group-match-card__separator" aria-hidden="true">–</span>
           <ScoreInput value={row.awayScore} label={`${awayTeam?.label ?? 'Away team'} score in match ${match.matchNumber}`} readOnly={scoreReadOnly} grace={hasGrace} state={state} onChange={awayScore => onChange(match, { awayScore })} />
-          <div className="group-match-team group-match-team--away"><TeamLabel team={awayTeam} compact /></div>
-        </div>
-
-        <footer className="group-match-card__footer">
-          <span>{complete ? `${row.homeScore}–${row.awayScore} predicted` : 'Enter both scores'}</span>
-          <JokerPill aria-pressed={row.jokerApplied} active={row.jokerApplied} disabled={jokerDisabled} multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER} statusLabel={jokerLabel} matchLabel={`match ${match.matchNumber}`} onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })} />
-        </footer>
-      </article>
+        </>}
+        note={<span>{complete ? `${row.homeScore}–${row.awayScore} predicted` : 'Enter both scores'}</span>}
+        action={<JokerPill aria-pressed={row.jokerApplied} active={row.jokerApplied} disabled={jokerDisabled} multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER} statusLabel={jokerLabel} matchLabel={`match ${match.matchNumber}`} onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })} />}
+      />
     )
   }
 

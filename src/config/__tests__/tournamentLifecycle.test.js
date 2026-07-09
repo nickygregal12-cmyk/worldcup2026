@@ -24,7 +24,12 @@ describe('tournament lifecycle config', () => {
 
   it('uses the central precise tournament start when staging only has a date', () => {
     const lifecycle = resolveTournamentLifecycle({ prediction_lock_at: null, prediction_locked_at: null, starts_on: '2028-06-09' }, new Date('2026-07-03T12:00:00Z'))
-    expect(lifecycle.tournamentStartAt).toBe('2028-06-09T20:00:00.000Z')
+    expect(lifecycle.tournamentStartAt).toBe('2028-06-09T19:00:00.000Z')
+  })
+
+  it('starts the tournament at the same moment predictions lock', () => {
+    const lifecycle = resolveTournamentLifecycle({ prediction_lock_at: null, prediction_locked_at: null, starts_on: '2028-06-09' }, new Date('2026-07-03T12:00:00Z'))
+    expect(lifecycle.tournamentStartAt).toBe(lifecycle.predictionLockAt)
   })
 
 })

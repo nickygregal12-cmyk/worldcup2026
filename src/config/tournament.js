@@ -29,8 +29,10 @@ export const TOURNAMENT_CONFIG = Object.freeze({
   status: 'development',
   provisionalData: true,
   dates: Object.freeze({
+    // Predictions lock at the first kick-off, so these are the same moment.
+    // 19:00Z is 8:00pm UK — June is BST. Opening kick-off time is assumed, not confirmed.
     predictionLockAt: import.meta.env.VITE_PREDICTION_LOCK_AT || '2028-06-09T19:00:00.000Z',
-    tournamentStartAt: import.meta.env.VITE_TOURNAMENT_START_AT || '2028-06-09T20:00:00.000Z',
+    tournamentStartAt: import.meta.env.VITE_TOURNAMENT_START_AT || '2028-06-09T19:00:00.000Z',
     groupStageEndAt: import.meta.env.VITE_GROUP_STAGE_END_AT || null,
     knockoutPredictorOpenAt: import.meta.env.VITE_KO_PREDICTOR_OPEN_AT || null,
     tournamentEndAt: import.meta.env.VITE_TOURNAMENT_END_AT || '2028-07-09T22:59:59.000Z',

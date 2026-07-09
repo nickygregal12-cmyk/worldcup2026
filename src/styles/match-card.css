@@ -1,0 +1,186 @@
+/*
+ * Shared match-card language.
+ *
+ * These rules were lifted out of `.group-match-card` in groups-predictor.css so
+ * that Home and the Groups predictor render the same card rather than two cards
+ * that merely resemble each other. Groups keeps only what is genuinely specific
+ * to a score-entry card: the five-column prediction grid, the score separator
+ * and the joker modifier.
+ *
+ * Imported before groups-predictor.css so Groups-specific overrides win.
+ */
+
+.match-card {
+  position: relative;
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--match-card-border);
+  border-radius: var(--radius-lg);
+  background: var(--match-card-surface);
+  box-shadow: var(--shadow-1);
+}
+
+.match-card__header,
+.match-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.match-card__header > div {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.match-card__header span,
+.match-card__footer > span {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.match-card__line {
+  display: grid;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Team labels stack the flag over a full-width name (home and away alike) so
+   long names use the whole column instead of collapsing beside the centre. */
+.match-card__team .team-label {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-width: 0;
+}
+
+.match-card__team .team-label__copy {
+  width: 100%;
+  min-width: 0;
+  justify-items: center;
+}
+
+.match-card__team .team-label__copy strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+/* ===== Home variant: read-only card that taps through to Match Centre ===== */
+
+.match-card--readonly .match-card__line {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
+.match-card--tappable {
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+}
+
+.match-card--tappable:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-2);
+}
+
+.match-card--tappable:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+
+.match-card__centre {
+  display: grid;
+  justify-items: center;
+  gap: 0.1rem;
+  min-width: 4rem;
+  text-align: center;
+}
+
+.match-card__centre-versus {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.match-card__centre-score {
+  font-size: 1.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.match-card__centre-kickoff {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.match-card__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.15rem var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: 0.66rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.match-card__chip--live {
+  background: var(--state-danger-soft);
+  color: var(--state-live);
+}
+
+.match-card__chip--kickoff {
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+
+.match-card__chip--fulltime {
+  background: var(--surface-sunken);
+  color: var(--text-secondary);
+}
+
+.match-card__pulse {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--state-live);
+  animation: match-card-pulse 1.4s infinite;
+}
+
+@keyframes match-card-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .match-card__pulse { animation: none; }
+}
+
+.match-card__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+@media (max-width: 40rem) {
+  .match-card {
+    padding: var(--space-4);
+  }
+
+  .match-card__header,
+  .match-card__footer {
+    align-items: flex-start;
+  }
+}
