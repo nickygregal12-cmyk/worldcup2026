@@ -79,10 +79,27 @@ const CANDIDATE_TEAM_POOL = Object.freeze([
 //
 // Every slot A1-F4 must name a slug from CANDIDATE_TEAM_POOL above, each slug
 // at most once. Teams left out of the mapping stay in the pool, unattached,
-// ready for a future re-run. This initial guess places the five UK & Ireland
-// host nations first in groups A-E; it carries no official meaning.
+// ready for a future re-run.
+//
+// The five UK & Ireland nations sit in the reserved group-head slots they hold
+// for the Euro 2028 finals draw: Wales A1, England B1, Northern Ireland D1,
+// Republic of Ireland E1, Scotland F1. Group C has no reserved nation. Slot
+// membership is the only thing fixed here: which teams fill the remaining slots,
+// and whether any of these five actually qualify, carries no official meaning.
+//
+// Two tiers hide behind those five reserved slots, and they are not the same:
+//   - Wales, England, Republic of Ireland and Scotland are the genuine co-hosts.
+//     They hold the reserved slot AND the host safety net: two places are kept
+//     back for the best-placed hosts that fail to qualify through the groups.
+//   - Northern Ireland holds the reserved D1 slot but is NOT a co-host — it lost
+//     host status in 2024. No safety-net place, and no home venue: were it to
+//     qualify by the normal route it would play its group matches in England.
+// Nothing in this script encodes that difference; it is recorded here because
+// the slot mapping alone makes the five nations look interchangeable, and they
+// are not. The qualification asymmetry lives in the curated Team Guide text in
+// scripts/assign-team-profiles.mjs.
 const SLOT_ASSIGNMENTS = Object.freeze({
-  A1: 'scotland',
+  A1: 'wales',
   A2: 'germany',
   A3: 'hungary',
   A4: 'switzerland',
@@ -90,7 +107,8 @@ const SLOT_ASSIGNMENTS = Object.freeze({
   B2: 'france',
   B3: 'austria',
   B4: 'ukraine',
-  C1: 'wales',
+  // Netherlands heads Group C, displaced from F1 by Scotland's reserved slot.
+  C1: 'netherlands',
   C2: 'spain',
   C3: 'croatia',
   C4: 'albania',
@@ -102,7 +120,7 @@ const SLOT_ASSIGNMENTS = Object.freeze({
   E2: 'portugal',
   E3: 'poland',
   E4: 'slovenia',
-  F1: 'netherlands',
+  F1: 'scotland',
   F2: 'belgium',
   F3: 'turkey',
   F4: 'czech-republic',
