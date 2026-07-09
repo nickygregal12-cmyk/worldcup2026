@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Original Bracket v2 — Euro 2028 Predictor (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand:#173A66; --brand-strong:#0E2A4F; --accent:#0EA5E9; --on-accent:#FFFFFF;
+  --surface-page:#F6F8FB; --surface-raised:#FFFFFF; --surface-sunken:#EAEEF4;
+  --text-primary:#0F1726; --text-secondary:#3E4A5E; --text-muted:#69758A;
+  --border:#D9E0EA;
+  --joker:#B8860B; --joker-bg:#FEF9E7;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --shadow-1:0 1px 2px rgba(15,23,38,.06);
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --brand:#1C4275; --brand-strong:#173A66; --accent:#38BDF8; --on-accent:#0A0F1C;
+  --surface-page:#0A0F1C; --surface-raised:#131B2C; --surface-sunken:#070B14;
+  --text-primary:#EEF2F8; --text-secondary:#B4C0D2; --text-muted:#7B8799;
+  --border:#22304A; --joker:#FACC15; --joker-bg:#2B2410; --shadow-1:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--surface-page);color:var(--text-primary);font-family:var(--font-body);font-size:16px;line-height:1.5;padding-bottom:92px}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer;color:inherit;background:none;border:none;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+.app{max-width:560px;margin:0 auto;padding:12px 12px 0}
+.app.wide{max-width:1180px}
+svg{display:block}
+
+.hdr{background:var(--brand);color:#EEF2F8;border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:18px}
+.save-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;background:rgba(255,255,255,.14);border-radius:999px;padding:5px 11px}
+
+/* compact strip: round rail (mobile) · wall-chart opt-in toggle */
+.topstrip{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}
+.rail{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.rail button{flex:0 0 auto;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface-raised);font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--text-secondary)}
+.rail button[aria-selected="true"]{background:var(--brand);border-color:var(--brand);color:#EEF2F8}
+.wallbtn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--accent);border:1px solid var(--border);border-radius:999px;padding:8px 14px;flex:none}
+.wallbtn svg{width:15px;height:15px}
+
+/* match cards: SAME anatomy as Groups/KO v2, interaction = tap a team to pick */
+.round-h{font-family:var(--font-display);font-weight:700;font-size:15px;margin:18px 2px 2px}
+.mcard{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:13px 14px;margin-top:10px;box-shadow:var(--shadow-1)}
+.mtop{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);flex-wrap:wrap}
+.mflag{width:13px;height:13px;border-radius:50%;flex:none}
+.mline{display:flex;align-items:center;gap:8px;margin-top:11px}
+.teambtn{display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:500;flex:1;min-width:0;padding:9px 10px;border-radius:var(--radius-sm);border:1.5px solid var(--border);background:var(--surface-page)}
+.teambtn img{width:24px;height:24px;border-radius:50%;flex:none}
+.teambtn .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.teambtn[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface-raised));font-weight:600}
+.teambtn.faded{opacity:.55}
+.vsep{font-family:var(--font-display);font-weight:700;color:var(--text-muted);flex:none;padding:0 2px}
+.pend{border-style:dashed;text-align:center;color:var(--text-muted);font-size:13px;padding:20px 14px}
+
+/* locked/frozen state: your predicted path, read-only, champion callout */
+.locked-note{display:flex;align-items:center;gap:8px;margin-top:12px;background:var(--surface-sunken);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;font-size:12.5px;color:var(--text-secondary)}
+.teamrow-locked{display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:500;flex:1;padding:9px 10px;border-radius:var(--radius-sm)}
+.teamrow-locked img{width:24px;height:24px;border-radius:50%}
+.teamrow-locked.winner{background:color-mix(in srgb,var(--accent) 10%,var(--surface-raised));font-weight:600;border:1.5px solid var(--accent)}
+.teamrow-locked.out{opacity:.5;border:1.5px solid transparent}
+.champion-card{margin-top:16px;background:linear-gradient(150deg,var(--brand-strong),var(--brand));color:#EEF2F8;border-radius:var(--radius-lg);padding:20px 16px;text-align:center}
+.champion-card .eyebrow{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#9DBCE0;font-weight:600}
+.champion-card img{width:44px;height:44px;border-radius:50%;margin:10px 0 6px;border:3px solid rgba(255,255,255,.25)}
+.champion-card .nm{font-family:var(--font-display);font-weight:700;font-size:19px}
+
+/* ============ WALL CHART (desktop native / mobile opt-in landscape) ============ */
+.wall-shell{display:none;position:relative;margin-top:10px;background:linear-gradient(180deg,color-mix(in srgb,var(--surface-raised) 86%,transparent),color-mix(in srgb,var(--surface-sunken) 45%,transparent));border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-1);padding:16px;overflow-x:auto}
+.wall-shell.show{display:block}
+.wall-chart{min-width:1040px;display:grid;grid-template-columns:1.15fr .95fr .85fr 1fr .85fr .95fr 1.15fr;gap:16px;align-items:center;position:relative;padding:6px}
+.wall-chart:before{content:"";position:absolute;left:10px;right:10px;top:50%;height:1px;background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 30%,var(--border)),transparent);pointer-events:none}
+.wall-col{display:grid;position:relative}
+.wall-col.r16{grid-template-rows:repeat(4,108px);gap:16px}
+.wall-col.qf{grid-template-rows:repeat(2,118px);gap:110px}
+.wall-col.sf{grid-template-rows:170px}
+.wall-col.left.qf,.wall-col.right.qf{padding-top:56px}
+.wall-col.left.sf,.wall-col.right.sf{padding-top:130px}
+.wall-final{align-self:center;position:relative}
+.wall-final:before,.wall-final:after{content:"";position:absolute;top:50%;width:16px;height:1px;background:color-mix(in srgb,var(--accent) 40%,var(--border))}
+.wall-final:before{left:-16px}.wall-final:after{right:-16px}
+.wcard{background:var(--surface-raised);border:1px solid var(--border);border-radius:12px;padding:9px 10px;position:relative;box-shadow:var(--shadow-1)}
+.wcard .meta{font-size:9.5px;color:var(--text-muted);display:flex;align-items:center;gap:4px}
+.wcard .wline{display:flex;flex-direction:column;gap:5px;margin-top:6px}
+.wteam{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:4px 6px;border-radius:7px}
+.wteam img{width:18px;height:18px;border-radius:50%}
+.wteam.win{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight:700}
+.wall-col.left .wcard:after,.wall-col.right .wcard:before{content:"";position:absolute;top:50%;width:16px;height:1px;background:color-mix(in srgb,var(--accent) 35%,var(--border))}
+.wall-col.left .wcard:after{right:-16px}.wall-col.right .wcard:before{left:-16px}
+.champion-wcard{text-align:center}
+.champion-wcard .wteam{justify-content:center;background:var(--joker-bg);color:var(--joker);font-weight:700}
+.rotate-hint{display:flex;align-items:center;gap:8px;justify-content:center;font-size:12px;color:var(--text-muted);padding:8px 0 2px}
+
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface-raised);border-top:1px solid var(--border);z-index:40}
+.nav-inner{max-width:560px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-around;padding:6px 4px calc(8px + env(safe-area-inset-bottom))}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--text-muted);min-width:56px;min-height:48px;justify-content:flex-end;padding:2px;border-radius:var(--radius-sm)}
+.nav-item svg{width:22px;height:22px}
+.nav-item[aria-current="page"]{color:var(--accent);font-weight:500}
+.nav-home .circle{width:46px;height:46px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;margin-top:-18px;border:4px solid var(--surface-page)}
+
+.proto{margin:30px 0 8px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:11.5px;color:var(--text-muted)}
+.proto .prow{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;flex-wrap:wrap}
+.seg{display:flex;gap:4px;background:var(--surface-sunken);border-radius:999px;padding:3px}
+.seg button{min-height:30px;padding:0 12px;border-radius:999px;font-size:11.5px;font-weight:500;color:var(--text-muted)}
+.seg button[aria-selected="true"]{background:var(--surface-raised);color:var(--text-primary);box-shadow:var(--shadow-1)}
+.switch{position:relative;width:40px;height:24px;border-radius:999px;background:var(--surface-sunken);border:1px solid var(--border);flex:none}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--surface-raised);border:1px solid var(--border);transition:left .15s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{left:18px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-chev-r" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="9" width="12" height="16" rx="2" transform="rotate(-90 12 17)"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M20 3v5h-5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+</svg>
+
+<div class="app" id="appRoot">
+  <header class="hdr">
+    <h1 class="wordmark">Bracket</h1>
+    <span class="save-pill"><svg width="12" height="12"><use href="#i-check"/></svg>Saved</span>
+  </header>
+
+  <div class="topstrip">
+    <div class="rail" role="tablist" id="roundRail">
+      <button role="tab" aria-selected="true">R16</button>
+      <button role="tab" aria-selected="false">QF</button>
+      <button role="tab" aria-selected="false">SF</button>
+      <button role="tab" aria-selected="false">Final</button>
+    </div>
+    <button class="wallbtn" id="wallToggle"><svg id="wallIcon"><use href="#i-rotate"/></svg><span id="wallLabel">View as wall chart</span></button>
+  </div>
+
+  <!-- ============ PREDICTING STATE — mobile stacked, tap a team to pick ============ -->
+  <section id="stacked-pre">
+    <div class="round-h">Round of 16</div>
+
+    <div class="mcard">
+      <div class="mtop">Sat 24 June · 5:00pm · Wembley <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-eng.svg" alt=""></div>
+      <div class="mline">
+        <button class="teambtn" aria-pressed="true"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""><span class="nm">Scotland</span></button>
+        <span class="vsep">v</span>
+        <button class="teambtn faded" aria-pressed="false"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/hr.svg" alt=""><span class="nm">Croatia</span></button>
+      </div>
+    </div>
+
+    <div class="mcard">
+      <div class="mtop">Sat 24 June · 8:00pm · Hampden Park <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""></div>
+      <div class="mline">
+        <button class="teambtn faded" aria-pressed="false"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt=""><span class="nm">France</span></button>
+        <span class="vsep">v</span>
+        <button class="teambtn" aria-pressed="true"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/nl.svg" alt=""><span class="nm">Netherlands</span></button>
+      </div>
+    </div>
+
+    <div class="mcard pend">More Round of 16 fixtures appear here as group results confirm them.</div>
+  </section>
+
+  <!-- ============ LOCKED / FROZEN STATE — your predicted path, read-only ============ -->
+  <section id="stacked-locked" hidden>
+    <div class="seg" role="tablist" style="margin-top:2px">
+      <button role="tab" aria-selected="true" data-locktab="bracket">Bracket</button>
+      <button role="tab" aria-selected="false" data-locktab="health">Health <span style="opacity:.7">· 6/8 alive</span></button>
+    </div>
+
+    <div id="lockview-bracket">
+      <div class="locked-note">Predictions locked at kick-off — this is your predicted path through the tournament.</div>
+
+      <div class="round-h">Round of 16</div>
+      <div class="mcard">
+        <div class="mtop">Sat 24 June · Hampden Park <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""></div>
+        <div class="mline">
+          <div class="teamrow-locked winner"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""><span>Scotland</span></div>
+          <span class="vsep">v</span>
+          <div class="teamrow-locked out"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/hr.svg" alt=""><span>Croatia</span></div>
+        </div>
+      </div>
+
+      <div class="round-h">Quarter-final</div>
+      <div class="mcard">
+        <div class="mline">
+          <div class="teamrow-locked winner"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""><span>Scotland</span></div>
+          <span class="vsep">v</span>
+          <div class="teamrow-locked out"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/nl.svg" alt=""><span>Netherlands</span></div>
+        </div>
+      </div>
+
+      <div class="champion-card">
+        <div class="eyebrow">Your predicted champion</div>
+        <img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt="">
+        <div class="nm">Scotland</div>
+      </div>
+    </div>
+
+    <!-- HEALTH TAB — existing approved contract, carried forward as a tab per Nicky's confirmed decision -->
+    <div id="lockview-health" hidden>
+      <div class="locked-note" style="justify-content:space-between">
+        <span>How your bracket is actually holding up, based on live results.</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;border-radius:999px;padding:6px 12px;color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)">6 of 8 alive</span>
+      </div>
+
+      <div class="round-h">On your path</div>
+      <div class="mcard"><div class="mline"><span class="teamrow-locked winner" style="flex:none;padding:6px 10px"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""><span>Scotland</span></span><span style="font-size:12px;color:var(--text-muted)">Exactly as you called it — through to the quarter-final.</span></div></div>
+
+      <div class="round-h">Alive, different path</div>
+      <div class="mcard"><div class="mline"><span class="teamrow-locked" style="flex:none;padding:6px 10px;background:var(--joker-bg)"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/es.svg" alt=""><span>Spain</span></span><span style="font-size:12px;color:var(--text-muted)">You had them winning the group — through as runner-up instead. Picks re-score where they still line up.</span></div></div>
+
+      <div class="round-h">Your teams meet early</div>
+      <div class="mcard"><div class="mline"><span class="teamrow-locked" style="flex:none;padding:6px 10px;background:var(--state-partial-bg,#FEF3C7)"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/de.svg" alt=""><span>Germany</span></span><span style="font-size:12px;color:var(--text-muted)">Now drawn against Netherlands in the QF — one of your semi-final picks can no longer happen.</span></div></div>
+
+      <div class="round-h">Out</div>
+      <div class="mcard"><div class="mline"><div class="teamrow-locked out"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/hr.svg" alt=""><span>Croatia</span></div></div></div>
+
+      <div class="round-h">Points still available, by round</div>
+      <div class="mcard">
+        <div style="display:flex;justify-content:space-between;gap:8px;text-align:center">
+          <div><div style="font-family:var(--font-display);font-weight:700;font-size:17px">40</div><div style="font-size:10px;color:var(--text-muted)">R16</div></div>
+          <div><div style="font-family:var(--font-display);font-weight:700;font-size:17px">65</div><div style="font-size:10px;color:var(--text-muted)">QF</div></div>
+          <div><div style="font-family:var(--font-display);font-weight:700;font-size:17px">90</div><div style="font-size:10px;color:var(--text-muted)">SF</div></div>
+          <div><div style="font-family:var(--font-display);font-weight:700;font-size:17px">140</div><div style="font-size:10px;color:var(--text-muted)">Final</div></div>
+        </div>
+        <p style="font-size:11.5px;color:var(--text-muted);margin:8px 0 0">Based on where your teams actually are now, not your original picks — updates as real results come in. Your predicted bracket itself never changes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ WALL CHART — desktop native (≥900px) or mobile opt-in landscape ============ -->
+  <div class="wall-shell" id="wallShell">
+    <div class="rotate-hint mobile-rotate-hint"><svg width="16" height="16"><use href="#i-rotate"/></svg>Best viewed with your phone turned sideways</div>
+    <div class="wall-chart">
+      <div class="wall-col r16 left">
+        <div class="wcard"><div class="meta">Sat 24 Jun · Hampden <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""></div>
+          <div class="wline"><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt="">Scotland</span><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/hr.svg" alt="">Croatia</span></div></div>
+        <div class="wcard"><div class="meta">Sun 25 Jun · Cardiff <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-wls.svg" alt=""></div>
+          <div class="wline"><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/de.svg" alt="">Germany</span><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/pt.svg" alt="">Portugal</span></div></div>
+        <div class="wcard"><div class="meta">Sat 24 Jun · Wembley <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-eng.svg" alt=""></div>
+          <div class="wline"><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/es.svg" alt="">Spain</span><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/be.svg" alt="">Belgium</span></div></div>
+        <div class="wcard"><div class="meta">Sun 25 Jun · Anfield</div>
+          <div class="wline"><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/it.svg" alt="">Italy</span><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/eng.svg" alt="">England</span></div></div>
+      </div>
+      <div class="wall-col qf left">
+        <div class="wcard"><div class="meta">QF1</div><div class="wline"><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt="">Scotland</span><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/pt.svg" alt="">Portugal</span></div></div>
+        <div class="wcard"><div class="meta">QF2</div><div class="wline"><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/es.svg" alt="">Spain</span><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/eng.svg" alt="">England</span></div></div>
+      </div>
+      <div class="wall-col sf left"><div class="wcard"><div class="meta">SF1</div><div class="wline"><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt="">Scotland</span><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/es.svg" alt="">Spain</span></div></div></div>
+      <div class="wall-final"><div class="wcard champion-wcard"><div class="meta" style="justify-content:center">Your champion</div><div class="wline"><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt="">Scotland</span></div></div></div>
+      <div class="wall-col sf right"><div class="wcard"><div class="meta">SF2</div><div class="wline"><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/nl.svg" alt="">Netherlands</span><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/de.svg" alt="">Germany</span></div></div></div>
+      <div class="wall-col qf right">
+        <div class="wcard"><div class="meta">QF3</div><div class="wline"><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/nl.svg" alt="">Netherlands</span><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt="">France</span></div></div>
+        <div class="wcard"><div class="meta">QF4</div><div class="wline"><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/hr.svg" alt="">Croatia</span><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/de.svg" alt="">Germany</span></div></div>
+      </div>
+      <div class="wall-col r16 right">
+        <div class="wcard"><div class="meta">R16</div><div class="wline"><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/nl.svg" alt="">Netherlands</span><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt="">France</span></div></div>
+        <div class="wcard"><div class="meta">R16</div><div class="wline"><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/pl.svg" alt="">Poland</span><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/hr.svg" alt="">Croatia</span></div></div>
+        <div class="wcard"><div class="meta">R16</div><div class="wline"><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/hr.svg" alt="">Croatia</span><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/rs.svg" alt="">Serbia</span></div></div>
+        <div class="wcard"><div class="meta">R16</div><div class="wline"><span class="wteam"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/dk.svg" alt="">Denmark</span><span class="wteam win"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/de.svg" alt="">Germany</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="proto">
+    <div class="prow">
+      <span>Prototype · Bracket v2 — state:</span>
+      <div class="seg" role="tablist">
+        <button role="tab" aria-selected="true" data-ph="pre">Predicting (mobile stacked)</button>
+        <button role="tab" aria-selected="false" data-ph="locked">Locked</button>
+        <button role="tab" aria-selected="false" data-ph="wall">Wall chart</button>
+      </div>
+      <span style="display:flex;align-items:center;gap:6px">Dark <button class="switch" role="switch" aria-checked="false" id="darkSwitch"></button></span>
+    </div>
+    <div class="prow" style="min-height:auto;padding-top:4px">
+      <span>Mobile defaults to normal portrait stacked cards (Groups/KO card language: date · time · stadium + host flag · "v"). Tap a team to pick the winner — no score inputs, no joker controls, unchanged from approved v1. "View as wall chart" is reversible — button flips to "Back to list" and returns to wherever you were (predicting or locked), rather than being a one-way trip. Desktop/tablet ≥900px shows the wall chart natively, no toggle needed. Locked state now has Bracket/Health sub-tabs, carrying forward the existing approved Bracket Health contract (tab-within-Bracket, confirmed previously) — On your path / Alive different path / Route conflict / Out categories, plus the points-still-available-by-round strip. Health uses live results only and never alters the predicted bracket itself, per the frozen/separate rule.</span>
+    </div>
+  </div>
+</div>
+
+<nav class="nav" aria-label="Main">
+  <div class="nav-inner">
+    <a class="nav-item" href="#"><svg><use href="#i-list"/></svg>Groups</a>
+    <a class="nav-item" href="#" aria-current="page"><svg><use href="#i-trophy"/></svg>Bracket</a>
+    <a class="nav-item nav-home" href="#"><span class="circle"><svg width="22" height="22"><use href="#i-home"/></svg></span>Home</a>
+    <a class="nav-item" href="#"><svg><use href="#i-users"/></svg>Leagues</a>
+    <a class="nav-item" href="#"><svg><use href="#i-more"/></svg>More</a>
+  </div>
+</nav>
+
+<script>
+const pre=document.getElementById('stacked-pre'), locked=document.getElementById('stacked-locked'), wall=document.getElementById('wallShell'), app=document.getElementById('appRoot');
+const wallLabel=document.getElementById('wallLabel'), wallToggle=document.getElementById('wallToggle');
+let lastNonWall='pre';
+function showState(s){
+  if(s!=='wall') lastNonWall=s;
+  pre.hidden = s!=='pre';
+  locked.hidden = s!=='locked';
+  wall.classList.toggle('show', s==='wall');
+  app.classList.toggle('wide', s==='wall');
+  wallLabel.textContent = s==='wall' ? 'Back to list' : 'View as wall chart';
+}
+document.querySelectorAll('[data-ph]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-ph]').forEach(x=>x.setAttribute('aria-selected','false'));
+  b.setAttribute('aria-selected','true');
+  showState(b.dataset.ph);
+}));
+wallToggle.addEventListener('click',()=>{
+  const goingToWall = wallLabel.textContent==='View as wall chart';
+  const target = goingToWall ? 'wall' : lastNonWall;
+  document.querySelectorAll('[data-ph]').forEach(x=>x.setAttribute('aria-selected', x.dataset.ph===target?'true':'false'));
+  showState(target);
+});
+/* Bracket / Health sub-tabs within Locked state */
+document.querySelectorAll('[data-locktab]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-locktab]').forEach(x=>x.setAttribute('aria-selected','false'));
+  b.setAttribute('aria-selected','true');
+  document.getElementById('lockview-bracket').hidden = b.dataset.locktab!=='bracket';
+  document.getElementById('lockview-health').hidden = b.dataset.locktab!=='health';
+}));
+document.querySelectorAll('.teambtn').forEach(t=>t.addEventListener('click',()=>{
+  const row=t.closest('.mline');
+  row.querySelectorAll('.teambtn').forEach(x=>{x.setAttribute('aria-pressed','false');x.classList.add('faded')});
+  t.setAttribute('aria-pressed','true'); t.classList.remove('faded');
+}));
+const sw=document.getElementById('darkSwitch');
+sw.addEventListener('click',()=>{
+  const on=sw.getAttribute('aria-checked')!=='true';
+  sw.setAttribute('aria-checked',String(on));
+  document.documentElement.setAttribute('data-theme',on?'dark':'');
+});
+showState('pre');
+</script>
+</body>
+</html>

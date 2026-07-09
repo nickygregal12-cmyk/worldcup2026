@@ -1,6 +1,6 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.14 — Approved page visual contracts recorded
+### Version 1.15 — Home, Groups, KO Predictor and Bracket v2 contracts supersede v1
 
 > **Authority:** This document governs how the Euro 2028 Predictor looks and feels. The Consolidated Decision Register governs product rules. The Agent Rules govern build process. A visual deviation must be proposed here before it ships.
 
@@ -281,7 +281,7 @@ A visual contract is an approved, self-contained HTML reference prototype stored
 Visual-contract rules:
 
 - Candidate prototype files are explorations until Nicky approves one variant or an explicitly merged variant.
-- Once approved, exactly one contract file is retained per surface; approved files supersede older references rather than accumulating alternatives.
+- Exactly one contract file is *binding* per surface. Approved files supersede older references rather than accumulating alternatives. A superseded contract may be retained for provenance only when it is renamed with a `-v1-superseded` suffix (or the equivalent `-vN-superseded`); a suffixed file is historical evidence and is never binding, never implemented against, and never counted in the approved-contract inventory.
 - Product implementation must rebuild the approved contract natively in the Euro design system using real components, semantic tokens, scoped CSS Modules and existing models/contracts.
 - Prototype HTML, inline CSS, sample JavaScript, hardcoded sample data, demo toggles, CDN fonts, local switches and fake storage are reference-only and must not be imported into the app.
 - Every candidate file must list preserved functional decisions in an HTML comment at the top before page markup.
@@ -291,12 +291,22 @@ Visual-contract rules:
 - The approved Groups Night Broadcast direction is the identity anchor for this programme. Groups must not be redrafted unless Nicky explicitly reopens that surface.
 - The supplied League visual contract is also approved. Leagues must not be redrafted unless Nicky explicitly reopens that surface.
 - League table D is the approved Leagues refinement: compact Match Centre at the top, full-row clickable user rows, subtle chevrons, and movement arrows.
-- Bracket G is the approved Original Bracket visual contract: mobile stacked view, proper ≥900px wall chart, Round of 16 on outside edges, quarter-finals and semi-finals stepping inward, centre final, small slick `vs`, and date/time/stadium/host-flag match detail.
-- KO Predictor F is the approved KO Predictor visual contract: teams pending before real fixtures are known, real fixtures once ready, 90-minute score, advancing team, method and five separate KO jokers.
-- Bracket Health remains unapproved and must be redrafted separately around `your predicted route vs the real route` before any implementation.
+- Bracket Health remains unapproved as a standalone surface and must not be a bottom-nav destination. Its approved state contract now lives inside the Bracket v2 Locked state as the Health sub-tab.
+
+### Binding v2 contracts (supersede v1)
+
+Four surfaces were re-drafted and their v2 files are now the binding contracts. The v1 files are retained as `-v1-superseded` provenance only.
+
+- **Home v2** — `euro28-home-page-prototype-v2.html`. A single countdown replaces the twin countdown grid, because the prediction lock *is* the first kick-off. The featured match card uses the Groups card language. Every match card taps through to Match Centre. Content and ordering are state-dependent across pre-tournament, matchday-live and post-match. A small "How scoring works" link appears pre-tournament only.
+- **Groups v2** — `euro28-groups-page-prototype-v2.html`. Hero, watermark and banner are removed in favour of a compact strip carrying the view toggle, the joker count with the new playing-card icon, and progress. Cards carry date, time, stadium and host flag. The predicted group table and third-place table are always reachable as collapsible sections. A "Continue to your bracket" flow CTA is added. In-tournament, cards show the real score against the player's pick with points chips.
+- **KO Predictor v2** — `euro28-ko-predictor-prototype-v2.html`. Same card language as Groups, with score inputs labelled "90 mins". A 90-minute draw expands the same card inline to capture Extra time or Penalties, then the advancing team. A one-time dismissible notice states that KO Predictor is a separate competition whose points do not combine. A round rail replaces by-group and by-date switching. There is no completion flow; each round shows pending-fixture placeholders instead.
+- **Bracket v2** — `euro28-bracket-page-prototype-v2.html`. Mobile defaults to portrait stacked pick-a-winner cards in the same card language, tap-to-pick, with no score inputs and no jokers. A reversible "View as wall chart" opt-in is available in mobile landscape; the wall chart remains native on desktop and tablet. The Locked state gains Bracket and Health sub-tabs, carrying forward the existing approved Bracket Health contract: On your path, Alive on a different path, Route conflict, Out, plus the points-still-available strip. The predicted bracket stays strictly separate from live results.
+
+These four supersede Bracket G and KO Predictor F as previously recorded in v1.14. Recording a contract here authorises no implementation; each of the four surfaces is separate, later work.
+
 - Light and dark theme treatment, realistic long-content states, loading/empty/partial states and hard-case football content are part of the approval standard, not optional polish.
 
-The design-contract drafting programme is docs/reference-only until a later separately approved implementation stage. It authorises no product-code change, no route change, no scoring or resolver change, no Supabase write, no Auth configuration change and no migration. Active migrations remain 19 and Migration 019 must not be created by visual-contract work.
+The design-contract drafting programme is docs/reference-only until a later separately approved implementation stage. It authorises no product-code change, no route change, no scoring or resolver change, no Supabase write, no Auth configuration change and no migration. Active migrations remain 20 and no further migration may be created by visual-contract work.
 
 ## 13. Deferred design decisions
 
@@ -306,6 +316,7 @@ The design-contract drafting programme is docs/reference-only until a later sepa
 
 ## Change log
 
+- **v1.15:** Recorded Home v2, Groups v2, KO Predictor v2 and Bracket v2 as the binding visual contracts, superseding their v1 predecessors (v1 files retained with a `-v1-superseded` suffix as provenance only). Home moves to a single countdown because the lock is the first kick-off; Groups drops the hero/watermark/banner for a compact strip; KO Predictor gains inline extra-time/penalties expansion and a round rail; Bracket defaults to portrait stacked pick-a-winner cards with a reversible wall-chart opt-in, and absorbs the approved Bracket Health contract as a Health sub-tab in the Locked state. Amended the one-contract-per-surface rule to permit clearly suffixed superseded files. No implementation is authorised by this record.
 - **v1.14:** Recorded Bracket G and KO Predictor F as approved visual contracts, recorded League table D as the approved Leagues refinement, and left Bracket Health unapproved for a later candidate.
 - **v1.13:** Recorded the approved League visual contract alongside the approved Groups Night Broadcast anchor; clarified that Bracket and KO Predictor remain unapproved candidates until Nicky approves a variant or merge.
 - **v1.12:** Recorded the visual-contract rule: approved self-contained HTML references become binding layout/hierarchy/state contracts, but are not code to port; one approved contract is retained per surface; Groups Night Broadcast remains the identity anchor; visual work cannot override functional decisions, signup gates, migrations, scoring, resolver or Original/KO boundaries.

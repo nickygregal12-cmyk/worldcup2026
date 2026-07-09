@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>KO Predictor v2 — Euro 2028 Predictor (prototype)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===== CHARTER TOKENS (identical to approved prototypes) ===== */
+:root{
+  --brand:#173A66; --brand-strong:#0E2A4F; --accent:#0EA5E9; --on-accent:#FFFFFF;
+  --surface-page:#F6F8FB; --surface-raised:#FFFFFF; --surface-sunken:#EAEEF4;
+  --text-primary:#0F1726; --text-secondary:#3E4A5E; --text-muted:#69758A;
+  --border:#D9E0EA;
+  --state-success:#15803D; --state-success-bg:#DCFCE7;
+  --state-partial:#B45309; --state-partial-bg:#FEF3C7;
+  --state-live:#DC2626; --state-live-bg:#FEE2E2;
+  --joker:#B8860B; --joker-bg:#FEF9E7;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:16px;
+  --shadow-1:0 1px 2px rgba(15,23,38,.06);
+  --font-display:'Space Grotesk',sans-serif; --font-body:'Inter',sans-serif;
+}
+[data-theme="dark"]{
+  --brand:#1C4275; --brand-strong:#173A66; --accent:#38BDF8; --on-accent:#0A0F1C;
+  --surface-page:#0A0F1C; --surface-raised:#131B2C; --surface-sunken:#070B14;
+  --text-primary:#EEF2F8; --text-secondary:#B4C0D2; --text-muted:#7B8799;
+  --border:#22304A;
+  --state-success:#4ADE80; --state-success-bg:#122D1D;
+  --state-partial:#FBBF24; --state-partial-bg:#2E230D;
+  --state-live:#FF5A5A; --state-live-bg:#3A1418;
+  --joker:#FACC15; --joker-bg:#2B2410;
+  --shadow-1:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{background:var(--surface-page);color:var(--text-primary);font-family:var(--font-body);font-size:16px;line-height:1.5;padding-bottom:92px}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+button{font:inherit;cursor:pointer;color:inherit;background:none;border:none;padding:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:var(--radius-sm)}
+.num{font-variant-numeric:tabular-nums}
+.app{max-width:560px;margin:0 auto;padding:12px 12px 0}
+svg{display:block}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* ===== header ===== */
+.hdr{background:var(--brand);color:#EEF2F8;border-radius:var(--radius-md);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:56px}
+.wordmark{font-family:var(--font-display);font-weight:700;font-size:18px;letter-spacing:.02em}
+.save-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;background:rgba(255,255,255,.14);border-radius:999px;padding:5px 11px}
+
+/* ===== one-time notice (dismissible) ===== */
+.notice{display:flex;align-items:flex-start;gap:10px;margin-top:12px;background:var(--surface-raised);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:var(--radius-md);padding:12px 14px;box-shadow:var(--shadow-1)}
+.notice .txt{flex:1;font-size:13px;color:var(--text-secondary)}
+.notice .txt b{color:var(--text-primary)}
+.notice .txt a{color:var(--accent);font-weight:500}
+.notice .x{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-muted);background:var(--surface-sunken)}
+
+/* ===== compact top strip: round rail · jokers · progress ===== */
+.topstrip{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}
+.rail{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.rail button{flex:0 0 auto;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface-raised);font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--text-secondary)}
+.rail button[aria-selected="true"]{background:var(--brand);border-color:var(--brand);color:#EEF2F8}
+.strip-stats{display:flex;align-items:center;gap:10px}
+.jokerpill{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--joker);background:var(--joker-bg);border-radius:999px;padding:6px 12px}
+.jokerpill svg{width:15px;height:15px}
+.progresspill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text-secondary)}
+.mini-meter{width:54px;height:6px;border-radius:999px;background:var(--surface-sunken);overflow:hidden}
+.mini-meter i{display:block;height:100%;background:var(--accent);border-radius:999px}
+
+/* ===== match cards — same anatomy as Groups v2 ===== */
+.mcard{background:var(--surface-raised);border:1px solid var(--border);border-radius:var(--radius-md);padding:13px 14px;margin-top:10px;box-shadow:var(--shadow-1)}
+.mtop{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+.mmeta{display:flex;align-items:center;gap:5px;color:var(--text-muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mflag{width:13px;height:13px;border-radius:50%;flex:none}
+.jbtn{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:999px;padding:5px 11px;border:1px solid var(--border);color:var(--text-muted);flex:none}
+.jbtn svg{width:13px;height:13px}
+.jbtn.on{background:var(--joker-bg);border-color:var(--joker);color:var(--joker)}
+.mline{display:flex;align-items:center;gap:8px;margin-top:11px}
+.team{display:flex;align-items:center;gap:7px;font-size:14.5px;font-weight:500;flex:1;min-width:0}
+.team img{width:24px;height:24px;border-radius:50%;flex:none}
+.team .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scorebox{display:flex;flex-direction:column;align-items:center;gap:3px;flex:none}
+.scorebox .lbl{font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.scorebox .ins{display:flex;align-items:center;gap:6px}
+.score-in{width:42px;height:44px;text-align:center;font-family:var(--font-display);font-weight:700;font-size:18px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-page);color:var(--text-primary)}
+.score-in:focus{border-color:var(--accent);outline:none}
+.score-sep{font-family:var(--font-display);font-weight:700;color:var(--text-muted)}
+
+/* ===== inline draw step: method + advancing team (appears on 90-min draw) ===== */
+.drawstep{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)}
+.drawstep .q{font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:8px}
+.optrow{display:flex;gap:8px}
+.opt{flex:1;min-height:40px;display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid var(--border);border-radius:var(--radius-md);background:var(--surface-page);font-size:13px;font-weight:500;color:var(--text-secondary)}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 9%,var(--surface-raised));color:var(--text-primary);font-weight:600}
+.opt img{width:20px;height:20px;border-radius:50%}
+.drawstep .q2{margin-top:12px}
+
+/* ===== in-tournament full-time state ===== */
+.ft-centre{flex:none;text-align:center;min-width:64px}
+.ft-centre .sc{font-family:var(--font-display);font-weight:700;font-size:19px}
+.ft-centre .how{font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)}
+.ft-centre .yours{font-size:10.5px;color:var(--text-muted);margin-top:1px}
+.chip{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;flex:none}
+.chip.x{background:var(--state-success-bg);color:var(--state-success)}
+.chip.o{background:var(--state-partial-bg);color:var(--state-partial)}
+.chip.z{background:var(--surface-sunken);color:var(--text-muted)}
+.chip.jok{background:var(--joker-bg);color:var(--joker)}
+.mfoot-pick{display:flex;align-items:center;gap:6px;margin-top:10px;padding-top:9px;border-top:1px solid var(--border);font-size:12px;color:var(--text-muted)}
+.mfoot-pick img{width:16px;height:16px;border-radius:50%}
+.mfoot-pick b{color:var(--text-secondary);font-weight:600}
+
+/* pending-fixture placeholder (round not decided yet) */
+.pend{border-style:dashed;text-align:center;color:var(--text-muted);font-size:13px;padding:20px 14px}
+.round-h{font-family:var(--font-display);font-weight:700;font-size:15px;margin:18px 2px 2px}
+
+/* ===== nav ===== */
+.nav{position:fixed;left:0;right:0;bottom:0;background:var(--surface-raised);border-top:1px solid var(--border);z-index:40}
+.nav-inner{max-width:560px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-around;padding:6px 4px calc(8px + env(safe-area-inset-bottom))}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--text-muted);min-width:56px;min-height:48px;justify-content:flex-end;padding:2px;border-radius:var(--radius-sm)}
+.nav-item svg{width:22px;height:22px}
+.nav-item[aria-current="page"]{color:var(--accent);font-weight:500}
+.nav-home .circle{width:46px;height:46px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;margin-top:-18px;border:4px solid var(--surface-page)}
+
+/* ===== prototype strip ===== */
+.proto{margin:30px 0 8px;padding:10px 12px;border:1.5px dashed var(--border);border-radius:var(--radius-sm);font-size:11.5px;color:var(--text-muted)}
+.proto .prow{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;flex-wrap:wrap}
+.seg{display:flex;gap:4px;background:var(--surface-sunken);border-radius:999px;padding:3px}
+.seg button{min-height:30px;padding:0 12px;border-radius:999px;font-size:11.5px;font-weight:500;color:var(--text-muted)}
+.seg button[aria-selected="true"]{background:var(--surface-raised);color:var(--text-primary);box-shadow:var(--shadow-1)}
+.switch{position:relative;width:40px;height:24px;border-radius:999px;background:var(--surface-sunken);border:1px solid var(--border);flex:none}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--surface-raised);border:1px solid var(--border);transition:left .15s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{left:18px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-jokercard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5.5" y="3" width="13" height="18" rx="2" transform="rotate(6 12 12)"/>
+    <path d="M9.2 14.5c.3-2.2.5-3.4 1-4.6.3.9.8 1.5 1.6 1.8.2-1.1.6-2 1.2-2.9.5.9.9 1.8 1 2.9.8-.3 1.3-.9 1.7-1.7.4 1.2.5 2.4.7 4.5"/>
+    <circle cx="9" cy="9.3" r=".6" fill="currentColor" stroke="none"/>
+    <circle cx="12.9" cy="8" r=".6" fill="currentColor" stroke="none"/>
+    <circle cx="16.4" cy="9.5" r=".6" fill="currentColor" stroke="none"/>
+  </symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></symbol>
+</svg>
+
+<div class="app">
+  <header class="hdr">
+    <h1 class="wordmark">KO Predictor</h1>
+    <span class="save-pill"><svg width="12" height="12"><use href="#i-check"/></svg>Saved</span>
+  </header>
+
+  <!-- one-time dismissible notice (first live day) -->
+  <div class="notice" id="notice">
+    <span class="txt"><b>A fresh, separate competition.</b> KO Predictor points don't combine with your Original Predictor — everyone starts level from the Round of 16. <a href="#">How scoring works</a></span>
+    <button class="x" aria-label="Dismiss" onclick="this.parentElement.remove()"><svg width="14" height="14"><use href="#i-x"/></svg></button>
+  </div>
+
+  <!-- compact strip: round rail · KO jokers · progress -->
+  <div class="topstrip">
+    <div class="rail" role="tablist">
+      <button role="tab" aria-selected="true">R16</button>
+      <button role="tab" aria-selected="false">QF</button>
+      <button role="tab" aria-selected="false">SF</button>
+      <button role="tab" aria-selected="false">Final</button>
+    </div>
+    <div class="strip-stats">
+      <span class="jokerpill"><svg><use href="#i-jokercard"/></svg><span class="num">2 / 5</span></span>
+      <span class="progresspill"><span class="mini-meter"><i style="width:50%"></i></span><span class="num">4/8</span></span>
+    </div>
+  </div>
+
+  <!-- ============ PREDICTING STATE ============ -->
+  <section id="state-pre">
+    <div class="round-h">Round of 16</div>
+
+    <!-- Card 1: predicted a WINNER in 90 — no draw step needed (normal time implied) -->
+    <div class="mcard">
+      <div class="mtop">
+        <span class="mmeta">Sat 24 June · 5:00pm · Wembley <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-eng.svg" alt=""></span>
+        <button class="jbtn on" aria-pressed="true"><svg><use href="#i-jokercard"/></svg>Joker 2×</button>
+      </div>
+      <div class="mline">
+        <span class="team"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""><span class="nm">Scotland</span></span>
+        <span class="scorebox">
+          <span class="lbl">90 mins</span>
+          <span class="ins">
+            <input class="score-in num" type="text" inputmode="numeric" maxlength="2" value="2" aria-label="Scotland 90-minute score">
+            <span class="score-sep">–</span>
+            <input class="score-in num" type="text" inputmode="numeric" maxlength="2" value="0" aria-label="Croatia 90-minute score">
+          </span>
+        </span>
+        <span class="team" style="justify-content:flex-end"><span class="nm">Croatia</span><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/hr.svg" alt=""></span>
+      </div>
+    </div>
+
+    <!-- Card 2: predicted a DRAW in 90 — inline step expands: method, then advancing team -->
+    <div class="mcard">
+      <div class="mtop">
+        <span class="mmeta">Sat 24 June · 8:00pm · Hampden Park <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""></span>
+        <button class="jbtn"><svg><use href="#i-jokercard"/></svg>Joker</button>
+      </div>
+      <div class="mline">
+        <span class="team"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt=""><span class="nm">France</span></span>
+        <span class="scorebox">
+          <span class="lbl">90 mins</span>
+          <span class="ins">
+            <input class="score-in num" type="text" inputmode="numeric" maxlength="2" value="1" aria-label="France 90-minute score">
+            <span class="score-sep">–</span>
+            <input class="score-in num" type="text" inputmode="numeric" maxlength="2" value="1" aria-label="Netherlands 90-minute score">
+          </span>
+        </span>
+        <span class="team" style="justify-content:flex-end"><span class="nm">Netherlands</span><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/nl.svg" alt=""></span>
+      </div>
+      <div class="drawstep">
+        <div class="q">Level after 90 — how is it decided?</div>
+        <div class="optrow">
+          <button class="opt" aria-pressed="true">Extra time</button>
+          <button class="opt" aria-pressed="false">Penalties</button>
+        </div>
+        <div class="q q2">Who goes through?</div>
+        <div class="optrow">
+          <button class="opt" aria-pressed="false"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt="">France</button>
+          <button class="opt" aria-pressed="true"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/nl.svg" alt="">Netherlands</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 3: untouched yet -->
+    <div class="mcard">
+      <div class="mtop">
+        <span class="mmeta">Sun 25 June · 2:00pm · Millennium Stadium <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-wls.svg" alt=""></span>
+        <button class="jbtn"><svg><use href="#i-jokercard"/></svg>Joker</button>
+      </div>
+      <div class="mline">
+        <span class="team"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/de.svg" alt=""><span class="nm">Germany</span></span>
+        <span class="scorebox">
+          <span class="lbl">90 mins</span>
+          <span class="ins">
+            <input class="score-in num" type="text" inputmode="numeric" maxlength="2" value="" aria-label="Germany 90-minute score">
+            <span class="score-sep">–</span>
+            <input class="score-in num" type="text" inputmode="numeric" maxlength="2" value="" aria-label="Portugal 90-minute score">
+          </span>
+        </span>
+        <span class="team" style="justify-content:flex-end"><span class="nm">Portugal</span><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/pt.svg" alt=""></span>
+      </div>
+    </div>
+
+    <!-- pending fixture: rest of round not decided yet -->
+    <div class="mcard pend">More Round of 16 fixtures appear here as group results confirm them.</div>
+  </section>
+
+  <!-- ============ IN-TOURNAMENT STATE ============ -->
+  <section id="state-in" hidden>
+    <div class="round-h">Round of 16</div>
+
+    <!-- exact + method bonus, joker doubled -->
+    <div class="mcard">
+      <div class="mtop">
+        <span class="mmeta">Sat 24 June · Full time · Wembley <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-eng.svg" alt=""></span>
+        <span style="display:flex;gap:5px"><span class="chip jok"><svg style="display:inline-block;vertical-align:-2px;width:10px;height:10px"><use href="#i-jokercard"/></svg> 2×</span><span class="chip x">Exact +40</span></span>
+      </div>
+      <div class="mline">
+        <span class="team"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""><span class="nm">Scotland</span></span>
+        <span class="ft-centre"><div class="sc num">2 – 0</div><div class="how">90 mins</div><div class="yours">you: 2–0</div></span>
+        <span class="team" style="justify-content:flex-end"><span class="nm">Croatia</span><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/hr.svg" alt=""></span>
+      </div>
+      <div class="mfoot-pick"><span>You picked</span><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""><b>Scotland</b><span>to advance ✓</span></div>
+    </div>
+
+    <!-- went to pens; outcome right, method right -->
+    <div class="mcard">
+      <div class="mtop">
+        <span class="mmeta">Sat 24 June · Full time · Hampden Park <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-sct.svg" alt=""></span>
+        <span class="chip o">Outcome + method +18</span>
+      </div>
+      <div class="mline">
+        <span class="team"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/fr.svg" alt=""><span class="nm">France</span></span>
+        <span class="ft-centre"><div class="sc num">1 – 1</div><div class="how">Pens 3–4</div><div class="yours">you: 1–1 · pens</div></span>
+        <span class="team" style="justify-content:flex-end"><span class="nm">Netherlands</span><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/nl.svg" alt=""></span>
+      </div>
+      <div class="mfoot-pick"><span>You picked</span><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/nl.svg" alt=""><b>Netherlands</b><span>to advance ✓</span></div>
+    </div>
+
+    <!-- not kicked off yet -->
+    <div class="mcard">
+      <div class="mtop">
+        <span class="mmeta">Sun 25 June · 2:00pm · Millennium Stadium <img class="mflag" src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/gb-wls.svg" alt=""></span>
+        <span class="chip z">Kicks off soon</span>
+      </div>
+      <div class="mline">
+        <span class="team"><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/de.svg" alt=""><span class="nm">Germany</span></span>
+        <span class="ft-centre"><div class="sc num" style="color:var(--text-muted)">2 – 1</div><div class="yours">your pick · 90 mins</div></span>
+        <span class="team" style="justify-content:flex-end"><span class="nm">Portugal</span><img src="https://cdn.jsdelivr.net/gh/hatscripts/circle-flags/flags/pt.svg" alt=""></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- prototype controls -->
+  <div class="proto">
+    <div class="prow">
+      <span>Prototype · KO Predictor v2 — state:</span>
+      <div class="seg" role="tablist">
+        <button role="tab" aria-selected="true" data-ph="pre">Predicting</button>
+        <button role="tab" aria-selected="false" data-ph="in">In tournament</button>
+      </div>
+      <span style="display:flex;align-items:center;gap:6px">Dark <button class="switch" role="switch" aria-checked="false" id="darkSwitch"></button></span>
+    </div>
+    <div class="prow" style="min-height:auto;padding-top:4px">
+      <span>Matches Groups v2 language exactly: compact strip (round rail · KO joker count 2/5 with playing-card icon · progress), straight into cards with date · time · stadium + host flag. Score inputs labelled "90 mins"; a 90-min draw expands the SAME card inline: Extra time / Penalties, then who goes through. One-time dismissible notice on first live day: separate competition, points never combine, rules link. Pending fixtures appear per round as group results confirm them — no completion flow needed.</span>
+    </div>
+  </div>
+</div>
+
+<nav class="nav" aria-label="Main">
+  <div class="nav-inner">
+    <a class="nav-item" href="#"><svg><use href="#i-list"/></svg>Groups</a>
+    <a class="nav-item" href="#" aria-current="page"><svg><use href="#i-trophy"/></svg>KO</a>
+    <a class="nav-item nav-home" href="#"><span class="circle"><svg width="22" height="22"><use href="#i-home"/></svg></span>Home</a>
+    <a class="nav-item" href="#"><svg><use href="#i-users"/></svg>Leagues</a>
+    <a class="nav-item" href="#"><svg><use href="#i-more"/></svg>More</a>
+  </div>
+</nav>
+
+<script>
+document.querySelectorAll('[data-ph]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-ph]').forEach(x=>x.setAttribute('aria-selected','false'));
+  b.setAttribute('aria-selected','true');
+  document.getElementById('state-pre').hidden=b.dataset.ph!=='pre';
+  document.getElementById('state-in').hidden=b.dataset.ph!=='in';
+}));
+const sw=document.getElementById('darkSwitch');
+sw.addEventListener('click',()=>{
+  const on=sw.getAttribute('aria-checked')!=='true';
+  sw.setAttribute('aria-checked',String(on));
+  document.documentElement.setAttribute('data-theme',on?'dark':'');
+});
+/* demo: toggle option buttons within each row */
+document.querySelectorAll('.optrow').forEach(row=>{
+  row.querySelectorAll('.opt').forEach(o=>o.addEventListener('click',()=>{
+    row.querySelectorAll('.opt').forEach(x=>x.setAttribute('aria-pressed','false'));
+    o.setAttribute('aria-pressed','true');
+  }));
+});
+</script>
+</body>
+</html>

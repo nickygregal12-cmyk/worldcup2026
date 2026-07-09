@@ -13,6 +13,19 @@ Approved files should be copied byte-exact unless a separate final-sweep stage i
 | Bracket G | `docs/reference-prototypes/euro28-bracket-page-prototype.html` |
 | KO Predictor F | `docs/reference-prototypes/euro28-ko-predictor-contract.html` or existing KO Predictor reference |
 
+## Superseded by v2 (Stage CONTRACTS-PROTOTYPE-V2-INSTALL)
+
+The rows above record what was installed at `96a9624`. Four of those surfaces have since been re-drafted. The v2 file is the binding contract; the v1 file is retained under a `-v1-superseded` suffix as provenance only and must not be implemented against.
+
+| Contract | Binding (v2) | Retained provenance (v1) |
+|---|---|---|
+| Home | `docs/reference-prototypes/euro28-home-page-prototype-v2.html` | `euro28-home-page-prototype-v1-superseded.html` |
+| Groups | `docs/reference-prototypes/euro28-groups-page-prototype-v2.html` | `euro28-groups-page-prototype-v1-superseded.html` |
+| KO Predictor | `docs/reference-prototypes/euro28-ko-predictor-prototype-v2.html` | `euro28-ko-predictor-contract-v1-superseded.html` |
+| Bracket | `docs/reference-prototypes/euro28-bracket-page-prototype-v2.html` | `euro28-bracket-page-prototype-v1-superseded.html` |
+
+Note the KO Predictor v1 was named `euro28-ko-predictor-contract.html`, not `-prototype.html`; the v2 file adopts the `-prototype-v2` stem.
+
 ## To record from later approved candidates
 
 | Source file from chat/downloads | Suggested target |
