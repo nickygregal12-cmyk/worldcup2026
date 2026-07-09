@@ -1,3 +1,5 @@
+> **SUPERSEDED SNAPSHOT — do not work from this copy.** This file is part of the locked v9 install pack and is frozen at its 2026-07-06 pack state. The canonical, maintained version is `docs/APPROVED-VISUAL-CONTRACT-INVENTORY.md`, which has moved on since this pack was installed. If a filename search brought you here, use the canonical copy.
+
 # Approved visual-contract inventory — locked set v2
 
 This inventory records the approved/confirmed visual contracts after the design workshop.

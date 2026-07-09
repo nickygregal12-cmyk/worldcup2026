@@ -1,3 +1,5 @@
+> **SUPERSEDED SNAPSHOT — do not work from this copy.** This file is part of the locked v9 install pack and is frozen at its 2026-07-06 pack state. The canonical, maintained version is `docs/REFERENCE-FILE-INSTALL-MAP.md`, which has moved on since this pack was installed. If a filename search brought you here, use the canonical copy.
+
 # Reference file install map — locked set v5
 
 This map lists approved HTML files that should be copied into `docs/reference-prototypes/` during the recording stage.
