@@ -81,7 +81,7 @@ assertIncludes('src/journey/__tests__/groupsPresentationModel.test.js', [
   'GROUPS_TABLE_KEY.THIRD_PLACE',
 ])
 
-assertIncludes('docs/STAGE-13G-GROUPS-2-PREMIUM-VIEW.md', [
+assertIncludes('docs/archive/STAGE-13G-GROUPS-2-PREMIUM-VIEW.md', [
   'By group / By date',
   'group tag',
   'sticky Tables pill',

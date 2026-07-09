@@ -9,7 +9,7 @@ const exists = relativePath => fs.existsSync(path.join(root, relativePath))
 const read = relativePath => fs.readFileSync(path.join(root, relativePath), 'utf8')
 
 for (const file of [
-  'docs/STAGE-13E-TEAM-PROFILE-SHEET.md',
+  'docs/archive/STAGE-13E-TEAM-PROFILE-SHEET.md',
   'scripts/check-team-profile-sheet.mjs',
   'src/teamProfile/TeamProfileProvider.jsx',
   'src/teamProfile/TeamProfileSheet.jsx',

@@ -15,8 +15,8 @@
 //   2. In any governing doc with more than one "Version X.Y" line, the
 //      header (first) version is the highest — appended changelog entries
 //      can never overtake a stale header.
-//   3. Every designated return-point commit reference in the governing docs
-//      matches the deployed head declared by the newest handover doc.
+//   3. Every live (non-historical) return-point commit reference in the
+//      governing docs matches PROJECT-CONTROL.md's Latest verified commit.
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -52,11 +52,14 @@ if (highestNumber !== actualCount) {
 // similar are not migration claims and must never false-positive.
 const COUNT_CLAIM = /(?:active migrations? remains?(?: at)? \**(\d+)\**|active migration count[^0-9]{0,12}\**(\d+)\**|exactly \**(\d+)\** (?:active )?migrations)/gi
 
-// Closed stage docs are frozen historical evidence ("migrations remain 14"
-// was true at that stage's close) and are exempt. Only documents that assert
-// CURRENT state must always be true now: the governing docs, every dated
-// handover from the current head, and every NEXT-CHAT prompt.
-const allDocs = walkFiles(root, 'docs').filter(file => file.endsWith('.md') && !file.startsWith('docs/reference-prototypes/'))
+// docs/archive/ is frozen historical evidence — its claims were true when the
+// docs closed and are NEVER edited to track later state. Only documents that
+// assert CURRENT state must always be true now: the governing docs plus any
+// non-archived handover/NEXT-CHAT prompt (normally none; new ones belong in
+// the archive once superseded).
+const allDocs = walkFiles(root, 'docs').filter(file => file.endsWith('.md')
+  && !file.startsWith('docs/reference-prototypes/')
+  && !file.startsWith('docs/archive/'))
 const handoverDocs = allDocs.filter(file => /HANDOVER-\d{8}/.test(file)).sort()
 const currentStateDocs = [
   ...GOVERNING_DOCS,
@@ -99,23 +102,31 @@ for (const file of GOVERNING_DOCS) {
   }
 }
 
-// ── 3. Return-point commits agree with the newest handover head ────────────
-const newestHandover = handoverDocs[handoverDocs.length - 1]
-if (!newestHandover) {
-  fail('No dated handover doc (docs/*HANDOVER-YYYYMMDD*.md) found to anchor return-point coherence.')
+// ── 3. Return-point commits agree with the PROJECT-CONTROL dashboard ───────
+// Handover prompts are archived history now; the live dashboard is the single
+// current-state anchor. Its "Latest verified commit" must be a real ancestor
+// of this checkout, and every return-point claim in governing docs must agree.
+const dashboard = 'PROJECT-CONTROL.md'
+const dashboardSource = fs.existsSync(path.join(root, dashboard)) ? read(dashboard) : null
+if (!dashboardSource) {
+  fail('PROJECT-CONTROL.md is missing — the live dashboard anchors return-point coherence.')
 } else {
-  const headMatch = read(newestHandover).match(/deployed (?:commit|head)[^`\n]*`([0-9a-f]{7,40})/i)
+  const headMatch = dashboardSource.match(/Latest verified commit[^`\n]*`([0-9a-f]{7,40})/i)
   if (!headMatch) {
-    fail(`${newestHandover} does not declare a deployed head ("deployed commit ... \`<hash>\`") — the newest handover must anchor the return point.`)
+    fail('PROJECT-CONTROL.md does not declare a "Latest verified commit" — the dashboard must anchor the return point.')
   } else {
     const head = headMatch[1]
+    // Governing ledgers are append-only: an anchor qualified as "before <stage>"
+    // is a frozen historical record and must NOT be edited to track later state.
+    // Only unqualified return-point claims are live and must match the dashboard.
     const RETURN_POINT = /(?:expected git commit[^`\n]*|latest known completed product commit[^`\n]*|current deployed head[^`\n]*|latest deployed commit[^`\n]*)`([0-9a-f]{7,40})/gi
     for (const file of GOVERNING_DOCS) {
       if (!fs.existsSync(path.join(root, file))) continue
       const source = read(file)
       for (const match of source.matchAll(RETURN_POINT)) {
+        if (/\bbefore\b/i.test(match[0])) continue
         if (!match[1].startsWith(head) && !head.startsWith(match[1])) {
-          fail(`${file} return point names \`${match[1]}\` but the newest handover (${newestHandover}) declares deployed head \`${head}\`. Update return points in the same commit as the handover.`)
+          fail(`${file} return point names \`${match[1]}\` but PROJECT-CONTROL.md declares latest verified commit \`${head}\`. Update return points in the same commit as the dashboard.`)
         }
       }
     }
@@ -129,4 +140,4 @@ if (errors.length > 0) {
   process.exit(1)
 }
 
-console.log(`Governance-coherence meta-audit passed. ${actualCount} migrations match every doc claim; version headers current; return points agree with ${newestHandover}.`)
+console.log(`Governance-coherence meta-audit passed. ${actualCount} migrations match every doc claim; version headers current; return points agree with PROJECT-CONTROL.md.`)

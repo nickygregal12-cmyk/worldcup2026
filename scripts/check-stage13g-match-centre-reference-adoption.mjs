@@ -21,8 +21,8 @@ function requireIncludes(file, content, markers) {
   }
 }
 
-const stageDoc = read('docs/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md')
-const matchCentreDoc = read('docs/STAGE-13F-C-EURO-MATCH-CENTRE.md')
+const stageDoc = read('docs/archive/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md')
+const matchCentreDoc = read('docs/archive/STAGE-13F-C-EURO-MATCH-CENTRE.md')
 const prototype = read('docs/reference-prototypes/euro28-match-centre-page-prototype.html')
 const expandedPrompt = read('docs/reference-prototypes/euro28-stage13g-expanded-agent-prompt.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
@@ -38,7 +38,7 @@ try {
   errors.push(`package.json is not valid JSON: ${error.message}`)
 }
 
-requireIncludes('docs/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md', stageDoc, [
+requireIncludes('docs/archive/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md', stageDoc, [
   'Stage 13G-MATCH-CENTRE-REF',
   'accepted docs/audit reference-adoption package',
   'implementation scheduled',
@@ -62,7 +62,7 @@ requireIncludes('docs/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md', stageDoc, [
   '13G-MATCH-CENTRE-1',
 ])
 
-requireIncludes('docs/STAGE-13F-C-EURO-MATCH-CENTRE.md', matchCentreDoc, [
+requireIncludes('docs/archive/STAGE-13F-C-EURO-MATCH-CENTRE.md', matchCentreDoc, [
   'Stage 13F-C',
   'Match Centre',
   'Original Predictor',

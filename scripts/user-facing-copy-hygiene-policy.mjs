@@ -1,7 +1,7 @@
 // Stage 13G-UI-HYGIENE (shared policy) — what counts as user-facing, what
 // vocabulary is banned there, and the explicit allowlist.
 //
-// Recreated deliberately per docs/STAGE-13G-UI-COPY-HYGIENE-REFERENCE.md
+// Recreated deliberately per docs/archive/STAGE-13G-UI-COPY-HYGIENE-REFERENCE.md
 // ("recreate them deliberately before wiring the audits"). This module is
 // imported by both check-user-facing-copy-hygiene.mjs and
 // check-user-facing-spec-echo.mjs, so the definition of "user-facing"

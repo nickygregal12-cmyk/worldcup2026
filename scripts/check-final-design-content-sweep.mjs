@@ -25,13 +25,13 @@ const forbidText = (file, marker, reason) => {
   if (exists(file) && has(file, marker)) errors.push(`${file} must not include "${marker}" — ${reason}.`)
 }
 
-const stageDoc = 'docs/STAGE-FINAL-DESIGN-CONTENT-SWEEP-1.md'
+const stageDoc = 'docs/archive/STAGE-FINAL-DESIGN-CONTENT-SWEEP-1.md'
 const contractDoc = 'docs/FINAL-DESIGN-CONTENT-SWEEP-CONTRACT.md'
 const register = 'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md'
 const ledger = 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md'
 const agentRules = 'docs/EURO28-AGENT-RULES-AND-ROADMAP.md'
 const roadmap = 'docs/PRODUCT-COMPLETENESS-ROADMAP.md'
-const batchOrder = 'docs/STREAMLINED-BATCH-ORDER.md'
+const batchOrder = 'docs/archive/STREAMLINED-BATCH-ORDER.md'
 const pkgFile = 'package.json'
 
 for (const file of [stageDoc, contractDoc, register, ledger, agentRules, roadmap, batchOrder, pkgFile]) {

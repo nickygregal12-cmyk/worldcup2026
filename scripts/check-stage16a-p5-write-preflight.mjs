@@ -26,13 +26,13 @@ function assertIncludes(label, text, marker) {
   if (!text.includes(marker)) fail(`${label} missing marker: ${marker}`)
 }
 
-const doc = read('docs/STAGE-16A-P5-STAGING-WRITE-PREFLIGHT.md')
-const scopeDoc = read('docs/STAGE-16A-SCOPE-ALIGNMENT.md')
+const doc = read('docs/archive/STAGE-16A-P5-STAGING-WRITE-PREFLIGHT.md')
+const scopeDoc = read('docs/archive/STAGE-16A-SCOPE-ALIGNMENT.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const agentRules = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
-const p3Doc = read('docs/STAGE-16A-P3-SEED-MANIFEST-DRY-RUN.md')
-const p4Doc = read('docs/STAGE-16A-P4-SEED-SQL-DRY-RUN.md')
+const p3Doc = read('docs/archive/STAGE-16A-P3-SEED-MANIFEST-DRY-RUN.md')
+const p4Doc = read('docs/archive/STAGE-16A-P4-SEED-SQL-DRY-RUN.md')
 const lib = read('scripts/lib/stage16aSeedWritePreflight.mjs')
 const generator = read('scripts/generate-stage16a-p5-write-preflight.mjs')
 const tests = read('scripts/__tests__/stage16aSeedWritePreflight.test.js')

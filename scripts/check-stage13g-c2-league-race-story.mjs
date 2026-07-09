@@ -19,7 +19,7 @@ const model = read('src/leagues/leagueModel.js')
 const presentation = read('src/leagues/LeaguePresentation.jsx')
 const tests = read('src/leagues/__tests__/leagueModel.test.js')
 const packageJson = JSON.parse(read('package.json') || '{}')
-const doc = read('docs/STAGE-13G-C2-LEAGUE-RACE-STORY.md')
+const doc = read('docs/archive/STAGE-13G-C2-LEAGUE-RACE-STORY.md')
 
 const migrations = existsSync('supabase/migrations')
   ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))

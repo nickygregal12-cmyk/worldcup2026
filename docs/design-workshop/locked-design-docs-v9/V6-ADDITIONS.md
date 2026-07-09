@@ -1,3 +1,5 @@
+> **PACK SNAPSHOT — do not work from this copy.** Part of the locked v9 install pack, frozen at its 2026-07-06 state. If a canonical version exists it lives outside the pack (docs/ or docs/archive/); a filename search that lands here should follow the canonical copy.
+
 # v6 additions — Admin Scenario Runner and simulation safety
 
 This v6 pack keeps the v5 locked visual-contract and missing-surface records intact, and adds two

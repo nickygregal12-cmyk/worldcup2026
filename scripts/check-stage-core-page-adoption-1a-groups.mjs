@@ -42,7 +42,7 @@ assertIncludes('src/journey/GroupsPredictorPolish.module.css', [
   'contractThirdPreview',
 ])
 
-assertIncludes('docs/STAGE-CORE-PAGE-ADOPTION-1A-GROUPS.md', [
+assertIncludes('docs/archive/STAGE-CORE-PAGE-ADOPTION-1A-GROUPS.md', [
   'STAGE-CORE-PAGE-ADOPTION-1A-GROUPS',
   'Night Broadcast',
   'native React/CSS',
@@ -116,7 +116,7 @@ assert(journeyContent.includes('PREDICTION_AUTOSAVE_NOTICE'), 'Prediction journe
 
 const forbiddenSource = ['src/resolver/', 'supabase/migrations/202607']
 for (const token of forbiddenSource) {
-  assert(!read('docs/STAGE-CORE-PAGE-ADOPTION-1A-GROUPS.md').includes(`Changed ${token}`), `Stage note must not claim forbidden change: ${token}`)
+  assert(!read('docs/archive/STAGE-CORE-PAGE-ADOPTION-1A-GROUPS.md').includes(`Changed ${token}`), `Stage note must not claim forbidden change: ${token}`)
 }
 
 const migrationsDir = path.join(root, 'supabase', 'migrations')

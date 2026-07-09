@@ -25,8 +25,8 @@ const requireText = (file, text, reason) => {
 
 const readinessFile = 'src/auth/publicSignupReadiness.js'
 const readinessTest = 'src/auth/__tests__/publicSignupReadiness.test.js'
-const stageDoc = 'docs/STAGE-OWNER-SIGNUP-DECISIONS.md'
-const readinessDoc = 'docs/STAGE-PUBLIC-SIGNUP-READINESS.md'
+const stageDoc = 'docs/archive/STAGE-OWNER-SIGNUP-DECISIONS.md'
+const readinessDoc = 'docs/archive/STAGE-PUBLIC-SIGNUP-READINESS.md'
 const roadmap = 'docs/PRODUCT-COMPLETENESS-ROADMAP.md'
 const register = 'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md'
 const ledger = 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md'

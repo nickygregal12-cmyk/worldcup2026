@@ -10,7 +10,7 @@ const exists = file => fs.existsSync(path.join(root, file))
 const fail = message => errors.push(message)
 
 const required = [
-  'docs/STAGE-13G-ADMIN-1-ADMIN-CONTROL-ROOM-RESTYLE.md',
+  'docs/archive/STAGE-13G-ADMIN-1-ADMIN-CONTROL-ROOM-RESTYLE.md',
   'src/admin/AdminOperations.jsx',
   'src/admin/AdminControlRoom.module.css',
   'src/admin/AdminOperationsCompletion.module.css',
@@ -23,7 +23,7 @@ const shellCss = read('src/admin/AdminControlRoom.module.css')
 const completionCss = read('src/admin/AdminOperationsCompletion.module.css')
 const service = read('src/admin/adminOperationsService.js')
 const appRoutes = read('src/app/appRoutes.js')
-const doc = read('docs/STAGE-13G-ADMIN-1-ADMIN-CONTROL-ROOM-RESTYLE.md')
+const doc = read('docs/archive/STAGE-13G-ADMIN-1-ADMIN-CONTROL-ROOM-RESTYLE.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const agent = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')

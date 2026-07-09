@@ -1,6 +1,9 @@
 # Project Control Dashboard
 
 Live repo-control dashboard for future agents. This is not a long history file.
+This document is the ONLY current-state summary; `check-governance-coherence.mjs`
+anchors return-point coherence to the "Latest verified commit" row below, so
+updating this dashboard in the same commit as the change is mandatory, not polite.
 
 ## Current State
 
@@ -8,46 +11,36 @@ Live repo-control dashboard for future agents. This is not a long history file.
 | --- | --- |
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
-| Current stage | `STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET-GRID-NATIVE-CONNECTORS-VERIFY-FALLBACK-AND-LAYOUT-REPAIR` |
-| Latest verified commit | `3bb3c6e Add agent control rules and project dashboard` |
+| Current stage | Repo hygiene and documentation consolidation (post structural-health-check remediation) |
+| Latest verified commit | `9781ec2 Execute the contained dead-code backlog: files, dependencies, orphan CSS` |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
-| Active migration count | 18 |
-| Migration 019 status | Not present; blocked unless approved or a real schema/read-contract gap is proved |
-| Immediate priority | Repair Original Bracket as a deterministic seven-lane bracket while preserving the fail-loud placement guard |
-| Next recommended stage | `STAGE-REPO-CONTROL-1B-AUDIT-AND-DOC-RETIREMENT-PLAN` after manual bracket visual review and commit approval |
+| Active migration count | 21 |
+| Latest migration | `202607090021_euro28_venue_metadata.sql` — applied locally AND on Euro staging |
+| Staging data parity | Full parity with local at 21 migrations (slots, kickoffs, Scotland profile, venue host nations) — see reports/REPORT-STAGING-RECONCILE-2026-07-09.md |
+| Immediate priority | Owner re-approval of mid-amendment prototypes, then visual-baseline blessing |
+| Next recommended stage | Prototype re-approval + `npm run visual:bless`, then continue feature/design work on a clean base |
 
 ## Current Blockers
 
-- Manual visual review is still required for the repaired Original Bracket wall-chart layout.
-- Public signup remains closed; SMTP/public-opening work is not approved by this stage.
-- Playwright is not currently proved installed or wired.
+- Public signup remains closed; SMTP/public-opening work is not approved.
+- Visual regression gate is built but NOT ARMED: baselines await prototype re-approval and owner blessing (`visual-baselines/README.md`).
+- Several reference prototypes are mid-amendment pending owner re-approval.
 
-## Deferred Findings
+## Verification Tiers
 
-- Hygiene debt exists: `.DS_Store`, `coverage/`, `supabase/.temp/`, `supabase/.branches/`, `node_modules/`, `.env.local`.
-- Audit/doc bloat needs a later controlled split, not this stage.
-- Original Bracket unknown wall placement now fails loudly in the working tree; seven-lane bracket layout is pending Nicky's visual review.
+- `npm run check` — every commit: 124 audits, lint, unit tests, build. Green at the verified commit above.
+- `npm run check:visual` — before any commit touching `src/**/*.css`, JSX layout or `docs/reference-prototypes/`; enforced by `audit:visual-freshness` in the main chain (armed once baselines are blessed).
+- Database tests (`test:db:*`) — when Supabase schema work happens.
 
 ## Do-Not-Touch Areas
 
-- `src/`
-- `supabase/`
-- `package.json`
-- CI workflows
-- migrations
-- production config and production data
-- scoring logic, resolver logic, Supabase Auth, public signup, and WC26 production references unless explicitly scoped
+- Production config and production data; WC26 production project (`ouhxawizadnwrhrjppld`) is blocked outright.
+- Scoring logic, resolver logic, Supabase Auth, public signup — unless explicitly scoped by Nicky.
+- `docs/archive/` — frozen history; never edited to track later state.
+- Quarantined legacy layer (`src/pages/`, `src/components/`, `src/store/`, `src/hooks/` and the audit-protected contract records) — see `scripts/check-legacy-boundary.mjs`.
 
-## Last Successful Gates
-
-Unknown — verify before relying on this.
-
-## Manual Visual Review Still Required
-
-None for this docs/process-control stage. UI/layout stages still require Nicky's visual approval before completion.
-
-## Source-Of-Truth Uncertainty
+## Source-Of-Truth Rules
 
 - Docs report proven reality, but docs are not proof alone.
-- Stage docs are historical unless promoted by `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`.
+- The living document set and each document's single job are indexed in `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`; anything in `docs/archive/` is historical evidence only.
 - If repo/runtime/tests/audits/build/deployment/Supabase disagree with docs, stop and record the conflict.

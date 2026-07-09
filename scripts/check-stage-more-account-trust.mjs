@@ -22,13 +22,13 @@ const requireText = (file, marker, reason) => {
   if (!has(file, marker)) errors.push(`${file} must record "${marker}" — ${reason}.`)
 }
 
-const stageDoc = 'docs/STAGE-MORE-ACCOUNT-TRUST-1.md'
+const stageDoc = 'docs/archive/STAGE-MORE-ACCOUNT-TRUST-1.md'
 const contractDoc = 'docs/MORE-ACCOUNT-TRUST-CONTRACT.md'
 const register = 'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md'
 const ledger = 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md'
 const agentRules = 'docs/EURO28-AGENT-RULES-AND-ROADMAP.md'
 const roadmap = 'docs/PRODUCT-COMPLETENESS-ROADMAP.md'
-const batchOrder = 'docs/STREAMLINED-BATCH-ORDER.md'
+const batchOrder = 'docs/archive/STREAMLINED-BATCH-ORDER.md'
 const pkgFile = 'package.json'
 
 for (const file of [stageDoc, contractDoc, register, ledger, agentRules, roadmap, batchOrder, pkgFile]) {

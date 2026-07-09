@@ -23,7 +23,7 @@ const requireText = (file, text, reason) => {
 const app = 'src/App.jsx'
 const copy = 'src/app/unknownRouteCopy.js'
 const routeTests = 'src/app/__tests__/appRoutes.test.js'
-const stageDoc = 'docs/STAGE-PRODUCT-UNKNOWN-ROUTE-FALLBACK.md'
+const stageDoc = 'docs/archive/STAGE-PRODUCT-UNKNOWN-ROUTE-FALLBACK.md'
 const roadmap = 'docs/PRODUCT-COMPLETENESS-ROADMAP.md'
 const register = 'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md'
 const ledger = 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md'

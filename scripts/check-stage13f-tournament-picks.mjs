@@ -17,7 +17,7 @@ requireText('src/contracts/tournamentPickContract.js', [
   'jokerAllowed: false',
   'playerSelectorActivationStage: \'17A\'',
 ])
-requireText('docs/STAGE-13F-I-TOURNAMENT-PICK-CONTRACT.md', [
+requireText('docs/archive/STAGE-13F-I-TOURNAMENT-PICK-CONTRACT.md', [
   '20 points',
   'nearest absolute distance',
   'joint winner',

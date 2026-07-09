@@ -9,7 +9,7 @@ const errors = []
 const fail = message => errors.push(message)
 
 const requiredFiles = [
-  'docs/STAGE-13G-C1-GUEST-IMPORT-PROMPT.md',
+  'docs/archive/STAGE-13G-C1-GUEST-IMPORT-PROMPT.md',
   'src/guest/GuestAccountTransfer.jsx',
   'src/guest/guestAccountTransferModel.js',
   'src/guest/guestAccountTransferPresentation.js',
@@ -26,7 +26,7 @@ const model = read('src/guest/guestAccountTransferModel.js')
 const presentation = read('src/guest/guestAccountTransferPresentation.js')
 const test = read('src/guest/__tests__/guestAccountTransferModel.test.js')
 const componentTest = read('src/guest/__tests__/GuestAccountTransfer.test.jsx')
-const doc = read('docs/STAGE-13G-C1-GUEST-IMPORT-PROMPT.md')
+const doc = read('docs/archive/STAGE-13G-C1-GUEST-IMPORT-PROMPT.md')
 
 for (const [file, text] of [
   ['guestAccountTransferModel.js', model],

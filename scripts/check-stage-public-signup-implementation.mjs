@@ -26,13 +26,13 @@ const files = [
   'src/auth/__tests__/authValidation.test.js',
   'src/auth/__tests__/euroAuthService.test.js',
   'src/auth/__tests__/publicSignupReadiness.test.js',
-  'docs/STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1.md',
+  'docs/archive/STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1.md',
   'docs/PUBLIC-SIGNUP-IMPLEMENTATION-CONTRACT.md',
   'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md',
   'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md',
   'docs/EURO28-AGENT-RULES-AND-ROADMAP.md',
   'docs/PRODUCT-COMPLETENESS-ROADMAP.md',
-  'docs/STREAMLINED-BATCH-ORDER.md',
+  'docs/archive/STREAMLINED-BATCH-ORDER.md',
   'package.json',
 ]
 for (const file of files) if (!exists(file)) errors.push(`${file} is missing.`)
@@ -66,10 +66,10 @@ const stageMarkers = [
   'No Supabase schema, RPC, RLS, service-role or browser write change',
   'No Migration 019',
 ]
-for (const file of ['docs/STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1.md', 'docs/PUBLIC-SIGNUP-IMPLEMENTATION-CONTRACT.md']) {
+for (const file of ['docs/archive/STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1.md', 'docs/PUBLIC-SIGNUP-IMPLEMENTATION-CONTRACT.md']) {
   for (const marker of stageMarkers) requireText(file, marker, 'stage contract must preserve implementation boundary')
 }
-for (const file of ['docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md', 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', 'docs/EURO28-AGENT-RULES-AND-ROADMAP.md', 'docs/PRODUCT-COMPLETENESS-ROADMAP.md', 'docs/STREAMLINED-BATCH-ORDER.md']) {
+for (const file of ['docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md', 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', 'docs/EURO28-AGENT-RULES-AND-ROADMAP.md', 'docs/PRODUCT-COMPLETENESS-ROADMAP.md', 'docs/archive/STREAMLINED-BATCH-ORDER.md']) {
   requireText(file, 'STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1', 'live docs must record the implementation stage')
   requireText(file, 'client-side pre-Auth display-name moderation', 'live docs must record moderation implementation')
   requireText(file, 'public registration remains closed', 'live docs must avoid opening signup prematurely')

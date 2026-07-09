@@ -37,3 +37,6 @@ reports/
 
 # Visual tier run outputs (screenshots, diff reports). Baselines in visual-baselines/ ARE committed.
 visual-artifacts/
+
+# Local agent-tooling state, never committed
+.claude/

@@ -1,3 +1,5 @@
+> **PACK SNAPSHOT — do not work from this copy.** Part of the locked v9 install pack, frozen at its 2026-07-06 state. If a canonical version exists it lives outside the pack (docs/ or docs/archive/); a filename search that lands here should follow the canonical copy.
+
 # v9 additions — Edge-case rules addendum
 
 This v9 pack keeps the v9 locked visual-contract, safety, streamlined batch and unresolved-tiebreaker

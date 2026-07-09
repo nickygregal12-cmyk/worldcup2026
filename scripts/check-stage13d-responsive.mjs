@@ -11,7 +11,7 @@ const read = relativePath => fs.readFileSync(path.join(root, relativePath), 'utf
 const requiredFiles = [
   'src/testFixtures/stage13dVisualFixture.js',
   'src/testFixtures/__tests__/stage13dVisualFixture.test.js',
-  'docs/STAGE-13D-BATCH-2-RESPONSIVE.md',
+  'docs/archive/STAGE-13D-BATCH-2-RESPONSIVE.md',
   'docs/design-baselines/stage13d/README.md',
 ]
 for (const file of requiredFiles) if (!exists(file)) fail(`Stage 13D responsive file is missing: ${file}`)

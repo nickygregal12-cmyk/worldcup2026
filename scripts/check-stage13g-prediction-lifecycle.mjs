@@ -20,7 +20,7 @@ const requiredFiles = [
   'src/koPredictor/__tests__/koPredictorPresentationModel.test.js',
   'src/journey/PredictionLifecycle.module.css',
   'src/koPredictor/KoPredictorLifecycle.module.css',
-  'docs/STAGE-13G-B-PREDICTION-LIFECYCLE.md',
+  'docs/archive/STAGE-13G-B-PREDICTION-LIFECYCLE.md',
 ]
 
 for (const file of requiredFiles) {

@@ -7,7 +7,7 @@ const required = [
   'src/bracketHealth/OriginalBracketHealth.jsx',
   'src/bracketHealth/OriginalBracketHealth.module.css',
   'src/bracketHealth/__tests__/bracketHealthModel.test.js',
-  'docs/STAGE-13F-D-ORIGINAL-BRACKET-HEALTH.md',
+  'docs/archive/STAGE-13F-D-ORIGINAL-BRACKET-HEALTH.md',
 ]
 for (const file of required) {
   if (!fs.existsSync(path.join(root, file))) throw new Error(`Missing Stage 13F-D file: ${file}`)

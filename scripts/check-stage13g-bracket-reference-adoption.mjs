@@ -20,7 +20,7 @@ function requireIncludes(file, content, tokens) {
   }
 }
 
-const doc = read('docs/STAGE-13G-BRACKET-REFERENCE-ADOPTION.md')
+const doc = read('docs/archive/STAGE-13G-BRACKET-REFERENCE-ADOPTION.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const agent = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
@@ -30,7 +30,7 @@ const charter = read('docs/EURO28-DESIGN-CHARTER.md')
 const prototype = read('docs/reference-prototypes/euro28-bracket-page-prototype-v2.html')
 const packageJson = read('package.json')
 
-requireIncludes('docs/STAGE-13G-BRACKET-REFERENCE-ADOPTION.md', doc, [
+requireIncludes('docs/archive/STAGE-13G-BRACKET-REFERENCE-ADOPTION.md', doc, [
   'Stage 13G-BRACKET-REF',
   'Contract change',
   'below `900px`',

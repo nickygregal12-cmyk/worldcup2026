@@ -20,7 +20,7 @@ const requireText = (file, text, reason) => {
   if (!has(file, text)) errors.push(`${file} must record "${text}" — ${reason}.`)
 }
 
-const stageDoc = 'docs/STAGE-PRODUCT-GATE-DECISIONS.md'
+const stageDoc = 'docs/archive/STAGE-PRODUCT-GATE-DECISIONS.md'
 const roadmap = 'docs/PRODUCT-COMPLETENESS-ROADMAP.md'
 const register = 'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md'
 const ledger = 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md'

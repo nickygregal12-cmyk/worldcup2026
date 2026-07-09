@@ -20,7 +20,7 @@ for (const file of [
   'src/tournament/TournamentOverview.module.css',
   'src/tournament/tournamentPageModel.js',
   'src/app/appRoutes.js',
-  'docs/STAGE-RULES-1A-RULES-HUB.md',
+  'docs/archive/STAGE-RULES-1A-RULES-HUB.md',
 ]) {
   if (!exists(file)) fail(`Required RULES-1A file is missing: ${file}`)
 }
@@ -93,7 +93,7 @@ for (const file of [
   'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md',
   'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md',
   'docs/EURO28-AGENT-RULES-AND-ROADMAP.md',
-  'docs/STAGE-RULES-1A-RULES-HUB.md',
+  'docs/archive/STAGE-RULES-1A-RULES-HUB.md',
 ]) {
   const text = read(file)
   for (const marker of ['RULES-1A', 'rules hub', 'no Supabase writes', 'no migration']) {

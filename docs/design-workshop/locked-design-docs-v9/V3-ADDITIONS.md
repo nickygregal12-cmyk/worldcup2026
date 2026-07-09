@@ -1,3 +1,5 @@
+> **PACK SNAPSHOT — do not work from this copy.** Part of the locked v9 install pack, frozen at its 2026-07-06 state. If a canonical version exists it lives outside the pack (docs/ or docs/archive/); a filename search that lands here should follow the canonical copy.
+
 # v3 additions — locked design docs
 
 This file records what changed from the v2 documentation pack.

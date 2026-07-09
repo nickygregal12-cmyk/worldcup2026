@@ -26,7 +26,7 @@ const requiredFiles = [
   'src/journey/__tests__/groupsPresentationModel.test.js',
   'src/journey/__tests__/euroLuckyDip.test.js',
   'src/styles/groups-predictor.css',
-  'docs/STAGE-13B-GROUPS-PREDICTOR-AND-REVIEW.md',
+  'docs/archive/STAGE-13B-GROUPS-PREDICTOR-AND-REVIEW.md',
   'docs/THIRD-PARTY-ASSETS.md',
 ]
 for (const file of requiredFiles) if (!exists(file)) fail(`Required Stage 13B file is missing: ${file}`)
