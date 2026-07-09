@@ -12,7 +12,7 @@ updating this dashboard in the same commit as the change is mandatory, not polit
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
 | Current stage | Repo hygiene and documentation consolidation (post structural-health-check remediation) |
-| Latest verified commit | `9781ec2 Execute the contained dead-code backlog: files, dependencies, orphan CSS` |
+| Latest verified commit | `bc859ae Archive 131 closed documents; anchor current state to the live dashboard` |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
 | Active migration count | 21 |
 | Latest migration | `202607090021_euro28_venue_metadata.sql` — applied locally AND on Euro staging |
