@@ -24,7 +24,9 @@ for (const file of [
   'docs/reference-prototypes/euro28-guest-transfer-modal-prototype.html',
   'docs/reference-prototypes/euro28-head-to-head-page-prototype.html',
   'docs/reference-prototypes/euro28-points-breakdown-page-prototype.html',
-  'docs/reference-prototypes/check-user-facing-spec-echo.mjs',
+  // The spec-echo audit's canonical home is scripts/; the byte-identical copy the
+  // install pack once placed in reference-prototypes/ was removed as duplicate debt.
+  'scripts/check-user-facing-spec-echo.mjs',
 ]) mustExist(file)
 
 mustContain('docs/STAGE-13G-HANDOVER-20260705.md', '64f2f3e Restyle Stage 13G admin control room')

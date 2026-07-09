@@ -92,7 +92,9 @@ const main = read('src/main.jsx')
 if (!main.includes("./styles/knockout-experiences.css")) fail('Stage 13C stylesheet is not imported by the app entry point')
 
 const css = read('src/styles/knockout-experiences.css')
-for (const marker of ['.knockout-context--predicted', '.knockout-context--real', '.original-bracket__rounds', '.ko-match-card', '.ko-joker-button', '@media (max-width: 40rem)']) {
+// .original-bracket__rounds was removed with the orphaned pre-module bracket CSS;
+// the live Original Bracket styling lives in OriginalBracket*.module.css.
+for (const marker of ['.knockout-context--predicted', '.knockout-context--real', '.ko-match-card', '.ko-joker-button', '@media (max-width: 40rem)']) {
   if (!css.includes(marker)) fail(`Stage 13C stylesheet is missing: ${marker}`)
 }
 

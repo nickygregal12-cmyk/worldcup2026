@@ -1,4 +1,3 @@
-4d8d7a4eaf9a6078b8aaabe6265c3b378b5bdd596cea9ea495ab411f795944b1  docs/reference-prototypes/check-user-facing-spec-echo.mjs
 7552467af60d6669310c08ecd7e27272076f60865d0edd97d5c22b63869b6559  docs/reference-prototypes/euro28-account-page-prototype.html
 1b573dc4ac14e4135b443e676da92517209b64368bcec91193aae2f8a2d67f93  docs/reference-prototypes/euro28-admin-page-prototype.html
 299ddf4c387c4faea38750f58361c4851c4c08dc30e62b5c6bd13929dfb161a8  docs/reference-prototypes/euro28-bracket-health-prototype.html

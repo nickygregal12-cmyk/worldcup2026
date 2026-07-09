@@ -35,10 +35,10 @@ export const TEMPORARY_COMPONENT_CAPS = Object.freeze({})
 export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   'src/design/tokens.css': 204,
   'src/design/typography.css': 12,
-  'src/styles/feature-compat.css': 2590,
-  'src/styles/app.css': 1903,
-  'src/styles/groups-predictor.css': 555,
-  'src/styles/knockout-experiences.css': 463,
+  'src/styles/feature-compat.css': 1142,
+  'src/styles/app.css': 1517,
+  'src/styles/groups-predictor.css': 395,
+  'src/styles/knockout-experiences.css': 424,
   'src/styles/match-card.css': 186,
 })
 

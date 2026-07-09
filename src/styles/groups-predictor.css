@@ -224,12 +224,6 @@ button.team-label {
   color: var(--text-secondary);
 }
 
-.groups-overview__progress {
-  display: grid;
-  gap: var(--space-3);
-  min-width: 15rem;
-}
-
 .groups-joker-meter, .groups-joker-meter--dots {
   display: flex;
   align-items: center;
@@ -257,44 +251,6 @@ button.team-label {
 .joker-control--pill .joker-control__icon { color: currentColor; }
 /* Stage 13G-GROUPS-1: approved joker pill and five-dot meter reference adoption */
 .groups-joker-meter__label { font-weight: 800; letter-spacing: 0.08em; }
-
-
-.groups-jump {
-  position: sticky;
-  top: calc(var(--header-height) + var(--space-2));
-  z-index: 5;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  background: var(--surface-glass);
-  box-shadow: var(--shadow-1);
-  backdrop-filter: blur(16px);
-}
-
-.groups-jump button {
-  display: grid;
-  gap: var(--space-1);
-  min-height: 2.75rem;
-  padding: var(--space-2);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.groups-jump button.is-complete {
-  border-color: var(--state-success-border);
-  background: var(--state-success-soft);
-  color: var(--state-success);
-}
-
-.groups-jump small {
-  font-variant-numeric: tabular-nums;
-}
 
 .groups-list {
   display: grid;
@@ -370,98 +326,6 @@ button.team-label {
   cursor: not-allowed;
 }
 
-.prediction-review {
-  display: grid;
-  gap: var(--space-6);
-}
-
-.prediction-review__hero {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-6);
-}
-
-.prediction-review__hero h2 {
-  margin: var(--space-1) 0 var(--space-2);
-}
-
-.prediction-review__hero p,
-.prediction-review__action p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
-.prediction-review__summary {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-3);
-}
-
-.prediction-review__summary .ui-card {
-  display: grid;
-  align-content: start;
-  gap: var(--space-2);
-}
-
-.prediction-review__summary .ui-card > span {
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-}
-
-.prediction-review__summary .ui-card > strong {
-  font: 700 var(--text-xl)/1 var(--font-display);
-  font-variant-numeric: tabular-nums;
-}
-
-.prediction-review__groups {
-  display: grid;
-  gap: var(--space-3);
-}
-
-.prediction-review__groups header {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--space-4);
-}
-
-.prediction-review__groups header span {
-  color: var(--text-muted);
-}
-
-.prediction-review__groups > div {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--space-2);
-}
-
-.prediction-review__groups button {
-  display: grid;
-  gap: var(--space-1);
-  min-height: 3.5rem;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.prediction-review__groups button.is-complete {
-  border-color: var(--state-success-border);
-  background: var(--state-success-soft);
-  color: var(--state-success);
-}
-
-.prediction-review__action {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  background: var(--surface-soft);
-}
-
 @media (max-width: 56.25rem) {
   .group-match-list,
   .prediction-review__summary {
@@ -471,10 +335,6 @@ button.team-label {
   .groups-overview,
   .groups-next-step {
     grid-template-columns: 1fr;
-  }
-
-  .groups-overview__progress {
-    min-width: 0;
   }
 }
 
@@ -486,16 +346,6 @@ button.team-label {
   .groups-overview,
   .groups-next-step {
     padding: var(--space-4);
-  }
-
-  .groups-jump {
-    top: var(--space-2);
-    grid-template-columns: repeat(6, 4rem);
-    overflow-x: auto;
-  }
-
-  .groups-jump button {
-    min-width: 4rem;
   }
 
   .group-match-card__prediction {
@@ -541,15 +391,5 @@ button.team-label {
   .joker-control {
     width: 100%;
     justify-content: center;
-  }
-
-  .prediction-review__hero,
-  .prediction-review__action {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .prediction-review__groups > div {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

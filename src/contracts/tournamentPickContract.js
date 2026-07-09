@@ -1,3 +1,7 @@
+// PARKED FOR STAGE 17A — no runtime consumers yet, deliberately kept and tested.
+// Carries the scoring-only tournament-pick rules (goals total, etc.) gated
+// behind Stage 17A per the Decision Register. Its test keeps the record honest
+// until 17A wires it into the product; do not delete as dead code.
 export const TOURNAMENT_PICK_CONTRACT_VERSION = 'euro28-tournament-picks-v1'
 
 export const TOURNAMENT_PICK_KEYS = Object.freeze({

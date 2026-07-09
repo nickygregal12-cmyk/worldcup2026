@@ -1,3 +1,8 @@
+// AUDIT-CONSUMED POLICY MODULE — not dead code.
+// No runtime component imports this today, but check-stage13g-interaction-
+// enforcement.mjs and check-stage13g-shared-primitives.mjs read it by path and
+// enforce its rules (manual refresh buttons stay disallowed). Deleting it
+// breaks the audit gate; changing it changes recorded interaction policy.
 export const REFRESH_SCOPE = Object.freeze({
   APP_BOOTSTRAP: 'app-bootstrap',
   ADMIN_ACTION: 'admin-action',

@@ -1,3 +1,9 @@
+// CONTRACT RECORD — no runtime consumers, deliberately kept.
+// This module freezes the agreed Original/KO point structure as executable
+// record. It is enforced by scripts/check-prediction-contracts.mjs (content
+// assertions), exercised by its tests, and reachable only from the quarantined
+// legacy layer at runtime. Displayed values come from the database ruleset via
+// resolveActiveScoring; do NOT wire this module into live surfaces.
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
 import { DECISION_METHOD } from './resultContract.js'
 

@@ -133,23 +133,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-.original-bracket__rounds {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-4);
-  align-items: start;
-}
-
 .original-bracket__round,
 .ko-round {
   display: grid;
   gap: var(--space-3);
   scroll-margin-top: calc(var(--header-height) + 6rem);
 }
-
-.original-bracket__round:nth-child(2) { margin-top: var(--space-8); }
-.original-bracket__round:nth-child(3) { margin-top: var(--space-12); }
-.original-bracket__round:nth-child(4) { margin-top: calc(var(--space-12) + var(--space-6)); }
 
 .original-bracket__round > header,
 .ko-round > header {
@@ -181,14 +170,6 @@
   box-shadow: var(--shadow-1);
 }
 
-.original-bracket-match--complete {
-  border-color: var(--state-success-border);
-}
-
-.original-bracket-match--blocked {
-  background: var(--surface-soft);
-}
-
 .original-bracket-match__meta,
 .ko-match-card__meta {
   display: flex;
@@ -207,11 +188,6 @@
 .ko-match-card__meta span {
   color: var(--text-muted);
   font-size: var(--text-xs);
-}
-
-.original-bracket-match__teams {
-  display: grid;
-  gap: var(--space-2);
 }
 
 .bracket-team-choice {
@@ -262,15 +238,6 @@
 .ko-team-choice__action:disabled {
   cursor: not-allowed;
   opacity: 0.72;
-}
-
-.original-bracket-match__winner {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--state-success);
-  font-size: var(--text-xs);
-  font-weight: 700;
 }
 
 .ko-match-card--joker {
@@ -422,11 +389,6 @@
 }
 
 @media (max-width: 56.25rem) {
-  .original-bracket__rounds {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .original-bracket__round:nth-child(n) { margin-top: 0; }
   .ko-score-row { grid-template-columns: minmax(6rem, 1fr) auto auto auto minmax(6rem, 1fr); }
 }
 
@@ -439,7 +401,6 @@
   .knockout-context > .ui-badge { grid-column: 1 / -1; justify-self: start; }
   .knockout-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .knockout-summary-card--joker { grid-column: 1 / -1; }
-  .original-bracket__rounds { grid-template-columns: 1fr; }
   .bracket-round-progress { top: var(--space-2); }
   .ko-score-heading { display: grid; }
   .ko-score-row {

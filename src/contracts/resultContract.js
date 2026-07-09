@@ -1,3 +1,7 @@
+// CONTRACT RECORD — no runtime consumers, deliberately kept.
+// Freezes the result/decision-method vocabulary as executable record, enforced
+// by scripts/check-prediction-contracts.mjs and its tests. Reachable only from
+// the quarantined legacy layer at runtime.
 export const MATCH_STATUS = Object.freeze({
   SCHEDULED: 'scheduled',
   LIVE: 'live',
