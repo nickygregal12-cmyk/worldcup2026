@@ -34,7 +34,7 @@ gcfdwobpnanjchcnvdco
 
 WC26 production project must not be touched.
 
-Active migrations remain 20.
+Active migrations remain 21.
 
 Migration 019 has not been created.
 

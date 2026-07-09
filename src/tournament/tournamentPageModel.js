@@ -27,23 +27,34 @@ export function buildTournamentPageModel(foundation, config = TOURNAMENT_CONFIG)
   const totals = foundation.totals
   const reference = foundation.guestReference
   const stages = foundation.stages ?? []
+  // Venues and key fixtures come from the database via the foundation load — the
+  // same public.venues rows the match cards render — never from client config.
+  const venues = (foundation.venues ?? []).map(venue => Object.freeze({
+    ...venue,
+    hostNation: venue.hostNation ?? 'Host nation not recorded',
+  }))
+  const hostNations = [...new Set(venues.map(venue => venue.hostNation).filter(nation => nation !== 'Host nation not recorded'))]
+  const keyFixtures = foundation.keyFixtures ?? []
 
   return Object.freeze({
     heading: config.name,
     context: 'Tournament',
     summary: Object.freeze([
       Object.freeze({ label: 'Dates', value: formatDateRange(facts.tournamentStartDate, facts.tournamentEndDate), note: 'Confirmed by UEFA schedule announcement' }),
-      Object.freeze({ label: 'Hosts', value: facts.hostNations.join(', '), note: facts.hostNationNote }),
-      Object.freeze({ label: 'Venues', value: `${facts.venues.length} confirmed`, note: `${new Set(facts.venues.map(venue => venue.city)).size} host cities` }),
+      Object.freeze({ label: 'Hosts', value: hostNations.length > 0 ? hostNations.join(', ') : 'Not recorded yet', note: facts.hostNationNote }),
+      Object.freeze({
+        label: 'Venues',
+        value: totals.confirmedVenues === totals.venues ? `${totals.venues} confirmed` : `${totals.confirmedVenues} of ${totals.venues} confirmed`,
+        note: `${new Set(venues.map(venue => venue.city).filter(Boolean)).size} host cities`,
+      }),
       Object.freeze({ label: 'Format', value: `${facts.format.groupCount} groups · ${facts.format.teamCount} teams`, note: `${facts.format.totalMatches} matches, no third-place play-off` }),
     ]),
-    venues: facts.venues,
-    keyDates: Object.freeze([
-      Object.freeze({ label: 'Opening match', date: formatDate(facts.openingMatch.date), detail: `${facts.openingMatch.venueName}, ${facts.openingMatch.city}` }),
-      Object.freeze({ label: 'Semi-final 1', date: formatDate(facts.finalWeek.semiFinalDates[0]), detail: `${facts.finalWeek.venueName}, ${facts.finalWeek.city}` }),
-      Object.freeze({ label: 'Semi-final 2', date: formatDate(facts.finalWeek.semiFinalDates[1]), detail: `${facts.finalWeek.venueName}, ${facts.finalWeek.city}` }),
-      Object.freeze({ label: 'Final', date: formatDate(facts.finalWeek.finalDate), detail: `${facts.finalWeek.venueName}, ${facts.finalWeek.city}` }),
-    ]),
+    venues: Object.freeze(venues),
+    keyDates: Object.freeze(keyFixtures.map(fixture => Object.freeze({
+      label: fixture.label,
+      date: formatDate(fixture.date),
+      detail: fixture.venueName ? `${fixture.venueName}${fixture.city ? `, ${fixture.city}` : ''}` : 'Venue to be confirmed',
+    }))),
     format: Object.freeze([
       Object.freeze({ label: 'Group stage', count: `${facts.format.teamCount} teams`, detail: `${facts.format.groupCount} groups of ${facts.format.teamsPerGroup}` }),
       Object.freeze({ label: 'Round of 16', count: `${facts.format.automaticGroupQualifiers * facts.format.groupCount + facts.format.bestThirdQualifiers} teams`, detail: `Top ${facts.format.automaticGroupQualifiers} in each group plus ${facts.format.bestThirdQualifiers} best third-placed teams` }),

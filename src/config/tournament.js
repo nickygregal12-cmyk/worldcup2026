@@ -1,17 +1,5 @@
 import { ENVIRONMENT } from './environment.js'
 
-const OFFICIAL_EURO_2028_VENUES = Object.freeze([
-  Object.freeze({ name: 'Wembley Stadium', city: 'London', hostNation: 'England', tags: Object.freeze(['Semi-finals', 'Final']) }),
-  Object.freeze({ name: 'Tottenham Hotspur Stadium', city: 'London', hostNation: 'England', tags: Object.freeze([]) }),
-  Object.freeze({ name: 'National Stadium of Wales', city: 'Cardiff', hostNation: 'Wales', tags: Object.freeze(['Opening match']) }),
-  Object.freeze({ name: 'Manchester City Stadium', city: 'Manchester', hostNation: 'England', tags: Object.freeze([]) }),
-  Object.freeze({ name: 'Everton Stadium', city: 'Liverpool', hostNation: 'England', tags: Object.freeze([]) }),
-  Object.freeze({ name: "St James' Park", city: 'Newcastle', hostNation: 'England', tags: Object.freeze([]) }),
-  Object.freeze({ name: 'Villa Park', city: 'Birmingham', hostNation: 'England', tags: Object.freeze([]) }),
-  Object.freeze({ name: 'Hampden Park', city: 'Glasgow', hostNation: 'Scotland', tags: Object.freeze([]) }),
-  Object.freeze({ name: 'Dublin Arena', city: 'Dublin', hostNation: 'Republic of Ireland', tags: Object.freeze([]) }),
-])
-
 /**
  * Tournament-level configuration.
  *
@@ -41,21 +29,10 @@ export const TOURNAMENT_CONFIG = Object.freeze({
     scheduleAnnouncementDate: '2025-11-12',
     tournamentStartDate: '2028-06-09',
     tournamentEndDate: '2028-07-09',
-    hostNations: Object.freeze(['England', 'Scotland', 'Wales', 'Republic of Ireland']),
+    // Venues, host nations, opening-match and final-week facts live in the
+    // database (public.venues + venues.metadata, Migration 021) and reach the
+    // UI through the foundation load — never as a client-side list here.
     hostNationNote: 'Northern Ireland is not a final-schedule host nation after Casement Park was removed from the confirmed venue list.',
-    venues: OFFICIAL_EURO_2028_VENUES,
-    openingMatch: Object.freeze({
-      date: '2028-06-09',
-      venueName: 'National Stadium of Wales',
-      city: 'Cardiff',
-      label: 'Opening match',
-    }),
-    finalWeek: Object.freeze({
-      venueName: 'Wembley Stadium',
-      city: 'London',
-      semiFinalDates: Object.freeze(['2028-07-04', '2028-07-05']),
-      finalDate: '2028-07-09',
-    }),
     format: Object.freeze({
       teamCount: 24,
       groupCount: 6,

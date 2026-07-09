@@ -306,7 +306,7 @@ These four supersede Bracket G and KO Predictor F as previously recorded in v1.1
 
 - Light and dark theme treatment, realistic long-content states, loading/empty/partial states and hard-case football content are part of the approval standard, not optional polish.
 
-The design-contract drafting programme is docs/reference-only until a later separately approved implementation stage. It authorises no product-code change, no route change, no scoring or resolver change, no Supabase write, no Auth configuration change and no migration. Active migrations remain 20 and no further migration may be created by visual-contract work.
+The design-contract drafting programme is docs/reference-only until a later separately approved implementation stage. It authorises no product-code change, no route change, no scoring or resolver change, no Supabase write, no Auth configuration change and no migration. Active migrations remain 21 and no further migration may be created by visual-contract work.
 
 ## 13. Deferred design decisions
 
@@ -354,12 +354,12 @@ Account follows the Stage 13G destination reference pattern: useful signed-in st
 
 ## Stage 13G-ADMIN-1 — Admin control-room cosmetic restyle — CONFIRMED
 
-Stage 13G-ADMIN-1 Admin control-room cosmetic restyle uses the approved Admin prototype as a cosmetic reference for shell hierarchy, compact section navigation, role/metadata chips, status cards, high-impact guardrail copy and audit filter pills. The adoption is visual only: Admin authorisation, section routing, operation contracts, audit records, Tournament Picks readiness and database boundaries are not product-design variables and must not be loosened for presentation polish. Active migrations remain 20 and Migration 019 must not be created for this cosmetic stage.
+Stage 13G-ADMIN-1 Admin control-room cosmetic restyle uses the approved Admin prototype as a cosmetic reference for shell hierarchy, compact section navigation, role/metadata chips, status cards, high-impact guardrail copy and audit filter pills. The adoption is visual only: Admin authorisation, section routing, operation contracts, audit records, Tournament Picks readiness and database boundaries are not product-design variables and must not be loosened for presentation polish. Active migrations remain 21 and Migration 019 must not be created for this cosmetic stage.
 
 
 ## Stage 13G-MATCH-CENTRE-REF — Match Centre group-match reference adoption
 
-The Match Centre group-match reference is accepted as design guidance for the next implementation slice. Group fixtures must feel specific to the fixture and group: Original Predictor only, `Live projection` or `Final` group-impact state, read-only projected/confirmed bracket-point context and `This match’s predictions` comparison. Knockout fixtures keep the existing Original/KO separation and `Points on the line` panel. Match Centre projections are labelled as projections, reuse `resolveGroupTable`, never blend predicted and live brackets, and never alter saved Original Bracket state. Active migrations remain 20 and Migration 019 is not a presentation requirement. `13G-MATCH-CENTRE-1` remains the separate implementation stage after this reference adoption.
+The Match Centre group-match reference is accepted as design guidance for the next implementation slice. Group fixtures must feel specific to the fixture and group: Original Predictor only, `Live projection` or `Final` group-impact state, read-only projected/confirmed bracket-point context and `This match’s predictions` comparison. Knockout fixtures keep the existing Original/KO separation and `Points on the line` panel. Match Centre projections are labelled as projections, reuse `resolveGroupTable`, never blend predicted and live brackets, and never alter saved Original Bracket state. Active migrations remain 21 and Migration 019 is not a presentation requirement. `13G-MATCH-CENTRE-1` remains the separate implementation stage after this reference adoption.
 
 ## Stage 13G handover design checkpoint
 

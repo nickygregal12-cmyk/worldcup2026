@@ -71,7 +71,7 @@ export async function loadEuroApp(client) {
       .order('display_order'),
     client
       .from('tournament_venues')
-      .select('venue_id,is_provisional,display_order')
+      .select('venue_id,is_provisional,display_order,venue:venues!tournament_venues_venue_id_fkey(slug,name,city,country_code,metadata)')
       .eq('tournament_id', tournament.id)
       .order('display_order'),
     client

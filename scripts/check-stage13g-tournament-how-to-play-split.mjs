@@ -28,15 +28,25 @@ for (const marker of [
   'confirmedFacts',
   "tournamentStartDate: '2028-06-09'",
   "tournamentEndDate: '2028-07-09'",
-  "hostNations: Object.freeze(['England', 'Scotland', 'Wales', 'Republic of Ireland'])",
   'Northern Ireland is not a final-schedule host nation',
-  'National Stadium of Wales',
-  'Wembley Stadium',
-  'Dublin Arena',
   'thirdPlacePlayoff: false',
   'Match-specific kick-off times remain unconfirmed',
 ]) {
   if (!config.includes(marker)) fail(`Tournament config is missing confirmed fact marker: ${marker}`)
+}
+
+// Venue facts moved into the database (Migration 021): client config must not carry a
+// venue list, and the Tournament page must render the foundation's public.venues rows.
+for (const forbidden of ['OFFICIAL_EURO_2028_VENUES', "hostNation: 'England'", 'Wembley Stadium']) {
+  if (config.includes(forbidden)) fail(`Tournament config must not hardcode venue facts: ${forbidden}`)
+}
+const venueMigration = read('supabase/migrations/202607090021_euro28_venue_metadata.sql')
+for (const marker of ['add column if not exists metadata jsonb', "('hampden-park', 'Scotland')", "('dublin-arena', 'Republic of Ireland')"]) {
+  if (!venueMigration.includes(marker)) fail(`Venue metadata migration is missing: ${marker}`)
+}
+const tournamentPage = read('src/tournament/tournamentPageModel.js')
+for (const marker of ['foundation.venues', 'foundation.keyFixtures', 'Host nation not recorded']) {
+  if (!tournamentPage.includes(marker)) fail(`Tournament page model must render database venues: ${marker}`)
 }
 
 const routes = read('src/app/appRoutes.js')

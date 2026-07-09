@@ -16,7 +16,7 @@ Recently closed and deployed:
 - `734ad9b Rebuild Stage 13G account destination`
 - `64f2f3e Restyle Stage 13G admin control room`
 
-Active migrations remain 20. Do not create Migration 019 unless a genuine schema/read-contract gap is proved and explicitly approved.
+Active migrations remain 21. Do not create Migration 019 unless a genuine schema/read-contract gap is proved and explicitly approved.
 
 ## Files to read first
 
