@@ -70,6 +70,28 @@ in both light and dark theme where visuals changed. You cannot review the code;
 you can absolutely review the behaviour — and the Home contrast bug proves your
 eyes catch what 70 audits missed. No checklist, no close-out.
 
+The visual tier now does the screenshotting for you: `npm run visual:diff` produces
+`visual-artifacts/conformance-report/index.html` — every contracted page next to its
+approved prototype at three widths with a pixel-diff overlay. Open that file for the
+side-by-side portion of a review batch instead of taking screenshots by hand. It is
+advisory input to your eyes, never a pass/fail verdict.
+
+### 6a. Blessing visual baselines (owner act)
+
+Once you re-approve a page's prototype, bless its screenshots so the hard pixel gate
+arms for that page:
+
+1. `npm run visual:seed` (canonical local data) then `npm run visual:capture`.
+2. Review `npm run visual:diff` output.
+3. `npm run visual:bless -- --pages <keys> --note "<who approved and why>"` — the note
+   is mandatory and recorded in `visual-baselines/BLESS-LOG.md`.
+4. Commit `visual-baselines/` and `visual-tests/visual-run-record.json` together.
+
+From then on any pixel drift on a blessed page fails `npm run check:visual`, and the
+main gate's `audit:visual-freshness` refuses commits that change visual files without
+the visual tier having been re-run. Re-blessing over a red gate is a contract
+amendment — say so in the note.
+
 ## 7. Independent review — the second-agent rule
 
 The agent that built a stage never marks its own homework. Before deploy-and-close,

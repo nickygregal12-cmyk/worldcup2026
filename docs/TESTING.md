@@ -8,6 +8,28 @@ npm run check
 
 The gate runs database safety, every Euro audit, lint, unit tests and a production build.
 
+## Visual tier (separate from the main gate)
+
+```bash
+npm run check:visual     # capture + hard regression gate (browser + seeded local DB)
+npm run visual:seed      # bring local Supabase to the canonical pre-tournament fixture
+npm run visual:capture   # deterministic screenshots, built app + prototypes, 390/820/1280
+npm run visual:diff      # ADVISORY contract-conformance report for owner review
+npm run visual:bless -- --pages <keys> --note "<who/why>"   # promote baselines (owner act)
+```
+
+**When each tier runs:** the main `npm run check` chain runs on every commit and stays
+browser-free. The visual tier runs before any commit that touches `src/**/*.css`,
+`*.module.css`, JSX layout or `docs/reference-prototypes/` — locally via
+`npm run check:visual`, and in CI via the `visual-tier` GitHub Actions job on the same
+path filters. The bridge between the tiers is `audit:visual-freshness` inside the main
+chain: `check:visual` records a content hash of every watched visual file in
+`visual-tests/visual-run-record.json`, and the audit fails the main chain when watched
+files changed without the visual tier re-running (once baselines are blessed; until then
+it warns). Determinism: frozen browser clock (`visual-tests/visual.config.mjs`), killed
+animations, font-ready waits, canonical seeded data — captures are bit-identical
+run-to-run. Baselines and blessing: see `visual-baselines/README.md`.
+
 The Stage 13C application gate includes the established Stage 13A/13B coverage plus separate bracket and KO presentation-model, component and service tests.
 
 ## Focused audits
