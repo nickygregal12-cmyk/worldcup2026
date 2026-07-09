@@ -33,20 +33,30 @@ const openingMatch = {
   awayTeamId: 'team-ger',
 }
 
-function fixtureFor({ now, results = null, reference = referenceWith([openingMatch]) }) {
+function fixtureFor({ now, results = null, reference = referenceWith([openingMatch]), originalBundle }) {
   return buildHomeDashboard({
     tournament,
     reference,
     session: { user: { id: 'user-1' } },
     profile: { display_name: 'Nicky' },
     guestSummary: { groupComplete: 0, bracketComplete: 0, groupJokers: 0 },
-    originalBundle: { predictions: [{ prediction_kind: 'group_score', match_id: 'm1', home_score_90: 2, away_score_90: 1 }] },
+    originalBundle: originalBundle ?? { predictions: [{ prediction_kind: 'group_score', match_id: 'm1', home_score_90: 2, away_score_90: 1 }] },
     koBundle: null,
     results,
     leagues: [],
     sectionErrors: {},
     now,
   })
+}
+
+/** Full group + bracket coverage against the single-match reference above. */
+function bundleFor({ groups, bracket }) {
+  return {
+    predictions: [
+      ...Array.from({ length: groups }, () => ({ prediction_kind: 'group_score', home_score_90: 1, away_score_90: 0 })),
+      ...Array.from({ length: bracket }, () => ({ prediction_kind: 'bracket_pick', advancing_tournament_team_id: 'team-sco' })),
+    ],
+  }
 }
 
 function renderHome(fixture) {
@@ -86,6 +96,46 @@ describe('Home dashboard rendering', () => {
     const link = card.slice(0, card.indexOf('</a>'))
 
     expect(link).not.toContain('<button')
+  })
+
+  describe('prediction CTA routing', () => {
+    const preTournament = new Date('2028-06-07T17:30:00Z')
+    const withKnockout = {
+      ...referenceWith([openingMatch]),
+      knockoutMatches: [{ matchNumber: 37, matchId: 'k37' }],
+    }
+
+    it('routes to Groups while group scores are still missing', () => {
+      const html = renderHome(fixtureFor({ now: preTournament, reference: withKnockout, originalBundle: bundleFor({ groups: 0, bracket: 0 }) }))
+      const cta = html.slice(html.indexOf('ui-button'))
+
+      expect(cta).toContain('href="#/groups"')
+      expect(html).toContain('Start your predictions')
+    })
+
+    it('routes to Bracket once Groups is complete but Bracket is not', () => {
+      const html = renderHome(fixtureFor({ now: preTournament, reference: withKnockout, originalBundle: bundleFor({ groups: 1, bracket: 0 }) }))
+
+      expect(html).toContain('href="#/bracket"')
+      expect(html).toContain('Finish your predictions')
+      expect(html).not.toContain('href="#/groups"')
+    })
+
+    it('withdraws the CTA once every stage that exists is complete', () => {
+      const html = renderHome(fixtureFor({ now: preTournament, reference: withKnockout, originalBundle: bundleFor({ groups: 1, bracket: 1 }) }))
+
+      expect(html).toContain('All predictions in')
+      expect(html).not.toContain('Finish your predictions')
+      expect(html).not.toContain('href="#/bracket"')
+    })
+
+    it('keeps the "How scoring works" link in every CTA state', () => {
+      const done = renderHome(fixtureFor({ now: preTournament, reference: withKnockout, originalBundle: bundleFor({ groups: 1, bracket: 1 }) }))
+      const todo = renderHome(fixtureFor({ now: preTournament, reference: withKnockout, originalBundle: bundleFor({ groups: 0, bracket: 0 }) }))
+
+      expect(done).toContain('How scoring works')
+      expect(todo).toContain('How scoring works')
+    })
   })
 
   it('drops the countdown entirely on a live matchday', () => {

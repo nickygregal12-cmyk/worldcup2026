@@ -207,9 +207,17 @@ function PreTournament({ dashboard }) {
           <span>{original.bracketComplete === original.bracketTotal ? 'Bracket complete' : `${original.bracketComplete}/${original.bracketTotal} bracket picks`}</span>
           <span>{remaining === 0 ? 'All done' : `${remaining} to go`}</span>
         </div>
-        <LinkButton href="#/groups" className={styles.cta}>
-          {done > 0 ? 'Finish your predictions' : 'Start your predictions'}
-        </LinkButton>
+        {home.predictionCta
+          ? (
+            <LinkButton href={home.predictionCta.href} className={styles.cta}>
+              {done > 0 ? 'Finish your predictions' : 'Start your predictions'}
+            </LinkButton>
+          )
+          : (
+            <p className={styles.ctaDone}>
+              All predictions in. You can still change them until the lock.
+            </p>
+          )}
         <div className={styles.scoringLink}>
           <a href="#/how-to-play">How scoring works</a>
         </div>

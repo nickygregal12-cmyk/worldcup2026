@@ -67,6 +67,34 @@ export const HOME_STATE = Object.freeze({
   POST: 'post',
 })
 
+/**
+ * Where "Finish your predictions" should send you: the first stage of the
+ * prediction flow that still needs attention.
+ *
+ * Counts come from the caller's `original` block, which is the app's existing
+ * completeness state — sourced from summarisePredictionJourney (guests, via
+ * preview.completeness) or from the saved bundle rows (accounts). Nothing is
+ * re-counted here.
+ *
+ * The flow order is Groups → Bracket. The two later stages the product flow
+ * describes are not reachable today: Goals & Top Scorer has no user-facing UI
+ * (tournamentPickContract carries scoring only, gated behind stage 17A), and
+ * the Review view has no route — App.jsx renders PredictionJourney with a
+ * `surface` prop on both routes, which suppresses the tab nav that would reach
+ * it. So once Groups and Bracket are both complete there is no honest
+ * destination, and the CTA is withdrawn rather than pointed somewhere that has
+ * nothing left to finish.
+ */
+export function resolvePredictionCta({ groupComplete, groupTotal, bracketComplete, bracketTotal }) {
+  if (groupComplete < groupTotal) {
+    return Object.freeze({ stage: 'groups', href: '#/groups' })
+  }
+  if (bracketComplete < bracketTotal) {
+    return Object.freeze({ stage: 'bracket', href: '#/bracket' })
+  }
+  return null
+}
+
 const LIVE_MATCH_STATUSES = new Set(['live', 'paused'])
 
 /** Days/hours/minutes remaining, for the single pre-tournament countdown. */
@@ -318,6 +346,12 @@ export function buildHomeDashboard({
     originalBundle,
   })
   const openingMatch = allMatches[0] ?? null
+  const predictionCta = resolvePredictionCta({
+    groupComplete: original.groups,
+    groupTotal: reference.groupMatches.length,
+    bracketComplete: original.bracket,
+    bracketTotal: reference.knockoutMatches.length,
+  })
 
   return Object.freeze({
     signedIn,
@@ -368,6 +402,7 @@ export function buildHomeDashboard({
       // One countdown, one moment: predictions lock at the first kick-off.
       countdown: countdownParts(lifecycle.predictionLockAt, now),
       lockAt: lifecycle.predictionLockAt,
+      predictionCta,
       openingMatch: openingMatch ? toCard(openingMatch) : null,
       liveMatches: Object.freeze(today.live.map(toCard)),
       upcomingMatches: Object.freeze(today.upcoming.map(toCard)),

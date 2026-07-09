@@ -256,6 +256,54 @@ describe('Home dashboard model', () => {
     expect(card).not.toHaveProperty('pointsEarned')
   })
 
+  it('sends the prediction CTA to Groups while group scores are missing', () => {
+    const dashboard = makeDashboard()
+
+    expect(dashboard.original.groupComplete).toBe(7)
+    expect(dashboard.home.predictionCta).toEqual({ stage: 'groups', href: '#/groups' })
+  })
+
+  it('sends the prediction CTA to Bracket once every group score is in', () => {
+    const dashboard = makeDashboard({
+      guestSummary: { groupComplete: 36, bracketComplete: 2, groupJokers: 0 },
+    })
+
+    expect(dashboard.home.predictionCta).toEqual({ stage: 'bracket', href: '#/bracket' })
+  })
+
+  it('withdraws the prediction CTA when Groups and Bracket are both complete', () => {
+    const dashboard = makeDashboard({
+      guestSummary: { groupComplete: 36, bracketComplete: 15, groupJokers: 0 },
+    })
+
+    expect(dashboard.home.predictionCta).toBeNull()
+  })
+
+  it('routes the CTA from saved bundle rows for a signed-in account', () => {
+    const dashboard = makeDashboard({
+      session: { user: { id: 'user-1' } },
+      originalBundle: {
+        predictions: Array.from({ length: 36 }, () => ({
+          prediction_kind: 'group_score', home_score_90: 1, away_score_90: 0,
+        })),
+      },
+    })
+
+    expect(dashboard.original.groupComplete).toBe(36)
+    expect(dashboard.original.bracketComplete).toBe(0)
+    expect(dashboard.home.predictionCta).toEqual({ stage: 'bracket', href: '#/bracket' })
+  })
+
+  it('keeps the CTA pointed at Groups when a failed fetch leaves counts at zero', () => {
+    const dashboard = makeDashboard({
+      session: { user: { id: 'user-1' } },
+      sectionErrors: { original: 'Prediction request failed' },
+    })
+
+    expect(dashboard.original.dataAvailable).toBe(false)
+    expect(dashboard.home.predictionCta).toEqual({ stage: 'groups', href: '#/groups' })
+  })
+
   it('hides the match hub when live result data is unavailable', () => {
     const dashboard = makeDashboard({
       sectionErrors: {

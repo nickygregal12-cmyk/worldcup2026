@@ -96,9 +96,20 @@
   font-size: var(--text-xs);
 }
 
-.cta {
+/* .ui-button sets `width: fit-content` at the same specificity as a bare .cta,
+   so the button collapsed and sat at the grid column's start edge. Two classes
+   beat one, and justify-self pins it across the full card width. */
+.card .cta {
   width: 100%;
+  justify-self: stretch;
   margin-top: var(--space-2);
+}
+
+.ctaDone {
+  margin: var(--space-2) 0 0;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
 }
 
 /* Deliberately muted and small: it must not compete with the primary CTA. */
