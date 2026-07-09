@@ -156,7 +156,9 @@ describe('Home dashboard rendering', () => {
 
     // The rank strip is signed-in only, so a guest pre-tournament is the exact
     // combination the v2 rebuild left with no route to the leaderboards at all.
-    expect(pre).not.toContain('rankStrip')
+    // The KO deep link is rendered only by the rank strip, so its absence proves
+    // the strip is gone while the standalone link still carries the access.
+    expect(pre).not.toContain('#/leaderboards?competition=koPredictor')
     expect(pre).toContain('#/leaderboards?competition=original')
     expect(pre).toContain('>Leaderboards</span>')
   })
