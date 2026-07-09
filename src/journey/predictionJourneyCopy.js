@@ -5,3 +5,7 @@ export const PREDICTION_GROUP_JOKERS_COPY = '5 group jokers available'
 export const PREDICTION_BRACKET_JOKERS_COPY = 'No jokers on the original bracket'
 export const PREDICTION_SAVE_CHECK_COPY = 'Your completed picks are checked before saving'
 export const PREDICTION_ACCOUNT_SAVE_UNAVAILABLE = 'Account saving is temporarily unavailable. Your device draft still saves here.'
+// Guest saves are local-only. Say so at the moment of saving, not after the person assumes otherwise.
+export const PREDICTION_GUEST_LOCAL_ONLY_NOTICE = 'Your picks save on this device only. They will not appear if you sign in on another device until you save them to an account.'
+export const PREDICTION_GUEST_DECISION_COPY = 'Your account is the source of truth now. Keep these device picks by importing them, or start fresh — they will never overwrite picks already saved to your account.'
+export const PREDICTION_GUEST_IMPORT_INCOMPLETE = 'All 51 device predictions must be complete before they can be imported. You can start fresh instead — your account picks save automatically as you edit.'

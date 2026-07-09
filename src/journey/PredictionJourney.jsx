@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { countTouchedOriginalRows, createGuestPredictionState, createGuestPredictionStorage } from '../guest/index.js'
 import { importGuestDraftToAccount, loadMyPredictionBundle, saveMyPredictionBundle } from '../predictions/predictionSaveService.js'
+import { resolvePredictionStoragePolicy, writesToAccount } from '../predictions/predictionStoragePolicy.js'
 import { GUEST_STATE_UPDATED_EVENT, PREDICTION_SAVE_SOURCE } from '../predictions/predictionSaveConfig.js'
 import { hasActivePredictionGrace, isPredictionMatchStarted, loadMyPredictionGraceWindows, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import { PREDICTION_AUTOSAVE_DELAY_MS, PREDICTION_AUTOSAVE_STATE, PREDICTION_JOURNEY_VIEW } from './predictionJourneyConfig.js'
@@ -43,11 +44,18 @@ export default function PredictionJourney({ client, reference, tournament, initi
   const accountRows = accountBundle?.predictions?.length ?? 0
   const guestSummary = useMemo(() => summarisePredictionJourney(reference, guestDraft), [guestDraft, reference])
   const guestTouched = useMemo(() => countTouchedOriginalRows(guestDraft), [guestDraft])
-  const guestTransferMode = signedIn && accountRows === 0 && guestTouched > 0
-  const context = signedIn && !guestTransferMode ? 'account' : guestTransferMode ? 'guest-transfer' : 'guest'
-  const draft = signedIn && !guestTransferMode ? accountDraft : guestDraft
+  // `guestTransferMode` is an OFFER flag only. It must never select the storage target: doing so
+  // deadlocked signed-in accounts with zero saved rows (see predictionStoragePolicy.js).
+  const storagePolicy = useMemo(
+    () => resolvePredictionStoragePolicy({ signedIn, accountRows, guestTouched }),
+    [signedIn, accountRows, guestTouched],
+  )
+  const guestTransferMode = storagePolicy.guestTransferMode
+  const savesToAccount = writesToAccount(storagePolicy)
+  const context = savesToAccount ? 'account' : 'guest'
+  const draft = savesToAccount ? accountDraft : guestDraft
   const summary = useMemo(() => summarisePredictionJourney(reference, draft), [reference, draft])
-  const reviewMode = signedIn && !guestTransferMode ? Boolean(accountBundle?.submittedAt) : guestReview
+  const reviewMode = savesToAccount ? Boolean(accountBundle?.submittedAt) : guestReview
   const lifecycle = useMemo(() => resolveTournamentLifecycle(tournament), [tournament])
   const lockConfigured = lifecycle.lockConfigured
   const locked = lifecycle.locked
@@ -171,7 +179,9 @@ export default function PredictionJourney({ client, reference, tournament, initi
   }, [accountBundle, client, lockConfigured, reference, session])
 
   useEffect(() => {
-    if (!signedIn || guestTransferMode || accountLoading || reviewMode || !lockConfigured) return undefined
+    // Deliberately NOT gated on guestTransferMode: a signed-in account must autosave even when this
+    // browser still holds unimported device picks.
+    if (!signedIn || accountLoading || reviewMode || !lockConfigured) return undefined
     if (editVersion <= savedEditVersion || savingRef.current) return undefined
 
     setAutosaveStatus(PREDICTION_AUTOSAVE_STATE.DIRTY)
@@ -191,7 +201,6 @@ export default function PredictionJourney({ client, reference, tournament, initi
     saveAccount,
     savedEditVersion,
     signedIn,
-    guestTransferMode,
   ])
 
   function persistGuest(nextDraft, message = 'Saved on this device.') {
@@ -205,7 +214,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
   }
 
   function applyDraftUpdate(updater) {
-    if (signedIn && !guestTransferMode) {
+    if (savesToAccount) {
       setAccountDraft(current => updater(current))
       setEditVersion(value => value + 1)
       return
@@ -246,6 +255,15 @@ export default function PredictionJourney({ client, reference, tournament, initi
 
   async function importGuestDraft() {
     if (!signedIn || !summary) return
+    // The account is authoritative once signed in. Device picks may only fill an EMPTY account,
+    // never replace saved rows — belt to the RPC's expected-revision brace.
+    if (!storagePolicy.canOfferGuestImport) {
+      setNotice({
+        tone: 'warning',
+        message: 'Your account already has saved predictions, so they are kept. The picks on this device were not imported.',
+      })
+      return
+    }
     setBusy(true)
     setNotice(null)
     try {
@@ -274,11 +292,22 @@ export default function PredictionJourney({ client, reference, tournament, initi
   }
 
 
+  // The "change" half of the keep-or-change decision: drop the device copy and keep editing the
+  // account. Never touches account rows.
+  function discardGuestDraft() {
+    guestStorage.clear()
+    setGuestReview(false)
+    writeGuestReview(reference, false)
+    setGuestDraft(createGuestPredictionState(reference))
+    globalThis.dispatchEvent?.(new Event(GUEST_STATE_UPDATED_EVENT))
+    setNotice({ tone: 'safe', message: 'Picks saved on this device were discarded. Your account picks are unaffected.' })
+  }
+
   function runLuckyDip(mode) {
     if (readOnly || locked) return
     try {
       const result = applyEuroLuckyDip(reference, draft, { mode })
-      if (signedIn && !guestTransferMode) {
+      if (savesToAccount) {
         setAccountDraft(result.draft)
         setEditVersion(value => value + 1)
       } else {
@@ -303,7 +332,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
 
   async function submitReview() {
     if (!summary.canSubmit) return
-    if (!signedIn || guestTransferMode) {
+    if (!savesToAccount) {
       setGuestReview(true)
       writeGuestReview(reference, true)
       setView(PREDICTION_JOURNEY_VIEW.REVIEW)
@@ -321,7 +350,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
   }
 
   async function editPredictions() {
-    if (!signedIn || guestTransferMode) {
+    if (!savesToAccount) {
       setGuestReview(false)
       writeGuestReview(reference, false)
       setView(PREDICTION_JOURNEY_VIEW.GROUPS)
@@ -347,7 +376,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
     <PredictionJourneyView
       {...{
         reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
-        accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft,
+        accountRows, guestSummary, guestTouched, guestTransferMode, canImportGuest, busy, importGuestDraft, discardGuestDraft,
         view, setView, surface, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
         updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
       }}

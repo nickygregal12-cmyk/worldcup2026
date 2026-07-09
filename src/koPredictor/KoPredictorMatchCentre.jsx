@@ -153,7 +153,7 @@ export default function KoPredictorMatchCentre({
 
       {notice && <p className="guest-notice guest-notice--warning" role="status">{notice}</p>}
       <div className="ko-save-bar">
-        <PredictionStateBadge state={saveState === 'idle' ? 'empty' : saveState} label={saveState === 'dirty' ? 'Changes waiting' : saveState === 'local' ? 'Saved on this device' : null} />
+        <PredictionStateBadge state={saveState === 'idle' ? 'empty' : saveState} label={saveState === 'dirty' ? 'Not saved yet' : saveState === 'local' ? 'Saved on this device only — not to an account' : null} />
         <div>
           <strong>{storageContext === 'account' ? 'KO Predictor saves separately' : storageContext === 'guest-transfer' ? 'Browser KO draft ready for your account' : 'KO predictions save on this device'}</strong>
           <span>Original Predictor points and picks are never included.</span>

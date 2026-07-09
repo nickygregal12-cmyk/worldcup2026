@@ -1,4 +1,4 @@
-import { PredictionStateBadge } from '../design-system/index.jsx'
+import { Button, PredictionStateBadge } from '../design-system/index.jsx'
 import GuestAccountPrompt from '../guest/GuestAccountPrompt.jsx'
 import { hasActivePredictionGrace } from '../grace/index.js'
 import OriginalBracket from './OriginalBracket.jsx'
@@ -8,31 +8,33 @@ import PredictionReview from './PredictionReview.jsx'
 import lifecycleStyles from './PredictionLifecycle.module.css'
 import chromeStyles from './PredictionJourneyChrome.module.css'
 import { PREDICTION_AUTOSAVE_STATE, PREDICTION_JOURNEY_VIEW } from './predictionJourneyConfig.js'
-import { PREDICTION_ACCOUNT_SAVE_UNAVAILABLE, PREDICTION_AUTOSAVE_NOTICE, PREDICTION_BRACKET_JOKERS_COPY, PREDICTION_GROUP_JOKERS_COPY, PREDICTION_LOCK_NOTICE, PREDICTION_SAVE_CHECK_COPY } from './predictionJourneyCopy.js'
+import { PREDICTION_ACCOUNT_SAVE_UNAVAILABLE, PREDICTION_AUTOSAVE_NOTICE, PREDICTION_BRACKET_JOKERS_COPY, PREDICTION_GROUP_JOKERS_COPY, PREDICTION_GUEST_DECISION_COPY, PREDICTION_GUEST_IMPORT_INCOMPLETE, PREDICTION_GUEST_LOCAL_ONLY_NOTICE, PREDICTION_LOCK_NOTICE, PREDICTION_SAVE_CHECK_COPY } from './predictionJourneyCopy.js'
 
+// Three honest states, never blurred:
+//   guest           -> "Saved on this device" only; will NOT appear if this account signs in elsewhere.
+//   signed in, saved-> "Saved to your account"; follows the account anywhere.
+//   anything else   -> "Not saved", said plainly.
 function AutosaveBadge({ context, status, revision, savedAt }) {
-  let label = 'Ready'
+  let label = 'Not saved yet'
   if (context === 'guest') {
-    label = 'Saved on this device'
-  } else if (context === 'guest-transfer') {
-    label = 'Saved on this device'
+    label = 'Saved on this device only — not to an account'
   } else if (status === PREDICTION_AUTOSAVE_STATE.SAVING) {
-    label = 'Saving…'
+    label = 'Saving to your account…'
   } else if (status === PREDICTION_AUTOSAVE_STATE.DIRTY) {
-    label = 'Changes queued'
+    label = 'Not saved yet — saving shortly'
   } else if (status === PREDICTION_AUTOSAVE_STATE.SAVED) {
-    label = `Saved · revision ${revision}`
+    label = 'Saved to your account'
   } else if (status === PREDICTION_AUTOSAVE_STATE.CONFLICT) {
-    label = 'Reload required'
+    label = 'Not saved — reload required'
   } else if (status === PREDICTION_AUTOSAVE_STATE.ERROR) {
-    label = 'Save failed'
+    label = 'Not saved — save failed'
   } else if (status === PREDICTION_AUTOSAVE_STATE.LOCKED) {
     label = 'Predictions locked'
   } else if (revision > 0) {
-    label = `Account revision ${revision}`
+    label = 'Saved to your account'
   }
 
-  const state = context === 'guest' || context === 'guest-transfer' ? 'local' : status === PREDICTION_AUTOSAVE_STATE.IDLE ? 'empty' : status
+  const state = context === 'guest' ? 'local' : status === PREDICTION_AUTOSAVE_STATE.IDLE ? 'empty' : status
   return (
     <div className="journey-autosave" aria-live="polite">
       <PredictionStateBadge state={state} label={label} />
@@ -45,7 +47,8 @@ function AutosaveBadge({ context, status, revision, savedAt }) {
 
 export default function PredictionJourneyView({
   reference, context, autosaveStatus, accountBundle, savedAt, summary, reviewMode, readOnly, signedIn,
-  guestTouched, busy, view, setView, surface, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
+  guestTouched, guestTransferMode, canImportGuest, importGuestDraft, discardGuestDraft,
+  busy, view, setView, surface, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
   updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
 }) {
   const compactSurface = surface === PREDICTION_JOURNEY_VIEW.GROUPS || surface === PREDICTION_JOURNEY_VIEW.BRACKET
@@ -66,7 +69,7 @@ export default function PredictionJourneyView({
             <div className="journey-progress">
               <div><strong>{summary.totalComplete}/51</strong><span>predictions complete</span></div>
               <div className="journey-progress__bar" aria-hidden="true"><span style={{ width: `${Math.round((summary.totalComplete / 51) * 100)}%` }} /></div>
-              <div><span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved on this device' : 'Guest workspace'}</span><strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong></div>
+              <div><span>{context === 'account' ? 'Account workspace' : 'Guest workspace — Saved on this device only'}</span><strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong></div>
             </div>
             <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor timing">
               <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Current Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
@@ -89,7 +92,7 @@ export default function PredictionJourneyView({
           <div className="journey-progress">
             <div><strong>{summary.totalComplete}/51</strong><span>predictions complete</span></div>
             <div className="journey-progress__bar" aria-hidden="true"><span style={{ width: `${Math.round((summary.totalComplete / 51) * 100)}%` }} /></div>
-            <div><span>{context === 'account' ? 'Account workspace' : context === 'guest-transfer' ? 'Saved on this device' : 'Guest workspace'}</span><strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong></div>
+            <div><span>{context === 'account' ? 'Account workspace' : 'Guest workspace — Saved on this device only'}</span><strong>{reviewMode ? 'Review mode' : readOnly ? 'Locked' : 'Editable'}</strong></div>
           </div>
           <div className={lifecycleStyles.lifecycle} aria-label="Original Predictor timing">
             <article className={`${lifecycleStyles.card} ${lifecycleStyles[surfaceLifecycle.lockTone] ?? ''}`}><span>Prediction lock</span><strong>{surfaceLifecycle.lockLabel}</strong><small>{surfaceLifecycle.provisional ? 'Current Euro 2028 rules' : `Source: ${surfaceLifecycle.source}`}</small></article>
@@ -208,9 +211,26 @@ export default function PredictionJourneyView({
           {PREDICTION_ACCOUNT_SAVE_UNAVAILABLE}
         </p>
       )}
+      {guestTransferMode && (
+        <div className="guest-notice guest-notice--warning" role="status">
+          <strong>You have picks saved on this device.</strong>{' '}
+          {PREDICTION_GUEST_DECISION_COPY}
+          <span className="journey-guest-decision">
+            <Button onClick={importGuestDraft} disabled={!canImportGuest || busy} variant="secondary">
+              Keep my device picks
+            </Button>
+            <Button onClick={discardGuestDraft} disabled={busy} variant="ghost">
+              Start fresh on this account
+            </Button>
+          </span>
+          {!canImportGuest && (
+            <small>{PREDICTION_GUEST_IMPORT_INCOMPLETE}</small>
+          )}
+        </div>
+      )}
       {lifecycle?.provisional && (
         <p className="guest-notice guest-notice--safe">
-          {PREDICTION_AUTOSAVE_NOTICE} {PREDICTION_LOCK_NOTICE}
+          {context === 'account' ? PREDICTION_AUTOSAVE_NOTICE : PREDICTION_GUEST_LOCAL_ONLY_NOTICE} {PREDICTION_LOCK_NOTICE}
         </p>
       )}
       {notice && <p className={`guest-notice guest-notice--${notice.tone}`} role="status">{notice.message}</p>}
