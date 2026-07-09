@@ -15,6 +15,7 @@ import {
   formatOrdinal,
   normaliseLeague,
   normaliseStanding,
+  RANK_MOVEMENT_PENDING_REASON,
   validateJoinCode,
   validateLeagueCompetition,
   validateLeagueName,
@@ -134,7 +135,7 @@ describe('league model', () => {
     expect(raceRows[2]).toMatchObject({ podium: 'top-3', podiumLabel: 'Top three' })
     expect(raceRows[3].podium).toBeNull()
     expect(raceRows[1].rankMovementLabel).toBeNull()
-    expect(raceRows[1].rankMovementReason).toContain('previous-rank data')
+    expect(raceRows[1].rankMovementReason).toBe(RANK_MOVEMENT_PENDING_REASON)
   })
 
   it('builds a league race summary strip model without combining competitions', () => {

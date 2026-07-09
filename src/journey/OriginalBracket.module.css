@@ -70,7 +70,7 @@
     overflow-x: auto;
     padding: var(--space-4);
     border: 1px solid var(--border-default);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
     background: linear-gradient(180deg, var(--surface-raised), var(--surface-soft));
     box-shadow: var(--shadow-2);
   }

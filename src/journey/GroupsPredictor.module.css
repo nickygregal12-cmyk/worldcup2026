@@ -3,7 +3,7 @@
   grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.75fr);
   gap: var(--space-4);
   align-items: center;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--space-4);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   background: linear-gradient(135deg, var(--surface-raised), var(--surface-soft));
@@ -100,7 +100,7 @@
 }
 
 .groupRail button span {
-  font: 800 var(--text-base)/1 var(--font-display);
+  font: 800 var(--text-body)/1 var(--font-display);
 }
 
 .groupRail .railComplete {
@@ -146,7 +146,7 @@
 
 .dateView {
   display: grid;
-  gap: var(--space-5);
+  gap: var(--space-4);
 }
 
 .dateIntro,
@@ -159,7 +159,7 @@
 }
 
 .dateIntro {
-  padding: var(--space-5);
+  padding: var(--space-4);
 }
 
 .dateIntro h3 {
@@ -215,7 +215,7 @@
   z-index: 7;
   justify-self: center;
   min-height: 2.75rem;
-  padding: 0 var(--space-5);
+  padding: 0 var(--space-4);
   border: 1px solid color-mix(in srgb, var(--brand) 45%, transparent);
   border-radius: var(--radius-full);
   background: var(--surface-glass);
@@ -260,7 +260,7 @@
   max-width: 48rem;
   margin: 0 auto;
   padding: var(--space-4);
-  border-radius: var(--radius-xl) var(--radius-xl) var(--radius-lg) var(--radius-lg);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-lg);
 }
 
 .sheetGrab {

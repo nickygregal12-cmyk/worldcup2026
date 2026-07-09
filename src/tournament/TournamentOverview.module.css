@@ -7,7 +7,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-3);
-  margin-top: var(--space-5);
+  margin-top: var(--space-4);
 }
 
 .venueCard {
@@ -45,7 +45,7 @@
 .lockList,
 .faqList {
   display: grid;
-  margin-top: var(--space-5);
+  margin-top: var(--space-4);
 }
 
 .dateList > div,
@@ -122,7 +122,7 @@
   font-family: var(--font-display);
 }
 
-.pointsTable { width: 100%; margin-top: var(--space-5); border-collapse: collapse; font-size: 0.88rem; }
+.pointsTable { width: 100%; margin-top: var(--space-4); border-collapse: collapse; font-size: 0.88rem; }
 
 .pointsTable th,
 .pointsTable td {
@@ -188,16 +188,16 @@
 .rulesHero {
   display: grid;
   grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.75fr);
-  gap: var(--space-5);
+  gap: var(--space-4);
   align-items: stretch;
-  padding: clamp(var(--space-5), 5vw, var(--space-8));
+  padding: clamp(var(--space-4), 5vw, var(--space-8));
   border: 1px solid var(--border-default);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   background:
     radial-gradient(circle at top left, color-mix(in srgb, var(--brand-emphasis) 20%, transparent), transparent 38%),
     linear-gradient(135deg, var(--surface-inverse), var(--brand-strong));
   color: var(--text-on-brand);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-2);
   overflow: hidden;
 }
 
@@ -232,10 +232,10 @@
   gap: var(--space-4);
   align-content: start;
   min-width: 0;
-  padding: var(--space-5);
+  padding: var(--space-4);
   border: 1px solid color-mix(in srgb, var(--text-on-brand) 18%, transparent);
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--surface-card) 12%, transparent);
+  background: color-mix(in srgb, var(--surface-raised) 12%, transparent);
   backdrop-filter: blur(12px);
 }
 
@@ -284,11 +284,11 @@
 .policyCard,
 .tieBreakPanel { gap: var(--space-4); }
 
-.trustCard { background: linear-gradient(180deg, var(--surface-card), var(--surface-soft)); }
+.trustCard { background: linear-gradient(180deg, var(--surface-raised), var(--surface-soft)); }
 
 .signupGatePanel {
-  gap: var(--space-5); border-style: dashed;
-  background: radial-gradient(circle at top right, color-mix(in srgb, var(--state-warning-soft) 55%, transparent), transparent 42%), linear-gradient(180deg, var(--surface-card), var(--surface-soft));
+  gap: var(--space-4); border-style: dashed;
+  background: radial-gradient(circle at top right, color-mix(in srgb, var(--state-warning-soft) 55%, transparent), transparent 42%), linear-gradient(180deg, var(--surface-raised), var(--surface-soft));
 }
 
 .signupGatePanel p { max-width: 58rem; margin: 0; color: var(--text-secondary); line-height: 1.6; }
@@ -297,7 +297,7 @@
 
 .signupGateItem {
   display: grid; gap: var(--space-2); min-width: 0; padding: var(--space-4);
-  border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--surface-card);
+  border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--surface-raised);
 }
 
 .signupGateItem span {
@@ -339,7 +339,7 @@
 .tieBreakSteps {
   display: grid;
   gap: var(--space-3);
-  margin-top: var(--space-5);
+  margin-top: var(--space-4);
 }
 
 .tieBreakSteps > div {
@@ -384,7 +384,7 @@
 }
 
 @media (max-width: 40rem) {
-  .rulesHero { padding: var(--space-5); }
+  .rulesHero { padding: var(--space-4); }
   .rulesHeroPanel { padding: var(--space-4); }
   .signupGateGrid { grid-template-columns: 1fr; }
 }

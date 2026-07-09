@@ -25,12 +25,14 @@ const migrations = existsSync('supabase/migrations')
   ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
   : []
 
+// The shell was rebuilt natively for single-competition leagues: the league code is
+// tucked into the actions card, standings are leader-list rows, and lifecycle copy plus
+// competition summaries live behind the "League details" disclosure.
 for (const marker of [
-  'export function LeagueCodeDisclosure',
+  'export function LeagueActionsCard',
   'export function LeagueSecondaryDetails',
-  'styles.compactCompetitionHeading',
-  'Groups + original bracket',
-  'Real knockout fixtures',
+  'raceStyles.compactCompetitionHeading',
+  'Copy invite',
 ]) {
   if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing marker: ${marker}`)
 }
@@ -38,23 +40,22 @@ for (const marker of [
 for (const marker of [
   'Private leagues',
   'Track Original Predictor',
-  'LeagueCodeDisclosure',
-  'LeagueSecondaryDetails',
-  'StandingsTable rows={standings}',
-  'Open a member row for the detailed comparison.',
+  'LeagueActionsCard',
+  'LeagueStandingsPanel',
+  'standings={standings}',
 ]) {
   if (!leaguesPage.includes(marker)) fail(`Leagues.jsx missing marker: ${marker}`)
 }
 
-const tableIndex = leaguesPage.indexOf('StandingsTable rows={standings}')
-const detailsIndex = leaguesPage.indexOf('LeagueSecondaryDetails title="League details"')
+const tableIndex = presentation.indexOf('<LeaderList rows={standings}')
+const detailsIndex = presentation.indexOf('LeagueSecondaryDetails title="League details"')
 if (tableIndex === -1 || detailsIndex === -1 || detailsIndex < tableIndex) {
-  fail('League details must render after the compact standings table')
+  fail('League details must render after the compact standings rows')
 }
 
-const summaryGridIndex = leaguesPage.indexOf('foundation-league-summary-grid')
-if (summaryGridIndex === -1 || summaryGridIndex < detailsIndex) {
-  fail('Summary grid must live inside/after the secondary league details section')
+const summaryCardIndex = presentation.indexOf('<LeagueSummaryCard', detailsIndex)
+if (summaryCardIndex === -1) {
+  fail('Competition summary must live inside/after the secondary league details section')
 }
 
 if (leaguesPage.includes('<LeagueLifecycleBanner lifecycleState={leagueLifecycle} />\n\n      {notice')) {
@@ -75,9 +76,8 @@ for (const forbidden of [
 }
 
 for (const marker of [
-  'Stage 13G-C6 compact league page shell',
+  'compact league standings',
   '.compactCompetitionHeading',
-  '.leagueCodeDisclosure',
   '.secondaryDetails',
   '.secondaryDetailsBody',
   '@media (max-width: 640px)',

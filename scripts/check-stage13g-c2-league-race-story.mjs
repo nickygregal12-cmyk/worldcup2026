@@ -25,18 +25,21 @@ const migrations = existsSync('supabase/migrations')
   ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
   : []
 
+// The pending-movement sentence lives in one exported constant (spec-echo rule):
+// assert the constant, never the sentence, so the copy stays improvable.
 for (const marker of [
   'buildLeagueRaceRows',
   'gapToLeaderLabel',
   'rankMovementReason',
-  'Rank movement waits for trustworthy previous-rank data.',
+  'RANK_MOVEMENT_PENDING_REASON',
 ]) {
   if (!model.includes(marker)) fail(`leagueModel.js missing marker: ${marker}`)
 }
 
+// The presentation imports this module as raceStyles since the native single-competition rebuild.
 for (const marker of [
-  'styles.rankMarker',
-  'styles.currentUserRow',
+  'raceStyles.rankMarker',
+  'raceStyles.currentUserRow',
   'buildLeagueRaceRows',
   "from './leagueRace.module.css'",
 ]) {
@@ -50,7 +53,7 @@ for (const forbidden of ['🥇', '🥈', '🥉', '🏆']) {
 for (const marker of [
   'buildLeagueRaceRows',
   '17 behind leader',
-  'previous-rank data',
+  'RANK_MOVEMENT_PENDING_REASON',
 ]) {
   if (!tests.includes(marker)) fail(`leagueModel.test.js missing marker: ${marker}`)
 }

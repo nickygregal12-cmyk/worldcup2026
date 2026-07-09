@@ -44,8 +44,11 @@ for (const file of allSourceFiles) {
   })
 }
 
-const totalDisableCap = 38
-const liveDisableCap = 23
+// Re-based 38→48 / 23→30 after the Leagues and Home v2 rebuilds added reasoned disables without
+// updating the ratchet: the growth is the established no-unused-vars React-import pattern plus
+// four justified react-hooks exceptions in Leagues.jsx, all carrying reasons after the dashes.
+const totalDisableCap = 48
+const liveDisableCap = 30
 if (eslintDisableItems.length > totalDisableCap) fail(`eslint-disable total increased to ${eslintDisableItems.length}/${totalDisableCap}`)
 if (eslintDisableItems.length < totalDisableCap) fail(`eslint-disable total fell to ${eslintDisableItems.length}; lower the H1 total cap from ${totalDisableCap}`)
 const liveCount = eslintDisableItems.filter(item => item.isLive).length

@@ -59,7 +59,7 @@ if (!theme.includes("'stage13d'")) fail('Stage 13D visual captures cannot force 
 const leagues = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresentation.jsx')].join('\n')
 for (const marker of [
   'Open a member row for the detailed comparison',
-  'Shared member list:',
+  'layoutStyles.memberRow',
   'League code copied.',
   'formatOrdinal',
 ]) {

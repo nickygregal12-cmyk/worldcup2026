@@ -20,7 +20,8 @@ const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter
 
 if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 if (!tournament.includes("predictionLockAt: import.meta.env.VITE_PREDICTION_LOCK_AT || '2028-06-09T19:00:00.000Z'")) fail('Central provisional prediction lock fallback is missing')
-if (!tournament.includes("tournamentStartAt: import.meta.env.VITE_TOURNAMENT_START_AT || '2028-06-09T20:00:00.000Z'")) fail('Central provisional tournament start fallback is missing')
+// Lock and opening kick-off are one moment since the Home v2 rebuild: both fall back to 19:00Z.
+if (!tournament.includes("tournamentStartAt: import.meta.env.VITE_TOURNAMENT_START_AT || '2028-06-09T19:00:00.000Z'")) fail('Central provisional tournament start fallback is missing')
 if (!lifecycle.includes('resolveTournamentLifecycle') || !lifecycle.includes('CENTRAL_PROVISIONAL')) fail('Tournament lifecycle resolver is missing central provisional source handling')
 if (!journey.includes('resolveTournamentLifecycle(tournament)')) fail('PredictionJourney must derive lock state from the lifecycle resolver')
 if (!view.includes('PREDICTION_AUTOSAVE_NOTICE')) fail('Player-facing autosave copy constant is missing')

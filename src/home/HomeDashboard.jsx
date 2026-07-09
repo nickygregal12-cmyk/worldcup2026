@@ -7,8 +7,7 @@ import { loadHomeDashboard } from './homeDashboardService.js'
 import styles from './HomeDashboard.module.css'
 
 function dateFromValue(value) {
-  if (!value) return null
-  return new Date(String(value).includes('T') ? value : `${value}T12:00:00Z`)
+  return value ? new Date(String(value).includes('T') ? value : `${value}T12:00:00Z`) : null
 }
 
 function formatKickoffTime(value, fallback = 'TBC') {
@@ -32,8 +31,12 @@ function formatDayLabel(dayKey, fallback = 'Tomorrow') {
   return new Intl.DateTimeFormat('en-GB', { weekday: 'long', timeZone: 'Europe/London' }).format(date)
 }
 
-function formatRank(rank) {
-  return rank ? `${rank}` : '—'
+function formatRank(rank) { return rank ? `${rank}` : '—' }
+
+/** Concise leader-gap storytelling per the Home v2 contract ("6 behind Craig"). */
+function leaderGap({ isLeader, pointsBehindLeader }) {
+  if (isLeader) return ' · Leading'
+  return pointsBehindLeader > 0 ? ` · ${pointsBehindLeader} behind leader` : ''
 }
 
 /** Ticks the countdown without re-fetching the dashboard. Minute granularity. */
@@ -58,11 +61,7 @@ function CountdownHero({ lockAt, countdown, openingMatch }) {
       : 'Opening match'
 
   const units = live
-    ? [
-        { value: live.days, label: 'Days' },
-        { value: live.hours, label: 'Hours' },
-        { value: live.minutes, label: 'Mins' },
-      ]
+    ? [{ value: live.days, label: 'Days' }, { value: live.hours, label: 'Hours' }, { value: live.minutes, label: 'Mins' }]
     : null
 
   return (
@@ -97,9 +96,7 @@ function CountdownHero({ lockAt, countdown, openingMatch }) {
  */
 function HomeMatchCard({ card }) {
   const kickoff = formatKickoffTime(card.kickoffAt)
-  const meta = [card.venueName, card.state === 'completed' ? 'Full time' : card.stageLabel]
-    .filter(Boolean)
-    .join(' · ')
+  const meta = [card.venueName, card.state === 'completed' ? 'Full time' : card.stageLabel].filter(Boolean).join(' · ')
 
   let badge
   if (card.state === 'live') {
@@ -112,9 +109,7 @@ function HomeMatchCard({ card }) {
 
   const centre = (
     <span className="match-card__centre">
-      {card.scoreLabel
-        ? <span className="match-card__centre-score">{card.scoreLabel}</span>
-        : <span className="match-card__centre-versus">v</span>}
+      {card.scoreLabel ? <span className="match-card__centre-score">{card.scoreLabel}</span> : <span className="match-card__centre-versus">v</span>}
     </span>
   )
 
@@ -173,15 +168,15 @@ function RankStrip({ dashboard }) {
 
   return (
     <div className={styles.rankStrip}>
-      <a className={styles.rankCell} href="#/leaderboards?competition=original" aria-label={`Overall: ${formatRank(dashboard.original.rank)}, ${dashboard.original.points ?? 0} points. Open full leaderboard.`}>
+      <a className={styles.rankCell} href="#/leaderboards?competition=original" aria-label={`Overall: ${formatRank(dashboard.original.rank)}, ${dashboard.original.points ?? 0} points${leaderGap(dashboard.original)}. Open full leaderboard.`}>
         <span className={styles.rankEyebrow}>Overall</span>
         <strong>{formatRank(dashboard.original.rank)}</strong>
-        <small>{dashboard.original.points ?? 0} pts</small>
+        <small>{dashboard.original.points ?? 0} pts{leaderGap(dashboard.original)}</small>
       </a>
-      <a className={styles.rankCell} href="#/leaderboards?competition=koPredictor" aria-label={`KO Predictor: ${formatRank(dashboard.koPredictor.rank)}, ${dashboard.koPredictor.points ?? 0} points. Open full leaderboard.`}>
+      <a className={styles.rankCell} href="#/leaderboards?competition=koPredictor" aria-label={`KO Predictor: ${formatRank(dashboard.koPredictor.rank)}, ${dashboard.koPredictor.points ?? 0} points${leaderGap(dashboard.koPredictor)}. Open full leaderboard.`}>
         <span className={styles.rankEyebrow}>KO Predictor</span>
         <strong>{formatRank(dashboard.koPredictor.rank)}</strong>
-        <small>{dashboard.koPredictor.points ?? 0} pts</small>
+        <small>{dashboard.koPredictor.points ?? 0} pts{leaderGap(dashboard.koPredictor)}</small>
       </a>
     </div>
   )
@@ -368,8 +363,7 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
     }
   }, [fixture, load, sessionState.session])
 
-  if (!fixture && sessionState.status === 'loading') return <LoadingDashboard />
-  if (state.status === 'loading') return <LoadingDashboard />
+  if (state.status === 'loading' || (!fixture && sessionState.status === 'loading')) return <LoadingDashboard />
   if (state.status === 'error') {
     return (
       <div className="home-dashboard">

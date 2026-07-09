@@ -36,10 +36,11 @@ for (const marker of [
   if (!model.includes(marker)) fail(`leagueModel.js missing marker: ${marker}`)
 }
 
+// Compact standings are now the League table D leader-list rows (raceStyles alias).
 for (const marker of [
   'buildLeagueRaceRows',
-  'Pts',
-  'styles.rankMarker',
+  'raceStyles.points',
+  'raceStyles.rankMarker',
 ]) {
   if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing compact correction marker: ${marker}`)
 }
@@ -51,7 +52,7 @@ if (leaguesPage.includes('LeagueRaceSummary')) {
 for (const marker of [
   '.rankMarker',
   '.currentUserRow',
-  'Stage 13G-C4 compact league standings',
+  'compact league standings',
 ]) {
   if (!cssModule.includes(marker)) fail(`leagueRace.module.css missing compact correction marker: ${marker}`)
 }

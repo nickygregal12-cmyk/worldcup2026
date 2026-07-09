@@ -2,7 +2,7 @@ import React from 'react' // eslint-disable-line no-unused-vars -- React is requ
 import layoutStyles from './LeagueLayout.module.css'
 import heroStyles from './LeagueHero.module.css'
 import raceStyles from './leagueRace.module.css'
-import { Badge, Button, Icon, PlayerIdentity, StatusBar, TextField } from '../design-system/index.jsx'
+import { Badge, Button, Icon, PlayerIdentity, SelectField, StatusBar, TextField } from '../design-system/index.jsx'
 import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, canCreateKoLeague, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
 
 function competitionName(competitionKey) {
@@ -100,25 +100,17 @@ export function CompetitionChoice({ value, onChange, koReadiness }) {
 
 export function LeaguePicker({ leagues, selectedId, onSelect }) {
   if (leagues.length <= 1) return null
-  const originalLeagues = leagues.filter(league => league.competition === LEAGUE_COMPETITION.ORIGINAL)
-  const koLeagues = leagues.filter(league => league.competition === LEAGUE_COMPETITION.KO_PREDICTOR)
-  const optionLabel = league => `${league.name} · ${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
+  // SelectField has no optgroup support, so the competition moves into each option label.
+  const optionLabel = league =>
+    `${competitionName(league.competition)} · ${league.name} · ${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
   return (
-    <label className={heroStyles.leaguePicker}>
-      <span className="sr-only">Your leagues</span>
-      <select value={selectedId ?? ''} onChange={event => onSelect(event.target.value)}>
-        {originalLeagues.length > 0 && (
-          <optgroup label="Original Predictor">
-            {originalLeagues.map(league => <option key={league.id} value={league.id}>{optionLabel(league)}</option>)}
-          </optgroup>
-        )}
-        {koLeagues.length > 0 && (
-          <optgroup label="KO Predictor">
-            {koLeagues.map(league => <option key={league.id} value={league.id}>{optionLabel(league)}</option>)}
-          </optgroup>
-        )}
-      </select>
-    </label>
+    <SelectField
+      label="Your leagues"
+      className={heroStyles.leaguePicker}
+      value={selectedId ?? ''}
+      onChange={onSelect}
+      options={leagues.map(league => ({ value: league.id, label: optionLabel(league) }))}
+    />
   )
 }
 

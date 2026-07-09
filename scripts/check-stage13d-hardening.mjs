@@ -23,12 +23,14 @@ for (const marker of ['begin()', 'cancel()', 'isCurrent(token)']) {
 }
 
 const sharedComparison = [read('src/player/PlayerHeadToHead.jsx'), read('src/player/playerComparisonModel.js')].join('\n')
-const leagues = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresentation.jsx'), sharedComparison].join('\n')
+// The member comparison now lives in PlayerView (league rows navigate there with the
+// league's fixed competition), so PlayerView joins the hardened-surface set.
+const leagues = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresentation.jsx'), read('src/player/PlayerView.jsx'), sharedComparison].join('\n')
 for (const marker of [
   'createLatestRequestGuard',
-  'competitionKey: requestedCompetitionKey',
+  'competitionKey: selectedLeague.competition',
   'buildStandingComparison',
-  'foundation-destructive-confirmation',
+  'destructiveConfirmation',
   'Confirm delete',
   'privateSelections',
 ]) {

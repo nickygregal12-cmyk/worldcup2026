@@ -17,7 +17,7 @@ These stages are complete, committed, pushed and deployed:
 | `734ad9b` | Stage 13G-ACCOUNT-1 | Rebuilt signed-in Account; one-time keep/start-fresh guest transfer dialog; Original-only clear action; retired `src/pages/Profile.jsx`. |
 | `06d5218` | Stage 13G-ADMIN-1 | Restyled protected Admin control room only; preserved Admin contracts, roles, RPCs and audits. |
 
-Post-deploy `npm run verify:foundation-page` passed after `06d5218`. Active migrations remain 19. Migration 019 is applied.
+Post-deploy `npm run verify:foundation-page` passed after `06d5218`. Active migrations remain 20. Migration 019 is applied.
 
 ## New files reviewed in this handover
 
@@ -51,7 +51,7 @@ The existing `docs/reference-prototypes/euro28-tournament-split-agent-prompt.md`
 ## Non-negotiable boundaries for the next chat
 
 - Stay on `euro28-development`; never work on `main`.
-- Active migrations remain 19 unless a genuine schema/read-contract gap is proved and explicitly approved.
+- Active migrations remain 20 unless a genuine schema/read-contract gap is proved and explicitly approved.
 - WC26 production must remain fail-closed.
 - Original Predictor and KO Predictor stay separate.
 - Predicted and live brackets never blend.

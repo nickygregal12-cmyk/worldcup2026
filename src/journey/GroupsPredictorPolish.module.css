@@ -3,7 +3,7 @@
   overflow: hidden;
   padding: clamp(var(--space-4), 4vw, var(--space-6));
   border-color: color-mix(in srgb, var(--brand) 22%, var(--border-default));
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   background:
     radial-gradient(circle at 10% 0%, color-mix(in srgb, var(--brand-soft) 58%, transparent), transparent 44%),
     linear-gradient(135deg, var(--surface-raised), var(--surface-soft));
@@ -104,7 +104,7 @@
   gap: var(--space-2);
   padding: var(--space-3);
   border-color: color-mix(in srgb, var(--brand) 18%, var(--border-default));
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface-raised) 92%, var(--brand-soft)), var(--surface-raised));
   box-shadow: var(--shadow-2);
@@ -257,7 +257,7 @@
 
 .contractTablePreview strong,
 .contractThirdPreview strong {
-  font: 850 var(--text-base)/1.1 var(--font-display);
+  font: 850 var(--text-body)/1.1 var(--font-display);
 }
 
 .contractTablePreview button,
