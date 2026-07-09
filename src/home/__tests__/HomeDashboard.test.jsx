@@ -33,11 +33,11 @@ const openingMatch = {
   awayTeamId: 'team-ger',
 }
 
-function fixtureFor({ now, results = null, reference = referenceWith([openingMatch]), originalBundle }) {
+function fixtureFor({ now, results = null, reference = referenceWith([openingMatch]), originalBundle, session = { user: { id: 'user-1' } } }) {
   return buildHomeDashboard({
     tournament,
     reference,
-    session: { user: { id: 'user-1' } },
+    session,
     profile: { display_name: 'Nicky' },
     guestSummary: { groupComplete: 0, bracketComplete: 0, groupJokers: 0 },
     originalBundle: originalBundle ?? { predictions: [{ prediction_kind: 'group_score', match_id: 'm1', home_score_90: 2, away_score_90: 1 }] },
@@ -136,6 +136,29 @@ describe('Home dashboard rendering', () => {
       expect(done).toContain('How scoring works')
       expect(todo).toContain('How scoring works')
     })
+  })
+
+  it('offers leaderboard access from every state, including pre-tournament', () => {
+    const pre = renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z') }))
+    const live = renderHome(fixtureFor({
+      now: new Date('2028-06-09T19:30:00Z'),
+      results: { live: { summary: {}, results: [{ matchNumber: 1, status: 'live' }] } },
+    }))
+
+    // The pre-tournament state has no rank strip, so without a standalone link
+    // Home would offer no route to the leaderboards in the state everyone sees.
+    expect(pre).toContain('#/leaderboards?competition=original')
+    expect(live).toContain('#/leaderboards?competition=original')
+  })
+
+  it('offers leaderboard access to a signed-out visitor before the tournament', () => {
+    const pre = renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z'), session: null }))
+
+    // The rank strip is signed-in only, so a guest pre-tournament is the exact
+    // combination the v2 rebuild left with no route to the leaderboards at all.
+    expect(pre).not.toContain('rankStrip')
+    expect(pre).toContain('#/leaderboards?competition=original')
+    expect(pre).toContain('>Leaderboards</span>')
   })
 
   it('drops the countdown entirely on a live matchday', () => {

@@ -173,16 +173,30 @@ function RankStrip({ dashboard }) {
 
   return (
     <div className={styles.rankStrip}>
-      <a className={styles.rankCell} href="#/leaderboards?competition=original">
+      <a className={styles.rankCell} href="#/leaderboards?competition=original" aria-label={`Overall: ${formatRank(dashboard.original.rank)}, ${dashboard.original.points ?? 0} points. Open full leaderboard.`}>
         <span className={styles.rankEyebrow}>Overall</span>
         <strong>{formatRank(dashboard.original.rank)}</strong>
         <small>{dashboard.original.points ?? 0} pts</small>
       </a>
-      <a className={styles.rankCell} href="#/leaderboards?competition=koPredictor">
+      <a className={styles.rankCell} href="#/leaderboards?competition=koPredictor" aria-label={`KO Predictor: ${formatRank(dashboard.koPredictor.rank)}, ${dashboard.koPredictor.points ?? 0} points. Open full leaderboard.`}>
         <span className={styles.rankEyebrow}>KO Predictor</span>
         <strong>{formatRank(dashboard.koPredictor.rank)}</strong>
         <small>{dashboard.koPredictor.points ?? 0} pts</small>
       </a>
+    </div>
+  )
+}
+
+/**
+ * Leaderboard access from every state. RankStrip is signed-in-only and absent
+ * pre-tournament, so without this Home offered no route to the leaderboards in
+ * the state every user currently sees. Muted, so it does not compete with the
+ * state's primary card.
+ */
+function LeaderboardsLink() {
+  return (
+    <div className={styles.secondaryActions}>
+      <LinkButton href="#/leaderboards?competition=original" variant="secondary" size="small" icon="results">Leaderboards</LinkButton>
     </div>
   )
 }
@@ -231,6 +245,7 @@ function PreTournament({ dashboard }) {
       )}
 
       <LeaguesTeaser dashboard={dashboard} />
+      <LeaderboardsLink />
     </>
   )
 }
@@ -253,6 +268,7 @@ function MatchdayLive({ dashboard }) {
 
       <RankStrip dashboard={dashboard} />
       <LeaguesTeaser dashboard={dashboard} />
+      <LeaderboardsLink />
     </>
   )
 }
@@ -295,6 +311,7 @@ function PostMatch({ dashboard }) {
       )}
 
       <LeaguesTeaser dashboard={dashboard} />
+      <LeaderboardsLink />
     </>
   )
 }
