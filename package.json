@@ -175,7 +175,7 @@
     "audit:final-design-content-sweep": "node scripts/check-final-design-content-sweep.mjs",
     "audit:stage-core-page-adoption-1a-groups": "node scripts/check-stage-core-page-adoption-1a-groups.mjs",
     "audit:player-facing-copy-sweep-2": "node scripts/check-stage-player-facing-copy-sweep-2.mjs",
-    "audit:stage-core-page-adoption-1b-original-bracket": "node scripts/check-stage-core-page-adoption-1b-original-bracket.mjs scripts/check-native-controls.mjs scripts/lib/nativeControlPolicy.mjs scripts/lib/liveModuleGraph.mjs"
+    "audit:stage-core-page-adoption-1b-original-bracket": "node scripts/check-stage-core-page-adoption-1b-original-bracket.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
