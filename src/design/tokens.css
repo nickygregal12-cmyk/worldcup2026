@@ -1,10 +1,12 @@
 :root {
-  font-family: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Public Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 
-  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-display: "Space Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  /* Fonts self-hosted via @fontsource; no runtime CDN. DP-0 adoption 2026-07-10:
+     Public Sans (400/600/700/800) body, Big Shoulders Display (700/800/900) display. */
+  --font-body: "Public Sans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Big Shoulders Display", "Public Sans", ui-sans-serif, system-ui, sans-serif;
 
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
@@ -18,13 +20,17 @@
   --leading-heading: 1.18;
   --leading-body: 1.55;
 
+  /* 4px scale (CLAUDE.md §5): 4 8 12 16 20 24 32 48 64. --space-5 (20px) and
+     --space-16 (64px) added at DP-0 to complete it; existing steps unchanged. */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
   --space-4: 1rem;
+  --space-5: 1.25rem;
   --space-6: 1.5rem;
   --space-8: 2rem;
   --space-12: 3rem;
+  --space-16: 4rem;
 
   --radius-sm: 0.375rem;
   --radius-md: 0.625rem;
@@ -201,4 +207,95 @@
   --real-context-text: var(--state-warning);
   --knockout-selected-surface: var(--brand-soft);
   --knockout-selected-border: var(--brand);
+}
+
+/* ============================================================================
+   Design Programme palette (DP) — Stage DP-0, adopted 2026-07-10.
+   ADDITIVE and namespaced (--dp-*). The tokens above are unchanged; every
+   not-yet-re-cut page keeps its verified-green contrast and unblurred
+   semantics. Pages adopt --dp-* only at their re-cut stage. The one global
+   change this stage is the font swap above. See the DP-0 Copy-Back Report for
+   the transition rationale (option b: new tokens alongside old).
+
+   Light  = Stage 2 declared palette + F1 ink text-use variants + the gap tokens
+            (F3 muted-on-chrome, subtle/strong borders). Ink variants are the
+            same hue, darkened per the Dark Theme Palette file's F1 methodology
+            until the text pairing clears 4.5:1; the declared original stays for
+            fills/chrome.
+   Dark   = transcribed verbatim from the dark authority
+            docs/design programme/Euro 2028 Predictor - Dark Theme Palette.html
+            (self-check there: 0 text pairings below 4.5:1). In dark, brighter
+            text clears without an ink step, so each --dp-*-ink mirrors its base.
+   Ratios in comments are WCAG 2.x, computed from these exact hexes.
+   Broadcast accent is the sky family (CLAUDE.md §5); joker gold is
+   joker-exclusive; six semantics keep one meaning each.
+   ============================================================================ */
+:root {
+  /* Broadcast / chrome accent — sky family (owner ruling §5). Same in both themes. */
+  --sky-bright: #5FC7F5;               /* accent text on navy chrome 5.75:1 (light) / 7.49:1 (dark) */
+  --sky: #38BDF8;                      /* deep sky — chrome/broadcast fills */
+
+  /* Text */
+  --dp-text-body: #0B1B34;             /* body — on page 16.01:1 · on card 17.20:1 */
+  --dp-text-strong: #0B1B34;           /* headings — on page 16.01:1 · on card 17.20:1 */
+  --dp-text-muted: #5D6B80;            /* secondary — on page 5.04:1 · on card 5.41:1 */
+  --dp-text-muted-chrome: #99ABC2;     /* F3 — muted on navy chrome 4.70:1 (page/card muted cannot clear on chrome) */
+  --dp-text-on-chrome: #FFFFFF;        /* body/heading on navy chrome 11.01:1 */
+  --dp-text-on-accent: #FFFFFF;        /* text on the action-ink fill 4.89:1 */
+
+  /* Surfaces */
+  --dp-surface-page: #F4F7FB;
+  --dp-surface-raised: #FFFFFF;
+  --dp-surface-chrome: #163B73;        /* brand navy — header / hero / chrome */
+
+  /* Action + focus */
+  --dp-action: #0284C7;                /* declared action blue — decorative / focus & active borders only (UI 3:1: page 3.81:1, card 4.10:1) */
+  --dp-action-ink: #0277B3;            /* F1 ink (~4pp darker, same hue) — link text page 4.55:1 / card 4.89:1; white-on-fill 4.89:1 (declared #0284C7 was 3.81/4.10) */
+
+  /* Borders */
+  --dp-border-subtle: #E3E9F0;         /* hairline divider — decorative, no WCAG minimum (1.22:1 on card) */
+  --dp-border-strong: #7B8DA7;         /* control boundary — page 3.15:1 / card 3.38:1 (UI 3:1) */
+
+  /* Semantics — base fill · -soft chip surface · -ink text-safe variant (F1). */
+  --dp-success: #15803D;               --dp-success-soft: #DCFCE7;
+  --dp-success-ink: #15803D;           /* 0pp — declared clears: on soft 4.57:1 / card 5.02:1 */
+  --dp-warning: #B45309;               --dp-warning-soft: #FDF1DC;
+  --dp-warning-ink: #B35209;           /* F1 ink (~0.3pp) — on soft 4.55:1 / card 5.09:1 (declared 4.49:1 failed by 0.01) */
+  --dp-danger: #B91C1C;                --dp-danger-soft: #FCE8E8;
+  --dp-danger-ink: #B91C1C;            /* 0pp — declared clears: on soft 5.50:1 / card 6.47:1 */
+  --dp-live: #DC2626;                  --dp-live-soft: #FEE2E2;
+  --dp-live-ink: #CA2121;              /* F1 ink (~4.5pp) — on soft 4.58:1 / card 5.60:1 (declared 3.95:1 failed) */
+  --dp-locked: #57657A;                --dp-locked-soft: #EEF1F5;
+  --dp-locked-ink: #57657A;            /* 0pp — declared clears: on soft 5.22:1 / card 5.92:1 */
+  --dp-joker: #A6790A;                 --dp-joker-soft: #FBF3DC;   /* joker gold — joker-exclusive (§5) */
+  --dp-joker-ink: #8F6809;             /* F1 ink (~4.75pp, same hue) — on soft 4.57:1 / card 5.06:1 (declared 3.54:1 failed) */
+  --dp-info: #0A6C9E;                  --dp-info-soft: #E6F4FD;    --dp-info-border: #3894C2; /* outline UI 3:1: page 3.16:1 / card 3.40:1 */
+  --dp-info-ink: #0A6C9E;              /* 0pp — declared clears: on soft 5.13:1 / card 5.75:1 */
+}
+
+:root[data-theme='dark'] {
+  /* Transcribed verbatim from the Dark Theme Palette authority. */
+  --dp-text-body: #E2EBF5;             /* on page 15.74:1 · card 13.81:1 · chrome 11.91:1 */
+  --dp-text-strong: #FFFFFF;
+  --dp-text-muted: #93A4B8;            /* on page 7.44:1 · card 6.53:1 · chrome 5.63:1 */
+  --dp-text-muted-chrome: #93A4B8;     /* dark chrome is light enough for the single muted token */
+  --dp-text-on-chrome: #E2EBF5;
+  --dp-text-on-accent: #06131F;        /* dark text on the bright action fill */
+
+  --dp-surface-page: #06111F;
+  --dp-surface-raised: #0E1F33;
+  --dp-surface-chrome: #0F2A4F;
+
+  --dp-action: #38BDF8;                --dp-action-ink: #38BDF8;   /* link on page 8.85:1 / card 7.76:1 */
+
+  --dp-border-subtle: #1C2C40;
+  --dp-border-strong: #546D8C;         /* page 3.56:1 / card 3.12:1 (UI 3:1) */
+
+  --dp-success: #5FD794;               --dp-success-soft: #0E2F20;  --dp-success-border: #24523A;  --dp-success-ink: #5FD794; /* chip 8.05:1 */
+  --dp-warning: #F5B860;               --dp-warning-soft: #38260E;  --dp-warning-border: #5E4520;  --dp-warning-ink: #F5B860; /* chip 8.20:1 */
+  --dp-danger: #FF9BA1;                --dp-danger-soft: #3A171B;   --dp-danger-border: #5E2A30;   --dp-danger-ink: #FF9BA1;  /* chip 7.93:1 */
+  --dp-live: #FF6C77;                  --dp-live-soft: #47141B;     --dp-live-border: #7A2630;     --dp-live-ink: #FF6C77;    /* chip 5.54:1 */
+  --dp-locked: #A2B1C2;                --dp-locked-soft: #1A2534;   --dp-locked-border: #33455B;   --dp-locked-ink: #A2B1C2;  /* chip 7.07:1 */
+  --dp-joker: #EFC55C;                 --dp-joker-soft: #352810;    --dp-joker-border: #5C4718;    --dp-joker-ink: #EFC55C;   /* chip 8.76:1 */
+  --dp-info: #6FC9F5;                  --dp-info-soft: #0F2C3F;     --dp-info-border: #377290;     --dp-info-ink: #6FC9F5;    /* chip 7.81:1 · outline UI 3:1 */
 }

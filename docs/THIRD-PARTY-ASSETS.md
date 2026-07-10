@@ -1,5 +1,15 @@
 # Third-party visual assets
 
+## Self-hosted fonts
+
+Stage DP-0 self-hosts the Design Programme typefaces via `@fontsource`, replacing the retired Space Grotesk / Inter faces. No runtime CDN or Google Fonts request is made in product code.
+
+- Display / headings: `@fontsource/big-shoulders-display` (weights 700/800/900).
+- Body / interface: `@fontsource/public-sans` (weights 400/600/700/800).
+- Runtime CDN requests: none. The `latin-*.css` faces reference package-local `woff2`/`woff` files that Vite bundles as hashed assets.
+- Licence: SIL Open Font License 1.1 for both; the installed licences remain in `node_modules/@fontsource/big-shoulders-display/LICENSE` and `node_modules/@fontsource/public-sans/LICENSE` after dependency installation.
+- Prototypes and design artifacts under `docs/` may keep their CDN font links; that constraint applies to product code only.
+
 ## Circle Flags
 
 Stage 13B uses the `circle-flags` npm package for locally bundled national and association flag SVGs.

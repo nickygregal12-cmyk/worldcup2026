@@ -178,8 +178,8 @@
     "audit:stage-core-page-adoption-1b-original-bracket": "node scripts/check-stage-core-page-adoption-1b-original-bracket.mjs"
   },
   "dependencies": {
-    "@fontsource/inter": "^5.2.8",
-    "@fontsource/space-grotesk": "^5.2.10",
+    "@fontsource/big-shoulders-display": "^5.2.5",
+    "@fontsource/public-sans": "^5.2.7",
     "@supabase/supabase-js": "^2.106.2",
     "@tanstack/react-query": "^5.100.14",
     "circle-flags": "^2.8.3",

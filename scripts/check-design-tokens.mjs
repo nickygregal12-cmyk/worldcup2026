@@ -40,8 +40,8 @@ for (const forbiddenImport of ['./foundation/foundation.css', './styles/globals.
   if (main.includes(forbiddenImport)) fail(`Active entry point imports retired styling: ${forbiddenImport}`)
 }
 for (const requiredImport of [
-  '@fontsource/inter/latin-400.css',
-  '@fontsource/space-grotesk/latin-600.css',
+  '@fontsource/public-sans/latin-400.css',
+  '@fontsource/big-shoulders-display/latin-700.css',
   './design/tokens.css',
   './design/typography.css',
   './styles/feature-compat.css',
@@ -51,7 +51,7 @@ for (const requiredImport of [
 ]) if (!main.includes(requiredImport)) fail(`Active entry point is missing: ${requiredImport}`)
 
 const packageJson = JSON.parse(read('package.json'))
-for (const dependency of ['lucide-react', '@fontsource/inter', '@fontsource/space-grotesk']) {
+for (const dependency of ['lucide-react', '@fontsource/public-sans', '@fontsource/big-shoulders-display']) {
   if (!packageJson.dependencies?.[dependency]) fail(`Required design dependency is missing: ${dependency}`)
 }
 if (packageJson.scripts?.['audit:design-tokens'] !== 'node scripts/check-design-tokens.mjs') {
@@ -73,6 +73,13 @@ for (const token of [
   '--predicted-context-surface', '--predicted-context-border', '--predicted-context-text',
   '--real-context-surface', '--real-context-border', '--real-context-text', '--knockout-selected-surface', '--knockout-selected-border',
   '--radius-full', "[data-theme='dark']",
+  // Design Programme palette (Stage DP-0) — additive --dp-* set, sky accent, completed 4px scale.
+  '--space-5', '--space-16', '--sky', '--sky-bright',
+  '--dp-surface-page', '--dp-surface-raised', '--dp-surface-chrome',
+  '--dp-text-body', '--dp-text-strong', '--dp-text-muted', '--dp-text-muted-chrome',
+  '--dp-text-on-chrome', '--dp-text-on-accent', '--dp-action', '--dp-action-ink',
+  '--dp-border-subtle', '--dp-border-strong',
+  '--dp-joker-ink', '--dp-live-ink', '--dp-warning-ink', '--dp-info-border',
 ]) if (!tokenSource.includes(token)) fail(`Semantic token is missing: ${token}`)
 
 const activeStyleFiles = ['src/design/typography.css', 'src/styles/app.css', 'src/styles/feature-compat.css', 'src/styles/groups-predictor.css', 'src/styles/knockout-experiences.css']
@@ -92,7 +99,7 @@ const definitions = new Set([...activeStyles.matchAll(/--([\w-]+)\s*:/g)].map(ma
 const usages = new Set([...activeStyles.matchAll(/var\(--([\w-]+)/g)].map(match => match[1]))
 for (const name of usages) if (!definitions.has(name)) fail(`CSS variable is used but not defined: --${name}`)
 
-for (const retiredValue of ['#003087', '#00206b', '#005eb8', 'DM Sans', 'DM Mono']) {
+for (const retiredValue of ['#003087', '#00206b', '#005eb8', 'DM Sans', 'DM Mono', 'Space Grotesk']) {
   if (activeStyles.toLowerCase().includes(retiredValue.toLowerCase())) fail(`Active design uses retired WC26 styling: ${retiredValue}`)
 }
 
@@ -205,7 +212,7 @@ if (errors.length) {
 
 console.log('Euro Stage 13A v6 design-token audit passed.')
 console.log('Identity: independent blue palette controlled from one semantic token file')
-console.log('Typography: self-hosted Space Grotesk and Inter')
+console.log('Typography: self-hosted Big Shoulders Display and Public Sans')
 console.log('Icons: Lucide for ordinary interface actions')
 console.log('Navigation: Groups/KO · permanent Bracket · raised Home · Leagues · More')
 console.log('Themes: light and dark share the same semantic component rules')

@@ -76,8 +76,8 @@ Gold must not be used for unrelated decoration.
 
 ## 5. Typography — CONFIRMED
 
-- Display and headings: **Space Grotesk**.
-- Body and interface: **Inter**.
+- Display and headings: **Big Shoulders Display** (700/800/900). *(Adopted at Stage DP-0, 2026-07-10, per the adopted Design Programme; superseded Space Grotesk.)*
+- Body and interface: **Public Sans** (400/600/700/800). *(Adopted at Stage DP-0, 2026-07-10; superseded Inter.)*
 - Both are self-hosted through `@fontsource`; no match-night CDN dependency.
 - Scores, ranks, points and countdowns use `font-variant-numeric: tabular-nums`.
 - Type sizes and line heights are defined once as tokens.
