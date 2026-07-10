@@ -2,6 +2,7 @@ import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 import { ACTIVE_UI_ROOTS, FOUNDATION_CLASS_RATCHET_CAP } from './architecture-policy.mjs'
+import { allowanceFor, countNativeControls } from './lib/nativeControlPolicy.mjs'
 
 const root = process.cwd()
 const fail = message => { console.error(message); process.exit(1) }
@@ -26,17 +27,19 @@ const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter
 
 if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
-const nativeSelectViolations = activeText.filter(([file, text]) => {
-  if (file === 'src/design-system/index.jsx') return false
-  if (file === 'src/design-system/__tests__/sharedPrimitives.test.jsx') return false
-  return /<select|<\/select>/.test(text)
-})
-if (nativeSelectViolations.length) fail(`Native select elements outside SelectField: ${nativeSelectViolations.map(([file]) => file).join(', ')}`)
+// Native selects and browser confirms score against the shared ratchet in
+// lib/nativeControlPolicy.mjs rather than a local exemption list, so this audit
+// and check-native-controls.mjs can never disagree about what is allowed.
+// (The regex replaced here carried a stray backspace control character, which
+// made its `<select` branch dead — only `</select>` ever matched, so a
+// self-closing `<select {...props} />` was invisible to it.)
+const aboveAllowance = controlId =>
+  activeText.filter(([file, text]) => (countNativeControls(text)[controlId] ?? 0) > allowanceFor(file, controlId))
 
-const confirmViolations = activeText.filter(([file, text]) => {
-  if (file === 'src/design-system/index.jsx') return false
-  return /window\.confirm|(?<![A-Za-z0-9_])confirm\(/.test(text)
-})
+const nativeSelectViolations = aboveAllowance('select')
+if (nativeSelectViolations.length) fail(`Native select elements above the native-control ratchet: ${nativeSelectViolations.map(([file]) => file).join(', ')}`)
+
+const confirmViolations = aboveAllowance('dialog')
 if (confirmViolations.length) fail(`Native confirmation calls outside ConfirmDialog: ${confirmViolations.map(([file]) => file).join(', ')}`)
 
 const manualRefreshViolations = activeText.filter(([, text]) => /Refresh control room|Refresh league|>Refresh<|Refreshing…/.test(text))
@@ -65,7 +68,7 @@ if (!packageJson.scripts['audit:interaction-enforcement']) fail('audit:interacti
 if (!packageJson.scripts.check.includes('npm run audit:interaction-enforcement')) fail('npm run check must include the interaction-enforcement audit')
 
 console.log('Stage 13G-A interaction enforcement audit passed.')
-console.log('Native active-surface selects: 0 outside SelectField')
+console.log('Native active-surface selects: within the native-control ratchet')
 console.log('Native confirmation calls: 0 outside ConfirmDialog')
 console.log('Manual refresh controls: 0 outside retry states')
 console.log(`foundation-* ratchet: ${foundationCount}/${FOUNDATION_CLASS_RATCHET_CAP}`)

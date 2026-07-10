@@ -2,55 +2,18 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
+import { collectLiveFiles } from './lib/liveModuleGraph.mjs'
 
 const scriptPath = fileURLToPath(import.meta.url)
 const root = path.resolve(path.dirname(scriptPath), '..')
 const srcRoot = path.join(root, 'src')
-const entry = path.join(srcRoot, 'main.jsx')
-const extensions = ['.js', '.jsx', '.mjs', '.css']
-const importPattern = /(?:import\s+(?:[^'\"]+?\s+from\s+)?|import\()\s*['\"]([^'\"]+)['\"]/g
 const errors = []
 
 function relative(filePath) {
   return path.relative(root, filePath).split(path.sep).join('/')
 }
 
-function resolveLocalImport(importer, specifier) {
-  if (!specifier.startsWith('.')) return null
-  const base = path.resolve(path.dirname(importer), specifier)
-  const candidates = path.extname(base)
-    ? [base]
-    : [
-        ...extensions.map(extension => `${base}${extension}`),
-        ...extensions.map(extension => path.join(base, `index${extension}`)),
-      ]
-
-  return candidates.find(candidate => fs.existsSync(candidate)) || null
-}
-
-function collectActiveFiles() {
-  const active = new Set()
-  const queue = [entry]
-
-  while (queue.length > 0) {
-    const filePath = queue.shift()
-    if (!filePath || active.has(filePath)) continue
-    active.add(filePath)
-
-    if (!/\.(?:js|jsx|mjs)$/.test(filePath)) continue
-    const content = fs.readFileSync(filePath, 'utf8')
-    importPattern.lastIndex = 0
-
-    for (const match of content.matchAll(importPattern)) {
-      const resolved = resolveLocalImport(filePath, match[1])
-      if (resolved && resolved.startsWith(srcRoot)) queue.push(resolved)
-    }
-  }
-
-  return [...active].sort()
-}
-
-const activeFiles = collectActiveFiles()
+const activeFiles = collectLiveFiles(root)
 const forbiddenActivePrefixes = [
   'src/pages/',
   'src/components/',
