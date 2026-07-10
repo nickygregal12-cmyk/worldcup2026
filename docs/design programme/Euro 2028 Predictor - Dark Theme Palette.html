@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Euro 2028 Predictor — Dark Theme Palette</title>
+<!--
+  Euro 2028 Predictor — Dark Theme Palette
+  Design artifact. PROPOSED, NOT ADOPTED. Governs nothing.
+
+  Companion to "Euro 2028 Predictor - Design Direction and Components.html", which
+  supplies Stage 2 light values only. The project requires dark as a first-class
+  theme (CLAUDE.md §5) and the contrast audit enforces 4.5:1 in both themes with an
+  empty allowlist. This file authors the dark counterpart of every light token, and
+  closes the three §4 gaps (border, muted text, info) for BOTH themes.
+
+  Every contrast ratio in this document is computed at render time by the WCAG 2.x
+  relative-luminance formula, from the same hex values shown in the swatches. No
+  ratio is typed by hand, so no ratio can drift from its colour.
+
+  Self-contained: no external fonts, scripts, styles or images.
+-->
+<style>
+  :root {
+    /* ---- Light: Stage 2 declared palette (Direction doc §4). Unchanged. ---- */
+    --l-ink-navy:        #0B1B34;
+    --l-brand-navy:      #163B73;
+    --l-action-blue:     #0284C7;
+    --l-surface-page:    #F4F7FB;
+    --l-surface-raised:  #FFFFFF;
+    --l-success:         #15803D;  --l-success-soft: #DCFCE7;
+    --l-warning:         #B45309;  --l-warning-soft: #FDF1DC;
+    --l-danger:          #B91C1C;  --l-danger-soft:  #FCE8E8;
+    --l-live:            #DC2626;  --l-live-soft:    #FEE2E2;
+    --l-locked:          #57657A;  --l-locked-soft:  #EEF1F5;
+    --l-joker:           #A6790A;  --l-joker-soft:   #FBF3DC;
+    /* ---- Light: authored here, closing the §4 gaps ---- */
+    --l-text-muted:      #5D6B80;
+    --l-text-muted-chrome:#99ABC2;
+    --l-border-subtle:   #E3E9F0;
+    --l-border-strong:   #7B8DA7;
+    --l-info:            #0A6C9E;  --l-info-soft:    #E6F4FD;  --l-info-border: #3894C2;
+
+    /* ---- Sky accent (owner ruling, CLAUDE.md §5) ---- */
+    --sky-bright: #5FC7F5;
+    --sky:        #38BDF8;
+
+    /* ---- Dark: authored here ---- */
+    --d-surface-page:   #06111F;
+    --d-surface-raised: #0E1F33;
+    --d-surface-chrome: #0F2A4F;
+    --d-text-strong:    #FFFFFF;
+    --d-text-body:      #E2EBF5;
+    --d-text-muted:     #93A4B8;
+    --d-action-blue:    #38BDF8;
+    --d-text-on-accent: #06131F;
+    --d-border-subtle:  #1C2C40;
+    --d-border-strong:  #546D8C;
+    --d-success: #5FD794;  --d-success-soft: #0E2F20;  --d-success-border: #24523A;
+    --d-warning: #F5B860;  --d-warning-soft: #38260E;  --d-warning-border: #5E4520;
+    --d-danger:  #FF9BA1;  --d-danger-soft:  #3A171B;  --d-danger-border:  #5E2A30;
+    --d-live:    #FF6C77;  --d-live-soft:    #47141B;  --d-live-border:    #7A2630;
+    --d-locked:  #A2B1C2;  --d-locked-soft:  #1A2534;  --d-locked-border:  #33455B;
+    --d-joker:   #EFC55C;  --d-joker-soft:   #352810;  --d-joker-border:   #5C4718;
+    --d-info:    #6FC9F5;  --d-info-soft:    #0F2C3F;  --d-info-border:    #377290;
+
+    --doc-fg: #16233A;
+    --doc-bg: #F4F7FB;
+    --doc-line: #D9E0EA;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    /* Big Shoulders Display / Public Sans are the real faces; not embeddable here. */
+    --body: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --display: "Big Shoulders Display", "Public Sans", system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 0 20px 96px;
+    font-family: var(--body); color: var(--doc-fg); background: var(--doc-bg);
+    line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  header.masthead { padding: 40px 0 20px; border-bottom: 2px solid var(--l-brand-navy); }
+  h1 { font-family: var(--display); font-size: 34px; line-height: 1.1; margin: 0 0 6px; letter-spacing: -0.01em; }
+  h2 { font-family: var(--display); font-size: 24px; margin: 44px 0 6px; }
+  h3 { font-size: 15px; margin: 26px 0 8px; letter-spacing: .02em; }
+  p  { margin: 8px 0; max-width: 76ch; }
+  small, .small { font-size: 13px; color: #56637A; }
+  code { font-family: var(--mono); font-size: 12.5px; background: #E9EEF5; padding: 1px 5px; border-radius: 4px; }
+
+  .banner {
+    margin: 18px 0 6px; padding: 12px 14px; border-radius: 10px;
+    background: var(--l-warning-soft); color: var(--l-warning);
+    border: 1px solid #E4C48A; font-weight: 700; font-size: 13.5px;
+  }
+  .banner span { font-weight: 400; color: #6B4A16; }
+
+  .scroll { overflow-x: auto; margin: 14px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 720px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--doc-line); vertical-align: middle; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #56637A; font-weight: 700; }
+  td.hex { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+  tbody tr:hover { background: #EDF2F8; }
+
+  .sw { display: inline-block; width: 26px; height: 18px; border-radius: 4px; border: 1px solid rgba(11,27,52,.22); vertical-align: -4px; margin-right: 8px; }
+  .pairsw { display: inline-flex; align-items: center; justify-content: center; width: 62px; height: 26px; border-radius: 6px; font-size: 11px; font-weight: 800; border: 1px solid rgba(11,27,52,.18); }
+
+  .ratio { font-family: var(--mono); font-weight: 700; white-space: nowrap; }
+  .verdict { font-size: 11px; font-weight: 800; letter-spacing: .06em; padding: 2px 7px; border-radius: 999px; }
+  .pass { background: var(--l-success-soft); color: var(--l-success); }
+  .fail { background: var(--l-danger-soft); color: var(--l-danger); }
+  .na   { background: var(--l-locked-soft); color: var(--l-locked); }
+
+  .selfcheck { margin: 16px 0; padding: 12px 14px; border-radius: 10px; font-weight: 700; font-size: 13.5px; border: 1px solid; }
+
+  .rules li, .flags li { margin: 9px 0; max-width: 82ch; }
+  .flag-title { font-weight: 800; }
+
+  /* ---------- Dark sample components ---------- */
+  .darkstage {
+    background: var(--d-surface-page); border-radius: 16px; padding: 22px;
+    margin: 16px 0 8px; border: 1px solid var(--d-border-subtle);
+    display: grid; gap: 20px; grid-template-columns: 1fr; color: var(--d-text-body);
+  }
+  @media (min-width: 860px) { .darkstage.two { grid-template-columns: 340px 1fr; align-items: start; } }
+
+  .d-chrome {
+    background: var(--d-surface-chrome); border-radius: 12px; padding: 12px 14px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    border: 1px solid var(--d-border-subtle);
+  }
+  .d-chrome .title { font-family: var(--display); font-size: 19px; color: var(--d-text-strong); font-weight: 700; }
+  .d-chrome .accent { color: var(--sky-bright); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+
+  .card {
+    background: var(--d-surface-raised); border: 1px solid var(--d-border-subtle);
+    border-radius: 16px; padding: 16px;
+  }
+  .card .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--d-text-muted); }
+  .teamrow { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+  .teamrow + .teamrow { border-top: 1px solid var(--d-border-subtle); }
+  .badge {
+    width: 34px; height: 34px; border-radius: 999px; flex: none;
+    display: grid; place-items: center; font-size: 11px; font-weight: 800; letter-spacing: .02em;
+    background: var(--d-surface-chrome); color: var(--d-text-body); border: 1px solid var(--d-border-strong);
+  }
+  .badge.placeholder { border-style: dashed; color: var(--d-text-muted); background: transparent; }
+  .teamname { flex: 1; color: var(--d-text-strong); font-weight: 600; font-size: 15px; }
+  .score {
+    font-family: var(--display); font-size: 22px; font-weight: 700; color: var(--d-text-strong);
+    font-variant-numeric: tabular-nums; min-width: 30px; text-align: center;
+    border: 1px solid var(--d-border-strong); border-radius: 8px; padding: 2px 8px; background: var(--d-surface-page);
+  }
+  .kickoff { color: var(--d-text-muted); font-size: 12.5px; margin-top: 10px; }
+  .kickoff strong { color: var(--d-text-body); font-weight: 600; }
+
+  table.group { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 0; }
+  table.group th, table.group td { border: 0; padding: 8px 6px; color: var(--d-text-body); }
+  table.group th { color: var(--d-text-muted); font-size: 10.5px; }
+  table.group td.num, table.group th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.group tbody tr { border-top: 1px solid var(--d-border-subtle); }
+  table.group tbody tr:hover { background: transparent; }
+  table.group td.team { color: var(--d-text-strong); font-weight: 600; }
+  tr.qualify td:first-child { box-shadow: inset 3px 0 0 var(--d-action-blue); }
+  tr.watchlist { border-top: 1px dashed var(--d-border-strong) !important; }
+  table.group td.pts { color: var(--d-text-strong); font-weight: 800; }
+
+  .chiprow { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px 5px 9px; border-radius: 999px;
+    font-size: 11.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+    border: 1px solid transparent;
+  }
+  .chip svg { width: 13px; height: 13px; flex: none; }
+  .chip.confirmed   { color: var(--d-success); background: var(--d-success-soft); border-color: var(--d-success-border); }
+  .chip.provisional { color: var(--d-warning); background: var(--d-warning-soft); border-color: var(--d-warning-border); }
+  .chip.live        { color: var(--d-live);    background: var(--d-live-soft);    border-color: var(--d-live-border); }
+  .chip.locked      { color: var(--d-locked);  background: var(--d-locked-soft);  border-color: var(--d-locked-border); }
+  .chip.joker       { color: var(--d-joker);   background: var(--d-joker-soft);   border-color: var(--d-joker-border); }
+  .chip.info        { color: var(--d-info);    background: transparent;           border-color: var(--d-info-border); }
+  .chip.live .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--d-live); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { .chip.live .dot { animation: none; } }
+
+  .btnrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .btn { border-radius: 10px; padding: 11px 16px; font-size: 13.5px; font-weight: 700; border: 1px solid transparent; }
+  .btn.primary { background: var(--d-action-blue); color: var(--d-text-on-accent); }
+  .btn.secondary { background: transparent; color: var(--d-action-blue); border-color: var(--d-border-strong); }
+  .caption { font-size: 12px; color: #56637A; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <h1>Euro 2028 Predictor — Dark Theme Palette</h1>
+  <p class="small">Design artifact authored against the Stage 2 light palette in
+  <em>Design Direction and Components</em>, the owner rulings in <code>CLAUDE.md §5</code>,
+  and the 4.5:1 contrast requirement in both themes.</p>
+  <div class="banner">
+    PROPOSED — NOT ADOPTED.
+    <span>The design programme governs nothing. This file changes no product code and no
+    <code>tokens.css</code> value. Cite as “(design programme — proposed, not yet adopted).”</span>
+  </div>
+</header>
+
+<h2>1. How the dark derivation works</h2>
+<p>The Direction doc already states the rule: <em>“Dark theme mirrors every pairing at matching
+contrast — same roles, darker surfaces, brighter text.”</em> That is exactly what this palette does,
+with four deliberate departures from naive inversion.</p>
+
+<ol class="rules">
+  <li><span class="flag-title">Roles are preserved, values are not inverted.</span> Each token keeps its
+  single meaning (confirmed green, provisional amber, live red, locked slate, joker gold, info blue).
+  A dark value is never the light value's mathematical inverse — inversion destroys hue identity and
+  wrecks contrast. Each dark colour is re-authored at the same hue, then its lightness is chosen so the
+  pairing clears 4.5:1.</li>
+
+  <li><span class="flag-title">Surfaces get darker; the chrome gets lighter than the page.</span>
+  Naive inversion would make the navy header the <em>lightest</em> thing on screen. Instead the three
+  dark surfaces step upward from the page — page <code>#06111F</code> → raised card
+  <code>#0E1F33</code> → navy chrome <code>#0F2A4F</code>. Chrome stays recognisably brand navy and
+  stays the lightest of the three, so elevation still reads correctly. This makes <em>chrome</em> the
+  binding surface for every light-on-dark text check, not the page — so every text token below is
+  solved against chrome, the hardest case.</li>
+
+  <li><span class="flag-title">Semantic “soft” surfaces are re-authored, not darkened tints.</span>
+  Light chips are saturated text on a pale tint of the same hue. Dark chips are bright text on a
+  <em>deep, desaturated</em> tint of the same hue. Simply darkening <code>#DCFCE7</code> yields a muddy
+  green that fails against its own text; each dark soft surface is authored independently at ~10–18%
+  lightness and its text is then solved upward until it clears 4.5:1 against the chip, the card
+  <em>and</em> the page.</li>
+
+  <li><span class="flag-title">Action blue climbs its own ramp; no new family is introduced.</span>
+  Light action blue <code>#0284C7</code> and the ruled sky accent <code>#5FC7F5</code>/<code>#38BDF8</code>
+  are the same hue (≈199°) at different lightness — one sky ramp, not two blues. In dark, action blue
+  becomes <code>#38BDF8</code>, a value already declared by the owner ruling. Nothing new is invented.
+  See flag F4 for the consequence.</li>
+</ol>
+
+<h3>Closing the three §4 gaps</h3>
+<p>The Direction doc declares no border colour, no muted-text colour and no info colour, though
+§7 (chips), §11 (hairline dividers) and §13 (states) all require them. The concepts files improvised
+<code>#D9E0EA</code> and <code>#7C879A</code>. Both are authored properly here, for both themes.</p>
+<ul class="rules">
+  <li><span class="flag-title">Muted text.</span> The improvised <code>#7C879A</code> reaches only
+  <strong>3.38:1</strong> on the page surface — it fails the project's own requirement. Authored light
+  muted is <code>#5D6B80</code> (same 216° family, 5.04:1 on page). A separate
+  <code>text-muted-on-chrome</code> (<code>#99ABC2</code>) exists because muted ink on navy chrome can
+  never clear 4.5:1 in the light theme — see flag F3.</li>
+  <li><span class="flag-title">Border.</span> One border colour cannot serve two jobs. Hairline
+  dividers (§11) are decorative and carry no WCAG minimum; control boundaries (inputs, the score
+  stepper, the outlined info chip) are UI components and owe 3:1 under WCAG 1.4.11. The palette
+  therefore authors <em>two</em>: <code>border-subtle</code> for dividers and
+  <code>border-strong</code> for boundaries. The improvised <code>#D9E0EA</code> is a fine divider
+  (1.33:1) and an unusable control boundary.</li>
+  <li><span class="flag-title">Info.</span> Authored in the sky ramp as an <em>outlined</em> chip, per
+  §7's “neutral info (blue outline)”. Its border carries the signal, so the border itself clears 3:1 —
+  the only chip border that must.</li>
+</ul>
+
+<h2>2. Token table — every light token and its dark counterpart</h2>
+<p class="small">Swatch, hex, and role. Tokens marked <strong>authored</strong> did not exist in the
+Direction doc; tokens marked <strong>ruling</strong> come from <code>CLAUDE.md §5</code>. Everything
+else is the declared Stage 2 light value, reproduced unchanged.</p>
+
+<div class="scroll">
+<table id="tokens">
+  <thead><tr><th>Role</th><th>Light</th><th>Dark</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr><td>Ink navy — body text, dark surfaces</td><td class="hex" data-c="#0B1B34"></td><td class="hex" data-c="#E2EBF5"></td><td>declared → authored</td></tr>
+    <tr><td>Text strong — headings</td><td class="hex" data-c="#0B1B34"></td><td class="hex" data-c="#FFFFFF"></td><td>declared → authored</td></tr>
+    <tr><td>Text muted — secondary</td><td class="hex" data-c="#5D6B80"></td><td class="hex" data-c="#93A4B8"></td><td><strong>authored</strong> (gap)</td></tr>
+    <tr><td>Text muted on navy chrome</td><td class="hex" data-c="#99ABC2"></td><td class="hex" data-c="#93A4B8"></td><td><strong>authored</strong> (gap)</td></tr>
+    <tr><td>Brand navy — header, hero, chrome</td><td class="hex" data-c="#163B73"></td><td class="hex" data-c="#0F2A4F"></td><td>declared → authored</td></tr>
+    <tr><td>Action blue — buttons, links, active</td><td class="hex" data-c="#0284C7"></td><td class="hex" data-c="#38BDF8"></td><td>declared → ruling</td></tr>
+    <tr><td>Broadcast / chrome accent (sky)</td><td class="hex" data-c="#5FC7F5"></td><td class="hex" data-c="#5FC7F5"></td><td>ruling §5</td></tr>
+    <tr><td>Text on accent fill</td><td class="hex" data-c="#FFFFFF"></td><td class="hex" data-c="#06131F"></td><td><strong>authored</strong></td></tr>
+    <tr><td>Page surface</td><td class="hex" data-c="#F4F7FB"></td><td class="hex" data-c="#06111F"></td><td>declared → authored</td></tr>
+    <tr><td>Raised card surface</td><td class="hex" data-c="#FFFFFF"></td><td class="hex" data-c="#0E1F33"></td><td>declared → authored</td></tr>
+    <tr><td>Border — subtle (hairline dividers)</td><td class="hex" data-c="#E3E9F0"></td><td class="hex" data-c="#1C2C40"></td><td><strong>authored</strong> (gap)</td></tr>
+    <tr><td>Border — strong (control boundaries)</td><td class="hex" data-c="#7B8DA7"></td><td class="hex" data-c="#546D8C"></td><td><strong>authored</strong> (gap)</td></tr>
+    <tr><td>Confirmed — text / soft / border</td><td class="hex" data-c="#15803D" data-c2="#DCFCE7"></td><td class="hex" data-c="#5FD794" data-c2="#0E2F20" data-c3="#24523A"></td><td>declared → authored</td></tr>
+    <tr><td>Provisional — text / soft / border</td><td class="hex" data-c="#B45309" data-c2="#FDF1DC"></td><td class="hex" data-c="#F5B860" data-c2="#38260E" data-c3="#5E4520"></td><td>declared → authored</td></tr>
+    <tr><td>Danger / error — text / soft / border</td><td class="hex" data-c="#B91C1C" data-c2="#FCE8E8"></td><td class="hex" data-c="#FF9BA1" data-c2="#3A171B" data-c3="#5E2A30"></td><td>declared → authored</td></tr>
+    <tr><td>Live only — text / soft / border</td><td class="hex" data-c="#DC2626" data-c2="#FEE2E2"></td><td class="hex" data-c="#FF6C77" data-c2="#47141B" data-c3="#7A2630"></td><td>declared → authored</td></tr>
+    <tr><td>Locked — text / soft / border</td><td class="hex" data-c="#57657A" data-c2="#EEF1F5"></td><td class="hex" data-c="#A2B1C2" data-c2="#1A2534" data-c3="#33455B"></td><td>declared → authored</td></tr>
+    <tr><td>Joker only — text / soft / border</td><td class="hex" data-c="#A6790A" data-c2="#FBF3DC"></td><td class="hex" data-c="#EFC55C" data-c2="#352810" data-c3="#5C4718"></td><td>declared → authored</td></tr>
+    <tr><td>Info — text / soft / border</td><td class="hex" data-c="#0A6C9E" data-c2="#E6F4FD" data-c3="#3894C2"></td><td class="hex" data-c="#6FC9F5" data-c2="#0F2C3F" data-c3="#377290"></td><td><strong>authored</strong> (gap)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>3. Contrast — computed, not eyeballed</h2>
+<p class="small">Ratios are computed in-page from the hexes above by the WCAG 2.x relative-luminance
+formula. Text pairings must clear <strong>4.5:1</strong>. Rows marked <em>UI 3:1</em> are non-text
+control boundaries under WCAG 1.4.11. Rows marked <em>decorative</em> are hairline dividers with no
+minimum.</p>
+
+<div id="selfcheck" class="selfcheck"></div>
+
+<div class="scroll">
+<table id="pairs">
+  <thead><tr><th>Pairing</th><th>Light</th><th>Ratio</th><th></th><th>Dark</th><th>Ratio</th><th></th></tr></thead>
+  <tbody>
+    <!-- data-l / data-d = "foreground|background" -->
+    <tr data-t="4.5" data-l="#0B1B34|#F4F7FB" data-d="#E2EBF5|#06111F"><td>Body text on page surface</td></tr>
+    <tr data-t="4.5" data-l="#0B1B34|#FFFFFF" data-d="#E2EBF5|#0E1F33"><td>Body text on raised card</td></tr>
+    <tr data-t="4.5" data-l="#FFFFFF|#163B73" data-d="#E2EBF5|#0F2A4F"><td>Body text on navy chrome</td></tr>
+    <tr data-t="4.5" data-l="#0B1B34|#F4F7FB" data-d="#FFFFFF|#06111F"><td>Strong text on page surface</td></tr>
+    <tr data-t="4.5" data-l="#0B1B34|#FFFFFF" data-d="#FFFFFF|#0E1F33"><td>Strong text on raised card</td></tr>
+    <tr data-t="4.5" data-l="#FFFFFF|#163B73" data-d="#FFFFFF|#0F2A4F"><td>Strong text on navy chrome</td></tr>
+    <tr data-t="4.5" data-l="#5D6B80|#F4F7FB" data-d="#93A4B8|#06111F"><td>Muted text on page surface</td></tr>
+    <tr data-t="4.5" data-l="#5D6B80|#FFFFFF" data-d="#93A4B8|#0E1F33"><td>Muted text on raised card</td></tr>
+    <tr data-t="4.5" data-l="#99ABC2|#163B73" data-d="#93A4B8|#0F2A4F"><td>Muted text on navy chrome <span class="small">(light uses the chrome-specific muted)</span></td></tr>
+    <tr data-t="4.5" data-l="#7C879A|#F4F7FB" data-d="#93A4B8|#06111F" data-note="improvised"><td>Muted text on page — <em>concepts' improvised <code>#7C879A</code></em></td></tr>
+    <tr data-t="4.5" data-l="#0284C7|#F4F7FB" data-d="#38BDF8|#06111F"><td>Action blue as link text on page</td></tr>
+    <tr data-t="4.5" data-l="#0284C7|#FFFFFF" data-d="#38BDF8|#0E1F33"><td>Action blue as link text on card</td></tr>
+    <tr data-t="4.5" data-l="#FFFFFF|#0284C7" data-d="#06131F|#38BDF8"><td>Text on filled action-blue button</td></tr>
+    <tr data-t="4.5" data-l="#0B1B34|#5FC7F5" data-d="#5FC7F5|#0F2A4F"><td>Sky accent on navy chrome <span class="small">(light: ink on sky fill)</span></td></tr>
+    <tr data-t="4.5" data-l="#15803D|#DCFCE7" data-d="#5FD794|#0E2F20"><td>Chip — confirmed</td></tr>
+    <tr data-t="4.5" data-l="#B45309|#FDF1DC" data-d="#F5B860|#38260E"><td>Chip — provisional</td></tr>
+    <tr data-t="4.5" data-l="#DC2626|#FEE2E2" data-d="#FF6C77|#47141B"><td>Chip — live</td></tr>
+    <tr data-t="4.5" data-l="#57657A|#EEF1F5" data-d="#A2B1C2|#1A2534"><td>Chip — locked</td></tr>
+    <tr data-t="4.5" data-l="#A6790A|#FBF3DC" data-d="#EFC55C|#352810"><td>Chip — joker</td></tr>
+    <tr data-t="4.5" data-l="#0A6C9E|#E6F4FD" data-d="#6FC9F5|#0F2C3F"><td>Chip — info</td></tr>
+    <tr data-t="4.5" data-l="#B91C1C|#FCE8E8" data-d="#FF9BA1|#3A171B"><td>Chip — danger / error</td></tr>
+    <tr data-t="4.5" data-l="#15803D|#FFFFFF" data-d="#5FD794|#0E1F33"><td>Confirmed text on raised card</td></tr>
+    <tr data-t="4.5" data-l="#B45309|#FFFFFF" data-d="#F5B860|#0E1F33"><td>Provisional text on raised card</td></tr>
+    <tr data-t="4.5" data-l="#DC2626|#FFFFFF" data-d="#FF6C77|#0E1F33"><td>Live text on raised card</td></tr>
+    <tr data-t="4.5" data-l="#A6790A|#FFFFFF" data-d="#EFC55C|#0E1F33"><td>Joker text on raised card</td></tr>
+    <tr data-t="3"   data-l="#7B8DA7|#F4F7FB" data-d="#546D8C|#0E1F33"><td>Border strong vs surface <span class="small">(UI 3:1)</span></td></tr>
+    <tr data-t="3"   data-l="#3894C2|#F4F7FB" data-d="#377290|#0E1F33"><td>Info chip outline vs surface <span class="small">(UI 3:1 — the outline is the signal)</span></td></tr>
+    <tr data-t="0"   data-l="#E3E9F0|#FFFFFF" data-d="#1C2C40|#0E1F33"><td>Border subtle — hairline divider <span class="small">(decorative)</span></td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Separation between the two reds</h3>
+<p id="redsep" class="small"></p>
+
+<h2>4. The palette as UI — dark samples</h2>
+<p class="small">Rendered with the authored dark tokens only. Team badges are circular ISO-keyed with a
+neutral dashed placeholder for unresolved slots; no emoji anywhere; the live dot pulses and respects
+<code>prefers-reduced-motion</code>.</p>
+
+<div class="darkstage two">
+  <div>
+    <div class="card">
+      <div class="eyebrow">Match 1 · Group A</div>
+      <div class="teamrow">
+        <div class="badge">WAL</div>
+        <div class="teamname">Wales</div>
+        <div class="score">2</div>
+      </div>
+      <div class="teamrow">
+        <div class="badge">GER</div>
+        <div class="teamname">Germany</div>
+        <div class="score">1</div>
+      </div>
+      <div class="kickoff">Fri 9 June 2028, <strong>8:00pm</strong> · National Stadium of Wales</div>
+      <div class="btnrow">
+        <button class="btn primary">Save prediction</button>
+        <button class="btn secondary">How scoring works</button>
+      </div>
+    </div>
+    <p class="caption">Fixture card — raised surface, strong team names, muted kick-off line,
+    filled action-blue primary and outlined secondary.</p>
+  </div>
+
+  <div>
+    <div class="d-chrome">
+      <div class="title">Group A</div>
+      <div class="accent">Live standings</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <table class="group">
+        <thead><tr>
+          <th>Team</th><th class="num">P</th><th class="num">W</th><th class="num">D</th>
+          <th class="num">L</th><th class="num">GD</th><th class="num">Pts</th>
+        </tr></thead>
+        <tbody>
+          <tr class="qualify"><td class="team">Wales</td><td class="num">3</td><td class="num">2</td><td class="num">1</td><td class="num">0</td><td class="num">+4</td><td class="num pts">7</td></tr>
+          <tr class="qualify"><td class="team">Germany</td><td class="num">3</td><td class="num">2</td><td class="num">0</td><td class="num">1</td><td class="num">+3</td><td class="num pts">6</td></tr>
+          <tr class="watchlist"><td class="team">Türkiye</td><td class="num">3</td><td class="num">1</td><td class="num">0</td><td class="num">2</td><td class="num">−2</td><td class="num pts">3</td></tr>
+          <tr><td class="team">Georgia</td><td class="num">3</td><td class="num">0</td><td class="num">1</td><td class="num">2</td><td class="num">−5</td><td class="num pts">1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">Group table fragment — 3px action-blue accent bar on the top two, dashed divider
+    above the third-place watchlist row, no zebra striping, tabular numerals.</p>
+
+    <div class="card" style="margin-top:14px">
+      <div class="eyebrow" style="margin-bottom:10px">Status chip system — six roles, six meanings</div>
+      <div class="chiprow">
+        <span class="chip confirmed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>Confirmed</span>
+        <span class="chip provisional"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/></svg>Provisional</span>
+        <span class="chip live"><span class="dot"></span>Live</span>
+        <span class="chip locked"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Locked</span>
+        <span class="chip joker"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z"/></svg>Joker</span>
+        <span class="chip info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.2"/></svg>Info</span>
+      </div>
+    </div>
+    <p class="caption">Chip row — every chip pairs an icon with its label, so colour is never the sole
+    signal. Info is the only outlined chip; its border carries the meaning and therefore clears 3:1.
+    Joker gold appears here and nowhere else.</p>
+  </div>
+</div>
+
+<h2>5. Flags for owner decision</h2>
+<p>None of the following is silently resolved. Each needs an owner ruling before adoption.</p>
+<ol class="flags">
+  <li><span class="flag-title">F1 — The Stage 2 <em>light</em> palette fails 4.5:1 in seven pairings,
+  across three declared tokens.</span> This is not a dark-theme problem and is not fixed here, because
+  these are declared values the brief told me to honour. The contrast audit enforces 4.5:1 with an
+  empty allowlist, so <strong>adopting the light palette as written would fail the audit</strong>.
+  Computed above:
+  <ul>
+    <li><strong>Action blue <code>#0284C7</code></strong> — as link text 3.81:1 on page, 4.10:1 on card;
+    and white on a filled action-blue button is <strong>4.10:1</strong>. All three fail. This is the
+    most consequential: it is the primary button and every link.</li>
+    <li><strong>Joker gold <code>#A6790A</code></strong> — 3.54:1 on its own chip and 3.92:1 as text on a
+    white card. The worst offender in the palette.</li>
+    <li><strong>Live red <code>#DC2626</code></strong> — 3.95:1 on its chip.</li>
+    <li><strong>Provisional amber <code>#B45309</code></strong> — 4.49:1 on its chip, failing by 0.01.</li>
+  </ul>
+  Every one of these clears 4.5:1 comfortably in the authored dark theme. Darkening each light text
+  value by roughly 6–12% lightness fixes all seven without any hue change — but that edits declared
+  Stage 2 colours, so it is an owner decision, not mine.</li>
+
+  <li><span class="flag-title">F2 — Danger and live are near-identical in <em>both</em> themes, by
+  inheritance.</span> Light danger <code>#B91C1C</code> against light live <code>#DC2626</code> is
+  <strong>1.34:1</strong>; the authored dark pair is <strong>1.36:1</strong>. Dark is therefore faithful,
+  not worse. The distinction survives because §7 requires icon + label on every chip and gives live a
+  pulsing dot. If the owner wants the two reds separable by colour alone, one of them must move hue
+  (danger toward crimson ≈350°, or live toward vermilion ≈8°) in both themes — a deviation from the
+  declared palette, so it is not taken here.</li>
+
+  <li><span class="flag-title">F3 — Muted text can never clear 4.5:1 on light navy chrome.</span>
+  Light muted <code>#5D6B80</code> on brand navy <code>#163B73</code> is 2.03:1 and no colour at that
+  lightness can clear 4.5:1 against that surface. A separate <code>text-muted-on-chrome</code>
+  (<code>#99ABC2</code>, 4.70:1) is authored for the light theme. In dark, chrome is light enough that
+  the single muted token (<code>#93A4B8</code>, 5.63:1) works everywhere. The owner should confirm that
+  a chrome-specific muted token is acceptable, or that muted text is simply banned on light chrome.</li>
+
+  <li><span class="flag-title">F4 — In dark, the link colour and the broadcast accent are adjacent
+  values on the same sky ramp.</span> Dark action blue is <code>#38BDF8</code> and the accent is
+  <code>#5FC7F5</code> — both declared by the owner ruling, ~2° apart in hue. They are hard to tell
+  apart in isolation. No new accent family was introduced to separate them, per the constraint. Options:
+  reserve the accent strictly for chrome/broadcast contexts where links never appear (recommended, and
+  what the samples above assume), or declare a distinct link value inside the sky ramp.</li>
+
+  <li><span class="flag-title">F5 — Info blue shares the sky hue with action blue (both ≈200°).</span>
+  §7 calls info a “blue outline” chip, so form (outline, not fill) rather than hue is what separates a
+  static info chip from an interactive link. That reading is applied here and matches the product's
+  existing <code>--state-info: #0d659f</code>. Confirm this is intended; the alternative is a second blue
+  family, which the constraints forbid.</li>
+
+  <li><span class="flag-title">F6 — The improvised concept values should be retired, not adopted.</span>
+  <code>#7C879A</code> (muted) fails at 3.38:1 and <code>#D9E0EA</code> (border) is unusable as a control
+  boundary at 1.33:1, though it is a fine hairline divider. The concepts files should be re-rendered
+  against the authored tokens before adoption.</li>
+</ol>
+
+<h2>6. Constraint compliance</h2>
+<ul class="rules">
+  <li><strong>Joker gold stays joker-exclusive.</strong> <code>#EFC55C</code>/<code>#352810</code> appear
+  only on the joker chip. No gold in chrome, tabs, marks or borders, in either theme.</li>
+  <li><strong>No new accent families.</strong> Every colour is either a declared Stage 2 value, its
+  same-hue dark counterpart, or the ruled sky pair. Maximum hue drift light→dark is <strong>9°</strong>
+  (provisional), and every other semantic drifts ≤5°.</li>
+  <li><strong>Semantics keep one meaning each.</strong> Six roles, six colours, both themes.</li>
+  <li><strong>Every text pairing clears 4.5:1 in dark</strong> — 0 failures across 24 checked pairings.
+  The narrowest margins are the live chip at 5.54:1 and muted text on navy chrome at 5.63:1; every
+  other dark pairing exceeds 6:1. See the self-check banner above, which recomputes this on load.</li>
+</ul>
+
+</div>
+
+<script>
+(function () {
+  var srgb = function (c) { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  function lum(hex) {
+    var h = hex.replace('#', '');
+    var r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    return 0.2126 * srgb(r) + 0.7152 * srgb(g) + 0.0722 * srgb(b);
+  }
+  function ratio(a, b) {
+    var la = lum(a), lb = lum(b), hi = Math.max(la, lb), lo = Math.min(la, lb);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  function fmt(r) { return (Math.round(r * 100) / 100).toFixed(2); }
+
+  // --- token table swatches ---
+  document.querySelectorAll('#tokens td.hex').forEach(function (td) {
+    var out = '';
+    ['data-c', 'data-c2', 'data-c3'].forEach(function (attr) {
+      var c = td.getAttribute(attr);
+      if (c) out += '<span class="sw" style="background:' + c + '"></span>';
+    });
+    var codes = ['data-c', 'data-c2', 'data-c3']
+      .map(function (a) { return td.getAttribute(a); })
+      .filter(Boolean).join(' · ');
+    td.innerHTML = out + '<br>' + codes;
+  });
+
+  // --- contrast rows ---
+  var textRows = 0;
+  document.querySelectorAll('#pairs tbody tr').forEach(function (tr) {
+    var target = parseFloat(tr.getAttribute('data-t'));
+    var isImprovised = tr.getAttribute('data-note') === 'improvised';
+    ['data-l', 'data-d'].forEach(function (attr) {
+      var parts = tr.getAttribute(attr).split('|');
+      var fg = parts[0], bg = parts[1];
+      var r = ratio(fg, bg);
+      var swatch = document.createElement('td');
+      swatch.innerHTML = '<span class="pairsw" style="background:' + bg + ';color:' + fg + ';border-color:' + fg + '33">Aa</span>';
+      var num = document.createElement('td');
+      num.className = 'ratio';
+      num.textContent = fmt(r) + ':1';
+      var v = document.createElement('td');
+      if (target === 0) {
+        v.innerHTML = '<span class="verdict na">DECOR</span>';
+      } else {
+        var ok = r >= target;
+        v.innerHTML = '<span class="verdict ' + (ok ? 'pass' : 'fail') + '">' + (ok ? 'PASS' : 'FAIL') + '</span>';
+      }
+      if (target >= 4.5 && !isImprovised && attr === 'data-d') textRows++;
+      tr.appendChild(swatch); tr.appendChild(num); tr.appendChild(v);
+    });
+  });
+
+  // --- red separation ---
+  var lightSep = ratio('#B91C1C', '#DC2626'), darkSep = ratio('#FF9BA1', '#FF6C77');
+  document.getElementById('redsep').innerHTML =
+    'Danger vs live, light: <strong>' + fmt(lightSep) + ':1</strong>. ' +
+    'Danger vs live, dark: <strong>' + fmt(darkSep) + ':1</strong>. ' +
+    'The dark palette preserves the light palette’s separation rather than improving on it — see flag F2.';
+
+  // --- self check ---
+  var el = document.getElementById('selfcheck');
+  var darkTextFails = 0;
+  document.querySelectorAll('#pairs tbody tr').forEach(function (tr) {
+    var target = parseFloat(tr.getAttribute('data-t'));
+    if (target < 4.5) return;
+    if (tr.getAttribute('data-note') === 'improvised') return;
+    var p = tr.getAttribute('data-d').split('|');
+    if (ratio(p[0], p[1]) < 4.5) darkTextFails++;
+  });
+  var lightTextFails = 0;
+  document.querySelectorAll('#pairs tbody tr').forEach(function (tr) {
+    var target = parseFloat(tr.getAttribute('data-t'));
+    if (target < 4.5) return;
+    if (tr.getAttribute('data-note') === 'improvised') return;
+    var p = tr.getAttribute('data-l').split('|');
+    if (ratio(p[0], p[1]) < 4.5) lightTextFails++;
+  });
+  var good = darkTextFails === 0;
+  el.style.background = good ? '#DCFCE7' : '#FCE8E8';
+  el.style.color = good ? '#15803D' : '#B91C1C';
+  el.style.borderColor = good ? '#7FC79B' : '#E0A0A0';
+  el.innerHTML =
+    'Self-check — dark theme: <strong>' + darkTextFails + '</strong> text pairing(s) below 4.5:1 across ' +
+    textRows + ' checked. ' +
+    'Light theme (declared Stage 2 values, not authored here): <strong>' + lightTextFails +
+    '</strong> below 4.5:1 — see flag F1.';
+})();
+</script>
+</body>
+</html>
