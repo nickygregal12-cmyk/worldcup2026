@@ -25,7 +25,7 @@
 .heroCopy p,
 .sectionIntro p {
   margin: 0;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .headerStats,
@@ -39,23 +39,23 @@
 .summaryGrid div,
 .summaryStrip div {
   padding: var(--space-3);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--color-surface-raised);
+  background: var(--surface-raised);
 }
 
 .headerStats strong,
 .summaryGrid strong,
 .summaryStrip strong {
   display: block;
-  font-size: var(--font-size-lg);
-  color: var(--color-text-strong);
+  font-size: var(--text-lg);
+  color: var(--text-strong);
 }
 
 .headerStats span,
 .summaryGrid span,
 .summaryStrip span {
-  color: var(--color-text-muted);
+  color: var(--text-muted);
 }
 
 .panel {
@@ -77,7 +77,7 @@
 }
 
 .controlNote {
-  color: var(--color-text-muted);
+  color: var(--text-muted);
 }
 
 .panelHeading,
@@ -112,18 +112,18 @@
   display: grid;
   gap: var(--space-2);
   padding: var(--space-3);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--color-surface-raised);
+  background: var(--surface-raised);
 }
 
 .emptyState {
-  background: var(--color-surface-soft);
+  background: var(--surface-soft);
 }
 
 .emptyState p {
   margin: 0;
-  color: var(--color-text-secondary);
+  color: var(--text-secondary);
 }
 
 .rowMain {
@@ -155,11 +155,11 @@
 
 .tableGroupHeader span,
 .protected {
-  color: var(--color-text-muted);
+  color: var(--text-muted);
 }
 
 .empty {
-  color: var(--color-text-muted);
+  color: var(--text-muted);
   margin: 0;
 }
 

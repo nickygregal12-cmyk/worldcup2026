@@ -1,3 +1,5 @@
+> **SUPERSEDED SNAPSHOT — do not work from this copy.** This file is part of the locked v9 install pack and is frozen at its 2026-07-06 pack state. The canonical, maintained version is `docs/STREAMLINED-BATCH-ORDER.md`, which has moved on since this pack was installed. If a filename search brought you here, use the canonical copy.
+
 # Streamlined Batch Order
 
 ## Governing order

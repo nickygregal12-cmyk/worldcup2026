@@ -148,7 +148,8 @@ for (const marker of [
 ]) if (!appCss.includes(marker)) fail(`Charter CSS behaviour is missing: ${marker}`)
 
 const scoringSources = {
-  'src/home/HomeDashboard.jsx': read('src/home/HomeDashboard.jsx'),
+  // Home reads scoring through its model since the v2 rebuild, so check view + model together.
+  'src/home/HomeDashboard.jsx': `${read('src/home/HomeDashboard.jsx')}\n${read('src/home/homeDashboardModel.js')}`,
   'src/tournament/TournamentOverview.jsx': `${read('src/tournament/TournamentOverview.jsx')}\n${read('src/tournament/tournamentPageModel.js')}`,
 }
 for (const [file, source] of Object.entries(scoringSources)) {

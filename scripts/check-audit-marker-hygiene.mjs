@@ -35,7 +35,7 @@ const CODE_SHAPE = /[{}<>=()_/$]/
 // introduced. The count must NEVER rise, and the cap must be lowered in the
 // same commit whenever remediation reduces the count (same discipline as the
 // lint-bypass governance caps). The healthy end state is 0.
-const MAX_FROZEN_MARKERS = 73
+const MAX_FROZEN_MARKERS = 68
 
 // Exceptions must name the audit file, the exact literal and a reason.
 // An empty list is the healthy state — prefer the shared-constant fix.

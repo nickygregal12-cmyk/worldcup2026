@@ -36,7 +36,9 @@ if (!app.includes("import { buildKoReadiness } from './app/koReadiness.js'") || 
 if (!app.includes('deriveNavigationLifecycle(appData.guestReference, { koReadiness })')) fail('App does not pass shared KO-readiness to navigation')
 if (!app.includes('koReadiness={koReadiness}')) fail('App does not pass shared KO-readiness to Leagues')
 if (!leagueModel.includes('koReadiness') || !leagueModel.includes('shared KO-readiness signal')) fail('League model does not use shared KO-readiness copy')
-if (!leagueUi.includes('koReadiness') || !leagueUi.includes('koLeagueReady') || !leagueUi.includes('LeagueKoReadinessCard')) fail('League UI does not gate KO league presentation with shared readiness')
+// The readiness card render moved into LeagueStandingsPanel (checked on the next line);
+// the page itself must still derive the gate from the shared signal.
+if (!leagueUi.includes('koReadiness') || !leagueUi.includes('koLeagueReady')) fail('League UI does not gate KO league presentation with shared readiness')
 if (!leaguePresentation.includes('LeagueKoReadinessCard') || !leaguePresentation.includes('disabled={disabled}')) fail('League presentation does not disable pre-readiness KO table access')
 if (!leagueTests.includes('keeps KO league tables waiting when the tournament has started but KO readiness is closed')) fail('League KO-readiness test is missing')
 if (!homeAudit.includes('shared KO readiness signal')) fail('Home lifecycle audit still checks the retired local KO-readiness helper')

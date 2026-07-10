@@ -155,6 +155,10 @@ export function buildLeagueCompetitionSummary(rows, competitionKey, { leagueComp
   })
 }
 
+// Shared constant so audits can assert the constant name instead of freezing the sentence.
+// Movement stays honest: no arrow is invented until an earlier table exists to compare against.
+export const RANK_MOVEMENT_PENDING_REASON = 'Rank moves appear once an earlier table exists to compare against.'
+
 function podiumLabel(rank) {
   if (rank === 1) return 'Top spot'
   if (rank === 2) return 'Top two'
@@ -183,7 +187,7 @@ export function buildLeagueRaceRows(rows) {
       gapToLeaderLabel: gapToLeader === 0 ? 'Leader' : `${gapToLeader} behind leader`,
       rankStoryLabel: row.isCurrentUser ? 'YOU' : podiumLabel(rank),
       rankMovementLabel: null,
-      rankMovementReason: 'Rank movement waits for trustworthy previous-rank data.',
+      rankMovementReason: RANK_MOVEMENT_PENDING_REASON,
     }
   }))
 }

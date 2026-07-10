@@ -82,6 +82,17 @@
   position: relative;
 }
 
+/* The shared SelectField renders a visible label span; the hero pill keeps it for
+   screen readers only so the picker still reads as a compact glass control. */
+.leaguePicker > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .leaguePicker select {
   appearance: none;
   padding: var(--space-2) var(--space-6) var(--space-2) var(--space-3);

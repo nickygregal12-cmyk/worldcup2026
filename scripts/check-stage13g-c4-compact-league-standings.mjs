@@ -25,11 +25,13 @@ const migrations = existsSync('supabase/migrations')
   ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
   : []
 
+// The compact table was rebuilt as League table D leader-list rows: one row per member
+// carrying rank, identity and running total only. Assert that structure.
 for (const marker of [
-  '<th>#</th><th>Member</th><th>Pts</th>',
+  'raceStyles.leaderRow',
   'buildLeagueRaceRows',
   'hasScoring ? row.rank : \'—\'',
-  'data-label="Pts"',
+  'raceStyles.points',
 ]) {
   if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing compact table marker: ${marker}`)
 }
@@ -51,7 +53,7 @@ if (leaguesPage.includes('LeagueRaceSummary')) {
 }
 
 for (const marker of [
-  'Stage 13G-C4 compact league standings',
+  'compact league standings',
   '.rankMarker',
   '.currentUserRow',
 ]) {

@@ -29,14 +29,17 @@ export const ACTIVE_UI_ROOTS = Object.freeze([
 // Temporary caps are exact ceilings. If a file shrinks, this policy must shrink in the same commit.
 export const TEMPORARY_COMPONENT_CAPS = Object.freeze({})
 
-// Permanent global CSS is limited to tokens and typography. The four compatibility files are frozen debt.
+// Permanent global CSS is limited to tokens and typography. The compatibility files below are frozen debt.
+// match-card.css arrived with the Home v2 rebuild as shared MatchCard styling; it is frozen here and
+// should be folded into a CSS Module in a dedicated slice rather than grown further.
 export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   'src/design/tokens.css': 204,
   'src/design/typography.css': 12,
   'src/styles/feature-compat.css': 2590,
   'src/styles/app.css': 1903,
-  'src/styles/groups-predictor.css': 603,
+  'src/styles/groups-predictor.css': 555,
   'src/styles/knockout-experiences.css': 463,
+  'src/styles/match-card.css': 186,
 })
 
 // Test fixtures share the hard cap. Exact temporary caps must ratchet down when a fixture shrinks.

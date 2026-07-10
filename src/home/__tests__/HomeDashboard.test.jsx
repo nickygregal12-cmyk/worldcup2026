@@ -66,6 +66,32 @@ function renderHome(fixture) {
 }
 
 describe('Home dashboard rendering', () => {
+  it('labels the countdown date as provisional when the database has no lock', () => {
+    // tournament above has prediction_lock_at/prediction_locked_at NULL: the client
+    // must not present the central fallback as a real, configured date.
+    const fixture = fixtureFor({ now: new Date('2028-06-07T17:30:00Z') })
+    expect(fixture.lifecycle.provisional).toBe(true)
+    expect(renderHome(fixture)).toContain('Provisional — kick-off time not confirmed')
+  })
+
+  it('presents a database-configured lock date without the provisional label', () => {
+    const fixture = buildHomeDashboard({
+      tournament: { ...tournament, prediction_lock_at: '2028-06-09T19:00:00Z' },
+      reference: referenceWith([openingMatch]),
+      session: { user: { id: 'user-1' } },
+      profile: { display_name: 'Nicky' },
+      guestSummary: { groupComplete: 0, bracketComplete: 0, groupJokers: 0 },
+      originalBundle: { predictions: [] },
+      koBundle: null,
+      results: null,
+      leagues: [],
+      sectionErrors: {},
+      now: new Date('2028-06-07T17:30:00Z'),
+    })
+    expect(fixture.lifecycle.provisional).toBe(false)
+    expect(renderHome(fixture)).not.toContain('Provisional — kick-off time not confirmed')
+  })
+
   it('shows exactly one countdown before the tournament, framed as the lock', () => {
     const html = renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z') }))
 

@@ -23,21 +23,24 @@ for (const marker of [
   if (!model.includes(marker)) fail(`Home model missing ${marker}`)
 }
 
+// Home v2 replaced the single match-hub panel with per-fixture Match Centre cards:
+// live and upcoming fixtures render as tappable HomeMatchCard links on matchday.
 for (const marker of [
-  'dashboard.live.matchHub',
-  'matchHub.href',
-  'matchHub.cta',
-  'matchHubTeams',
+  'home.liveMatches.map',
+  'home.upcomingMatches.map',
+  'href={card.href}',
+  'HomeMatchCard',
   'TeamLabel',
 ]) {
   if (!view.includes(marker)) fail(`Home view missing ${marker}`)
 }
 
+const matchCardStyles = read('src/styles/match-card.css')
 for (const marker of [
-  'matchHubBody',
-  'matchHubTeams',
+  'match-card__chip--live',
+  'match-card__hint',
 ]) {
-  if (!styles.includes(marker)) fail(`Home styles missing ${marker}`)
+  if (!matchCardStyles.includes(marker)) fail(`Match card styles missing ${marker}`)
 }
 
 for (const marker of [

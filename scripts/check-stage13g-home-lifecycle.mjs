@@ -17,17 +17,21 @@ const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter
 
 if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 if (!lifecycle.includes('validStartTimestamp') || !lifecycle.includes('hasExplicitTime')) fail('Lifecycle resolver must keep date-only tournament starts from overriding central precise start config')
-if (!lifecycleTest.includes("starts_on: '2028-06-09'") || !lifecycleTest.includes("2028-06-09T20:00:00.000Z")) fail('Config-to-surface lifecycle test for central tournament start is missing')
+// Home v2 made the lock and the opening kick-off one moment: the central start fallback is 19:00Z.
+if (!lifecycleTest.includes("starts_on: '2028-06-09'") || !lifecycleTest.includes("2028-06-09T19:00:00.000Z")) fail('Config-to-surface lifecycle test for central tournament start is missing')
 if (!model.includes('resolveTournamentLifecycle(tournament, now)')) fail('Home model must derive lifecycle from the central resolver')
 if (!model.includes('predictionLockCountdown') || !model.includes('tournamentStartCountdown')) fail('Home model must expose prediction-lock and tournament-start countdowns')
 if (!model.includes("import { buildKoReadiness } from '../app/koReadiness.js'") || !model.includes('const ko = buildKoReadiness(reference)')) fail('Home model must consume the shared KO readiness signal')
 if (!homeTest.includes('drives Home countdowns from the central lifecycle configuration')) fail('Home countdown contract test is missing')
 if (!homeTest.includes('surfaces a central KO readiness signal')) fail('Home KO readiness contract test is missing')
 if (!homeTest.includes('marks Home as live and promotes the active match')) fail('Home today/live match hub test is missing')
-if (!view.includes('homeStyles.lifecycleStrip')) fail('Home lifecycle countdown strip is missing')
-if (!view.includes('Today’s match hub')) fail('Home today match hub copy is missing')
-if (!view.includes('heroPrompt')) fail('Home first-visit/returning guest conversion prompt is missing')
-if (!styles.includes('lifecycleStrip') || !styles.includes('nextMatchHint')) fail('Stage 13G-B Home lifecycle styles are missing')
+// Home v2: the lifecycle strip became the single CountdownHero (lock == opening kick-off),
+// the today hub became state-ordered MatchdayLive cards, and guest conversion is the
+// prediction CTA driven by the model.
+if (!view.includes('CountdownHero')) fail('Home lifecycle countdown hero is missing')
+if (!view.includes('MatchdayLive')) fail('Home matchday-live surface is missing')
+if (!view.includes('predictionCta')) fail('Home prediction conversion prompt is missing')
+if (!styles.includes('countHero') || !styles.includes('countBig')) fail('Stage 13G-B Home lifecycle styles are missing')
 if (!packageJson.scripts['audit:home-lifecycle']) fail('audit:home-lifecycle script is not registered')
 if (!packageJson.scripts.check.includes('npm run audit:home-lifecycle')) fail('npm run check must include the Home lifecycle audit')
 

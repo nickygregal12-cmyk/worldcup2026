@@ -72,8 +72,10 @@ for (const marker of [
 ]) if (!groups.includes(marker)) fail(`Groups predictor is missing: ${marker}`)
 if (/onClick=.*group-match-card/.test(groups)) fail('The surrounding match card must not become a team-profile trigger')
 
+// The review surface was rebuilt on a real route (Original Predictor Review). Assert its
+// structure rather than v1 prose: saved counts, the step checklist, submit and edit actions.
 const review = read('src/journey/PredictionReview.jsx')
-for (const marker of ['Saved predictions count whether submitted or not', 'Group checklist', 'Submit for review', 'Edit predictions', 'Predicted champion']) {
+for (const marker of ['styles.recapCount', 'styles.stepper', 'onClick={onSubmit}', 'onClick={onEdit}', 'Predicted champion']) {
   if (!review.includes(marker)) fail(`Prediction review is missing: ${marker}`)
 }
 

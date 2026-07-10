@@ -40,6 +40,9 @@ export const PRIMITIVE_SOURCES = Object.freeze({
 // into recorded debt, which the Constitution (§5.8 — the check suite only ever
 // gets stricter) permits only by explicit owner decision. That decision exists:
 // APPROVED BY OWNER RULING 2026-07-10. Nothing else here is grandfathered.
+// REPAID 2026-07-10: the Leagues select was migrated to SelectField by the
+// recovered fix-era commits (39d1b9a lineage); its entry was removed in the
+// same merge commit, per the ratchet rule below.
 //
 // This list is a RATCHET, not an exemption pool:
 //   * a count that RISES fails      — a new native control slipped in
@@ -55,20 +58,6 @@ export const PRIMITIVE_SOURCES = Object.freeze({
 // these entries are removed by whichever approved stage redesigns the named
 // surface. The debt is real regardless of what that stage ends up being called.
 export const PENDING_RECUT_ALLOWLIST = Object.freeze([
-  Object.freeze({
-    file: 'src/leagues/LeaguePresentation.jsx',
-    marker: 'PENDING-RECUT: Leagues',
-    counts: Object.freeze({ select: 1 }),
-    // LeaguePicker. Uses <optgroup> to head Original / KO Predictor groups.
-    // SelectField supports neither optgroup nor multi-select, so it is not a
-    // drop-in — and would not remove the OS picker anyway (see header).
-    // Whatever replaces it must keep Original and KO leagues visually
-    // separate and never combined (Decision Register, "Points separation";
-    // Charter §10). The approved League contract shows no <select>; the
-    // replacement control itself is not yet specified by any binding
-    // authority, and Charter §12A holds Leagues closed unless Nicky
-    // explicitly reopens the surface.
-  }),
   Object.freeze({
     file: 'src/admin/AdminControlRoomSections.jsx',
     marker: 'PENDING-RECUT: Admin Control Room',

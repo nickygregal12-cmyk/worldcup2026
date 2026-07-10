@@ -26,7 +26,8 @@ const checks = [
   [model.includes('RESULT_COMPETITION'), 'competition boundary'],
   [service.includes('get_member_predictions_after_lock'), 'server-authorised overall prediction reads'],
   [service.includes('getLeagueMemberPredictions'), 'server-authorised league prediction reads'],
-  [(home.includes('matchHub.href') && homeModel.includes('#/match-centre?match=')), 'Home Match Centre entry'],
+  // Home v2 renders every match card as a Match Centre link (card.href from the model).
+  [(home.includes('href={card.href}') && homeModel.includes('#/match-centre?match=')), 'Home Match Centre entry'],
   [results.includes('#/match-centre?match='), 'Results Match Centre entry'],
 ]
 for (const [ok, label] of checks) if (!ok) throw new Error(`Stage 13F-C audit failed: ${label}`)

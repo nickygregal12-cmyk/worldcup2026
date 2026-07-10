@@ -17,7 +17,7 @@ function read(path) {
 
 const presentation = read('src/leagues/LeaguePresentation.jsx')
 const leaguesPage = read('src/leagues/Leagues.jsx')
-const cssModule = read('src/leagues/leagueRace.module.css')
+const playerView = read('src/player/PlayerView.jsx')
 const packageJson = JSON.parse(read('package.json') || '{}')
 const doc = read('docs/STAGE-13G-C5-LEAGUE-DETAIL-DESTINATION.md')
 
@@ -25,26 +25,29 @@ const migrations = existsSync('supabase/migrations')
   ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
   : []
 
+// The inline LeagueDetailDestination panel was superseded: a member row now navigates
+// straight to that player's PlayerView, which hosts the head-to-head comparison and
+// points breakdown as tabs. The invariant this stage protects is unchanged — the
+// league table stays rank/member/points and breakdowns live in a deeper destination.
 for (const marker of [
-  'export function LeagueDetailDestination',
-  'aria-label="League member detail"',
-  'Breakdowns open here so the league table stays as rank, member and points.',
-  'selectedUserId',
-  'Details open',
-  'View details',
+  'onClick={() => onOpenPlayer(row)}',
+  'raceStyles.leaderRow',
+  'heroStyles.heroHint',
 ]) {
   if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing marker: ${marker}`)
 }
 
 for (const marker of [
-  'LeagueDetailDestination',
-  'detailRef',
-  'scrollIntoView',
-  'selectedUserId={comparisonMemberId}',
-  'Open a member row for the detailed comparison.',
-  'PlayerHeadToHead state={comparison}',
+  'openPlayerView({ userId: row.userId, competitionKey: selectedLeague.competition })',
 ]) {
   if (!leaguesPage.includes(marker)) fail(`Leagues.jsx missing marker: ${marker}`)
+}
+
+for (const marker of [
+  'PlayerHeadToHead',
+  'buildStandingComparison',
+]) {
+  if (!playerView.includes(marker)) fail(`PlayerView.jsx missing detail-destination marker: ${marker}`)
 }
 
 if (leaguesPage.includes('<MemberPicker')) {
@@ -60,14 +63,8 @@ for (const forbidden of [
   if (presentation.includes(forbidden)) fail(`League table must stay compact; found ${forbidden}`)
 }
 
-for (const marker of [
-  'Stage 13G-C5 league row detail destination',
-  '.selectedRow',
-  '.detailDestination',
-  '.detailDestinationHeading',
-]) {
-  if (!cssModule.includes(marker)) fail(`leagueRace.module.css missing marker: ${marker}`)
-}
+// The inline destination's CSS classes were retired with the panel itself; the row
+// styling that carries the destination affordance is asserted above via the JSX.
 
 for (const marker of [
   'row detail destination',
@@ -98,6 +95,6 @@ if (failures.length > 0) {
 
 console.log('Euro Stage 13G-C5 league detail-destination audit passed.')
 console.log('Table: rank, member and points only.')
-console.log('Detail: member comparison opens below the compact table.')
+console.log('Detail: member rows open the player\'s PlayerView, which hosts comparison and breakdown tabs.')
 console.log('Boundary: Original Predictor and KO Predictor remain separate.')
 console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)
