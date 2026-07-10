@@ -1,3 +1,95 @@
+**Stage DESIGN-PROGRAMME-ADOPTION-1 (2026-07-10 — owner rulings, final)** adopts the
+`docs/design programme/` package as the binding visual authority for the Euro 2028
+Predictor and records the owner rulings that resolved the prior verification. All rulings
+in this entry are dated 2026-07-10 and are final. This entry is docs/authority-only: it
+changes no `src/`, `supabase/`, test, scoring runtime, resolver, Auth, service-role,
+fake-result-write or migration; active migrations remain 20 and Migration 020 is applied.
+It supersedes only *appearance*; every functional decision, competition boundary and gate
+recorded elsewhere in this register remains untouched.
+
+*Binding boundaries (recorded verbatim):*
+
+1. The design programme governs appearance only — it changes nothing functional.
+2. Existing contracts and this Decision Register govern everything else. Where a concept
+   omits something the contracts require, the contract wins and the element gets styled
+   into the new system, never dropped.
+3. The per-page finalisation standard (recorded 2026-07-09) applies to every re-cut stage:
+   each exits FINAL — flaws fixed in-stage, CSS modularised in-stage, no scaffold UI,
+   fail-loud provisional indicators are features and stay; exit = owner gallery approval →
+   visual blessing (once the Playwright visual tier is present) → FINAL.
+
+**A. Scoring (the locked contract governs everywhere; see `docs/RULES-SCORING-LOCKED-CONTRACT.md`).**
+Group matches 5 exact / 3 correct result; group positions 2 per correct position, +5 for a
+perfect group; Top Scorer 30, entered on Review (player pool pending Stage 17A); group-goals
+total tiered 25 / 15 / 5 (exact / within 5 / within 10, bands inclusive by distance),
+auto-calculated from the 36 group predictions and never player-entered. **Highest-Scoring
+Team is dropped and ceases to exist.** Top Scorer ties pay the full 30 to anyone who picked
+any tied official winner. The superseded 30/10 match values and flat-20 tournament picks are
+dead and must not be written, asserted or pinned anywhere; the earlier "Scoring model" and
+"Extra tournament picks" prose in §2/§3 of this register is superseded on this date (see the
+banners added there) and by Stage STAGE-RULES-SCORING-LOCK-1.
+
+**B. Joker multiplier amendment.** A joker doubles that match's score points only — group
+matches and KO Predictor matches; never position points, never bonuses, never anything on
+the Original Bracket (bracket jokers do not exist). The locked contract previously defined
+caps (5 group / 0 bracket / 5 KO) but no multiplier; the multiplier is added to that contract
+as this recorded amendment.
+
+**C. KO draw-bonus amendment.** In the KO Predictor, a correctly-predicted 90-minute draw
+plus the correct advancing team earns a bonus. **Point value: PENDING OWNER VALUE — unset.**
+No number is invented here; the value lands as a follow-up register entry. The rule is
+recorded in the locked contract with the value explicitly marked unset.
+
+**D. Design rulings.** Gold is joker-exclusive (`#A6790A` family); the sky family
+(`#5FC7F5` / `#38BDF8`) is the broadcast/chrome accent — no gold in mastheads, tabs, marks or
+borders. Palette findings: **F1** — light-palette text uses gain-authored ink variants ~6–12%
+darker at the same hues (the originals stay for fills/chrome); **F3** — the
+`text-muted-on-chrome` token is approved; **F2/F4/F5** — accepted as analysed in the
+dark-palette copy-back; **F6** — the concepts' improvised muted/border values are retired via
+per-page extraction, with no bundle re-render. `docs/design programme/Euro 2028 Predictor -
+Dark Theme Palette.html` is the dark-theme authority. Team badges are circular ISO-keyed
+(neutral dashed placeholder chip for unresolved slots). The 4px spacing scale holds with the
+owner compact bias (between two steps take the smaller). Mobile bottom-nav auto-hide is the
+approved amendment (hysteresis rules per CLAUDE.md §5). Mobile score steppers are mandatory:
+vertical arrows above and below each score, plus direct numeric entry, 48px targets.
+High-score confirm fires at 7+ on typed entry only, shown once. Contextual watermark glyphs
+appear per surface (the Group A page shows "A", etc.). Dark mode is a manual toggle (top bar
+and More), not system-driven. Mobile and desktop receive equal polish. Contrast ≥4.5:1 in
+both themes remains required.
+
+**E. Guest mode.** Permanently alive. Guests get the same experience on their two proper
+pages (Groups, Bracket) with exactly two differences — no lock and no points. Completed
+matches show real scores with the guest's remaining picks applied (route-tracker). A post-lock
+guest transfer keeps the picks but awards no points, and the explicit missed-deadline message
+is a required Guest Transfer modal state. This is a contract-level requirement, not a visual
+option.
+
+**F. Fonts.** Prototypes and design artifacts may load Google Fonts via CDN; the product app
+self-hosts via fontsource at stage DP-0 — no runtime Google Font requests in product code.
+
+**G. Supersession recorded.** This adoption makes `docs/design programme/` (Design Direction
+and Components; the two Concepts bundles; the approved Home re-cut prototype
+`euro28-home-recut-prototype-PROPOSED.html`; the approved Dark Theme Palette) the binding
+visual authority. It supersedes (i) the Design Charter's *visual direction* — the Charter's
+non-visual rules (line caps, CSS Modules requirement, component discipline, dependency
+direction, WCAG enforcement mechanism, completion terminology) remain live — and (ii) the
+Night Broadcast direction/contract set. The 21 live `docs/reference-prototypes/` files keep
+their content/interaction contracts binding until each page's re-cut is approved; only their
+visual treatment is superseded. The design programme is registered in
+`AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md` per the current tree's governance; item 69's
+documentation-constitution sweep (Mac-stranded) re-homes this registration under the
+constitution when it syncs.
+
+*Contract-wins list (from the prior verification — the contract wins where a concept omits it):*
+
+- **CW1** — Home Leaderboards card deep-links into both competitions.
+- **CW2** — Review is the tournament-picks entry surface (Top Scorer entered there).
+- **CW3** — Points Breakdown itemises ALL point sources.
+- **CW4** — Match Centre keeps its personal bracket-impact helper.
+- **CW5** — Navigation State 2 (early KO access via More) is preserved.
+- **CW6** — Guest mode per ruling E above is a contract-level requirement carried into every
+  re-cut.
+
 **Stage CONTRACTS-PROTOTYPE-V2-INSTALL** is accepted as a docs-only supersession of four approved visual contracts. `docs/reference-prototypes/euro28-home-page-prototype-v2.html`, `euro28-groups-page-prototype-v2.html`, `euro28-ko-predictor-prototype-v2.html` and `euro28-bracket-page-prototype-v2.html` are now the binding visual contracts for Home, Groups, KO Predictor and the Original Bracket, replacing their v1 predecessors. The v1 files are retained, not deleted, renamed with a `-v1-superseded` suffix: `euro28-home-page-prototype-v1-superseded.html`, `euro28-groups-page-prototype-v1-superseded.html`, `euro28-bracket-page-prototype-v1-superseded.html` and `euro28-ko-predictor-contract-v1-superseded.html`. Note the KO Predictor v1 contract was named `euro28-ko-predictor-contract.html`, not `-prototype.html`.
 
 Recorded contract changes. **Home v2:** a single countdown replaces the twin countdown grid because the prediction lock IS the first kick-off; the featured match card adopts the Groups card language; every match card taps through to Match Centre; content and order are state-dependent across pre-tournament, matchday-live and post-match; a small "How scoring works" link appears pre-tournament only. **Groups v2:** the hero, watermark and banner are removed in favour of a compact strip carrying the view toggle, joker count with the new playing-card icon, and progress; cards carry date, time, stadium and host flag; the predicted group table and third-place table are always reachable as collapsible sections; a "Continue to your bracket" flow CTA is added; in-tournament cards show the real score against the player's pick with points chips. **KO Predictor v2:** it adopts the same card language as Groups with score inputs labelled "90 mins"; a 90-minute draw expands the same card inline to capture Extra time or Penalties and then the advancing team; a one-time dismissible notice states that KO Predictor is a separate competition whose points do not combine; a round rail replaces by-group and by-date switching; there is no completion flow, and each round shows pending-fixture placeholders instead. **Bracket v2:** mobile defaults to portrait stacked pick-a-winner cards using the same card language with tap-to-pick and no score inputs or jokers; a reversible "View as wall chart" opt-in is available in mobile landscape and the wall chart remains native on desktop and tablet; the Locked state gains Bracket and Health sub-tabs which carry forward the existing approved Bracket Health contract (On your path, Alive on a different path, Route conflict, Out, plus the points-still-available strip); the predicted bracket remains strictly separate from live results.
@@ -12,7 +104,7 @@ Follow-up closed: the three reference-adoption audits — `scripts/check-stage13
 
 # EURO 2028 PREDICTOR
 ## Consolidated Decision Register and Build Roadmap
-### Version 4.14 — Groups player-facing copy repair
+### Version 4.15 — Design programme adopted as binding visual authority (2026-07-10 owner rulings)
 
 > **Authority:** This is the product decision authority for the Euro 2028 Predictor. The Design Charter governs visual behaviour. The Agent Rules govern build process. Where they conflict, this register wins on product rules.
 
@@ -79,7 +171,7 @@ No owner choice is invented in this stage. It does not change Auth settings, ope
 | Penalty shoot-out score | Never predicted for points |
 | Original jokers | Five group-stage jokers and no bracket jokers |
 | KO jokers | Five separate KO Predictor jokers |
-| Joker multiplier | Provisional 2× through the versioned central scoring ruleset |
+| Joker multiplier | 2× (doubles that match's score points only — group and KO Predictor matches; never positions, bonuses or the Original Bracket), through the versioned central scoring ruleset. Recorded 2026-07-10 (Stage DESIGN-PROGRAMME-ADOPTION-1); previously provisional. |
 | Prediction save | One atomic full-bundle save |
 | Submit | Reversible review state; saved but unsubmitted predictions still count |
 | Global lock | Prediction content locks at the first tournament kick-off |
@@ -96,7 +188,7 @@ No owner choice is invented in this stage. It does not change Auth settings, ope
 | Direct writes | No direct browser writes to protected tables |
 | External results API | Deferred; manual operation remains authoritative and the fallback |
 | App name | **Euro 2028 Predictor** |
-| Extra tournament picks | Original Predictor only: total tournament goals, top scorer and highest-scoring team; 20 points each; global lock; no joker; no KO points; nearest-total ties and official joint winners receive full points |
+| Extra tournament picks | **SUPERSEDED 2026-07-10 — see the locked contract and Stage DESIGN-PROGRAMME-ADOPTION-1.** The live rule: Original Predictor only — group-goals total (tiered 25/15/5, auto-calculated) and Top Scorer (30, entered on Review); global lock; no joker; no KO points; Top Scorer ties pay full 30 to any picker of a tied winner. Highest-Scoring Team is dropped and does not exist. The old "20 points each" and highest-scoring-team wording is dead. |
 
 ## 2A. Product completeness gates for wider Euro 2028 scale
 
@@ -143,31 +235,31 @@ This package is docs/audit-only. It introduces no Supabase writes, Auth users, p
 
 ## 3. Scoring model
 
-### Original Predictor
+> **SUPERSEDED — do not use the values below.** The dead 30/10 match values, the flat-20
+> tournament picks and Highest-Scoring Team are retired. This section was already superseded by
+> Stage STAGE-RULES-SCORING-LOCK-1 and is re-flagged on 2026-07-10 by Stage
+> DESIGN-PROGRAMME-ADOPTION-1. The single scoring authority is
+> `docs/RULES-SCORING-LOCKED-CONTRACT.md`. The live values are summarised immediately below;
+> the original prose is retained struck-through-in-spirit for provenance only and must not be
+> pinned, quoted or implemented.
 
-- Exact group score: 30 points.
-- Correct group outcome: 10 points.
-- Group joker: provisional 2×.
-- Original bracket: points by a predicted team reaching each defined milestone.
+**Live scoring (authority: `docs/RULES-SCORING-LOCKED-CONTRACT.md`):** group match 5 exact /
+3 correct result; group position 2 per team, +5 perfect-group bonus; Original Bracket team
+progression R16 8 / QF 12 / SF 15 / Final 20 / Champion +25; group-goals total tiered 25 / 15
+/ 5 (exact / within 5 / within 10), auto-calculated; Top Scorer 30, entered on Review. KO
+Predictor: 90-minute score 10, advancing team 5, method +3 (requires correct advancing team),
+first-goal bracket +3 (provisional/API). A joker doubles that match's score points only (group
+and KO Predictor matches; never positions, bonuses or the Original Bracket). Highest-Scoring
+Team does not exist.
 
-### KO Predictor
+*Retired prose (provenance only — values dead, do not use):*
 
-- Exact 90-minute score: 30 points.
-- Correct 90-minute outcome: 10 points.
-- Correct advancing team: 10 points.
-- Correct decision method: 5 points when the advancing team is also correct.
-- KO joker: provisional 2×.
-
-All provisional values remain central and versioned. They must not be duplicated into page components.
-
-### Extra tournament picks
-
-- Total tournament goals: 20 points to every equally nearest prediction.
-- Top scorer: 20 points when the selected player is among the official joint winners.
-- Highest-scoring team: 20 points when the selected team is among the joint highest scorers.
-- All three belong to the Original Predictor, lock globally, use no joker and never enter KO Predictor totals.
-- None acts as the final leaderboard tiebreaker.
-- The official player selector activates only in Stage 17A.
+- ~~Original Predictor — exact group score 30; correct group outcome 10.~~
+- ~~KO Predictor — exact 90-minute score 30; correct 90-minute outcome 10; advancing team 10; decision method 5.~~
+- ~~Extra tournament picks — total tournament goals 20; top scorer 20; highest-scoring team 20.~~
+- Original bracket points accrue by a predicted team reaching each defined milestone (still true).
+- Central versioning still holds: live values remain central, versioned and never duplicated into page components.
+- The official player selector still activates only in Stage 17A.
 
 ## 4. Confirmed five-position mobile navigation
 
@@ -545,7 +637,10 @@ The approved scope lives in `docs/STAGE-13F-K0-ADMIN-OPERATIONS-SCOPE-AND-SERVER
 
 ## 12. Open decisions
 
-- Final joker multiplier.
+- KO Predictor draw-bonus point value — a correctly-predicted 90-minute draw plus the correct
+  advancing team earns a bonus; the value is PENDING OWNER VALUE (recorded unset 2026-07-10,
+  Stage DESIGN-PROGRAMME-ADOPTION-1) and lands as a follow-up register entry.
+- ~~Final joker multiplier.~~ Resolved 2026-07-10: 2× (doubles that match's score points only).
 - Official Euro 2028 tie-break regulations.
 - Final qualified teams, draw positions and kick-off times.
 - Whether Google sign-in is enabled after its optional stage is completed.

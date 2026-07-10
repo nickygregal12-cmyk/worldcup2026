@@ -35,6 +35,29 @@ Rules:
 - Original bracket picks do not use jokers.
 - Original Predictor and KO Predictor points never combine.
 
+### Highest-Scoring Team — DROPPED (owner ruling 2026-07-10)
+
+Highest-Scoring Team does not exist and is not scored. It is a dead tournament
+pick; it must not be entered, displayed, referenced or reintroduced anywhere.
+
+### Top Scorer entry and ties (owner ruling 2026-07-10)
+
+- Top Scorer is worth 30 and is entered on the Review surface (player pool
+  pending Stage 17A).
+- Top Scorer ties pay the full 30 to anyone who picked any tied official winner
+  — nearest/joint winners all receive the full award, not a shared fraction.
+
+### Joker multiplier (owner ruling 2026-07-10 — recorded amendment)
+
+This contract previously defined joker caps but not the multiplier. The
+multiplier is now recorded here:
+
+- A joker **doubles that match's score points only**.
+- It applies to **group matches and KO Predictor matches**.
+- It never doubles position points, never doubles bonuses, and never applies to
+  anything on the Original Bracket (bracket jokers do not exist).
+- Caps are unchanged: 5 group / 0 bracket / 5 KO.
+
 ## KO Predictor scoring
 
 | Item | Points |

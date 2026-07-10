@@ -1,3 +1,10 @@
+> **SUPERSEDED — Night Broadcast visual direction (2026-07-10, Stage DESIGN-PROGRAMME-ADOPTION-1).**
+> The Night Broadcast identity treatment established here is superseded by `docs/design programme/`,
+> the binding visual authority. The visual-contract *process discipline* (approve one contract per
+> surface; do not port HTML into `src/`) still holds, and prototype content/interaction contracts
+> remain binding until each page's re-cut is approved. Retained for provenance. See
+> `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`.
+
 # Stage DESIGN-CONTRACTS-BATCH-0 — Visual-contract rule recording
 
 Status: accepted governance package after owner approval of the all-main-pages design-contract batch plan.

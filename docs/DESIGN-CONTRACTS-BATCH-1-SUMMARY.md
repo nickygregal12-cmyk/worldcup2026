@@ -1,3 +1,9 @@
+> **SUPERSEDED — Night Broadcast visual direction (2026-07-10, Stage DESIGN-PROGRAMME-ADOPTION-1).**
+> The Night Broadcast visual direction recorded here is superseded by `docs/design programme/`,
+> the binding visual authority. The content/interaction contracts of the referenced prototypes
+> remain binding until each page's re-cut is approved; only their visual treatment is retired.
+> This file is retained for provenance. See `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`.
+
 # DESIGN-CONTRACTS-BATCH-1 — Approved visual contracts recorded
 
 Status: approved and recorded after Nicky review.

@@ -1,3 +1,10 @@
+> **SUPERSEDED (visual) — Night Broadcast direction (2026-07-10, Stage DESIGN-PROGRAMME-ADOPTION-1).**
+> The Night Broadcast identity/visual direction referenced here is superseded by
+> `docs/design programme/`, the binding visual authority; Home's re-cut input is the approved
+> `docs/design programme/euro28-home-recut-prototype-PROPOSED.html`. The non-visual surface
+> decisions extracted here remain useful reference. Retained for provenance. See
+> `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`.
+
 # Home and missing-surfaces build brief — extracted decisions
 
 Source: `Euro 2028 Predictor Build Brief.pdf`.

@@ -1,8 +1,28 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.15 — Home, Groups, KO Predictor and Bracket v2 contracts supersede v1
+### Version 1.16 — Visual direction superseded by the design programme (2026-07-10); non-visual rules remain live
 
-> **Authority:** This document governs how the Euro 2028 Predictor looks and feels. The Consolidated Decision Register governs product rules. The Agent Rules govern build process. A visual deviation must be proposed here before it ships.
+> **SUPERSESSION BANNER (2026-07-10 — Stage DESIGN-PROGRAMME-ADOPTION-1).** The **visual
+> direction** of this Charter — identity, colour roles and values, typography choices, spacing
+> and shape values, iconography direction, page composition and the visual treatment of the
+> reference prototypes — is **SUPERSEDED** by `docs/design programme/`, now the binding visual
+> authority (registered in `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`). Where this Charter and the
+> design programme differ on appearance, the design programme wins; the approved Dark Theme
+> Palette file is the dark-theme authority.
+>
+> **What remains LIVE in this Charter (not superseded):** the non-visual/process rules —
+> §11 Frontend architecture and enforcement in full (component ownership, scoped styling / CSS
+> Modules requirement, the transitional line caps and file-size boundaries, dependency
+> direction, dev/test isolation, WCAG contrast *enforcement mechanism*, the architecture audit,
+> completion terminology), the visual-contract *process discipline* (§12A), and the
+> Original/KO separation and predicted-vs-live distinction principles. These continue to govern.
+> Individual visual sections below (§1, §4, §5, §6, §8, colour/type/spacing specifics) are
+> retained for provenance but yield to the design programme on any appearance question.
+>
+> **Authority:** This document governs the Euro 2028 Predictor's non-visual frontend rules and,
+> for provenance, its former visual direction. The design programme governs appearance. The
+> Consolidated Decision Register governs product rules. The Agent Rules govern build process. A
+> visual deviation is now proposed against the design programme, not here.
 
 ## 1. Identity — CONFIRMED
 
@@ -316,6 +336,7 @@ The design-contract drafting programme is docs/reference-only until a later sepa
 
 ## Change log
 
+- **v1.16:** Visual direction superseded by `docs/design programme/` (Stage DESIGN-PROGRAMME-ADOPTION-1, 2026-07-10 owner rulings). The design programme is the binding visual authority for identity, colour, typography, spacing, iconography and page composition, and its Dark Theme Palette file is the dark-theme authority. The Charter's non-visual rules remain live: §11 frontend architecture and enforcement (line caps, CSS Modules requirement, file-size boundaries, dependency direction, dev/test isolation, WCAG enforcement mechanism, architecture audit, completion terminology), the §12A visual-contract process discipline, and the Original/KO and predicted-vs-live principles. No implementation is authorised by this record; per-page re-cuts follow the DP stage plan.
 - **v1.15:** Recorded Home v2, Groups v2, KO Predictor v2 and Bracket v2 as the binding visual contracts, superseding their v1 predecessors (v1 files retained with a `-v1-superseded` suffix as provenance only). Home moves to a single countdown because the lock is the first kick-off; Groups drops the hero/watermark/banner for a compact strip; KO Predictor gains inline extra-time/penalties expansion and a round rail; Bracket defaults to portrait stacked pick-a-winner cards with a reversible wall-chart opt-in, and absorbs the approved Bracket Health contract as a Health sub-tab in the Locked state. Amended the one-contract-per-surface rule to permit clearly suffixed superseded files. No implementation is authorised by this record.
 - **v1.14:** Recorded Bracket G and KO Predictor F as approved visual contracts, recorded League table D as the approved Leagues refinement, and left Bracket Health unapproved for a later candidate.
 - **v1.13:** Recorded the approved League visual contract alongside the approved Groups Night Broadcast anchor; clarified that Bracket and KO Predictor remain unapproved candidates until Nicky approves a variant or merge.
