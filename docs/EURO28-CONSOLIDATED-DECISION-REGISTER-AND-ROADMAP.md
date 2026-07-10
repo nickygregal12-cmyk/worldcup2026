@@ -35,10 +35,12 @@ the Original Bracket (bracket jokers do not exist). The locked contract previous
 caps (5 group / 0 bracket / 5 KO) but no multiplier; the multiplier is added to that contract
 as this recorded amendment.
 
-**C. KO draw-bonus amendment.** In the KO Predictor, a correctly-predicted 90-minute draw
-plus the correct advancing team earns a bonus. **Point value: PENDING OWNER VALUE — unset.**
-No number is invented here; the value lands as a follow-up register entry. The rule is
-recorded in the locked contract with the value explicitly marked unset.
+**C. KO draw-bonus amendment — RESOLVED 2026-07-10 (Stage DP-SCORING).** The KO Predictor
+match now scores as three additive +5 components: correct advancer (any method), correct
+draw call (predicted level at 90 and it was), and exact 90-minute score. Regulation maximum
+10, extra-time maximum 15; a joker doubles the match total. This resolves the previously
+unset draw bonus — **the bonus is the +5 draw-call component**, not a separate value. The
+locked contract (`docs/RULES-SCORING-LOCKED-CONTRACT.md`) and CLAUDE.md §4 carry the scheme.
 
 **D. Design rulings.** Gold is joker-exclusive (`#A6790A` family); the sky family
 (`#5FC7F5` / `#38BDF8`) is the broadcast/chrome accent — no gold in mastheads, tabs, marks or
@@ -637,9 +639,9 @@ The approved scope lives in `docs/STAGE-13F-K0-ADMIN-OPERATIONS-SCOPE-AND-SERVER
 
 ## 12. Open decisions
 
-- KO Predictor draw-bonus point value — a correctly-predicted 90-minute draw plus the correct
-  advancing team earns a bonus; the value is PENDING OWNER VALUE (recorded unset 2026-07-10,
-  Stage DESIGN-PROGRAMME-ADOPTION-1) and lands as a follow-up register entry.
+- ~~KO Predictor draw-bonus point value.~~ Resolved 2026-07-10 (Stage DP-SCORING): the KO
+  Predictor match scores three additive +5 components (advancer / draw call / exact 90-minute
+  score); the draw bonus is the +5 draw-call component. See §1 amendment C.
 - ~~Final joker multiplier.~~ Resolved 2026-07-10: 2× (doubles that match's score points only).
 - Official Euro 2028 tie-break regulations.
 - Final qualified teams, draw positions and kick-off times.

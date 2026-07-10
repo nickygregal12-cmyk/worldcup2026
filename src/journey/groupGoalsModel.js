@@ -35,32 +35,36 @@ export function calculateGroupGoalsTotal(draft, expectedMatches = 36) {
   })
 }
 
+import { GROUP_GOALS_TIERS, scoreTotalGoalsPick } from '../contracts/tournamentPickContract.js'
+
+export { GROUP_GOALS_TIERS }
+
 export const GROUP_GOALS_SCORING_STATUS = Object.freeze({
-  /** Points are not implemented. Nothing awards or displays them. */
-  NOT_BUILT: 'not_built',
+  /** Both totals are in and the tiered points are final. */
+  SCORED: 'scored',
+  /** The official group-goals total is not yet available, so no points yet. */
+  PENDING_RESULT: 'pending_result',
 })
 
 /**
- * STUB — group-goals points are not implemented, and must not be guessed at.
+ * Tiered group-goals points (owner ruling, CLAUDE.md §4): the user's predicted
+ * 36-match group-goal total is compared to the official total; 25 for an exact
+ * match, 15 within 5, 5 within 10, else 0. Bands are inclusive by absolute
+ * distance (exactly 5 off -> 15, exactly 10 off -> 5, 11 off -> 0).
  *
- * Three things are missing:
- *
- *   1. No source computes the official group-stage goals total. It would be
- *      sum(home_score_90 + away_score_90) over confirmed match_results for
- *      match_number <= 36, but nothing calculates or stores it.
- *   2. prediction_totals has no column to persist the points, so they could not
- *      influence leaderboard rank, which is dense_rank() over total_points.
- *   3. Two locked contracts disagree on the mechanic. docs/RULES-SCORING-LOCKED-CONTRACT.md
- *      scores tolerance bands (exact 25, within 5 -> 15, within 10 -> 5);
- *      docs/STAGE-13F-I-TOURNAMENT-PICK-CONTRACT.md scores a flat 20 to every
- *      nearest guess. That conflict is unresolved and is an owner decision.
- *
- * Returning null is the honest answer: the UI shows the calculated total and
- * says nothing about points. Do not replace this with a plausible-looking
- * formula — pick (3) first, then build (1) and (2).
+ * The official total is sum(home_score_90 + away_score_90) over confirmed group
+ * results (match_number <= 36); until every group result is confirmed it is not
+ * final, so a missing/partial actual total returns PENDING_RESULT with no points.
  */
-export function scoreGroupGoalsTotal() {
-  return Object.freeze({ status: GROUP_GOALS_SCORING_STATUS.NOT_BUILT, points: null })
+export function scoreGroupGoalsTotal(predictedTotal, actualTotal) {
+  if (!Number.isInteger(predictedTotal) || !Number.isInteger(actualTotal)) {
+    return Object.freeze({ status: GROUP_GOALS_SCORING_STATUS.PENDING_RESULT, points: null, distance: null })
+  }
+  return Object.freeze({
+    status: GROUP_GOALS_SCORING_STATUS.SCORED,
+    points: scoreTotalGoalsPick(predictedTotal, actualTotal),
+    distance: Math.abs(predictedTotal - actualTotal),
+  })
 }
 
 /**

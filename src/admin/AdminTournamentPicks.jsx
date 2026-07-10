@@ -1,10 +1,19 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import styles from './AdminOperationsCompletion.module.css'
+import { GROUP_GOALS_TIERS, TOURNAMENT_PICK_POINTS, TOURNAMENT_PICK_KEYS } from '../contracts/tournamentPickContract.js'
 
+// Point values render from the versioned contract, never hardcoded prose (CLAUDE.md §7).
 const PICKS = Object.freeze([
-  ['Total tournament goals', 'Nearest prediction receives 20 points; tied nearest predictions receive full points.'],
-  ['Top scorer', 'Official joint winners receive full points.'],
-  ['Highest-scoring team', 'Official joint winners receive full points.'],
+  [
+    'Total group-stage goals',
+    `${GROUP_GOALS_TIERS.EXACT} / ${GROUP_GOALS_TIERS.WITHIN_5} / ${GROUP_GOALS_TIERS.WITHIN_10} points`,
+    'Auto-calculated from your 36 group scores: exact / within 5 / within 10.',
+  ],
+  [
+    'Top scorer',
+    `${TOURNAMENT_PICK_POINTS[TOURNAMENT_PICK_KEYS.TOP_SCORER]} points`,
+    'Official joint winners each receive full points.',
+  ],
 ])
 
 export default function AdminTournamentPicks({ readiness }) {
@@ -18,8 +27,8 @@ export default function AdminTournamentPicks({ readiness }) {
       </div>
       <p>This is the single Admin home for the approved Tournament Picks contract. It has no outcome-entry controls until Stage 17A supplies persistence, official player references and scoring.</p>
       <div className={styles.pickGrid}>
-        {PICKS.map(([label, detail]) => (
-          <div key={label}><strong>{label}</strong><span>20 points</span><small>{detail}</small></div>
+        {PICKS.map(([label, points, detail]) => (
+          <div key={label}><strong>{label}</strong><span>{points}</span><small>{detail}</small></div>
         ))}
       </div>
       <dl className={styles.pickBoundaries}>

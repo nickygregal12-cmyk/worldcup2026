@@ -88,47 +88,72 @@ describe('uniform match scoring', () => {
     expect(points.total).toBe(MATCH_SCORE_POINTS.CORRECT_OUTCOME)
   })
 
-  it('scores a knockout normal-time draw independently from the eventual winner', () => {
+  it('scores a KO match as the three additive components', () => {
     const points = calculateMatchPredictionPoints({
       home_score: 1,
       away_score: 1,
-      advancing_team_id: 'away',
-      decision_method: DECISION_METHOD.PENALTIES,
+      advancing_team_id: 'sco',
+      decision_method: DECISION_METHOD.EXTRA_TIME,
     }, {
       normalTimeHomeGoals: 1,
       normalTimeAwayGoals: 1,
-      advancingTeamId: 'away',
-      decisionMethod: DECISION_METHOD.PENALTIES,
+      advancingTeamId: 'sco',
+      decisionMethod: DECISION_METHOD.EXTRA_TIME,
     }, { isKnockout: true })
 
     expect(points).toMatchObject({
-      exactScore: MATCH_SCORE_POINTS.EXACT_SCORE,
+      correctAdvancer: KNOCKOUT_MATCH_POINTS.CORRECT_ADVANCER,
+      correctDrawCall: KNOCKOUT_MATCH_POINTS.CORRECT_DRAW_CALL,
+      exact90Score: KNOCKOUT_MATCH_POINTS.EXACT_90_SCORE,
+      exactScore: 0,
       correctOutcome: 0,
-      correctAdvancingTeam: KNOCKOUT_MATCH_POINTS.CORRECT_ADVANCING_TEAM,
-      correctDecisionMethod: KNOCKOUT_MATCH_POINTS.CORRECT_DECISION_METHOD,
-      jokerApplied: false,
-      jokerMultiplier: 1,
-      total: MATCH_SCORE_POINTS.EXACT_SCORE +
-        KNOCKOUT_MATCH_POINTS.CORRECT_ADVANCING_TEAM +
-        KNOCKOUT_MATCH_POINTS.CORRECT_DECISION_METHOD,
+      total: 15,
     })
   })
 
-  it('does not award a method bonus when the advancing team is wrong', () => {
+  // Owner's worked scenarios (CLAUDE.md §4): actual 90-min 1-1, Scotland advances in ET.
+  const scoThroughInExtraTime = {
+    normalTimeHomeGoals: 1,
+    normalTimeAwayGoals: 1,
+    advancingTeamId: 'sco',
+    decisionMethod: DECISION_METHOD.EXTRA_TIME,
+  }
+  const koScenarios = [
+    ['1-1 Scotland', 1, 1, 'sco', 15],
+    ['1-1 Germany', 1, 1, 'ger', 10],
+    ['2-2 Scotland', 2, 2, 'sco', 10],
+    ['2-2 Germany', 2, 2, 'ger', 5],
+    ['2-1 Scotland', 2, 1, 'sco', 5],
+    ['2-1 Germany', 2, 1, 'ger', 0],
+  ]
+  it.each(koScenarios)('KO worked scenario %s scores %d', (_label, home, away, advancing, expected) => {
     const points = calculateMatchPredictionPoints({
-      home_score: 1,
+      home_score: home,
+      away_score: away,
+      advancing_team_id: advancing,
+      decision_method: DECISION_METHOD.EXTRA_TIME,
+    }, scoThroughInExtraTime, { isKnockout: true })
+    expect(points.total).toBe(expected)
+  })
+
+  it('caps a regulation KO game at advancer plus exact and doubles it with a joker', () => {
+    const args = [{
+      home_score: 2,
       away_score: 1,
       advancing_team_id: 'home',
-      decision_method: DECISION_METHOD.PENALTIES,
+      decision_method: DECISION_METHOD.NORMAL_TIME,
     }, {
-      normalTimeHomeGoals: 1,
+      normalTimeHomeGoals: 2,
       normalTimeAwayGoals: 1,
-      advancingTeamId: 'away',
-      decisionMethod: DECISION_METHOD.PENALTIES,
-    }, { isKnockout: true })
+      advancingTeamId: 'home',
+      decisionMethod: DECISION_METHOD.NORMAL_TIME,
+    }]
+    const regulation = calculateMatchPredictionPoints(...args, { isKnockout: true })
+    expect(regulation.correctDrawCall).toBe(0)
+    expect(regulation.total).toBe(10)
 
-    expect(points.correctDecisionMethod).toBe(0)
-    expect(points.total).toBe(MATCH_SCORE_POINTS.EXACT_SCORE)
+    const withJoker = calculateMatchPredictionPoints(...args, { isKnockout: true, jokerApplied: true })
+    expect(withJoker.total).toBe(20)
   })
 
   it('applies the centrally configured joker multiplier', () => {

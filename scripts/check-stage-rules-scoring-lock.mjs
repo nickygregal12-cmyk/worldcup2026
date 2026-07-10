@@ -48,10 +48,11 @@ const lockedScoringMarkers = [
   'Group-goals total within 5 | 15',
   'Group-goals total within 10 | 5',
   'Correct top scorer | 30',
-  'Correct 90-minute score | 10 total, not cumulative',
-  'Correct advancing team, without exact score | 5',
-  'Correct 90-minute result | 5 for draw/advancement edge cases',
-  'Correct method of advancement | +3, requires correct advancing team',
+  'Correct advancer, any method | 5',
+  'Correct draw call (level at 90) | 5',
+  'Exact 90-minute score | 5',
+  'Regulation match maximum | 10',
+  'Extra-time match maximum | 15',
 ]
 for (const marker of lockedScoringMarkers) {
   requireText(stageDoc, marker, 'stage doc must lock the scoring value')

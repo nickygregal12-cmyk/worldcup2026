@@ -171,9 +171,10 @@ function originalMaximum(matchNumber, prediction) {
 }
 
 function koMaximum(prediction) {
-  const base = EURO_SCORING_CONFIG.match.EXACT_SCORE
-    + EURO_SCORING_CONFIG.koPredictor.CORRECT_ADVANCING_TEAM
-    + EURO_SCORING_CONFIG.koPredictor.CORRECT_DECISION_METHOD
+  // Best case is an extra-time game: advancer + draw call + exact 90-minute score.
+  const base = EURO_SCORING_CONFIG.koPredictor.CORRECT_ADVANCER
+    + EURO_SCORING_CONFIG.koPredictor.CORRECT_DRAW_CALL
+    + EURO_SCORING_CONFIG.koPredictor.EXACT_90_SCORE
   return base * (prediction?.joker_applied ? EURO_SCORING_CONFIG.joker.MULTIPLIER : 1)
 }
 

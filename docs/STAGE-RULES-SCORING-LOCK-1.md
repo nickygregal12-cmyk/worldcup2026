@@ -67,19 +67,19 @@ KO Predictor points are locked as follows:
 
 | Item | Points |
 |---|---:|
-| Correct 90-minute score | 10 total, not cumulative |
-| Correct advancing team, without exact score | 5 |
-| Correct 90-minute result | 5 for draw/advancement edge cases |
-| Correct method of advancement | +3, requires correct advancing team |
-| Correct first-goal time bracket | +3 provisional/API-dependent |
+| Correct advancer, any method | 5 |
+| Correct draw call (level at 90) | 5 |
+| Exact 90-minute score | 5 |
+| Regulation match maximum | 10 |
+| Extra-time match maximum | 15 |
 
 ### KO Predictor scoring interpretations
 
-- Correct 90-minute score and correct 90-minute result are not cumulative.
-- KO method bonus requires the correct advancing team.
+- Three additive components (owner ruling 2026-07-10): correct advancer (any method), correct draw call (predicted level at 90 and it was), and exact 90-minute score.
+- A regulation game maxes at advancer + exact = 10; only a game level at 90 can also earn the draw call, so an extra-time/penalties game maxes at 15.
+- A joker doubles the whole match total.
 - KO Predictor has its own five jokers.
 - KO Predictor points remain separate from the Original Predictor.
-- The KO first-goal time bracket remains provisional and must only be included if reliable official/API data can confirm it automatically.
 
 ## Provisional / API-dependent items
 

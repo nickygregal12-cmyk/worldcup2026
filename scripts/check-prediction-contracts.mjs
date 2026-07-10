@@ -38,7 +38,7 @@ for (const [source, snippet, message] of [
   [result, 'penalty_home_goals', 'shoot-out scores must remain separate from predictions'],
 ]) if (!source.includes(snippet)) fail(message)
 
-const copiedPointDefinitionPattern = /(?:^|[\n,{])\s*(?:EXACT_SCORE|CORRECT_OUTCOME|CORRECT_ADVANCING_TEAM|CORRECT_DECISION_METHOD|MULTIPLIER)\s*:\s*\d+/m
+const copiedPointDefinitionPattern = /(?:^|[\n,{])\s*(?:EXACT_SCORE|CORRECT_OUTCOME|CORRECT_ADVANCER|CORRECT_DRAW_CALL|EXACT_90_SCORE|MULTIPLIER)\s*:\s*\d+/m
 if (copiedPointDefinitionPattern.test(prediction) || copiedPointDefinitionPattern.test(scoring)) fail('scoring values were copied outside src/config/scoringConfig.js')
 
 if (!process.exitCode) {
@@ -49,6 +49,6 @@ if (!process.exitCode) {
   console.log('Joker placement locks: each relevant match kick-off')
   console.log('Grace: audited competition + user + match exception for unstarted matches only')
   console.log(`Match score: exact ${EURO_SCORING_CONFIG.match.EXACT_SCORE}, correct outcome ${EURO_SCORING_CONFIG.match.CORRECT_OUTCOME}`)
-  console.log(`KO Predictor: advancing team ${EURO_SCORING_CONFIG.koPredictor.CORRECT_ADVANCING_TEAM}, method ${EURO_SCORING_CONFIG.koPredictor.CORRECT_DECISION_METHOD}`)
+  console.log(`KO Predictor: advancer ${EURO_SCORING_CONFIG.koPredictor.CORRECT_ADVANCER}, draw call ${EURO_SCORING_CONFIG.koPredictor.CORRECT_DRAW_CALL}, exact 90 ${EURO_SCORING_CONFIG.koPredictor.EXACT_90_SCORE}`)
   console.log(`Jokers: 5 group, 0 original bracket, 5 KO Predictor; ${EURO_SCORING_CONFIG.joker.MULTIPLIER}x multiplier`)
 }

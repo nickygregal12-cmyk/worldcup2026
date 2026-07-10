@@ -83,17 +83,25 @@ function calculateBaseScorePoints(prediction, result) {
 }
 
 /**
- * Score a prediction against the canonical normal-time result. Knockout
- * advancement and method are separate, transparent additions. A method bonus
- * is available only when the advancing team is also correct.
+ * Score a prediction against the canonical normal-time result.
+ *
+ * Group matches score on the 90-minute result only (exact score OR correct
+ * result). KO Predictor matches use the locked three-component scheme
+ * (CLAUDE.md §4): three additive parts, each worth the same points —
+ *   - correct advancer (your picked team went through, by any method),
+ *   - correct draw call (you predicted a level 90-minute score and it was level),
+ *   - exact 90-minute score.
+ * Regulation games top out at advancer + exact; only games level at 90 can also
+ * earn the draw call. A joker doubles the whole match total.
  */
 export function calculateMatchPredictionPoints(prediction, canonicalResult, { isKnockout = false, jokerApplied = false } = {}) {
   if (!prediction || !canonicalResult) {
     return Object.freeze({
       exactScore: 0,
       correctOutcome: 0,
-      correctAdvancingTeam: 0,
-      correctDecisionMethod: 0,
+      correctAdvancer: 0,
+      correctDrawCall: 0,
+      exact90Score: 0,
       jokerApplied: false,
       jokerMultiplier: 1,
       totalBeforeJoker: 0,
@@ -101,25 +109,42 @@ export function calculateMatchPredictionPoints(prediction, canonicalResult, { is
     })
   }
 
-  const base = calculateBaseScorePoints(prediction, canonicalResult)
-  let advancing = 0
-  let method = 0
+  let exactScore = 0
+  let correctOutcome = 0
+  let correctAdvancer = 0
+  let correctDrawCall = 0
+  let exact90Score = 0
 
-  if (isKnockout && prediction.advancing_team_id === canonicalResult.advancingTeamId) {
-    advancing = KNOCKOUT_MATCH_POINTS.CORRECT_ADVANCING_TEAM
-    if (prediction.decision_method === canonicalResult.decisionMethod) {
-      method = KNOCKOUT_MATCH_POINTS.CORRECT_DECISION_METHOD
+  const predictedOutcome = getScoreOutcome(prediction.home_score, prediction.away_score)
+  const actualOutcome = getScoreOutcome(canonicalResult.normalTimeHomeGoals, canonicalResult.normalTimeAwayGoals)
+  const exact90 = prediction.home_score === canonicalResult.normalTimeHomeGoals &&
+    prediction.away_score === canonicalResult.normalTimeAwayGoals
+
+  if (isKnockout) {
+    if (prediction.advancing_team_id === canonicalResult.advancingTeamId) {
+      correctAdvancer = KNOCKOUT_MATCH_POINTS.CORRECT_ADVANCER
     }
+    if (predictedOutcome === 'draw' && actualOutcome === 'draw') {
+      correctDrawCall = KNOCKOUT_MATCH_POINTS.CORRECT_DRAW_CALL
+    }
+    if (exact90) {
+      exact90Score = KNOCKOUT_MATCH_POINTS.EXACT_90_SCORE
+    }
+  } else {
+    const base = calculateBaseScorePoints(prediction, canonicalResult)
+    exactScore = base.exactScore
+    correctOutcome = base.correctOutcome
   }
 
-  const totalBeforeJoker = base.total + advancing + method
+  const totalBeforeJoker = exactScore + correctOutcome + correctAdvancer + correctDrawCall + exact90Score
   const jokerMultiplier = jokerApplied && JOKER_RULES.ENABLED ? JOKER_RULES.MULTIPLIER : 1
 
   return Object.freeze({
-    exactScore: base.exactScore,
-    correctOutcome: base.correctOutcome,
-    correctAdvancingTeam: advancing,
-    correctDecisionMethod: method,
+    exactScore,
+    correctOutcome,
+    correctAdvancer,
+    correctDrawCall,
+    exact90Score,
     jokerApplied: jokerApplied && JOKER_RULES.ENABLED,
     jokerMultiplier,
     totalBeforeJoker,

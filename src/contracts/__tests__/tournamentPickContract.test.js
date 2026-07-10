@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  GROUP_GOALS_TIERS,
   scoreTotalGoalsPick,
   scoreWinnerSetPick,
   TOURNAMENT_PICK_CONTRACT_VERSION,
@@ -20,23 +21,23 @@ describe('Euro tournament-pick contract', () => {
     })
   })
 
-  it('uses one uniform 20-point value for all three approved picks', () => {
-    expect(TOURNAMENT_PICK_POINTS).toEqual({
-      total_goals: 20,
-      top_scorer: 20,
-      highest_scoring_team: 20,
-    })
+  it('scores Top Scorer at 30 and has dropped Highest-Scoring Team entirely', () => {
+    expect(TOURNAMENT_PICK_POINTS).toEqual({ top_scorer: 30 })
+    expect(TOURNAMENT_PICK_KEYS).toEqual({ TOTAL_GOALS: 'total_goals', TOP_SCORER: 'top_scorer' })
+    expect(TOURNAMENT_PICK_KEYS).not.toHaveProperty('HIGHEST_SCORING_TEAM')
   })
 
-  it('awards every equally nearest total-goals prediction', () => {
-    expect(scoreTotalGoalsPick(142, 144, 2)).toBe(20)
-    expect(scoreTotalGoalsPick(146, 144, 2)).toBe(20)
-    expect(scoreTotalGoalsPick(141, 144, 2)).toBe(0)
+  it('scores group-goals total in tiers of 25 / 15 / 5', () => {
+    expect(GROUP_GOALS_TIERS).toEqual({ EXACT: 25, WITHIN_5: 15, WITHIN_10: 5 })
+    expect(scoreTotalGoalsPick(144, 144)).toBe(25)
+    expect(scoreTotalGoalsPick(144, 149)).toBe(15) // exactly 5 off
+    expect(scoreTotalGoalsPick(144, 134)).toBe(5) // exactly 10 off
+    expect(scoreTotalGoalsPick(144, 133)).toBe(0) // 11 off
   })
 
-  it('accepts any official joint winner for scorer and team picks', () => {
-    expect(scoreWinnerSetPick('player-b', ['player-a', 'player-b'], TOURNAMENT_PICK_KEYS.TOP_SCORER)).toBe(20)
-    expect(scoreWinnerSetPick('team-b', ['team-a', 'team-b'], TOURNAMENT_PICK_KEYS.HIGHEST_SCORING_TEAM)).toBe(20)
+  it('pays Top Scorer in full to any picker of a joint winner', () => {
+    expect(scoreWinnerSetPick('player-b', ['player-a', 'player-b'], TOURNAMENT_PICK_KEYS.TOP_SCORER)).toBe(30)
+    expect(scoreWinnerSetPick('player-a', ['player-a', 'player-b'])).toBe(30) // defaults to top scorer
     expect(scoreWinnerSetPick('player-c', ['player-a', 'player-b'], TOURNAMENT_PICK_KEYS.TOP_SCORER)).toBe(0)
   })
 })

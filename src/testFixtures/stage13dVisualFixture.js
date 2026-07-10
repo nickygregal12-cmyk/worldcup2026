@@ -269,32 +269,32 @@ function koBundle(userId) {
 }
 
 const ORIGINAL_POINTS = Object.freeze({
-  match_points: 110,
-  bracket_points: 46,
-  total_points: 156,
+  match_points: 21,
+  bracket_points: 55,
+  total_points: 76,
   scored_match_count: 36,
   match_breakdown: Object.freeze([
-    Object.freeze({ match_id: 'visual-match-1', exact_score_points: 30, correct_outcome_points: 0, advancing_team_points: 0, decision_method_points: 0, joker_multiplier: 2, total_points: 60, result_revision: 1 }),
-    Object.freeze({ match_id: 'visual-match-2', exact_score_points: 0, correct_outcome_points: 10, advancing_team_points: 0, decision_method_points: 0, joker_multiplier: 1, total_points: 10, result_revision: 1 }),
-    Object.freeze({ match_id: 'visual-match-3', exact_score_points: 30, correct_outcome_points: 0, advancing_team_points: 0, decision_method_points: 0, joker_multiplier: 1, total_points: 30, result_revision: 1 }),
-    Object.freeze({ match_id: 'visual-match-4', exact_score_points: 0, correct_outcome_points: 10, advancing_team_points: 0, decision_method_points: 0, joker_multiplier: 1, total_points: 10, result_revision: 2 }),
+    Object.freeze({ match_id: 'visual-match-1', exact_score_points: 5, correct_outcome_points: 0, advancing_team_points: 0, decision_method_points: 0, joker_multiplier: 2, total_points: 10, result_revision: 1 }),
+    Object.freeze({ match_id: 'visual-match-2', exact_score_points: 0, correct_outcome_points: 3, advancing_team_points: 0, decision_method_points: 0, joker_multiplier: 1, total_points: 3, result_revision: 1 }),
+    Object.freeze({ match_id: 'visual-match-3', exact_score_points: 5, correct_outcome_points: 0, advancing_team_points: 0, decision_method_points: 0, joker_multiplier: 1, total_points: 5, result_revision: 1 }),
+    Object.freeze({ match_id: 'visual-match-4', exact_score_points: 0, correct_outcome_points: 3, advancing_team_points: 0, decision_method_points: 0, joker_multiplier: 1, total_points: 3, result_revision: 2 }),
   ]),
   bracket_breakdown: Object.freeze([
     Object.freeze({ milestone: 'round_of_16', tournament_team_id: 'visual-team-1', points: 8 }),
     Object.freeze({ milestone: 'quarter_final', tournament_team_id: 'visual-team-5', points: 12 }),
-    Object.freeze({ milestone: 'semi_final', tournament_team_id: 'visual-team-9', points: 16 }),
-    Object.freeze({ milestone: 'final', tournament_team_id: 'visual-team-13', points: 10 }),
+    Object.freeze({ milestone: 'semi_final', tournament_team_id: 'visual-team-9', points: 15 }),
+    Object.freeze({ milestone: 'final', tournament_team_id: 'visual-team-13', points: 20 }),
   ]),
 })
 
 const KO_POINTS = Object.freeze({
-  match_points: 65,
+  match_points: 20,
   bracket_points: 0,
-  total_points: 65,
+  total_points: 20,
   scored_match_count: 5,
   match_breakdown: Object.freeze([
-    Object.freeze({ match_id: 'visual-match-37', exact_score_points: 30, correct_outcome_points: 0, advancing_team_points: 10, decision_method_points: 5, joker_multiplier: 1, total_points: 45, result_revision: 1 }),
-    Object.freeze({ match_id: 'visual-match-38', exact_score_points: 0, correct_outcome_points: 10, advancing_team_points: 10, decision_method_points: 5, joker_multiplier: 1, total_points: 25, result_revision: 1 }),
+    Object.freeze({ match_id: 'visual-match-37', exact_score_points: 5, correct_outcome_points: 0, advancing_team_points: 5, decision_method_points: 0, joker_multiplier: 1, total_points: 10, result_revision: 1 }),
+    Object.freeze({ match_id: 'visual-match-38', exact_score_points: 0, correct_outcome_points: 0, advancing_team_points: 5, decision_method_points: 5, joker_multiplier: 1, total_points: 10, result_revision: 1 }),
     Object.freeze({ match_id: 'visual-match-41', exact_score_points: 0, correct_outcome_points: 0, advancing_team_points: 0, decision_method_points: 0, joker_multiplier: 1, total_points: 0, result_revision: 2 }),
   ]),
   bracket_breakdown: Object.freeze([]),

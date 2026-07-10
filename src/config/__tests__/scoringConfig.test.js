@@ -22,9 +22,25 @@ describe('Euro scoring configuration', () => {
     expect(EURO_SCORING_CONFIG.joker.KO_PREDICTOR_CAP).toBe(5)
   })
 
-  it('keeps KO Predictor match points separate from bracket points', () => {
-    expect(EURO_SCORING_CONFIG.koPredictor.CORRECT_ADVANCING_TEAM).toBe(10)
-    expect(EURO_SCORING_CONFIG.bracket.champion).toBe(50)
+  it('uses the locked group match and group-position values', () => {
+    expect(EURO_SCORING_CONFIG.match.EXACT_SCORE).toBe(5)
+    expect(EURO_SCORING_CONFIG.match.CORRECT_OUTCOME).toBe(3)
+    expect(EURO_SCORING_CONFIG.groupPositions.PER_CORRECT_POSITION).toBe(2)
+    expect(EURO_SCORING_CONFIG.groupPositions.PERFECT_GROUP_BONUS).toBe(5)
+  })
+
+  it('uses the locked KO Predictor three-component match scheme', () => {
+    expect(EURO_SCORING_CONFIG.koPredictor.CORRECT_ADVANCER).toBe(5)
+    expect(EURO_SCORING_CONFIG.koPredictor.CORRECT_DRAW_CALL).toBe(5)
+    expect(EURO_SCORING_CONFIG.koPredictor.EXACT_90_SCORE).toBe(5)
+  })
+
+  it('keeps the cumulative bracket ladder separate from KO Predictor points', () => {
+    expect(EURO_SCORING_CONFIG.bracket.round_of_16).toBe(8)
+    expect(EURO_SCORING_CONFIG.bracket.quarter_final).toBe(12)
+    expect(EURO_SCORING_CONFIG.bracket.semi_final).toBe(15)
+    expect(EURO_SCORING_CONFIG.bracket.final).toBe(20)
+    expect(EURO_SCORING_CONFIG.bracket.champion).toBe(45)
   })
 
   it('rejects invalid point and joker values', () => {

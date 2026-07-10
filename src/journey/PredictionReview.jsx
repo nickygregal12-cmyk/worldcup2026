@@ -10,12 +10,11 @@ const BRACKET_PICK_COUNT = 15
  * The final step of the Original Predictor: recap what was predicted, show the
  * calculated group-goals total, and confirm.
  *
- * Total tournament goals is the only one of the three extra tournament picks
- * shown here, because it is the only one that can be derived from what the user
- * has already entered. Top Scorer and Highest-Scoring Team are deliberately
- * absent: there is no player data source at all, and neither pick has anywhere
- * to persist. Building either would mean inventing a team/player list and a
- * scoring rule.
+ * The group-goals total is the only tournament pick shown here, because it is
+ * the only one derivable from what the user has already entered. Top Scorer is
+ * deliberately absent: it needs an official player list and persistence, which
+ * arrive at Stage 17A. (Highest-Scoring Team was dropped from the contract
+ * entirely — it is not a feature.)
  */
 export default function PredictionReview({ reference, draft, summary, context, reviewMode, locked, busy, onSubmit, onEdit }) {
   const groupsDone = summary.groupComplete >= GROUP_MATCH_COUNT

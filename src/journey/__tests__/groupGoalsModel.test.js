@@ -62,10 +62,30 @@ describe('calculated group-stage goals total', () => {
 })
 
 describe('group-goals scoring', () => {
-  it('is explicitly not built, and awards no points', () => {
-    const result = scoreGroupGoalsTotal()
+  it('awards 25 for an exact total', () => {
+    const result = scoreGroupGoalsTotal(140, 140)
+    expect(result.status).toBe(GROUP_GOALS_SCORING_STATUS.SCORED)
+    expect(result.distance).toBe(0)
+    expect(result.points).toBe(25)
+  })
 
-    expect(result.status).toBe(GROUP_GOALS_SCORING_STATUS.NOT_BUILT)
+  it('awards 15 when within 5, inclusive of exactly 5 off', () => {
+    expect(scoreGroupGoalsTotal(140, 141).points).toBe(15)
+    expect(scoreGroupGoalsTotal(140, 135).points).toBe(15) // exactly 5 off -> 15
+  })
+
+  it('awards 5 when within 10, inclusive of exactly 10 off', () => {
+    expect(scoreGroupGoalsTotal(140, 146).points).toBe(5)
+    expect(scoreGroupGoalsTotal(140, 150).points).toBe(5) // exactly 10 off -> 5
+  })
+
+  it('awards 0 once more than 10 off', () => {
+    expect(scoreGroupGoalsTotal(140, 151).points).toBe(0) // 11 off -> 0
+  })
+
+  it('reports pending, not zero, before the official total is known', () => {
+    const result = scoreGroupGoalsTotal(140, null)
+    expect(result.status).toBe(GROUP_GOALS_SCORING_STATUS.PENDING_RESULT)
     expect(result.points).toBeNull()
   })
 })

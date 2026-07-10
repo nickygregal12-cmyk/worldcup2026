@@ -71,8 +71,14 @@ Per `docs/RULES-SCORING-LOCKED-CONTRACT.md`:
 - Jokers: a joker doubles THAT MATCH'S score points only (group matches and KO
   Predictor matches; never position points, never bonuses, never anything on the
   Original Bracket — bracket jokers do not exist). Caps: 5 group / 0 bracket / 5 KO.
-- KO Predictor: score judged on the 90-minute result; a correctly-predicted 90-min
-  draw PLUS the correct advancing team earns a bonus (value TBD by owner).
+- KO Predictor match scoring (LOCKED, owner-ruled 2026-07-10): three additive +5
+  components per match — correct ADVANCER (your team goes through, any method incl.
+  ET/pens) + correct DRAW CALL (you predicted 90 mins level and it was) + EXACT
+  90-minute score. Max 10 on a regulation game, 15 on an ET game; a joker doubles the
+  match total. Examples: actual 1-1 with Scotland through in ET → picked 1-1 Scotland
+  = 15; 1-1 Germany = 10; 2-2 Scotland = 10; 2-1 Scotland = 5 (advancer only); 2-1
+  Germany = 0. This SUPERSEDES the earlier "draw-plus-advancer bonus, value TBD"
+  amendment — the bonus IS the draw component.
 - KO scoring: cumulative team progression (R32=5, R16=8, QF=12, SF=15, Final=20,
   Champion +25 — SF=15 owner-confirmed 2026-07-10) — KO Predictor and Original Bracket never share cards, jokers, meters,
   or totals.

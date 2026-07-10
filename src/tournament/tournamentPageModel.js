@@ -108,10 +108,9 @@ export function buildHowToPlayPageModel(foundation, scoring = EURO_SCORING_CONFI
         eyebrow: 'Competition 2',
         summary: 'A separate knockout-only game that opens once real knockout fixtures are known.',
         points: Object.freeze([
-          Object.freeze({ label: '90-minute exact score', value: `${scoring.match.EXACT_SCORE} pts` }),
-          Object.freeze({ label: '90-minute outcome', value: `${scoring.match.CORRECT_OUTCOME} pts` }),
-          Object.freeze({ label: 'Correct advancing team', value: `${scoring.koPredictor.CORRECT_ADVANCING_TEAM} pts` }),
-          Object.freeze({ label: 'Correct method', value: `${scoring.koPredictor.CORRECT_DECISION_METHOD} pts` }),
+          Object.freeze({ label: 'Correct advancer (any method)', value: `${scoring.koPredictor.CORRECT_ADVANCER} pts` }),
+          Object.freeze({ label: 'Correct draw call (level at 90)', value: `${scoring.koPredictor.CORRECT_DRAW_CALL} pts` }),
+          Object.freeze({ label: 'Exact 90-minute score', value: `${scoring.koPredictor.EXACT_90_SCORE} pts` }),
           Object.freeze({ label: 'KO jokers', value: `${scoring.joker.KO_PREDICTOR_CAP} at ${scoring.joker.MULTIPLIER}×` }),
         ]),
         bullets: Object.freeze([

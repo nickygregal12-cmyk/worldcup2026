@@ -60,18 +60,28 @@ multiplier is now recorded here:
 
 ## KO Predictor scoring
 
+Three additive components per match (owner ruling 2026-07-10; this supersedes the
+earlier "draw-plus-advancer bonus, value TBD" amendment — the bonus **is** the
+draw component):
+
 | Item | Points |
 |---|---:|
-| Correct 90-minute score | 10 total, not cumulative |
-| Correct advancing team, without exact score | 5 |
-| Correct 90-minute result | 5 for draw/advancement edge cases |
-| Correct method of advancement | +3, requires correct advancing team |
-| Correct first-goal time bracket | +3 provisional/API-dependent |
+| Correct advancer, any method | 5 |
+| Correct draw call (level at 90) | 5 |
+| Exact 90-minute score | 5 |
+| Regulation match maximum | 10 |
+| Extra-time match maximum | 15 |
 
 Rules:
 
-- Exact 90-minute score and correct 90-minute result are not cumulative.
-- Method bonus requires the correct advancing team.
+- The three components are additive and independent: correct advancer (your
+  picked team goes through by any method, including extra time or penalties);
+  correct draw call (you predicted a level 90-minute score and it was level at
+  90); and the exact 90-minute scoreline.
+- A regulation game (decided inside 90 minutes) can earn advancer + exact only,
+  so its maximum is 10. Only a game level at 90 can also earn the draw call, so
+  an extra-time/penalties game maxes at 15.
+- A joker doubles the whole match total.
 - KO Predictor has its own five jokers and its own standings.
 - Penalty shoot-out scores are never predicted for match-score points.
 

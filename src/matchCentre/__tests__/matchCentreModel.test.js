@@ -45,7 +45,7 @@ describe('Euro Match Centre model', () => {
     })
     expect(impact.visibleCount).toBe(1)
     expect(impact.privateCount).toBe(1)
-    expect(impact.lines[0]).toMatchObject({ userId: 'u1', maximumPoints: 60, isCurrentUser: true })
+    expect(impact.lines[0]).toMatchObject({ userId: 'u1', maximumPoints: 10, isCurrentUser: true })
     expect(impact.lines.find(row => row.userId === 'u2')).toMatchObject({ visibility: 'private', maximumPoints: 0 })
   })
 
@@ -58,7 +58,7 @@ describe('Euro Match Centre model', () => {
       reference,
       currentUserId: 'u1',
     })
-    expect(impact.lines[0].maximumPoints).toBe(45)
+    expect(impact.lines[0].maximumPoints).toBe(15)
     expect(impact.competitionKey).toBe(RESULT_COMPETITION.KO_PREDICTOR)
   })
 

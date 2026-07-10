@@ -38,7 +38,7 @@ for (const marker of [
   'EURO_SCORING_CONFIG',
   'SCORING_CONFIG_STATUS',
   'scoring.bracket.champion',
-  'scoring.koPredictor.CORRECT_DECISION_METHOD',
+  'scoring.koPredictor.CORRECT_ADVANCER',
   'scoring.joker.ORIGINAL_BRACKET_CAP',
 ]) {
   if (!model.includes(marker)) fail(`Rules model is missing marker: ${marker}`)

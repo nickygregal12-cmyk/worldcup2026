@@ -13,22 +13,33 @@ export const SCORING_CONFIG_STATUS = Object.freeze({
 })
 
 export const EURO_SCORING_CONFIG = Object.freeze({
+  // Values are the locked scoring contract (CLAUDE.md §4, owner ruling 2026-07-10).
+  // Status stays provisional and the ruleset_key is unchanged so the DB
+  // scoring_rulesets row remains mutable for the matching value update (see the
+  // Stage DP-SCORING migration and the idempotent staging SQL).
   version: 'euro28-scoring-provisional-v2',
   status: SCORING_CONFIG_STATUS.PROVISIONAL,
   match: Object.freeze({
-    EXACT_SCORE: 30,
-    CORRECT_OUTCOME: 10,
+    EXACT_SCORE: 5, // exact group score (total, not cumulative)
+    CORRECT_OUTCOME: 3, // correct group result
+  }),
+  groupPositions: Object.freeze({
+    PER_CORRECT_POSITION: 2, // 2 per correct final group position (auto-derived from the 36 group scores)
+    PERFECT_GROUP_BONUS: 5, // +5 when all four positions in a group are correct
   }),
   koPredictor: Object.freeze({
-    CORRECT_ADVANCING_TEAM: 10,
-    CORRECT_DECISION_METHOD: 5,
+    // KO Predictor match: three additive components; regulation max 10, ET max 15.
+    CORRECT_ADVANCER: 5, // your picked team advanced (any method)
+    CORRECT_DRAW_CALL: 5, // you predicted a level 90-min score and it was level
+    EXACT_90_SCORE: 5, // exact 90-minute scoreline
   }),
   bracket: Object.freeze({
-    round_of_16: 10,
-    quarter_final: 15,
-    semi_final: 20,
-    final: 25,
-    champion: 50,
+    // Original Bracket cumulative team-progression totals (Champion = Final + 25).
+    round_of_16: 8,
+    quarter_final: 12,
+    semi_final: 15,
+    final: 20,
+    champion: 45,
   }),
   joker: Object.freeze({
     ENABLED: true,
@@ -57,8 +68,11 @@ export function validateScoringConfig(config = EURO_SCORING_CONFIG) {
   const values = [
     ['match.EXACT_SCORE', config.match?.EXACT_SCORE],
     ['match.CORRECT_OUTCOME', config.match?.CORRECT_OUTCOME],
-    ['koPredictor.CORRECT_ADVANCING_TEAM', config.koPredictor?.CORRECT_ADVANCING_TEAM],
-    ['koPredictor.CORRECT_DECISION_METHOD', config.koPredictor?.CORRECT_DECISION_METHOD],
+    ['groupPositions.PER_CORRECT_POSITION', config.groupPositions?.PER_CORRECT_POSITION],
+    ['groupPositions.PERFECT_GROUP_BONUS', config.groupPositions?.PERFECT_GROUP_BONUS],
+    ['koPredictor.CORRECT_ADVANCER', config.koPredictor?.CORRECT_ADVANCER],
+    ['koPredictor.CORRECT_DRAW_CALL', config.koPredictor?.CORRECT_DRAW_CALL],
+    ['koPredictor.EXACT_90_SCORE', config.koPredictor?.EXACT_90_SCORE],
     ['bracket.round_of_16', config.bracket?.round_of_16],
     ['bracket.quarter_final', config.bracket?.quarter_final],
     ['bracket.semi_final', config.bracket?.semi_final],

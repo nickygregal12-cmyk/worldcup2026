@@ -289,9 +289,9 @@ Approved contract:
 - central versioned scoring contract;
 - no standalone Awards page;
 - Home live-race presentation and points breakdown integration are implementation work, not part of this contract-only batch;
-- total tournament goals: 20 points to every equally nearest prediction;
-- top scorer: 20 points when the selected player is among the official joint winners;
-- highest-scoring team: 20 points when the selected team is among the joint highest scorers;
+- total group-stage goals: auto-calculated, tiered 25 / 15 / 5 by absolute distance from the official total (Stage DP-SCORING); never player-entered;
+- top scorer: 30 points when the selected player is among the official joint winners;
+- Highest-Scoring Team: dropped entirely — not a feature;
 - no extra-pick value acts as a tournament tiebreaker;
 - the real player selector activates only in Stage 17A when official player data exists;
 - no database migration in Stage 13F-I.
