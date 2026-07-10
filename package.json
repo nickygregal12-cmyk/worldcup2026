@@ -15,6 +15,7 @@
     "db:safety": "node scripts/check-database-safety.mjs",
     "verify:knockout": "node scripts/verify-euro28-knockout.mjs",
     "audit:legacy": "node scripts/check-legacy-boundary.mjs",
+    "audit:native-controls": "node scripts/check-native-controls.mjs",
     "verify:foundation-page": "node scripts/verify-euro28-foundation-page.mjs",
     "audit:contracts": "node scripts/check-prediction-contracts.mjs",
     "audit:db-design": "node scripts/check-prediction-database-design.mjs",
