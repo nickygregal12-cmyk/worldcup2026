@@ -68,6 +68,11 @@ Per `docs/RULES-SCORING-LOCKED-CONTRACT.md`:
 - **Highest-Scoring Team does not exist.** Do not reference it as a feature.
 - The superseded 30/10 match values and flat-20 tournament picks are dead. Never write,
   assert, or pin them anywhere, including audits and prototypes.
+- Jokers: a joker doubles THAT MATCH'S score points only (group matches and KO
+  Predictor matches; never position points, never bonuses, never anything on the
+  Original Bracket — bracket jokers do not exist). Caps: 5 group / 0 bracket / 5 KO.
+- KO Predictor: score judged on the 90-minute result; a correctly-predicted 90-min
+  draw PLUS the correct advancing team earns a bonus (value TBD by owner).
 - KO scoring: cumulative team progression (R32=5, R16=8, QF=12, SF=16, Final=20,
   Champion +25) — KO Predictor and Original Bracket never share cards, jokers, meters,
   or totals.
