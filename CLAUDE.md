@@ -73,8 +73,8 @@ Per `docs/RULES-SCORING-LOCKED-CONTRACT.md`:
   Original Bracket — bracket jokers do not exist). Caps: 5 group / 0 bracket / 5 KO.
 - KO Predictor: score judged on the 90-minute result; a correctly-predicted 90-min
   draw PLUS the correct advancing team earns a bonus (value TBD by owner).
-- KO scoring: cumulative team progression (R32=5, R16=8, QF=12, SF=16, Final=20,
-  Champion +25) — KO Predictor and Original Bracket never share cards, jokers, meters,
+- KO scoring: cumulative team progression (R32=5, R16=8, QF=12, SF=15, Final=20,
+  Champion +25 — SF=15 owner-confirmed 2026-07-10) — KO Predictor and Original Bracket never share cards, jokers, meters,
   or totals.
 
 ## 5. Design rulings in force (2026-07-10)
