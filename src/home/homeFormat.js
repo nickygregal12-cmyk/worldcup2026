@@ -32,9 +32,17 @@ export function formatRank(rank) {
   return rank ? `${rank}` : '—'
 }
 
-/** A dash, never a false zero, when the section behind a figure failed to load. */
+/**
+ * A dash, never a false zero.
+ *
+ * `points` is null for a signed-out visitor and for any section that failed to
+ * load; a genuine zero is a real score and prints as 0. Number(null) is 0, so
+ * the null check has to come first — without it an unknown total would render as
+ * nil points, which is the one thing this helper exists to prevent.
+ */
 export function formatPoints(points, dataAvailable = true) {
-  return dataAvailable && Number.isFinite(Number(points)) ? `${Number(points)}` : '—'
+  if (!dataAvailable || points == null) return '—'
+  return Number.isFinite(Number(points)) ? `${Number(points)}` : '—'
 }
 
 /** Concise leader-gap storytelling per the Home contract. */

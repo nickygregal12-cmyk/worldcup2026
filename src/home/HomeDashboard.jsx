@@ -141,9 +141,12 @@ function SignedOut({ dashboard }) {
               : (
                 <>
                   <div className={styles.cardRow}><h2>Predict all {original.total} matches</h2></div>
+                  {/* No top-scorer pick is promised here: that stage has no
+                      user-facing UI yet, and Home must not invite a visitor to do
+                      something the app cannot do. */}
                   <p className={styles.muted}>
-                    Enter a score for all {original.groupTotal} group matches, build your bracket, and pick a top
-                    scorer. Everything locks at the first kick-off.
+                    Enter a score for all {original.groupTotal} group matches and build your bracket.
+                    Everything locks at the first kick-off.
                   </p>
                   <div className={styles.ctaPair}>
                     <a className={styles.cta} href="#/account">Create an account</a>
@@ -217,7 +220,11 @@ function PostMatch({ dashboard }) {
           <section className={styles.card}>
             <div className={styles.cardRow}>
               <h2>Your day</h2>
-              <span className={styles.muted}>{formatPoints(dashboard.original.points, dashboard.original.dataAvailable)} pts total</span>
+              {/* Named for the competition it belongs to. This is the running
+                  Original total, not a figure for today — no per-day points
+                  source exists — and under a "Your day" heading a bare "pts
+                  total" reads as though it were today's. */}
+              <span className={styles.muted}>Original: {formatPoints(dashboard.original.points, true)} pts</span>
             </div>
             <div className={styles.progLine}>
               <span>{played} match{played === 1 ? '' : 'es'} played today</span>
@@ -228,8 +235,9 @@ function PostMatch({ dashboard }) {
 
         {home.tomorrow && (
           <a className={`${styles.card} ${styles.tappable}`} href="#/results">
-            <span>
-              <h2>{formatDayLabel(home.tomorrow.dayKey)}</h2>
+            <span className={styles.teaserCopy}>
+              {/* A heading is flow content and cannot sit inside a <span>. */}
+              <strong className={styles.teaserTitle}>{formatDayLabel(home.tomorrow.dayKey)}</strong>
               <span className={styles.muted}>
                 {home.tomorrow.matchCount} match{home.tomorrow.matchCount === 1 ? '' : 'es'}
                 {home.tomorrow.firstKickoffAt ? ` · first kick-off ${formatKickoffTime(home.tomorrow.firstKickoffAt)}` : ''}

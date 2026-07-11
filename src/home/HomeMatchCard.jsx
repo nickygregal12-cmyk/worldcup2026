@@ -33,9 +33,13 @@ function StatusChip({ card, outcome }) {
     )
   }
 
+  // The tab already reads "Full time" for a finished match. With no prediction to
+  // report on — every knockout tie, and any group match left unpredicted — there
+  // is nothing left for the chip to add, so it says nothing rather than saying it
+  // twice.
   if (card.state === 'completed') {
-    const chip = outcome ? OUTCOME_CHIP[outcome] : null
-    if (!chip) return <span className={`${styles.chip} ${styles.chipQuiet}`}>Full time</span>
+    if (!outcome) return null
+    const chip = OUTCOME_CHIP[outcome]
     return <span className={`${styles.chip} ${styles[chip.className]}`}>{chip.label}</span>
   }
 
@@ -52,14 +56,17 @@ function StatusChip({ card, outcome }) {
  */
 export default function HomeMatchCard({ card, showPrediction = true }) {
   const outcome = card.state === 'completed' ? matchOutcome(card) : null
-  const meta = [card.stageLabel, card.state === 'completed' ? 'Full time' : card.venueName ?? `Match ${card.matchNumber}`]
+
+  // The tab identifies the match; the footer carries the venue or your pick. The
+  // venue lives in exactly one of them, never in both.
+  const meta = [card.stageLabel, card.state === 'completed' ? 'Full time' : `Match ${card.matchNumber}`]
     .filter(Boolean)
     .join(' · ')
 
   const ariaState = card.state === 'live' ? ', live' : card.state === 'completed' ? ', full time' : ''
 
   let note
-  if (!showPrediction) note = card.venueName ?? (card.kickoffAt ? '' : 'Kick-off time not confirmed')
+  if (!showPrediction) note = card.kickoffAt ? card.venueName ?? '' : 'Kick-off time not confirmed'
   else if (card.predictedScore) {
     note = <>You predicted <b className={styles.num}>{card.predictedScore}</b>{outcome ? ` · ${OUTCOME_NOTE[outcome]}` : ''}</>
   } else note = card.kickoffAt ? 'No prediction saved' : 'Kick-off time not confirmed'

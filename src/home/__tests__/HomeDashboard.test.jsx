@@ -320,6 +320,47 @@ describe('Home dashboard rendering', () => {
     })
   })
 
+  describe('a failed section shows a dash, never a false zero', () => {
+    const preTournament = new Date('2028-06-07T17:30:00Z')
+
+    const withErrors = sectionErrors => buildHomeDashboard({
+      tournament,
+      reference: referenceWith([openingMatch]),
+      session: { user: { id: 'user-1' } },
+      profile: { display_name: 'Nicky' },
+      guestSummary: { groupComplete: 0, bracketComplete: 0, groupJokers: 0 },
+      originalBundle: { predictions: [] },
+      koBundle: null,
+      results: null,
+      leagues: null,
+      sectionErrors,
+      now: preTournament,
+    })
+
+    it('dashes the points and rank tiles when the leaderboard fetch fails', () => {
+      // points and rank come from `results`, NOT from the prediction bundle, so
+      // gating them on original.dataAvailable would print a confident "0" to a
+      // user whose leaderboard call failed. Home's own banner promises otherwise.
+      const text = renderedText(renderHome(withErrors({ results: 'offline' })))
+
+      expect(text).toContain('—')
+      expect(text).not.toMatch(/0\s*Points/)
+    })
+
+    it('never tells a league member they have no leagues because the fetch failed', () => {
+      const text = renderedText(renderHome(withErrors({ leagues: 'offline' })))
+
+      expect(text).not.toContain('Create or join a league')
+      expect(text).toContain('could not be loaded')
+    })
+
+    it('still prints a genuine zero when the data really did load', () => {
+      const text = renderedText(renderHome(withErrors({})))
+
+      expect(text).toContain('Create or join a league')
+    })
+  })
+
   it('drops the countdown entirely on a live matchday', () => {
     const html = renderHome(fixtureFor({
       now: new Date('2028-06-09T19:30:00Z'),

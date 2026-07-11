@@ -4,9 +4,17 @@
    smaller. The masthead, the rail and the bottom nav are the app shell's, not
    Home's — this file styles Home's content only. */
 
+/* Home establishes the DP page ground. Every --dp-* ratio in tokens.css is
+   computed against --dp-surface-*, but the shell still paints the legacy
+   --surface-page beneath Home; on that ground --dp-action-ink measures 4.42:1 and
+   misses 4.5. Painting Home's own ground makes the token contract true for the
+   text that sits directly on the page (the section links). The two colours are
+   within a percent of each other in both themes, so nothing moves visually. The
+   shell should adopt this globally when it is re-cut. */
 .home {
   display: grid;
   gap: var(--space-4);
+  background: var(--dp-surface-page);
 }
 
 .grid {
@@ -101,7 +109,24 @@
 
 .tappable:hover { border-color: var(--dp-border-strong); }
 
-.card:focus-visible {
+.teaserCopy {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.teaserTitle {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--dp-text-strong);
+}
+
+.card:focus-visible,
+.cta:focus-visible,
+.ctaGhost:focus-visible,
+.howto:focus-visible,
+.sectMore:focus-visible {
   outline: 2px solid var(--dp-action);
   outline-offset: 2px;
 }
@@ -126,10 +151,15 @@
   background: var(--dp-surface-page);
 }
 
+/* The fill carries role="progressbar", so it is a meaningful graphical object and
+   owes 3:1 against the track. --sky (#38BDF8) is a chrome/broadcast fill with no
+   UI rating and lands at 1.99:1 on the light track — the prototype's sky sweep
+   cannot be used here. --dp-action clears at 3.81:1 and --dp-action-ink deepens
+   it, so the sweep runs between those two instead. */
 .meterFill {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--dp-action), var(--sky));
+  background: linear-gradient(90deg, var(--dp-action-ink), var(--dp-action));
 }
 
 .progLine {
@@ -156,8 +186,13 @@
   text-decoration: none;
 }
 
+/* Flat, not the prototype's gradient. The gradient darkened one end, which helps
+   white-on-blue in light but destroys dark, where --dp-action-ink is a BRIGHT
+   fill carrying DARK ink: darkening it drove the far end to 4.46:1. A single
+   token fill is the pinned pairing (4.89:1 light / 8.75:1 dark) and is the only
+   version that holds in both themes. Reported as a prototype deviation. */
 .cta {
-  background: linear-gradient(90deg, var(--dp-action-ink), color-mix(in srgb, var(--dp-action-ink) 70%, black));
+  background: var(--dp-action-ink);
   color: var(--dp-text-on-accent);
 }
 
@@ -199,12 +234,6 @@
 
 .skeletonHero { min-height: 14rem; }
 .skeletonCard { min-height: 7rem; }
-
-@media (prefers-reduced-motion: reduce) {
-  .tappable,
-  .rankCell,
-  .card { transition: none; }
-}
 
 /* ===== desktop ===== */
 

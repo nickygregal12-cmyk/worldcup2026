@@ -150,15 +150,22 @@
   font-weight: 700;
 }
 
+/* Quiet, not invisible. The prototype's sunken grey is --dp-surface-page, which
+   IS the ground this card sits on: 1.03:1 in light and indistinguishable in dark,
+   leaving a card bounded only by a border the tokens rate as decorative. It takes
+   the raised surface instead and stays quiet by dropping the shadow and carrying
+   a stronger boundary. */
 .quiet {
   display: block;
   padding: var(--space-4);
-  border: 1px solid var(--dp-border-subtle);
+  border: 1px solid var(--dp-border-strong);
   border-radius: var(--radius-md);
-  background: var(--dp-surface-page);
+  background: var(--dp-surface-raised);
   color: var(--dp-text-body);
   text-decoration: none;
 }
+
+.quiet:hover { border-color: var(--dp-action); }
 
 .quiet h3 {
   margin: 0;
@@ -174,7 +181,9 @@
 }
 
 .rankCell:focus-visible,
-.lbRow:focus-visible {
+.lbRow:focus-visible,
+.panel:focus-visible,
+.quiet:focus-visible {
   outline: 2px solid var(--dp-action);
   outline-offset: 2px;
 }

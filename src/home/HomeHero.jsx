@@ -33,7 +33,7 @@ export default function CountdownHero({ lockAt, countdown, openingMatch, provisi
     ? [{ value: live.days, label: 'Days' }, { value: live.hours, label: 'Hours' }, { value: live.minutes, label: 'Mins' }]
     : null
 
-  const where = [openingMatch?.venueName].filter(Boolean).join('')
+  const where = openingMatch?.venueName ?? ''
   const ribbon = openingMatch
     ? [`Match ${openingMatch.matchNumber}`, openingMatch.stageLabel].filter(Boolean).join(' · ')
     : null

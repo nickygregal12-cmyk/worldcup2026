@@ -91,14 +91,26 @@ export function RankStrip({ dashboard }) {
   )
 }
 
-/** Pre-tournament headline figures. A failed section shows a dash, never a zero. */
+/**
+ * Pre-tournament headline figures. A failed section shows a dash, never a zero.
+ *
+ * Each figure is gated on the section that actually feeds it, which is not
+ * always the one named after it. Points and rank come from `results` (via
+ * leaderboardStory/pointsValue), NOT from `original` — `original.dataAvailable`
+ * tracks the prediction bundle, so gating points on it would print a confident
+ * "0" for a user whose leaderboard fetch failed. Leagues has no dataAvailable
+ * flag of its own, so it reads the section error directly.
+ */
 export function StatTiles({ dashboard }) {
   if (!dashboard.signedIn) return null
 
+  const scoresLoaded = !dashboard.sectionErrors.results
+  const leaguesLoaded = !dashboard.sectionErrors.leagues
+
   const tiles = [
-    { key: 'rank', label: 'Rank', value: formatRank(dashboard.original.rank) },
-    { key: 'points', label: 'Points', value: formatPoints(dashboard.original.points, dashboard.original.dataAvailable) },
-    { key: 'leagues', label: 'Leagues', value: `${dashboard.leagues.count}`, accent: true },
+    { key: 'rank', label: 'Rank', value: scoresLoaded ? formatRank(dashboard.original.rank) : '—' },
+    { key: 'points', label: 'Points', value: formatPoints(dashboard.original.points, scoresLoaded) },
+    { key: 'leagues', label: 'Leagues', value: leaguesLoaded ? `${dashboard.leagues.count}` : '—', accent: true },
   ]
 
   return (
@@ -114,9 +126,14 @@ export function StatTiles({ dashboard }) {
 }
 
 export function LeaguesTeaser({ dashboard }) {
-  const detail = dashboard.leagues.count > 0
-    ? `${dashboard.leagues.count} league${dashboard.leagues.count === 1 ? '' : 's'} · ${dashboard.leagues.members} members`
-    : 'Create or join a league'
+  // "Create or join a league" asserts an absence. If the leagues fetch failed we
+  // do not know there are none, and telling a member of three leagues that they
+  // have none is worse than saying nothing.
+  const { count, members } = dashboard.leagues
+  let detail
+  if (dashboard.sectionErrors.leagues) detail = 'Your leagues could not be loaded just now.'
+  else if (count > 0) detail = `${count} league${count === 1 ? '' : 's'} · ${members} members`
+  else detail = 'Create or join a league'
 
   return (
     <a className={styles.panel} href="#/leagues">
