@@ -1,0 +1,22 @@
+/* Circular ISO-keyed team badge. The unresolved slot is a neutral dashed chip:
+   it must not resemble a team, so it carries no flag, no colour and no letters. */
+
+.badge {
+  flex: none;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+}
+
+.placeholder {
+  border: 1.5px dashed var(--dp-border-strong);
+  background: var(--dp-surface-page);
+}
+
+@media (min-width: 64rem) {
+  .badge {
+    width: 1.875rem;
+    height: 1.875rem;
+  }
+}

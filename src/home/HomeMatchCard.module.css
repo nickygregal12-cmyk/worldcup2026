@@ -1,0 +1,214 @@
+/* Home's fixture card — the ticket stub: a status tab, a perforation, the
+   fixture line, and a footer that carries your pick. Every colour is a --dp-*
+   token so both themes come for free. */
+
+.ticket {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-body);
+  text-decoration: none;
+  box-shadow: var(--shadow-1);
+  transition: border-color var(--motion-micro) var(--ease-standard), transform var(--motion-micro) var(--ease-standard);
+}
+
+.ticket:hover {
+  border-color: var(--dp-border-strong);
+  transform: translateY(-1px);
+}
+
+.ticket:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+}
+
+/* ===== status tab ===== */
+
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+}
+
+.meta {
+  color: var(--dp-text-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ===== the perforation ===== */
+
+.notch {
+  position: relative;
+  display: block;
+  border-top: 2px dashed var(--dp-border-subtle);
+}
+
+.notch::before,
+.notch::after {
+  content: "";
+  position: absolute;
+  top: -0.5rem;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--dp-surface-page);
+}
+
+.notch::before { left: -0.5rem; }
+.notch::after { right: -0.5rem; }
+
+/* ===== fixture line ===== */
+
+.fixture {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.side {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.sideRight { justify-content: flex-end; }
+
+.name {
+  overflow: hidden;
+  color: var(--dp-text-strong);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nameTbd {
+  color: var(--dp-text-muted);
+  font-weight: 600;
+}
+
+.centre {
+  flex: none;
+  min-width: 4rem;
+  font-family: var(--font-display);
+  font-weight: 800;
+  text-align: center;
+}
+
+.versus {
+  color: var(--dp-text-muted);
+  font-size: var(--text-sm);
+}
+
+.score {
+  font-size: var(--text-xl);
+  color: var(--dp-text-strong);
+}
+
+.num { font-variant-numeric: tabular-nums; }
+
+/* ===== footer ===== */
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--dp-border-subtle);
+  background: var(--dp-surface-page);
+  color: var(--dp-text-muted);
+}
+
+.pick {
+  font-size: var(--text-xs);
+  min-width: 0;
+}
+
+.pick b {
+  color: var(--dp-text-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.go {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--dp-action-ink);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ===== chips ===== */
+
+.chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.125rem var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chipLive {
+  background: var(--dp-live-soft);
+  color: var(--dp-live-ink);
+}
+
+.chipQuiet {
+  background: var(--dp-locked-soft);
+  color: var(--dp-locked-ink);
+}
+
+.chipWon {
+  background: var(--dp-success-soft);
+  color: var(--dp-success-ink);
+}
+
+.chipProvisional {
+  background: var(--dp-warning-soft);
+  color: var(--dp-warning-ink);
+  letter-spacing: 0.06em;
+}
+
+.pulse {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: var(--radius-full);
+  background: var(--dp-live);
+  animation: ticket-pulse 1.4s infinite;
+}
+
+@keyframes ticket-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse { animation: none; }
+  .ticket { transition: none; }
+}
+
+@media (min-width: 64rem) {
+  .tab { padding: var(--space-3) var(--space-5); }
+  .fixture { gap: var(--space-4); padding: var(--space-5); }
+  .foot { padding: var(--space-3) var(--space-5); }
+  .name { font-size: var(--text-body); }
+}

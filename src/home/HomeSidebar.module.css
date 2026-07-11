@@ -1,0 +1,180 @@
+/* The Home sidebar: stat tiles, the competition rank strip, the Leaderboards
+   card (CW1 — present in every state), the leagues panel and the rules card.
+   Colocated with HomeSidebar.jsx; the shared card frame lives in
+   HomeDashboard.module.css, which is the page's own card language. */
+
+/* ===== navy stat tiles ===== */
+
+.stats {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.stat {
+  flex: 1;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-chrome);
+  color: var(--dp-text-on-chrome);
+  text-align: center;
+}
+
+.stat strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat span {
+  font-size: 0.5625rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--dp-text-muted-chrome);
+}
+
+.statAccent { color: var(--sky-bright); }
+
+/* ===== rank strip ===== */
+
+.ranks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.rankCell {
+  display: grid;
+  gap: 0.1rem;
+  padding: var(--space-3);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-body);
+  text-decoration: none;
+  box-shadow: var(--shadow-1);
+}
+
+.rankCell:hover { border-color: var(--dp-border-strong); }
+
+.rankEyebrow {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dp-text-muted);
+}
+
+.rankCell strong {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankCell small {
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+}
+
+/* ===== leaderboards card (present in every state) ===== */
+
+.lbRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--dp-border-subtle);
+  color: var(--dp-text-body);
+  text-decoration: none;
+}
+
+.lbRow:first-of-type {
+  padding-top: var(--space-2);
+  border-top: 0;
+}
+
+.lbName {
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.lbRank {
+  flex: none;
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 800;
+  color: var(--dp-action-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.lbNote {
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--dp-border-subtle);
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+}
+
+/* ===== navy panel + quiet card ===== */
+
+.panel {
+  display: block;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-chrome);
+  color: var(--dp-text-on-chrome);
+  text-decoration: none;
+}
+
+.panel h3 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.panel p {
+  margin: var(--space-1) 0 0;
+  color: var(--dp-text-muted-chrome);
+  font-size: var(--text-xs);
+}
+
+.panelGo {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--sky-bright);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.quiet {
+  display: block;
+  padding: var(--space-4);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-page);
+  color: var(--dp-text-body);
+  text-decoration: none;
+}
+
+.quiet h3 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.quiet p {
+  margin: var(--space-2) 0 0;
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+}
+
+.rankCell:focus-visible,
+.lbRow:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+}

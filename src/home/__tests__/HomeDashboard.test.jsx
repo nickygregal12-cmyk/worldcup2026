@@ -65,6 +65,11 @@ function renderHome(fixture) {
   )
 }
 
+/** What the visitor actually reads, with the emphasis markup taken back out. */
+function renderedText(html) {
+  return html.replace(/<[^>]+>/g, '')
+}
+
 describe('Home dashboard rendering', () => {
   it('labels the countdown date as provisional when the database has no lock', () => {
     // tournament above has prediction_lock_at/prediction_locked_at NULL: the client
@@ -113,13 +118,18 @@ describe('Home dashboard rendering', () => {
 
     expect(html).toContain('href="#/match-centre?match=1&amp;competition=original"')
     expect(html).toContain('Match Centre')
-    expect(html).toContain('You predicted 2–1')
+    // The ticket card emphasises the score, so assert what is read, not the markup.
+    expect(renderedText(html)).toContain('You predicted 2–1')
   })
 
-  it('never nests a button inside the tappable match-card link', () => {
+  it('never nests a button inside the tappable fixture-card link', () => {
     const html = renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z') }))
-    const card = html.slice(html.indexOf('match-card--tappable'))
-    const link = card.slice(0, card.indexOf('</a>'))
+    // Anchor on the Match Centre route: the whole ticket is one link, so anything
+    // interactive inside it would be illegal nesting. The team badge is an image
+    // and the team name is text precisely so that stays true.
+    const start = html.indexOf('href="#/match-centre')
+    expect(start).toBeGreaterThan(-1)
+    const link = html.slice(start, html.indexOf('</a>', start))
 
     expect(link).not.toContain('<button')
   })
@@ -133,9 +143,10 @@ describe('Home dashboard rendering', () => {
 
     it('routes to Groups while group scores are still missing', () => {
       const html = renderHome(fixtureFor({ now: preTournament, reference: withKnockout, originalBundle: bundleFor({ groups: 0, bracket: 0 }) }))
-      const cta = html.slice(html.indexOf('ui-button'))
 
-      expect(cta).toContain('href="#/groups"')
+      // The CTA is the only thing on Home that links to Groups — the sibling
+      // cases below prove it by asserting the route disappears with the CTA.
+      expect(html).toContain('href="#/groups"')
       expect(html).toContain('Start your predictions')
     })
 
@@ -177,16 +188,136 @@ describe('Home dashboard rendering', () => {
     expect(live).toContain('#/leaderboards?competition=original')
   })
 
-  it('offers leaderboard access to a signed-out visitor before the tournament', () => {
+  it('carries both competition deep links in every state, signed in or out', () => {
+    const states = [
+      renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z') })),
+      renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z'), session: null })),
+      renderHome(fixtureFor({
+        now: new Date('2028-06-09T19:30:00Z'),
+        results: { live: { summary: {}, results: [{ matchNumber: 1, status: 'live' }] } },
+      })),
+    ]
+
+    // CW1: Leaderboards is a More-nav destination, so Home is its only primary
+    // entry point. Original and KO never combine, so both routes are always
+    // offered — in every state, and never merged into one tap.
+    for (const html of states) {
+      expect(html).toContain('#/leaderboards?competition=original')
+      expect(html).toContain('#/leaderboards?competition=koPredictor')
+      expect(html).toContain('Leaderboards')
+    }
+  })
+
+  it('withholds the rank strip from a signed-out visitor, keeping the deep links', () => {
     const pre = renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z'), session: null }))
 
-    // The rank strip is signed-in only, so a guest pre-tournament is the exact
-    // combination the v2 rebuild left with no route to the leaderboards at all.
-    // The KO deep link is rendered only by the rank strip, so its absence proves
-    // the strip is gone while the standalone link still carries the access.
-    expect(pre).not.toContain('#/leaderboards?competition=koPredictor')
+    // A guest has no rank to show. The rank strip is the only thing that labels a
+    // cell "Open full leaderboard", so its absence proves the strip is gone while
+    // the Leaderboards card still carries the access.
+    expect(pre).not.toContain('Open full leaderboard')
     expect(pre).toContain('#/leaderboards?competition=original')
-    expect(pre).toContain('>Leaderboards</span>')
+    expect(pre).toContain('#/leaderboards?competition=koPredictor')
+  })
+
+  describe('team badges', () => {
+    const preTournament = new Date('2028-06-07T17:30:00Z')
+
+    it('renders a circular ISO badge for each team, never a letter avatar', () => {
+      const html = renderHome(fixtureFor({ now: preTournament }))
+
+      // Two teams, two flag images. The letter-avatar fallback TeamLabel reaches
+      // for when a slot is unresolved must never appear on Home.
+      expect(html).toContain('data:image/svg+xml')
+      expect(html.match(/<img/g)).toHaveLength(2)
+    })
+
+    it('gives an unresolved slot the neutral dashed chip, not a guessed flag or initials', () => {
+      const reference = {
+        ...referenceWith([openingMatch]),
+        teamsById: {
+          'team-sco': { label: 'Scotland', fifaCode: 'SCO', actualTeamId: 'sco', isProvisional: false },
+          'team-ger': { label: 'Germany', fifaCode: 'GER', actualTeamId: null, isProvisional: true },
+        },
+      }
+      const html = renderHome(fixtureFor({ now: preTournament, reference }))
+
+      // Exactly one flag: the resolved side. The provisional side gets the neutral
+      // placeholder, which carries no image and no letters.
+      expect(html.match(/<img/g)).toHaveLength(1)
+    })
+  })
+
+  describe('the hero names no teams', () => {
+    const preTournament = new Date('2028-06-07T17:30:00Z')
+    const heroOf = html => html.slice(0, html.indexOf('</section>'))
+
+    // The hero used to carry a title that named both teams, but only when both
+    // read as resolved — a stricter condition than the card below it applied. So
+    // the hero said "Match 1" while the card said "Scotland v Germany" from the
+    // same data. The teams now live on the card alone: one surface, one answer.
+    it('identifies the match, not the participants, whether or not they resolve', () => {
+      const resolved = renderHome(fixtureFor({ now: preTournament }))
+      const provisional = renderHome(fixtureFor({
+        now: preTournament,
+        reference: {
+          ...referenceWith([openingMatch]),
+          teamsById: {
+            'team-sco': { label: 'Scotland', fifaCode: 'SCO', actualTeamId: null, isProvisional: true },
+            'team-ger': { label: 'Germany', fifaCode: 'GER', actualTeamId: null, isProvisional: true },
+          },
+        },
+      }))
+
+      for (const html of [resolved, provisional]) {
+        expect(heroOf(html)).toContain('Match 1')
+        expect(heroOf(html)).not.toContain('Scotland')
+        expect(heroOf(html)).not.toContain('Germany')
+      }
+      // …and the card names them in both cases, so the two can no longer disagree.
+      expect(resolved).toContain('Scotland')
+      expect(provisional).toContain('Scotland')
+    })
+  })
+
+  describe('signed out', () => {
+    const preTournament = new Date('2028-06-07T17:30:00Z')
+
+    const secondMatch = { matchNumber: 2, matchId: 'm2', groupCode: 'A', kickoffAt: '2028-06-10T14:00:00Z', homeTeamId: 'team-sco', awayTeamId: 'team-ger' }
+    const twoGroupMatches = referenceWith([openingMatch, secondMatch])
+
+    const guestHome = guestSummary => buildHomeDashboard({
+      tournament,
+      reference: twoGroupMatches,
+      session: null,
+      profile: null,
+      guestSummary,
+      originalBundle: null,
+      koBundle: null,
+      results: null,
+      leagues: [],
+      sectionErrors: {},
+      now: preTournament,
+    })
+
+    it('invites a first-time visitor to open an account, counting the real fixtures', () => {
+      const html = renderHome(guestHome({ groupComplete: 0, bracketComplete: 0, groupJokers: 0 }))
+
+      expect(html).toContain('Create an account')
+      // The totals render from the reference data, never from hardcoded prose.
+      expect(renderedText(html)).toContain('Predict all 2 matches')
+      expect(renderedText(html)).toContain('all 2 group matches')
+    })
+
+    it('keeps a guest’s browser progress and their route back into it', () => {
+      // A guest who has already predicted in this browser must not be handed an
+      // empty invitation: the work is real, and Home has always carried it. The
+      // prototype's signed-out state draws a first-time visitor only.
+      const html = renderHome(guestHome({ groupComplete: 1, bracketComplete: 0, groupJokers: 0 }))
+
+      expect(renderedText(html)).toContain('Your predictions')
+      expect(html).toContain('href="#/groups"')
+      expect(html).toContain('Create an account')
+    })
   })
 
   it('drops the countdown entirely on a live matchday', () => {
@@ -217,5 +348,23 @@ describe('Home dashboard rendering', () => {
     expect(html).toContain('Your day')
     expect(html).toContain('1 match')
     expect(html).not.toContain('Predictions lock at kick-off')
+  })
+
+  it('tells how each finished pick went without inventing a points figure', () => {
+    // The re-cut prototype prints a per-match points chip ("Exact +5") and a
+    // "+8 pts today" total. Neither has a data source — the result columns carry
+    // no per-match points and the model refuses to fabricate them. The outcome
+    // itself IS derivable from the predicted and actual scores, so Home says that
+    // and stops there. Reported to the owner rather than resolved by guessing.
+    const html = renderHome(fixtureFor({
+      now: new Date('2028-06-09T22:30:00Z'),
+      results: { live: { summary: {}, results: [{ matchNumber: 1, status: 'completed', home_score_90: 2, away_score_90: 1 }] } },
+    }))
+    const text = renderedText(html)
+
+    expect(text).toContain('You predicted 2–1 · exact score')
+    expect(text).toContain('1 exact')
+    expect(text).not.toMatch(/\+\d+\s*pts today/)
+    expect(text).not.toMatch(/Exact \+\d/)
   })
 })

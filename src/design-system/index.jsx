@@ -7,6 +7,7 @@ import Icon from './Icon.jsx'
 import PlayerIdentity from './PlayerIdentity.jsx'
 import JokerPill, { JokerMeter } from './JokerControl.jsx'
 import MatchCard from './MatchCard.jsx'
+import TeamBadge from './TeamBadge.jsx'
 import SelectField from './SelectField.jsx'
 import PredictionInputRow from './PredictionInputRow.jsx'
 import TiebreakPositionPicker from './TiebreakPositionPicker.jsx'
@@ -178,4 +179,4 @@ export function ConfirmDialog({ open, title, children, confirmLabel = 'Confirm',
   )
 }
 
-export { Icon, PlayerIdentity, TeamLabel, ScoreInput, PredictionStateBadge, JokerPill, JokerMeter, MatchCard, SelectField, PredictionInputRow, TiebreakPositionPicker }
+export { Icon, PlayerIdentity, TeamLabel, TeamBadge, ScoreInput, PredictionStateBadge, JokerPill, JokerMeter, MatchCard, SelectField, PredictionInputRow, TiebreakPositionPicker }
