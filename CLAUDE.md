@@ -79,8 +79,10 @@ Per `docs/RULES-SCORING-LOCKED-CONTRACT.md`:
   = 15; 1-1 Germany = 10; 2-2 Scotland = 10; 2-1 Scotland = 5 (advancer only); 2-1
   Germany = 0. This SUPERSEDES the earlier "draw-plus-advancer bonus, value TBD"
   amendment — the bonus IS the draw component.
-- KO scoring: cumulative team progression (R32=5, R16=8, QF=12, SF=15, Final=20,
-  Champion +25 — SF=15 owner-confirmed 2026-07-10) — KO Predictor and Original Bracket never share cards, jokers, meters,
+- KO scoring: cumulative team progression — R16=8, QF=12, SF=15, Final=20, Champion
+  +25 on top (a champion's Final+win line totals 45; a losing finalist keeps 20).
+  There is NO Round-of-32 rung — Euro 2028 is 24 teams, first KO round is the R16.
+  (Ladder owner-confirmed 2026-07-10.) — KO Predictor and Original Bracket never share cards, jokers, meters,
   or totals.
 
 ## 5. Design rulings in force (2026-07-10)
