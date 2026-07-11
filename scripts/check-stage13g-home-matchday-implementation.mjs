@@ -1,4 +1,5 @@
 import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
+import { readHomeView } from './lib/homeSource.mjs'
 import fs from 'node:fs'
 import process from 'node:process'
 
@@ -8,8 +9,9 @@ const read = file => fs.readFileSync(file, 'utf8')
 const exists = file => fs.existsSync(file)
 
 const model = read('src/home/homeDashboardModel.js')
-const view = read('src/home/HomeDashboard.jsx')
-const styles = read('src/home/HomeDashboard.module.css')
+// Home's view is a layer, not a file: the 400-line component cap split it at
+// Stage DP-HOME. See scripts/lib/homeSource.mjs.
+const view = readHomeView()
 const tests = read('src/home/__tests__/homeDashboardModel.test.js')
 const pkg = JSON.parse(read('package.json'))
 
@@ -25,22 +27,30 @@ for (const marker of [
 
 // Home v2 replaced the single match-hub panel with per-fixture Match Centre cards:
 // live and upcoming fixtures render as tappable HomeMatchCard links on matchday.
+// TeamBadge replaced TeamLabel at Stage DP-HOME: TeamLabel falls back to a
+// two-letter initial avatar whenever a slot is unresolved, and the design ruling
+// requires the circular ISO badge with a neutral dashed placeholder instead.
 for (const marker of [
   'home.liveMatches.map',
   'home.upcomingMatches.map',
   'href={card.href}',
   'HomeMatchCard',
-  'TeamLabel',
+  'TeamBadge',
 ]) {
   if (!view.includes(marker)) fail(`Home view missing ${marker}`)
 }
 
-const matchCardStyles = read('src/styles/match-card.css')
+// The match-card styles moved from the global src/styles/match-card.css into
+// Home's own CSS Module at Stage DP-HOME, retiring that half of the frozen debt.
+// Same three guarantees, at their new address: the live chip, the Match Centre
+// hint, and the fail-loud provisional chip.
+const matchCardStyles = read('src/home/HomeMatchCard.module.css')
 for (const marker of [
-  'match-card__chip--live',
-  'match-card__hint',
+  'chipLive',
+  'matchCentreHint',
+  'chipProvisional',
 ]) {
-  if (!matchCardStyles.includes(marker)) fail(`Match card styles missing ${marker}`)
+  if (!matchCardStyles.includes(marker)) fail(`Home match-card styles missing ${marker}`)
 }
 
 for (const marker of [

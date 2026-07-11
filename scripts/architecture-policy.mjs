@@ -30,8 +30,13 @@ export const ACTIVE_UI_ROOTS = Object.freeze([
 export const TEMPORARY_COMPONENT_CAPS = Object.freeze({})
 
 // Permanent global CSS is limited to tokens and typography. The compatibility files below are frozen debt.
-// match-card.css arrived with the Home v2 rebuild as shared MatchCard styling; it is frozen here and
-// should be folded into a CSS Module in a dedicated slice rather than grown further.
+//
+// match-card.css: HALF-RETIRED at Stage DP-HOME (186 -> 90). Home stopped using the shared MatchCard
+// and renders its own ticket card from src/home/HomeMatchCard.module.css, so the Home-only rules
+// (--readonly/--tappable, the centre, the status chips, the pulse, the Match Centre hint) lost their
+// last caller and were deleted. What remains is the card shell that Groups, Leagues and the two
+// matchday hubs genuinely share, so the registration CANNOT be retired outright from a Home stage —
+// the remaining 90 lines belong to those surfaces and fold into a module when THEY are re-cut.
 export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   // Raised 204 -> 301 at Stage DP-0 for the full Design Programme palette (light
   // + F1 ink variants + gap tokens + transcribed dark palette). Owner-approved
@@ -39,10 +44,12 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   'src/design/tokens.css': 301,
   'src/design/typography.css': 12,
   'src/styles/feature-compat.css': 2590,
-  'src/styles/app.css': 1903,
+  // 1903 -> 1517 at Stage DP-HOME: every home-* orphan is gone. Home now carries its own
+  // CSS Modules, so the only survivor is .home-section-heading, which TournamentOverview uses.
+  'src/styles/app.css': 1517,
   'src/styles/groups-predictor.css': 555,
   'src/styles/knockout-experiences.css': 463,
-  'src/styles/match-card.css': 186,
+  'src/styles/match-card.css': 90,
 })
 
 // Test fixtures share the hard cap. Exact temporary caps must ratchet down when a fixture shrinks.

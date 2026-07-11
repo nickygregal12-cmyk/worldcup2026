@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
+import { useEffect, useState } from 'react'
 import { getNow } from '../lib/clock.js'
 import { countdownParts } from './homeDashboardModel.js'
 import { formatKickoffDateTime } from './homeFormat.js'

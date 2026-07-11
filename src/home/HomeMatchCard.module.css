@@ -142,7 +142,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.go {
+.matchCentreHint {
   display: inline-flex;
   flex: none;
   align-items: center;

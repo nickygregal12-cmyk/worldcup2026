@@ -1,4 +1,3 @@
-import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { Icon } from '../design-system/index.jsx'
 import { formatPoints, formatRank, leaderGap } from './homeFormat.js'
 import page from './HomeDashboard.module.css'
@@ -17,9 +16,13 @@ const COMPETITIONS = Object.freeze([
  * combine, so the two routes are always two rows and never merge into one tap.
  */
 export function LeaderboardsCard({ dashboard }) {
+  // Two competitions, two tables, two totals — said as copy for a player. The
+  // prototype's own note line ("Original and KO standings and totals never
+  // combine") is the spec sentence word for word, which is spec wording on a
+  // player surface.
   const note = dashboard.signedIn
-    ? 'Original and KO standings and totals never combine.'
-    : 'Standings are public. Sign in to see your own points story.'
+    ? 'Your Original and KO Predictor scores are ranked separately. They never add up into one total.'
+    : 'Tables are open to everyone. Sign in to see where you sit.'
 
   return (
     <section className={page.card} aria-labelledby="home-leaderboards">

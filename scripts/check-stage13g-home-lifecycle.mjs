@@ -1,4 +1,5 @@
 import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
+import { readHomeStyles, readHomeView } from './lib/homeSource.mjs'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -7,11 +8,14 @@ const read = file => fs.readFileSync(path.join(root, file), 'utf8')
 const fail = message => { console.error(message); process.exit(1) }
 
 const model = read('src/home/homeDashboardModel.js')
-const view = read('src/home/HomeDashboard.jsx')
+// Home's view and styles are layers, not files: the 400-line component cap split
+// the page at Stage DP-HOME and each component took a colocated CSS Module with
+// it. See scripts/lib/homeSource.mjs.
+const view = readHomeView()
 const lifecycle = read('src/config/tournamentLifecycle.js')
 const lifecycleTest = read('src/config/__tests__/tournamentLifecycle.test.js')
 const homeTest = read('src/home/__tests__/homeDashboardModel.test.js')
-const styles = read('src/home/HomeDashboard.module.css')
+const styles = readHomeStyles()
 const packageJson = JSON.parse(read('package.json'))
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql')).sort()
 

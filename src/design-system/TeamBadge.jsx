@@ -1,4 +1,3 @@
-import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { flagAssetForTeamIso } from './teamFlagRegistry.js'
 import styles from './TeamBadge.module.css'
 

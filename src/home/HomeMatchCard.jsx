@@ -1,4 +1,3 @@
-import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { Icon, TeamBadge } from '../design-system/index.jsx'
 import { formatKickoffTime, matchOutcome, OUTCOME_NOTE } from './homeFormat.js'
 import styles from './HomeMatchCard.module.css'
@@ -90,7 +89,7 @@ export default function HomeMatchCard({ card, showPrediction = true }) {
 
       <span className={styles.foot}>
         <span className={styles.pick}>{note}</span>
-        <span className={styles.go}>Match Centre <Icon name="chevron" size={15} /></span>
+        <span className={styles.matchCentreHint}>Match Centre <Icon name="chevron" size={15} /></span>
       </span>
     </a>
   )

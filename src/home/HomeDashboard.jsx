@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
+import { useCallback, useEffect, useState } from 'react'
 import { GUEST_STATE_UPDATED_EVENT } from '../predictions/predictionSaveConfig.js'
 import { Button, Icon, StatusBar } from '../design-system/index.jsx'
 import { HOME_STATE } from './homeDashboardModel.js'

@@ -55,8 +55,13 @@ for (const file of allSourceFiles) {
 // The four design-system files this stage rewrote dropped theirs. The remaining React-import
 // disables are now equally unnecessary and can be swept in a follow-up, lowering these caps
 // again — the ratchet only ever tightens.
-const totalDisableCap = 45
-const liveDisableCap = 29
+//
+// TIGHTENED 45→44 / 29→28 at Stage DP-HOME — the first instalment of exactly that sweep.
+// Home's five re-cut components (HomeDashboard, HomeHero, HomeMatchCard, HomeSidebar and the
+// new design-system TeamBadge) carry no `import React` and therefore no disable. Every page
+// still holding one can shed it the same way at its own re-cut, dropping these caps further.
+const totalDisableCap = 44
+const liveDisableCap = 28
 if (eslintDisableItems.length > totalDisableCap) fail(`eslint-disable total increased to ${eslintDisableItems.length}/${totalDisableCap}`)
 if (eslintDisableItems.length < totalDisableCap) fail(`eslint-disable total fell to ${eslintDisableItems.length}; lower the H1 total cap from ${totalDisableCap}`)
 const liveCount = eslintDisableItems.filter(item => item.isLive).length

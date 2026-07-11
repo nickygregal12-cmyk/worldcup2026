@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { readHomeView } from './lib/homeSource.mjs'
 
 const root = process.cwd()
 const errors = []
@@ -52,11 +53,16 @@ for (const marker of [
   if (!app.includes(marker)) fail(`Application route composition is missing: ${marker}`)
 }
 
-const home = read('src/home/HomeDashboard.jsx')
+// CW1 — Leaderboards is a More-nav destination, so the bottom nav never exposes
+// it and Home is its only primary entry point. LeaderboardsCard replaced the
+// single LinkButton at Stage DP-HOME: it carries BOTH competition deep links, as
+// two rows that never merge into one tap, in every state including signed out.
+// The rank strip is signed-in only, which is why it cannot be the entry point.
+const home = readHomeView()
 for (const marker of [
   '#/leaderboards?competition=original',
   '#/leaderboards?competition=koPredictor',
-  '>Leaderboards</LinkButton>',
+  'LeaderboardsCard',
   'Open full leaderboard',
 ]) {
   if (!home.includes(marker)) fail(`Home leaderboard access is missing: ${marker}`)

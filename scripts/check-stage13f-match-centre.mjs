@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import { readHomeView } from './lib/homeSource.mjs'
 
 const required = [
   'src/matchCentre/MatchCentre.jsx',
@@ -14,7 +15,7 @@ const route = fs.readFileSync('src/app/appRoutes.js', 'utf8')
 const app = fs.readFileSync('src/App.jsx', 'utf8')
 const model = fs.readFileSync('src/matchCentre/matchCentreModel.js', 'utf8')
 const service = fs.readFileSync('src/matchCentre/matchCentreService.js', 'utf8')
-const home = fs.readFileSync('src/home/HomeDashboard.jsx', 'utf8')
+const home = readHomeView()
 const results = fs.readFileSync('src/results/ResultsPresentation.jsx', 'utf8')
 const homeModel = fs.readFileSync('src/home/homeDashboardModel.js', 'utf8')
 

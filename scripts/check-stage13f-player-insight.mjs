@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
+import { readHomeLogic, readHomeView } from './lib/homeSource.mjs'
 
 const root = process.cwd()
 const errors = []
@@ -76,11 +77,14 @@ const results = read('src/results/ResultsAndLeaderboards.jsx')
 // League member insight now opens inside the dedicated Player View rather than inline on the
 // Leagues page, so the league rank-story rows live in PlayerView.jsx.
 const playerView = read('src/player/PlayerView.jsx')
-const home = read('src/home/HomeDashboard.jsx')
 if (!results.includes('<PlayerInsight')) fail('Leaderboards does not render the full player-insight surface')
 if (!results.includes('standingsRows')) fail('Overall comparison does not retain rank-story rows')
 if (!playerView.includes('standingsRows')) fail('League player insight does not retain league rank-story rows')
-if (!home.includes('pointsBehindLeader')) fail('Home does not expose concise leader-gap storytelling')
+// Home's leader-gap storytelling: the model must expose the gap and the view
+// must render it. Split across two layers at Stage DP-HOME — leaderGap() lives
+// in homeFormat.js and the rank strip in HomeSidebar.jsx — so assert both ends.
+if (!readHomeLogic().includes('pointsBehindLeader')) fail('Home model does not expose the leader gap')
+if (!readHomeView().includes('leaderGap')) fail('Home does not render concise leader-gap storytelling')
 
 const services = [
   read('src/player/playerInsightService.js'),
