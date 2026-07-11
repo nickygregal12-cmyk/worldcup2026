@@ -1,7 +1,7 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { useMemo, useState } from 'react'
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
-import { ScoreInput, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar, JokerMeter, JokerPill, MatchCard } from '../design-system/index.jsx'
+import { PredictionInputRow, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar, JokerMeter, JokerPill, MatchCard } from '../design-system/index.jsx'
 import { hasActivePredictionGrace, isPredictionMatchStarted, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import {
   GROUPS_TABLE_KEY,
@@ -202,11 +202,17 @@ export default function GroupsPredictor({
           : <PredictionStateBadge state={state} />}
         home={<TeamLabel team={homeTeam} compact />}
         away={<TeamLabel team={awayTeam} compact />}
-        centre={<>
-          <ScoreInput value={row.homeScore} label={`${homeTeam?.label ?? 'Home team'} score in match ${match.matchNumber}`} readOnly={scoreReadOnly} grace={hasGrace} state={state} onChange={homeScore => onChange(match, { homeScore })} />
-          <span className="group-match-card__separator" aria-hidden="true">–</span>
-          <ScoreInput value={row.awayScore} label={`${awayTeam?.label ?? 'Away team'} score in match ${match.matchNumber}`} readOnly={scoreReadOnly} grace={hasGrace} state={state} onChange={awayScore => onChange(match, { awayScore })} />
-        </>}
+        centre={<PredictionInputRow
+          homeValue={row.homeScore}
+          awayValue={row.awayScore}
+          homeLabel={`${homeTeam?.label ?? 'Home team'} score in match ${match.matchNumber}`}
+          awayLabel={`${awayTeam?.label ?? 'Away team'} score in match ${match.matchNumber}`}
+          readOnly={scoreReadOnly}
+          grace={hasGrace}
+          state={state}
+          onHomeChange={homeScore => onChange(match, { homeScore })}
+          onAwayChange={awayScore => onChange(match, { awayScore })}
+        />}
         note={<span>{complete ? `${row.homeScore}–${row.awayScore} predicted` : 'Enter both scores'}</span>}
         action={<JokerPill aria-pressed={row.jokerApplied} active={row.jokerApplied} disabled={jokerDisabled} multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER} statusLabel={jokerLabel} matchLabel={`match ${match.matchNumber}`} onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })} />}
       />

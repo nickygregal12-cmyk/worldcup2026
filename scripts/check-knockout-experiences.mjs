@@ -34,7 +34,10 @@ for (const marker of [
   'Original Predictor',
   'TeamLabel',
 ]) if (!bracket.includes(marker)) fail(`Original bracket is missing: ${marker}`)
-for (const forbidden of ['ScoreInput', 'decisionMethod', 'jokerApplied', '90-minute score']) {
+// PredictionInputRow joins this list at Stage DP-PRIMITIVES: it is the shared score-entry
+// row, and the Original Bracket predicts advancers only — it must never gain score entry
+// by the back door of the new primitive.
+for (const forbidden of ['ScoreInput', 'PredictionInputRow', 'decisionMethod', 'jokerApplied', '90-minute score']) {
   if (bracket.includes(forbidden)) fail(`Original bracket must not contain ${forbidden}`)
 }
 
@@ -63,7 +66,9 @@ for (const marker of [
   'TBC matches stay hidden',
   'Original Predictor points and picks are never included',
 ]) if (!ko.includes(marker)) fail(`KO Predictor match centre is missing: ${marker}`)
-for (const component of ['ScoreInput', 'TeamLabel', 'PredictionStateBadge']) {
+// KO now reaches ScoreInput through the shared PredictionInputRow (Stage DP-PRIMITIVES),
+// so the steppers and the high-score confirm stay identical to Groups by construction.
+for (const component of ['PredictionInputRow', 'TeamLabel', 'PredictionStateBadge']) {
   if (!ko.includes(component)) fail(`KO Predictor match centre is missing shared component: ${component}`)
 }
 

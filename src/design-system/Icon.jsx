@@ -2,6 +2,7 @@ import React from 'react' // eslint-disable-line no-unused-vars -- React is requ
 import {
   ChartNoAxesColumn,
   Check,
+  ChevronDown,
   ChevronRight,
   CircleUserRound,
   Clock3,
@@ -40,6 +41,7 @@ const ICONS = Object.freeze({
   moon: Moon,
   close: X,
   chevron: ChevronRight,
+  'chevron-down': ChevronDown,
   refresh: RefreshCw,
   alert: TriangleAlert,
   check: Check,

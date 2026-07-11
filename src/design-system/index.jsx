@@ -7,6 +7,9 @@ import Icon from './Icon.jsx'
 import PlayerIdentity from './PlayerIdentity.jsx'
 import JokerPill, { JokerMeter } from './JokerControl.jsx'
 import MatchCard from './MatchCard.jsx'
+import SelectField from './SelectField.jsx'
+import PredictionInputRow from './PredictionInputRow.jsx'
+import TiebreakPositionPicker from './TiebreakPositionPicker.jsx'
 
 export function Button({ children, variant = 'primary', size = 'medium', icon = null, loading = false, className = '', disabled, ...props }) {
   return (
@@ -163,23 +166,6 @@ export function Dialog({ open, title, onClose, children, labelledBy, className =
 }
 
 
-export function SelectField({ label, hint, id: providedId, value, options, onChange, className = '', placeholder = null, ...props }) {
-  const generatedId = useId()
-  const id = providedId ?? generatedId
-  return (
-    <label className={`ui-field ui-select-field ${className}`.trim()} htmlFor={id} data-design-system-select="true">
-      <span>{label}</span>
-      <select id={id} value={value ?? ''} onChange={event => onChange(event.target.value)} {...props}>
-        {placeholder && <option value="">{placeholder}</option>}
-        {options.map(option => (
-          <option key={option.value} value={option.value} disabled={option.disabled}>{option.label}</option>
-        ))}
-      </select>
-      {hint && <small>{hint}</small>}
-    </label>
-  )
-}
-
 export function ConfirmDialog({ open, title, children, confirmLabel = 'Confirm', cancelLabel = 'Cancel', tone = 'warning', busy = false, onConfirm, onCancel }) {
   return (
     <Dialog open={open} title={title} onClose={onCancel} className={`ui-confirm-dialog ui-confirm-dialog--${tone}`}>
@@ -192,4 +178,4 @@ export function ConfirmDialog({ open, title, children, confirmLabel = 'Confirm',
   )
 }
 
-export { Icon, PlayerIdentity, TeamLabel, ScoreInput, PredictionStateBadge, JokerPill, JokerMeter, MatchCard }
+export { Icon, PlayerIdentity, TeamLabel, ScoreInput, PredictionStateBadge, JokerPill, JokerMeter, MatchCard, SelectField, PredictionInputRow, TiebreakPositionPicker }

@@ -1,10 +1,9 @@
-import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { ConfirmDialog, SelectField } from '../index.jsx'
 
 describe('shared design-system primitives', () => {
-  it('renders a labelled design-system selector', () => {
+  it('renders a custom listbox selector with no native select element', () => {
     const html = renderToStaticMarkup(
       <SelectField
         label="League"
@@ -14,8 +13,12 @@ describe('shared design-system primitives', () => {
       />,
     )
     expect(html).toContain('data-design-system-select="true"')
+    // Trigger is a combobox button; the selected label shows; the OS picker is gone.
+    expect(html).toContain('role="combobox"')
+    expect(html).toContain('aria-haspopup="listbox"')
+    expect(html).toContain('aria-expanded="false"')
     expect(html).toContain('Alpha')
-    expect(html).toContain('<select')
+    expect(html).not.toContain('<select')
   })
 
   it('renders a shared confirmation dialog for destructive actions', () => {

@@ -27,7 +27,11 @@ if (!journey.includes('resolveTournamentLifecycle(tournament)')) fail('Predictio
 if (!view.includes('PREDICTION_AUTOSAVE_NOTICE')) fail('Player-facing autosave copy constant is missing')
 if (!PREDICTION_AUTOSAVE_NOTICE.includes('save automatically')) fail('Player-facing autosave notice constant is missing the save message')
 if (view.includes('central provisional Euro 2028 lock configuration') || view.includes('irreversible tournament lock') || view.includes('atomic saving')) fail('Internal lock/save-contract language must not appear in the prediction journey UI')
-if (!design.includes('export function ConfirmDialog') || !design.includes('export function SelectField')) fail('Shared confirmation and selector primitives are missing')
+if (!design.includes('export function ConfirmDialog') || !design.includes('SelectField')) fail('Shared confirmation and selector primitives are missing')
+// SelectField became a custom-rendered listbox at Stage DP-PRIMITIVES (no native
+// OS picker). It lives in its own file and is re-exported from index.jsx.
+const selectField = read('src/design-system/SelectField.jsx')
+if (!selectField.includes('role="listbox"') || !selectField.includes('role="combobox"')) fail('SelectField must be a custom-rendered listbox (button trigger + option list), not a native select')
 if (!account.includes('ConfirmDialog') || !account.includes('Sign out of Euro 2028 Predictor?')) fail('Sign-out must use the shared confirmation dialog')
 if (!leagues.includes('SelectField') || leagues.includes('<select value={selectedId')) fail('League pickers must use the design-system selector groundwork')
 if (!refresh.includes('REFRESH_POLICY') || !refresh.includes('manualButton: false')) fail('Refresh-policy groundwork is missing')

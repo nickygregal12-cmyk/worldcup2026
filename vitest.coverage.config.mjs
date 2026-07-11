@@ -1,4 +1,9 @@
 export default {
+  // Standalone config — it does not extend vite.config.js, so the automatic JSX
+  // runtime has to be pinned here as well. Without it esbuild falls back to the
+  // classic runtime and every rendered component needs an `import React` that
+  // nothing references. Keep this in step with vite.config.js.
+  esbuild: { jsx: 'automatic' },
   test: {
     environment: 'node',
     include: [

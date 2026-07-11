@@ -26,10 +26,14 @@
 //   dialog      confirm() / alert() / prompt()
 
 // Files permitted to contain a native control because they DEFINE the shared
-// primitive that wraps it. Exactly one file may hold the sanctioned <select>.
-export const PRIMITIVE_SOURCES = Object.freeze({
-  'src/design-system/index.jsx': Object.freeze({ select: 1 }),
-})
+// primitive that wraps it.
+//
+// RATCHET SHRUNK 2026-07-11 (Stage DP-PRIMITIVES): SelectField became a
+// custom-rendered listbox (button trigger + popover), so there is no longer a
+// native <select> anywhere in the live product — the last one, the sanctioned
+// `src/design-system/index.jsx: { select: 1 }` allowance, was removed here in
+// the same commit that removed the element. No file may hold a native <select>.
+export const PRIMITIVE_SOURCES = Object.freeze({})
 
 // Known debt, recorded exactly as found by the 2026-07-10 sweep.
 //

@@ -52,10 +52,20 @@ for (const marker of ['team-label--placeholder', 'team-label--provisional', 'onA
 }
 if (teamLabel.includes('onClick={team') || teamLabel.includes('article onClick')) fail('Team profile activation must remain on the identity primitive only')
 
+// Stage DP-PRIMITIVES moved the seam, not the guarantee. ScoreInput now carries its
+// own --dp-* CSS module, so the read-only state is asserted through its structural
+// marker (data-score-input="readonly") rather than the old global class name; and
+// Groups reaches ScoreInput through the shared PredictionInputRow rather than
+// importing it directly. Both assertions below are re-pointed, and the composition
+// chain is checked end to end — Groups -> PredictionInputRow -> ScoreInput — which is
+// stricter than the single grep it replaces, not looser.
 const scoreInput = read('src/design-system/ScoreInput.jsx')
-for (const marker of ['inputMode="numeric"', 'pattern="[0-9]*"', 'score-input--readonly', "grace ? 'unlock' : 'lock'", 'Decrease ${label}', 'Increase ${label}']) {
+for (const marker of ['inputMode="numeric"', 'pattern="[0-9]*"', 'data-score-input="readonly"', "grace ? 'unlock' : 'lock'", 'Decrease ${label}', 'Increase ${label}']) {
   if (!scoreInput.includes(marker)) fail(`ScoreInput is missing: ${marker}`)
 }
+
+const predictionInputRow = read('src/design-system/PredictionInputRow.jsx')
+if (!predictionInputRow.includes('ScoreInput')) fail('PredictionInputRow must compose the shared ScoreInput primitive')
 
 const stateBadge = read('src/design-system/PredictionStateBadge.jsx')
 for (const state of ['dirty', 'saving', 'saved', 'submitted', 'locked', 'grace', 'conflict', 'error']) {
@@ -65,7 +75,7 @@ for (const state of ['dirty', 'saving', 'saved', 'submitted', 'locked', 'grace',
 const groups = read('src/journey/GroupsPredictor.jsx')
 for (const marker of [
   'viewStyles.focusStrip', 'summary.groupJokerCap', 'EURO_SCORING_CONFIG.joker.MULTIPLIER',
-  'TeamLabel', 'ScoreInput', 'PredictionStateBadge', 'hasActivePredictionGrace',
+  'TeamLabel', 'PredictionInputRow', 'PredictionStateBadge', 'hasActivePredictionGrace',
   'isPredictionMatchStarted', 'group-match-card--joker', 'aria-pressed={row.jokerApplied}',
   'Review progress', 'reference.groups.map', 'reference.groupMatches.filter',
   'Fill empty scores', 'Replace all scores', 'Lucky Dip never uses odds',

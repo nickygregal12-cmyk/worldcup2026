@@ -1,0 +1,112 @@
+/* Item-64 tiebreak position picker (--dp-*). Amber provisional warning + manual
+   ▲/▼ ordering + reset notice. Amber tokens per the design programme's
+   provisional role; the picker layout is defined here (programme has no
+   position-picker pattern — flagged in the DP-PRIMITIVES report). */
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  /* --dp-warning-border is dark-only in tokens.css (DP-0 gap); use the neutral
+     strong border. The amber provisional signal reads from the .warning banner. */
+  border: 1px solid var(--dp-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-raised);
+}
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--dp-warning-soft);
+  color: var(--dp-warning-ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.warningIcon {
+  flex: none;
+  margin-top: 1px;
+}
+
+.reset {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--dp-warning-ink);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 48px;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--dp-surface-page);
+  color: var(--dp-text-body);
+}
+
+.rank {
+  min-width: 1.5rem;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  color: var(--dp-text-strong);
+}
+
+.name {
+  flex: 1;
+  font-weight: 600;
+  color: var(--dp-text-strong);
+}
+
+.controls {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.control {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--dp-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-body);
+  cursor: pointer;
+}
+
+.control:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.control:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+}
+
+.save {
+  align-self: flex-start;
+  min-height: 48px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--dp-action-ink);
+  border-radius: var(--radius-md);
+  background: var(--dp-action-ink);
+  color: var(--dp-text-on-accent);
+  font-weight: 600;
+  cursor: pointer;
+}

@@ -47,8 +47,16 @@ for (const file of allSourceFiles) {
 // Re-based 38→48 / 23→30 after the Leagues and Home v2 rebuilds added reasoned disables without
 // updating the ratchet: the growth is the established no-unused-vars React-import pattern plus
 // four justified react-hooks exceptions in Leagues.jsx, all carrying reasons after the dashes.
-const totalDisableCap = 48
-const liveDisableCap = 30
+//
+// TIGHTENED 48→45 / 30→29 at Stage DP-PRIMITIVES. Vitest was transforming JSX with esbuild's
+// CLASSIC runtime, so every rendered file needed an `import React` that nothing referenced —
+// each one bought with a no-unused-vars disable. vite.config.js now pins the automatic runtime
+// (matching what plugin-react already did for the browser build), so that import is dead weight.
+// The four design-system files this stage rewrote dropped theirs. The remaining React-import
+// disables are now equally unnecessary and can be swept in a follow-up, lowering these caps
+// again — the ratchet only ever tightens.
+const totalDisableCap = 45
+const liveDisableCap = 29
 if (eslintDisableItems.length > totalDisableCap) fail(`eslint-disable total increased to ${eslintDisableItems.length}/${totalDisableCap}`)
 if (eslintDisableItems.length < totalDisableCap) fail(`eslint-disable total fell to ${eslintDisableItems.length}; lower the H1 total cap from ${totalDisableCap}`)
 const liveCount = eslintDisableItems.filter(item => item.isLive).length

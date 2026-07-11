@@ -10,6 +10,14 @@ export default defineConfig({
   define: {
     'import.meta.env.VITE_SENTRY_RELEASE': JSON.stringify(release),
   },
+  // Vitest transforms JSX with esbuild rather than the react plugin's Babel
+  // pass, and esbuild's default is the CLASSIC runtime — which is why every
+  // rendered component and test carried `import React` purely to put the
+  // identifier in scope (each one costing an eslint-disable against the H1
+  // ratchet). Pinning the automatic runtime here matches what plugin-react
+  // already does for the browser build, so new files need no React import at
+  // all. Existing React imports stay valid; they are simply no longer load-bearing.
+  esbuild: { jsx: 'automatic' },
   plugins: [react()],
   build: {
     outDir: 'dist',

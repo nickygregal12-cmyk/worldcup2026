@@ -1,6 +1,6 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import lifecycleStyles from './KoPredictorLifecycle.module.css'
-import { Badge, Button, Icon, PredictionStateBadge, ProgressBar, ScoreInput, TeamLabel } from '../design-system/index.jsx'
+import { Badge, Button, Icon, PredictionStateBadge, ProgressBar, PredictionInputRow, TeamLabel } from '../design-system/index.jsx'
 import { buildKoRoundProgress, deriveKoMatchPresentation, koMethodOptions, KO_PREDICTOR_ROUNDS } from './koPredictorPresentationModel.js'
 
 function team(reference, id) {
@@ -101,9 +101,15 @@ export default function KoPredictorMatchCentre({
                       <div className="ko-score-heading"><strong>90-minute score</strong><small>Penalty shoot-out score is never predicted.</small></div>
                       <div className="ko-score-row">
                         <TeamLabel team={home} compact />
-                        <ScoreInput value={row.homeScore} label={`${home?.label ?? 'Home'} 90-minute score`} readOnly={presentation.locked} onChange={value => onChange(match, { homeScore: value })} />
-                        <span className="ko-score-row__dash">–</span>
-                        <ScoreInput value={row.awayScore} label={`${away?.label ?? 'Away'} 90-minute score`} readOnly={presentation.locked} onChange={value => onChange(match, { awayScore: value })} />
+                        <PredictionInputRow
+                          homeValue={row.homeScore}
+                          awayValue={row.awayScore}
+                          homeLabel={`${home?.label ?? 'Home'} 90-minute score`}
+                          awayLabel={`${away?.label ?? 'Away'} 90-minute score`}
+                          readOnly={presentation.locked}
+                          onHomeChange={value => onChange(match, { homeScore: value })}
+                          onAwayChange={value => onChange(match, { awayScore: value })}
+                        />
                         <TeamLabel team={away} compact />
                       </div>
 

@@ -1,0 +1,154 @@
+/* Prediction score input — vertical ▲/▼ steppers around a tappable numeric
+   field (owner ruling, CLAUDE.md §5). First product surface on --dp-*; the
+   design programme specifies the 48px target and the locked read-only render
+   but no stepper geometry (flagged in the DP-PRIMITIVES report). */
+
+.scoreInput {
+  position: relative;
+  display: inline-flex;
+}
+
+.stepper {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+  width: 3.75rem;
+}
+
+.step {
+  min-height: 48px;
+  border: 1px solid var(--dp-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--dp-surface-page);
+  color: var(--dp-text-body);
+  font-size: var(--text-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.step:hover:not(:disabled) {
+  background: var(--dp-surface-raised);
+  border-color: var(--dp-action);
+}
+
+.step:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+}
+
+.step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.number {
+  min-height: 48px;
+  width: 100%;
+  text-align: center;
+  border: 1px solid var(--dp-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-strong);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-variant-numeric: tabular-nums;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.number::-webkit-outer-spin-button,
+.number::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.number:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+  border-color: var(--dp-action);
+}
+
+/* Locked / read-only: a structurally different render, never an editable input. */
+.readonly {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  min-width: 3.75rem;
+  justify-content: center;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--dp-surface-page);
+  color: var(--dp-text-strong);
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+}
+
+.grace {
+  /* --dp-warning-border is dark-only in tokens.css (DP-0 gap), so the boundary
+     uses the neutral strong border; the amber reads from soft-bg + ink-text. */
+  border-color: var(--dp-border-strong);
+  background: var(--dp-warning-soft);
+  color: var(--dp-warning-ink);
+}
+
+.saved .number {
+  border-color: var(--dp-success);
+}
+
+.saving {
+  opacity: 0.7;
+}
+
+/* Inline high-score confirm — a designed surface, never a native dialog. */
+.confirm {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: max-content;
+  max-width: 14rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: var(--dp-surface-raised);
+  border: 1px solid var(--dp-border-strong);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-2);
+}
+
+.confirmText {
+  font-size: var(--text-sm);
+  color: var(--dp-text-body);
+}
+
+.confirmActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.confirmYes,
+.confirmNo {
+  min-height: 40px;
+  flex: 1;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirmYes {
+  border: 1px solid var(--dp-action-ink);
+  background: var(--dp-action-ink);
+  color: var(--dp-text-on-accent);
+}
+
+.confirmNo {
+  border: 1px solid var(--dp-border-strong);
+  background: transparent;
+  color: var(--dp-action-ink);
+}

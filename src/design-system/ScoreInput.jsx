@@ -1,15 +1,7 @@
-import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
+import { useState } from 'react'
 import Icon from './Icon.jsx'
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value))
-}
-
-function parseScore(value, min, max) {
-  if (value === '') return null
-  const numeric = Number(value)
-  return Number.isInteger(numeric) ? clamp(numeric, min, max) : null
-}
+import { needsHighScoreConfirm, parseScore, rememberConfirmed, stepScore } from './scoreInputModel.js'
+import styles from './ScoreInput.module.css'
 
 export default function ScoreInput({
   value,
@@ -22,38 +14,82 @@ export default function ScoreInput({
   max = 99,
   onChange,
 }) {
+  // Values the user has already confirmed as intentional high scores, so we
+  // never re-ask for the same one (item 63: shown once per confirmed value).
+  const [confirmed, setConfirmed] = useState(() => new Set())
+  const [pendingHigh, setPendingHigh] = useState(null)
+
   const classes = [
-    'score-input',
-    disabled || readOnly ? 'score-input--readonly' : '',
-    grace ? 'score-input--grace' : '',
-    `score-input--${state}`,
+    styles.scoreInput,
+    disabled || readOnly ? styles.readonly : '',
+    grace ? styles.grace : '',
+    styles[state] ?? '',
   ].filter(Boolean).join(' ')
 
   if (disabled || readOnly) {
     return (
-      <div className={classes} aria-label={`${label}: ${value ?? 'not predicted'}, read only`}>
+      <div className={classes} data-score-input="readonly" data-grace={grace || undefined} aria-label={`${label}: ${value ?? 'not predicted'}, read only`}>
         <strong>{value ?? '–'}</strong>
         <Icon name={grace ? 'unlock' : 'lock'} size={15} />
       </div>
     )
   }
 
-  const step = delta => onChange(clamp((value ?? 0) + delta, min, max))
+  // Steppers commit immediately and mark high values confirmed, so a later typed
+  // entry of the same number never triggers the confirm.
+  const step = delta => {
+    const next = stepScore(value, delta, min, max)
+    setConfirmed(previous => rememberConfirmed(previous, next))
+    setPendingHigh(null)
+    onChange(next)
+  }
+
+  const onType = event => {
+    const next = parseScore(event.target.value, min, max)
+    if (next != null && needsHighScoreConfirm(next, confirmed)) {
+      setPendingHigh(next)
+      return // hold the value until confirmed; do not commit yet
+    }
+    setPendingHigh(null)
+    onChange(next)
+  }
+
+  const confirmHigh = () => {
+    setConfirmed(previous => rememberConfirmed(previous, pendingHigh))
+    onChange(pendingHigh)
+    setPendingHigh(null)
+  }
+
+  const cancelHigh = () => setPendingHigh(null)
+
+  const displayValue = pendingHigh != null ? pendingHigh : (value ?? '')
 
   return (
-    <div className={classes} data-state={state}>
-      <button type="button" className="score-input__step score-input__step--minus" aria-label={`Decrease ${label}`} disabled={(value ?? 0) <= min} onClick={() => step(-1)}>−</button>
-      <input
-        type="number"
-        min={min}
-        max={max}
-        inputMode="numeric"
-        pattern="[0-9]*"
-        aria-label={label}
-        value={value ?? ''}
-        onChange={event => onChange(parseScore(event.target.value, min, max))}
-      />
-      <button type="button" className="score-input__step score-input__step--plus" aria-label={`Increase ${label}`} disabled={(value ?? 0) >= max} onClick={() => step(1)}>+</button>
+    <div className={classes} data-score-input="editable" data-state={state}>
+      <div className={styles.stepper}>
+        <button type="button" className={styles.step} aria-label={`Increase ${label}`} disabled={(value ?? 0) >= max} onClick={() => step(1)}>▲</button>
+        <input
+          className={styles.number}
+          type="number"
+          min={min}
+          max={max}
+          inputMode="numeric"
+          pattern="[0-9]*"
+          aria-label={label}
+          value={displayValue}
+          onChange={onType}
+        />
+        <button type="button" className={styles.step} aria-label={`Decrease ${label}`} disabled={(value ?? 0) <= min} onClick={() => step(-1)}>▼</button>
+      </div>
+      {pendingHigh != null && (
+        <div className={styles.confirm} role="group" aria-label={`Confirm ${pendingHigh} goals`}>
+          <span className={styles.confirmText}>{pendingHigh} goals — is that right?</span>
+          <div className={styles.confirmActions}>
+            <button type="button" className={styles.confirmYes} onClick={confirmHigh}>Yes</button>
+            <button type="button" className={styles.confirmNo} onClick={cancelHigh}>Edit</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

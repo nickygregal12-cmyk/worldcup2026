@@ -1,0 +1,14 @@
+/* Shared prediction input row (--dp-*). Two ScoreInputs around a centred dash. */
+.row {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.dash {
+  align-self: center;
+  padding-top: 20px; /* aligns the dash with the numeric fields between the steppers */
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  color: var(--dp-text-muted);
+}
