@@ -1649,3 +1649,79 @@ no Migration 019
 ```
 
 Original Predictor and KO Predictor remain separate. Active migrations remain 20.
+
+## Stage DP-PRIMITIVES — shared input primitives (owner rulings 2026-07-11)
+
+Status: CLOSED / RECORDED. Delivered items 63/64/65/66. Full check suite green.
+Implementation commit: `7c9a4bf`.
+
+### What changed
+
+`SelectField` became a genuinely custom-rendered listbox (button trigger + popover option
+list). The native `<select>` is gone from the live product, so the iPhone wheel picker can
+no longer survive a migration — this was item 65's critical finding. The native-control
+ratchet SHRANK from 5 permitted controls to 4: the last sanctioned native `<select>` was
+the one inside the SelectField primitive itself, and its `PRIMITIVE_SOURCES` allowance was
+removed in the same commit as the element. `PRIMITIVE_SOURCES` is now empty — no file may
+hold a native `<select>`.
+
+Score entry was extracted into one shared `PredictionInputRow`, so Groups and KO Predictor
+inherit identical behaviour by construction: vertical ▲/▼ steppers (48px, ±1, floor 0) plus
+direct numeric entry. The high-score confirm (item 63) fires at 7+ on TYPED entry only —
+a stepper tap marks the value confirmed instead, because deliberate tapping means you meant
+it — and asks once per confirmed value.
+
+### Correction to the record
+
+The four PENDING-RECUT Admin Control Room allowlist entries were NOT selects. They are
+three native date/time inputs (AdminControlRoomSections ×1, AdminFixtureOperations ×2) and
+one checkbox (AdminScoringRecovery). Admin's dropdowns were already routed through
+SelectField — which is exactly why they never appeared in the allowlist, and exactly why
+they still produced the OS picker anyway. Rebuilding the primitive migrated them. The
+three date/time inputs and the checkbox REMAIN allowlisted: no shared date or checkbox
+primitive exists, and building one was out of scope.
+
+### Owner rulings recorded 2026-07-11
+
+- **Three component conventions ratified into the house conventions** (the design programme
+  specified none of them): the popover-listbox convention (popover, not modal — ARIA listbox,
+  Escape/Tab dismiss, focus returns to trigger, no hard focus trap); the inline-confirm
+  pattern (designed in-row confirm, never `window.confirm`); and the tiebreak ▲/▼ idiom
+  (vertical stepper ordering controls under the amber provisional role). Recorded in CLAUDE.md §5.
+- **Both audit re-points ratified** as strictly tightening, not loosening. `check-groups-predictor`
+  and `check-knockout-experiences` now assert `PredictionInputRow` and the full
+  Groups → PredictionInputRow → ScoreInput composition chain (stricter than the single grep
+  they replace); ScoreInput's read-only state is asserted via `data-score-input="readonly"`
+  now that it owns a CSS module; and `PredictionInputRow` joins the Original Bracket's
+  FORBIDDEN list, so the bracket can never acquire score entry through the new primitive.
+- **JSX automatic-runtime pin ratified.** Vitest was transforming JSX with esbuild's classic
+  runtime, so every rendered file needed an `import React` that nothing referenced, each one
+  bought with a `no-unused-vars` disable. `vite.config.js` and `vitest.coverage.config.mjs`
+  now pin the automatic runtime, matching plugin-react's browser build. The H1 eslint-disable
+  ratchet TIGHTENED 48→45 total / 30→29 live.
+
+### Item 64 boundary (unchanged, restated)
+
+`TiebreakPositionPicker` is the COMPONENT half only: amber warning banner, manual position
+picker, reset notice — driven by a STUB tie descriptor. The MODEL half (detecting undecidable
+ties, feeding the third-place allocator, reset-on-edit) is scheduled with the Groups re-cut
+and is NOT wired. See docs/UNRESOLVED-GROUP-TIEBREAKER-PROMPT.md.
+
+### Follow-ups owner-scheduled 2026-07-11
+
+- **jsdom test environment: APPROVED, as its own stage, BEFORE the Groups re-cut.** Not now.
+  The repo has no DOM test environment, so keyboard navigation, stepper taps and the confirm
+  flow are currently tested as pure decision tables plus static-markup ARIA assertions — no
+  test actually presses a key or taps a stepper. The jsdom stage closes that gap and must
+  land before Groups' re-cut wires the item-64 model.
+- **DP-0 follow-up: `--dp-warning-border` has no light-theme value** (dark-theme only). The
+  amber provisional surfaces avoid it and use `--dp-border-strong`, reading the amber signal
+  from the banner fill and ink instead. DP-0 should supply the missing light value.
+- **Residual eslint-disable debt:** with the automatic runtime pinned, the remaining
+  `import React` disables reference nothing and can be swept, lowering the H1 caps further.
+- **Unscanned legacy selects:** raw `<select>` elements remain in `src/pages/` and
+  `src/components/admin/`, which sit outside `ACTIVE_UI_ROOTS` and so are invisible to the
+  native-control ratchet. If any of those surfaces is still reachable, the OS picker still
+  appears there. Owner decision pending.
+
+Original Predictor and KO Predictor remain separate. Active migrations remain 20.

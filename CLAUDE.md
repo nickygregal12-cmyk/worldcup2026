@@ -101,9 +101,26 @@ Per `docs/RULES-SCORING-LOCKED-CONTRACT.md`:
   downward scroll, reveals instantly on any upward scroll, never hides while an input is
   focused, translates as one unit with the raised Home circle.
 - Score entry: steppers (▲/▼ per side) AND direct numeric entry, 48px targets.
-- `SelectField` currently renders a native `<select>` — migrating to it does NOT remove
-  the OS picker. A custom-rendered control is a required component stage before any
-  dropdown migration claims user-visible improvement.
+- `SelectField` is a **custom-rendered listbox** as of Stage DP-PRIMITIVES (2026-07-11):
+  button trigger + popover option list, no native `<select>` underneath, so the OS wheel
+  picker is gone from every surface that uses it. The native-control ratchet now permits
+  **zero** native `<select>` anywhere — `PRIMITIVE_SOURCES` is empty. (This supersedes the
+  earlier ruling that SelectField still rendered a native `<select>`; that is no longer true.)
+
+### Component conventions ratified 2026-07-11 (owner ruling)
+
+These three fill gaps the design programme did not specify. They are binding house
+conventions — the programme itself remains PROPOSED, but these are recorded owner rulings.
+
+- **Popover listbox** (SelectField): a popover, NOT a modal. Standard ARIA
+  listbox/combobox semantics; arrows + Home/End move, Enter/Space commit, Escape and Tab
+  dismiss, type-ahead jumps; click-outside dismisses; focus returns to the trigger on
+  close. No hard focus trap — the modal §12 trap convention does not apply to popovers.
+- **Inline confirm** (high-score confirm): a designed in-row confirm in the system's own
+  language — warning-soft fill, warning-ink text, 48px actions. Never `window.confirm`;
+  the native-controls ratchet polices dialogs.
+- **Tiebreak ▲/▼ idiom**: manual ordering controls reuse the vertical stepper idiom, with
+  the amber provisional role for the warning state.
 
 ## 6. Ground-truth tournament facts
 
