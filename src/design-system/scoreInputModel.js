@@ -1,7 +1,9 @@
 // Score-entry rules shared by ScoreInput and its tests. They live outside the
 // component file because it may only export components (react-refresh), and
-// because the node test environment cannot dispatch DOM events — keeping the
-// decisions pure is the only way this repo can test them.
+// because keeping the decisions pure lets every case be enumerated directly.
+// Since the jsdom stage they are also exercised through real taps and typing —
+// see PredictionInputRow.interaction.test.jsx, which proves the component obeys
+// the rules below rather than merely that the rules are right.
 
 // High-score confirm, item 63: a typed value at or above this asks once.
 export const HIGH_SCORE_THRESHOLD = 7

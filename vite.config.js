@@ -19,6 +19,17 @@ export default defineConfig({
   // all. Existing React imports stay valid; they are simply no longer load-bearing.
   esbuild: { jsx: 'automatic' },
   plugins: [react()],
+  test: {
+    // The default stays `node`, which is what every suite before the jsdom stage
+    // already ran under — pure models plus renderToStaticMarkup, neither of which
+    // needs a DOM. Making the default explicit is the point: a DOM is OPT-IN, per
+    // file, with a `// @vitest-environment jsdom` docblock. Files that ask for it
+    // (the DP-PRIMITIVES interaction tests) can dispatch real key, pointer and
+    // focus events; the rest keep their existing semantics and pay none of jsdom's
+    // per-file construction cost.
+    environment: 'node',
+    setupFiles: ['./vitest.setup.js'],
+  },
   build: {
     outDir: 'dist',
     sourcemap: sentryUploadEnabled ? 'hidden' : false,

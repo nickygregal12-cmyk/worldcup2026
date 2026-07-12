@@ -8,10 +8,11 @@ import {
   typeAheadIndex,
 } from '../selectFieldNav.js'
 
-// The node/static-markup test environment cannot dispatch real key events, so
-// the SelectField's keyboard-navigation logic is unit-tested through its pure
-// helpers. These cover: arrow movement with wrap and disabled-skipping,
-// Home/End edges, type-ahead matching, and the trigger open-keys.
+// The SelectField's keyboard contract, enumerated through its pure helpers:
+// arrow movement with wrap and disabled-skipping, Home/End edges, type-ahead
+// matching, and the trigger open-keys. Real key events are dispatched against
+// the mounted component in SelectField.interaction.test.jsx (jsdom); this file
+// stays as the exhaustive decision table behind it.
 
 const items = [
   { value: 'a', label: 'Alpha' },

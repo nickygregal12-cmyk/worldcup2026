@@ -1,9 +1,13 @@
 // Keyboard-navigation logic for the custom SelectField listbox.
 //
-// These live outside SelectField.jsx for two reasons: the component file may
-// only export components (react-refresh), and the node/static-markup test
-// environment cannot dispatch real key events — so the interaction rules are
-// kept pure here where they can be exercised directly.
+// These live outside SelectField.jsx because the component file may only export
+// components (react-refresh), and because a pure decision table is the cheapest
+// place to enumerate every key against every list shape.
+//
+// They are no longer the ONLY way to test the keyboard: since the jsdom stage,
+// SelectField.interaction.test.jsx presses these keys for real against a mounted
+// component. The two are complements — the pure tests cover the contract
+// exhaustively, the interaction tests prove the component is wired to it.
 
 // First enabled index scanning from `from` in `direction`, or `from` if none.
 export function edgeIndex(items, from, direction) {

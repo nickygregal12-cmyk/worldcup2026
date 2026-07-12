@@ -5,7 +5,13 @@ export default {
   // nothing references. Keep this in step with vite.config.js.
   esbuild: { jsx: 'automatic' },
   test: {
+    // Same opt-in DOM model as vite.config.js: node by default, jsdom only where a
+    // file's `// @vitest-environment jsdom` docblock asks for it. setupFiles must be
+    // repeated here because this config does not extend vite.config.js — without it
+    // the coverage run would execute the interaction tests with no between-test
+    // cleanup and they would leak into each other.
     environment: 'node',
+    setupFiles: ['./vitest.setup.js'],
     include: [
       'src/**/*.{test,spec}.{js,jsx}',
       'scripts/**/*.{test,spec}.{js,mjs}',
