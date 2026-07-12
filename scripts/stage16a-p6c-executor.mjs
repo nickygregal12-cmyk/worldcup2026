@@ -238,6 +238,10 @@ const SYNTH_USER_SELECT = `
     and (raw_user_meta_data->>'synthetic_euro28') = 'true'`
 
 // ---- synthetic_user_writer --------------------------------------------------
+// The shared password for every seeded persona. These accounts are meant to be
+// signed into — reviewing a logged-in surface is the point of the seed.
+export const STAGE16A_SYNTHETIC_PASSWORD = 'synthetic-not-a-real-login'
+
 function seedUsers() {
   for (const persona of STAGE16A_SYNTHETIC_PERSONAS) {
     // Profile display name must be 3–30 chars, canonical and unique. The full
@@ -249,13 +253,34 @@ function seedUsers() {
     // partial index, not a plain constraint, so guard with NOT EXISTS). The
     // profile row is created by the existing handle_new_euro_user_profile
     // trigger from raw_user_meta_data.
+    //
+    // The token columns are written as '' rather than left to their NULL default:
+    // GoTrue scans them into non-nullable Go strings, so a NULL makes every
+    // password grant fail with 500 "Database error querying schema".
     runSql(`
       insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
-        email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+        email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+        confirmation_token, recovery_token, email_change, email_change_token_new,
+        email_change_token_current, phone_change, phone_change_token, reauthentication_token)
       select gen_random_uuid(), '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
-        ${q(persona.email)}, crypt('synthetic-not-a-real-login', gen_salt('bf')),
-        now(), '{"provider":"email","providers":["email"]}'::jsonb, ${q(meta)}::jsonb, now(), now()
+        ${q(persona.email)}, crypt(${q(STAGE16A_SYNTHETIC_PASSWORD)}, gen_salt('bf')),
+        now(), '{"provider":"email","providers":["email"]}'::jsonb, ${q(meta)}::jsonb, now(), now(),
+        '', '', '', '', '', '', '', ''
       where not exists (select 1 from auth.users where email = ${q(persona.email)});`)
+
+    // The email password grant resolves the user through auth.identities; without
+    // a matching identity row the account exists but cannot sign in. Cascades on
+    // user delete, so teardown stays zero-residue.
+    runSql(`
+      insert into auth.identities (provider_id, user_id, identity_data, provider,
+        last_sign_in_at, created_at, updated_at)
+      select u.id::text, u.id,
+        jsonb_build_object('sub', u.id::text, 'email', u.email, 'email_verified', true, 'phone_verified', false),
+        'email', now(), now(), now()
+      from auth.users u
+      where u.email = ${q(persona.email)}
+        and not exists (
+          select 1 from auth.identities i where i.user_id = u.id and i.provider = 'email');`)
   }
 }
 
