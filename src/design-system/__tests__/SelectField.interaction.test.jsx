@@ -251,7 +251,9 @@ describe('SelectField — real keyboard and pointer interaction', () => {
 
     // The native-controls ratchet (PRIMITIVE_SOURCES is empty) is a source-level
     // grep. This is the same ruling proved at runtime, with the popover OPEN:
-    // there is no <select> under the custom listbox.
+    // no native select element is rendered beneath the custom listbox, so the OS
+    // wheel picker has nothing to attach to. (Writing that element's tag out in
+    // prose here would itself trip the grep — that is the ratchet working.)
     expect(container.querySelector('select')).toBeNull()
     expect(document.querySelector('select')).toBeNull()
     expect(screen.getByRole('listbox').tagName).toBe('UL')
