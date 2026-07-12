@@ -50,5 +50,17 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Codespaces cannot reach a container port from the browser: 127.0.0.1 there
+    // is the developer's own laptop. Proxying the local Supabase stack under the
+    // dev server's own origin keeps it same-origin, so no port needs opening.
+    // Inert unless VITE_SUPABASE_URL points at this path.
+    proxy: {
+      '/local-supabase': {
+        target: 'http://127.0.0.1:54321',
+        changeOrigin: true,
+        ws: true,
+        rewrite: path => path.replace(/^\/local-supabase/, ''),
+      },
+    },
   },
 })
