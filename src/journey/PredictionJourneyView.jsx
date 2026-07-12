@@ -52,12 +52,12 @@ export default function PredictionJourneyView({
   updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
 }) {
   const compactSurface = surface === PREDICTION_JOURNEY_VIEW.GROUPS || surface === PREDICTION_JOURNEY_VIEW.BRACKET
-  // The re-cut Groups page stands on the DP page ground the shell paints (DP-SHELL).
+  // A re-cut surface stands on the DP page ground the shell paints (DP-SHELL).
   // `.foundation-panel` wrapped it in a legacy glass card with a 22px radius — off the
-  // 4px scale entirely — which is what put a frame around the whole page and stopped
-  // the ground landing. Scoped to Groups alone: the Bracket surface is not re-cut yet
-  // and keeps its panel until its own stage.
-  const recut = surface === PREDICTION_JOURNEY_VIEW.GROUPS
+  // 4px scale entirely — which is what put a frame around the whole page and stopped the
+  // ground landing beneath it. Groups dropped it at its own re-cut; Bracket carried it
+  // until this one, and both surfaces are now re-cut. Review is not, and keeps its panel.
+  const recut = compactSurface
   return (
     <section className={recut ? 'prediction-journey' : 'foundation-panel prediction-journey'} aria-labelledby="prediction-journey-title">
       {compactSurface && <h2 id="prediction-journey-title" className="sr-only">Original Predictor workspace</h2>}
@@ -69,13 +69,14 @@ export default function PredictionJourneyView({
               <strong>{surface === PREDICTION_JOURNEY_VIEW.GROUPS ? 'Group scores workspace' : 'Bracket picks workspace'}</strong>
             </div>
             {/* The whole-journey count — group scores AND bracket picks — belongs on a
-                surface where it is the only count. On Groups it is not: the sticky dock
-                two inches below carries x/36, the group scores, and stacking a /51 on top
-                of a /36 asks the player to hold two denominators for overlapping things.
-                Worse, it is a number they cannot act on here — you cannot pick the bracket
-                from the Groups page. Home already tells them where they are across the
-                whole Original Predictor, which is Home's job. So it stays on Bracket,
-                where nothing competes with it, and leaves Groups to the dock. */}
+                surface where it is the only count. It was dropped from Groups because the
+                dock two inches below carries x/36, and stacking a /51 on a /36 asks the
+                player to hold two denominators for overlapping things. It was kept on
+                Bracket at that stage on the grounds that nothing there competed with it.
+                After the Bracket re-cut something does: the round rail carries the bracket's
+                own progress. So the same argument now retires it from both, and the figure
+                lives where it is actionable — Home, which is Home's job. Review, which is
+                not re-cut and has no progress display of its own, still shows it. */}
             {!recut && <span className={chromeStyles.statusCount}>{summary.totalComplete}/51 complete</span>}
             <AutosaveBadge context={context} status={autosaveStatus} revision={accountBundle?.revision ?? 0} savedAt={savedAt} />
           </summary>

@@ -1,59 +1,209 @@
+/* Original Bracket — page shell (DP tokens, prototype v2).
+ *
+ * The page told you the same things three and four times over: a page hero, then a blue
+ * context panel repeating the same heading, then a champion strip, then a summary card
+ * repeating the champion, then the champion again in the chart. All of it is gone. What
+ * remains is what the prototype asks for — the surface names itself once, the champion is
+ * stated once, and then you are in the bracket.
+ *
+ * ONE breakpoint, 900px, min-width only. The bracket audits forbid a max-width media query
+ * anywhere in these three modules — and they grep the raw source, comments included, so do
+ * not even write one down. Everything is mobile-first; the wall chart is the enhancement.
+ */
+
 .bracket {
   display: grid;
-  gap: var(--space-6);
+  gap: var(--space-4);
 }
 
-.championStrip {
+/* ===== the page says what it is, once ===== */
+
+.head {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.headTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-4);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-1);
+  gap: var(--space-3);
 }
 
-.championStrip > div {
-  display: grid;
-  gap: var(--space-1);
+.head h2 {
+  margin: 0;
+  color: var(--dp-text-strong);
+  font-size: var(--text-xl);
 }
 
-.championStrip span {
-  color: var(--text-muted);
+.head p {
+  margin: 0;
+  max-width: 46rem;
+  color: var(--dp-text-muted);
+  font-size: var(--text-sm);
+}
+
+.eyebrow {
+  color: var(--dp-text-muted);
   font-size: var(--text-xs);
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.championStrip small {
-  max-width: 24rem;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
+.tag {
+  flex: none;
+  padding: 0.125rem var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--dp-info-soft);
+  color: var(--dp-info-ink);
+  font-size: var(--text-xs);
   font-weight: 700;
-  text-align: right;
+}
+
+/* ===== the champion, stated once =====
+   Navy chrome, not gold. The approved prototype paints this card in the joker family, and
+   §5 makes gold joker-exclusive — the ruling outranks the prototype, so the colour is the
+   one thing here that is not adopted from it. */
+
+.championCard {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--dp-surface-chrome);
+  color: var(--dp-text-on-chrome);
+  text-align: center;
+}
+
+.championCard .eyebrow {
+  color: var(--dp-text-muted-chrome);
+}
+
+.championCard small {
+  max-width: 28rem;
+  color: var(--dp-text-muted-chrome);
+  font-size: var(--text-xs);
 }
 
 .emptyChampion {
-  color: var(--text-strong);
+  color: var(--dp-text-on-chrome);
   font: 700 var(--text-lg)/var(--leading-heading) var(--font-display);
 }
+
+/* ===== round rail + the wall-chart trip ===== */
+
+.topStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.roundRail {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.roundRail::-webkit-scrollbar {
+  display: none;
+}
+
+.roundRail button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-muted);
+  cursor: pointer;
+}
+
+.roundRail button span {
+  font: 800 var(--text-sm)/1 var(--font-display);
+}
+
+.roundRail button strong {
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.roundRail .roundOn {
+  border-color: var(--dp-surface-chrome);
+  background: var(--dp-surface-chrome);
+  color: var(--dp-text-on-chrome);
+}
+
+.roundRail .roundDone {
+  color: var(--dp-success-ink, var(--dp-success));
+}
+
+.roundRail .roundOn.roundDone {
+  color: var(--dp-text-on-chrome);
+}
+
+.roundRail button:focus-visible,
+.wallToggle:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+}
+
+/* Reversible, and it says so: the label turns into "Back to list". A one-way trip into a
+   chart you could not leave is the thing the prototype calls out by name. */
+.wallToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: none;
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--dp-surface-raised);
+  color: var(--dp-action-ink);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ===== notes ===== */
 
 .bracketHeroNote {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  width: fit-content;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-full);
-  background: var(--surface-soft);
-  color: var(--text-secondary);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-body);
   font-size: var(--text-sm);
-  font-weight: 800;
+  font-weight: 700;
 }
+
+.pickNote {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin: 0;
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+}
+
+.pickNote strong {
+  color: var(--dp-text-body);
+}
+
+/* ===== the frame the chart lives in ===== */
 
 .wallFrame {
   display: grid;
@@ -61,17 +211,27 @@
 }
 
 @media (min-width: 900px) {
-  .championStrip {
-    align-items: stretch;
+  .bracket {
+    gap: var(--space-5);
+  }
+
+  /* The rail filters nothing here — the whole chart is on screen — so it stays as the round
+     legend and its progress count, and stops pretending to be a control. */
+  .roundRail button {
+    cursor: default;
+  }
+
+  /* Above 900px the chart IS the view, so the toggle has nothing to offer. */
+  .wallToggle {
+    display: none;
   }
 
   .wallFrame {
     position: relative;
     overflow-x: auto;
     padding: var(--space-4);
-    border: 1px solid var(--border-default);
+    border: 1px solid var(--dp-border-subtle);
     border-radius: var(--radius-lg);
-    background: linear-gradient(180deg, var(--surface-raised), var(--surface-soft));
-    box-shadow: var(--shadow-2);
+    background: var(--dp-surface-raised);
   }
 }

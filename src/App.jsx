@@ -157,7 +157,8 @@ export default function App() {
   } else if (route === APP_ROUTE.BRACKET) {
     content = (
       <div className="content-stack knockout-page">
-        <PageIntro eyebrow="Original Predictor" title="Your pre-tournament bracket" description="Choose the team that advances from every predicted knockout match. Scores and jokers do not apply here." />
+        {/* No PageIntro, as on Groups: the re-cut bracket names itself. A page hero here only
+            said "Your pre-tournament bracket" directly above a heading saying the same thing. */}
         <PredictionJourney key={`bracket-${appData.guestReference.referenceVersion}`} client={activeClient} reference={appData.guestReference} tournament={appData.tournament} initialView="bracket" surface="bracket" />
       </div>
     )
