@@ -17,30 +17,54 @@ function assertIncludes(file, tokens) {
   }
 }
 
+function assertNotIncludes(file, tokens) {
+  const content = read(file)
+  for (const token of tokens) {
+    assert(!content.includes(token), `${file} still contains retired token: ${token}`)
+  }
+}
+
+// RE-POINTED at the DP Groups visual re-cut (owner ruling 2026-07-12 — §5.8 exception,
+// recorded here and in the commit).
+//
+// This stage adopted the "Night Broadcast" contract on Groups: a dark gradient panel
+// (data-contract="night-broadcast-groups", .nightContract, radial-gradient), three
+// guardrail chips beneath it (Private until lock / Live tables / Five 2× jokers), and
+// two bordered preview asides carrying the predicted tables. The owner has ruled that
+// the binding contract for this page is now the approved Groups v2 prototype rendered
+// in adopted DP tokens, and that prototype deletes the banner and the chips outright
+// and turns the two asides into ONE collapsible, open where you are predicting.
+//
+// The substance the stage guaranteed is unchanged and still pinned below: the predicted
+// group table and the best-third ranking are both reachable from the live Groups
+// surface, built natively, fed from the player's own predictions. What is retired is
+// the visual language that carried them. The re-cut adds a guarantee the old contract
+// never made and the owner asked for — that Groups is not a dead end.
 assertIncludes('src/journey/GroupsPredictor.jsx', [
-  'data-contract="night-broadcast-groups"',
-  'polishStyles.nightContract',
-  'polishStyles.contractMeta',
-  'Private until lock',
-  'Live tables',
-  'Five 2× jokers',
-  'GroupsContractTablePreview',
-  'GroupsContractThirdPlacePreview',
-  'tablesModel.groups.find(item => item.code === group.code)?.table',
+  'data-contract="dp-groups-v2"',
+  'PredictedTables',
+  'tablesModel.groups.find(item => item.code === openGroup)?.table',
   'tablesModel.bestThird.ranking',
   'Original Bracket',
   'GROUPS_DATE_TABLES_COPY',
 ])
-
-assertIncludes('src/journey/GroupsPredictorPolish.module.css', [
-  '.nightContract',
-  'nightContract::after',
-  '.contractMeta',
-  '.contractTablePreview',
-  '.contractThirdPreview',
-  'radial-gradient',
-  'contractThirdPreview',
+assertNotIncludes('src/journey/GroupsPredictor.jsx', [
+  'night-broadcast-groups',
+  'Private until lock',
+  'Five 2× jokers',
 ])
+
+// Groups flows into the bracket. It used to stop: the journey tabs are hidden on this
+// route-owned surface, so a player who finished 36 scores had nowhere to go from here.
+assertIncludes('src/journey/GroupsPredictorFlow.module.css', [
+  '.flowCta',
+  '.tables',
+  '.tableCard',
+])
+const groupsFlow = read('src/journey/GroupsPredictor.jsx')
+assert(groupsFlow.includes('BRACKET_DESTINATION.hash'), 'Groups must carry a real route link on to the Original Bracket, not a dead end')
+assert(groupsFlow.includes('APP_ROUTE.BRACKET'), 'The bracket link must come from the route registry, never a hash spelled out on the page')
+assert(!fs.existsSync(path.join(root, 'src/journey/GroupsPredictorPolish.module.css')), 'The Night Broadcast polish module is retired with the contract it carried')
 
 assertIncludes('docs/STAGE-CORE-PAGE-ADOPTION-1A-GROUPS.md', [
   'STAGE-CORE-PAGE-ADOPTION-1A-GROUPS',

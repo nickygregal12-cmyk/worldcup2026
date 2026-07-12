@@ -52,8 +52,14 @@ export default function PredictionJourneyView({
   updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
 }) {
   const compactSurface = surface === PREDICTION_JOURNEY_VIEW.GROUPS || surface === PREDICTION_JOURNEY_VIEW.BRACKET
+  // The re-cut Groups page stands on the DP page ground the shell paints (DP-SHELL).
+  // `.foundation-panel` wrapped it in a legacy glass card with a 22px radius — off the
+  // 4px scale entirely — which is what put a frame around the whole page and stopped
+  // the ground landing. Scoped to Groups alone: the Bracket surface is not re-cut yet
+  // and keeps its panel until its own stage.
+  const recut = surface === PREDICTION_JOURNEY_VIEW.GROUPS
   return (
-    <section className="foundation-panel prediction-journey" aria-labelledby="prediction-journey-title">
+    <section className={recut ? 'prediction-journey' : 'foundation-panel prediction-journey'} aria-labelledby="prediction-journey-title">
       {compactSurface && <h2 id="prediction-journey-title" className="sr-only">Original Predictor workspace</h2>}
       {compactSurface ? (
         <details className={chromeStyles.statusDisclosure}>

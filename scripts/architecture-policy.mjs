@@ -61,7 +61,14 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   // into their global class names from the outside. The .score-input rules that
   // remain are dead (DP-PRIMITIVES moved ScoreInput to a module and left the
   // globals behind); removing them is legacy cleanup, reported not swept up.
-  'src/styles/groups-predictor.css': 385,
+  // 385 -> 291 at the DP Groups visual re-cut: the hero panel, its gradient, the
+  // six-card jump rail and the stacked group sections left for CSS Modules
+  // (GroupsPredictor.module.css + GroupsPredictorFlow.module.css), because new
+  // component styling must be modular. What stays global is what has to be: the
+  // `match-card__*` class names MatchCard emits cannot be reached from a module, so
+  // the Groups overrides of them live here — plus PredictionReview's rules, which
+  // belong to a page that has not been re-cut.
+  'src/styles/groups-predictor.css': 291,
   // 463 -> 462: the two rules that reached into TeamLabel from a KO score row are
   // now TeamLabel variants (alignEnd, collapseCopy), passed by the caller.
   'src/styles/knockout-experiences.css': 462,

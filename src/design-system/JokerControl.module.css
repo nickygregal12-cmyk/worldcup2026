@@ -32,8 +32,14 @@
   outline-offset: 2px;
 }
 
+/* Applied reads as APPLIED, at a glance and across the card grid: the gold fill
+   arrives, the border goes solid gold, and a gold ring lifts the pill off the card.
+   The card itself takes the matching gold edge (.group-match-card--joker), so the
+   doubling is legible from the whole-page view, not only by reading the pill. */
 .pill.active {
+  border-color: var(--dp-joker);
   background: var(--dp-joker-soft);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dp-joker) 18%, transparent);
 }
 
 .pill:disabled {
@@ -47,6 +53,12 @@
   color: currentColor;
 }
 
+/* The multiplier fill is the INK gold, not the base gold. The declared --dp-joker
+   (#A6790A) carries white text at only 3.93:1 — under the 4.5:1 floor §5 sets for
+   both themes — because it was drawn as a fill for chips whose text is the ink, not
+   as a fill that itself bears white text. --dp-joker-ink (#8F6809) is the same hue
+   four points darker and clears at 5.02:1. In dark the ink mirrors the base, so the
+   bright gold and its dark on-accent text are unchanged. */
 .multiplier {
   display: inline-grid;
   place-items: center;
@@ -54,9 +66,10 @@
   min-height: 1.5rem;
   padding: 0 var(--space-1);
   border-radius: var(--radius-full);
-  background: var(--dp-joker);
+  background: var(--dp-joker-ink);
   color: var(--dp-text-on-accent);
   font-size: var(--text-xs);
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 

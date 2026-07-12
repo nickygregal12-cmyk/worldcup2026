@@ -1,82 +1,130 @@
+/* Groups view chrome — the re-cut (DP tokens, prototype v2).
+ *
+ * The hero is gone: a gradient panel with an eyebrow, a heading, a sentence of
+ * explanation and three contract chips stood between the player and the matches.
+ * The prototype deletes it outright ("hero/watermark/context-banner removed — one
+ * compact strip, then straight into match cards"), because someone who opened the
+ * Groups page has already decided to predict. What survives is the one thing the
+ * hero was FOR: the two numbers you want while you work — jokers placed, scores
+ * entered — on a compact strip that now stays with you as you scroll.
+ *
+ * That strip is sticky in BOTH views. By group had a sticky rail and By date had a
+ * lone floating pill, which is why By date read as a different page.
+ *
+ * Every colour is a --dp-* token. Do not reach for --dp-*-border: all but
+ * --dp-info-border are dark-theme-only in tokens.css, and an unresolved var()
+ * silently invalidates the whole declaration.
+ */
+
+/* ===== the sticky dock: view toggle · jokers · progress ===== */
+
 .focusStrip {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.75fr);
-  gap: var(--space-4);
-  align-items: center;
-  padding: var(--space-4) var(--space-4);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--surface-raised), var(--surface-soft));
-  box-shadow: var(--shadow-1);
-}
-.focusStrip h2 {
-  margin: var(--space-1) 0;
-  font-size: var(--text-xl);
-}
-.focusStrip p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-.focusMeters {
-  display: grid;
-  gap: var(--space-3);
-}
-.helperDisclosure {
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-1);
-}
-.helperDisclosure summary {
+  position: sticky;
+  top: 0;
+  z-index: 6;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
-  min-height: 3.25rem;
-  padding: 0 var(--space-4);
-  color: var(--text-secondary);
-  cursor: pointer;
-  list-style: none;
+  flex-wrap: wrap;
+  margin-inline: calc(var(--space-2) * -1);
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--dp-border-subtle);
+  background: var(--dp-surface-page);
 }
 
-.helperDisclosure summary::-webkit-details-marker {
-  display: none;
+.focusMeters {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
 }
 
-.helperDisclosure summary span {
-  color: var(--brand);
+/* A hairline meter and the count. The ProgressBar primitive is a block built for a
+   panel and would swamp the strip. */
+.progressPill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--dp-text-muted);
   font-size: var(--text-xs);
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.helperDisclosure summary strong {
-  color: var(--text-primary);
-}
-
-.helperDisclosure summary small {
-  color: var(--text-muted);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.helperDisclosure[open] summary {
-  border-bottom: 1px solid var(--border-subtle);
+.miniMeter {
+  display: block;
+  overflow: hidden;
+  width: 3.5rem;
+  height: 0.375rem;
+  border-radius: var(--radius-full);
+  background: var(--dp-border-subtle);
 }
+
+.miniMeter i {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--dp-action);
+}
+
+/* ===== segmented view toggle ===== */
+
+.viewToggle {
+  display: inline-flex;
+  gap: var(--space-1);
+  flex: none;
+  padding: var(--space-1);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--dp-surface-page);
+}
+
+.viewToggle button {
+  min-height: 2.25rem;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.viewToggle button:hover {
+  color: var(--dp-text-body);
+}
+
+.viewToggle .on {
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-strong);
+  box-shadow: var(--shadow-1);
+}
+
+.viewToggle button:focus-visible,
+.groupRail button:focus-visible,
+.sheetRail button:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+}
+
+/* ===== group letter tabs (A–F) =====
+   Was six wide cards, each with its own label, count and progress bar — a second
+   progress display competing with the dock two inches above it. The prototype makes
+   them what they are: tabs. A letter, and a dot when the group is done. */
 
 .groupRail {
   position: sticky;
-  top: calc(var(--header-height) + var(--space-2));
+  top: 3.25rem;
   z-index: 5;
   display: flex;
   gap: var(--space-2);
   overflow-x: auto;
+  margin-inline: calc(var(--space-2) * -1);
   padding: var(--space-2);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-full);
-  background: var(--surface-glass);
-  box-shadow: var(--shadow-1);
-  backdrop-filter: blur(16px);
+  background: var(--dp-surface-page);
   scrollbar-width: none;
 }
 
@@ -85,150 +133,139 @@
 }
 
 .groupRail button {
-  flex: 1 0 5.75rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  min-height: 2.55rem;
-  padding: 0 var(--space-3);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-full);
-  background: var(--surface-raised);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.groupRail button span {
-  font: 800 var(--text-body)/1 var(--font-display);
-}
-
-.groupRail .railComplete {
-  border-color: var(--state-success-border);
-  background: color-mix(in srgb, var(--state-success-soft) 70%, var(--surface-raised));
-  color: var(--state-success);
-}
-
-.groupRail small {
-  font-variant-numeric: tabular-nums;
-  font-weight: 800;
-}
-
-.viewToggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-1);
-  padding: var(--space-1);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--surface-sunken);
-}
-
-.viewToggle button {
+  position: relative;
+  flex: 0 0 auto;
+  min-width: 2.75rem;
   min-height: 2.5rem;
-  border: 0;
-  border-radius: calc(var(--radius-md) - var(--space-1));
-  background: transparent;
-  color: var(--text-secondary);
-  font: 700 var(--text-sm)/1 var(--font-display);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-muted);
+  font: 800 var(--text-sm)/1 var(--font-display);
   cursor: pointer;
 }
 
-.viewToggle button:hover {
-  color: var(--text-primary);
+.groupRail .selected {
+  border-color: var(--dp-surface-chrome);
+  background: var(--dp-surface-chrome);
+  color: var(--dp-text-on-chrome);
 }
 
-.viewToggle .on {
-  background: var(--surface-raised);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-1);
+/* Done, at a glance: the green dot the prototype puts on a completed group tab. */
+.railComplete::after {
+  content: "";
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: var(--radius-full);
+  background: var(--dp-success);
 }
+
+/* ===== Lucky Dip ===== */
+
+.helperDisclosure {
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-raised);
+}
+
+.helperDisclosure summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: 0 var(--space-4);
+  color: var(--dp-text-muted);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.helperDisclosure summary::-webkit-details-marker {
+  display: none;
+}
+
+.helperDisclosure summary strong {
+  color: var(--dp-text-body);
+}
+
+.helperDisclosure[open] summary {
+  border-bottom: 1px solid var(--dp-border-subtle);
+}
+
+/* ===== by-date view ===== */
 
 .dateView {
   display: grid;
   gap: var(--space-4);
 }
 
-.dateIntro,
-.dateSection,
-.sheetInner {
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-1);
-}
-
-.dateIntro {
-  padding: var(--space-4);
-}
-
-.dateIntro h3 {
-  margin: var(--space-1) 0 var(--space-2);
-}
-
-.dateIntro p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
 .dateSection {
   display: grid;
-  gap: var(--space-4);
-  padding: var(--space-4);
+  gap: var(--space-3);
 }
 
+/* A heading, not a card: this was a bordered panel wrapping each day's fixtures,
+   stacking a frame inside a frame around every card. */
 .dateSection > header {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2);
   padding-inline: var(--space-1);
 }
 
 .dateSection > header strong {
-  font: 700 var(--text-lg)/1 var(--font-display);
+  color: var(--dp-text-strong);
+  font: 700 var(--text-lg)/1.2 var(--font-display);
 }
 
 .dateSection > header span {
-  color: var(--text-muted);
+  color: var(--dp-text-muted);
   font-size: var(--text-xs);
   font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
+/* The group tag on a by-date card: this fixture's group, one tap from its table. */
 .groupTag {
-  border: 1px solid var(--predicted-context-border);
-  border-radius: var(--radius-sm);
-  background: var(--predicted-context-surface);
-  color: var(--predicted-context-text);
+  flex: none;
+  min-height: 1.75rem;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--dp-info-border);
+  border-radius: var(--radius-full);
+  background: var(--dp-info-soft);
+  color: var(--dp-info-ink);
   font-size: var(--text-xs);
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 700;
   cursor: pointer;
 }
 
+/* The sticky Tables fast path. It floated alone at the bottom of By date on a glass
+   blur with a brand-tinted edge — the reason that view read as unfinished. It now
+   sits on DP ground, and clears the mobile nav rather than guessing its height. */
 .tablesPill {
   position: sticky;
-  bottom: calc(var(--bottom-nav-height, 5rem) + var(--space-4));
+  bottom: calc(var(--mobile-nav-height) + var(--space-3));
   z-index: 7;
   justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   min-height: 2.75rem;
-  padding: 0 var(--space-4);
-  border: 1px solid color-mix(in srgb, var(--brand) 45%, transparent);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--dp-border-strong);
   border-radius: var(--radius-full);
-  background: var(--surface-glass);
-  color: var(--brand-strong);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-strong);
   box-shadow: var(--shadow-2);
-  font: 800 var(--text-sm)/1 var(--font-display);
-  backdrop-filter: blur(16px);
+  font-size: var(--text-sm);
+  font-weight: 700;
   cursor: pointer;
 }
 
-:global([data-theme='dark']) .tablesPill {
-  color: var(--accent);
-}
+/* ===== predicted-tables sheet ===== */
 
 .sheetVeil {
   position: fixed;
@@ -236,8 +273,7 @@
   z-index: 39;
   display: none;
   border: 0;
-  background: rgb(7 16 32 / 55%);
-  backdrop-filter: blur(3px);
+  background: var(--overlay);
 }
 
 .sheet {
@@ -247,7 +283,7 @@
   left: 0;
   z-index: 40;
   display: none;
-  max-height: 78vh;
+  max-height: 80vh;
   overflow: auto;
   padding: 0 var(--space-4) var(--space-4);
 }
@@ -257,39 +293,45 @@
 }
 
 .sheetInner {
-  max-width: 48rem;
+  max-width: 44rem;
   margin: 0 auto;
   padding: var(--space-4);
-  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-lg);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--dp-surface-raised);
+  box-shadow: var(--shadow-3);
 }
 
 .sheetGrab {
-  width: 3rem;
-  height: 0.3rem;
+  width: 2.5rem;
+  height: 0.25rem;
   margin: 0 auto var(--space-4);
   border-radius: var(--radius-full);
-  background: var(--border-default);
+  background: var(--dp-border-strong);
 }
 
 .sheetHead {
   display: flex;
-  align-items: start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
   margin-bottom: var(--space-4);
 }
 
 .sheetHead h3 {
-  margin: var(--space-1) 0 0;
+  margin: 0;
+  color: var(--dp-text-strong);
+  font-size: var(--text-lg);
 }
 
 .sheetClose {
-  min-height: 2rem;
+  flex: none;
+  min-height: 2.25rem;
   padding: 0 var(--space-3);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-full);
-  background: var(--surface-raised);
-  color: var(--text-secondary);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-muted);
   font-weight: 700;
   cursor: pointer;
 }
@@ -308,83 +350,35 @@
 
 .sheetRail button {
   flex: 0 0 auto;
-  min-height: 2.5rem;
+  min-height: 2.25rem;
   padding: 0 var(--space-3);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  color: var(--text-secondary);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-muted);
   font: 700 var(--text-sm)/1 var(--font-display);
   cursor: pointer;
 }
 
 .sheetRail .selected {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: var(--text-on-brand);
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-sm);
-}
-
-.table th,
-.table td {
-  padding: var(--space-2);
-  border-bottom: 1px solid var(--border-subtle);
-  text-align: left;
-}
-
-.table th {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.table tr:last-child td {
-  border-bottom: 0;
-}
-
-.table .right {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-.qualifies td:first-child {
-  border-left: 0.25rem solid var(--state-success);
+  border-color: var(--dp-surface-chrome);
+  background: var(--dp-surface-chrome);
+  color: var(--dp-text-on-chrome);
 }
 
 .sheetNote {
   margin: var(--space-3) 0 0;
-  color: var(--text-secondary);
+  color: var(--dp-text-muted);
   font-size: var(--text-sm);
 }
 
+/* The predicted-table styles (.table/.right/.qualifies) moved to
+   GroupsPredictorFlow.module.css, next to the PredictedTables component that owns
+   them; the sheet reaches the same GroupTable, so both render one table. */
+
 @media (max-width: 40rem) {
-  .groupRail {
-    top: var(--space-2);
-  }
-
-  .groupRail button {
-    flex-basis: 4.75rem;
-  }
-
   .focusStrip {
-    grid-template-columns: 1fr;
-    padding: var(--space-4);
-  }
-
-  .helperDisclosure summary {
-    align-items: flex-start;
-    flex-direction: column;
-    padding-block: var(--space-3);
-  }
-
-  .dateSection {
-    padding: var(--space-3);
+    gap: var(--space-2);
   }
 
   .sheet {

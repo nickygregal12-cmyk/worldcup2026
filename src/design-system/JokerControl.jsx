@@ -35,7 +35,7 @@ export function JokerPill({
       data-joker-pill="true"
       onClick={onClick}
     >
-      <Icon name="star" size={14} className={styles.icon} />
+      <Icon name="joker" size={16} className={styles.icon} />
       <span>Joker</span>
       {active && <strong className={styles.multiplier}>{multiplierLabel}</strong>}
     </button>
@@ -53,7 +53,7 @@ export function JokerMeter({ value = 0, max = 5, multiplier = 2, label = 'Jokers
       aria-label={`${safeValue} of ${safeMax} ${label}`}
       data-joker-meter="true"
     >
-      <Icon name="star" size={14} className={styles.star} />
+      <Icon name="joker" size={16} className={styles.star} />
       <span className={styles.label}>JOKER METER</span>
       <span className={styles.dots} aria-hidden="true">
         {dots.map((filled, index) => (

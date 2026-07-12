@@ -1,0 +1,8 @@
+/* The joker mark inherits its colour from whatever wears it — the pill, the meter,
+   the applied chip — so gold stays owned by the --dp-joker family in JokerControl
+   (§5, joker-exclusive) and is never declared twice. */
+
+.mark {
+  flex: none;
+  color: currentColor;
+}

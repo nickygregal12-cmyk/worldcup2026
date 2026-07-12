@@ -1,20 +1,29 @@
 /*
- * Groups predictor page styles.
+ * Groups predictor page styles — what is genuinely GLOBAL and nothing else.
  *
- * TeamLabel, JokerControl (pill + meter) and PredictionStateBadge left this file
- * at the Groups re-cut. They are shared design-system primitives, not page
- * styling, so they now carry their own --dp-* CSS Modules:
- *   src/design-system/TeamLabel.module.css
- *   src/design-system/JokerControl.module.css
- *   src/design-system/PredictionStateBadge.module.css
- * The cap in scripts/architecture-policy.mjs comes down with the file, in the
- * same commit.
+ * TeamLabel, JokerControl (pill + meter) and PredictionStateBadge left this file at
+ * the primitives re-cut: they are shared design-system primitives, not page styling,
+ * and carry their own --dp-* CSS Modules now.
+ *
+ * The page chrome left at the DP visual re-cut. The hero panel, its gradient, the
+ * six-card jump rail and the stacked group sections are gone — the prototype deletes
+ * them — and what replaced them is a CSS Module (GroupsPredictor.module.css) plus
+ * GroupsPredictorFlow.module.css, because new component styling must be modular and
+ * a global stylesheet cannot be themed per-component. What HAS to stay global is
+ * here: the class names MatchCard emits (`match-card__*`) can only be reached from a
+ * global sheet, so the Groups-specific overrides of them live here.
  *
  * The .score-input rules below are DEAD and are deliberately left alone. Stage
- * DP-PRIMITIVES moved ScoreInput onto src/design-system/ScoreInput.module.css
- * and never removed the globals it superseded, so nothing renders these class
- * names any more. Deleting them is legacy cleanup, not this stage's scope —
- * reported for an owner decision instead of swept up here.
+ * DP-PRIMITIVES moved ScoreInput onto src/design-system/ScoreInput.module.css and
+ * never removed the globals it superseded, so nothing renders these class names any
+ * more. Deleting them is legacy cleanup, not this stage's scope — reported for an
+ * owner decision instead of swept up here.
+ *
+ * The .prediction-review__* rules belong to PredictionReview, which is not re-cut.
+ * They stay on the legacy tokens until that page has its own stage.
+ *
+ * No raw colour and no font-family may appear in this file, comments included — the
+ * token audit reads it line by line.
  */
 
 .score-input {
@@ -99,123 +108,50 @@
 
 .groups-predictor {
   display: grid;
-  gap: var(--space-6);
-}
-
-.groups-overview,
-.groups-next-step {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--space-6);
-  align-items: center;
-  padding: var(--space-6);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  background: var(--gradient-surface);
-  box-shadow: var(--shadow-1);
-}
-
-.groups-overview h2,
-.groups-next-step h3 {
-  margin: var(--space-1) 0 var(--space-2);
-}
-
-.groups-overview p,
-.groups-next-step p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
-.groups-overview__progress {
-  display: grid;
-  gap: var(--space-3);
-  min-width: 15rem;
-}
-
-.groups-jump {
-  position: sticky;
-  top: calc(var(--header-height) + var(--space-2));
-  z-index: 5;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
-  background: var(--surface-glass);
-  box-shadow: var(--shadow-1);
-  backdrop-filter: blur(16px);
-}
-
-.groups-jump button {
-  display: grid;
-  gap: var(--space-1);
+  gap: var(--space-4);
   min-height: 2.75rem;
-  padding: var(--space-2);
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.groups-jump button.is-complete {
-  border-color: var(--state-success-border);
-  background: var(--state-success-soft);
-  color: var(--state-success);
-}
-
-.groups-jump small {
-  font-variant-numeric: tabular-nums;
-}
-
-.groups-list {
-  display: grid;
-  gap: var(--space-8);
-}
-
-.group-section {
-  scroll-margin-top: calc(var(--header-height) + 6rem);
-  display: grid;
-  gap: var(--space-4);
-}
-
-.group-section__header {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding-inline: var(--space-1);
-}
-
-.group-section__header h3 {
-  margin: var(--space-1) 0 0;
-  font-size: var(--text-2xl);
-}
-
-.group-match-list {
-  display: grid;
-  /* Two cards per row only when a card is wide enough for full team names. */
-  grid-template-columns: repeat(auto-fit, minmax(min(30rem, 100%), 1fr));
-  gap: var(--space-4);
 }
 
 /* The card frame, header and footer live in match-card.css, shared with the
    matchday hubs. What remains here is specific to a score-entry card. */
 
+/* An applied joker is legible from the whole-page view, not only by reading the
+   pill: the card takes the gold edge and a gold ring. On the DP joker family now
+   (§5, joker-exclusive) rather than the legacy --joker-* tokens, so it matches the
+   pill sitting inside it. */
 .group-match-card--joker {
-  border-color: var(--joker-border);
-  box-shadow: 0 0 0 3px var(--joker-soft), var(--shadow-1);
+  border-color: var(--dp-joker);
+  box-shadow: 0 0 0 3px var(--dp-joker-soft), var(--shadow-1);
 }
 
+/* THREE columns, because the line has three children.
+ *
+ * This read `minmax(0, 1fr) auto 1rem auto minmax(0, 1fr)` — five columns, from when
+ * the centre slot spread its two score inputs and their separator directly into this
+ * grid. PredictionInputRow has since wrapped them in one element, so MatchCard's line
+ * hands the grid three children, not five: home, the input row, away. Grid filled the
+ * first three columns in order, which put the AWAY team in the 1rem column and
+ * crushed every away name on every card on the page. */
 .group-match-card__prediction {
-  grid-template-columns: minmax(0, 1fr) auto 1rem auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+/* Both identities get the same column and the same rules, so a long name behaves the
+   same on the left as on the right. */
+.group-match-card .match-card__team {
+  min-width: 0;
+}
+
+.group-match-card .match-card__team--away {
+  justify-items: end;
 }
 
 .group-match-card__separator {
-  color: var(--text-muted);
+  color: var(--dp-text-muted);
   font-size: var(--text-lg);
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .prediction-review {
@@ -311,44 +247,14 @@
 }
 
 @media (max-width: 56.25rem) {
-  .group-match-list,
   .prediction-review__summary {
     grid-template-columns: 1fr;
-  }
-
-  .groups-overview,
-  .groups-next-step {
-    grid-template-columns: 1fr;
-  }
-
-  .groups-overview__progress {
-    min-width: 0;
   }
 }
 
 @media (max-width: 40rem) {
-  .groups-predictor {
-    gap: var(--space-4);
-  }
-
-  .groups-overview,
-  .groups-next-step {
-    padding: var(--space-4);
-  }
-
-  .groups-jump {
-    top: var(--space-2);
-    grid-template-columns: repeat(6, 4rem);
-    overflow-x: auto;
-  }
-
-  .groups-jump button {
-    min-width: 4rem;
-  }
-
   .group-match-card__prediction {
-    grid-template-columns: minmax(0, 1fr) 3.75rem 0.75rem 3.75rem minmax(0, 1fr);
-    gap: var(--space-1);
+    gap: var(--space-2);
   }
 
   .score-input {

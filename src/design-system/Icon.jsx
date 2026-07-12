@@ -14,7 +14,6 @@ import {
   LockKeyhole,
   LoaderCircle,
   Save,
-  Star,
   Moon,
   RefreshCw,
   ShieldCheck,
@@ -26,7 +25,12 @@ import {
   X,
 } from 'lucide-react'
 
+// The one mark lucide does not carry. It lives in its own primitive because this
+// file is a lucide adapter and the token audit holds it to that — no raw SVG here.
+import JokerMark from './JokerMark.jsx'
+
 const ICONS = Object.freeze({
+  joker: JokerMark,
   home: Home,
   predict: ListChecks,
   bracket: GitBranch,
@@ -50,7 +54,6 @@ const ICONS = Object.freeze({
   lock: LockKeyhole,
   unlock: UnlockKeyhole,
   save: Save,
-  star: Star,
 })
 
 export default function Icon({ name, size = 22, strokeWidth = 1.9, className = '' }) {
