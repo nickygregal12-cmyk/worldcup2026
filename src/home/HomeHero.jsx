@@ -34,7 +34,21 @@ export default function CountdownHero({ lockAt, countdown, openingMatch, provisi
     : null
 
   const where = openingMatch?.venueName ?? ''
-  const ribbon = openingMatch
+
+  // Two carriers for the match identity, and they do NOT get the same copy.
+  //
+  // The corner ribbon is a fixed-width band, rotated into a corner that clips it,
+  // and it is the variant shown below 64rem — so it is what a 390px phone sees.
+  // "MATCH 1 · GROUP A" did not fit: the owner's eye test on the built app caught
+  // the final letter sheared off by the clip. Truncated text does not ship, and
+  // when the geometry cannot hold the copy, the copy gives way — so the ribbon
+  // carries the match number alone.
+  //
+  // Nothing is lost by that. The flat chip below (shown from 64rem, unrotated and
+  // unclipped, with room to spare) keeps the group, and the fixture card directly
+  // beneath the hero already reads "GROUP A · MATCH 1" at every width.
+  const ribbon = openingMatch ? `Match ${openingMatch.matchNumber}` : null
+  const tag = openingMatch
     ? [`Match ${openingMatch.matchNumber}`, openingMatch.stageLabel].filter(Boolean).join(' · ')
     : null
 
@@ -47,11 +61,11 @@ export default function CountdownHero({ lockAt, countdown, openingMatch, provisi
       {/* The match identity, as real content rather than decoration. The rotated
           corner ribbon is a mobile device; the wide hero wants a flat chip in the
           body. Exactly one of the two is displayed at any width, so it is spoken
-          once. */}
+          once — and each carries only the copy its geometry can actually hold. */}
       {ribbon && <span className={styles.countRibbon}>{ribbon}</span>}
 
       <div className={styles.countBody}>
-        {ribbon && <span className={styles.countTag}>{ribbon}</span>}
+        {tag && <span className={styles.countTag}>{tag}</span>}
         <h1 className={styles.countEyebrow}>Predictions lock at kick-off</h1>
 
         {units

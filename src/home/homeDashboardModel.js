@@ -255,7 +255,22 @@ function homeTeam(reference, teamId, fallback) {
     id: teamId,
     label: team.label ?? team.slotCode ?? fallback,
     isoCode: team.fifaCode ?? team.isoCode ?? null,
-    unresolved: Boolean(team.isProvisional || !team.actualTeamId),
+    // A slot is UNRESOLVED when no team is behind it — nothing else. It is not
+    // the same question as whether the assignment is provisional.
+    //
+    // This used to read `team.isProvisional || !team.actualTeamId`, and every one
+    // of staging's 24 tournament_teams rows carries is_provisional = true (the
+    // draw has not been made). So every team came through unresolved: the name
+    // still rendered, because the label comes from metadata, but TeamBadge
+    // suppressed the flag and Wales and Germany wore the empty-slot dashed ring.
+    // The two teams were resolved all along — the flag registry and the bundled
+    // assets were never at fault.
+    //
+    // Provisional-ness is still surfaced, and must be: by the amber PROVISIONAL
+    // chip, the hero's provisional line, and the `unresolvedTeams` data-health
+    // count below — none of which this touches. What it stops doing is spending
+    // the empty-slot treatment on a team we can name.
+    unresolved: !team.actualTeamId,
   })
 }
 

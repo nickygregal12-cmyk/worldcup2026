@@ -1,5 +1,9 @@
 /* Circular ISO-keyed team badge. The unresolved slot is a neutral dashed chip:
-   it must not resemble a team, so it carries no flag, no colour and no letters. */
+   it must not resemble a team, so it carries no flag, no colour and no letters.
+
+   The dashed ring means exactly one thing — an empty slot. A resolved team whose
+   flag asset cannot be found is a DEFECT and takes .missingFlag instead, so the
+   two can never be confused for one another on screen. */
 
 .badge {
   flex: none;
@@ -12,6 +16,20 @@
 .placeholder {
   border: 1.5px dashed var(--dp-border-strong);
   background: var(--dp-surface-page);
+}
+
+/* Deliberately loud: a missing flag is a bug, and it should look like one rather
+   than degrade quietly into something that reads as an intentional empty slot. */
+.missingFlag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--dp-danger-border);
+  background: var(--dp-danger-soft);
+  color: var(--dp-danger-ink);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 @media (min-width: 64rem) {
