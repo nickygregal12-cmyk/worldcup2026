@@ -68,7 +68,15 @@ export default function PredictionJourneyView({
               <span className={chromeStyles.statusKicker}>Original Predictor</span>
               <strong>{surface === PREDICTION_JOURNEY_VIEW.GROUPS ? 'Group scores workspace' : 'Bracket picks workspace'}</strong>
             </div>
-            <span className={chromeStyles.statusCount}>{summary.totalComplete}/51 complete</span>
+            {/* The whole-journey count — group scores AND bracket picks — belongs on a
+                surface where it is the only count. On Groups it is not: the sticky dock
+                two inches below carries x/36, the group scores, and stacking a /51 on top
+                of a /36 asks the player to hold two denominators for overlapping things.
+                Worse, it is a number they cannot act on here — you cannot pick the bracket
+                from the Groups page. Home already tells them where they are across the
+                whole Original Predictor, which is Home's job. So it stays on Bracket,
+                where nothing competes with it, and leaves Groups to the dock. */}
+            {!recut && <span className={chromeStyles.statusCount}>{summary.totalComplete}/51 complete</span>}
             <AutosaveBadge context={context} status={autosaveStatus} revision={accountBundle?.revision ?? 0} savedAt={savedAt} />
           </summary>
           <div className={chromeStyles.statusPanel}>

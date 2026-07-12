@@ -88,9 +88,12 @@
   color: var(--dp-joker-ink);
 }
 
+/* Never let the words come apart: "JOKER METER" was breaking into "JOKER / METER" and
+   taking the pill to two lines with it. */
 .label {
   font-weight: 800;
   letter-spacing: 0.08em;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
@@ -126,5 +129,17 @@
   .pill {
     width: 100%;
     justify-content: center;
+  }
+
+  /* On a phone the label is the first thing to go. A gold pill wearing the joker card,
+     five dots, "0/5" and "2× points" says what it is without being told — and the meter
+     keeps its full name for a screen reader either way (aria-label, on the element). */
+  .meter .label {
+    display: none;
+  }
+
+  .meter {
+    gap: var(--space-2);
+    padding: var(--space-2);
   }
 }

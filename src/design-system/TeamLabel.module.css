@@ -133,12 +133,26 @@ button.teamLabel {
   justify-items: center;
 }
 
+/* Two lines, and the second one has to start somewhere a reader would put it.
+ *
+ * This said `overflow-wrap: anywhere`, which is licence to split a word between ANY
+ * two characters — so at 390px, where the score entry leaves the team roughly 99px,
+ * "Switzerland" came out as "Switzerlan / d". A screenshot found it; no test could.
+ *
+ * `break-word` only breaks a word that cannot fit on a line by its own, and `hyphens:
+ * auto` then gives the break a legal place to happen and a hyphen to show for it —
+ * "Switzer-land". The page is lang="en-GB", which is what makes auto hyphenation
+ * possible at all. Widening the box was the other option and it is the wrong one: the
+ * names that overflow (Liechtenstein, Netherlands, Azerbaijan, Montenegro) are only
+ * going to get longer, and the score entry has 48px targets it cannot give back.
+ */
 .stacked .copy strong {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  hyphens: auto;
   max-width: 100%;
 }
 
