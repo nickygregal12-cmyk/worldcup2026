@@ -34,3 +34,6 @@ coverage/
 # REPORT-P6C-EXECUTOR.md predates this rule and stays tracked: .gitignore does
 # not untrack an already-tracked file, so no exception rule is needed for it.
 reports/
+
+# Playwright visual-verification output (proof-of-concept, never committed)
+.visual-shots/
