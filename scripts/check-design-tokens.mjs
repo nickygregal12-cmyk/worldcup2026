@@ -110,7 +110,7 @@ if (iconSource.includes('<svg') || iconSource.includes('<path')) fail('The ordin
 const shell = read('src/app/EuroAppShell.jsx')
 for (const marker of [
   'primaryDestination', 'bracketDestination', 'navigationDestinations.phaseMoreDestinations',
-  'app-nav-link--home', 'data-navigation-phase', 'aria-expanded={moreOpen}', '<Dialog',
+  '<MobileNav', 'data-navigation-phase', 'aria-expanded={moreOpen}', '<Dialog',
 ]) if (!shell.includes(marker)) fail(`App shell is missing charter navigation behaviour: ${marker}`)
 if (shell.includes('knockoutOpen') || shell.includes('knockoutNavigationDestination')) {
   fail('The superseded phase-aware Bracket/KO navigation remains in the app shell')
@@ -151,8 +151,31 @@ if (!foundationLoader.includes('result_status')) fail('Foundation loading must i
 const appCss = read('src/styles/app.css')
 for (const marker of [
   '@media (max-width: 56.25rem)', '@media (max-width: 40rem)',
-  'font-variant-numeric: tabular-nums', '.app-nav-link--home', 'prefers-reduced-motion',
+  'font-variant-numeric: tabular-nums', 'prefers-reduced-motion',
 ]) if (!appCss.includes(marker)) fail(`Charter CSS behaviour is missing: ${marker}`)
+
+// DP-SHELL: the mobile bottom nav moved out of app.css into its own CSS Module, so the
+// raised-Home-circle marker moved with it. This is a REPOINT and a tightening, not a
+// relaxation — `.app-nav-link--home` only ever proved a class name existed in app.css,
+// and in fact nothing painted it: there was no raised circle in the product at all. The
+// module is now held to the behaviour itself (the circle, and the §5 auto-hide transform
+// that must live on the NAV so the bar and the circle translate as one unit).
+const mobileNavCss = read('src/app/MobileNav.module.css')
+for (const marker of [
+  '.circle',                                        // the raised Home circle exists
+  'margin-top: -1.125rem',                          // ...raised in flow, not positioned out of the nav
+  "[data-nav-hidden='true']",                       // §5 auto-hide
+  'transform: translateY(',                         // ...by translating
+  'prefers-reduced-motion',
+]) if (!mobileNavCss.includes(marker)) fail(`Charter mobile-nav behaviour is missing: ${marker}`)
+if (/\.circle[^}]*position:\s*(fixed|absolute)/.test(mobileNavCss)) {
+  fail('The raised Home circle must stay in the nav\'s flow — positioning it out of the nav breaks §5 "translates as one unit"')
+}
+
+const mobileNav = read('src/app/MobileNav.jsx')
+for (const marker of ['useNavAutoHide', 'data-nav-hidden']) {
+  if (!mobileNav.includes(marker)) fail(`App shell mobile nav is missing charter behaviour: ${marker}`)
+}
 
 const scoringSources = {
   // Home reads scoring through its model since the v2 rebuild, so check view + model together.

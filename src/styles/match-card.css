@@ -36,7 +36,7 @@
 
 .match-card__header span,
 .match-card__footer > span {
-  color: var(--text-muted);
+  color: var(--dp-text-muted);
   font-size: var(--text-xs);
 }
 

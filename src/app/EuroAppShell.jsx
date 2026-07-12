@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { APP_ROUTE, destinationForRoute } from './appRoutes.js'
 import { buildNavigationDestinations } from './navigationLifecycle.js'
+import MobileNav from './MobileNav.jsx'
 import { Dialog, Icon } from '../design-system/index.jsx'
 
 function initials(value) {
@@ -8,20 +9,20 @@ function initials(value) {
   return words.slice(0, 2).map(word => word[0]).join('').toUpperCase() || 'U'
 }
 
-function NavLink({ destination, route, compact = false, centre = false, onClick }) {
+// The DESKTOP nav link. The mobile bar is MobileNav's own — including the raised Home
+// circle, which used to be a `centre` variant here that emitted classes no stylesheet
+// ever painted. Those props and classes went with it rather than being left to rot.
+function NavLink({ destination, route, onClick }) {
   const active = destination.key === route
-  const classes = ['app-nav-link', active ? 'is-active' : '', centre ? 'app-nav-link--home' : ''].filter(Boolean).join(' ')
   return (
     <a
       href={destination.hash}
-      className={classes}
+      className={active ? 'app-nav-link is-active' : 'app-nav-link'}
       aria-current={active ? 'page' : undefined}
       onClick={onClick}
     >
-      <span className={centre ? 'app-nav-link__home-icon' : undefined}>
-        <Icon name={destination.icon} size={centre ? 25 : compact ? 22 : 18} />
-      </span>
-      <span>{compact ? destination.shortLabel : destination.label}</span>
+      <Icon name={destination.icon} size={18} />
+      <span>{destination.label}</span>
     </a>
   )
 }
@@ -56,6 +57,15 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, a
     leaguesDestination,
     resultsDestination,
   ], [homeDestination, primaryDestination, bracketDestination, leaguesDestination, resultsDestination])
+
+  // Home sits third of five (the fifth is the More button MobileNav renders itself),
+  // so the raised circle lands dead centre of the bar.
+  const mobileDestinations = useMemo(() => [
+    primaryDestination,
+    bracketDestination,
+    { ...homeDestination, home: true },
+    leaguesDestination,
+  ], [primaryDestination, bracketDestination, homeDestination, leaguesDestination])
 
   const moreDestinations = useMemo(() => {
     const destinations = [
@@ -134,19 +144,13 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, a
         <nav aria-label="Footer navigation"><a href="#/tournament">Tournament</a><a href="#/how-to-play">How to play</a><a href="#/account">Account</a></nav>
       </footer>
 
-      <nav className="app-mobile-nav" aria-label="Mobile navigation">
-        <NavLink destination={primaryDestination} route={route} compact />
-        <NavLink destination={bracketDestination} route={route} compact />
-        <NavLink destination={homeDestination} route={route} compact centre />
-        <NavLink destination={leaguesDestination} route={route} compact />
-        <button
-          type="button"
-          className={moreActive ? 'app-nav-link is-active' : 'app-nav-link'}
-          aria-expanded={moreOpen}
-          aria-haspopup="dialog"
-          onClick={() => setMoreOpen(true)}
-        ><Icon name="more" size={22} /><span>More</span></button>
-      </nav>
+      <MobileNav
+        destinations={mobileDestinations}
+        route={route}
+        moreActive={moreActive}
+        moreOpen={moreOpen}
+        onMoreOpen={() => setMoreOpen(true)}
+      />
 
       <Dialog open={moreOpen} title="More" onClose={() => setMoreOpen(false)} className="app-more-dialog">
         <nav className="app-more-grid" aria-label="More destinations">

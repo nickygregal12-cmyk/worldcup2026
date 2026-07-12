@@ -1,9 +1,17 @@
+/* PlayerIdentity, migrated onto the DP token set at DP-SHELL. It was the last shared
+   primitive with its own CSS Module still entirely on legacy tokens (0 --dp-*, 5 legacy).
+
+   Mapping follows the conventions the already-migrated primitives set: focus is
+   --dp-action at 2px/offset 2px (SelectField, ScoreInput); a hover fill on a raised
+   surface is --dp-surface-page. The avatar takes the sky/info family, never gold —
+   gold is joker-exclusive (CLAUDE.md §5) — and --dp-info-ink on --dp-info-soft is a
+   pinned pair (5.13:1 light, 7.81:1 dark). */
 .identity {
   min-width: 0;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--text-primary);
+  color: var(--dp-text-body);
   text-align: left;
 }
 
@@ -20,12 +28,12 @@
 }
 
 .button:hover {
-  border-color: var(--border-default);
-  background: var(--surface-soft);
+  border-color: var(--dp-border-subtle);
+  background: var(--dp-surface-page);
 }
 
 .button:focus-visible {
-  outline: 3px solid var(--focus-ring);
+  outline: 2px solid var(--dp-action);
   outline-offset: 2px;
 }
 
@@ -35,10 +43,10 @@
   flex: 0 0 2rem;
   display: grid;
   place-items: center;
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-full);
-  background: var(--brand-soft);
-  color: var(--brand-strong);
+  background: var(--dp-info-soft);
+  color: var(--dp-info-ink);
   font-family: var(--font-display);
   font-size: var(--text-xs);
   font-weight: 800;
@@ -60,7 +68,7 @@
 
 .name {
   overflow: hidden;
-  color: var(--text-strong);
+  color: var(--dp-text-strong);
   font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -68,7 +76,7 @@
 
 .meta {
   overflow: hidden;
-  color: var(--text-muted);
+  color: var(--dp-text-muted);
   font-size: var(--text-xs);
   font-weight: 600;
   text-overflow: ellipsis;
@@ -76,5 +84,5 @@
 }
 
 .current {
-  color: var(--state-info);
+  color: var(--dp-info-ink);
 }

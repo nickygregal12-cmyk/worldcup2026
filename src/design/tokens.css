@@ -181,8 +181,8 @@
   --score-readonly-surface: var(--surface-sunken);
   --team-placeholder-surface: var(--surface-soft);
   --team-placeholder-border: var(--border-strong);
-  --match-card-surface: var(--surface-raised);
-  --match-card-border: var(--border-default);
+  --match-card-surface: var(--dp-surface-raised);
+  --match-card-border: var(--dp-border-subtle);
   --match-card-complete-border: var(--state-success-border);
 }
 
@@ -193,8 +193,8 @@
   --score-readonly-surface: var(--surface-sunken);
   --team-placeholder-surface: var(--surface-soft);
   --team-placeholder-border: var(--border-strong);
-  --match-card-surface: var(--surface-raised);
-  --match-card-border: var(--border-default);
+  --match-card-surface: var(--dp-surface-raised);
+  --match-card-border: var(--dp-border-subtle);
   --match-card-complete-border: var(--state-success-border);
 }
 

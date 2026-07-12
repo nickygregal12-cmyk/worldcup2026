@@ -2,10 +2,17 @@
   box-sizing: border-box;
 }
 
+/* DP page ground, globally (DP-SHELL). The approved prototypes paint a FLAT page
+   ground — var(--surface-page) with no wash — so the legacy brand radial gradient is
+   gone with it. DP-HOME had to paint --dp-surface-page on Home's own container to
+   make the token contract true beneath it (on the legacy ground --dp-action-ink
+   measures 4.42:1 and misses 4.5) and left a note that the shell should adopt it
+   globally when re-cut. This is that adoption, so every page now stands on the ground
+   the DP contrast ratios were computed against — and Home's local patch is retired. */
 html {
   min-width: 20rem;
   min-height: 100%;
-  background: var(--surface-page);
+  background: var(--dp-surface-page);
   scroll-behavior: smooth;
 }
 
@@ -13,10 +20,8 @@ body {
   min-width: 20rem;
   min-height: 100vh;
   margin: 0;
-  color: var(--text-primary);
-  background:
-    radial-gradient(circle at 7% -10%, color-mix(in srgb, var(--brand) 15%, transparent), transparent 28rem),
-    var(--surface-page);
+  color: var(--dp-text-body);
+  background: var(--dp-surface-page);
   transition: background-color var(--motion-micro) var(--ease-standard), color var(--motion-micro) var(--ease-standard);
 }
 
@@ -205,18 +210,18 @@ a {
   display: inline-grid;
   place-items: center;
   padding: 0;
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  color: var(--text-secondary);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-muted);
   box-shadow: var(--shadow-1);
 }
 
 .ui-icon-button:hover,
 .ui-icon-button.is-active {
-  color: var(--brand-strong);
-  border-color: color-mix(in srgb, var(--brand) 45%, var(--border-default));
-  background: var(--brand-soft);
+  color: var(--dp-action-ink);
+  border-color: color-mix(in srgb, var(--dp-action) 45%, var(--dp-border-subtle));
+  background: var(--dp-info-soft);
 }
 
 .app-account-link {
@@ -289,10 +294,6 @@ a {
   color: var(--brand-strong);
 }
 
-.app-mobile-nav {
-  display: none;
-}
-
 .content-stack,
 .tournament-overview {
   display: grid;
@@ -363,50 +364,50 @@ a {
 }
 
 .ui-button--primary {
-  background: var(--brand);
-  color: var(--text-on-brand);
-  box-shadow: 0 9px 22px color-mix(in srgb, var(--brand) 28%, transparent);
+  background: var(--dp-action);
+  color: var(--dp-text-on-accent);
+  box-shadow: 0 9px 22px color-mix(in srgb, var(--dp-action) 28%, transparent);
 }
 
 .ui-button--primary:hover:not(:disabled) {
-  background: var(--brand-strong);
+  background: var(--dp-action-ink);
 }
 
 .ui-button--secondary {
-  border-color: color-mix(in srgb, var(--brand) 35%, var(--border-default));
-  background: var(--brand-soft);
-  color: var(--brand-strong);
+  border-color: color-mix(in srgb, var(--dp-action) 35%, var(--dp-border-subtle));
+  background: var(--dp-info-soft);
+  color: var(--dp-action-ink);
 }
 
 .ui-button--ghost {
-  border-color: var(--border-default);
-  background: var(--surface-raised);
-  color: var(--text-primary);
+  border-color: var(--dp-border-subtle);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-body);
 }
 
 .ui-button--danger {
-  background: var(--state-danger);
-  color: var(--text-on-brand);
+  background: var(--dp-danger);
+  color: var(--dp-text-on-accent);
 }
 
 .ui-card {
   padding: clamp(1.15rem, 2.4vw, 1.55rem);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--surface-raised);
+  background: var(--dp-surface-raised);
   box-shadow: var(--shadow-1);
 }
 
 .ui-card h2 {
   margin: var(--space-2) 0;
-  color: var(--text-strong);
+  color: var(--dp-text-strong);
   font-size: 1.35rem;
   line-height: 1.16;
   letter-spacing: -0.035em;
 }
 
 .ui-card p {
-  color: var(--text-secondary);
+  color: var(--dp-text-muted);
   line-height: 1.62;
 }
 
@@ -416,10 +417,10 @@ a {
   display: inline-flex;
   align-items: center;
   padding: 0.3rem 0.62rem;
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-full);
-  background: var(--surface-emphasis);
-  color: var(--text-secondary);
+  background: var(--dp-surface-page);
+  color: var(--dp-text-muted);
   font-size: 0.67rem;
   font-weight: 900;
   letter-spacing: 0.06em;
@@ -429,27 +430,27 @@ a {
 }
 
 .ui-badge--safe {
-  border-color: color-mix(in srgb, var(--state-success) 35%, transparent);
-  background: var(--state-success-soft);
-  color: var(--state-success);
+  border-color: color-mix(in srgb, var(--dp-success) 35%, transparent);
+  background: var(--dp-success-soft);
+  color: var(--dp-success-ink);
 }
 
 .ui-badge--info {
-  border-color: color-mix(in srgb, var(--brand) 35%, transparent);
-  background: var(--brand-soft);
-  color: var(--brand-strong);
+  border-color: color-mix(in srgb, var(--dp-action) 35%, transparent);
+  background: var(--dp-info-soft);
+  color: var(--dp-action-ink);
 }
 
 .ui-badge--warning {
-  border-color: color-mix(in srgb, var(--state-warning) 35%, transparent);
-  background: var(--state-warning-soft);
-  color: var(--state-warning);
+  border-color: color-mix(in srgb, var(--dp-warning) 35%, transparent);
+  background: var(--dp-warning-soft);
+  color: var(--dp-warning-ink);
 }
 
 .ui-badge--danger {
-  border-color: color-mix(in srgb, var(--state-danger) 35%, transparent);
-  background: var(--state-danger-soft);
-  color: var(--state-danger);
+  border-color: color-mix(in srgb, var(--dp-danger) 35%, transparent);
+  background: var(--dp-danger-soft);
+  color: var(--dp-danger-ink);
 }
 
 .ui-progress {
@@ -463,20 +464,20 @@ a {
   height: 0.55rem;
   overflow: hidden;
   border-radius: var(--radius-full);
-  background: var(--surface-emphasis);
+  background: var(--dp-surface-page);
 }
 
 .ui-progress__track span {
   height: 100%;
   display: block;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--brand), var(--accent));
+  background: linear-gradient(90deg, var(--dp-action), var(--dp-action));
   transition: width 250ms ease;
 }
 
 .ui-progress__value {
   min-width: 3.2rem;
-  color: var(--text-secondary);
+  color: var(--dp-text-muted);
   font-size: 0.78rem;
   font-weight: 850;
   text-align: right;
@@ -488,9 +489,9 @@ a {
   gap: var(--space-3);
   align-items: center;
   padding: var(--space-4);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-md);
-  background: var(--surface-raised);
+  background: var(--dp-surface-raised);
   box-shadow: var(--shadow-1);
 }
 
@@ -500,30 +501,30 @@ a {
 }
 
 .ui-status strong {
-  color: var(--text-strong);
+  color: var(--dp-text-strong);
 }
 
 .ui-status span {
-  color: var(--text-secondary);
+  color: var(--dp-text-muted);
   font-size: 0.86rem;
 }
 
 .ui-status--warning {
-  border-color: color-mix(in srgb, var(--state-warning) 40%, var(--border-default));
-  background: color-mix(in srgb, var(--state-warning-soft) 66%, var(--surface-raised));
-  color: var(--state-warning);
+  border-color: color-mix(in srgb, var(--dp-warning) 40%, var(--dp-border-subtle));
+  background: color-mix(in srgb, var(--dp-warning-soft) 66%, var(--dp-surface-raised));
+  color: var(--dp-warning-ink);
 }
 
 .ui-status--danger {
-  border-color: color-mix(in srgb, var(--state-danger) 40%, var(--border-default));
-  background: color-mix(in srgb, var(--state-danger-soft) 66%, var(--surface-raised));
-  color: var(--state-danger);
+  border-color: color-mix(in srgb, var(--dp-danger) 40%, var(--dp-border-subtle));
+  background: color-mix(in srgb, var(--dp-danger-soft) 66%, var(--dp-surface-raised));
+  color: var(--dp-danger-ink);
 }
 
 .ui-status--info {
-  border-color: color-mix(in srgb, var(--brand) 32%, var(--border-default));
-  background: color-mix(in srgb, var(--brand-soft) 65%, var(--surface-raised));
-  color: var(--brand-strong);
+  border-color: color-mix(in srgb, var(--dp-action) 32%, var(--dp-border-subtle));
+  background: color-mix(in srgb, var(--dp-info-soft) 65%, var(--dp-surface-raised));
+  color: var(--dp-action-ink);
 }
 
 .ui-tabs {
@@ -531,9 +532,9 @@ a {
   display: flex;
   gap: var(--space-1);
   padding: var(--space-1);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-md);
-  background: var(--surface-soft);
+  background: var(--dp-surface-page);
 }
 
 .ui-tabs button {
@@ -542,20 +543,20 @@ a {
   border: 0;
   border-radius: 0.65rem;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--dp-text-muted);
   font-weight: 800;
 }
 
 .ui-tabs button.is-active {
-  background: var(--surface-raised);
-  color: var(--brand-strong);
+  background: var(--dp-surface-raised);
+  color: var(--dp-action-ink);
   box-shadow: var(--shadow-1);
 }
 
 .ui-field {
   display: grid;
   gap: var(--space-2);
-  color: var(--text-primary);
+  color: var(--dp-text-body);
   font-weight: 800;
 }
 
@@ -566,13 +567,13 @@ a {
   width: 100%;
   min-height: 2.75rem;
   padding: 0.7rem 0.8rem;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--dp-border-strong);
   border-radius: var(--radius-md);
-  background: var(--surface-raised);
-  color: var(--text-primary);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-body);
 }
 
-.ui-field small { color: var(--text-secondary); font-weight: 500; }
+.ui-field small { color: var(--dp-text-muted); font-weight: 500; }
 
 .has-dialog-open {
   overflow: hidden;
@@ -594,10 +595,10 @@ a {
   max-height: min(44rem, calc(100vh - 2rem));
   overflow: auto;
   padding: var(--space-6);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-lg);
-  background: var(--surface-raised);
-  color: var(--text-primary);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-body);
   box-shadow: var(--shadow-3);
 }
 
@@ -611,7 +612,7 @@ a {
 
 .ui-dialog__header h2 {
   margin: 0;
-  color: var(--text-strong);
+  color: var(--dp-text-strong);
   font-size: 1.45rem;
   letter-spacing: -0.035em;
 }
@@ -964,31 +965,6 @@ a {
     display: none;
   }
 
-  .app-mobile-nav {
-    position: fixed;
-    inset: auto 0 0;
-    z-index: 70;
-    min-height: var(--mobile-nav-height);
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    padding: 0.45rem max(0.35rem, env(safe-area-inset-right)) calc(0.45rem + env(safe-area-inset-bottom)) max(0.35rem, env(safe-area-inset-left));
-    border-top: 1px solid var(--border-default);
-    background: var(--surface-header);
-    box-shadow: 0 -12px 28px color-mix(in srgb, var(--surface-inverse) 11%, transparent);
-    backdrop-filter: blur(18px) saturate(150%);
-  }
-
-  .app-mobile-nav .app-nav-link {
-    min-width: 0;
-    min-height: 3.6rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    padding: 0.4rem 0.15rem;
-    border-radius: 0.75rem;
-    font-size: 0.65rem;
-  }
-
   .ui-dialog-backdrop {
     align-items: end;
     padding: 0;
@@ -1094,38 +1070,6 @@ a {
 
   .app-header__actions .app-more-button {
     display: none;
-  }
-
-  .app-mobile-nav {
-    position: fixed;
-    inset: auto 0 0;
-    z-index: 70;
-    min-height: var(--mobile-nav-height);
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    align-items: end;
-    padding: var(--space-2) max(var(--space-2), env(safe-area-inset-right)) calc(var(--space-2) + env(safe-area-inset-bottom)) max(var(--space-2), env(safe-area-inset-left));
-    border-top: 1px solid var(--border-default);
-    background: var(--surface-header);
-    box-shadow: var(--shadow-2);
-    backdrop-filter: blur(18px) saturate(150%);
-  }
-
-  .app-mobile-nav .app-nav-link {
-    min-width: 0;
-    min-height: 3.75rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: var(--space-1);
-    padding: var(--space-2) var(--space-1);
-    border-radius: var(--radius-md);
-    font-size: var(--text-xs);
-  }
-
-  .app-mobile-nav .app-nav-link--home {
-    overflow: visible;
-    color: var(--text-strong);
   }
 
   .ui-dialog-backdrop {

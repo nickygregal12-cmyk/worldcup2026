@@ -4,17 +4,13 @@
    smaller. The masthead, the rail and the bottom nav are the app shell's, not
    Home's — this file styles Home's content only. */
 
-/* Home establishes the DP page ground. Every --dp-* ratio in tokens.css is
-   computed against --dp-surface-*, but the shell still paints the legacy
-   --surface-page beneath Home; on that ground --dp-action-ink measures 4.42:1 and
-   misses 4.5. Painting Home's own ground makes the token contract true for the
-   text that sits directly on the page (the section links). The two colours are
-   within a percent of each other in both themes, so nothing moves visually. The
-   shell should adopt this globally when it is re-cut. */
+/* The DP page ground is the SHELL's now, adopted globally at DP-SHELL — html and
+   body both paint --dp-surface-page, so every page stands on the ground the DP
+   contrast ratios were computed against. Home's local patch (added at DP-HOME with a
+   note asking the shell to take it over) has been retired: it is inherited. */
 .home {
   display: grid;
   gap: var(--space-4);
-  background: var(--dp-surface-page);
 }
 
 .grid {

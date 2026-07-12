@@ -46,7 +46,11 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   'src/styles/feature-compat.css': 2590,
   // 1903 -> 1517 at Stage DP-HOME: every home-* orphan is gone. Home now carries its own
   // CSS Modules, so the only survivor is .home-section-heading, which TournamentOverview uses.
-  'src/styles/app.css': 1517,
+  // 1517 -> 1461 at Stage DP-SHELL: the mobile bottom nav left. It was three near-duplicate
+  // .app-mobile-nav blocks spread across two legacy media queries; it is now one CSS Module
+  // (src/app/MobileNav.module.css) on DP tokens, which is where the raised Home circle and
+  // the §5 auto-hide transform live. The cap comes down with the file, in the same commit.
+  'src/styles/app.css': 1461,
   'src/styles/groups-predictor.css': 555,
   'src/styles/knockout-experiences.css': 463,
   'src/styles/match-card.css': 90,
