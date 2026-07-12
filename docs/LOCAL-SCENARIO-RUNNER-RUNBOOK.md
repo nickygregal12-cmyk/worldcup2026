@@ -49,6 +49,39 @@ Source: `scripts/stage16a-p6c-executor.mjs`.
    outright, and refuses any branch that is not `euro28-development`.
 3. **A backup.** Seeding and clock changes refuse to run without a checksum-verified
    backup less than 6 hours old. Step 4 below creates one.
+4. **Kick-off times applied** — see below. Without them the runner falls back to derived
+   slots and the opening match is never live at its real time.
+
+### Kick-off times (one-off per database)
+
+`matches.kickoff_at` is what the runner compares against when deciding whether a match is
+scheduled, live or final. It is **not** set by any migration, so a fresh database — or any
+`supabase db reset` — leaves all 51 matches with `kickoff_at = NULL`, and the runner falls
+back to derived 13:00 / 16:00 / 19:00 UTC slots cycling by match number. Those derived
+slots are wrong for the matches that matter: they put the opening match at 13:00 UTC, so
+at its true 20:00 UK kick-off it has already finished.
+
+`scripts/assign-kickoff-times.mjs` only **prints** SQL; it writes nothing itself. Generate
+and apply it:
+
+```bash
+node scripts/assign-kickoff-times.mjs > /tmp/kickoffs.sql
+docker exec -i supabase_db_euro28predictor psql -U postgres -d postgres -v ON_ERROR_STOP=1 < /tmp/kickoffs.sql
+```
+
+The SQL is transactional and fail-loud: it refuses to commit unless all 51 matches end up
+on one of the three sanctioned UTC slots, with match 1 and the Final both at 19:00 UTC
+(20:00 UK). It is idempotent — re-run it any time.
+
+After applying, re-run `npm run scenario:set-time -- <ISO>` so match state is recomputed
+against the real times.
+
+Verify:
+
+```
+match 1  -> 2028-06-09 19:00 UTC / 20:00 UK   (Wales v Germany, the ground-truth opener)
+match 51 -> 2028-07-09 19:00 UTC / 20:00 UK   (the Final)
+```
 
 ---
 
@@ -214,11 +247,15 @@ and `away_score_90` still NULL. Scores only materialise at full time. There is n
 in-play score to look at; a live match renders as in-progress with no numbers. If you need
 an evolving scoreline, that feature does not exist yet.
 
-**Local `kickoff_at` is NULL for all 51 matches.** The runner therefore falls back to
-derived 13:00 / 16:00 / 19:00 UTC slots cycling by match number, so local kick-off times do
-**not** match the real fixture list — Match 1 is not at the true Wales v Germany 19:00
-kickoff. Staging holds the correct 51/51 kickoffs. `scripts/assign-kickoff-times.mjs` will
-populate them locally, but it has not been run against local.
+**Kick-off times do not survive a database reset.** They are applied as data, not as a
+migration, so `supabase db reset` silently returns all 51 matches to `kickoff_at = NULL`
+and the runner goes back to the wrong derived slots. There is no guard that catches this —
+the runner will happily simulate against fabricated times. Re-run the kick-off SQL in
+section 2 after any reset.
+
+**The kick-off times are placeholders, not broadcast times.** They follow sensible
+scheduling rules (opener and Final at 20:00 UK; matchday-3 pairs simultaneous within a
+group) but only match 1 and the Final are confirmed real. Do not treat the rest as fact.
 
 **No regression test guards the seeded logins.** `seedUsers()` shells SQL directly into
 Docker, so it is not unit-testable without extracting the SQL into a pure builder. The
