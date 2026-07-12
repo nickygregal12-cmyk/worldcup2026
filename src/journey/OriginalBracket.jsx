@@ -1,5 +1,5 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { hasActivePredictionGrace, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import { Icon, PredictionStateBadge, TeamLabel } from '../design-system/index.jsx'
 import {
@@ -20,16 +20,54 @@ const CONTEXT_COPY = ORIGINAL_BRACKET_CONTEXT_COPY
 const KO_SUBLINE = ORIGINAL_BRACKET_KO_SUBLINE
 const BRACKET_G_COPY = ORIGINAL_BRACKET_G_COPY
 
+// The same two formats Groups and Home speak, to the character: "Fri 9 June" and "8:00pm".
+// This file used to print the date in UTC and the kick-off as a 24-hour "20:00", so a bracket
+// tie and a group tie described the same fixture in two different languages.
 function formatDate(dateValue) {
   if (!dateValue) return 'Date to be confirmed'
-  return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long', timeZone: 'UTC' })
-    .format(new Date(`${dateValue}T12:00:00Z`))
+  return new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'long', timeZone: 'Europe/London' })
+    .format(new Date(String(dateValue).includes('T') ? dateValue : `${dateValue}T12:00:00Z`))
 }
 
 function formatKickoffTime(kickoffAt) {
   if (!kickoffAt) return 'Kick-off TBC'
-  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' })
+  return new Intl.DateTimeFormat('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Europe/London' })
     .format(new Date(kickoffAt))
+    .replace(' ', '')
+}
+
+/*
+ * Is the board being read as a chart?
+ *
+ * Two ways in, and until now only one of them worked. At 900px the chart IS the view. Below
+ * it, the wall toggle opts into the same chart — and the card rules that make a tie legible in
+ * a 132px lane (strip the date line, shrink the flag, drop the double box) lived ONLY inside
+ * `@media (min-width: 900px)`. A phone that opted in got desktop GEOMETRY with card INTERNALS,
+ * which is why "Selected to advance" sat on top of the team names.
+ *
+ * The tie stylesheet did try to share those rules with `:global(.wallMode)` — but `.wallMode`
+ * is a CSS Module class in the rounds stylesheet, so it is hashed, and the literal `.wallMode`
+ * that selector asks for is a class no element has ever carried. It matched nothing, silently,
+ * and the media query covered for it on every screen anyone had checked.
+ *
+ * So the state is answered once, here, and published as a plain data attribute — unhashed, and
+ * therefore reachable from every module that needs it. One rule set, both readings, no drift.
+ */
+const CHART_VIEWPORT = '(min-width: 900px)' // keep in step with the 900px breakpoint in the three bracket stylesheets
+
+function useChartViewport() {
+  const [wide, setWide] = useState(
+    () => typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia(CHART_VIEWPORT).matches,
+  )
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined
+    const query = window.matchMedia(CHART_VIEWPORT)
+    const sync = () => setWide(query.matches)
+    sync()
+    query.addEventListener('change', sync)
+    return () => query.removeEventListener('change', sync)
+  }, [])
+  return wide
 }
 
 function venueLabel(tie) {
@@ -58,9 +96,19 @@ function stateBadge(state) {
   return { state: 'empty', label: 'Choose a winner' }
 }
 
-function ChampionIdentity({ champion, emptyLabel = 'Pick through to the final', compact = false }) {
+/*
+ * `onChrome` is not decoration. The champion is named by TeamLabel, and TeamLabel paints its
+ * name in --dp-text-strong and its "Provisional" line in --dp-text-muted — both chosen for the
+ * light page it normally sits on. The summary card is NAVY. In the light theme that put #0B1B34
+ * on #163B73: 1.56:1, against a 4.5:1 floor.
+ *
+ * It is the same defect as the wall box's white-on-white "Pick your final", pointing the other
+ * way: an identity styled for one surface, dropped on another. Fixing it on TeamLabel rather
+ * than overriding it from this stylesheet is what stops there being a third one.
+ */
+function ChampionIdentity({ champion, emptyLabel = 'Pick through to the final', compact = false, onChrome = false }) {
   return champion
-    ? <TeamLabel team={champion} compact={compact} />
+    ? <TeamLabel team={champion} compact={compact} onChrome={onChrome} />
     : <strong className={shellStyles.emptyChampion}>{emptyLabel}</strong>
 }
 
@@ -161,6 +209,8 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
   // away, and the trip is reversible: the button turns into "Back to list".
   const [openRound, setOpenRound] = useState('round_of_16')
   const [wallOpen, setWallOpen] = useState(false)
+  // At 900px the chart is the view whatever the toggle says; below it, the toggle decides.
+  const chartReading = useChartViewport() || wallOpen
 
   const progress = buildOriginalBracketRoundProgress(preview)
   const champion = predictedChampion(preview, reference)
@@ -193,7 +243,12 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
   }
 
   return (
-    <section className={shellStyles.bracket} data-contract="original-bracket-g" aria-labelledby="original-bracket-heading">
+    <section
+      className={shellStyles.bracket}
+      data-contract="original-bracket-g"
+      data-wall-mode={chartReading ? 'on' : 'off'}
+      aria-labelledby="original-bracket-heading"
+    >
       <header className={shellStyles.head}>
         <div className={shellStyles.headTop}>
           <span className={shellStyles.eyebrow}>Your bracket</span>
@@ -208,7 +263,7 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
           and the chart box — each in a different voice. */}
       <aside className={shellStyles.championCard}>
         <span className={shellStyles.eyebrow}>Your predicted champion</span>
-        <ChampionIdentity champion={champion} />
+        <ChampionIdentity champion={champion} onChrome />
         <small>{KO_SUBLINE}</small>
       </aside>
 
@@ -246,10 +301,7 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
       </p>
 
       <div className={shellStyles.wallFrame} data-wall-chart="seven-lanes" data-final-position="centre" data-wall-lanes="7">
-        <div
-          className={`${roundStyles.rounds}${wallOpen ? ` ${roundStyles.wallMode}` : ''}`}
-          aria-label="Seven-lane bracket"
-        >
+        <div className={roundStyles.rounds} aria-label="Seven-lane bracket">
           {surface.wallColumns.map(column => {
             // A lane belongs to whichever round its ties are in, so the rail can open the
             // round and both of its lanes come with it — left lane first, then right, which

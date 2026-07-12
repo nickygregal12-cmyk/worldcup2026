@@ -83,6 +83,20 @@ for (const marker of [
   '.repickFlag',
 ]) if (!css.includes(marker)) fail(`OriginalBracket module CSS is missing marker: ${marker}`)
 if (css.includes('@media (max-width')) fail('OriginalBracket module must keep a single 900px breakpoint')
+// The chart's card rules must be reachable from every bracket module, and `:global()` is how they
+// stopped being. The tie stylesheet shared its chart rules with the phone's wall mode by selecting
+// `:global(.wallMode)` — but `.wallMode` was a CSS Module class in the rounds stylesheet, so it was
+// hashed, and the literal class name that selector asks for is one no element has ever carried. It
+// matched nothing, in silence, and the phone chart kept the LIST card inside the CHART grid: the
+// team names ran under "Selected to advance", exactly as photographed on a real handset. Nothing
+// caught it, because the ≥900px copy of the same rules covered every screen anyone had looked at.
+// Cross-module state on this surface travels by data attribute, which hashing cannot rename.
+//
+// Comments are stripped before the test, unlike the max-width rule above, and deliberately: the
+// modules EXPLAIN this bug at length, and a check that forbade them from naming it would delete the
+// one thing standing between the next reader and writing it again.
+const cssRules = css.replace(/\/\*[\s\S]*?\*\//g, '')
+if (/:global\(/.test(cssRules)) fail('OriginalBracket modules must not reach across stylesheets with :global() — a CSS Module class is hashed, so the literal name matches nothing. Share chart state via a data attribute.')
 // Connector lines are anchored to each card's real box via `data-wall-side` (checked above), not
 // fixed pixel coordinates — `grid-column: var(--wall-column)` / `grid-row: var(--wall-row)` was the
 // earlier fixed-coordinate mechanism and is deliberately retired, not a regression.

@@ -1,17 +1,24 @@
 /* A tie, and the two slots you choose between (DP tokens, prototype v2).
  *
- * Same anatomy as a Groups card, because it IS the same card language: a meta line saying
- * when and where, then the two teams. What is different is the interaction — you tap a
- * team, you do not type a score. There are no score inputs and no jokers on this bracket,
- * by rule (§4), and the audits hold the file to it.
+ * Same anatomy as a Groups card, because it IS the same card language: a meta line saying when
+ * and where, then the two teams. What is different is the interaction — you tap a team, you do
+ * not type a score. There are no score inputs and no jokers on this bracket, by rule (§4), and
+ * the audits hold the file to it.
  *
- * The chart (≥900px, or `.wallMode` on a phone) strips the card back to what a chart needs:
- * two names and the tick. Everything the card says in the list — the date line, the re-pick
- * explainer, the "Pick to advance" instruction — is still in the DOM for a screen reader,
- * just not painted into a 132px lane.
+ * The CHART strips the card back to what a chart needs: two names and the tick. Everything the
+ * card says in the list — the date line, the re-pick explainer, the "Pick to advance"
+ * instruction — is still in the DOM for a screen reader, just not painted into a 132px lane.
  *
- * ONE breakpoint, min-width only. A max-width media query anywhere in this file fails the
- * bracket audit outright — it greps the source, comments and all.
+ * Those chart rules were written TWICE — once under `:global(.wallMode)` for the phone's opt-in,
+ * once inside `@media (min-width: 900px)` for the native chart — and only the second copy ever
+ * ran. `.wallMode` is a CSS Module class owned by the rounds stylesheet, so it is HASHED, and
+ * `:global(.wallMode)` asks for a literal name no element carries. It matched nothing, in silence.
+ * A phone that tapped "View as wall chart" got the chart's GEOMETRY with the list's CARD — date
+ * line, a state chip with a sentence in it, a 32px flag and "Selected to advance", all competing
+ * for a 132px lane. That is the photograph. One rule set now, keyed on a data attribute (unhashed,
+ * readable from any module); OriginalBracket.jsx answers "is this a chart?" once.
+ *
+ * No max-width media query, ever: the bracket audit greps this source, comments and all.
  */
 
 .tie {
@@ -242,150 +249,135 @@
 }
 
 /* ===== the chart reading of a tie =====
-   Shared by the phone's opt-in wall mode and the native chart at 900px, so the two cannot
-   drift. `:global(.wallMode)` reaches the class the rounds module owns — the alternative is
-   duplicating every rule below, twice. */
+ *
+ * Set by OriginalBracket.jsx on the frame, for BOTH ways into the chart: the 900px viewport and
+ * the phone's wall toggle. Written once, so the phone and the desktop cannot show two different
+ * cards inside the same grid — which is exactly what they were doing.
+ */
 
-:global(.wallMode) .tie,
-:global(.wallMode) .wallChampion {
+[data-wall-mode='on'] .tie,
+[data-wall-mode='on'] .wallChampion {
   gap: var(--space-2);
+  min-width: 0;
   padding: var(--space-2);
 }
 
-:global(.wallMode) .matchDetails,
-:global(.wallMode) .repickFlag,
-:global(.wallMode) .slotActionText,
-:global(.wallMode) .slotVs {
+/*
+ * The chart card carries two names and a tick. It used to carry the date line, the venue, the
+ * match number, the state badge label AND "Pick to advance" beside every name — in a 132px lane,
+ * which is why every team on the chart read "Sco…", "Cro…", "Rep… of Irel…". The lane width is
+ * byte-pinned by the audit and cannot be widened, so what goes is everything that was competing
+ * with the name for it.
+ */
+[data-wall-mode='on'] .matchDetails,
+[data-wall-mode='on'] .repickFlag,
+[data-wall-mode='on'] .slotActionText,
+[data-wall-mode='on'] .slotVs {
   display: none;
 }
 
-:global(.wallMode) .wallChampion {
+[data-wall-mode='on'] .tieMeta {
+  display: block;
+}
+
+[data-wall-mode='on'] .wallChampion {
   display: grid;
 }
 
-@media (min-width: 900px) {
-  /*
-   * Connector stubs are drawn from each card's own box, not from fixed coordinates, so they
-   * track the card wherever the flex layout settles it. Left cards grow a stub right, right
-   * cards grow one left, and the centred final grows both.
-   */
-  [data-wall-side='left'] .tie,
-  [data-wall-side='right'] .tie,
-  [data-wall-side='centre'] .tie {
-    position: relative;
-  }
+[data-wall-mode='on'] .slotAction,
+[data-wall-mode='on'] .slot.slotUnresolved {
+  min-height: 2.25rem;
+  padding: var(--space-1) var(--space-2);
+}
 
-  [data-wall-side='left'] .tie::after,
-  [data-wall-side='right'] .tie::before,
-  [data-wall-side='centre'] .tie::before,
-  [data-wall-side='centre'] .tie::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 0.75rem;
-    height: 1px;
-    background: var(--dp-border-strong);
-    pointer-events: none;
-  }
+/* A box inside a box: the global `.bracket-team-choice` frames and pads the wrapper, and the pick
+   button inside frames and pads itself again — 24px of padding and two borders around one team,
+   which in a 132px lane is a quarter of the name's width. The wrapper stands down and lets the
+   button be the box. Resolved slots only: an unresolved slot's dashed ring IS the wrapper. */
+[data-wall-mode='on'] .tie .slot:not(.slotUnresolved) {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
 
-  [data-wall-side='left'] .tie::after { right: -0.75rem; }
-  [data-wall-side='right'] .tie::before { left: -0.75rem; }
-  [data-wall-side='centre'] .tie::before { left: -0.75rem; }
-  [data-wall-side='centre'] .tie::after { right: -0.75rem; }
+/* The chart's own identity scale — the 20px flag and 12px name the approved chart uses. TeamLabel's
+   own is built for a card, and in this lane its 32px flag left "Netherlands" 63px when it wanted 82.
+   Reached through the data attributes TeamLabel emits, never its hashed class names, and doubled up
+   on `.tie` so the cascade cannot go the other way. */
+[data-wall-mode='on'] .tie .slotTeam [data-team-label] {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-basis: 1.25rem;
+}
 
-  .tie {
-    gap: var(--space-2);
-    min-width: 0;
-    padding: var(--space-2);
-  }
+[data-wall-mode='on'] .tie .slotTeam [data-team-label-copy] strong {
+  font-size: var(--text-xs);
+}
 
-  /*
-   * The chart card carries two names and a tick. It used to carry the date line, the venue,
-   * the match number, the state badge label AND "Pick to advance" beside every name — in a
-   * 132px lane, which is why every team on the chart read "Sco…", "Cro…", "Rep… of Irel…".
-   * The lane width is byte-pinned by the audit and cannot be widened, so what goes is
-   * everything that was competing with the name for it.
-   */
-  .matchDetails,
-  .repickFlag,
-  .slotActionText,
-  .slotVs {
-    display: none;
-  }
+[data-wall-mode='on'] .tie .slotTeam [data-team-label-copy] small {
+  font-size: 0.6rem;
+}
 
-  .tieMeta {
-    display: block;
-  }
+/* State stays visible per the Design Charter, but as a corner marker rather than a chip with a
+   sentence in it. Its label remains for a screen reader. */
+[data-wall-mode='on'] .tieBadge {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--dp-text-muted);
+}
 
-  .wallChampion {
-    display: grid;
-  }
+[data-wall-mode='on'] .tieBadge span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
-  .slotAction,
-  .slot.slotUnresolved {
-    min-height: 2.25rem;
-    padding: var(--space-1) var(--space-2);
-  }
+/* Connector stubs grow from each card's own box, not from fixed coordinates, so they track the card
+   wherever the flex layout settles it. Left cards grow one right, right cards one left, final both. */
+[data-wall-mode='on'] [data-wall-side='left'] .tie,
+[data-wall-mode='on'] [data-wall-side='right'] .tie,
+[data-wall-mode='on'] [data-wall-side='centre'] .tie {
+  position: relative;
+}
 
-  /*
-   * The chart's own identity scale — a 20px flag and a 12px name, which is the size the
-   * approved chart uses. TeamLabel's own is built for a card, and in a 132px lane its 32px
-   * flag left "Netherlands" 63px to live in when it wanted 82, so it alone still clipped
-   * while every other name had come back. Reached through the data attributes TeamLabel
-   * emits, never its hashed class names, and doubled up on `.tie` so the cascade cannot go
-   * the other way.
-   */
-  /*
-   * A box inside a box. The global `.bracket-team-choice` frames and pads the wrapper, and
-   * the pick button inside frames and pads itself again — 24px of padding and two borders
-   * drawn around one team. On a card you barely notice; in a 132px lane it is a quarter of
-   * the name's width, and it is why "Netherlands" still clipped after the flag and the type
-   * had both come down. The wrapper stands down and lets the button be the box.
-   * Resolved slots only: an unresolved slot's dashed ring IS the wrapper.
-   */
-  .tie .slot:not(.slotUnresolved) {
-    padding: 0;
-    border: 0;
-    background: transparent;
-  }
+[data-wall-mode='on'] [data-wall-side='left'] .tie::after,
+[data-wall-mode='on'] [data-wall-side='right'] .tie::before,
+[data-wall-mode='on'] [data-wall-side='centre'] .tie::before,
+[data-wall-mode='on'] [data-wall-side='centre'] .tie::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 0.75rem;
+  height: 1px;
+  background: var(--dp-border-strong);
+  pointer-events: none;
+}
 
-  .tie .slotTeam [data-team-label] {
-    width: 1.25rem;
-    height: 1.25rem;
-    flex-basis: 1.25rem;
-  }
+[data-wall-mode='on'] [data-wall-side='left'] .tie::after { right: -0.75rem; }
+[data-wall-mode='on'] [data-wall-side='right'] .tie::before { left: -0.75rem; }
+[data-wall-mode='on'] [data-wall-side='centre'] .tie::before { left: -0.75rem; }
+[data-wall-mode='on'] [data-wall-side='centre'] .tie::after { right: -0.75rem; }
 
-  .tie .slotTeam [data-team-label-copy] strong {
-    font-size: var(--text-xs);
-  }
-
-  .tie .slotTeam [data-team-label-copy] small {
-    font-size: 0.6rem;
-  }
-
-  /* State stays visible per the Design Charter, but as a corner marker rather than a chip
-     with a sentence in it. Its label remains for a screen reader. */
-  .tieBadge {
-    position: absolute;
-    top: var(--space-1);
-    right: var(--space-1);
-    min-height: 0;
-    min-width: 0;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: var(--dp-text-muted);
-  }
-
-  .tieBadge span {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
+/* A finger is not a mouse pointer, and the chart is now something a finger reaches. 36px is fine for
+   a cursor on the desktop chart and under every touch floor there is on the phone one. Keyed on the
+   INPUT DEVICE, not a width: a touchscreen laptop deserves the bigger target, a narrow desktop
+   window does not. Note when verifying — headless Chromium reports `pointer: fine` however narrow
+   you make it, so this rule does not exist for a harness that has not been told to emulate touch. */
+@media (pointer: coarse) {
+  [data-wall-mode='on'] .slotAction,
+  [data-wall-mode='on'] .slot.slotUnresolved {
+    min-height: 2.75rem;
   }
 }

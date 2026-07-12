@@ -38,9 +38,13 @@ const OUT_DIR = path.join(process.cwd(), '.visual-shots')
 
 // Phone width is the owner's 390px. Desktop is a common laptop viewport, wide enough that
 // the responsive breakpoints (40rem / 56.25rem) are all on the far side of it.
+// `isMobile`/`hasTouch` on the phone are not cosmetic. Without them Chromium reports
+// `pointer: fine` at any width, so every `@media (pointer: coarse)` rule in the app is simply
+// absent from the screenshot — the picture shows mouse-sized targets on what is meant to be a
+// phone. It also makes Chromium honour the viewport meta tag the way a handset does.
 const VIEWPORTS = [
-  { name: 'phone', width: 390, height: 844 },
-  { name: 'desktop', width: 1440, height: 900 },
+  { name: 'phone', width: 390, height: 844, isMobile: true, hasTouch: true },
+  { name: 'desktop', width: 1440, height: 900, isMobile: false, hasTouch: false },
 ]
 const THEMES = ['light', 'dark']
 
@@ -76,6 +80,14 @@ function startDevServer() {
         // Same-origin, in-container. Overrides the public Codespaces host in .env.local
         // for this run only; the file is untouched.
         VITE_SUPABASE_URL: `${ORIGIN}/local-supabase`,
+        // A THIRD environment trap, and the costliest one so far: the local stack's
+        // tournament_time_controls row is enabled at 2028-06-14, which is AFTER the prediction
+        // lock — and .env.local turns time travel on, so the app honours it. Every screenshot this
+        // harness has ever taken of a prediction surface was therefore of a LOCKED board: nothing
+        // picked, no champion named, no slot "Selected to advance". Four defects the owner found on
+        // a handset live in states this harness could not reach. Deny time travel for the run and
+        // the app falls back to the real clock, which is comfortably pre-lock.
+        VITE_ENABLE_TIME_TRAVEL: 'false',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     },
@@ -113,6 +125,8 @@ function startDevServer() {
 async function shoot(browser, route, viewport, theme) {
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
+    isMobile: viewport.isMobile,
+    hasTouch: viewport.hasTouch,
     colorScheme: theme,
     deviceScaleFactor: 2,
   })

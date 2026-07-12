@@ -122,7 +122,13 @@ export function buildOriginalBracketSurface({ reference, draft, preview }) {
     buildOriginalBracketWallPlacement(match.matchNumber) // throws if a knockout match has no approved wall-chart slot
     return Object.freeze({
       ...match,
-      // The resolver definition carries no schedule/venue; source them from the reference row.
+      // The resolver definition carries no schedule/venue — EURO28_KNOCKOUT_MATCHES is match
+      // number, stage and the two slot sources, nothing else — so all four fields come off the
+      // reference row. Venue was sourced here and the schedule was not, which is why every KO
+      // tie read "Date to be confirmed / Kick-off TBC" beside a correctly named stadium while
+      // the reference had carried scheduled_date and kickoff_at all along.
+      scheduledDate: match.scheduledDate ?? referenceMatch?.scheduledDate ?? null,
+      kickoffAt: match.kickoffAt ?? referenceMatch?.kickoffAt ?? null,
       venueName: match.venueName ?? referenceMatch?.venueName ?? null,
       venueCity: match.venueCity ?? referenceMatch?.venueCity ?? null,
       stale,

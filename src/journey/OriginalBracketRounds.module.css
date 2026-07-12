@@ -1,16 +1,20 @@
 /* The seven lanes — one markup, two readings.
  *
- * Below 900px this is a LIST, and the rail decides which round you are looking at: lanes
- * outside the open round are not on screen at all. That is the fix for a page that was
- * 15,000px tall on a phone because it stacked all seven lanes end to end and walked you
- * R16 → QF → SF → Final → SF → QF → R16.
+ * LIST. The default, and on a phone the only thing you get until you ask otherwise: the rail
+ * decides which round you are looking at, and lanes outside the open round are not on screen at
+ * all. That is the fix for a page that was 15,000px tall on a phone because it stacked all seven
+ * lanes end to end and walked you R16 → QF → SF → Final → SF → QF → R16.
  *
- * A round owns two lanes, left and right, and lane order is already match order — the left
- * R16 lane holds 37–40 and the right holds 41–44 — so opening a round yields 37, 38, 39,
- * 40, 41, 42, 43, 44 in that order, out of the same markup the chart uses.
+ * A round owns two lanes, left and right, and lane order is already match order — the left R16
+ * lane holds 37–40 and the right holds 41–44 — so opening a round yields 37, 38, 39, 40, 41, 42,
+ * 43, 44 in that order, out of the same markup the chart uses.
  *
- * `.wallMode` is the mobile opt-in: the same lanes laid out as the chart, scrolled
- * sideways. At 900px the chart is simply what this IS, with no toggle involved.
+ * CHART. `[data-wall-mode='on']`, which OriginalBracket.jsx sets when the viewport is at 900px
+ * OR the player has opted in with the wall toggle. It used to be a CSS Module class, `.wallMode`,
+ * which meant the tie stylesheet could not reach it — `:global(.wallMode)` asks for a literal
+ * class name that hashing had already renamed, so it matched nothing and the phone chart quietly
+ * kept the LIST card inside the CHART grid. An attribute is not hashed. Every module that needs
+ * to know now reads the same one, and the two readings cannot drift.
  *
  * The 7-column declaration is byte-pinned by the 1B audit. Do not reformat it.
  */
@@ -67,27 +71,44 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* ===== the chart, opted into on a phone ===== */
+/* ===== the chart — one rule set, whichever way you arrived at it =====
+ *
+ * 78rem of lanes will not fit a phone and is not meant to: the frame scrolls sideways (see
+ * .wallFrame). What matters is that the lanes keep their real width while it does, because a lane
+ * squeezed to a seventh of 390px is where the names started colliding with the labels.
+ *
+ * The floor is 78rem and not 70rem, and that is the difference between a chart that reads and one
+ * that does not. The chart is fluid up to 78rem, so a desktop gets 171px lanes — but it FLOORED at
+ * 70rem, and a phone always gets the floor, so a phone got 153px. "Netherlands" needs 72px of name
+ * and had 66: the desktop chart was clean and the phone chart, out of the very same markup, cut
+ * the name in half. Hyphenating it was the obvious repair and it is a trap — headless Chromium has
+ * no hyphenation dictionary, so `hyphens: auto` silently does nothing, `overflow-wrap` hard-breaks
+ * instead, and you ship "Switzerlan / d" exactly as Groups once did. Give the lanes the width the
+ * names were measured against and nothing needs breaking at all: one chart, one geometry.
+ */
 
-.rounds.wallMode {
+[data-wall-mode='on'] .rounds {
   grid-template-columns: repeat(7, minmax(8.25rem, 1fr));
   align-items: stretch;
   gap: var(--space-2);
-  min-width: 70rem;
+  min-width: 78rem;
 }
 
-.rounds.wallMode .round {
+/* Every lane is on screen at once, open round or not. */
+[data-wall-mode='on'] .round {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
 }
 
-.rounds.wallMode .roundHeader {
+[data-wall-mode='on'] .roundHeader {
   display: flex;
+  min-height: 2.8rem;
+  padding: 0;
 }
 
-.rounds.wallMode .laneStack {
+[data-wall-mode='on'] .laneStack {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -98,20 +119,30 @@
 
 @media (min-width: 900px) {
   /*
-   * One unified grid: each lane is a column, and the cards grow their connector stubs from
-   * their own box (see OriginalBracketTie.module.css), anchored on [data-wall-side] so they
-   * track the card wherever the flex layout settles it. No hardcoded SVG paths — the audits
-   * forbid them, and they were always a lie about where the cards actually were.
+   * What is true of the chart only when it fits: it is centred rather than scrolled, and it
+   * gets the halfway line the approved chart draws through it. The cards grow their own
+   * connector stubs from their own boxes (see OriginalBracketTie.module.css), anchored on
+   * [data-wall-side] so they track the card wherever the flex layout settles it. No hardcoded
+   * SVG paths — the audits forbid them, and they were always a lie about where the cards were.
+   */
+  /*
+   * The desktop chart keeps the floor it was approved with. Only the CONTAINER differs between the
+   * two readings — the cards inside are one rule set, which is the whole point — and the floor is
+   * legitimately a property of the screen: a desktop chart is centred and fits, so a 78rem floor
+   * would push it into a sideways scroll it has never had, while a phone chart scrolls sideways no
+   * matter what and can afford the room the names need.
    */
   .rounds {
     position: relative;
-    display: grid;
-    grid-template-columns: repeat(7, minmax(8.25rem, 1fr));
-    align-items: stretch;
-    gap: var(--space-2);
     width: min(100%, 78rem);
-    min-width: 70rem;
     margin: 0 auto;
+  }
+
+  /* Same two classes as the floor above, not one — a media query adds no specificity, so a bare
+     `.rounds` here would lose the cascade to `[data-wall-mode='on'] .rounds` and this would look
+     like it worked while changing nothing. */
+  [data-wall-mode='on'] .rounds {
+    min-width: 70rem;
   }
 
   .rounds::before {
@@ -123,28 +154,5 @@
     height: 1px;
     background: linear-gradient(90deg, transparent, var(--dp-border-strong), transparent);
     pointer-events: none;
-  }
-
-  /* Every lane is on screen at once, open round or not. */
-  .round {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    min-width: 0;
-  }
-
-  .roundHeader {
-    display: flex;
-    min-height: 2.8rem;
-    padding: 0;
-  }
-
-  .laneStack {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    justify-content: space-around;
-    gap: var(--space-2);
-    min-height: 0;
   }
 }

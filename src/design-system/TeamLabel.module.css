@@ -109,6 +109,24 @@ button.teamLabel {
   font-size: var(--text-xs);
 }
 
+/* On a chrome (navy) surface.
+ *
+ * The two copy colours above are chosen against the light page and the white card. On chrome in
+ * the LIGHT theme they are near-black on navy — #0B1B34 on #163B73 is 1.56:1, and the muted line
+ * is 2.04:1 — so the champion of the tournament was legible only because you already knew what
+ * you had picked. tokens.css keeps a matched pair for exactly this surface, and this is the only
+ * thing that changes: same flag, same layout, the two colours the surface is owed.
+ *
+ * In the dark theme --dp-text-strong is already white, so this is close to a no-op there; the
+ * point of the class is that the caller no longer has to know which theme it is in. */
+.onChrome .copy strong {
+  color: var(--dp-text-on-chrome);
+}
+
+.onChrome .copy small {
+  color: var(--dp-text-muted-chrome);
+}
+
 .compact .flag {
   width: 2rem;
   height: 2rem;

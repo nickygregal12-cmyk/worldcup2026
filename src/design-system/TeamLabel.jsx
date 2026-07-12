@@ -34,6 +34,13 @@ export default function TeamLabel({
   stacked = false,
   alignEnd = false,
   collapseCopy = false,
+  // The identity is painted for the light page it usually sits on: --dp-text-strong for the
+  // name, --dp-text-muted for the "Provisional" line. Dropped on a chrome (navy) surface in the
+  // light theme, that is #0B1B34 on #163B73 — 1.56:1, where the floor is 4.5:1 — and the name of
+  // the team you have picked to win the tournament is the thing that disappears. A caller that
+  // knows it is putting an identity on chrome says so, and the component answers with the
+  // on-chrome pair. Nothing else about it changes.
+  onChrome = false,
   onActivate = null,
   className = '',
   profileDisabled = false,
@@ -77,6 +84,7 @@ export default function TeamLabel({
     stacked ? styles.stacked : '',
     alignEnd ? styles.alignEnd : '',
     collapseCopy ? styles.collapseCopy : '',
+    onChrome ? styles.onChrome : '',
     activation ? styles.interactive : '',
     className,
   ].filter(Boolean).join(' ')

@@ -11,9 +11,35 @@
  * not even write one down. Everything is mobile-first; the wall chart is the enhancement.
  */
 
+/*
+ * Block flow, not a grid, and the reason is the sticky rail below.
+ *
+ * A grid item's containing block is its GRID AREA. In a single-column grid every child sits in
+ * its own auto-sized row, so the area is exactly the height of the item in it — and a sticky box
+ * is clamped to its containing block, which means it has nowhere to travel and does not stick at
+ * all. It is a silent no-op: the declaration is honoured, the element simply never moves.
+ *
+ * In normal flow the strip's containing block is this whole section, which is as tall as the
+ * board, so it has the full page to travel down. Gaps become margins on everything after the
+ * first child, which is what the grid gap was doing anyway.
+ */
 .bracket {
-  display: grid;
-  gap: var(--space-4);
+  display: flow-root;
+  /*
+   * The one declaration standing between a 70rem chart and a phone that pans sideways.
+   *
+   * This section is a grid item (of `.prediction-journey`, itself a grid item of
+   * `.content-stack`), and a grid item's automatic minimum size is its MIN-CONTENT size — so the
+   * chart's `min-width: 70rem` propagated straight up the chain and pushed the track to 1154px
+   * inside a 372px column. The frame's own `overflow-x: auto` was powerless: it had been handed a
+   * 1152px box, so there was nothing left over to scroll, and what scrolled instead was the
+   * document. Nobody saw it above 900px, where 1152px fits and overflows nothing.
+   */
+  min-width: 0;
+}
+
+.bracket > * + * {
+  margin-top: var(--space-4);
 }
 
 /* ===== the page says what it is, once ===== */
@@ -94,12 +120,29 @@
 
 /* ===== round rail + the wall-chart trip ===== */
 
+/*
+ * Sticky, because a round rail you have to scroll back to the top of the page to reach is not a
+ * control — it is a table of contents. Eight R16 ties is a long way down on a phone, and the way
+ * you change round was above all of them.
+ *
+ * It parks under the app header, which is itself `position: sticky; top: 0` and
+ * `min-height: var(--header-height)`, so that is exactly the offset the strip owes it. Below the
+ * header's z-index (50) and above the board, so cards pass underneath rather than through.
+ */
 .topStrip {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
   flex-wrap: wrap;
+  padding-block: var(--space-2);
+  /* Opaque, or the ties scroll visibly through the pills. The page's own colour, so the bar is
+     invisible until something is actually behind it; the hairline is what says where it ends. */
+  background: var(--dp-surface-page);
+  border-bottom: 1px solid var(--dp-border-subtle);
 }
 
 .roundRail {
@@ -113,9 +156,18 @@
   display: none;
 }
 
+/*
+ * `align-items: baseline` put the text at the TOP of a 40px pill.
+ *
+ * Baseline alignment lines the span and the strong up with each other, and then sits that whole
+ * group at the cross-START of the flex line — so with a min-height and no vertical padding, the
+ * label hugged the ceiling and left ~24px of empty pill hanging beneath it. Centre both axes and
+ * give the count a tight line box, and the label sits where the pill is.
+ */
 .roundRail button {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
+  justify-content: center;
   gap: var(--space-2);
   flex: 0 0 auto;
   min-height: 2.5rem;
@@ -133,6 +185,7 @@
 
 .roundRail button strong {
   font-size: var(--text-xs);
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
@@ -210,28 +263,39 @@
   gap: var(--space-3);
 }
 
-@media (min-width: 900px) {
-  .bracket {
-    gap: var(--space-5);
-  }
+/*
+ * The chart is 70rem of lanes and always was. Above 900px the frame scrolled it; below 900px the
+ * frame had no `overflow-x` at all, so those 70rem simply ran out of the page and took the
+ * document's horizontal scrollbar with them — the whole phone view slid sideways, masthead and
+ * all, and reading a team name meant panning the page rather than the chart.
+ *
+ * The frame owns the sideways scroll now, in both readings, and it is the frame that moves.
+ * `overscroll-behavior-x: contain` keeps a swipe inside the chart instead of handing it to
+ * Safari's back-gesture once the lanes reach their end.
+ */
+[data-wall-mode='on'] .wallFrame {
+  position: relative;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: var(--space-4);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--dp-surface-raised);
+}
 
-  /* The rail filters nothing here — the whole chart is on screen — so it stays as the round
-     legend and its progress count, and stops pretending to be a control. */
-  .roundRail button {
-    cursor: default;
+/* The rail filters nothing in the chart — every lane is on screen — so it stays as the round
+   legend and its progress count, and stops pretending to be a control. */
+[data-wall-mode='on'] .roundRail button {
+  cursor: default;
+}
+
+@media (min-width: 900px) {
+  .bracket > * + * {
+    margin-top: var(--space-5);
   }
 
   /* Above 900px the chart IS the view, so the toggle has nothing to offer. */
   .wallToggle {
     display: none;
-  }
-
-  .wallFrame {
-    position: relative;
-    overflow-x: auto;
-    padding: var(--space-4);
-    border: 1px solid var(--dp-border-subtle);
-    border-radius: var(--radius-lg);
-    background: var(--dp-surface-raised);
   }
 }

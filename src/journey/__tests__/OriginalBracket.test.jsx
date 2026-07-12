@@ -58,6 +58,47 @@ describe('OriginalBracket', () => {
     expect(renderBracket(emptyBracketDraft)).toContain('Pick through to the final')
   })
 
+  /*
+   * The reference row carried scheduled_date and kickoff_at all along — guestReferenceModel puts
+   * them on every knockout row — but buildOriginalBracketSurface backfilled only the venue off
+   * it. So a KO tie printed a real, confirmed stadium beside "Date to be confirmed / Kick-off
+   * TBC", which is what the owner saw on the phone: the venue was proof the data had arrived.
+   *
+   * The date is asserted in the language Groups and Home speak, because it used to be a third
+   * one: 24-hour, UTC, "20:00". Same fixture, same product, one voice.
+   */
+  it('renders the confirmed kick-off date and time when the reference carries them', () => {
+    const reference = {
+      ...VISUAL_GROUP_REFERENCE,
+      knockoutMatches: VISUAL_GROUP_REFERENCE.knockoutMatches.map(match => ({
+        ...match,
+        scheduledDate: '2028-06-24',
+        kickoffAt: '2028-06-24T19:00:00Z',
+      })),
+    }
+    const preview = resolveGuestTournamentPreview(reference, VISUAL_BRACKET_DRAFT)
+    const html = renderToStaticMarkup(
+      <TeamProfileContext.Provider value={{ openTeamProfile: () => {} }}>
+        <OriginalBracket reference={reference} draft={VISUAL_BRACKET_DRAFT} preview={preview} contentLocked={false} reviewMode={false} graceWindows={[]} onChange={() => {}} />
+      </TeamProfileContext.Provider>,
+    )
+    expect(html).toContain('Sat 24 June')
+    expect(html).toContain('8:00pm') // 19:00Z is 8:00pm in June — BST, and the same clock Groups prints
+    expect(html).not.toContain('Date to be confirmed')
+    expect(html).not.toContain('Kick-off TBC')
+  })
+
+  /*
+   * The chart is one rule set reached two ways, and the tie stylesheet reads it off this
+   * attribute. It used to reach for `:global(.wallMode)` — a CSS Module class, therefore hashed,
+   * therefore a selector that matched no element that has ever existed — so the phone's wall
+   * chart silently kept the list card inside the chart grid and the names collided with the
+   * labels. If this attribute stops being emitted, that failure comes straight back.
+   */
+  it('publishes the chart-reading state as an unhashed attribute the stylesheets can reach', () => {
+    expect(renderBracket()).toContain('data-wall-mode="off"')
+  })
+
   it('renders the confirmed venue name when the reference carries it', () => {
     const reference = {
       ...VISUAL_GROUP_REFERENCE,

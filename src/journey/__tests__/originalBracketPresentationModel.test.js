@@ -55,6 +55,42 @@ describe('original bracket presentation model', () => {
     expect(surface.tiesByMatchNumber[45].slots.map(slot => slot.sourceCode)).toEqual(['W39', 'W37'])
   })
 
+  /*
+   * The resolver's knockout definitions carry a match number, a stage and two slot sources —
+   * no schedule, no venue. Everything a tie says about WHEN and WHERE it is played has to be
+   * lifted off the reference row, and the venue was while the schedule was not. That single
+   * omission is the whole of "Date to be confirmed" on a bracket whose kick-offs staging has
+   * known all along, and nothing failed: the fallbacks did their job on data that never came.
+   */
+  it('sources schedule and venue for a knockout tie from the reference row', () => {
+    const reference = {
+      ...VISUAL_GROUP_REFERENCE,
+      knockoutMatches: VISUAL_GROUP_REFERENCE.knockoutMatches.map(match => ({
+        ...match,
+        scheduledDate: '2028-06-24',
+        kickoffAt: '2028-06-24T16:00:00Z',
+        venueName: 'National Stadium of Wales',
+        venueCity: 'Cardiff',
+      })),
+    }
+    const preview = resolveGuestTournamentPreview(reference, VISUAL_BRACKET_DRAFT)
+    const tie = buildOriginalBracketSurface({ reference, draft: VISUAL_BRACKET_DRAFT, preview }).tiesByMatchNumber[37]
+
+    expect(tie.scheduledDate).toBe('2028-06-24')
+    expect(tie.kickoffAt).toBe('2028-06-24T16:00:00Z')
+    expect(tie.venueName).toBe('National Stadium of Wales')
+  })
+
+  /* An absent kick-off still reads as absent. §5: the provisional indicators are a FEATURE, and
+     they must appear when — and only when — the database genuinely lacks the data. */
+  it('leaves schedule fields null when the reference genuinely has no kick-off', () => {
+    const preview = resolveGuestTournamentPreview(VISUAL_GROUP_REFERENCE, VISUAL_BRACKET_DRAFT)
+    const tie = buildOriginalBracketSurface({ reference: VISUAL_GROUP_REFERENCE, draft: VISUAL_BRACKET_DRAFT, preview }).tiesByMatchNumber[37]
+
+    expect(tie.scheduledDate).toBeNull()
+    expect(tie.kickoffAt).toBeNull()
+  })
+
   it('fails loudly when a knockout match has no wall placement', () => {
     expect(() => buildOriginalBracketWallPlacement(999)).toThrow('Unknown Original Bracket wall placement for match 999')
   })
