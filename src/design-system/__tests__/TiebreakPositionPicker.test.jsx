@@ -1,10 +1,18 @@
-import { renderToStaticMarkup } from 'react-dom/server'
+// @vitest-environment jsdom
+import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import TiebreakPositionPicker from '../TiebreakPositionPicker.jsx'
-import { hasUnresolvedTie, labelFor, moveItem, orderFromTie } from '../tiebreakModel.js'
+
+// The picker's STATES, against a real DOM.
+//
+// TiebreakPositionPicker.interaction.test.jsx drives the ▲/▼ controls and the
+// save. tiebreakModel.test.js proves the detection and the reset-on-edit rule.
+// This file proves what the player is actually shown in each state — and, above
+// all, when they are shown nothing at all.
 
 const tie = {
   groupCode: 'A',
+  signature: '1:2-1',
   reason: 'both level on points, goal difference and goals scored',
   teams: [
     { teamId: 'wal', label: 'Wales' },
@@ -12,56 +20,58 @@ const tie = {
   ],
 }
 
-describe('TiebreakPositionPicker (item 64 — component states)', () => {
-  it('renders nothing when there is no unresolved tie (stub input null)', () => {
-    expect(renderToStaticMarkup(<TiebreakPositionPicker tie={null} />)).toBe('')
-    expect(renderToStaticMarkup(<TiebreakPositionPicker tie={{ groupCode: 'A', teams: [] }} />)).toBe('')
+const picker = () => document.querySelector('[data-tiebreak-picker="true"]')
+const control = name => screen.getByRole('button', { name })
+
+describe('TiebreakPositionPicker (item 64 — states)', () => {
+  it('renders nothing when there is no tie', () => {
+    render(<TiebreakPositionPicker tie={null} />)
+    expect(picker()).toBeNull()
   })
 
-  it('shows the amber provisional warning and a ranked picker for the tied teams', () => {
-    const html = renderToStaticMarkup(<TiebreakPositionPicker tie={tie} />)
-    expect(html).toContain('data-tiebreak-picker="true"')
-    expect(html).toContain('data-tiebreak-warning="true"') // amber warning banner present
-    expect(html).toContain('can’t be decided automatically')
-    expect(html).toContain('Wales')
-    expect(html).toContain('Germany')
-    // Manual ordering controls with accessible labels.
-    expect(html).toContain('Move Wales up')
-    expect(html).toContain('Move Germany down')
-    // No reset notice unless flagged.
-    expect(html).not.toContain('data-tiebreak-reset')
+  it('renders nothing for a single team, which is not a tie', () => {
+    // A one-team partition is a team the resolver ranked cleanly. Raising the
+    // amber "we can't decide this" banner over it — and asking the player to
+    // order a list of one — was the hasUnresolvedTie truthy-length bug.
+    render(<TiebreakPositionPicker tie={{ groupCode: 'A', teams: [{ teamId: 'wal', label: 'Wales' }] }} />)
+
+    expect(picker()).toBeNull()
+    expect(screen.queryByText(/can’t be decided automatically/)).toBeNull()
   })
 
-  it('shows the reset notice only when the stub reset flag is set', () => {
-    const html = renderToStaticMarkup(<TiebreakPositionPicker tie={tie} resetNotice />)
-    expect(html).toContain('data-tiebreak-reset="true"')
-    expect(html).toContain('reset these positions')
-  })
-})
+  it('warns and offers a ranked picker when teams are genuinely tied', () => {
+    render(<TiebreakPositionPicker tie={tie} />)
 
-describe('tiebreak reorder logic', () => {
-  const list = ['a', 'b', 'c']
+    expect(picker()).toBeTruthy()
+    expect(document.querySelector('[data-tiebreak-warning="true"]')).toBeTruthy()
+    expect(picker().textContent).toContain('can’t be decided automatically')
+    expect(picker().textContent).toContain(tie.reason)
 
-  it('moves an item up and down', () => {
-    expect(moveItem(list, 1, -1)).toEqual(['b', 'a', 'c'])
-    expect(moveItem(list, 1, 1)).toEqual(['a', 'c', 'b'])
-  })
+    // Every tied team gets a row and a working pair of ordering controls.
+    expect(control('Move Wales down')).toHaveProperty('disabled', false)
+    expect(control('Move Germany up')).toHaveProperty('disabled', false)
+    // The ends are dead: first cannot go up, last cannot go down.
+    expect(control('Move Wales up')).toHaveProperty('disabled', true)
+    expect(control('Move Germany down')).toHaveProperty('disabled', true)
 
-  it('is a no-op past the ends', () => {
-    expect(moveItem(list, 0, -1)).toEqual(['a', 'b', 'c'])
-    expect(moveItem(list, 2, 1)).toEqual(['a', 'b', 'c'])
+    expect(document.querySelector('[data-tiebreak-reset="true"]')).toBeNull()
   })
 
-  it('reads its starting order and labels from the stub tie descriptor', () => {
-    expect(orderFromTie(tie)).toEqual(['wal', 'ger'])
-    expect(orderFromTie(null)).toEqual([])
-    expect(labelFor(tie, 'ger')).toBe('Germany')
-    expect(labelFor(tie, 'unknown')).toBe('unknown') // falls back to the id
+  it('starts from a previously saved ordering rather than the default one', () => {
+    render(<TiebreakPositionPicker tie={tie} initialOrder={['ger', 'wal']} />)
+
+    // Germany is first now, so it is Germany that cannot move up.
+    expect(control('Move Germany up')).toHaveProperty('disabled', true)
+    expect(control('Move Wales down')).toHaveProperty('disabled', true)
   })
 
-  it('only reports a tie worth resolving when the stub supplies tied teams', () => {
-    expect(hasUnresolvedTie(tie)).toBe(true)
-    expect(hasUnresolvedTie(null)).toBe(false)
-    expect(hasUnresolvedTie({ groupCode: 'A', teams: [] })).toBe(false)
+  it('says out loud when a score edit has reset the positions', () => {
+    render(<TiebreakPositionPicker tie={tie} resetNotice />)
+
+    const notice = document.querySelector('[data-tiebreak-reset="true"]')
+    expect(notice).toBeTruthy()
+    expect(notice.textContent).toContain('reset these positions')
+    // The picker stays usable — the notice asks for a decision, it does not block one.
+    expect(control('Move Germany up')).toHaveProperty('disabled', false)
   })
 })

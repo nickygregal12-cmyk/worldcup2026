@@ -46,11 +46,35 @@ if (new Set(codes).size !== 55) fail(`Team flag registry must contain all 55 UEF
 if (/https?:\/\//.test(registry)) fail('Team flags must be bundled locally, not loaded from a runtime CDN')
 for (const code of ['SCO', 'ENG', 'WAL', 'NIR', 'IRL', 'KOS']) if (!codes.includes(code)) fail(`Team flag registry is missing ${code}`)
 
+// The Groups re-cut moved the seam, not the guarantee. TeamLabel now carries its own
+// --dp-* CSS module, so its identity states are asserted through structural markers
+// (data-team-label="…") rather than the old global class names. All THREE states are
+// pinned now, not just the placeholder: an empty slot and a resolved team whose flag
+// asset is missing used to share one `!flagUrl` branch, so a registry miss silently
+// wore the empty-slot treatment. They are distinct states now and a miss is loud.
+// The conflation itself is pinned shut below. Stricter than the greps it replaces.
 const teamLabel = read('src/design-system/TeamLabel.jsx')
-for (const marker of ['team-label--placeholder', 'team-label--provisional', 'onActivate', 'Open ${resolvedLabel} team profile', 'flagAssetForTeamIso']) {
+for (const marker of [
+  'data-team-label="placeholder"',
+  'data-team-label="missing-flag"',
+  'data-team-provisional',
+  'actualTeamId',
+  'onActivate',
+  'Open ${resolvedLabel} team profile',
+  'flagAssetForTeamIso',
+]) {
   if (!teamLabel.includes(marker)) fail(`TeamLabel is missing: ${marker}`)
 }
 if (teamLabel.includes('onClick={team') || teamLabel.includes('article onClick')) fail('Team profile activation must remain on the identity primitive only')
+// The DP-HOME conflation, pinned shut on this surface too: unresolved means "no team
+// behind this slot" and nothing else. Every staging tournament_teams row carries
+// is_provisional = true, so inferring unresolved from it blanks the entire board.
+if (/isProvisional\s*\|\|\s*!/.test(teamLabel)) fail('TeamLabel must not infer unresolved-ness from isProvisional')
+
+const teamLabelStyles = read('src/design-system/TeamLabel.module.css')
+for (const marker of ['.placeholder', '.missingFlag', '--dp-']) {
+  if (!teamLabelStyles.includes(marker)) fail(`TeamLabel module is missing: ${marker}`)
+}
 
 // Stage DP-PRIMITIVES moved the seam, not the guarantee. ScoreInput now carries its
 // own --dp-* CSS module, so the read-only state is asserted through its structural
@@ -126,8 +150,11 @@ for (const [name, width, height] of baselines) {
   if (!dimensions || dimensions.width !== width || dimensions.height !== height) fail(`${file} must be ${width}×${height}`)
 }
 
+// .team-label--placeholder left this list at the Groups re-cut: the placeholder is
+// now a TeamLabel module state, asserted structurally above. What stays here is what
+// genuinely still belongs to the page.
 const css = read('src/styles/groups-predictor.css')
-for (const marker of ['min-height: 2.75rem', '.group-match-card--joker', '.score-input--readonly', '.team-label--placeholder', 'font-variant-numeric: tabular-nums', '@media (max-width: 40rem)']) {
+for (const marker of ['min-height: 2.75rem', '.group-match-card--joker', '.score-input--readonly', 'font-variant-numeric: tabular-nums', '@media (max-width: 40rem)']) {
   if (!css.includes(marker)) fail(`Groups CSS is missing: ${marker}`)
 }
 

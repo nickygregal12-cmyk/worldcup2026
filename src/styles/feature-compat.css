@@ -1373,38 +1373,19 @@ button {
   }
 }
 
-/* Stage 8 competition split and joker controls */
-.journey-joker-summary {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--foundation-border);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--foundation-safe) 9%, transparent);
-}
-
-.journey-joker-summary > div {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.journey-joker-summary span {
-  font-size: 0.82rem;
-}
-
-.journey-joker-summary--neutral {
-  background: var(--foundation-surface-muted);
-}
-
-.journey-match-row--joker {
-  outline: 2px solid color-mix(in srgb, var(--foundation-warning) 65%, transparent);
-  outline-offset: -2px;
-}
-
-.journey-joker-button,
+/* Stage 8 competition split.
+ *
+ * The Stage 8 joker rules (`.journey-joker-summary` and its children,
+ * `.journey-joker-button`, `.journey-match-row--joker`) were removed at the Groups
+ * re-cut. They had no consumer: the joker is a design-system primitive now
+ * (JokerControl, JokerMeter, JokerPill), and the surfaces that still style a joker
+ * do it on their own card — `.group-match-card--joker`, `.ko-joker-button`. Nothing
+ * in the app composed these class names, so this is deletion, not a move.
+ *
+ * They also drew the joker in `--foundation-warning`, which the 2026-07-10 ruling
+ * retired: the joker has its own exclusive token family now, and the warning tone is
+ * the provisional role.
+ */
 .journey-bracket-team {
   border: 1px solid var(--foundation-border);
   border-radius: 10px;
@@ -1414,7 +1395,6 @@ button {
   cursor: pointer;
 }
 
-.journey-joker-button--active,
 .journey-bracket-team--selected {
   border-color: var(--foundation-warning);
   background: color-mix(in srgb, var(--foundation-warning) 14%, var(--foundation-surface));
@@ -1454,7 +1434,6 @@ button {
 }
 
 @media (max-width: 720px) {
-  .journey-joker-summary,
   .journey-bracket-pick-row {
     grid-template-columns: 1fr;
     display: grid;
@@ -1462,10 +1441,6 @@ button {
 
   .journey-match-row {
     grid-template-columns: 1fr auto auto auto 1fr;
-  }
-
-  .journey-joker-button {
-    grid-column: 1 / -1;
   }
 }
 

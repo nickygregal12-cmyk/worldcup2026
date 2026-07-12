@@ -1,0 +1,117 @@
+/* Joker pill + five-dot joker meter (--dp-*).
+ *
+ * Gold is joker-exclusive (CLAUDE.md §5) — the --dp-joker family appears here
+ * and nowhere else in the chrome. Text uses the F1 ink variant (--dp-joker-ink),
+ * never the raw fill, so the chip clears 4.5:1 in both themes.
+ *
+ * --dp-joker-border is dark-theme-only in tokens.css (a DP-0 gap), so it is
+ * referenced with an explicit fallback: an unresolved var() silently invalidates
+ * the whole declaration.
+ */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--dp-joker-border, var(--dp-joker));
+  border-radius: var(--radius-full);
+  background: var(--dp-surface-raised);
+  color: var(--dp-joker-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pill:hover:not(:disabled) {
+  background: var(--dp-joker-soft);
+}
+
+.pill:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+}
+
+.pill.active {
+  background: var(--dp-joker-soft);
+}
+
+.pill:disabled {
+  border-color: var(--dp-border-subtle);
+  background: var(--dp-surface-page);
+  color: var(--dp-text-muted);
+  cursor: not-allowed;
+}
+
+.icon {
+  color: currentColor;
+}
+
+.multiplier {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.75rem;
+  min-height: 1.5rem;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--dp-joker);
+  color: var(--dp-text-on-accent);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.meter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--dp-joker-border, var(--dp-joker));
+  border-radius: var(--radius-md);
+  background: var(--dp-joker-soft);
+  color: var(--dp-joker-ink);
+}
+
+.star {
+  color: var(--dp-joker-ink);
+}
+
+.label {
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-variant-numeric: tabular-nums;
+}
+
+.meter strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.meter small {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.dots {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1.5px solid var(--dp-joker-border, var(--dp-joker));
+  border-radius: var(--radius-full);
+  background: transparent;
+}
+
+.dot.filled {
+  border-color: var(--dp-joker);
+  background: var(--dp-joker);
+}
+
+@media (max-width: 40rem) {
+  .pill {
+    width: 100%;
+    justify-content: center;
+  }
+}

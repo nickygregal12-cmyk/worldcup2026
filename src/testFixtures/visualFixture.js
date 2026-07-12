@@ -33,7 +33,15 @@ const VISUAL_TEAMS = Object.freeze([
 ].map(([isoCode, label], index) => Object.freeze({
   teamId: `visual-team-${index + 1}`,
   tournamentTeamId: `visual-team-${index + 1}`,
-  actualTeamId: null,
+  // These 24 are fully identified teams — Scotland, Germany, and so on — so a
+  // real team sits behind every slot, exactly as it does in staging. They are
+  // still PROVISIONAL, because the draw has not been made: staging's rows all
+  // carry is_provisional = true while their team_id is set. The two fields answer
+  // different questions and the fixture has to model both, or a surface that
+  // reads actualTeamId (TeamLabel, TeamBadge) tests green against a shape that
+  // does not exist. This was `null`, which said "empty slot" about a team with a
+  // name and a flag.
+  actualTeamId: `visual-actual-${index + 1}`,
   slotCode: `V${index + 1}`,
   stableKey: `V${index + 1}`,
   label,

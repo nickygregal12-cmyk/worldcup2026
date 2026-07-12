@@ -43,7 +43,11 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   // §5.8 ratchet exception, recorded in AGENT-CONTROL/09-STAGE-ORDER.md (DP-0).
   'src/design/tokens.css': 301,
   'src/design/typography.css': 12,
-  'src/styles/feature-compat.css': 2590,
+  // 2590 -> 2565 at the Groups re-cut: the dead Stage 8 joker rules
+  // (.journey-joker-summary and children, .journey-joker-button, .journey-match-row--joker)
+  // were deleted. Nothing composed those class names — the joker is a design-system
+  // primitive now — so this is a deletion with no destination module.
+  'src/styles/feature-compat.css': 2565,
   // 1903 -> 1517 at Stage DP-HOME: every home-* orphan is gone. Home now carries its own
   // CSS Modules, so the only survivor is .home-section-heading, which TournamentOverview uses.
   // 1517 -> 1461 at Stage DP-SHELL: the mobile bottom nav left. It was three near-duplicate
@@ -51,9 +55,18 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   // (src/app/MobileNav.module.css) on DP tokens, which is where the raised Home circle and
   // the §5 auto-hide transform live. The cap comes down with the file, in the same commit.
   'src/styles/app.css': 1461,
-  'src/styles/groups-predictor.css': 555,
-  'src/styles/knockout-experiences.css': 463,
-  'src/styles/match-card.css': 90,
+  // 555 -> 385 at the Groups re-cut: TeamLabel, JokerControl (pill + meter) and
+  // PredictionStateBadge left for their own --dp-* CSS Modules. They are shared
+  // design-system primitives, not page styling, and three surfaces were reaching
+  // into their global class names from the outside. The .score-input rules that
+  // remain are dead (DP-PRIMITIVES moved ScoreInput to a module and left the
+  // globals behind); removing them is legacy cleanup, reported not swept up.
+  'src/styles/groups-predictor.css': 385,
+  // 463 -> 462: the two rules that reached into TeamLabel from a KO score row are
+  // now TeamLabel variants (alignEnd, collapseCopy), passed by the caller.
+  'src/styles/knockout-experiences.css': 462,
+  // 90 -> 70: the team-label stacking block is now TeamLabel's `stacked` variant.
+  'src/styles/match-card.css': 70,
 })
 
 // Test fixtures share the hard cap. Exact temporary caps must ratchet down when a fixture shrinks.

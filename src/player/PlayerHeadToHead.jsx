@@ -14,9 +14,9 @@ function TeamMatchup({ homeTeam, awayTeam, fallback }) {
   if (!homeTeam && !awayTeam) return <small>{fallback}</small>
   return (
     <span className={styles.teamMatchup}>
-      <TeamLabel team={homeTeam} label={homeTeam?.label ?? 'TBC'} unresolved={!homeTeam} compact />
+      <TeamLabel team={homeTeam} label={homeTeam?.label ?? 'TBC'} unresolved={!homeTeam} compact className={styles.matchupTeam} />
       <span>v</span>
-      <TeamLabel team={awayTeam} label={awayTeam?.label ?? 'TBC'} unresolved={!awayTeam} compact />
+      <TeamLabel team={awayTeam} label={awayTeam?.label ?? 'TBC'} unresolved={!awayTeam} compact className={styles.matchupTeam} />
     </span>
   )
 }
@@ -46,7 +46,7 @@ function Selection({ label, selection, kind }) {
         <>
           <TeamMatchup homeTeam={selection.homeTeam} awayTeam={selection.awayTeam} fallback={selection.matchup} />
           <strong>{selection.score}</strong>
-          {selection.advancingTeamLabel && <span className={styles.advancing}><TeamLabel team={selection.advancingTeam} label={selection.advancingTeamLabel} compact /> through</span>}
+          {selection.advancingTeamLabel && <span className={styles.advancing}><TeamLabel team={selection.advancingTeam} label={selection.advancingTeamLabel} compact className={styles.matchupTeam} /> through</span>}
           {selection.decisionMethodLabel && <small>{selection.decisionMethodLabel}</small>}
           {selection.jokerApplied && <small className={styles.joker}>Joker applied</small>}
         </>

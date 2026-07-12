@@ -295,9 +295,8 @@
   align-items: center;
 }
 
-.ko-score-row > .team-label:last-child {
-  justify-self: end;
-}
+/* Right-aligning the away identity is now TeamLabel's `alignEnd` variant: it
+   owns a CSS Module, so this file can no longer reach into its class names. */
 
 .ko-score-row__dash {
   color: var(--text-muted);
@@ -445,7 +444,7 @@
   .ko-score-row {
     grid-template-columns: minmax(0, 1fr) auto auto auto minmax(0, 1fr);
   }
-  .ko-score-row .team-label__copy { display: none; }
+  /* Dropping the name on a narrow row is TeamLabel's `collapseCopy` variant. */
   .ko-choice-group > div { grid-template-columns: 1fr; }
   .bracket-team-choice,
   .ko-team-choice { grid-template-columns: 1fr; }

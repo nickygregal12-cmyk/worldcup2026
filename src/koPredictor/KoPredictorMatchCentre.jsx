@@ -3,6 +3,10 @@ import lifecycleStyles from './KoPredictorLifecycle.module.css'
 import { Badge, Button, Icon, PredictionStateBadge, ProgressBar, PredictionInputRow, TeamLabel } from '../design-system/index.jsx'
 import { buildKoRoundProgress, deriveKoMatchPresentation, koMethodOptions, KO_PREDICTOR_ROUNDS } from './koPredictorPresentationModel.js'
 
+// Null until the group stage produces the team — which is the normal state of a KO
+// fixture, not an edge case. Every TeamLabel below therefore says `unresolved={!team}`
+// out loud rather than leaving the primitive to infer an empty slot from an absent
+// record, matching OriginalBracketHealth.
 function team(reference, id) {
   return id ? reference.teamsById?.[id] ?? null : null
 }
@@ -100,7 +104,7 @@ export default function KoPredictorMatchCentre({
 
                       <div className="ko-score-heading"><strong>90-minute score</strong><small>Penalty shoot-out score is never predicted.</small></div>
                       <div className="ko-score-row">
-                        <TeamLabel team={home} compact />
+                        <TeamLabel team={home} unresolved={!home} compact collapseCopy />
                         <PredictionInputRow
                           homeValue={row.homeScore}
                           awayValue={row.awayScore}
@@ -110,7 +114,7 @@ export default function KoPredictorMatchCentre({
                           onHomeChange={value => onChange(match, { homeScore: value })}
                           onAwayChange={value => onChange(match, { awayScore: value })}
                         />
-                        <TeamLabel team={away} compact />
+                        <TeamLabel team={away} unresolved={!away} compact collapseCopy alignEnd />
                       </div>
 
                       <fieldset className="ko-choice-group" aria-disabled={presentation.locked}>
@@ -120,7 +124,7 @@ export default function KoPredictorMatchCentre({
                             const selected = row.advancingTeamId === item?.teamId
                             return (
                               <div key={item?.teamId} className={selected ? 'ko-team-choice is-selected' : 'ko-team-choice'}>
-                                <TeamLabel team={item} compact />
+                                <TeamLabel team={item} unresolved={!item} compact />
                                 <button
                                   type="button"
                                   className="ko-team-choice__action"

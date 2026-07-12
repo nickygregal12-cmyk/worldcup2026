@@ -1,5 +1,6 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import Icon from './Icon.jsx'
+import styles from './PredictionStateBadge.module.css'
 
 // Save wording must always answer one question: where does this pick actually live?
 //   'saved' -> on the account, follows you to any device you sign in on.
@@ -23,8 +24,9 @@ const STATE = Object.freeze({
 
 export default function PredictionStateBadge({ state = 'empty', label = null, className = '' }) {
   const config = STATE[state] ?? STATE.empty
+  const classes = [styles.badge, styles[config.tone] ?? '', className].filter(Boolean).join(' ')
   return (
-    <span className={`prediction-state prediction-state--${config.tone} ${className}`.trim()} data-prediction-state={state}>
+    <span className={classes} data-prediction-state={state} data-prediction-tone={config.tone}>
       <Icon name={config.icon} size={14} className={state === 'saving' ? 'ui-icon--spin' : ''} />
       <span>{label ?? config.label}</span>
     </span>

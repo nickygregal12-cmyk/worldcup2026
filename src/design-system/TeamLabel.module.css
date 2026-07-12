@@ -1,0 +1,155 @@
+/* Shared team identity (--dp-*): circular ISO-keyed flag + name.
+ *
+ * Three states, and exactly three — the same law TeamBadge follows:
+ *
+ *   unresolved slot             -> neutral dashed placeholder ring (no letters)
+ *   resolved team, flag found   -> the flag
+ *   resolved team, flag MISSING -> a loud danger chip, never the dashed ring
+ *
+ * Until this stage the component collapsed "no flag asset" into the same
+ * `!flagUrl` branch as "empty slot", so a resolved team whose flag was missing
+ * from the registry silently wore the empty-slot treatment and the bug looked
+ * like a design. That is the DP-HOME defect, fixed on TeamBadge in 8f4ea93 and
+ * fixed here now. A registry miss is a DEFECT, not an empty slot, so it is
+ * deliberately ugly.
+ *
+ * Provisional is a SEPARATE axis and always was: a provisional team is still a
+ * resolved team. It keeps its flag and adds the "Provisional" line. Never infer
+ * unresolved-ness from is_provisional — every one of staging's 24 rows carries
+ * is_provisional = true because the draw has not been made.
+ *
+ * --dp-danger-border is dark-theme-only in tokens.css (a DP-0 gap), so it is
+ * referenced with an explicit fallback: an unresolved var() silently invalidates
+ * the whole declaration.
+ */
+
+.teamLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  color: var(--dp-text-body);
+  text-align: left;
+}
+
+button.teamLabel {
+  border: 0;
+  padding: var(--space-1);
+  background: transparent;
+  font: inherit;
+}
+
+.interactive {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+}
+
+.interactive:hover {
+  background: var(--dp-surface-page);
+}
+
+.interactive:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+}
+
+.flag {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 2.25rem;
+  overflow: hidden;
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--dp-surface-page);
+}
+
+.flag img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The dashed ring means ONE thing: this slot has no team yet. No flag, no
+   colour, no letters — it must not resemble a team. */
+.placeholder {
+  border: 1.5px dashed var(--dp-border-strong);
+  background: var(--dp-surface-page);
+}
+
+/* Deliberately loud: a missing flag asset is a bug and should look like one
+   rather than degrade quietly into something that reads as an empty slot. */
+.missingFlag {
+  border: 1.5px solid var(--dp-danger-border, var(--dp-danger));
+  background: var(--dp-danger-soft);
+  color: var(--dp-danger-ink);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.copy {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-1);
+}
+
+.copy strong {
+  overflow: hidden;
+  font-size: var(--text-sm);
+  line-height: var(--leading-tight);
+  text-overflow: ellipsis;
+  color: var(--dp-text-strong);
+}
+
+.copy small {
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+}
+
+.compact .flag {
+  width: 2rem;
+  height: 2rem;
+  flex-basis: 2rem;
+}
+
+/* Stacked: flag over a full-width name, so long names use the whole column
+   instead of collapsing beside the score entry. Lifted out of match-card.css,
+   where it reached into this component from the outside. */
+.stacked {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-width: 0;
+  text-align: center;
+}
+
+.stacked .copy {
+  width: 100%;
+  min-width: 0;
+  justify-items: center;
+}
+
+.stacked .copy strong {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+/* Lifted out of knockout-experiences.css, which reached in to right-align the
+   away identity and to drop the name on a narrow KO score row. */
+.alignEnd {
+  justify-self: end;
+}
+
+@media (max-width: 40rem) {
+  .collapseCopy .copy {
+    display: none;
+  }
+}

@@ -60,7 +60,9 @@ for (const file of allSourceFiles) {
 // Home's five re-cut components (HomeDashboard, HomeHero, HomeMatchCard, HomeSidebar and the
 // new design-system TeamBadge) carry no `import React` and therefore no disable. Every page
 // still holding one can shed it the same way at its own re-cut, dropping these caps further.
-const totalDisableCap = 44
+// 44 -> 43 at the Groups re-cut: TeamLabel's test no longer imports React just to
+// satisfy the classic JSX runtime, so its no-unused-vars bypass went with it.
+const totalDisableCap = 43
 const liveDisableCap = 28
 if (eslintDisableItems.length > totalDisableCap) fail(`eslint-disable total increased to ${eslintDisableItems.length}/${totalDisableCap}`)
 if (eslintDisableItems.length < totalDisableCap) fail(`eslint-disable total fell to ${eslintDisableItems.length}; lower the H1 total cap from ${totalDisableCap}`)

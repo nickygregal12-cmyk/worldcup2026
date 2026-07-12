@@ -46,31 +46,11 @@
   gap: var(--space-2);
 }
 
-/* Team labels stack the flag over a full-width name (home and away alike) so
-   long names use the whole column instead of collapsing beside the centre. */
-.match-card__team .team-label {
-  display: grid;
-  justify-items: center;
-  text-align: center;
-  gap: var(--space-1);
-  width: 100%;
-  min-width: 0;
-}
-
-.match-card__team .team-label__copy {
-  width: 100%;
-  min-width: 0;
-  justify-items: center;
-}
-
-.match-card__team .team-label__copy strong {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  max-width: 100%;
-}
+/* The team-label stacking rules left this file at the Groups re-cut. They reached
+   into TeamLabel from the outside, which only worked while TeamLabel emitted a
+   global class name; it now owns a CSS Module. The same treatment is a TeamLabel
+   variant (`stacked`), passed by the caller that wants it — today, Groups, which
+   is this card's only consumer. */
 
 /* The Home variant (--readonly/--tappable, the centre, the status chips, the
    live pulse and the Match Centre hint) was retired at Stage DP-HOME. Home now

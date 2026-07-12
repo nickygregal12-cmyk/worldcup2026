@@ -1,7 +1,13 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { useMemo, useState } from 'react'
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
-import { PredictionInputRow, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar, JokerMeter, JokerPill, MatchCard } from '../design-system/index.jsx'
+import { PredictionInputRow, TeamLabel, PredictionStateBadge, Button, Dialog, ProgressBar, JokerMeter, JokerPill, MatchCard, TiebreakPositionPicker } from '../design-system/index.jsx'
+import {
+  buildUnresolvedTies,
+  reconcileTieResolutions,
+  resolutionFor,
+  saveResolution,
+} from '../design-system/tiebreakModel.js'
 import { hasActivePredictionGrace, isPredictionMatchStarted, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
 import {
   GROUPS_TABLE_KEY,
@@ -156,10 +162,29 @@ export default function GroupsPredictor({
   const [viewMode, setViewMode] = useState(GROUPS_VIEW_MODE.GROUP)
   const [tablesOpen, setTablesOpen] = useState(false)
   const [selectedTableKey, setSelectedTableKey] = useState('A')
+  const [savedTies, setSavedTies] = useState({})
   const groupProgress = useMemo(() => buildGroupProgress(reference, draft), [reference, draft])
   const dateSections = useMemo(() => buildGroupDateSections(reference), [reference])
   const tablesModel = useMemo(() => buildGroupsTablesSheetModel(reference, draft), [reference, draft])
   const isDateView = viewMode === GROUPS_VIEW_MODE.DATE
+
+  // Item 64. The resolver tells us which teams its criteria could not separate;
+  // a saved ordering survives only while that group's scores are untouched.
+  const ties = useMemo(() => buildUnresolvedTies(tablesModel, reference, draft), [tablesModel, reference, draft])
+  const { resolutions, resetGroupCodes } = useMemo(() => reconcileTieResolutions(savedTies, ties), [savedTies, ties])
+
+  const tieForGroup = code => ties.find(tie => tie.groupCode === code) ?? null
+
+  const renderTiebreak = tie => tie && (
+    <TiebreakPositionPicker
+      // Remount when the scores move, so a reset cannot leave a stale order on screen.
+      key={`${tie.groupCode}-${tie.signature}`}
+      tie={tie}
+      initialOrder={resolutionFor(resolutions, tie)}
+      resetNotice={resetGroupCodes.includes(tie.groupCode)}
+      onResolve={order => setSavedTies(previous => saveResolution(previous, tie, order))}
+    />
+  )
 
   const openTable = code => {
     setSelectedTableKey(code)
@@ -200,8 +225,8 @@ export default function GroupsPredictor({
         badge={isDateView
           ? <button className={viewStyles.groupTag} type="button" onClick={() => openTable(match.groupCode)}>Group {match.groupCode}</button>
           : <PredictionStateBadge state={state} />}
-        home={<TeamLabel team={homeTeam} compact />}
-        away={<TeamLabel team={awayTeam} compact />}
+        home={<TeamLabel team={homeTeam} compact stacked />}
+        away={<TeamLabel team={awayTeam} compact stacked />}
         centre={<PredictionInputRow
           homeValue={row.homeScore}
           awayValue={row.awayScore}
@@ -297,6 +322,7 @@ export default function GroupsPredictor({
                 <section className="group-section" id={`group-${group.code}`} key={group.code} aria-labelledby={`group-${group.code}-title`}>
                   <header className="group-section__header"><div><span className="page-eyebrow">Original Predictor</span><h3 id={`group-${group.code}-title`}>Group {group.code}</h3></div><PredictionStateBadge state={progress.isComplete ? 'complete' : 'empty'} label={`${progress.complete}/${progress.total} complete`} /></header>
                   <div className="group-match-list">{matches.map(renderMatchCard)}</div>
+                  {renderTiebreak(tieForGroup(group.code))}
                   <GroupsContractTablePreview table={tablesModel.groups.find(item => item.code === group.code)?.table} groupCode={group.code} onOpen={() => openTable(group.code)} />
                 </section>
               )
@@ -308,6 +334,9 @@ export default function GroupsPredictor({
         <section className={viewStyles.dateView} aria-label="Group matches by date">
           <div className={viewStyles.dateIntro}><span className="page-eyebrow">By date</span><h3>All group fixtures in matchday order</h3><p>{GROUPS_DATE_TABLES_COPY}</p></div>
           {dateSections.map(section => <section className={viewStyles.dateSection} key={section.key}><header><strong>{section.label}</strong><span>{formatMatchDate(section.date)}</span></header><div className="group-match-list">{section.matches.map(renderMatchCard)}</div></section>)}
+          {/* Ties are a property of a group, not a date, but a player who never leaves
+              this view must still be told their positions need setting. */}
+          {ties.map(renderTiebreak)}
           <button className={viewStyles.tablesPill} type="button" onClick={() => setTablesOpen(true)}>▦ Tables</button>
         </section>
       )}

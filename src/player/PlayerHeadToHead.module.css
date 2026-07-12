@@ -194,8 +194,10 @@
   font-size: var(--text-xs);
 }
 
-.teamMatchup :global(.team-label),
-.advancing :global(.team-label) {
+/* Passed to TeamLabel as its className rather than reaching into its internals:
+   it owns a CSS Module as of the Groups re-cut, so :global(.team-label) no longer
+   matches anything. */
+.matchupTeam {
   min-width: 0;
 }
 

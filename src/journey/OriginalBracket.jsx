@@ -101,7 +101,7 @@ function OriginalBracketSlot({ slot, disabled, onSelect }) {
           aria-pressed={slot.selected}
           onClick={() => onSelect(slot.teamId)}
         >
-          <TeamLabel team={slot.team} label={slot.label} compact profileDisabled />
+          <TeamLabel team={slot.team} label={slot.label} compact profileDisabled className={tieStyles.slotTeam} />
           <span className={tieStyles.slotActionText}>{actionLabel}</span>
           {slot.selected && <Icon name="check" size={15} />}
         </button>
@@ -125,7 +125,7 @@ function OriginalBracketTie({ tie, reference, disabled, state, onChange }) {
           <strong>Match {tie.matchNumber}</strong>
           <span>{formatDate(tie.scheduledDate)}</span>
         </div>
-        <PredictionStateBadge state={badge.state} label={badge.label} />
+        <PredictionStateBadge state={badge.state} label={badge.label} className={tieStyles.tieBadge} />
       </div>
       {tie.stale && (
         <div className={tieStyles.repickFlag} role="status">

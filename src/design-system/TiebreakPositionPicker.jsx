@@ -3,22 +3,25 @@ import Icon from './Icon.jsx'
 import { hasUnresolvedTie, labelFor, moveItem, orderFromTie } from './tiebreakModel.js'
 import styles from './TiebreakPositionPicker.module.css'
 
-// Item 64 — the COMPONENT half only.
+// Item 64 — the component half.
 //
 // This renders the three states of an unresolvable-standings tie: the amber
 // provisional warning banner, the manual position-picker interaction, and the
-// reset notice. It is deliberately driven by STUB inputs: `tie` is a supplied
-// descriptor and `resetNotice` a supplied flag. The MODEL half — detecting when
-// a tie is genuinely undecidable, feeding the third-place allocator, and the
-// reset-on-edit rule — is scheduled with the Groups re-cut, NOT this stage. See
-// the DP-PRIMITIVES report for the boundary.
+// reset notice. `tie` and `resetNotice` are supplied by the MODEL half, which
+// landed with the Groups re-cut: tiebreakModel.js reads the resolver's own
+// unresolved partitions, holds the saved ordering and applies the reset-on-edit
+// rule. This component still owns none of that — it renders what it is given.
+//
+// `initialOrder` seeds the picker from an ordering the player already saved.
+// Callers must remount (key on the tie's signature) when the scores move, so a
+// stale order cannot survive a reset.
 //
 // The design programme specifies the amber provisional role but no position
 // picker or tie-break ordering control (flagged as a gap); the picker geometry
 // here follows the vertical ▲/▼ stepper idiom and the amber provisional tokens.
 
-export default function TiebreakPositionPicker({ tie, resetNotice = false, onResolve }) {
-  const [order, setOrder] = useState(() => orderFromTie(tie))
+export default function TiebreakPositionPicker({ tie, resetNotice = false, initialOrder = null, onResolve }) {
+  const [order, setOrder] = useState(() => initialOrder ?? orderFromTie(tie))
 
   if (!hasUnresolvedTie(tie)) return null
 

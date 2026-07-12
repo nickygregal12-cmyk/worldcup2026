@@ -23,15 +23,28 @@ function assertNotIncludes(file, tokens) {
   }
 }
 
+// The Groups re-cut moved JokerControl onto its own --dp-* CSS module, so the pill,
+// the multiplier and the five dots are asserted through structural markers rather
+// than the global class names they used to emit. Gold stays joker-exclusive (§5) and
+// is now pinned in the module itself, below — stricter than the greps it replaces.
 assertIncludes('src/design-system/JokerControl.jsx', [
   'export function JokerPill',
   'export function JokerMeter',
   'Icon name="star"',
   'Joker',
   '`${multiplier}×`',
-  'groups-joker-dot',
+  'data-joker-dot',
   'data-joker-pill="true"',
   'data-joker-meter="true"',
+])
+
+assertIncludes('src/design-system/JokerControl.module.css', [
+  '--dp-joker',
+  '.dot',
+  '.filled',
+  '.pill',
+  '.multiplier',
+  '.meter',
 ])
 
 assertIncludes('src/design-system/Icon.jsx', [
@@ -61,12 +74,9 @@ assertNotIncludes('src/journey/GroupsPredictor.jsx', [
   '>J</span>',
 ])
 
+// The joker rules left groups-predictor.css for JokerControl.module.css. The joker
+// modifier on the match card is page styling and stays.
 assertIncludes('src/styles/groups-predictor.css', [
-  'Stage 13G-GROUPS-1',
-  '.groups-joker-meter--dots',
-  '.groups-joker-dot.is-active',
-  '.joker-control--pill',
-  '.joker-control__multiplier',
   '.group-match-card--joker',
 ])
 
@@ -74,7 +84,7 @@ assertIncludes('src/design-system/__tests__/JokerControl.test.jsx', [
   'renders the approved pill',
   'Joker limit reached',
   'five-dot joker meter',
-  'groups-joker-dot',
+  'data-joker-dot',
 ])
 
 assertIncludes('package.json', [

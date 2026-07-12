@@ -158,7 +158,10 @@
   grid-column: 1 / -1;
 }
 
-.slotAction :global(.team-label) {
+/* Passed to TeamLabel as its className rather than reaching into its internals:
+   it owns a CSS Module as of the Groups re-cut, so :global(.team-label) no longer
+   matches anything. */
+.slotTeam {
   flex: 1;
   min-width: 0;
 }
@@ -251,7 +254,7 @@
     display: none;
   }
 
-  .tieMeta :global(.prediction-state) {
+  .tieBadge {
     position: absolute;
     top: var(--space-2);
     right: var(--space-2);
@@ -263,7 +266,7 @@
     color: var(--text-muted);
   }
 
-  .tieMeta :global(.prediction-state) span {
+  .tieBadge span {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -338,7 +341,7 @@
   }
 
   /* Provisional-pick sub-label is a second line of detail beyond "team name only" — kept for screen readers, hidden visually to match the compact card. */
-  .slotAction :global(.team-label__copy) small {
+  .slotTeam small {
     position: absolute;
     width: 1px;
     height: 1px;
