@@ -1,0 +1,63 @@
+/* DP tokens only. The share image itself is painted in fixed dark broadcast colours, but this
+   card is ordinary app chrome and follows the player's theme like everything else. */
+.share {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  margin-top: var(--space-4);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--dp-surface-raised);
+}
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.title {
+  margin: 0;
+  color: var(--dp-text-strong);
+  font-size: var(--text-lg);
+  line-height: var(--leading-heading);
+}
+
+.body {
+  margin: 0;
+  color: var(--dp-text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-body);
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.notice[data-tone='safe'] {
+  color: var(--dp-success-ink);
+}
+
+.notice[data-tone='warning'] {
+  color: var(--dp-warning-ink);
+}
+
+@media (min-width: 40rem) {
+  .share {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .copy {
+    flex: 1 1 22rem;
+  }
+}

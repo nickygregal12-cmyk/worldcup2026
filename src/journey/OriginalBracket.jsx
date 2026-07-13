@@ -9,6 +9,7 @@ import {
   predictedChampion,
 } from './originalBracketPresentationModel.js'
 import { ORIGINAL_BRACKET_CONTEXT_COPY, ORIGINAL_BRACKET_G_COPY, ORIGINAL_BRACKET_KO_SUBLINE } from './originalBracketCopy.js'
+import BracketShareAction from './BracketShareAction.jsx'
 import shellStyles from './OriginalBracket.module.css'
 import roundStyles from './OriginalBracketRounds.module.css'
 import tieStyles from './OriginalBracketTie.module.css'
@@ -331,6 +332,11 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
           })}
         </div>
       </div>
+
+      {/* Last thing on the page, and deliberately so: you pick your way through the chart, and
+          the share card is what you do with it once it is finished. Not gated on an account —
+          a guest's bracket is just as shareable, and that is the whole growth loop. */}
+      <BracketShareAction reference={reference} draft={draft} preview={preview} />
     </section>
   )
 }

@@ -1,4 +1,5 @@
 import styles from './JokerMark.module.css'
+import { JOKER_MARK_BELLS, JOKER_MARK_CARD, JOKER_MARK_HAT, JOKER_MARK_VIEWBOX } from './jokerMarkPaths.js'
 
 /**
  * The joker mark: a tilted playing card wearing a jester's hat.
@@ -17,14 +18,18 @@ import styles from './JokerMark.module.css'
  *
  * The bells are filled, not stroked: at the 16px the pill renders, a 0.6-radius
  * outlined circle disappears.
+ *
+ * The shapes themselves live in jokerMarkPaths.js, because the share image paints this same mark
+ * onto a canvas, where there is no SVG — one description of the mark, two renderers.
  */
 export default function JokerMark({ size = 22, strokeWidth = 1.8, className = '' }) {
+  const { x, y, width, height, radius, rotation } = JOKER_MARK_CARD
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
-      viewBox="0 0 24 24"
+      viewBox={`0 0 ${JOKER_MARK_VIEWBOX} ${JOKER_MARK_VIEWBOX}`}
       fill="none"
       stroke="currentColor"
       strokeWidth={strokeWidth}
@@ -35,11 +40,18 @@ export default function JokerMark({ size = 22, strokeWidth = 1.8, className = ''
       focusable="false"
       data-joker-mark="true"
     >
-      <rect x="5.5" y="3" width="13" height="18" rx="2" transform="rotate(6 12 12)" />
-      <path d="M9.2 14.5c.3-2.2.5-3.4 1-4.6.3.9.8 1.5 1.6 1.8.2-1.1.6-2 1.2-2.9.5.9.9 1.8 1 2.9.8-.3 1.3-.9 1.7-1.7.4 1.2.5 2.4.7 4.5" />
-      <circle cx="9" cy="9.3" r="0.6" fill="currentColor" stroke="none" />
-      <circle cx="12.9" cy="8" r="0.6" fill="currentColor" stroke="none" />
-      <circle cx="16.4" cy="9.5" r="0.6" fill="currentColor" stroke="none" />
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        rx={radius}
+        transform={`rotate(${rotation} ${JOKER_MARK_VIEWBOX / 2} ${JOKER_MARK_VIEWBOX / 2})`}
+      />
+      <path d={JOKER_MARK_HAT} />
+      {JOKER_MARK_BELLS.map(bell => (
+        <circle key={`${bell.cx}-${bell.cy}`} cx={bell.cx} cy={bell.cy} r={bell.r} fill="currentColor" stroke="none" />
+      ))}
     </svg>
   )
 }
