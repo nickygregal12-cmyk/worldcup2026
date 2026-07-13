@@ -3,17 +3,11 @@ import {
   SHARE_IMAGE_HEIGHT, SHARE_IMAGE_WIDTH, SHARE_LAYOUT_MARGIN, TIE_HEIGHT,
   buildShareBands, columnWidth, columnX, feedsRightward, teamNameWidth, tieBox,
 } from '../shareImageLayout.js'
-import { buildShareBracketTree } from '../shareBracketTopology.js'
-import { buildBracketShareModel } from '../shareImageModel.js'
-import { VISUAL_BRACKET_DRAFT, VISUAL_GROUP_REFERENCE } from '../../testFixtures/visualFixture.js'
-import { resolveGuestTournamentPreview } from '../../guest/index.js'
+import { BRACKET_WALL_TOPOLOGY } from '../bracketWallTopology.js'
 
-const model = buildBracketShareModel({
-  reference: VISUAL_GROUP_REFERENCE,
-  draft: VISUAL_BRACKET_DRAFT,
-  preview: resolveGuestTournamentPreview(VISUAL_GROUP_REFERENCE, VISUAL_BRACKET_DRAFT),
-})
-const tree = buildShareBracketTree(model.tiesByMatchNumber)
+// The same topology the live wall chart uses — one placement source, asserted in
+// bracketWallTopology.test.js against the resolver itself.
+const tree = BRACKET_WALL_TOPOLOGY
 const placementOf = matchNumber => tree.placements.get(matchNumber)
 
 describe('share image bands', () => {

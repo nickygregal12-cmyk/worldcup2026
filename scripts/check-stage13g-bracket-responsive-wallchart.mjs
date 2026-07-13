@@ -63,8 +63,52 @@ for (const marker of [
   "return 'repick'",
 ]) if (!model.includes(marker)) fail(`Original bracket presentation model is missing marker: ${marker}`)
 
-for (const marker of ['1, row: 2', '4, row: 5', '7, row: 8', '3${combination}', 'W${slot.matchNumber}']) {
+for (const marker of ['3${combination}', 'W${slot.matchNumber}']) {
   if (!model.includes(marker)) fail(`Original bracket wall/source model is missing marker: ${marker}`)
+}
+
+/*
+ * §5.8 AMENDMENT — approved visual contract changed by explicit owner decision (2026-07-13).
+ *
+ * This block used to require the literal strings '1, row: 2', '4, row: 5' and '7, row: 8' in the
+ * presentation model. Those were substrings of a hand-written WALL_PLACEMENT table — and that table
+ * was WRONG. It put R16 ties 37-40 in the left lane and 41-44 in the right, by match number, while
+ * the resolver pairs the quarter-finals 45<-39,37 46<-41,42 47<-44,43 48<-40,38. Ties 41 and 42
+ * feed a LEFT-side quarter-final and were drawn on the right; 38 and 40 were the mirror error. The
+ * chart was not a bracket, and the ratchet was pinning the defect in place.
+ *
+ * The owner ruled on 2026-07-13 that the live wall chart is corrected to the resolver's topology and
+ * consumes the same derivation as the share image, so there is ONE placement source.
+ *
+ * The gate is TIGHTENED, not loosened: it no longer accepts a hand-written table at all, and it
+ * requires the shape to be derived from EURO28_KNOCKOUT_MATCHES and asserted against it in a test.
+ * A future hand-written table cannot pass this audit.
+ */
+const topology = exists('src/journey/bracketWallTopology.js') ? read('src/journey/bracketWallTopology.js') : ''
+if (!topology) fail('Missing src/journey/bracketWallTopology.js — the wall chart must derive its shape from the resolver')
+for (const marker of ['EURO28_KNOCKOUT_MATCHES', 'BRACKET_WALL_TOPOLOGY', 'buildBracketWallTopology', "sourceType === 'match_winner'"]) {
+  if (!topology.includes(marker)) fail(`Bracket wall topology must derive the chart from the resolver; missing marker: ${marker}`)
+}
+if (!model.includes('BRACKET_WALL_TOPOLOGY')) {
+  fail('Original bracket presentation model must consume BRACKET_WALL_TOPOLOGY, not restate the lanes')
+}
+// No second placement source, on this page or anywhere else. A hardcoded lane table is exactly the
+// defect this amendment removes, and it is not allowed back in under any name.
+for (const file of ['src/journey/originalBracketPresentationModel.js', 'src/journey/bracketWallTopology.js']) {
+  const source = exists(file) ? read(file) : ''
+  if (/matchNumbers:\s*Object\.freeze\(\[\s*\d/.test(source)) {
+    fail(`${file} hardcodes wall-lane match numbers; lanes must be derived from EURO28_KNOCKOUT_MATCHES`)
+  }
+  if (/\b(37|41)\s*:\s*Object\.freeze\(\{\s*column:/.test(source)) {
+    fail(`${file} hardcodes a wall-placement table; placements must be derived from EURO28_KNOCKOUT_MATCHES`)
+  }
+}
+const topologyTest = exists('src/journey/__tests__/bracketWallTopology.test.js')
+  ? read('src/journey/__tests__/bracketWallTopology.test.js')
+  : ''
+if (!topologyTest) fail('Missing src/journey/__tests__/bracketWallTopology.test.js')
+for (const marker of ['EURO28_KNOCKOUT_MATCHES', 'feeds the quarter-final it is actually fed into']) {
+  if (!topologyTest.includes(marker)) fail(`Bracket wall topology test must assert the chart against the resolver; missing marker: ${marker}`)
 }
 
 for (const marker of [

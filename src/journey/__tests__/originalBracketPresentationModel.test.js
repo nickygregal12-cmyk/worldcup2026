@@ -49,7 +49,12 @@ describe('original bracket presentation model', () => {
     expect(surface.ties).toHaveLength(15)
     expect(surface.rounds.map(round => round.total)).toEqual([8, 4, 2, 1])
     expect(surface.wallColumns).toHaveLength(7)
-    expect(buildOriginalBracketWallPlacement(37)).toEqual({ column: 1, row: 2 })
+    // Match 37 is SECOND in the left R16 lane, not first: quarter-final 45 is fed by 39 then 37
+    // (see the W39/W37 assertion below), so the lane reads 39, 37, 41, 42. It used to be asserted
+    // here as row 2 — the top of the lane — which was the hand-written table agreeing with itself
+    // and disagreeing with the resolver. Owner ruling 2026-07-13; see bracketWallTopology.js.
+    expect(buildOriginalBracketWallPlacement(39)).toEqual({ column: 1, row: 2 })
+    expect(buildOriginalBracketWallPlacement(37)).toEqual({ column: 1, row: 4 })
     expect(buildOriginalBracketWallPlacement(51)).toEqual({ column: 4, row: 5 })
     expect(surface.tiesByMatchNumber[39].slots[1].sourceCode).toBe('3ABCD')
     expect(surface.tiesByMatchNumber[45].slots.map(slot => slot.sourceCode)).toEqual(['W39', 'W37'])

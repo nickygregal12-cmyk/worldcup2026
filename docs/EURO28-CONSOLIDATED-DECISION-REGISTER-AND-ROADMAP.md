@@ -1725,3 +1725,72 @@ and is NOT wired. See docs/UNRESOLVED-GROUP-TIEBREAKER-PROMPT.md.
   appears there. Owner decision pending.
 
 Original Predictor and KO Predictor remain separate. Active migrations remain 20.
+
+## 13. 13 July 2026 amendments — Original Bracket topology and the Share Card
+
+### Amendment to Confirmed Decision 13 — the Share Card is a dedicated share layout
+
+Confirmed Decision 13 (§10A) settled the Share Card as "the user's completed bracket rendered from
+this converging wall-chart layout in the Euro 2028 Predictor identity", and stated it "is **not a
+separate visual design** or separate bracket implementation".
+
+By explicit owner instruction (2026-07-13), that clause is amended. The Share Card **is** a
+dedicated, purpose-composed share layout at fixed dimensions — portrait **1080×1920**, rendered
+client-side on a canvas, carrying the champion, the converging knockout chart, the auto-calculated
+group-goals total, an optional band of the champion's three group scores, a reserved Top Scorer row
+and the app's own name and join footer. It is not a screenshot of the live page, and it is not
+constrained to the live page's markup.
+
+Decision 13's remaining binding constraints stand and are honoured: the card uses the existing
+canonical resolver and existing slot references, renders every team through circular ISO-keyed
+identity, keeps predicted and live brackets strictly separate, works on every device including
+phones, introduces no new bracket logic, data model or migration, and adds no product invariant.
+
+**Stage 13P-A's share-image row is delivered.** The converging wall-chart row is delivered for the
+predicted bracket (see the topology amendment below); the live bracket's converging presentation
+remains scheduled.
+
+### Amendment to the Original Bracket approved visual contract — wall-chart topology corrected
+
+The approved seven-lane wall chart placed Round-of-16 ties in lanes by **match number** — 37–40 in
+the left lane, 41–44 in the right. The canonical resolver pairs the quarter-finals:
+
+    45 <- 39, 37     46 <- 41, 42     47 <- 44, 43     48 <- 40, 38
+    49 <- 45, 46     50 <- 47, 48     51 <- 49, 50
+
+so the half of the draw reaching semi-final 49 holds ties **39, 37, 41, 42**. Ties 41 and 42 feed a
+**left-side** quarter-final and were drawn on the right; ties 38 and 40 were the mirror error. The
+two ties beside a quarter-final were not the ties that fed it: the chart was not a bracket. It went
+unseen because the live chart draws no connector lines between lanes, so nothing in it could
+contradict the table. The share image was the first surface to draw real connectors and exposed it.
+
+By owner ruling (2026-07-13) the live wall chart is corrected to the resolver's topology. The lanes
+and placements are now **derived** from `EURO28_KNOCKOUT_MATCHES` in `src/journey/bracketWallTopology.js`
+and consumed by both the live Original Bracket and the share image, so there is **one** placement
+source. The hand-written `WALL_PLACEMENT` table and the hardcoded lane arrays are retired.
+
+Consequences recorded:
+
+- The left R16 lane now reads **39, 37, 41, 42**; the right reads **44, 43, 40, 38**. This is
+  user-visible in both the desktop/opt-in chart and the phone list, which now reads down one half
+  of the draw and then the other, as a wall chart does. Lane captions still list their match
+  numbers ascending, because a caption names *which* matches are in the lane, not their order.
+- **§5.8 audit amendment:** `scripts/check-stage13g-bracket-responsive-wallchart.mjs` previously
+  required the literal strings `1, row: 2`, `4, row: 5` and `7, row: 8` in the presentation model —
+  substrings of the incorrect hand-written table. The ratchet was pinning the defect. Those markers
+  are replaced by checks that the shape is **derived from the resolver** and asserted against it in
+  `src/journey/__tests__/bracketWallTopology.test.js`, and by a check that **forbids** a hardcoded
+  lane table or placement table in either module. The gate is tightened, not loosened.
+- The Bracket reference prototype (`docs/reference-prototypes/euro28-bracket-page-prototype-v2.html`)
+  needs **no amendment**: it encodes lane roles by round and carries no match numbers, so it never
+  asserted the incorrect composition.
+
+### Original Bracket → Review continuation
+
+The Original Bracket now carries the journey's forward call to action at the foot of the page —
+"Continue to Review" — using the Review destination from the route registry, named in full, in the
+same anatomy as the existing Groups → Bracket call to action. The prediction journey reads
+Groups → Bracket → Review on every surface.
+
+No scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration
+change. Original Predictor and KO Predictor remain separate. Active migrations remain 20.

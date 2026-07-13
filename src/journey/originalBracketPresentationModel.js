@@ -1,3 +1,5 @@
+import { BRACKET_WALL_TOPOLOGY } from './bracketWallTopology.js'
+
 export const ORIGINAL_BRACKET_ROUNDS = Object.freeze([
   Object.freeze({ key: 'round_of_16', label: 'Round of 16', shortLabel: 'R16' }),
   Object.freeze({ key: 'quarter_final', label: 'Quarter-finals', shortLabel: 'QF' }),
@@ -5,33 +7,17 @@ export const ORIGINAL_BRACKET_ROUNDS = Object.freeze([
   Object.freeze({ key: 'final', label: 'Final', shortLabel: 'F' }),
 ])
 
-export const ORIGINAL_BRACKET_WALL_COLUMNS = Object.freeze([
-  Object.freeze({ key: 'r16-left', label: 'Round of 16', shortLabel: 'R16', matchNumbers: Object.freeze([37, 38, 39, 40]), column: 1 }),
-  Object.freeze({ key: 'qf-left', label: 'Quarter-finals', shortLabel: 'QF', matchNumbers: Object.freeze([45, 46]), column: 2 }),
-  Object.freeze({ key: 'sf-left', label: 'Semi-final', shortLabel: 'SF', matchNumbers: Object.freeze([49]), column: 3 }),
-  Object.freeze({ key: 'final-centre', label: 'Final', shortLabel: 'F', matchNumbers: Object.freeze([51]), column: 4 }),
-  Object.freeze({ key: 'sf-right', label: 'Semi-final', shortLabel: 'SF', matchNumbers: Object.freeze([50]), column: 5 }),
-  Object.freeze({ key: 'qf-right', label: 'Quarter-finals', shortLabel: 'QF', matchNumbers: Object.freeze([47, 48]), column: 6 }),
-  Object.freeze({ key: 'r16-right', label: 'Round of 16', shortLabel: 'R16', matchNumbers: Object.freeze([41, 42, 43, 44]), column: 7 }),
-])
-
-const WALL_PLACEMENT = Object.freeze({
-  37: Object.freeze({ column: 1, row: 2 }),
-  38: Object.freeze({ column: 1, row: 4 }),
-  39: Object.freeze({ column: 1, row: 6 }),
-  40: Object.freeze({ column: 1, row: 8 }),
-  45: Object.freeze({ column: 2, row: 3 }),
-  46: Object.freeze({ column: 2, row: 7 }),
-  49: Object.freeze({ column: 3, row: 5 }),
-  51: Object.freeze({ column: 4, row: 5 }),
-  50: Object.freeze({ column: 5, row: 5 }),
-  47: Object.freeze({ column: 6, row: 3 }),
-  48: Object.freeze({ column: 6, row: 7 }),
-  41: Object.freeze({ column: 7, row: 2 }),
-  42: Object.freeze({ column: 7, row: 4 }),
-  43: Object.freeze({ column: 7, row: 6 }),
-  44: Object.freeze({ column: 7, row: 8 }),
-})
+/**
+ * The seven lanes, derived — not declared (owner ruling 2026-07-13).
+ *
+ * These used to be a hand-written table that put R16 ties 37-40 in the left lane and 41-44 in the
+ * right, by match number. The resolver pairs the quarter-finals 45<-39,37 46<-41,42 47<-44,43
+ * 48<-40,38, so ties 41 and 42 feed a LEFT-side quarter-final and were being drawn on the right;
+ * 38 and 40 were the mirror error. The chart was not a bracket. See bracketWallTopology.js — the
+ * shape is now read off the resolver's own edges, so there is ONE placement source for this page
+ * and the share image, and it cannot drift from the bracket it claims to draw.
+ */
+export const ORIGINAL_BRACKET_WALL_COLUMNS = BRACKET_WALL_TOPOLOGY.columns
 
 export function sourceCodeForBracketSlot(slot, preview, matchNumber) {
   if (!slot) return 'TBC'
@@ -82,7 +68,7 @@ export function predictedChampion(preview, reference) {
 }
 
 export function buildOriginalBracketWallPlacement(matchNumber) {
-  const placement = WALL_PLACEMENT[Number(matchNumber)]
+  const placement = BRACKET_WALL_TOPOLOGY.placements.get(Number(matchNumber))
   if (!placement) throw new Error(`Unknown Original Bracket wall placement for match ${matchNumber}`)
   return placement
 }

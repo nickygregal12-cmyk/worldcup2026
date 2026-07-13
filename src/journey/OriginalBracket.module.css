@@ -299,3 +299,58 @@
     display: none;
   }
 }
+
+/* The road out: Groups → Bracket → Review.
+ *
+ * Deliberately the same anatomy as the Groups → Bracket call to action (navy chrome, display-face
+ * title, chrome-muted subline, sky disc and chevron), because it is the same idea one step further
+ * along and a player should recognise it on sight. It is restated here rather than shared because
+ * the Groups rules live in that page's own CSS Module and a module's classes are hashed — reaching
+ * across for them is the exact `:global()` mistake the bracket stylesheets already carry a scar
+ * from. When a third caller appears this earns its place as a shared primitive; two does not. */
+.flowCta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  margin-top: var(--space-4);
+  padding: var(--space-5) var(--space-4);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--dp-surface-chrome);
+  color: var(--dp-text-on-chrome);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.flowCta:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+}
+
+.flowCtaTitle {
+  display: block;
+  font: 700 var(--text-lg)/1.2 var(--font-display);
+}
+
+/* Muted copy on the navy chrome needs the chrome-specific muted token: the page and card muted
+   (--dp-text-muted) cannot clear 4.5:1 against it. That is what F3 is for. */
+.flowCtaSub {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--dp-text-muted-chrome);
+  font-size: var(--text-xs);
+}
+
+.flowCtaArrow {
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--dp-action);
+  color: var(--dp-text-on-accent);
+}

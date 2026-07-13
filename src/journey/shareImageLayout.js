@@ -22,7 +22,7 @@ export const SHARE_IMAGE_HEIGHT = 1920
 const MARGIN = 32
 const COLUMN_GAP = 8
 const COLUMNS = 7
-/** The eight R16-pitch units the wall chart is measured in. Rows 2..8 of WALL_PLACEMENT sit on it. */
+/** The eight R16-pitch units the chart is measured in. Rows 2..8 of the topology sit on it. */
 const ROW_UNITS = 8
 
 export const TIE_HEIGHT = 76
@@ -69,13 +69,12 @@ export function teamNameWidth() {
 }
 
 /**
- * Convert a WALL_PLACEMENT {column,row} into a pixel box inside the bracket band.
+ * Convert a {column,row} placement from bracketWallTopology.js into a pixel box in the bracket band.
  *
- * Rows are the interesting half. WALL_PLACEMENT puts the four left R16 ties on rows 2/4/6/8, the
- * two left QFs on 3/7 (each exactly between the pair it feeds), and both semis AND the final on
- * row 5, the centre line. Centring row r on `(r - 0.5) * pitch` over eight units reproduces the
- * converging chart for free — a QF lands halfway between its two R16 feeders because 3 is halfway
- * between 2 and 4, and it stays true if the pitch changes.
+ * Rows are the interesting half. The topology puts the four R16 ties of a half on rows 2/4/6/8, each
+ * quarter-final on the mean of the pair that feeds it (3 and 7), and both semis AND the final on row
+ * 5, the centre line. Centring row r on `(r - 0.5) * pitch` over eight units reproduces the
+ * converging chart for free, and it stays true if the pitch changes.
  */
 export function tieBox(placement, bracketBand) {
   const pitch = bracketBand.height / ROW_UNITS

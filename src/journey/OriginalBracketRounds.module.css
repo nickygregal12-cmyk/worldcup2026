@@ -5,9 +5,13 @@
  * all. That is the fix for a page that was 15,000px tall on a phone because it stacked all seven
  * lanes end to end and walked you R16 → QF → SF → Final → SF → QF → R16.
  *
- * A round owns two lanes, left and right, and lane order is already match order — the left R16
- * lane holds 37–40 and the right holds 41–44 — so opening a round yields 37, 38, 39, 40, 41, 42,
- * 43, 44 in that order, out of the same markup the chart uses.
+ * A round owns two lanes, left and right, and lane order is BRACKET order — which is not match
+ * order, and used to be confused for it. The resolver feeds quarter-final 45 from ties 39 and 37,
+ * so the left R16 lane holds 39, 37, 41, 42 and the right holds 44, 43, 40, 38; opening the round
+ * yields them in that order, out of the same markup the chart uses. It previously held 37–40 on
+ * the left and 41–44 on the right, by number, which put ties 41 and 42 on the opposite side of the
+ * draw from the quarter-final they feed (owner ruling 2026-07-13 — see bracketWallTopology.js).
+ * The list therefore reads down one half of the draw and then the other, as a wall chart does.
  *
  * CHART. `[data-wall-mode='on']`, which OriginalBracket.jsx sets when the viewport is at 900px
  * OR the player has opted in with the wall toggle. It used to be a CSS Module class, `.wallMode`,

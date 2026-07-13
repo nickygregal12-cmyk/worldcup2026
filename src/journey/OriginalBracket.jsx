@@ -10,6 +10,7 @@ import {
 } from './originalBracketPresentationModel.js'
 import { ORIGINAL_BRACKET_CONTEXT_COPY, ORIGINAL_BRACKET_G_COPY, ORIGINAL_BRACKET_KO_SUBLINE } from './originalBracketCopy.js'
 import BracketShareAction from './BracketShareAction.jsx'
+import { APP_DESTINATIONS, APP_ROUTE } from '../app/appRoutes.js'
 import shellStyles from './OriginalBracket.module.css'
 import roundStyles from './OriginalBracketRounds.module.css'
 import tieStyles from './OriginalBracketTie.module.css'
@@ -54,6 +55,11 @@ function formatKickoffTime(kickoffAt) {
  * So the state is answered once, here, and published as a plain data attribute — unhashed, and
  * therefore reachable from every module that needs it. One rule set, both readings, no drift.
  */
+// Review's own registered destination, not a hash spelled out here — the route registry is the
+// single source of truth and the route audit is what keeps it honest. Same as Groups does for the
+// bracket, because the journey is one road: Groups → Bracket → Review.
+const REVIEW_DESTINATION = APP_DESTINATIONS.find(destination => destination.key === APP_ROUTE.REVIEW)
+
 const CHART_VIEWPORT = '(min-width: 900px)' // keep in step with the 900px breakpoint in the three bracket stylesheets
 
 function useChartViewport() {
@@ -304,9 +310,12 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
       <div className={shellStyles.wallFrame} data-wall-chart="seven-lanes" data-final-position="centre" data-wall-lanes="7">
         <div className={roundStyles.rounds} aria-label="Seven-lane bracket">
           {surface.wallColumns.map(column => {
-            // A lane belongs to whichever round its ties are in, so the rail can open the
-            // round and both of its lanes come with it — left lane first, then right, which
-            // is already match order (37–40 then 41–44).
+            // A lane belongs to whichever round its ties are in, so the rail can open the round
+            // and both of its lanes come with it. Lane order is BRACKET order, not match order:
+            // the resolver feeds quarter-final 45 from ties 39 and 37, so the left R16 lane reads
+            // 39, 37, 41, 42 and the right reads 44, 43, 40, 38. It used to read 37–40 then 41–44,
+            // which put ties 41 and 42 on the opposite side of the draw from the quarter-final
+            // they actually feed (owner ruling 2026-07-13 — see bracketWallTopology.js).
             const laneStage = surface.tiesByMatchNumber[column.matchNumbers[0]]?.stage
             const open = laneStage === openRound
             return (
@@ -321,7 +330,9 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
               >
                 <header className={roundStyles.roundHeader}>
                   <div><span>{column.shortLabel}</span><h3>{column.label}</h3></div>
-                  <small>{column.matchNumbers.join(' / ')}</small>
+                  {/* The caption names WHICH matches are in the lane, so it reads ascending. The
+                      cards below it are in bracket order, which is a different question. */}
+                  <small>{[...column.matchNumbers].sort((left, right) => left - right).join(' / ')}</small>
                 </header>
                 <div className={roundStyles.laneStack}>
                   {column.matchNumbers.map(matchNumber => renderTie(surface.tiesByMatchNumber[matchNumber]))}
@@ -333,10 +344,22 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
         </div>
       </div>
 
-      {/* Last thing on the page, and deliberately so: you pick your way through the chart, and
-          the share card is what you do with it once it is finished. Not gated on an account —
-          a guest's bracket is just as shareable, and that is the whole growth loop. */}
+      {/* You pick your way through the chart, and the share card is what you do with it once it is
+          finished. Not gated on an account — a guest's bracket is just as shareable, and that is
+          the whole growth loop. */}
       <BracketShareAction reference={reference} draft={draft} preview={preview} />
+
+      {/* The road out. The bracket is a step, not a destination: Groups → Bracket → Review, and
+          Review is where the predictions are actually submitted. Review is named in full for the
+          same reason Groups names the bracket in full — a bare "next" tells a player nothing about
+          where they are going. */}
+      <a className={shellStyles.flowCta} href={REVIEW_DESTINATION.hash}>
+        <span>
+          <span className={shellStyles.flowCtaTitle}>Continue to Review</span>
+          <span className={shellStyles.flowCtaSub}>Check your group scores and bracket, then submit</span>
+        </span>
+        <span className={shellStyles.flowCtaArrow} aria-hidden="true"><Icon name="chevron" size={20} /></span>
+      </a>
     </section>
   )
 }

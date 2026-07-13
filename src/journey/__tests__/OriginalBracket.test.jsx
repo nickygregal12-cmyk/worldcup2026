@@ -35,6 +35,31 @@ describe('OriginalBracket', () => {
     expect(html).toContain('bracket-team-choice__action')
   })
 
+  /**
+   * The lanes are a bracket, not a numbered list. The left R16 lane must hold the four ties that
+   * actually reach semi-final 49 — 39, 37, 41, 42 — in the order the chart converges them. It used
+   * to hold 37, 38, 39, 40 by match number, which drew ties 41 and 42 on the opposite side of the
+   * draw from the quarter-final they feed. Owner ruling 2026-07-13.
+   */
+  it('lays the R16 lanes out by the half of the draw a tie actually feeds', () => {
+    const html = renderBracket()
+    const lane = key => html.split(`data-wall-lane="${key}"`)[1].split('</section>')[0]
+    const ties = markup => [...markup.matchAll(/data-match-number="(\d+)"/g)].map(match => Number(match[1]))
+
+    expect(ties(lane('r16-left'))).toEqual([39, 37, 41, 42])
+    expect(ties(lane('r16-right'))).toEqual([44, 43, 40, 38])
+    expect(ties(lane('qf-left'))).toEqual([45, 46])
+    expect(ties(lane('qf-right'))).toEqual([47, 48])
+    expect(ties(lane('final-centre'))).toEqual([51])
+  })
+
+  it('offers the way on to Review, naming the destination in full', () => {
+    const html = renderBracket()
+    expect(html).toContain('href="#/review"')
+    expect(html).toContain('Continue to Review')
+    expect(html).toContain('Check your group scores and bracket, then submit')
+  })
+
   it('shows source references and the single wall-chart surface contract', () => {
     const html = renderBracket()
     expect(html).toContain('data-wall-chart="seven-lanes"')

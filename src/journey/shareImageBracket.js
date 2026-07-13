@@ -1,7 +1,7 @@
 /**
  * The converging wall chart: the tie cards and the elbows between them.
  */
-import { SHARE_COLUMN_LABELS, buildShareBracketTree } from './shareBracketTopology.js'
+import { BRACKET_WALL_TOPOLOGY } from './bracketWallTopology.js'
 import { SHARE_PALETTE } from './shareImagePalette.js'
 import { FLAG_SIZE, TEAM_ROW_HEIGHT, feedsRightward, teamNameWidth, tieBox } from './shareImageLayout.js'
 import { drawFlag, fitText, font, roundRect } from './shareImagePaint.js'
@@ -46,8 +46,8 @@ function drawTie(ctx, flags, tie, box) {
 
 /**
  * The elbows, drawn from the tree's own edges — so a line can only ever join a tie to the tie it
- * actually feeds. See shareBracketTopology.js for why that is not the same as the live page's
- * lane order.
+ * actually feeds. The live wall chart now reads the same tree (bracketWallTopology.js), so the card
+ * and the page cannot disagree about which quarter-final a tie goes to.
  */
 function drawConnectors(ctx, tree, band) {
   ctx.strokeStyle = SHARE_PALETTE.borderStrong
@@ -73,21 +73,27 @@ function drawConnectors(ctx, tree, band) {
   }
 }
 
+/** "F" is too terse for a card someone else will read cold, so the final lane spells itself out. */
+function laneLabel(column) {
+  return column.key === 'final-centre' ? column.label : column.shortLabel
+}
+
 function drawColumnLabels(ctx, band) {
   ctx.font = font(800, 18)
   ctx.letterSpacing = '0.12em'
   ctx.fillStyle = SHARE_PALETTE.textMuted
   ctx.textAlign = 'center'
-  for (const { column, label } of SHARE_COLUMN_LABELS) {
-    const box = tieBox({ column, row: 1 }, band)
-    ctx.fillText(label.toUpperCase(), box.x + box.width / 2, box.centreY + 22)
+  for (const column of BRACKET_WALL_TOPOLOGY.columns) {
+    const box = tieBox({ column: column.column, row: 1 }, band)
+    ctx.fillText(laneLabel(column).toUpperCase(), box.x + box.width / 2, box.centreY + 22)
   }
   ctx.letterSpacing = '0px'
   ctx.textAlign = 'left'
 }
 
 export function drawBracket(ctx, flags, model, band) {
-  const tree = buildShareBracketTree(model.tiesByMatchNumber)
+  // The same derivation the live wall chart uses. One placement source, one bracket.
+  const tree = BRACKET_WALL_TOPOLOGY
   drawColumnLabels(ctx, band)
   drawConnectors(ctx, tree, band)
   for (const [matchNumber, placement] of tree.placements) {
