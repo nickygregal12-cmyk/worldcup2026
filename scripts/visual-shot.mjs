@@ -31,6 +31,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { chromium } from 'playwright'
 import { THEME_STORAGE_KEY } from '../src/app/theme.js'
+import { resolveVisualTimeTravel } from './lib/visualTimeTravel.mjs'
 
 const PORT = 5173
 const ORIGIN = `http://127.0.0.1:${PORT}`
@@ -85,9 +86,11 @@ function startDevServer() {
         // lock — and .env.local turns time travel on, so the app honours it. Every screenshot this
         // harness has ever taken of a prediction surface was therefore of a LOCKED board: nothing
         // picked, no champion named, no slot "Selected to advance". Four defects the owner found on
-        // a handset live in states this harness could not reach. Deny time travel for the run and
-        // the app falls back to the real clock, which is comfortably pre-lock.
-        VITE_ENABLE_TIME_TRAVEL: 'false',
+        // a handset live in states this harness could not reach. Denying time travel falls the app
+        // back to the real clock, which is comfortably pre-lock — still the default. A stage that
+        // wants the tournament phase now opts in with VISUAL_ENABLE_TIME_TRAVEL=true instead of
+        // booting a dev server of its own. See scripts/lib/visualTimeTravel.mjs.
+        VITE_ENABLE_TIME_TRAVEL: resolveVisualTimeTravel(),
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     },

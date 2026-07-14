@@ -40,6 +40,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { chromium } from 'playwright'
 import { THEME_STORAGE_KEY } from '../src/app/theme.js'
+import { resolveVisualTimeTravel } from './lib/visualTimeTravel.mjs'
 
 const PORT = 5174 // not 5173: so a probe and a shot run can coexist
 const ORIGIN = `http://127.0.0.1:${PORT}`
@@ -87,8 +88,12 @@ function startDevServer() {
          * `canApplyStagingTime` needs appEnv=staging AND enableTimeTravel — deny the second and
          * the app clears the override and uses the real clock, which is comfortably pre-lock. The
          * .env.local file is not touched, exactly as with the Supabase URL above.
+         *
+         * That denial is still the default. It is no longer hardcoded: a run that genuinely wants
+         * a tournament-phase page asks for it with VISUAL_ENABLE_TIME_TRAVEL=true, so the opt-in is
+         * explicit and no run drifts into simulated time by accident.
          */
-        VITE_ENABLE_TIME_TRAVEL: 'false',
+        VITE_ENABLE_TIME_TRAVEL: resolveVisualTimeTravel(),
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     },
