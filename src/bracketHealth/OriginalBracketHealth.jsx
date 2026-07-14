@@ -17,10 +17,14 @@ function Matchup({ reference, homeTeamId, awayTeamId, unresolved = false }) {
   )
 }
 
-export default function OriginalBracketHealth({ reference, preview, liveSnapshot, status = 'ready', error = null }) {
-  const model = useMemo(() => status === 'ready' && liveSnapshot
+// `model` lets the caller hand in a model it has already built — the Bracket page needs one
+// anyway to put the alive count on the Health tab, and building it twice would be waste.
+// Left optional so the component still stands alone.
+export default function OriginalBracketHealth({ reference, preview, liveSnapshot, status = 'ready', error = null, model: providedModel = null }) {
+  const builtModel = useMemo(() => !providedModel && status === 'ready' && liveSnapshot
     ? buildOriginalBracketHealth({ reference, preview, liveSnapshot })
-    : null, [liveSnapshot, preview, reference, status])
+    : null, [liveSnapshot, preview, providedModel, reference, status])
+  const model = providedModel ?? builtModel
   const [roundKey, setRoundKey] = useState('round_of_16')
 
   if (status === 'loading') return <div className={styles.state} role="status">Loading live bracket comparison…</div>
@@ -38,8 +42,20 @@ export default function OriginalBracketHealth({ reference, preview, liveSnapshot
           <h3 id="bracket-health-heading">Original bracket health</h3>
           <p>Your saved bracket never changes. Known real fixtures are compared against it; unresolved fixtures continue to show your original matchup.</p>
         </div>
-        <Badge tone="info">Prediction remains locked</Badge>
+        <Badge tone={model.provisional ? 'warning' : 'info'}>
+          {model.provisional ? 'Provisional' : 'Prediction remains locked'}
+        </Badge>
       </div>
+
+      {/* Fail-loud provenance (§5): while any slot is filled from a projection rather than
+          a finished group, the panel says so in its own words and shows its working. */}
+      {model.provisional && (
+        <p className={styles.provenance}>
+          As it stands: {model.projection.groupsReadyCount} of {model.projection.groupsTotal} groups have played two rounds,
+          so some slots below show who <em>would</em> go through on the tables so far, not a confirmed fixture.
+          {!model.projection.allGroupsReady && ' The best third-placed teams need all six groups before they can be placed at all.'}
+        </p>
+      )}
 
       <nav className={styles.roundTabs} aria-label="Bracket health rounds">
         {model.rounds.map(item => (
@@ -66,7 +82,12 @@ export default function OriginalBracketHealth({ reference, preview, liveSnapshot
               <Badge tone={card.tone === 'neutral' ? 'info' : card.tone}>{card.title}</Badge>
             </div>
 
-            {card.liveParticipantsKnown ? (
+            {card.liveParticipantsProjected ? (
+              <>
+                <span className={`${styles.contextLabel} ${styles.contextProjected}`}>As it stands · on the group tables so far</span>
+                <Matchup reference={reference} homeTeamId={card.liveHomeTeamId} awayTeamId={card.liveAwayTeamId} />
+              </>
+            ) : card.liveParticipantsKnown ? (
               <>
                 <span className={styles.contextLabel}>Known real fixture</span>
                 <Matchup reference={reference} homeTeamId={card.liveHomeTeamId} awayTeamId={card.liveAwayTeamId} />

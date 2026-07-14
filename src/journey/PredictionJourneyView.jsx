@@ -1,8 +1,9 @@
-import { Button, PredictionStateBadge } from '../design-system/index.jsx'
+import { useMemo, useState } from 'react'
+import { Button, PredictionStateBadge, Tabs } from '../design-system/index.jsx'
 import GuestAccountPrompt from '../guest/GuestAccountPrompt.jsx'
 import { hasActivePredictionGrace } from '../grace/index.js'
 import OriginalBracket from './OriginalBracket.jsx'
-import { OriginalBracketHealth } from '../bracketHealth/index.js'
+import { OriginalBracketHealth, buildLiveSlotProjection, buildOriginalBracketHealth } from '../bracketHealth/index.js'
 import GroupsPredictor from './GroupsPredictor.jsx'
 import PredictionReview from './PredictionReview.jsx'
 import lifecycleStyles from './PredictionLifecycle.module.css'
@@ -51,6 +52,27 @@ export default function PredictionJourneyView({
   busy, view, setView, surface, sessionLoading, accountLoading, draft, locked, graceWindows, activeGroupMatchNumber,
   updateGroup, runLuckyDip, clearStale, updateBracket, submitReview, editPredictions, lockConfigured, lifecycle, surfaceLifecycle, notice, liveBracketState,
 }) {
+  const [bracketPanel, setBracketPanel] = useState('picks')
+
+  // Bracket Health reveals itself on the standings, not on the clock. It needs a group to
+  // have played two rounds before it has anything true to say, so the gate is the
+  // projection, not `locked` — which is what used to let a bracket submitted in May render
+  // fifteen cards all saying "Real fixture not known yet". Owner ruling 2026-07-14.
+  const healthSnapshot = liveBracketState?.status === 'ready' ? liveBracketState.snapshot : null
+  const healthProjection = useMemo(() => buildLiveSlotProjection(healthSnapshot), [healthSnapshot])
+  const healthEligible = (locked || reviewMode) && summary.bracketComplete > 0
+  const healthModel = useMemo(
+    () => (healthEligible && healthProjection.revealed && healthSnapshot
+      ? buildOriginalBracketHealth({ reference, preview: summary.preview, liveSnapshot: healthSnapshot })
+      : null),
+    [healthEligible, healthProjection.revealed, healthSnapshot, reference, summary.preview],
+  )
+  const healthAvailable = Boolean(healthModel && healthModel.status === 'ready')
+  // Under way, but no group has reached its second round yet. Say so rather than vanish.
+  const healthPending = healthEligible && !healthAvailable && healthProjection.tournamentUnderway
+  const showHealth = healthAvailable && bracketPanel === 'health'
+  const healthR16 = healthModel?.rounds?.find(round => round.key === 'round_of_16') ?? null
+
   const compactSurface = surface === PREDICTION_JOURNEY_VIEW.GROUPS || surface === PREDICTION_JOURNEY_VIEW.BRACKET
   // A re-cut surface stands on the DP page ground the shell paints (DP-SHELL).
   // `.foundation-panel` wrapped it in a legacy glass card with a 22px radius — off the
@@ -173,20 +195,49 @@ export default function PredictionJourneyView({
                   <button type="button" onClick={clearStale} disabled={readOnly}>Clear stale picks</button>
                 </div>
               )}
-              <OriginalBracket
-                reference={reference}
-                draft={draft}
-                preview={summary.preview}
-                contentLocked={locked || summary.groupComplete < 36}
-                reviewMode={reviewMode}
-                graceWindows={graceWindows}
-                onChange={updateBracket}
-              />
-              {(locked || reviewMode) && summary.bracketComplete > 0 && (
+              {/* The locked state's Bracket/Health sub-tabs — the restructure the DP-BRACKET
+                  stage flagged as its honest gap. The tabs exist only once Health has real
+                  signal; before that the bracket stands alone, as it always did. */}
+              {healthAvailable && (
+                <Tabs
+                  label="Bracket view"
+                  className={chromeStyles.bracketPanelTabs}
+                  value={bracketPanel}
+                  onChange={setBracketPanel}
+                  options={[
+                    { value: 'picks', label: 'My picks' },
+                    {
+                      value: 'health',
+                      label: healthR16
+                        ? <>Health <span className={chromeStyles.tabCount}>· {healthR16.alive}/{healthR16.total} alive</span></>
+                        : 'Health',
+                    },
+                  ]}
+                />
+              )}
+              {!showHealth && (
+                <OriginalBracket
+                  reference={reference}
+                  draft={draft}
+                  preview={summary.preview}
+                  contentLocked={locked || summary.groupComplete < 36}
+                  reviewMode={reviewMode}
+                  graceWindows={graceWindows}
+                  onChange={updateBracket}
+                />
+              )}
+              {healthPending && (
+                <p className={chromeStyles.healthPending}>
+                  Bracket Health opens once a group has played two rounds of matches. Until then there are no
+                  standings to compare your bracket against.
+                </p>
+              )}
+              {showHealth && (
                 <OriginalBracketHealth
                   reference={reference}
                   preview={summary.preview}
-                  liveSnapshot={liveBracketState?.snapshot ?? null}
+                  liveSnapshot={healthSnapshot}
+                  model={healthModel}
                   status={liveBracketState?.status ?? 'unavailable'}
                   error={liveBracketState?.error ?? null}
                 />

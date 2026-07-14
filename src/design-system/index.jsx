@@ -63,9 +63,9 @@ export function StatusBar({ tone = 'info', title, children, action = null, icon 
   )
 }
 
-export function Tabs({ label, value, options, onChange }) {
+export function Tabs({ label, value, options, onChange, className = '' }) {
   return (
-    <div className="ui-tabs" role="tablist" aria-label={label}>
+    <div className={`ui-tabs ${className}`.trim()} role="tablist" aria-label={label}>
       {options.map(option => (
         <button
           key={option.value}

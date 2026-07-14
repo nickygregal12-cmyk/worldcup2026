@@ -98,3 +98,32 @@
     justify-items: start;
   }
 }
+
+/* Bracket/Health sub-tabs (locked state). The shared .ui-tabs button is 37.6px, which is
+   under target on every surface that uses it — but raising it globally would move four
+   other pages, so the new tab carries its own 48px here. The round rail's 40px targets are
+   a known, separate debt and are deliberately not touched. */
+.bracketPanelTabs {
+  width: 100%;
+  margin-bottom: var(--space-3);
+}
+
+.bracketPanelTabs button {
+  min-height: 48px;
+  flex: 1;
+  justify-content: center;
+}
+
+.tabCount {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.healthPending {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-muted);
+}

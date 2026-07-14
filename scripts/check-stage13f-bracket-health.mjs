@@ -7,6 +7,8 @@ const required = [
   'src/bracketHealth/OriginalBracketHealth.jsx',
   'src/bracketHealth/OriginalBracketHealth.module.css',
   'src/bracketHealth/__tests__/bracketHealthModel.test.js',
+  'src/bracketHealth/liveSlotProjection.js',
+  'src/bracketHealth/__tests__/liveSlotProjection.test.js',
   'docs/STAGE-13F-D-ORIGINAL-BRACKET-HEALTH.md',
 ]
 for (const file of required) {
@@ -22,6 +24,47 @@ for (const phrase of ['Your saved bracket never changes', 'Known real fixture', 
   if (!view.includes(phrase)) throw new Error(`Bracket-health view is missing: ${phrase}`)
 }
 if (!journey.includes('<OriginalBracketHealth')) throw new Error('Original bracket does not render the bracket-health comparison')
+
+// ── Reveal timing — owner ruling 2026-07-14 ────────────────────────────────────────────
+// Health used to be gated on (locked || reviewMode). reviewMode is true the moment a player
+// submits, so a bracket submitted months out rendered fifteen cards all saying the real
+// fixture was not known yet. The gate is now the standings: a group must have played two
+// rounds before Health has anything true to say. These assertions exist so that cannot be
+// quietly undone — the timing IS the feature.
+const projection = fs.readFileSync(path.join(root, 'src/bracketHealth/liveSlotProjection.js'), 'utf8')
+
+if (!/PROJECTION_MATCHES_PLAYED\s*=\s*2\b/.test(projection)) {
+  throw new Error('The reveal threshold must remain two matches played per team (owner ruling 2026-07-14)')
+}
+for (const phrase of ['groupAtThreshold', 'allGroupsReady', 'tournamentUnderway', 'projectedSlotTeamId']) {
+  if (!projection.includes(phrase)) throw new Error(`Live slot projection is missing ${phrase}`)
+}
+// A best-third slot is a cross-group ranking: projecting one before all six groups have
+// reached the threshold produces the wrong combination key, and therefore the wrong team.
+if (!/best_third[\s\S]*?allGroupsReady/.test(projection)) {
+  throw new Error('Best-third slots must stay unprojected until every group has reached the threshold')
+}
+// A projection may say who leads a group. It may never bank points or declare a team out.
+for (const phrase of ['liveParticipantsProjected', 'participantsProjected', "status: 'pending'"]) {
+  if (!model.includes(phrase)) throw new Error(`Bracket-health model is missing ${phrase}`)
+}
+if (!model.includes('buildLiveSlotProjection')) {
+  throw new Error('Bracket-health model no longer consults the reveal projection')
+}
+// The panel must never present a projected occupant as an official fixture.
+for (const phrase of ['As it stands', 'provisional']) {
+  if (!view.includes(phrase)) throw new Error(`Bracket-health view must mark projected slots: missing ${phrase}`)
+}
+// The page must not fall back to showing Health purely because the board is locked.
+if (!journey.includes('healthProjection') || !journey.includes('healthAvailable')) {
+  throw new Error('The bracket page must gate Health on the standings projection, not on lock alone')
+}
+if (!journey.includes('Bracket Health opens once a group has played two rounds')) {
+  throw new Error('The bracket page must say when Health opens while the threshold is unmet')
+}
+if (!journey.includes('<Tabs')) {
+  throw new Error('The locked bracket must carry Bracket/Health sub-tabs per the approved prototype')
+}
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql'))
 if (migrations.length < 16) throw new Error(`Expected Migration 016 and later approved migrations; found ${migrations.length}`)
 if (!migrations.some(file => file.includes('016_euro28_staging_time_phase_controls'))) throw new Error('Approved staging Time & Phase Migration 016 is missing')
