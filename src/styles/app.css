@@ -219,7 +219,7 @@ a {
 
 .ui-icon-button:hover,
 .ui-icon-button.is-active {
-  color: var(--dp-action-ink);
+  color: var(--dp-info-ink);
   border-color: color-mix(in srgb, var(--dp-action) 45%, var(--dp-border-subtle));
   background: var(--dp-info-soft);
 }
@@ -364,7 +364,7 @@ a {
 }
 
 .ui-button--primary {
-  background: var(--dp-action);
+  background: var(--dp-action-ink);
   color: var(--dp-text-on-accent);
   box-shadow: 0 9px 22px color-mix(in srgb, var(--dp-action) 28%, transparent);
 }
@@ -376,7 +376,7 @@ a {
 .ui-button--secondary {
   border-color: color-mix(in srgb, var(--dp-action) 35%, var(--dp-border-subtle));
   background: var(--dp-info-soft);
-  color: var(--dp-action-ink);
+  color: var(--dp-info-ink);
 }
 
 .ui-button--ghost {
@@ -438,7 +438,7 @@ a {
 .ui-badge--info {
   border-color: color-mix(in srgb, var(--dp-action) 35%, transparent);
   background: var(--dp-info-soft);
-  color: var(--dp-action-ink);
+  color: var(--dp-info-ink);
 }
 
 .ui-badge--warning {
@@ -524,7 +524,7 @@ a {
 .ui-status--info {
   border-color: color-mix(in srgb, var(--dp-action) 32%, var(--dp-border-subtle));
   background: color-mix(in srgb, var(--dp-info-soft) 65%, var(--dp-surface-raised));
-  color: var(--dp-action-ink);
+  color: var(--dp-info-ink);
 }
 
 .ui-tabs {

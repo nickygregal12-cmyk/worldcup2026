@@ -21,6 +21,22 @@
 //      gradient endpoint, in BOTH themes.
 //   C. Same-block pairs — any block declaring both a token background and a
 //      token colour must pass WCAG contrast in BOTH themes.
+//   D. Kit coverage — the ui-* kit's stateful surfaces must still BE such pairs.
+//
+// Rule C's fourth escape (found 2026-07-14 on .ui-button--primary): it only
+// recognised a background as checkable if its token began --surface/--brand/
+// --accent/--hero. The entire --dp-* generation — the tokens every live
+// component actually fills with — was invisible to it, so `background:
+// var(--dp-action); color: var(--dp-text-on-accent)` (white at 4.10:1, under
+// §5's 4.5 floor) sailed through a green suite. Only the non-gating visual
+// probe caught it. The prefix list now includes --dp-, which is what makes the
+// computed fill+text combos of the real kit gate the build.
+//
+// Rule D exists because Rule C is silent by construction when a block STOPS
+// being a token pair: hardcode a hex fill, or drop the colour declaration, and
+// coverage vanishes with the suite still green. So the kit's stateful surfaces
+// are named, and each one must actually reach checkPair. Deleting or renaming a
+// surface is fine — updating this list is the deliberate act that records it.
 //
 // Known static limit (by design, recorded honestly): descendants composed in
 // JSX whose class names carry no selector or BEM relationship to the painted
@@ -47,6 +63,25 @@ const ALLOWED_PAIRINGS = Object.freeze([
 ])
 const isAllowedPairing = (file, selector, token) =>
   ALLOWED_PAIRINGS.some(entry => entry.file === file && entry.selector === selector && entry.token === token)
+
+// Rule D — the ui-* kit's stateful surfaces: every selector that paints a fill
+// and sits text on it. Each MUST be checked by Rule C on every run; if one stops
+// being a token fill + token text pair, coverage is lost silently and this fails.
+const KIT_FILE = 'src/styles/app.css'
+const REQUIRED_STATEFUL_SURFACES = Object.freeze([
+  '.ui-button--primary',
+  '.ui-button--secondary',
+  '.ui-button--danger',
+  '.ui-badge--safe',
+  '.ui-badge--info',
+  '.ui-badge--warning',
+  '.ui-badge--danger',
+  '.ui-status--info',
+  '.ui-status--warning',
+  '.ui-status--danger',
+  '.ui-icon-button.is-active',
+])
+const coveredSurfaces = new Set()
 
 // ── Token values per theme ──────────────────────────────────────────────────
 function parseThemeBlocks(source) {
@@ -114,6 +149,7 @@ const allTokens = value => [...stripTranslucentLayers(value).matchAll(/var\(\s*(
 const INVERSE_BG_TOKENS = new Set(['--surface-inverse', '--brand-strong', '--brand-emphasis'])
 
 function checkPair(file, selector, colorToken, backgroundTokens, contextNote) {
+  if (file === KIT_FILE) coveredSurfaces.add(selector)
   if (isAllowedPairing(file, selector, colorToken)) return
   for (const theme of ['light', 'dark']) {
     const foreground = resolveHex(colorToken, theme)
@@ -161,7 +197,8 @@ for (const file of cssFiles) {
 
     // Rule C — same-block background + colour pairing.
     const ownBackground = allTokens(`${block.declarations.background ?? ''} ${block.declarations['background-color'] ?? ''}`)
-      .filter(token => token.startsWith('--surface') || token.startsWith('--brand') || token.startsWith('--accent') || token.startsWith('--hero'))
+      .filter(token => token.startsWith('--surface') || token.startsWith('--brand') || token.startsWith('--accent')
+        || token.startsWith('--hero') || token.startsWith('--dp-'))
     if (ownBackground.length > 0) {
       checkedPairs += 1
       checkPair(file, block.selector, colorToken, ownBackground, '(same block)')
@@ -177,6 +214,12 @@ for (const file of cssFiles) {
   }
 }
 
+// Rule D — every named kit surface must have been reached by Rule C above.
+for (const selector of REQUIRED_STATEFUL_SURFACES) {
+  if (coveredSurfaces.has(selector)) continue
+  fail(`${KIT_FILE} "${selector}": stateful kit surface is no longer a checked token fill + token text pair, so its contrast is now unguarded. Restore the token pairing, or remove it from REQUIRED_STATEFUL_SURFACES if the surface was deliberately deleted or renamed.`)
+}
+
 if (errors.length > 0) {
   console.error(`Token contrast-usage audit failed with ${errors.length} issue(s):\n`)
   for (const message of errors) console.error(`  - ${message}`)
@@ -184,4 +227,4 @@ if (errors.length > 0) {
   process.exit(1)
 }
 
-console.log(`Token contrast-usage audit passed. Checked ${checkedPairs} real token pairings across ${cssFiles.length} stylesheets in both themes — no unreadable pairings, no surface-tokens-as-text.`)
+console.log(`Token contrast-usage audit passed. Checked ${checkedPairs} real token pairings across ${cssFiles.length} stylesheets in both themes — no unreadable pairings, no surface-tokens-as-text. All ${REQUIRED_STATEFUL_SURFACES.length} ui-* stateful kit surfaces (buttons, badges, status chips) are covered fill-against-text at the ${MIN_CONTRAST}:1 floor.`)

@@ -344,6 +344,8 @@
   font-size: var(--text-xs);
 }
 
+/* --dp-action-ink, not --dp-action: the glyph is white on this fill, and the
+   declared action blue carries it at only 4.10:1. Ink is the text-safe fill. */
 .flowCtaArrow {
   display: grid;
   place-items: center;
@@ -351,6 +353,6 @@
   height: 2.5rem;
   flex: none;
   border-radius: var(--radius-full);
-  background: var(--dp-action);
+  background: var(--dp-action-ink);
   color: var(--dp-text-on-accent);
 }
