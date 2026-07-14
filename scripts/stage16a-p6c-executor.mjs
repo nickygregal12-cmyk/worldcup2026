@@ -350,6 +350,128 @@ function seedOriginalPredictions() {
   }
 }
 
+// ---- prediction_seed_writer (Original knockout bracket picks) ---------------
+// Every persona carried 36 group predictions and not one bracket pick, so no scenario
+// run could reach Bracket Health, Review, or bracket scoring as a signed-in player.
+//
+// The picks are NOT hand-rolled. They come from the same resolver the save RPC validates
+// bracket rows against — private.euro28_expected_knockout_participants — so a seeded
+// bracket is, by construction, exactly what the app itself would have written. Feeding it
+// a persona's own 36 predicted scorelines yields that persona's R16; feeding its R16 picks
+// back in resolves the quarter-finals, and so on. Hence the loop: participants for match
+// 45 do not exist until the winners of 37 and 39 have been chosen, so a bracket cannot be
+// computed in one shot, and a pick made before its participants resolve is a stale pick.
+// The bracket is therefore built round by round, each pick drawn from the two teams as
+// they stand at that moment.
+const BRACKET_CHALK = ['bracket_survives_deep', 'exact_score_heavy', 'submitted_complete', 'unsubmitted_identical', 'engineered_tie_a', 'engineered_tie_b']
+const BRACKET_UPSET = ['bracket_dead_early', 'all_wrong']
+
+/**
+ * A knockout slot pairs a better-placed side (home) with a runner-up or third (away), so
+ * backing the home side throughout is the chalk bracket that realistically survives deep,
+ * and backing the away side throughout is the upset bracket that dies early. That is what
+ * bracket_survives_deep and bracket_dead_early are named for. Everyone else gets a
+ * deterministic mix, so champions differ across the field.
+ */
+function advancingTeamFor(personaKey, matchNumber, homeTeam, awayTeam) {
+  if (BRACKET_CHALK.includes(personaKey)) return homeTeam
+  if (BRACKET_UPSET.includes(personaKey)) return awayTeam
+  return hash32(`${personaKey}:${matchNumber}`) % 2 === 0 ? homeTeam : awayTeam
+}
+
+function bracketBundleRow(pick) {
+  return {
+    match_id: pick.matchId,
+    predicted_home_tournament_team_id: pick.homeTeam,
+    predicted_away_tournament_team_id: pick.awayTeam,
+    home_score_90: null,
+    away_score_90: null,
+    advancing_tournament_team_id: pick.advancing,
+    decision_method: null,
+    joker_applied: false,
+  }
+}
+
+/** This persona's 36 group predictions, in the bundle shape the resolver reads. */
+function personaGroupBundle(personaKey, matches) {
+  return matches.map((match, index) => {
+    const pred = predictionForPersona(personaKey, syntheticScore(match.matchNumber), index)
+    return {
+      match_id: match.id,
+      predicted_home_tournament_team_id: match.homeTeam,
+      predicted_away_tournament_team_id: match.awayTeam,
+      home_score_90: pred.h,
+      away_score_90: pred.a,
+      advancing_tournament_team_id: null,
+      decision_method: null,
+      joker_applied: false,
+    }
+  })
+}
+
+function resolvePersonaBracket(personaKey, matches) {
+  const groupRows = personaGroupBundle(personaKey, matches)
+  const picks = new Map()
+
+  // R16 → QF → SF → final: four rounds, but bounded by 15 in case a round resolves partially.
+  for (let round = 0; round < 15 && picks.size < 15; round += 1) {
+    const bundle = [...groupRows, ...[...picks.values()].map(bracketBundleRow)]
+    const knockout = runSql(`
+      select k.match_number, k.match_id, k.home_team_id, k.away_team_id, k.participants_resolved
+      from private.euro28_expected_knockout_participants('${TOURNAMENT_ID}'::uuid, ${q(JSON.stringify(bundle))}::jsonb) k
+      order by k.match_number;`, { rows: true })
+
+    let added = 0
+    for (const [number, matchId, homeTeam, awayTeam, resolved] of knockout) {
+      const matchNumber = Number(number)
+      if (resolved !== 't' || picks.has(matchNumber)) continue
+      picks.set(matchNumber, {
+        matchNumber,
+        matchId,
+        homeTeam,
+        awayTeam,
+        advancing: advancingTeamFor(personaKey, matchNumber, homeTeam, awayTeam),
+      })
+      added += 1
+    }
+    if (!added) break
+  }
+  return [...picks.values()].sort((a, b) => a.matchNumber - b.matchNumber)
+}
+
+function seedBracketPredictions() {
+  const matches = groupMatches()
+  // The database refuses bracket rows on an incomplete bundle ("All 36 group predictions
+  // are required before saving bracket picks"), so the 6-row persona is correctly excluded
+  // rather than forced — its incompleteness is the scenario it exists to provide.
+  const bracketPersonas = STAGE16A_SYNTHETIC_PERSONAS.filter(
+    persona => persona.competitions.includes('original') && persona.key !== 'partial_predictions',
+  )
+
+  for (const persona of bracketPersonas) {
+    const uid = synthUserIdByKey(persona.key)
+    if (!uid) continue
+    const setId = scalar(`
+      select id from public.prediction_sets
+      where tournament_id='${TOURNAMENT_ID}' and user_id=${q(uid)} and competition_key='original' limit 1;`)
+    if (!setId) continue
+
+    const picks = resolvePersonaBracket(persona.key, matches)
+    if (picks.length !== 15) throw new Error(`Bracket incomplete for ${persona.key}: ${picks.length}/15 picks resolved`)
+
+    const values = picks.map(pick => `('${setId}','${TOURNAMENT_ID}','${pick.matchId}',${q(pick.homeTeam)},${q(pick.awayTeam)},${q(pick.advancing)})`)
+    runSql(`
+      insert into public.bracket_predictions (prediction_set_id, tournament_id, match_id,
+        predicted_home_tournament_team_id, predicted_away_tournament_team_id, advancing_tournament_team_id)
+      values ${values.join(',')}
+      on conflict (prediction_set_id, match_id) do update set
+        predicted_home_tournament_team_id = excluded.predicted_home_tournament_team_id,
+        predicted_away_tournament_team_id = excluded.predicted_away_tournament_team_id,
+        advancing_tournament_team_id = excluded.advancing_tournament_team_id,
+        updated_at = now();`)
+  }
+}
+
 // ---- KO prediction sets (separate competition, exists with 0 pts pre-KO) ----
 function seedKoPredictionSets() {
   const koPersonas = STAGE16A_SYNTHETIC_PERSONAS.filter(p => p.competitions.includes('ko_predictor'))
@@ -636,6 +758,8 @@ function makeLocalBackup() {
 function seedAll() {
   seedUsers()
   seedOriginalPredictions()
+  // After the group predictions: a persona's bracket is derived from its own 36 scorelines.
+  seedBracketPredictions()
   seedKoPredictionSets()
   seedLeagues()
 }
