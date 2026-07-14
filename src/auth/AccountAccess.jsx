@@ -13,6 +13,7 @@ import {
 } from './euroAuthService.js'
 import { validateEmail, validatePassword, validatePasswordConfirmation, validatePublicSignupDisplayName } from './authValidation.js'
 import { ACCOUNT_STATS_DEFAULT, buildAccountLifecycle } from './accountAccessModel.js'
+import { resolveTournamentLifecycle, useTournamentNow } from '../config/index.js'
 import { clearMyOriginalPredictions, loadAccountDashboard } from './accountAccessService.js'
 import { buildGuestAccountTransferSummary } from '../guest/guestAccountTransferModel.js'
 import { createGuestPredictionStorage } from '../guest/guestPredictionStorage.js'
@@ -80,7 +81,10 @@ export default function AccountAccess({ client, reference, tournament = null, li
 
   const isRecovery = mode === 'update-password'
   const emailAddress = useMemo(() => getEmailForSession(session), [session])
-  const accountLifecycle = useMemo(() => providedLifecycle ?? buildAccountLifecycle(tournament), [providedLifecycle, tournament])
+  // `now` is live, so "Clear predictions" disappears the moment the lock engages rather
+  // than staying offered on a page that was open when the first kick-off passed.
+  const now = useTournamentNow(resolveTournamentLifecycle(tournament).predictionLockAt)
+  const accountLifecycle = useMemo(() => providedLifecycle ?? buildAccountLifecycle(tournament, now), [providedLifecycle, tournament, now])
 
   const setMode = value => {
     setModeState(value)

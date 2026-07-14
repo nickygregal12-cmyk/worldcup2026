@@ -26,7 +26,7 @@ import TeamProfileProvider from './teamProfile/TeamProfileProvider.jsx'
 import { StagingTimeBanner, useTournamentTimeControl } from './timePhase/index.js'
 import { loadEuroApp } from './runtime/loadEuroApp.js'
 import { createAppClient } from './runtime/appClient.js'
-import { resolveTournamentLifecycle } from './config/index.js'
+import { useTournamentLifecycle } from './config/index.js'
 
 function PageIntro({ eyebrow, title, description, badge = null }) {
   return (
@@ -131,6 +131,9 @@ export default function App() {
     sessionState: activeSession,
     fixtureAccess: null,
   })
+  // Above the loading/error returns because it is a hook. It tolerates a missing
+  // tournament and re-resolves once the load lands.
+  const lifecycle = useTournamentLifecycle(state.data?.tournament)
 
   if (state.status === 'loading') return <LoadingApplication />
   if (state.status === 'error' || !state.data) return <AppLoadError message={state.error} onRetry={refresh} />
@@ -139,7 +142,6 @@ export default function App() {
   const unknownDestinationRequested = hashLocation.hash.startsWith('#/') && !isKnownAppHash(hashLocation.hash)
   const koReadiness = buildKoReadiness(appData.guestReference)
   const navigation = deriveNavigationLifecycle(appData.guestReference, { koReadiness })
-  const lifecycle = resolveTournamentLifecycle(appData.tournament)
 
   let content
   if (unknownDestinationRequested) {

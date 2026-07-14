@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTournamentLifecycle } from '../config/index.js'
 import { GUEST_STATE_UPDATED_EVENT } from '../predictions/predictionSaveConfig.js'
 import { Button, Icon, StatusBar } from '../design-system/index.jsx'
 import { HOME_STATE } from './homeDashboardModel.js'
@@ -298,6 +299,17 @@ export default function HomeDashboard({ client, foundation, sessionState, fixtur
   useEffect(() => {
     if (!fixture && sessionState.status !== 'loading') void Promise.resolve().then(load)
   }, [fixture, load, sessionState.status])
+
+  // Home's phase, hero and calls to action are baked into the dashboard at fetch time,
+  // against the `now` that loadHomeDashboard captured. Recomputing is not enough — the
+  // whole dashboard has to be rebuilt — so crossing the lock triggers exactly one reload.
+  const { locked } = useTournamentLifecycle(foundation?.tournament)
+  const lastLocked = useRef(locked)
+  useEffect(() => {
+    if (fixture || lastLocked.current === locked) return
+    lastLocked.current = locked
+    void Promise.resolve().then(load)
+  }, [fixture, load, locked])
 
   useEffect(() => {
     if (fixture) return undefined
