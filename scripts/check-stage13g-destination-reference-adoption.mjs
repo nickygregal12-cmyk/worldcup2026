@@ -20,12 +20,12 @@ function requireIncludes(file, content, markers) {
   }
 }
 
-const stageDoc = read('docs/STAGE-13G-DESTINATION-REFERENCE-ADOPTION.md')
+const stageDoc = read('docs/archive/STAGE-13G-DESTINATION-REFERENCE-ADOPTION.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const agent = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
 const charter = read('docs/EURO28-DESIGN-CHARTER.md')
-const scope = read('docs/STAGE-13G-0-INFORMATION-ARCHITECTURE-AND-COHERENT-UI-SCOPE.md')
+const scope = read('docs/archive/STAGE-13G-0-INFORMATION-ARCHITECTURE-AND-COHERENT-UI-SCOPE.md')
 const packageJson = read('package.json')
 
 const referenceFiles = [
@@ -42,7 +42,7 @@ for (const [label, file, markers] of referenceFiles) {
   requireIncludes(`${label} reference`, content, markers)
 }
 
-requireIncludes('docs/STAGE-13G-DESTINATION-REFERENCE-ADOPTION.md', stageDoc, [
+requireIncludes('docs/archive/STAGE-13G-DESTINATION-REFERENCE-ADOPTION.md', stageDoc, [
   'Stage 13G Destination Reference Adoption',
   'docs/audit only',
   'No UI rebuild',
@@ -89,7 +89,7 @@ requireIncludes('docs/EURO28-DESIGN-CHARTER.md', charter, [
   'football tournament reference content and predictor mechanics must not be bundled into one destination',
 ])
 
-requireIncludes('docs/STAGE-13G-0-INFORMATION-ARCHITECTURE-AND-COHERENT-UI-SCOPE.md', scope, [
+requireIncludes('docs/archive/STAGE-13G-0-INFORMATION-ARCHITECTURE-AND-COHERENT-UI-SCOPE.md', scope, [
   '| Tournament | `#/tournament`',
   '| How to Play | `#/how-to-play`',
   'Stage 13G destination reference adoption amends this map',
@@ -102,8 +102,8 @@ requireIncludes('package.json', packageJson, [
   'npm run audit:stage13g-destination-reference-adoption',
 ])
 
-const implementationDoc = read('docs/STAGE-13G-B-TOURNAMENT-HOW-TO-PLAY-SPLIT.md')
-requireIncludes('docs/STAGE-13G-B-TOURNAMENT-HOW-TO-PLAY-SPLIT.md', implementationDoc, [
+const implementationDoc = read('docs/archive/STAGE-13G-B-TOURNAMENT-HOW-TO-PLAY-SPLIT.md')
+requireIncludes('docs/archive/STAGE-13G-B-TOURNAMENT-HOW-TO-PLAY-SPLIT.md', implementationDoc, [
   'Stage 13G-B-TOURNAMENT-1',
   'Account, Admin and Match Centre reference prototypes remain recorded for later focused batches',
 ])

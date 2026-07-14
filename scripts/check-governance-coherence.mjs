@@ -56,7 +56,13 @@ const COUNT_CLAIM = /(?:active migrations? remains?(?: at)? \**(\d+)\**|active m
 // was true at that stage's close) and are exempt. Only documents that assert
 // CURRENT state must always be true now: the governing docs, every dated
 // handover from the current head, and every NEXT-CHAT prompt.
-const allDocs = walkFiles(root, 'docs').filter(file => file.endsWith('.md') && !file.startsWith('docs/reference-prototypes/'))
+// docs/archive/ is frozen history. Its documents were true when their stage closed and must never
+// be re-read as claims about the present: without this exclusion the next migration would force
+// edits to closed stage records to keep the suite green, which is precisely what archiving cures.
+const allDocs = walkFiles(root, 'docs').filter(file =>
+  file.endsWith('.md')
+  && !file.startsWith('docs/reference-prototypes/')
+  && !file.startsWith('docs/archive/'))
 const handoverDocs = allDocs.filter(file => /HANDOVER-\d{8}/.test(file)).sort()
 const currentStateDocs = [
   ...GOVERNING_DOCS,

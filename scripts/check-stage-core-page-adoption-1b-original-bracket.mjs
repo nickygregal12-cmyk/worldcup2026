@@ -29,7 +29,7 @@ const css = [cssShell, cssRounds, cssTie].join('\n')
 const model = requireFile('src/journey/originalBracketPresentationModel.js')
 const test = requireFile('src/journey/__tests__/OriginalBracket.test.jsx')
 const modelTest = requireFile('src/journey/__tests__/originalBracketPresentationModel.test.js')
-const stageDoc = requireFile('docs/STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET.md')
+const stageDoc = requireFile('docs/archive/STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET.md')
 const ledger = requireFile('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const register = requireFile('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const agent = requireFile('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
@@ -42,7 +42,7 @@ for (const file of [
   'src/journey/OriginalBracketRounds.module.css',
   'src/journey/OriginalBracketTie.module.css',
   'src/journey/__tests__/OriginalBracket.test.jsx',
-  'docs/STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET.md',
+  'docs/archive/STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET.md',
 ]) if (!exists(file)) fail(`Missing Original Bracket 1B file: ${file}`)
 
 for (const marker of [

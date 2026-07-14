@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 
 const requiredFiles = [
-  'docs/STAGE-13F-K3-STAGING-ACCEPTANCE-AND-CLOSE-OUT.md',
+  'docs/archive/STAGE-13F-K3-STAGING-ACCEPTANCE-AND-CLOSE-OUT.md',
   'scripts/generate-stage13fk3-acceptance-sql.mjs',
   'scripts/lib/stage13fk3AcceptanceSql.mjs',
   'scripts/__tests__/stage13fk3AcceptanceSql.test.js',

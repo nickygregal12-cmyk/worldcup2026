@@ -12,7 +12,7 @@ function read(path) {
   return readFileSync(path, 'utf8')
 }
 
-const scopeDoc = read('docs/STAGE-16A-SCOPE-ALIGNMENT.md')
+const scopeDoc = read('docs/archive/STAGE-16A-SCOPE-ALIGNMENT.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const agentRules = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')

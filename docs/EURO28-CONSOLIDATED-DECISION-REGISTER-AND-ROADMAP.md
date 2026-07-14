@@ -570,7 +570,7 @@ The Stage 13F-K1 database operations contract remains accepted and is the bindin
 12. Stage 13F-K completes first. Stage 16A supplies seeded acceptance data after 13G-C. Stage 13G-D and Stage 16A close in the same evidence window. Stage 13P-A begins only after Stage 13G acceptance.
 13. Stage 13G-0 adds no migration. A narrow Stage 13G-C read contract for `is_synthetic` or invite-safe metadata must be proved and separately approved.
 
-The full IA map, More ordering, hardwired-data evidence and batch contract live in `docs/STAGE-13G-0-INFORMATION-ARCHITECTURE-AND-COHERENT-UI-SCOPE.md`.
+The full IA map, More ordering, hardwired-data evidence and batch contract live in `docs/archive/STAGE-13G-0-INFORMATION-ARCHITECTURE-AND-COHERENT-UI-SCOPE.md`.
 
 ## 10C. Stage 13F-K complete Admin operations backbone — CONFIRMED
 
@@ -590,7 +590,7 @@ Confirmed decisions:
 10. Existing append-only Admin events remain authoritative. Stage 13F-K2 adds category filters and expandable detail without event mutation or deletion.
 11. Stage 13F-K is delivered as K0 documents, K1 database, K2 frontend and K3 staging acceptance. Stage 13G-A may not begin before K3 closes.
 
-The approved scope lives in `docs/STAGE-13F-K0-ADMIN-OPERATIONS-SCOPE-AND-SERVER-CONTRACT.md`; the implemented database contract lives in `docs/STAGE-13F-K1-DATABASE-OPERATIONS-CONTRACT.md`.
+The approved scope lives in `docs/archive/STAGE-13F-K0-ADMIN-OPERATIONS-SCOPE-AND-SERVER-CONTRACT.md`; the implemented database contract lives in `docs/archive/STAGE-13F-K1-DATABASE-OPERATIONS-CONTRACT.md`.
 
 ## 11. Updated build roadmap
 
@@ -1469,7 +1469,7 @@ Readiness gate amendment: `STAGE-TOURNAMENT-READINESS-ACCEPTANCE-1` cannot be ac
 
 Status: recorded as the locked product rules target before the Entry/Review journey stage.
 
-This stage supersedes earlier provisional scoring notes in the decision register with the locked product target recorded in `docs/RULES-SCORING-LOCKED-CONTRACT.md` and `docs/STAGE-RULES-SCORING-LOCK-1.md`.
+This stage supersedes earlier provisional scoring notes in the decision register with the locked product target recorded in `docs/RULES-SCORING-LOCKED-CONTRACT.md` and `docs/archive/STAGE-RULES-SCORING-LOCK-1.md`.
 
 Locked Original Predictor scoring:
 

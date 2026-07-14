@@ -6,7 +6,7 @@
 // -facing copy — usually because an audit script started checking for that
 // literal sentence's presence, which locks the wording in place forever.
 //
-// Real example found in this repo: docs/STAGE-13G-C-CLOSEOUT-HANDOVER.md
+// Real example found in this repo: docs/archive/STAGE-13G-C-CLOSEOUT-HANDOVER.md
 // calls a sentence "the required competition-boundary sentence" and gives
 // its exact text. That exact text is hardcoded as a UI copy string in
 // src/leagues/Leagues.jsx, AND hardcoded as a literal marker in two

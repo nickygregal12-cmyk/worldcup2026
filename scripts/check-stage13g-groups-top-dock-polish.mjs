@@ -86,7 +86,7 @@ assertIncludes('src/journey/__tests__/groupsPresentationModel.test.js', [
   'awayScore: 1',
 ])
 
-assertIncludes('docs/STAGE-13G-GROUPS-2-PREMIUM-VIEW.md', [
+assertIncludes('docs/archive/STAGE-13G-GROUPS-2-PREMIUM-VIEW.md', [
   'Stage 13G-GROUPS-2D',
   'Groups Top Dock Repair',
   'one-sided partial score drafts',

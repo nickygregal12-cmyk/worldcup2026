@@ -17,7 +17,7 @@ const requiredFiles = [
   'src/player/playerComparisonModel.js',
   'src/player/__tests__/PlayerHeadToHead.test.jsx',
   'src/player/__tests__/playerComparisonModel.test.js',
-  'docs/STAGE-13F-B-PLAYER-IDENTITY-AND-HEAD-TO-HEAD.md',
+  'docs/archive/STAGE-13F-B-PLAYER-IDENTITY-AND-HEAD-TO-HEAD.md',
 ]
 for (const file of requiredFiles) if (!exists(file)) fail(`Stage 13F-B file is missing: ${file}`)
 

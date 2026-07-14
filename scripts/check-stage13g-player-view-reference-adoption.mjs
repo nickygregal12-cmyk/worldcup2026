@@ -7,7 +7,7 @@ const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8')
 const exists = (file) => fs.existsSync(path.join(ROOT, file))
 
 const requiredFiles = [
-  'docs/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md',
+  'docs/archive/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md',
   'docs/reference-prototypes/euro28-player-view-prototype.html',
   'scripts/check-stage13g-player-view-reference-adoption.mjs',
 ]
@@ -16,7 +16,7 @@ for (const file of requiredFiles) {
   if (!exists(file)) throw new Error(`Stage 13G-PLAYER-REF required file missing: ${file}`)
 }
 
-const stageDoc = read('docs/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md')
+const stageDoc = read('docs/archive/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const agent = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')

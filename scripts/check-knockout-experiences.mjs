@@ -21,7 +21,7 @@ const requiredFiles = [
   'src/koPredictor/__tests__/KoPredictorMatchCentre.test.jsx',
   'src/koPredictor/__tests__/koPredictorPresentationModel.test.js',
   'src/styles/knockout-experiences.css',
-  'docs/STAGE-13C-BRACKET-AND-KO-PREDICTOR.md',
+  'docs/archive/STAGE-13C-BRACKET-AND-KO-PREDICTOR.md',
 ]
 for (const file of requiredFiles) if (!exists(file)) fail(`Stage 13C file is missing: ${file}`)
 

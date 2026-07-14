@@ -19,7 +19,7 @@ const requiredFiles = [
   'src/player/__tests__/PlayerInsight.test.jsx',
   'src/player/__tests__/playerInsightModel.test.js',
   'src/player/__tests__/playerInsightService.test.js',
-  'docs/STAGE-13F-J-PLAYER-INSIGHT-AND-POINTS-STORYTELLING.md',
+  'docs/archive/STAGE-13F-J-PLAYER-INSIGHT-AND-POINTS-STORYTELLING.md',
 ]
 for (const file of requiredFiles) if (!exists(file)) fail(`Stage 13F-J file is missing: ${file}`)
 

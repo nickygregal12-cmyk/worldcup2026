@@ -1,31 +1,180 @@
-# Document Authority Map
+# Document Authority Map — the documentation constitution
 
-Use this map to decide which docs are active instructions, reference evidence, or future archive candidates. If this map conflicts with repo/runtime/tests/audits/build/visual review/deployment/Supabase evidence, stop and record the conflict.
+This is THE index. If a markdown document under `docs/` is not listed here, it is not current
+guidance, and the audit `npm run audit:doc-structure` fails the build until it is either listed or
+archived. If this map conflicts with repo, runtime, tests, audits, build, visual review or Supabase
+evidence, **stop and record the conflict** — do not resolve it silently.
 
-| Document/path | Current role | Authority level | Status | Why | Key rules or decisions extracted | Conflicts or uncertainty |
-| --- | --- | --- | --- | --- | --- | --- |
-| `AGENT-CONTROL/` | Durable first-read agent-control layer | Highest docs/process authority after repo/runtime proof and current user task | Keep active | Created to reduce repeated long prompts | Read first, stop on conflicts, keep scope narrow | New layer; validate against future repo facts |
-| `PROJECT-CONTROL.md` | Live dashboard | High current-state summary | Keep active | Records current operational state without long history | Branch, stage, deployment URL, migration count, blockers, priorities | Must be updated as state changes |
-| `docs/EURO28-PROJECT-CONSTITUTION.md` | Project constitution | Highest historical source document | Keep active | Declares owner, hierarchy, product invariants and safety boundaries | Nicky owns decisions; WC26 production blocked; Original/KO separate; one resolver; central scoring; privacy/admin gates; no `sudo`, no `npm audit fix --force`, no `git add .` | Older than this control layer but remains foundational |
-| `docs/EURO28-AGENT-RULES-AND-ROADMAP.md` | Historical agent rules and roadmap ledger | High reference; not first-read | Reference only | Large accumulated roadmap and marker records | Public signup remains closed; Migration 019 blocked; visual contracts binding as references; Original/KO separation | Too large for first-read; may contain superseded stage order |
-| `docs/design programme/` (note the space) | **Binding visual authority** (Design Direction and Components; two Concepts bundles; approved Home re-cut prototype; approved Dark Theme Palette) | **Highest visual authority** — supersedes the Design Charter's visual direction and the Night Broadcast contract set | Keep active | Adopted 2026-07-10 by Stage DESIGN-PROGRAMME-ADOPTION-1 (owner rulings) | Appearance only — changes nothing functional; gold joker-exclusive, sky broadcast/chrome accent; F1 ink variants + F3 token; Dark Theme Palette file is the dark-theme authority; circular ISO badges; 4px scale, compact bias; mandatory mobile score steppers; manual dark toggle; per-page re-cut exits FINAL per the 2026-07-09 finalisation standard | Item 69's documentation-constitution sweep (Mac-stranded) re-homes this registration under the constitution when it syncs. Registered here per the current tree's governance in the interim. |
-| `docs/EURO28-DESIGN-CHARTER.md` | Design constitution — **visual direction superseded 2026-07-10 by `docs/design programme/`; non-visual rules remain live** | High authority for non-visual rules only (line caps, CSS Modules, component discipline, dependency direction, WCAG mechanism, completion terminology) | Keep active | Governs frontend architecture/process; its identity/colour/type/spacing/composition direction is superseded | Semantic-token discipline; CSS Modules; Lucide icon source; predicted/live contexts distinct; §11 architecture enforcement live. Palette/identity/spacing values now come from the design programme | Visual direction superseded; see the banner at the top of the Charter and Stage DESIGN-PROGRAMME-ADOPTION-1 |
-| `docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md` | Completion ledger | High evidence reference | Keep active | Records accepted/completed functional areas and standing priorities | Completion requires proof; accepted stages remain evidence | Some rows may be historical rather than current priority |
-| `docs/PRODUCT-COMPLETENESS-ROADMAP.md` | Product roadmap | Medium-high product reference | Reference only | Consolidates gaps and sequencing | Public signup gates; completion gaps; suggested sequencing | May be superseded by newer stage-order docs |
-| `docs/STREAMLINED-BATCH-ORDER.md` | Batch sequencing map | Medium reference | Reference only | Shows older governing order and batches | Batch ordering, reference contracts, candidate stages | Current immediate order is now in `09-STAGE-ORDER.md` |
-| `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md` | Decision register and roadmap | High product-rule reference | Keep active | Records confirmed product decisions and scoring model | Product decisions, scoring model, navigation and roadmap decisions | Needs reconciliation if it conflicts with newer approved contracts |
-| `docs/EDGE-CASE-RULES-ADDENDUM.md` | Edge-case product rules | High rule reference | Keep active | Captures unresolved/tournament edge cases | Tiebreaker prompts, best-third resolver, bracket invalidation, KO scoring examples | Verify runtime implementation before claiming complete |
-| `docs/SIMULATION-SAFETY-GUIDELINES.md` | Simulation safety rules | High safety authority | Keep active | Prevents fake data affecting real users | Fake results never become official; normal scoring ignores simulation; WC26 production fail-closed | Schema/runtime state must be verified before relying on implementation |
-| `docs/OPERATIONS-RUNBOOK.md` | Human operations runbook | Medium-high operations authority | Keep active | Written for Nicky for deploys, backups and incidents | Backup, rollback, secrets, visual eyes-on acceptance, privacy basics | Some operational steps may depend on external services |
-| `docs/TESTING.md` | Test guidance | Medium-high verification authority | Keep active | Lists gates, focused audits and database tests | Full code gate, focused audits, database tests, package-lock checks | Current `npm run check` chain may be too broad for every stage |
-| `docs/DATABASE.md` | Database development reference | High database reference | Keep active | Lists active migrations and DB model | 18 active migrations; Original/KO DB separation; admin control-room model | Must verify live DB/schema before hosted changes |
-| `docs/DEPLOYMENT.md` | Deployment reference | High deployment reference | Keep active | Records Euro staging deploy and Supabase guardrails | Deployment URL; WC26 production blocked; backup before migration; Auth redirects | External Netlify/Supabase state can drift |
-| `docs/DEVELOPMENT.md` | Development workflow reference | Medium-high engineering reference | Keep active | Captures repo safety and architecture notes | No WC26 main/prod; no `sudo`; no `npm audit fix --force`; architecture separations | May contain stage-specific historical details |
-| `docs/THIRD-PARTY-ASSETS.md` | Asset provenance reference | Medium asset authority | Keep active | Records visual asset sources and constraints | Circle Flags and UEFA identity cautions | Verify licenses and asset availability before new use |
-| `docs/AGENT-DRIFT-GUARDS.md` | Audit rationale | Medium audit reference | Reference only | Explains drift-prevention scripts | Import reachability, dependency hygiene, debug leftovers, client singleton | Script wiring must be verified in `package.json` before relying on it |
-| `docs/DESIGN-CONTRAST-GUARDS.md` | Contrast audit rationale | Medium design-audit reference | Reference only | Explains contrast failures and guard intent | No surface tokens as foreground colour; runtime contrast guard proposed | Playwright route contrast guard is not proved installed/wired |
-| `docs/design-workshop/locked-design-docs-v9/` | Locked visual/design source set | High design reference | Keep active | Contains approved locked design docs | Approved design direction and visual contracts | Do not treat as production implementation |
-| `docs/reference-prototypes/` | **Content/interaction contracts (visual treatment superseded 2026-07-10)** | High reference for content/interaction only | Keep active | Approved prototypes still bind content/state coverage until each page's re-cut is approved | Visual treatment superseded by `docs/design programme/`; each of the 21 live files carries this header. Content/interaction contract binding until that page's re-cut is approved; do not port HTML/CSS into `src/`; a `-vN` file supersedes its unsuffixed predecessor, and any `-vN-superseded` file is provenance only | Prototype code/data are reference artefacts only. Home/Groups/KO/Bracket governed by their `-v2` files; the three reference-adoption audit scripts were repointed at the v2 paths in commit `0889c72` and pass. Visual layer now governed by the design programme |
-| `docs/design-baselines/` | Visual baseline evidence | High visual evidence | Keep active | Stores visual baseline captures and references | Baselines support review and regression checks | Do not archive as ordinary stale docs |
-| `docs/NEXT-CHAT-PROMPT-*` | Handoff prompt files | Low current authority | Candidate archive | Useful as handoff history, not durable rules | May contain recent task intent | Must be reviewed before archiving; may include still-useful context |
-| `docs/STAGE-*` | Stage evidence and historical task specs | Historical evidence | Reference only; many candidate archive | 118 top-level stage docs preserve proof trail | Stage-specific scope, audits, acceptance notes | Historical unless promoted here; archive only with index and audit updates |
+The map deliberately records **one job per document** and no volatile numbers. Counts, commits and
+migration totals live in the documents that own them; repeating them here would only create one more
+surface that can go stale.
+
+---
+
+## 1. The four rules
+
+**The same-commit staleness rule.** A document that records state must be corrected in the **same
+commit** as the change that made it stale. Recorded state equals real state. This is not a
+convention — `scripts/check-governance-coherence.mjs` enforces the mechanically checkable part
+(migration-count claims, version headers, return-point commits) and fails the build.
+
+**What justifies a new document.** A job no existing document has, **plus a row in this map added in
+the same commit**. A new document that is not in this map fails `audit:doc-structure`. If the job
+belongs to a document that already exists, amend that one instead: the corpus reached 168 top-level
+documents because "write a new stage doc" was always easier than "update the right one".
+
+**Session reports.** Working notes live in `reports/`, named `REPORT-<topic>-<date>.md`. `reports/`
+is **gitignored** — reports never travel between machines, and the Copy-Back Report returned in chat
+is the only channel that reaches the owner. A `REPORT-*` file anywhere outside `reports/` fails the
+audit. (`reports/REPORT-P6C-EXECUTOR.md` predates the rule and stays tracked as-is.)
+
+**The archive procedure.** When work closes, its document is history, not guidance:
+1. `git mv docs/<doc>.md docs/archive/<doc>.md` — history follows the file.
+2. Open it with the ARCHIVED banner (below). Every file in `docs/archive/` must carry it.
+3. Repoint any audit script that asserts markers inside it to the new path, and run that audit.
+4. Remove its row from this map.
+
+Commit the move separately from the banner where the file is small: a banner can outweigh a short
+document's content and drop the rename below git's similarity threshold, which silently loses the
+history the `git mv` was for.
+
+The banner, verbatim:
+
+```
+> **ARCHIVED — historical record of completed work.**
+> This document is frozen. It describes work that is finished and it is NOT current guidance:
+> do not derive present state, scope or decisions from it. The living document set is indexed by
+> `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`, which is the only index that describes what is true now.
+```
+
+`docs/archive/` is **frozen history**. It is excluded from current-state claims by
+`check-governance-coherence`, so a future migration never forces an edit to a closed stage record.
+Do not edit archived documents, and do not cite them as current — their internal cross-references
+still point at pre-archive paths, deliberately: rewriting them would falsify the record.
+
+---
+
+## 2. The living set
+
+### Root (the only markdown permitted at the repository root)
+
+| Document | Its one job |
+| --- | --- |
+| `CLAUDE.md` | Standing law for every agent session. Read before anything else. |
+| `AGENTS.md` | Entry point that routes an agent to the control layer. |
+| `PROJECT-CONTROL.md` | Live current-state dashboard: branch, stage, blockers, priorities. |
+| `README.md` | What the project is, for a human arriving cold. |
+
+### `AGENT-CONTROL/` — the durable first-read control layer
+
+Read first, stop on conflicts, keep scope narrow. `00`–`09` and `11` carry the standing agent rules,
+scope guards, workflow, Copy-Back format, design/database/visual rules, handover hygiene and stage
+order. `10` is this map.
+
+### Authority (CLAUDE.md §1 hierarchy)
+
+| Document | Its one job |
+| --- | --- |
+| `docs/EURO28-PROJECT-CONSTITUTION.md` | Process law: discrepancies reported not resolved; the check suite is a ratchet. |
+| `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md` | The append-only register of confirmed product decisions. |
+| `docs/EURO28-DESIGN-CHARTER.md` | Non-visual design law (architecture, CSS Modules, tokens). Visual direction superseded by `docs/design programme/` (proposed, not adopted). |
+| `docs/RULES-SCORING-LOCKED-CONTRACT.md` | The ONLY scoring authority. Nothing else may assert point values. |
+
+### Current state and plan
+
+| Document | Its one job |
+| --- | --- |
+| `docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md` | What is actually finished, with proof. |
+| `docs/EURO28-AGENT-RULES-AND-ROADMAP.md` | Accumulated agent rules and roadmap ledger. |
+| `docs/EURO28-SITE-ACCESS-MAP.md` | Which surfaces exist and who may reach them. |
+| `docs/PRODUCT-COMPLETENESS-ROADMAP.md` | Remaining product gaps and their sequencing. |
+| `docs/STREAMLINED-BATCH-ORDER.md` | The order the remaining batches are worked in. |
+| `docs/STAGE-13G-HANDOVER-20260705.md` | **Load-bearing, not history:** the sole dated handover, and the deployed-head anchor `check-governance-coherence` validates every governing doc's return point against. |
+
+### Engineering handbook
+
+| Document | Its one job |
+| --- | --- |
+| `docs/DATABASE.md` | The database model and the active migration list. |
+| `docs/DEPLOYMENT.md` | How this deploys, and the Supabase guardrails. |
+| `docs/DEVELOPMENT.md` | Repo safety and architecture separations for day-to-day work. |
+| `docs/TESTING.md` | The gates, the focused audits, and what green means. |
+
+### Operations (safety-critical — read before touching a database)
+
+| Document | Its one job |
+| --- | --- |
+| `docs/DATABASE-BACKUP-AND-RESTORE.md` | The backup a staging write requires first, every time. |
+| `docs/STAGING-ADMIN-ACCESS.md` | How to reach Euro staging as an administrator. |
+| `docs/OPERATIONS-RUNBOOK.md` | Deploys, backups and incidents, written for the owner. |
+| `docs/LOCAL-SCENARIO-RUNNER-RUNBOOK.md` | Running scenarios locally without touching hosted data. |
+| `docs/SIMULATION-SAFETY-GUIDELINES.md` | Why simulated results can never become official ones. |
+
+### Standing rules and guards
+
+| Document | Its one job |
+| --- | --- |
+| `docs/EDGE-CASE-RULES-ADDENDUM.md` | The tournament edge cases the product must still answer. |
+| `docs/UNRESOLVED-GROUP-TIEBREAKER-PROMPT.md` | The unresolved group-tiebreaker question, kept open on purpose. |
+| `docs/CONTEXTUAL-RETURN-RULE.md` | Where a player returns to after an action. |
+| `docs/AGENT-DRIFT-GUARDS.md` | Why the drift audits exist and what each one catches. |
+| `docs/DESIGN-CONTRAST-GUARDS.md` | Why the Home page once shipped unreadable, and the guard that prevents it. |
+| `docs/THIRD-PARTY-ASSETS.md` | Provenance and licence constraints for visual assets. |
+| `docs/APPROVED-VISUAL-CONTRACT-INVENTORY.md` | Which visual contracts are approved and locked. |
+| `docs/REFERENCE-FILE-INSTALL-MAP.md` | Where each reference file installs to. |
+
+### Behaviour contracts (each asserted by an audit — moving one breaks its audit)
+
+| Document | Its one job |
+| --- | --- |
+| `docs/ADMIN-OPS-TRUST-CONTRACT.md` | Admin operations the player must be able to trust. |
+| `docs/ENTRY-AND-REVIEW-JOURNEY-CONTRACT.md` | The entry and review journey's required behaviour. |
+| `docs/LEAGUE-SETUP-AND-INVITES-CONTRACT.md` | League setup and invite behaviour. |
+| `docs/MORE-ACCOUNT-TRUST-CONTRACT.md` | More/Account surface trust behaviour. |
+| `docs/RESULTS-AND-SCORING-TRUST-CONTRACT.md` | Results and scoring trust behaviour. |
+| `docs/FINAL-DESIGN-CONTENT-SWEEP-CONTRACT.md` | The design/content sweep the build must satisfy. |
+| `docs/STAGE-13F-I-TOURNAMENT-PICK-CONTRACT.md` | The approved tournament-pick set and values. Despite the `STAGE-` prefix this is a live contract, amended 2026-07-10 to the locked scoring. |
+| `docs/PUBLIC-SIGNUP-CONTROLLED-OPEN-CONTRACT.md` | Controlled-open behaviour for public signup. |
+| `docs/PUBLIC-SIGNUP-EXTERNAL-SETTINGS-CHECK-CONTRACT.md` | External settings that must be verified before opening. |
+| `docs/PUBLIC-SIGNUP-IMPLEMENTATION-CONTRACT.md` | Public-signup implementation behaviour. |
+| `docs/PUBLIC-SIGNUP-IMPLEMENTATION-READINESS-CONTRACT.md` | Readiness conditions before implementation. |
+| `docs/PUBLIC-SIGNUP-OPENING-GATE-CONTRACT.md` | The gate that must pass before signup opens. |
+| `docs/PUBLIC-SIGNUP-SMTP-READINESS-CONTRACT.md` | SMTP readiness before signup opens. |
+
+### Live tooling input
+
+| Document | Its one job |
+| --- | --- |
+| `docs/CANDIDATE-TEAM-POOL-BRIEF.md` | The candidate pool and draw-slot rules that `scripts/assign-candidate-teams.mjs` reads. |
+
+### Directory zones (not individually indexed)
+
+| Path | Its one job |
+| --- | --- |
+| `docs/archive/` | Frozen history. Every file carries the ARCHIVED banner. Never current guidance. |
+| `docs/reference-prototypes/` | Approved prototypes — binding content/interaction contracts (CLAUDE.md §1). |
+| `docs/design programme/` (note the space) | **PROPOSED, NOT ADOPTED.** Governs nothing. Cite only as "(design programme — proposed, not yet adopted)". |
+| `docs/design-workshop/locked-design-docs-v9/` | The locked v9 design pack — a frozen source snapshot. |
+| `docs/design-baselines/` | Visual baseline captures used for review and regression. |
+| `docs/future-templates/` | Templates not yet in use. |
+
+---
+
+## 3. Pending — not classified, and deliberately so
+
+**Deferred behind the Leagues boundary.** These eight are closed stage records and belong in
+`docs/archive/`, but each is asserted by a league-named audit script, and an interrupted Leagues
+session's work must rebase cleanly. Archiving them would force edits to exactly those scripts. They
+stay at the top of `docs/` and are allowed by `audit:doc-structure` as an explicit, named exception —
+**not** because they are living. Archive them once Leagues recovery lands.
+
+`STAGE-11-LEAGUES-AND-SHARED-PREDICTIONS.md`, `STAGE-13G-B-LEAGUE-LIFECYCLE.md`,
+`STAGE-13G-C2-LEAGUE-RACE-STORY.md`, `STAGE-13G-C3-LEAGUE-RACE-SUMMARY.md`,
+`STAGE-13G-C4-COMPACT-LEAGUE-STANDINGS.md`, `STAGE-13G-C5-LEAGUE-DETAIL-DESTINATION.md`,
+`STAGE-13G-C6-COMPACT-LEAGUE-SHELL.md`, `STAGE-LEAGUE-SETUP-AND-INVITES-1.md`.
+
+**Owner to confirm.** Kept living pending a ruling, because archiving a document asserts it records
+*completed* work — and for these two that assertion may be false:
+
+- `docs/ADMIN-SCENARIO-RUNNER-BRIEF.md` — a design brief for the scenario runner. `docs/LOCAL-SCENARIO-RUNNER-RUNBOOK.md` now documents how to run it, which suggests the brief is closed. Confirm, then archive.
+- `docs/STAGE-WELCOME-PAGE-CONTRACT.md` — says "draft candidate — not yet approved". That is pending work, not completed work; the ARCHIVED banner would assert something untrue about it. Approve, reject, or archive.

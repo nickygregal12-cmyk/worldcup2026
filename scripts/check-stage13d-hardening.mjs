@@ -9,7 +9,7 @@ const exists = relativePath => fs.existsSync(path.join(root, relativePath))
 const read = relativePath => fs.readFileSync(path.join(root, relativePath), 'utf8')
 
 for (const file of [
-  'docs/STAGE-13D-BATCH-3-HARDENING.md',
+  'docs/archive/STAGE-13D-BATCH-3-HARDENING.md',
   'scripts/check-stage13d-hardening.mjs',
   'src/lib/latestRequest.js',
   'src/lib/__tests__/latestRequest.test.js',

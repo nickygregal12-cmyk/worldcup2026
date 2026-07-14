@@ -9,7 +9,7 @@ const exists = file => fs.existsSync(path.join(root, file))
 const errors = []
 const fail = message => errors.push(message)
 
-const h2DocPath = 'docs/STAGE-13G-H2-PRODUCT-FACING-ALIGNMENT.md'
+const h2DocPath = 'docs/archive/STAGE-13G-H2-PRODUCT-FACING-ALIGNMENT.md'
 if (!exists(h2DocPath)) fail(`${h2DocPath} is missing`)
 const h2 = exists(h2DocPath) ? read(h2DocPath) : ''
 

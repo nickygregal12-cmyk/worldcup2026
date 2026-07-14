@@ -668,7 +668,7 @@ Next sequenced package: a default-off write-capable skeleton only after explicit
 
 Status: complete in development as a docs/audit-only decision-alignment package.
 
-This slice records Euro 2028 scale gates before wider registration and before matchday one. It adds `docs/PRODUCT-COMPLETENESS-ROADMAP.md`, adds `docs/STAGE-PRODUCT-COMPLETENESS-REGISTER-ALIGNMENT.md`, and wires a product-completeness audit into the local gate chain.
+This slice records Euro 2028 scale gates before wider registration and before matchday one. It adds `docs/PRODUCT-COMPLETENESS-ROADMAP.md`, adds `docs/archive/STAGE-PRODUCT-COMPLETENESS-REGISTER-ALIGNMENT.md`, and wires a product-completeness audit into the local gate chain.
 
 Confirmed decisions:
 
@@ -711,7 +711,7 @@ Accepted. The signup owner decisions are recorded without opening public registr
 
 Status: complete as a docs/audit recording stage.
 
-This stage records the locked product scoring and rules contract before the Entry/Review journey stage. It adds `docs/STAGE-RULES-SCORING-LOCK-1.md`, adds `docs/RULES-SCORING-LOCKED-CONTRACT.md`, updates the decision register, agent rules, product roadmap and streamlined batch order, and wires `audit:rules-scoring-lock` into `npm run check`.
+This stage records the locked product scoring and rules contract before the Entry/Review journey stage. It adds `docs/archive/STAGE-RULES-SCORING-LOCK-1.md`, adds `docs/RULES-SCORING-LOCKED-CONTRACT.md`, updates the decision register, agent rules, product roadmap and streamlined batch order, and wires `audit:rules-scoring-lock` into `npm run check`.
 
 Recorded decisions:
 

@@ -24,7 +24,7 @@ const resultTests = read('src/results/__tests__/resultModel.test.js')
 const matchTests = read('src/matchCentre/__tests__/matchCentreModel.test.js')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const roadmap = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
-const stageDoc = read('docs/STAGE-13G-B-RESULTS-LIFECYCLE.md')
+const stageDoc = read('docs/archive/STAGE-13G-B-RESULTS-LIFECYCLE.md')
 
 if (!resultModel.includes('export function buildResultsLifecycle')) fail('results lifecycle model is missing')
 if (!resultModel.includes('export function buildLeaderboardLifecycle')) fail('leaderboard lifecycle model is missing')

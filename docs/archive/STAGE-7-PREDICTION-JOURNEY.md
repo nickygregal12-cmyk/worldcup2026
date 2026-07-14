@@ -1,3 +1,8 @@
+> **ARCHIVED — historical record of completed work.**
+> This document is frozen. It describes work that is finished and it is NOT current guidance:
+> do not derive present state, scope or decisions from it. The living document set is indexed by
+> `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`, which is the only index that describes what is true now.
+
 > **Superseded by Stage 8:** Stage 7 temporarily represented knockout score rows inside the original 51-row bundle. Stage 8 corrects this: the original bracket is winner-only with no jokers, while real knockout score predictions belong to a completely separate KO Predictor competition.
 
 # Stage 7 — Prediction Journey and Autosave UX

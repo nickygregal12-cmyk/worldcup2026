@@ -10,7 +10,7 @@ const errors = []
 const fail = message => errors.push(message)
 
 const required = [
-  'docs/STAGE-13G-ACCOUNT-1-ACCOUNT-DESTINATION-REBUILD.md',
+  'docs/archive/STAGE-13G-ACCOUNT-1-ACCOUNT-DESTINATION-REBUILD.md',
   'src/auth/AccountAccess.jsx',
   'src/auth/AccountDashboard.jsx',
   'src/auth/AccountDashboard.module.css',
@@ -31,7 +31,7 @@ const service = read('src/auth/accountAccessService.js')
 const guestModel = read('src/guest/guestAccountTransferModel.js')
 const guest = read('src/guest/GuestAccountTransfer.jsx')
 const app = read('src/App.jsx')
-const doc = read('docs/STAGE-13G-ACCOUNT-1-ACCOUNT-DESTINATION-REBUILD.md')
+const doc = read('docs/archive/STAGE-13G-ACCOUNT-1-ACCOUNT-DESTINATION-REBUILD.md')
 const packageJson = JSON.parse(read('package.json'))
 
 for (const marker of [

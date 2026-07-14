@@ -16,7 +16,7 @@ function assertIncludes(label, text, marker) {
   if (!text.includes(marker)) fail(`${label} missing marker: ${marker}`)
 }
 
-const spec = read('docs/STAGE-13G-REF-PROTOTYPE-ADOPTION.md')
+const spec = read('docs/archive/STAGE-13G-REF-PROTOTYPE-ADOPTION.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const agentRules = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')

@@ -27,7 +27,7 @@ const requiredFiles = [
   'src/testFixtures/adminControlRoomVisualEntry.jsx',
   'src/testFixtures/__tests__/adminControlRoomVisualFixture.test.jsx',
   'visual-admin.html',
-  'docs/STAGE-13F-K2-EURO-CONTROL-ROOM-IMPLEMENTATION.md',
+  'docs/archive/STAGE-13F-K2-EURO-CONTROL-ROOM-IMPLEMENTATION.md',
   'docs/design-baselines/stage13fk2/README.md',
 ]
 for (const file of requiredFiles) if (!exists(file)) fail(`Stage 13F-K2 file is missing: ${file}`)

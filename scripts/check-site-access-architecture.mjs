@@ -12,7 +12,7 @@ const exists = relativePath => fs.existsSync(path.join(root, relativePath))
 for (const file of [
   'docs/EURO28-PROJECT-CONSTITUTION.md',
   'docs/EURO28-SITE-ACCESS-MAP.md',
-  'docs/STAGE-13F-0-SITE-ACCESS-ARCHITECTURE.md',
+  'docs/archive/STAGE-13F-0-SITE-ACCESS-ARCHITECTURE.md',
   'src/app/appRoutes.js',
   'src/app/EuroAppShell.jsx',
   'src/home/HomeDashboard.jsx',

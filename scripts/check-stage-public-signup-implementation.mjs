@@ -26,7 +26,7 @@ const files = [
   'src/auth/__tests__/authValidation.test.js',
   'src/auth/__tests__/euroAuthService.test.js',
   'src/auth/__tests__/publicSignupReadiness.test.js',
-  'docs/STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1.md',
+  'docs/archive/STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1.md',
   'docs/PUBLIC-SIGNUP-IMPLEMENTATION-CONTRACT.md',
   'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md',
   'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md',
@@ -66,7 +66,7 @@ const stageMarkers = [
   'No Supabase schema, RPC, RLS, service-role or browser write change',
   'No Migration 019',
 ]
-for (const file of ['docs/STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1.md', 'docs/PUBLIC-SIGNUP-IMPLEMENTATION-CONTRACT.md']) {
+for (const file of ['docs/archive/STAGE-PUBLIC-SIGNUP-IMPLEMENTATION-1.md', 'docs/PUBLIC-SIGNUP-IMPLEMENTATION-CONTRACT.md']) {
   for (const marker of stageMarkers) requireText(file, marker, 'stage contract must preserve implementation boundary')
 }
 for (const file of ['docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md', 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', 'docs/EURO28-AGENT-RULES-AND-ROADMAP.md', 'docs/PRODUCT-COMPLETENESS-ROADMAP.md', 'docs/STREAMLINED-BATCH-ORDER.md']) {

@@ -25,7 +25,7 @@ Two separate issues, both real:
 **A. Two of the tournament's own canonical facts are stale, not just missing.**
 
 - `src/config/tournament.js` → `TOURNAMENT_CONFIG.dates.tournamentEndAt` is `null`.
-- `docs/STAGE-1-TOURNAMENT-MODEL.md` treats venue names as undisclosed.
+- `docs/archive/STAGE-1-TOURNAMENT-MODEL.md` treats venue names as undisclosed.
 
 Both are wrong as of now. UEFA confirmed the full schedule and all 9 stadium names on 12 November 2025:
 
@@ -49,7 +49,7 @@ Bundling them means the reusable half gets diluted by the one-and-done half, and
 
 ### A2. Required changes
 
-1. **Data correction** — update `src/config/tournament.js` (`TOURNAMENT_CONFIG`) and `docs/STAGE-1-TOURNAMENT-MODEL.md` with the confirmed dates, venues and host nations above. Keep the existing provisional/confirmed distinction the codebase already uses — group participants and kickoff times stay explicitly unconfirmed; dates, venues and host nations become confirmed. No invented specifics beyond what's public and cited above.
+1. **Data correction** — update `src/config/tournament.js` (`TOURNAMENT_CONFIG`) and `docs/archive/STAGE-1-TOURNAMENT-MODEL.md` with the confirmed dates, venues and host nations above. Keep the existing provisional/confirmed distinction the codebase already uses — group participants and kickoff times stay explicitly unconfirmed; dates, venues and host nations become confirmed. No invented specifics beyond what's public and cited above.
 
 2. **Split `#/tournament` into two destinations**:
    - **Tournament** — hosts, venues (with opener/final tags), key dates, format ladder, groups (provisional slots, one plain status line, no invented FAQ about it). Modelled on `euro28-tournament-page-prototype.html`.
@@ -106,7 +106,7 @@ Rebuild the signed-in state of `AccountAccess.jsx` (the `session?.user && !isRec
    - primary action: **"Keep these predictions"**
    - secondary action: **"Start fresh"** (unchanged)
 
-   Thread this wording through every file the audit checks, not just the trigger point: `docs/STAGE-13G-C1-GUEST-IMPORT-PROMPT.md`, `src/guest/GuestAccountTransfer.jsx`, `src/guest/guestAccountTransferModel.js`, `src/guest/guestAccountTransferPresentation.js`, `src/guest/__tests__/guestAccountTransferModel.test.js`, `src/guest/__tests__/GuestAccountTransfer.test.jsx`, **and** `scripts/check-stage13g-c1-guest-import-prompt.mjs` itself (its hardcoded marker strings on lines 36–38 need updating to match). Update the stage doc's status/changelog entry to record both the copy revision and the modal-placement correction rather than silently rewriting an "ACCEPTED" stage with no record. The underlying transfer logic (`buildGuestAccountTransferPrompt`, competition-boundary rules, "Start fresh clears local draft, never touches account data") does not change — this is presentation and placement only.
+   Thread this wording through every file the audit checks, not just the trigger point: `docs/archive/STAGE-13G-C1-GUEST-IMPORT-PROMPT.md`, `src/guest/GuestAccountTransfer.jsx`, `src/guest/guestAccountTransferModel.js`, `src/guest/guestAccountTransferPresentation.js`, `src/guest/__tests__/guestAccountTransferModel.test.js`, `src/guest/__tests__/GuestAccountTransfer.test.jsx`, **and** `scripts/check-stage13g-c1-guest-import-prompt.mjs` itself (its hardcoded marker strings on lines 36–38 need updating to match). Update the stage doc's status/changelog entry to record both the copy revision and the modal-placement correction rather than silently rewriting an "ACCEPTED" stage with no record. The underlying transfer logic (`buildGuestAccountTransferPrompt`, competition-boundary rules, "Start fresh clears local draft, never touches account data") does not change — this is presentation and placement only.
 4. **New: "Clear my predictions" danger-zone action.** This is genuinely new functionality, not a restyle — there is currently no way for a signed-in user to wipe their own Original Predictor group scores and bracket picks. Requirements:
    - Visible only before the Original Predictor locks — derive this from `resolveTournamentLifecycle()`, the same central lifecycle resolver already used for account autosave, not a raw database lock-field check.
    - Scope: clears Original Predictor group scores and bracket picks only. Does not touch KO Predictor (which isn't open pre-lock anyway), leagues, or account identity.
@@ -133,7 +133,7 @@ Rebuild the signed-in state of `AccountAccess.jsx` (the `session?.user && !isRec
 
 This is **cosmetic only** — no admin power, permission, data operation or route change. Confirm that scope with yourself before starting: if a change would alter what an admin can do rather than how it looks, it's out of scope for this stage.
 
-Read `docs/STAGE-13F-F-ADMIN-CONTROL-ROOM-VISUAL-REBUILD.md` first — it's the last visual pass on this surface (checkpoint `8349e83`) and this stage supersedes/extends it, not duplicates it. Record this stage as a new entry referencing that one, the same way Stage 13G-BRACKET-REF referenced the earlier Bracket work.
+Read `docs/archive/STAGE-13F-F-ADMIN-CONTROL-ROOM-VISUAL-REBUILD.md` first — it's the last visual pass on this surface (checkpoint `8349e83`) and this stage supersedes/extends it, not duplicates it. Record this stage as a new entry referencing that one, the same way Stage 13G-BRACKET-REF referenced the earlier Bracket work.
 
 ### C1. The problem, in plain terms
 
@@ -161,7 +161,7 @@ Status: design signed off below. This is the approved contract for the next chat
 
 ### D0. Before you touch anything
 
-Read `docs/STAGE-13F-C-EURO-MATCH-CENTRE.md` first — the real Match Centre already exists at `src/matchCentre/MatchCentre.jsx` / `matchCentreModel.js` / `matchCentreService.js` (explicitly built to replace WC26's `MatchStats.jsx`, which is separate legacy code — do not confuse the two, and do not touch `src/pages/MatchStats.jsx`). Check the Decision Register/Ledger for any existing entry describing Match Centre content quality and amend it in place if one exists; otherwise record this as a new stage in the `13G-*` family — propose `13G-MATCH-CENTRE-REF` for the docs/audit-only reference-adoption package this part describes, followed by a separate `13G-MATCH-CENTRE-1` implementation stage, mirroring how Bracket-REF preceded Bracket-1.
+Read `docs/archive/STAGE-13F-C-EURO-MATCH-CENTRE.md` first — the real Match Centre already exists at `src/matchCentre/MatchCentre.jsx` / `matchCentreModel.js` / `matchCentreService.js` (explicitly built to replace WC26's `MatchStats.jsx`, which is separate legacy code — do not confuse the two, and do not touch `src/pages/MatchStats.jsx`). Check the Decision Register/Ledger for any existing entry describing Match Centre content quality and amend it in place if one exists; otherwise record this as a new stage in the `13G-*` family — propose `13G-MATCH-CENTRE-REF` for the docs/audit-only reference-adoption package this part describes, followed by a separate `13G-MATCH-CENTRE-1` implementation stage, mirroring how Bracket-REF preceded Bracket-1.
 
 ### D1. The problem, in plain terms
 
@@ -204,14 +204,14 @@ Reference: `euro28-match-centre-page-prototype.html` implements Decisions 1, 2, 
 
 ## Part E — Player View, Head-to-head and Points Breakdown
 
-Two of the three prototypes for this part already exist in the repo and are already signed off: `docs/reference-prototypes/euro28-player-view-prototype.html`, adopted via `docs/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md`. That prototype mocks the player-view hub with buttons pointing at Head-to-head and Points Breakdown, but not what those two destinations actually look like as full pages — so two new prototypes are attached to fill that gap: `euro28-points-breakdown-page-prototype.html` and `euro28-head-to-head-page-prototype.html`. This part is otherwise an investigation-then-build task, not a from-scratch design task.
+Two of the three prototypes for this part already exist in the repo and are already signed off: `docs/reference-prototypes/euro28-player-view-prototype.html`, adopted via `docs/archive/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md`. That prototype mocks the player-view hub with buttons pointing at Head-to-head and Points Breakdown, but not what those two destinations actually look like as full pages — so two new prototypes are attached to fill that gap: `euro28-points-breakdown-page-prototype.html` and `euro28-head-to-head-page-prototype.html`. This part is otherwise an investigation-then-build task, not a from-scratch design task.
 
 ### E0. Before you touch anything
 
-This is not a case of scope being lost — check first, but expect to confirm the opposite. `docs/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md`, the Decision Register, the Agent Rules and the Ledger all already describe the same accepted "S5 shape" in detail: a dedicated player view opened from league rows and other player-entry points, with header, Predictions/Bracket/Tables, and header actions routing to real Head-to-head and Points-breakdown destinations at `#/player/:userId` and `#/player/:userId/points`. The Ledger correctly marks this `SCHEDULED` under Stage 13G-C. Run:
+This is not a case of scope being lost — check first, but expect to confirm the opposite. `docs/archive/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md`, the Decision Register, the Agent Rules and the Ledger all already describe the same accepted "S5 shape" in detail: a dedicated player view opened from league rows and other player-entry points, with header, Predictions/Bracket/Tables, and header actions routing to real Head-to-head and Points-breakdown destinations at `#/player/:userId` and `#/player/:userId/points`. The Ledger correctly marks this `SCHEDULED` under Stage 13G-C. Run:
 
 ```bash
-git log --oneline -- docs/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md
+git log --oneline -- docs/archive/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md
 git log --oneline -- src/player/
 git log --oneline -- src/leagues/Leagues.jsx
 ```
@@ -258,7 +258,7 @@ This part is already built and tested, not just specced — three files are atta
 
 | File | Frozen sentence | Source of the freeze |
 |---|---|---|
-| `src/leagues/Leagues.jsx:291` | "Track each competition separately with a compact points table. Original Predictor and KO Predictor ranks and points are always shown separately." | `docs/STAGE-13G-C-CLOSEOUT-HANDOVER.md` literally calls this "the required competition-boundary sentence" — **and** it's hardcoded as an exact-match marker in both `scripts/check-stage13g-c6-compact-league-shell.mjs:39` and `scripts/check-stage13d-integration.mjs:30` |
+| `src/leagues/Leagues.jsx:291` | "Track each competition separately with a compact points table. Original Predictor and KO Predictor ranks and points are always shown separately." | `docs/archive/STAGE-13G-C-CLOSEOUT-HANDOVER.md` literally calls this "the required competition-boundary sentence" — **and** it's hardcoded as an exact-match marker in both `scripts/check-stage13g-c6-compact-league-shell.mjs:39` and `scripts/check-stage13d-integration.mjs:30` |
 | `src/player/PlayerHeadToHead.jsx:118` | "...Only selections released by the existing server privacy rules are shown." | Same phrase duplicated in `playerInsightModel.js` |
 | `src/player/playerInsightModel.js:92` | "Original Predictor point evidence follows the global prediction lock. Only selections released by the existing server privacy rules are shown." | — |
 | `src/teamProfile/teamProfileModel.js:155` | "Community percentages use complete Original Predictor brackets only. The KO Predictor is not included and no Original/KO points are combined." | Duplicated again at line 162 with a different lead-in |
@@ -275,7 +275,7 @@ Note why line 291 specifically could never get fixed by hand: two different audi
    - playerInsightModel.js → *"Your Original Predictor picks stay hidden from others until the tournament locks — then everyone can see how each prediction scored."*
    - teamProfileModel.js (both occurrences) → *"These percentages are based on Original Predictor bracket picks only — KO Predictor isn't part of this."* / *"These percentages stay hidden until enough predictions are locked in to show a fair picture. Only Original Predictor picks count here."*
 4. **Fix the structural cause for the Leagues.jsx sentence specifically**, not just the wording: extract the rewritten copy into one named, exported constant (e.g. `COMPETITION_BOUNDARY_COPY` in a small shared copy/constants module), have `Leagues.jsx` render that constant, and change both `check-stage13g-c6-compact-league-shell.mjs` and `check-stage13d-integration.mjs` to assert the constant is used/rendered rather than hardcoding a duplicate literal string. This means future copy edits happen in exactly one place and the audits can never drift out of sync with it again — the same fix pattern applies to any other place where an audit currently hardcodes prose instead of a shared constant.
-5. Update `docs/STAGE-13G-C-CLOSEOUT-HANDOVER.md`'s own record of "the required competition-boundary sentence" to point at the new constant name instead of quoting exact prose, so the doc itself stops being the thing that re-freezes the next wording choice.
+5. Update `docs/archive/STAGE-13G-C-CLOSEOUT-HANDOVER.md`'s own record of "the required competition-boundary sentence" to point at the new constant name instead of quoting exact prose, so the doc itself stops being the thing that re-freezes the next wording choice.
 6. Record the underlying principle in `docs/EURO28-DESIGN-CHARTER.md` and/or `docs/EURO28-AGENT-RULES-AND-ROADMAP.md`, matching how other architecture rules are stated there (`check-frontend-architecture.mjs` checks for specific marker strings in the Charter — these two new rules should get the same treatment): something like *"User-facing surfaces carry zero admin, dev, or build-internal language, and never echo spec/decision-doc prose verbatim — that vocabulary lives only in `src/admin/**` and `docs/**`. Copy is written for the player reading it, not lifted from the requirement that produced it."* Add that marker string to both audits (Charter-presence check, following the existing pattern) and to the Charter doc itself.
 7. As Parts A–E in this brief get built, run both audits as part of each — cheap insurance against exactly the kind of thing this brief kept finding by hand.
 
@@ -299,7 +299,7 @@ grep -n "13G-B" docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md docs/E
 grep -n "\-\-brand" src/design/tokens.css docs/EURO28-DESIGN-CHARTER.md
 grep -n "MatchStats" src/App.jsx src/app/
 grep -rln "from '\.\./pages\|from '\./pages" src/ --include=*.jsx --include=*.js | grep -v "^src/pages/"
-git log --oneline -- docs/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md
+git log --oneline -- docs/archive/STAGE-13G-PLAYER-VIEW-REFERENCE-ADOPTION.md
 ```
 
 Confirm the current state of Stage 13G-B, confirm the `--brand` token conflict, and confirm the real Match Centre route points at `src/matchCentre/MatchCentre.jsx` rather than the legacy `MatchStats.jsx`. The `grep -rln` line should return nothing — if it does return a file, that's a live reference into `src/pages/` you need to account for before treating any of `AdminPanel.jsx`, `Profile.jsx`, `HeadToHead.jsx`, `PointsSummary.jsx` or the rest of that directory as dead. Confirm the Player View reference-adoption doc's history looks like normal doc-then-schedule progression, not a dropped build. Drop in and wire up Part F's audit early — it's independent of the other five and cheap to add first, then let it run against your work on the rest as you go. Propose amended/new stage ids for Parts A–E and get them recorded across Charter, Agent Rules, Decision Register and Ledger before starting the build — same governance as every other stage in this project.

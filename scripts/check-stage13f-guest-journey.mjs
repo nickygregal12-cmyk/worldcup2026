@@ -20,7 +20,7 @@ const requiredFiles = [
   'src/journey/euroLuckyDip.js',
   'src/journey/GroupsPredictorActions.module.css',
   'src/journey/__tests__/euroLuckyDip.test.js',
-  'docs/STAGE-13F-A-GUEST-JOURNEY-AND-LUCKY-DIP.md',
+  'docs/archive/STAGE-13F-A-GUEST-JOURNEY-AND-LUCKY-DIP.md',
 ]
 for (const file of requiredFiles) if (!exists(file)) fail(`Stage 13F-A file is missing: ${file}`)
 

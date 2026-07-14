@@ -51,7 +51,7 @@ for (const file of [
   'src/admin/AdminOperations.jsx',
   'src/admin/__tests__/adminOperationsModel.test.js',
   'src/admin/__tests__/adminOperationsService.test.js',
-  'docs/STAGE-10-ADMIN-RESULTS-AND-TOURNAMENT-OPERATIONS.md',
+  'docs/archive/STAGE-10-ADMIN-RESULTS-AND-TOURNAMENT-OPERATIONS.md',
   'supabase/tests/database/012_admin_results_operations.test.sql',
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 10 file is missing: ${file}`)
 

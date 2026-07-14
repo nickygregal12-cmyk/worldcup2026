@@ -25,7 +25,7 @@ const forbidText = (file, marker, reason) => {
   if (exists(file) && has(file, marker)) errors.push(`${file} must not include "${marker}" — ${reason}.`)
 }
 
-const stageDoc = 'docs/STAGE-FINAL-DESIGN-CONTENT-SWEEP-1.md'
+const stageDoc = 'docs/archive/STAGE-FINAL-DESIGN-CONTENT-SWEEP-1.md'
 const contractDoc = 'docs/FINAL-DESIGN-CONTENT-SWEEP-CONTRACT.md'
 const register = 'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md'
 const ledger = 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md'

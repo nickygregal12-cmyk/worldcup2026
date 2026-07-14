@@ -26,7 +26,7 @@ const requiredFiles = [
   'src/app/appRoutes.js',
   'src/app/navigationLifecycle.js',
   'src/app/__tests__/navigationLifecycle.test.js',
-  'docs/STAGE-13A-V6-DESIGN-SYSTEM-NAVIGATION-HOME.md',
+  'docs/archive/STAGE-13A-V6-DESIGN-SYSTEM-NAVIGATION-HOME.md',
   'src/home/HomeDashboard.jsx',
   'src/tournament/TournamentOverview.jsx',
 ]

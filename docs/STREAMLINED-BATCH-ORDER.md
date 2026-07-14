@@ -273,7 +273,7 @@ Migration 019 boundary marker for STAGE-RULES-SCORING-LOCK-1: active migrations 
 
 ## Batch 2 detail — STAGE-ENTRY-AND-REVIEW-JOURNEY-1
 
-Locked contract now recorded in `docs/STAGE-ENTRY-AND-REVIEW-JOURNEY-1.md` and `docs/ENTRY-AND-REVIEW-JOURNEY-CONTRACT.md`.
+Locked contract now recorded in `docs/archive/STAGE-ENTRY-AND-REVIEW-JOURNEY-1.md` and `docs/ENTRY-AND-REVIEW-JOURNEY-CONTRACT.md`.
 
 Implementation must cover Home clarity, Review Picks, Welcome, Invite/Join, no wrong-state flicker, progress-aware CTA model, auto-calculated group-goals display, unresolved in-group tiebreaker prompt, best-third prompt, bracket invalidation, joker confirmation and locked prediction snapshot.
 

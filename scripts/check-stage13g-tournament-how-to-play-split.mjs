@@ -16,8 +16,8 @@ for (const file of [
   'src/App.jsx',
   'src/tournament/TournamentOverview.jsx',
   'src/tournament/tournamentPageModel.js',
-  'docs/STAGE-1-TOURNAMENT-MODEL.md',
-  'docs/STAGE-13G-B-TOURNAMENT-HOW-TO-PLAY-SPLIT.md',
+  'docs/archive/STAGE-1-TOURNAMENT-MODEL.md',
+  'docs/archive/STAGE-13G-B-TOURNAMENT-HOW-TO-PLAY-SPLIT.md',
 ]) {
   if (!exists(file)) fail(`Required Stage 13G-B Tournament split file is missing: ${file}`)
 }
@@ -97,7 +97,7 @@ for (const forbidden of ['why can\'t I see real teams', 'Why can\'t I see real t
   if (component.includes(forbidden) || model.includes(forbidden)) fail(`Defensive real-team FAQ framing must not be used: ${forbidden}`)
 }
 
-const stage1 = read('docs/STAGE-1-TOURNAMENT-MODEL.md')
+const stage1 = read('docs/archive/STAGE-1-TOURNAMENT-MODEL.md')
 for (const marker of [
   'Confirmed UEFA 2028 facts',
   '9 June 2028 to 9 July 2028',
@@ -115,7 +115,7 @@ for (const [file, markers] of Object.entries({
   'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md': ['Tournament/How to Play split', 'Dedicated `#/how-to-play` destination', 'Canonical tournament facts'],
   'docs/EURO28-AGENT-RULES-AND-ROADMAP.md': ['Stage 13G-B-TOURNAMENT-1', '`#/tournament` is the football facts destination', '`#/how-to-play` is the predictor mechanics destination'],
   'docs/EURO28-DESIGN-CHARTER.md': ['Tournament, How to Play', 'How to Play is a separate mechanics lookup destination'],
-  'docs/STAGE-13G-0-INFORMATION-ARCHITECTURE-AND-COHERENT-UI-SCOPE.md': ['| Tournament | `#/tournament`', '| How to play | `#/how-to-play`'],
+  'docs/archive/STAGE-13G-0-INFORMATION-ARCHITECTURE-AND-COHERENT-UI-SCOPE.md': ['| Tournament | `#/tournament`', '| How to play | `#/how-to-play`'],
 })) {
   const text = read(file)
   for (const marker of markers) {

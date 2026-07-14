@@ -22,7 +22,7 @@ const requireText = (file, marker, reason) => {
   if (!has(file, marker)) errors.push(`${file} must record "${marker}" — ${reason}.`)
 }
 
-const stageDoc = 'docs/STAGE-MORE-ACCOUNT-TRUST-1.md'
+const stageDoc = 'docs/archive/STAGE-MORE-ACCOUNT-TRUST-1.md'
 const contractDoc = 'docs/MORE-ACCOUNT-TRUST-CONTRACT.md'
 const register = 'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md'
 const ledger = 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md'

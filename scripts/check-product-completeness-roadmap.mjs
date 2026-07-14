@@ -22,7 +22,7 @@ const requireText = (file, text, reason) => {
 }
 
 const roadmap = 'docs/PRODUCT-COMPLETENESS-ROADMAP.md'
-const stageDoc = 'docs/STAGE-PRODUCT-COMPLETENESS-REGISTER-ALIGNMENT.md'
+const stageDoc = 'docs/archive/STAGE-PRODUCT-COMPLETENESS-REGISTER-ALIGNMENT.md'
 const register = 'docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md'
 const agentRules = 'docs/EURO28-AGENT-RULES-AND-ROADMAP.md'
 const ledger = 'docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md'

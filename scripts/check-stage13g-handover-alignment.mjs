@@ -15,11 +15,11 @@ const mustContain = (file, marker) => {
 
 for (const file of [
   'docs/STAGE-13G-HANDOVER-20260705.md',
-  'docs/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md',
-  'docs/STAGE-13G-HANDOVER-ZIP-GUIDE.md',
-  'docs/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md',
-  'docs/STAGE-13G-PLAYER-DESTINATIONS-REFERENCE-ADOPTION.md',
-  'docs/STAGE-13G-UI-COPY-HYGIENE-REFERENCE.md',
+  'docs/archive/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md',
+  'docs/archive/STAGE-13G-HANDOVER-ZIP-GUIDE.md',
+  'docs/archive/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md',
+  'docs/archive/STAGE-13G-PLAYER-DESTINATIONS-REFERENCE-ADOPTION.md',
+  'docs/archive/STAGE-13G-UI-COPY-HYGIENE-REFERENCE.md',
   'docs/reference-prototypes/euro28-stage13g-expanded-agent-prompt.md',
   'docs/reference-prototypes/euro28-guest-transfer-modal-prototype.html',
   'docs/reference-prototypes/euro28-head-to-head-page-prototype.html',
@@ -29,11 +29,11 @@ for (const file of [
 
 mustContain('docs/STAGE-13G-HANDOVER-20260705.md', '64f2f3e Restyle Stage 13G admin control room')
 mustContain('docs/STAGE-13G-HANDOVER-20260705.md', 'only `check-user-facing-spec-echo.mjs` is available')
-mustContain('docs/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md', 'Stage 13G-MATCH-CENTRE-REF')
-mustContain('docs/STAGE-13G-HANDOVER-ZIP-GUIDE.md', 'zip -r "$ZIP" euro28predictor')
-mustContain('docs/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md', 'Group-stage fixtures (`matchNumber <= 36`) render Original Predictor only')
-mustContain('docs/STAGE-13G-PLAYER-DESTINATIONS-REFERENCE-ADOPTION.md', 'Do not rebuild scoring, resolver or comparison engines')
-mustContain('docs/STAGE-13G-UI-COPY-HYGIENE-REFERENCE.md', 'must not be wired into `npm run check` alone')
+mustContain('docs/archive/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md', 'Stage 13G-MATCH-CENTRE-REF')
+mustContain('docs/archive/STAGE-13G-HANDOVER-ZIP-GUIDE.md', 'zip -r "$ZIP" euro28predictor')
+mustContain('docs/archive/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md', 'Group-stage fixtures (`matchNumber <= 36`) render Original Predictor only')
+mustContain('docs/archive/STAGE-13G-PLAYER-DESTINATIONS-REFERENCE-ADOPTION.md', 'Do not rebuild scoring, resolver or comparison engines')
+mustContain('docs/archive/STAGE-13G-UI-COPY-HYGIENE-REFERENCE.md', 'must not be wired into `npm run check` alone')
 mustContain('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', 'Stage 13G handover and next-reference alignment')
 mustContain('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', '734ad9b')
 mustContain('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', '64f2f3e')

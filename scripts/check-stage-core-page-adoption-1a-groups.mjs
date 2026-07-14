@@ -66,7 +66,7 @@ assert(groupsFlow.includes('BRACKET_DESTINATION.hash'), 'Groups must carry a rea
 assert(groupsFlow.includes('APP_ROUTE.BRACKET'), 'The bracket link must come from the route registry, never a hash spelled out on the page')
 assert(!fs.existsSync(path.join(root, 'src/journey/GroupsPredictorPolish.module.css')), 'The Night Broadcast polish module is retired with the contract it carried')
 
-assertIncludes('docs/STAGE-CORE-PAGE-ADOPTION-1A-GROUPS.md', [
+assertIncludes('docs/archive/STAGE-CORE-PAGE-ADOPTION-1A-GROUPS.md', [
   'STAGE-CORE-PAGE-ADOPTION-1A-GROUPS',
   'Night Broadcast',
   'native React/CSS',
@@ -140,7 +140,7 @@ assert(journeyContent.includes('PREDICTION_AUTOSAVE_NOTICE'), 'Prediction journe
 
 const forbiddenSource = ['src/resolver/', 'supabase/migrations/202607']
 for (const token of forbiddenSource) {
-  assert(!read('docs/STAGE-CORE-PAGE-ADOPTION-1A-GROUPS.md').includes(`Changed ${token}`), `Stage note must not claim forbidden change: ${token}`)
+  assert(!read('docs/archive/STAGE-CORE-PAGE-ADOPTION-1A-GROUPS.md').includes(`Changed ${token}`), `Stage note must not claim forbidden change: ${token}`)
 }
 
 const migrationsDir = path.join(root, 'supabase', 'migrations')

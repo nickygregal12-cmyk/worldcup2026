@@ -19,7 +19,7 @@ for (const file of [
   'src/journey/__tests__/OriginalBracket.test.jsx',
   'src/journey/__tests__/originalBracketPresentationModel.test.js',
   'src/journey/__tests__/predictionJourneyModel.test.js',
-  'docs/STAGE-13G-BRACKET-1-ORIGINAL-BRACKET-RESPONSIVE-WALLCHART.md',
+  'docs/archive/STAGE-13G-BRACKET-1-ORIGINAL-BRACKET-RESPONSIVE-WALLCHART.md',
 ]) if (!exists(file)) fail(`Missing Stage 13G-BRACKET-1 file: ${file}`)
 
 const component = exists('src/journey/OriginalBracket.jsx') ? read('src/journey/OriginalBracket.jsx') : ''
@@ -34,7 +34,7 @@ const journey = exists('src/journey/PredictionJourney.jsx') ? read('src/journey/
 const componentTest = exists('src/journey/__tests__/OriginalBracket.test.jsx') ? read('src/journey/__tests__/OriginalBracket.test.jsx') : ''
 const modelTest = exists('src/journey/__tests__/originalBracketPresentationModel.test.js') ? read('src/journey/__tests__/originalBracketPresentationModel.test.js') : ''
 const journeyTest = exists('src/journey/__tests__/predictionJourneyModel.test.js') ? read('src/journey/__tests__/predictionJourneyModel.test.js') : ''
-const doc = exists('docs/STAGE-13G-BRACKET-1-ORIGINAL-BRACKET-RESPONSIVE-WALLCHART.md') ? read('docs/STAGE-13G-BRACKET-1-ORIGINAL-BRACKET-RESPONSIVE-WALLCHART.md') : ''
+const doc = exists('docs/archive/STAGE-13G-BRACKET-1-ORIGINAL-BRACKET-RESPONSIVE-WALLCHART.md') ? read('docs/archive/STAGE-13G-BRACKET-1-ORIGINAL-BRACKET-RESPONSIVE-WALLCHART.md') : ''
 const packageJson = JSON.parse(read('package.json'))
 
 for (const marker of [

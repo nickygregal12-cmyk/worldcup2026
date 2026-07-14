@@ -11,7 +11,7 @@ const exists = file => fs.existsSync(path.join(root, file))
 
 const migrationFile = 'supabase/migrations/202607030018_euro28_complete_admin_operations.sql'
 const testFile = 'supabase/tests/database/018_complete_admin_operations.test.sql'
-const contractFile = 'docs/STAGE-13F-K1-DATABASE-OPERATIONS-CONTRACT.md'
+const contractFile = 'docs/archive/STAGE-13F-K1-DATABASE-OPERATIONS-CONTRACT.md'
 
 for (const file of [migrationFile, testFile, contractFile]) {
   if (!exists(file)) fail(`Stage 13F-K1 file is missing: ${file}`)
