@@ -37,3 +37,13 @@ reports/
 
 # Playwright visual-verification output (proof-of-concept, never committed)
 .visual-shots/
+
+# Claude Code local state. settings.local.json is a machine-local permission
+# allowlist and must never be committable: one machine's allowlist silently
+# becoming everyone else's is exactly the failure this prevents. It was only
+# ever protected by the owner's personal global gitignore, which does not
+# travel to a Codespace or another machine. launch.json is ignored by owner
+# ruling (2026-07-14). The committed, shared config is .claude/settings.json,
+# .claude/commands/ and .claude/hooks/ — those stay tracked.
+.claude/settings.local.json
+.claude/launch.json
