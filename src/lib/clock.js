@@ -2,6 +2,23 @@ import { ENVIRONMENT } from '../config/environment.js'
 
 let overrideMs = null
 
+/**
+ * The override is module state, so a change is invisible to React. Anything that
+ * derives from `getNow()` (the prediction lock above all) must be told when the
+ * clock moves, or it renders against a time that no longer exists.
+ */
+const listeners = new Set()
+
+function notify() {
+  for (const listener of [...listeners]) listener()
+}
+
+/** Subscribe to clock-override changes. Returns an unsubscribe function. */
+export function subscribeToClock(listener) {
+  listeners.add(listener)
+  return () => { listeners.delete(listener) }
+}
+
 function parseDate(value) {
   const date = value instanceof Date ? new Date(value.getTime()) : new Date(value)
   if (Number.isNaN(date.getTime())) {
@@ -27,12 +44,17 @@ export function setClockOverride(value) {
   if (!canOverrideClock()) {
     throw new Error('Clock overrides are disabled in this environment')
   }
-  overrideMs = parseDate(value).getTime()
+  const next = parseDate(value).getTime()
+  const changed = next !== overrideMs
+  overrideMs = next
+  if (changed) notify()
   return getNow()
 }
 
 export function clearClockOverride() {
+  const changed = overrideMs != null
   overrideMs = null
+  if (changed) notify()
 }
 
 export function getClockOverride() {

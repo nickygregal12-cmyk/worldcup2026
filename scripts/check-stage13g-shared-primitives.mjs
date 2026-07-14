@@ -23,7 +23,12 @@ if (!tournament.includes("predictionLockAt: import.meta.env.VITE_PREDICTION_LOCK
 // Lock and opening kick-off are one moment since the Home v2 rebuild: both fall back to 19:00Z.
 if (!tournament.includes("tournamentStartAt: import.meta.env.VITE_TOURNAMENT_START_AT || '2028-06-09T19:00:00.000Z'")) fail('Central provisional tournament start fallback is missing')
 if (!lifecycle.includes('resolveTournamentLifecycle') || !lifecycle.includes('CENTRAL_PROVISIONAL')) fail('Tournament lifecycle resolver is missing central provisional source handling')
-if (!journey.includes('resolveTournamentLifecycle(tournament)')) fail('PredictionJourney must derive lock state from the lifecycle resolver')
+// Tightened at Stage LOCK-RECOMPUTE: deriving the lifecycle is no longer enough, because
+// `resolveTournamentLifecycle` reads the clock. Memoising it on `tournament` alone froze
+// `locked` at mount, so a board held open across the first kick-off stayed editable. The
+// lock must come from the hook that re-evaluates across the boundary.
+if (!journey.includes('useTournamentLifecycle(tournament)')) fail('PredictionJourney must derive lock state from the live lifecycle hook')
+if (/useMemo\(\s*\(\)\s*=>\s*resolveTournamentLifecycle/.test(journey)) fail('PredictionJourney must not freeze lock state in a useMemo — the lock would never engage on an open page')
 if (!view.includes('PREDICTION_AUTOSAVE_NOTICE')) fail('Player-facing autosave copy constant is missing')
 if (!PREDICTION_AUTOSAVE_NOTICE.includes('save automatically')) fail('Player-facing autosave notice constant is missing the save message')
 if (view.includes('central provisional Euro 2028 lock configuration') || view.includes('irreversible tournament lock') || view.includes('atomic saving')) fail('Internal lock/save-contract language must not appear in the prediction journey UI')

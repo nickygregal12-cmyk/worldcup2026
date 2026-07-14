@@ -10,7 +10,7 @@ import { applyEuroLuckyDip } from './euroLuckyDip.js'
 import PredictionJourneyView from './PredictionJourneyView.jsx'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { browserStorage, messageForError, readGuestReview, writeGuestReview } from './predictionJourneyRuntime.js'
-import { resolveTournamentLifecycle } from '../config/index.js'
+import { useTournamentLifecycle } from '../config/index.js'
 
 export default function PredictionJourney({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, surface = initialView, fixtureDraft = null }) {
   const guestStorage = useMemo(() => createGuestPredictionStorage({
@@ -56,7 +56,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
   const draft = savesToAccount ? accountDraft : guestDraft
   const summary = useMemo(() => summarisePredictionJourney(reference, draft), [reference, draft])
   const reviewMode = savesToAccount ? Boolean(accountBundle?.submittedAt) : guestReview
-  const lifecycle = useMemo(() => resolveTournamentLifecycle(tournament), [tournament])
+  const lifecycle = useTournamentLifecycle(tournament)
   const lockConfigured = lifecycle.lockConfigured
   const locked = lifecycle.locked
   const readOnly = locked || reviewMode

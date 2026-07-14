@@ -1,3 +1,4 @@
+import { resolvePredictionLock } from '../contracts/lockContract.js'
 import { getNow } from '../lib/clock.js'
 import { TOURNAMENT_CONFIG } from './tournament.js'
 
@@ -40,18 +41,31 @@ export function resolveTournamentLifecycle(tournament = {}, now = getNow()) {
         : TOURNAMENT_LIFECYCLE_SOURCE.UNCONFIGURED
   const currentTime = now instanceof Date ? now : new Date(now)
 
+  // The lock rule itself lives in the contract and nowhere else. This resolver adds
+  // provenance (which source the date came from, whether it is provisional) on top,
+  // but it must never decide "locked" independently: a parallel implementation is
+  // what let the one-hour tournamentStartAt mismatch, and later the never-engaging
+  // lock, drift away from `docs/RULES-SCORING-LOCKED-CONTRACT.md`.
+  const lock = resolvePredictionLock({
+    now: currentTime,
+    openingKickoffAt: databaseLockAt ?? configuredLockAt,
+    persistedLockedAt: lockedAt,
+  })
+
   return Object.freeze({
     predictionLockAt,
     predictionLockedAt: lockedAt,
     tournamentStartAt,
     source,
+    lockState: lock.state,
+    lockReason: lock.reason,
     // Database-backed only, mirroring the SQL save guard (which raises when both
     // prediction_lock_at and prediction_locked_at are NULL). The central-provisional
     // fallback keeps a labelled display date flowing but never counts as configured,
     // so account saving fails loud client-side instead of erroring at the database.
     lockConfigured: Boolean(lockedAt || databaseLockAt),
     startConfigured: Boolean(validTimestamp(tournament.starts_on)),
-    locked: Boolean(lockedAt || (predictionLockAt && currentTime >= new Date(predictionLockAt))),
+    locked: !lock.canEdit,
     provisional: source === TOURNAMENT_LIFECYCLE_SOURCE.CENTRAL_PROVISIONAL,
   })
 }
