@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Badge, ProgressBar, TeamLabel } from '../design-system/index.jsx'
 import { buildOriginalBracketHealth } from './bracketHealthModel.js'
+import { BRACKET_HEALTH_BEST_THIRD_PENDING, BRACKET_HEALTH_PROJECTED_LABEL, bracketHealthProvenance } from './bracketHealthCopy.js'
 import styles from './OriginalBracketHealth.module.css'
 
 function team(reference, teamId) {
@@ -51,9 +52,11 @@ export default function OriginalBracketHealth({ reference, preview, liveSnapshot
           a finished group, the panel says so in its own words and shows its working. */}
       {model.provisional && (
         <p className={styles.provenance}>
-          As it stands: {model.projection.groupsReadyCount} of {model.projection.groupsTotal} groups have played two rounds,
-          so some slots below show who <em>would</em> go through on the tables so far, not a confirmed fixture.
-          {!model.projection.allGroupsReady && ' The best third-placed teams need all six groups before they can be placed at all.'}
+          {bracketHealthProvenance({
+            groupsReady: model.projection.groupsReadyCount,
+            groupsTotal: model.projection.groupsTotal,
+          })}
+          {!model.projection.allGroupsReady && ` ${BRACKET_HEALTH_BEST_THIRD_PENDING}`}
         </p>
       )}
 
@@ -84,7 +87,7 @@ export default function OriginalBracketHealth({ reference, preview, liveSnapshot
 
             {card.liveParticipantsProjected ? (
               <>
-                <span className={`${styles.contextLabel} ${styles.contextProjected}`}>As it stands · on the group tables so far</span>
+                <span className={`${styles.contextLabel} ${styles.contextProjected}`}>{BRACKET_HEALTH_PROJECTED_LABEL}</span>
                 <Matchup reference={reference} homeTeamId={card.liveHomeTeamId} awayTeamId={card.liveAwayTeamId} />
               </>
             ) : card.liveParticipantsKnown ? (

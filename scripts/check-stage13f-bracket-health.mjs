@@ -51,15 +51,23 @@ for (const phrase of ['liveParticipantsProjected', 'participantsProjected', "sta
 if (!model.includes('buildLiveSlotProjection')) {
   throw new Error('Bracket-health model no longer consults the reveal projection')
 }
-// The panel must never present a projected occupant as an official fixture.
-for (const phrase of ['As it stands', 'provisional']) {
-  if (!view.includes(phrase)) throw new Error(`Bracket-health view must mark projected slots: missing ${phrase}`)
+// The panel must never present a projected occupant as an official fixture. The copy itself
+// lives in bracketHealthCopy.js — audits pin the shared constant, never the sentence.
+const copy = fs.readFileSync(path.join(root, 'src/bracketHealth/bracketHealthCopy.js'), 'utf8')
+for (const name of ['BRACKET_HEALTH_PENDING_COPY', 'BRACKET_HEALTH_PROJECTED_LABEL', 'BRACKET_HEALTH_BEST_THIRD_PENDING', 'bracketHealthProvenance']) {
+  if (!copy.includes(`export const ${name}`) && !copy.includes(`export function ${name}`)) {
+    throw new Error(`Bracket-health copy module must export ${name}`)
+  }
 }
+for (const name of ['BRACKET_HEALTH_PROJECTED_LABEL', 'bracketHealthProvenance']) {
+  if (!view.includes(name)) throw new Error(`Bracket-health view must mark projected slots via ${name}`)
+}
+if (!view.includes('provisional')) throw new Error('Bracket-health view must carry the provisional indicator')
 // The page must not fall back to showing Health purely because the board is locked.
 if (!journey.includes('healthProjection') || !journey.includes('healthAvailable')) {
   throw new Error('The bracket page must gate Health on the standings projection, not on lock alone')
 }
-if (!journey.includes('Bracket Health opens once a group has played two rounds')) {
+if (!journey.includes('BRACKET_HEALTH_PENDING_COPY')) {
   throw new Error('The bracket page must say when Health opens while the threshold is unmet')
 }
 if (!journey.includes('<Tabs')) {

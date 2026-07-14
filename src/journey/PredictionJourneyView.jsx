@@ -3,7 +3,7 @@ import { Button, PredictionStateBadge, Tabs } from '../design-system/index.jsx'
 import GuestAccountPrompt from '../guest/GuestAccountPrompt.jsx'
 import { hasActivePredictionGrace } from '../grace/index.js'
 import OriginalBracket from './OriginalBracket.jsx'
-import { OriginalBracketHealth, buildLiveSlotProjection, buildOriginalBracketHealth } from '../bracketHealth/index.js'
+import { BRACKET_HEALTH_PENDING_COPY, OriginalBracketHealth, buildLiveSlotProjection, buildOriginalBracketHealth } from '../bracketHealth/index.js'
 import GroupsPredictor from './GroupsPredictor.jsx'
 import PredictionReview from './PredictionReview.jsx'
 import lifecycleStyles from './PredictionLifecycle.module.css'
@@ -215,6 +215,13 @@ export default function PredictionJourneyView({
                   ]}
                 />
               )}
+              {/* Sits where the tabs will sit once Health opens, so the player learns where to
+                  look. Below the bracket it would be seven thousand pixels down and unread. */}
+              {healthPending && (
+                <p className={chromeStyles.healthPending}>
+                  <strong>{BRACKET_HEALTH_PENDING_COPY.heading}</strong> {BRACKET_HEALTH_PENDING_COPY.detail}
+                </p>
+              )}
               {!showHealth && (
                 <OriginalBracket
                   reference={reference}
@@ -225,12 +232,6 @@ export default function PredictionJourneyView({
                   graceWindows={graceWindows}
                   onChange={updateBracket}
                 />
-              )}
-              {healthPending && (
-                <p className={chromeStyles.healthPending}>
-                  Bracket Health opens once a group has played two rounds of matches. Until then there are no
-                  standings to compare your bracket against.
-                </p>
               )}
               {showHealth && (
                 <OriginalBracketHealth

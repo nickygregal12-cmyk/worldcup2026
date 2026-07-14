@@ -148,6 +148,7 @@
     "scenario:reset-now": "node scripts/stage16a-p6c-executor.mjs reset-clock",
     "scenario:teardown": "node scripts/stage16a-p6c-executor.mjs teardown",
     "scenario:verify": "node scripts/stage16a-p6c-executor.mjs verify",
+    "scenario:bracket-health": "node scripts/verify-bracket-health-timing.mjs",
     "audit:debug-leftovers": "node scripts/check-debug-leftovers.mjs",
     "audit:client-singleton": "node scripts/check-client-singleton.mjs",
     "audit:token-contrast-usage": "node scripts/check-token-contrast-usage.mjs",
