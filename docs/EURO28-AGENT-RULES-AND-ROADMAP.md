@@ -1160,7 +1160,7 @@ Completion gate: this reference stage does not make Match Centre group-match upg
 
 Current deployed head before the handover-docs package is `8ee70ec Restyle Stage 13G admin control room`. Tournament/How to Play, Account and Admin are complete/deployed; active migrations remain 20 and Migration 019 exists.
 
-Read `docs/STAGE-13G-HANDOVER-20260705.md` and `docs/archive/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md` before starting the next chat. The next work must be one scoped stage only:
+Read `docs/archive/STAGE-13G-HANDOVER-20260705.md` and `docs/archive/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md` before starting the next chat. The next work must be one scoped stage only:
 
 1. Match Centre reference adoption / group-match implementation;
 2. Player View, Head-to-head and Points Breakdown destinations;

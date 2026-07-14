@@ -14,7 +14,7 @@ const mustContain = (file, marker) => {
 }
 
 for (const file of [
-  'docs/STAGE-13G-HANDOVER-20260705.md',
+  'docs/archive/STAGE-13G-HANDOVER-20260705.md',
   'docs/archive/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md',
   'docs/archive/STAGE-13G-HANDOVER-ZIP-GUIDE.md',
   'docs/archive/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md',
@@ -27,8 +27,8 @@ for (const file of [
   'docs/reference-prototypes/check-user-facing-spec-echo.mjs',
 ]) mustExist(file)
 
-mustContain('docs/STAGE-13G-HANDOVER-20260705.md', '64f2f3e Restyle Stage 13G admin control room')
-mustContain('docs/STAGE-13G-HANDOVER-20260705.md', 'only `check-user-facing-spec-echo.mjs` is available')
+mustContain('docs/archive/STAGE-13G-HANDOVER-20260705.md', '64f2f3e Restyle Stage 13G admin control room')
+mustContain('docs/archive/STAGE-13G-HANDOVER-20260705.md', 'only `check-user-facing-spec-echo.mjs` is available')
 mustContain('docs/archive/NEXT-CHAT-PROMPT-STAGE-13G-CONTINUATION.md', 'Stage 13G-MATCH-CENTRE-REF')
 mustContain('docs/archive/STAGE-13G-HANDOVER-ZIP-GUIDE.md', 'zip -r "$ZIP" euro28predictor')
 mustContain('docs/archive/STAGE-13G-MATCH-CENTRE-REFERENCE-ADOPTION.md', 'Group-stage fixtures (`matchNumber <= 36`) render Original Predictor only')

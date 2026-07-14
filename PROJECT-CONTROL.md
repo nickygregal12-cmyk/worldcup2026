@@ -1,6 +1,18 @@
 # Project Control Dashboard
 
-Live repo-control dashboard for future agents. This is not a long history file.
+The live current-state summary for whoever picks this up next. Not a history file — closed work
+lives in `docs/archive/`, and the living document set is indexed by
+`AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`.
+
+This document declares the **return-point commit** that `scripts/check-governance-coherence.mjs`
+validates every governing document's return point against, and its structure is asserted by that
+audit. If a heading or a required field below disappears, the build fails. That is deliberate: the
+one document whose entire job is to state current state used to be the one nothing verified, and it
+drifted four claims deep.
+
+**It repeats no counts.** Where a single document already owns a number, this one names that
+document instead of copying the value — a dashboard that duplicates figures is just one more surface
+that goes stale. The return-point commit is the exception, because holding it is this document's job.
 
 ## Current State
 
@@ -8,46 +20,60 @@ Live repo-control dashboard for future agents. This is not a long history file.
 | --- | --- |
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
-| Current stage | `STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET-GRID-NATIVE-CONNECTORS-VERIFY-FALLBACK-AND-LAYOUT-REPAIR` |
-| Latest verified commit | `3bb3c6e Add agent control rules and project dashboard` |
+| Latest verified commit | `45b4caa Install the documentation constitution: an index that is enforced, not merely written` |
+| Current stage | Design Programme per-page re-cut — **near-complete**. Every core page is on the DP except Leagues. |
+| Immediate next stage | The **Leagues re-cut**. A prior run was lost when the Codespace hit a quota stop; it is being rerun on this Mac. |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
-| Active migration count | 18 |
-| Migration 019 status | Not present; blocked unless approved or a real schema/read-contract gap is proved |
-| Immediate priority | Repair Original Bracket as a deterministic seven-lane bracket while preserving the fail-loud placement guard |
-| Next recommended stage | `STAGE-REPO-CONTROL-1B-AUDIT-AND-DOC-RETIREMENT-PLAN` after manual bracket visual review and commit approval |
+| Active migration count | Owned by `docs/DATABASE.md` — not repeated here. Asserted against `supabase/migrations/` by `audit:governance-coherence`. |
+| Migration 021 | Not present in the tree. Before authoring any new SQL, check for a **stranded Migration 021** (it may exist only on another machine — CLAUDE.md §2). |
+| Primary environment | **This Mac.** Full stack validated here: `npm run check` green, Playwright 1.61.1 installed with Chromium, the visual probe/shot harness present and exercised. |
+
+### The "Latest verified commit" convention
+
+It names the most recent commit proven green by a full `npm run check`. A session updates it to the
+commit it verified, which is necessarily an **ancestor** of the commit doing the updating — a commit
+cannot certify its own hash. `audit:governance-coherence` enforces exactly that: the declared commit
+must exist and must be an ancestor of `HEAD`.
+
+## Immediate Priority Order
+
+1. **Leagues re-cut** — the last core page not yet on the Design Programme.
+2. **The `visual.yml` CI lift** — the visual tier runs on this Mac but has no CI workflow.
+   `.github/workflows/` currently holds only `euro28-checks.yml`.
+3. **The `save_my_prediction_bundle` conflict-loop fix — high care.** On 2026-07-14 a runaway
+   internal retry flooded staging with roughly **2.6 million failed requests**. The fix is a retry
+   cap, a revision re-read, and a statement timeout. This touches a prediction-write path: take a
+   **fresh verified backup first, every time** (CLAUDE.md §2), and do not modify scoring, resolver or
+   Auth SQL in the same breath.
 
 ## Current Blockers
 
-- Manual visual review is still required for the repaired Original Bracket wall-chart layout.
-- Public signup remains closed; SMTP/public-opening work is not approved by this stage.
-- Playwright is not currently proved installed or wired.
+**None.** The Codespace is abandoned pending deletion and is not a blocker; work proceeds on this Mac.
 
-## Deferred Findings
+## Deliberately Deferred
 
-- Hygiene debt exists: `.DS_Store`, `coverage/`, `supabase/.temp/`, `supabase/.branches/`, `node_modules/`, `.env.local`.
-- Audit/doc bloat needs a later controlled split, not this stage.
-- Original Bracket unknown wall placement now fails loudly in the working tree; seven-lane bracket layout is pending Nicky's visual review.
+Not forgotten, not blocked — sequenced on purpose. Do not pick these up opportunistically:
+
+- **Push-notification sends** — post-draw.
+- **Top Scorer build** — Stage 17A. Check for a stranded Migration 021 before authoring SQL.
+- **Public signup** — post-draw. It remains closed.
 
 ## Do-Not-Touch Areas
 
-- `src/`
-- `supabase/`
-- `package.json`
-- CI workflows
-- migrations
-- production config and production data
-- scoring logic, resolver logic, Supabase Auth, public signup, and WC26 production references unless explicitly scoped
-
-## Last Successful Gates
-
-Unknown — verify before relying on this.
-
-## Manual Visual Review Still Required
-
-None for this docs/process-control stage. UI/layout stages still require Nicky's visual approval before completion.
+- WC26 production Supabase (`ouhxawizadnwrhrjppld`) — permanently off-limits, and blocked mechanically
+  by the PreToolUse hook in `.claude/hooks/`.
+- Scoring logic, resolver logic, Supabase Auth, and public signup — unless explicitly scoped.
+- Production config and production data.
+- CI workflows, `package.json` and migrations — unless the stage explicitly scopes them.
+- `src/leagues/`, the league audit scripts and the leagues CSS while the Leagues re-cut is in flight.
 
 ## Source-Of-Truth Uncertainty
 
 - Docs report proven reality, but docs are not proof alone.
-- Stage docs are historical unless promoted by `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`.
-- If repo/runtime/tests/audits/build/deployment/Supabase disagree with docs, stop and record the conflict.
+- Stage documents are historical unless promoted by `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`.
+- If repo, runtime, tests, audits, build, deployment or Supabase disagree with a document, **stop and
+  record the conflict** — do not resolve it silently (CLAUDE.md §0, Constitution §5.8).
+
+<!-- Owner-judgement fields (current stage, priorities, blockers, deferrals) supplied by owner ruling
+     2026-07-15. Mechanical fields (verified commit, migration count, visual tooling) are verified
+     against the tree, not asserted from memory. -->

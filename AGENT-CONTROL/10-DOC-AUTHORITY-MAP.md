@@ -62,7 +62,7 @@ still point at pre-archive paths, deliberately: rewriting them would falsify the
 | --- | --- |
 | `CLAUDE.md` | Standing law for every agent session. Read before anything else. |
 | `AGENTS.md` | Entry point that routes an agent to the control layer. |
-| `PROJECT-CONTROL.md` | Live current-state dashboard: branch, stage, blockers, priorities. |
+| `PROJECT-CONTROL.md` | Live current-state dashboard **and the return-point anchor** — see its row under *Current state and plan*. Structure and declared commit are audit-enforced. |
 | `README.md` | What the project is, for a human arriving cold. |
 
 ### `AGENT-CONTROL/` — the durable first-read control layer
@@ -89,7 +89,7 @@ order. `10` is this map.
 | `docs/EURO28-SITE-ACCESS-MAP.md` | Which surfaces exist and who may reach them. |
 | `docs/PRODUCT-COMPLETENESS-ROADMAP.md` | Remaining product gaps and their sequencing. |
 | `docs/STREAMLINED-BATCH-ORDER.md` | The order the remaining batches are worked in. |
-| `docs/STAGE-13G-HANDOVER-20260705.md` | **Load-bearing, not history:** the sole dated handover, and the deployed-head anchor `check-governance-coherence` validates every governing doc's return point against. |
+| `PROJECT-CONTROL.md` | The live current-state dashboard, and the **return-point anchor**: it declares the latest verified commit that `check-governance-coherence` validates every governing doc's return point against. That audit also asserts the dashboard's required sections and that its declared commit is real and an ancestor of `HEAD`. |
 
 ### Engineering handbook
 
@@ -174,7 +174,10 @@ stay at the top of `docs/` and are allowed by `audit:doc-structure` as an explic
 `STAGE-13G-C6-COMPACT-LEAGUE-SHELL.md`, `STAGE-LEAGUE-SETUP-AND-INVITES-1.md`.
 
 **Owner to confirm.** Kept living pending a ruling, because archiving a document asserts it records
-*completed* work — and for these two that assertion may be false:
+*completed* work — and for this one that assertion may be false:
 
-- `docs/ADMIN-SCENARIO-RUNNER-BRIEF.md` — a design brief for the scenario runner. `docs/LOCAL-SCENARIO-RUNNER-RUNBOOK.md` now documents how to run it, which suggests the brief is closed. Confirm, then archive.
 - `docs/STAGE-WELCOME-PAGE-CONTRACT.md` — says "draft candidate — not yet approved". That is pending work, not completed work; the ARCHIVED banner would assert something untrue about it. Approve, reject, or archive.
+
+**Resolved 2026-07-15 (owner ruling).** `ADMIN-SCENARIO-RUNNER-BRIEF.md` is superseded by
+`LOCAL-SCENARIO-RUNNER-RUNBOOK.md` and is archived. `STAGE-13G-HANDOVER-20260705.md` stopped being
+load-bearing when the return-point anchor moved to `PROJECT-CONTROL.md`, and is archived.
