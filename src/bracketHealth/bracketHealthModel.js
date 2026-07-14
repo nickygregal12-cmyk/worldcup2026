@@ -1,5 +1,6 @@
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
 import { buildLiveBracketRounds } from '../results/resultModel.js'
+import { buildLiveSlotProjection, projectedSlotTeamId } from './liveSlotProjection.js'
 
 export const BRACKET_HEALTH_STATE = Object.freeze({
   EXACT: 'exact',
@@ -40,6 +41,36 @@ function resultByNumber(liveSnapshot) {
 function knownLiveMatches(reference, liveSnapshot) {
   return buildLiveBracketRounds({ reference, liveSnapshot })
     .flatMap(round => round.matches.map(match => ({ ...match, stage: round.stage })))
+}
+
+// buildLiveBracketRounds deliberately withholds a knockout participant until its whole
+// group is finished — the right call for Results, where a slot is either official or it
+// is not. Health asks a different question ("who would be there if the groups ended
+// now?"), so it overlays the resolver's projected occupant onto the slots the strict view
+// leaves empty, and marks every one it touches.
+//
+// The strict list is still what eliminations and secured points are counted from. A
+// projection can say who leads a group; it can never say a team is out.
+function comparisonMatches(liveSnapshot, strictMatches, projection) {
+  if (!projection.revealed) return strictMatches
+  // Slot sources come from the resolver's own knockout output — the same place the strict
+  // gate reads them from, so the two views can never disagree about what a slot IS.
+  const sourceByNumber = new Map((liveSnapshot?.knockout?.matches ?? []).map(match => [match.matchNumber, match]))
+
+  return strictMatches.map(match => {
+    if (match.participantsResolved) return match
+    const slots = sourceByNumber.get(match.matchNumber)
+    if (!slots) return match
+
+    const project = source => projectedSlotTeamId({ source, matchNumber: match.matchNumber, liveSnapshot, projection })
+    const homeTeamId = match.homeTeamId ?? project(slots.home)
+    const awayTeamId = match.awayTeamId ?? project(slots.away)
+    // Half a projected tie is not a tie. Both sides must be known before the card can
+    // compare anything, so a partially-projected fixture stays the original matchup.
+    if (!homeTeamId || !awayTeamId) return match
+
+    return { ...match, homeTeamId, awayTeamId, participantsResolved: true, participantsProjected: true }
+  })
 }
 
 function eliminatedTeams(reference, liveSnapshot, liveMatches) {
@@ -171,11 +202,22 @@ export function buildOriginalBracketHealth({ reference, preview, liveSnapshot })
     return Object.freeze({ status: 'unavailable', rounds: Object.freeze([]), cards: Object.freeze([]) })
   }
 
+  const projection = buildLiveSlotProjection(liveSnapshot)
+
+  // Nothing to compare against until a group has reached its second round. Owner ruling
+  // 2026-07-14: Bracket Health does not show at all before then.
+  if (!projection.revealed) {
+    return Object.freeze({ status: 'pending', projection, rounds: Object.freeze([]), cards: Object.freeze([]) })
+  }
+
   const liveMatches = knownLiveMatches(reference, liveSnapshot)
-  const liveByNumber = new Map(liveMatches.map(match => [match.matchNumber, match]))
+  const projectedMatches = comparisonMatches(liveSnapshot, liveMatches, projection)
+  const liveByNumber = new Map(projectedMatches.map(match => [match.matchNumber, match]))
   const results = resultByNumber(liveSnapshot)
   const eliminated = eliminatedTeams(reference, liveSnapshot, liveMatches)
   const predictedMatches = preview.resolution.knockout.matches
+  // Reached — and therefore secured — is counted from the strict list only. A team the
+  // standings project into the Round of 16 has not reached it.
   const liveReachedByStage = Object.fromEntries(ROUND_ORDER.map(stage => [
     stage,
     new Set(liveMatches.filter(match => match.stage === stage && match.participantsResolved)
@@ -185,7 +227,7 @@ export function buildOriginalBracketHealth({ reference, preview, liveSnapshot })
   const cards = predictedMatches.map(predictedMatch => {
     const liveMatch = liveByNumber.get(predictedMatch.matchNumber) ?? null
     const result = results.get(predictedMatch.matchNumber) ?? null
-    const routeConflict = routeConflictFor(predictedMatch, liveMatches)
+    const routeConflict = routeConflictFor(predictedMatch, projectedMatches)
     const state = cardState({ reference, predictedMatch, liveMatch, result, eliminated, routeConflict })
     const points = pointsForStage(predictedMatch.stage)
     const matchReference = reference.knockoutMatches.find(match => match.matchNumber === predictedMatch.matchNumber)
@@ -200,12 +242,17 @@ export function buildOriginalBracketHealth({ reference, preview, liveSnapshot })
       liveHomeTeamId: liveMatch?.homeTeamId ?? null,
       liveAwayTeamId: liveMatch?.awayTeamId ?? null,
       liveParticipantsKnown: Boolean(liveMatch?.participantsResolved),
+      // Projected from the standings so far, not an official fixture. The view must say so.
+      liveParticipantsProjected: Boolean(liveMatch?.participantsProjected),
       score: liveMatch?.score ?? null,
       resultDetail: liveMatch?.detail ?? null,
       points,
       pointsSecured: state.state === BRACKET_HEALTH_STATE.SURVIVED ? points : 0,
       pointsAvailable: [BRACKET_HEALTH_STATE.EXACT, BRACKET_HEALTH_STATE.NEED].includes(state.state) ? points : 0,
-      matchCentreHref: liveMatch?.participantsResolved ? `#/match-centre?match=${predictedMatch.matchNumber}&competition=original` : null,
+      // Match Centre covers real fixtures. A projected tie has no match to open.
+      matchCentreHref: liveMatch?.participantsResolved && !liveMatch?.participantsProjected
+        ? `#/match-centre?match=${predictedMatch.matchNumber}&competition=original`
+        : null,
       ...state,
     })
   })
@@ -232,6 +279,10 @@ export function buildOriginalBracketHealth({ reference, preview, liveSnapshot })
 
   return Object.freeze({
     status: 'ready',
+    projection,
+    // True while any card is comparing against a projected occupant rather than an
+    // official one — the whole panel is provisional until the groups finish.
+    provisional: cards.some(card => card.liveParticipantsProjected),
     rounds: Object.freeze(rounds),
     cards: Object.freeze(cards),
   })
