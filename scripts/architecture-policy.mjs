@@ -47,7 +47,7 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   // (.journey-joker-summary and children, .journey-joker-button, .journey-match-row--joker)
   // were deleted. Nothing composed those class names — the joker is a design-system
   // primitive now — so this is a deletion with no destination module.
-  'src/styles/feature-compat.css': 2565,
+  'src/styles/feature-compat.css': 2208,
   // 1903 -> 1517 at Stage DP-HOME: every home-* orphan is gone. Home now carries its own
   // CSS Modules, so the only survivor is .home-section-heading, which TournamentOverview uses.
   // 1517 -> 1461 at Stage DP-SHELL: the mobile bottom nav left. It was three near-duplicate
