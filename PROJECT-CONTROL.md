@@ -20,7 +20,7 @@ that goes stale. The return-point commit is the exception, because holding it is
 | --- | --- |
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
-| Latest verified commit | `45b4caa Install the documentation constitution: an index that is enforced, not merely written` |
+| Latest verified commit | `ba9b4f3 The document whose job is current state stops being the one nothing verifies` |
 | Current stage | Design Programme per-page re-cut — **near-complete**. Every core page is on the DP except Leagues. |
 | Immediate next stage | The **Leagues re-cut**. A prior run was lost when the Codespace hit a quota stop; it is being rerun on this Mac. |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
