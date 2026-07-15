@@ -1,3 +1,11 @@
+// Stage 13G-C3 — re-pointed at the DP re-cut (Stage DP-LEAGUES, 2026-07-15).
+//
+// C3 originally proved a "race summary strip" backed by buildLeagueRaceSummary. That model was
+// dead (no renderer, no importer) and is deleted in this commit. The living invariant it now
+// guards is the DESIGNED NOT-YET STATE for rank movement (owner ruling 2026-07-15): with no
+// previous-rank history, movement is stated ONCE per table using RANK_MOVEMENT_PENDING_REASON and
+// gap-to-leader is static text — never an empty per-row movement chip. Tightened, not loosened:
+// the dead model and the per-row chip are both forbidden.
 import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
@@ -17,64 +25,40 @@ function read(path) {
 
 const model = read('src/leagues/leagueModel.js')
 const presentation = read('src/leagues/LeaguePresentation.jsx')
-const leaguesPage = read('src/leagues/Leagues.jsx')
-const cssModule = read('src/leagues/leagueRace.module.css')
-const tests = read('src/leagues/__tests__/leagueModel.test.js')
 const packageJson = JSON.parse(read('package.json') || '{}')
-const doc = read('docs/STAGE-13G-C3-LEAGUE-RACE-SUMMARY.md')
 
 const migrations = existsSync('supabase/migrations')
   ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
   : []
 
+// The not-yet reason string lives in the model and is rendered once per table.
 for (const marker of [
-  'buildLeagueRaceSummary',
-  'pre_scoring',
-  'Race starts when members appear',
-  'The race summary will show the gap to the leader',
+  'RANK_MOVEMENT_PENDING_REASON',
+  'rankMovementLabel: null',
 ]) {
-  if (!model.includes(marker)) fail(`leagueModel.js missing marker: ${marker}`)
+  if (!model.includes(marker)) fail(`leagueModel.js missing not-yet-state marker: ${marker}`)
 }
 
-// Compact standings are now the League table D leader-list rows (raceStyles alias).
+// The dead race-summary model must stay deleted.
+if (model.includes('buildLeagueRaceSummary')) {
+  fail('leagueModel.js still exports the dead buildLeagueRaceSummary (no renderer, no importer) — it must stay deleted')
+}
+
+// The presentation renders the not-yet movement note once (guarded by hasScoring), and the gap
+// as static text — not a per-row movement chip.
 for (const marker of [
+  'raceStyles.movementNote',
+  'RANK_MOVEMENT_PENDING_REASON',
   'buildLeagueRaceRows',
-  'raceStyles.points',
-  'raceStyles.rankMarker',
 ]) {
-  if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing compact correction marker: ${marker}`)
+  if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing not-yet-state marker: ${marker}`)
 }
 
-if (leaguesPage.includes('LeagueRaceSummary')) {
-  fail('Leagues.jsx must not render the superseded C3 race summary strip after the compact C4 correction')
-}
-
-for (const marker of [
-  '.rankMarker',
-  '.currentUserRow',
-  'compact league standings',
-]) {
-  if (!cssModule.includes(marker)) fail(`leagueRace.module.css missing compact correction marker: ${marker}`)
-}
-
-for (const marker of [
+for (const forbidden of [
+  'raceStyles.movementChip',   // per-row movement chips are the exact not-yet-scaffold this state replaces
   'buildLeagueRaceSummary',
-  '17 behind leader',
-  'pre_scoring',
-  'Race starts when members appear',
 ]) {
-  if (!tests.includes(marker)) fail(`leagueModel.test.js missing marker: ${marker}`)
-}
-
-for (const marker of [
-  'league race summary strip',
-  'you vs leader',
-  'pre-scoring',
-  'empty-member',
-  'no database migration',
-  'Original Predictor and KO Predictor remain separate',
-]) {
-  if (!doc.toLowerCase().includes(marker.toLowerCase())) fail(`Stage 13G-C3 doc missing marker: ${marker}`)
+  if (presentation.includes(forbidden)) fail(`LeaguePresentation.jsx must not render the superseded marker: ${forbidden}`)
 }
 
 if (packageJson.scripts?.['audit:league-race-summary'] !== 'node scripts/check-stage13g-c3-league-race-summary.mjs') {
@@ -88,12 +72,9 @@ if (!packageJson.scripts?.check?.includes('npm run audit:league-race-summary')) 
 if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (failures.length > 0) {
-  console.error('Euro Stage 13G-C3 league race-summary audit failed:')
+  console.error('Stage 13G-C3 league race-story not-yet-state audit failed:')
   for (const failure of failures) console.error(`- ${failure}`)
   process.exit(1)
 }
 
-console.log('Euro Stage 13G-C3 league race-summary audit passed with C4 compact-table correction.')
-console.log('Summary: you-vs-leader, pre-scoring and empty-member states are modelled.')
-console.log('Boundary: Original Predictor and KO Predictor remain separate.')
-console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)
+console.log('Stage 13G-C3 passed: rank movement is a designed not-yet state (once per table), gap is static text, and the dead race-summary model stays deleted.')

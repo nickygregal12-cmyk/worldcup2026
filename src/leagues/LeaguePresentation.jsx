@@ -3,18 +3,10 @@ import layoutStyles from './LeagueLayout.module.css'
 import heroStyles from './LeagueHero.module.css'
 import raceStyles from './leagueRace.module.css'
 import { Badge, Button, Icon, PlayerIdentity, SelectField, StatusBar, TextField } from '../design-system/index.jsx'
-import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, canCreateKoLeague, formatOrdinal, LEAGUE_COMPETITION } from './leagueModel.js'
+import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, canCreateKoLeague, formatOrdinal, LEAGUE_COMPETITION, RANK_MOVEMENT_PENDING_REASON } from './leagueModel.js'
 
 function competitionName(competitionKey) {
   return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
-}
-
-function movementDirection(label) {
-  if (!label) return null
-  const trimmed = String(label).trim()
-  if (trimmed.startsWith('+')) return 'up'
-  if (trimmed.startsWith('-') || trimmed.startsWith('−')) return 'down'
-  return 'same'
 }
 
 export function LeagueLifecycleBanner({ lifecycleState, competitionKey }) {
@@ -114,21 +106,20 @@ export function LeaguePicker({ leagues, selectedId, onSelect }) {
   )
 }
 
-export function LeagueHero({ league, leagues, onSelectLeague, currentRank }) {
+export function LeagueHero({ league, leagues, onSelectLeague }) {
   const original = league.competition === LEAGUE_COMPETITION.ORIGINAL
   return (
-    <section className={heroStyles.hero} aria-label={`${league.name} overview`}>
-      {currentRank && <span className={heroStyles.watermark} aria-hidden="true">#{currentRank}</span>}
-      <div className={heroStyles.heroBody}>
+    <section className={heroStyles.identity} aria-label={`${league.name} overview`}>
+      <div className={heroStyles.identityMain}>
         <span className={heroStyles.eyebrow}>Leagues · {competitionName(league.competition)}</span>
         <h2>{league.name}</h2>
-        <p className={heroStyles.heroHint}>
+        <p className={heroStyles.hint}>
           <Icon name="info" size={14} />
           <span>Open any member row to compare standings and released predictions.</span>
         </p>
       </div>
-      <div className={heroStyles.heroRow}>
-        <span className={heroStyles.glassPill}><span className={heroStyles.glassDot} />{league.memberCount} member{league.memberCount === 1 ? '' : 's'}</span>
+      <div className={heroStyles.identityMeta}>
+        <span className={heroStyles.memberPill}><span className={heroStyles.memberDot} aria-hidden="true" />{league.memberCount} member{league.memberCount === 1 ? '' : 's'}</span>
         <LeaguePicker leagues={leagues} selectedId={league.id} onSelect={onSelectLeague} />
       </div>
       {!original && <span className="sr-only">This is a KO Predictor league, separate from Original Predictor leagues.</span>}
@@ -198,38 +189,29 @@ export function LeagueSummaryCard({ title, summary, section }) {
   )
 }
 
-function MovementChip({ label }) {
-  if (!label) return null
-  const direction = movementDirection(label)
-  const toneClass = direction === 'up' ? raceStyles.movementUp : direction === 'down' ? raceStyles.movementDown : ''
-  const iconRotation = direction === 'up' ? raceStyles.movementUpIcon : direction === 'down' ? raceStyles.movementDownIcon : ''
-  return (
-    <span className={`${raceStyles.movementChip} ${toneClass}`.trim()}>
-      <span className={`${raceStyles.movementIcon} ${iconRotation}`.trim()}><Icon name="chevron" size={11} /></span>
-      {label}
-    </span>
-  )
-}
-
 export function LeaderList({ rows, onOpenPlayer }) {
   const raceRows = buildLeagueRaceRows(rows)
   const hasScoring = raceRows.some(row => row.scoredMatchCount > 0 || row.totalPoints > 0)
   return (
     <div className={raceStyles.leaderList}>
+      {/* Rank movement is a designed not-yet state: no earlier table exists to compare against,
+          so it is stated once here rather than as an empty per-row chip (owner ruling 2026-07-15). */}
+      {hasScoring && (
+        <p className={raceStyles.movementNote}>
+          <Icon name="info" size={13} />
+          <span>{RANK_MOVEMENT_PENDING_REASON}</span>
+        </p>
+      )}
       {raceRows.map(row => {
         const rowClassName = [
           raceStyles.leaderRow,
           row.isCurrentUser ? raceStyles.currentUserRow : '',
         ].filter(Boolean).join(' ')
-        const rankGroup = (
-          <span className={raceStyles.rankGroup}>
-            <span className={raceStyles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
-            <MovementChip label={row.rankMovementLabel} />
-          </span>
-        )
+        // Gap-to-leader is static text under the identity, not a live movement chip.
+        const showGap = hasScoring && row.gapToLeader > 0
         const identity = (
           <span className={raceStyles.rowIdentity}>
-            <PlayerIdentity player={row} isCurrentUser={row.isCurrentUser} meta={row.memberRole === 'owner' ? 'League owner' : null} />
+            <PlayerIdentity player={row} isCurrentUser={row.isCurrentUser} meta={row.memberRole === 'owner' ? 'League owner' : (showGap ? row.gapToLeaderLabel : null)} />
           </span>
         )
 
@@ -241,7 +223,9 @@ export function LeaderList({ rows, onOpenPlayer }) {
             aria-label={row.isCurrentUser ? 'Open your Player View' : `Open ${row.displayName}'s Player View`}
             onClick={() => onOpenPlayer(row)}
           >
-            {rankGroup}
+            <span className={raceStyles.rankGroup}>
+              <span className={raceStyles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
+            </span>
             {identity}
             <span className={raceStyles.points}>{row.totalPoints}</span>
             <span className={raceStyles.rowGo} aria-hidden="true"><Icon name="chevron" size={13} /></span>

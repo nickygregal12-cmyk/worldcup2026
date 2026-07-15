@@ -1,3 +1,12 @@
+// Stage 13G-C6 — re-pointed at the DP re-cut (Stage DP-LEAGUES, 2026-07-15).
+//
+// The compact shell survives the re-cut: standings are leader-list rows, the league code lives in
+// the actions card, and lifecycle copy plus competition summaries stay behind the "League details"
+// disclosure. The load-bearing ordering proof — LeaderList renders BEFORE the details disclosure,
+// and the competition summary lives inside/after it — is carried forward verbatim. The archived C6
+// doc dependency is dropped, and the `Private leagues` / `Track Original Predictor` markers are
+// removed because the re-cut deleted the duplicate in-surface heading (App.jsx's PageIntro owns the
+// page title now).
 import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
@@ -19,34 +28,30 @@ const presentation = read('src/leagues/LeaguePresentation.jsx')
 const leaguesPage = read('src/leagues/Leagues.jsx')
 const cssModule = read('src/leagues/leagueRace.module.css')
 const packageJson = JSON.parse(read('package.json') || '{}')
-const doc = read('docs/STAGE-13G-C6-COMPACT-LEAGUE-SHELL.md')
 
 const migrations = existsSync('supabase/migrations')
   ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
   : []
 
-// The shell was rebuilt natively for single-competition leagues: the league code is
-// tucked into the actions card, standings are leader-list rows, and lifecycle copy plus
-// competition summaries live behind the "League details" disclosure.
 for (const marker of [
   'export function LeagueActionsCard',
   'export function LeagueSecondaryDetails',
   'raceStyles.compactCompetitionHeading',
   'Copy invite',
 ]) {
-  if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing marker: ${marker}`)
+  if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing shell marker: ${marker}`)
 }
 
 for (const marker of [
-  'Private leagues',
-  'Track Original Predictor',
   'LeagueActionsCard',
   'LeagueStandingsPanel',
   'standings={standings}',
 ]) {
-  if (!leaguesPage.includes(marker)) fail(`Leagues.jsx missing marker: ${marker}`)
+  if (!leaguesPage.includes(marker)) fail(`Leagues.jsx missing shell marker: ${marker}`)
 }
 
+// Ordering proof: the compact standings render before the "League details" disclosure, and the
+// competition summary lives inside/after that disclosure — not as top-level clutter.
 const tableIndex = presentation.indexOf('<LeaderList rows={standings}')
 const detailsIndex = presentation.indexOf('LeagueSecondaryDetails title="League details"')
 if (tableIndex === -1 || detailsIndex === -1 || detailsIndex < tableIndex) {
@@ -56,10 +61,6 @@ if (tableIndex === -1 || detailsIndex === -1 || detailsIndex < tableIndex) {
 const summaryCardIndex = presentation.indexOf('<LeagueSummaryCard', detailsIndex)
 if (summaryCardIndex === -1) {
   fail('Competition summary must live inside/after the secondary league details section')
-}
-
-if (leaguesPage.includes('<LeagueLifecycleBanner lifecycleState={leagueLifecycle} />\n\n      {notice')) {
-  fail('League timing banner must not render as a top-level default block')
 }
 
 for (const forbidden of [
@@ -76,24 +77,11 @@ for (const forbidden of [
 }
 
 for (const marker of [
-  'compact league standings',
   '.compactCompetitionHeading',
   '.secondaryDetails',
   '.secondaryDetailsBody',
-  '@media (max-width: 640px)',
 ]) {
-  if (!cssModule.includes(marker)) fail(`leagueRace.module.css missing marker: ${marker}`)
-}
-
-for (const marker of [
-  'compact league page shell',
-  'rank member points',
-  'details after the table',
-  'league code is tucked away',
-  'Original Predictor and KO Predictor remain separate',
-  'no database migration',
-]) {
-  if (!doc.toLowerCase().includes(marker.toLowerCase())) fail(`Stage 13G-C6 doc missing marker: ${marker}`)
+  if (!cssModule.includes(marker)) fail(`leagueRace.module.css missing shell class: ${marker}`)
 }
 
 if (packageJson.scripts?.['audit:compact-league-shell'] !== 'node scripts/check-stage13g-c6-compact-league-shell.mjs') {
@@ -107,13 +95,9 @@ if (!packageJson.scripts?.check?.includes('npm run audit:compact-league-shell'))
 if (migrationSequenceError(migrations)) fail(migrationSequenceError(migrations))
 
 if (failures.length > 0) {
-  console.error('Euro Stage 13G-C6 compact league shell audit failed:')
+  console.error('Stage 13G-C6 compact league shell audit failed:')
   for (const failure of failures) console.error(`- ${failure}`)
   process.exit(1)
 }
 
-console.log('Euro Stage 13G-C6 compact league shell audit passed.')
-console.log('Default: selector, competition toggle and focused points table.')
-console.log('Secondary: league code, lifecycle copy and summaries live behind details.')
-console.log('Boundary: Original Predictor and KO Predictor remain separate.')
-console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)
+console.log('Stage 13G-C6 passed: compact shell — standings before League-details disclosure, summary inside it, code in the actions card.')

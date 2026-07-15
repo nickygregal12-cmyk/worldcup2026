@@ -19,7 +19,6 @@ const model = read('src/leagues/leagueModel.js')
 const presentation = read('src/leagues/LeaguePresentation.jsx')
 const tests = read('src/leagues/__tests__/leagueModel.test.js')
 const packageJson = JSON.parse(read('package.json') || '{}')
-const doc = read('docs/STAGE-13G-C2-LEAGUE-RACE-STORY.md')
 
 const migrations = existsSync('supabase/migrations')
   ? readdirSync('supabase/migrations').filter(name => name.endsWith('.sql'))
@@ -58,15 +57,9 @@ for (const marker of [
   if (!tests.includes(marker)) fail(`leagueModel.test.js missing marker: ${marker}`)
 }
 
-for (const marker of [
-  'adopt-improved',
-  'gap to leader',
-  'YOU',
-  'no database migration',
-  'rank movement waits for trustworthy previous-rank data',
-]) {
-  if (!doc.toLowerCase().includes(marker.toLowerCase())) fail(`Stage 13G-C2 doc missing marker: ${marker}`)
-}
+// Re-pointed at the DP re-cut (2026-07-15): the C2 doc dependency is dropped (that stage record is
+// archived), and the invariant is proven from source — the race-story fields are modelled and the
+// pending-movement reason is one exported constant, kept out of prose so the copy stays improvable.
 
 if (packageJson.scripts?.['audit:league-race-story'] !== 'node scripts/check-stage13g-c2-league-race-story.mjs') {
   fail('package.json missing audit:league-race-story script')
@@ -85,7 +78,7 @@ if (failures.length > 0) {
 }
 
 console.log('Euro Stage 13G-C2 league race-story audit passed.')
-console.log('Rows: current-user YOU anchor, top-three designed chips and gap-to-leader copy are modelled.')
-console.log('Movement: deferred until trustworthy previous-rank data exists.')
+console.log('Rows: current-user YOU anchor and gap-to-leader are modelled; gap renders as static text.')
+console.log('Movement: a designed not-yet state, deferred until trustworthy previous-rank data exists.')
 console.log('Boundary: Original and KO Predictor standings remain separate.')
 console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

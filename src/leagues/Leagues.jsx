@@ -260,13 +260,10 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     : null
 
   return (
-    <section className={layoutStyles.page} aria-labelledby="euro28-leagues-heading">
-      <div className={layoutStyles.sectionHeading}>
-        <span className={layoutStyles.kicker}>Private leagues</span>
-        <h2 id="euro28-leagues-heading">Private leagues</h2>
-        <p>Track Original Predictor and KO Predictor separately. Each table has its own points race.</p>
-      </div>
-
+    <section className={layoutStyles.page} aria-label="Private leagues">
+      {/* The page title is owned by App.jsx's standard PageIntro ("Your leagues …"); the re-cut
+          drops the duplicate in-surface heading and keeps only this one-line explainer. */}
+      <p className={layoutStyles.lead}>Track Original Predictor and KO Predictor separately. Each table has its own points race.</p>
       <LeagueNotice notice={notice} />
       {loadingSession && <p className={layoutStyles.emptyCopy}>Checking your league access…</p>}
       {!loadingSession && !session?.user && (
@@ -298,7 +295,6 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                 league={selectedLeague}
                 leagues={leagues}
                 onSelectLeague={value => { overviewRequests.current.cancel(); setSelectedLeagueId(value); setPendingLeagueAction(null) }}
-                currentRank={activeSummary?.currentRank ?? null}
               />
 
               <MiniMatchStrip fixture={liveFixture} href={matchStripHref} />

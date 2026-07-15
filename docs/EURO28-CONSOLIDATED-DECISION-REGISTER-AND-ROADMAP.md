@@ -1828,3 +1828,38 @@ same commit, and `docs/DATABASE.md`'s migration list (which had drifted to 14) i
 CLAUDE.md §6 is unchanged: the venue host-nation facts are consistent with the recorded tournament
 truth. Venue metadata is display-only editorial data (host nation); it changes no slot, scoring or
 resolver premise.
+
+## 15. Stage DP-LEAGUES — Leagues re-cut (owner rulings 2026-07-15)
+
+The Leagues surfaces are finalised onto the Design Programme (per the 2026-07-09 finalisation
+standard): gradient hero replaced by a compact DP strip, all three CSS modules moved to `--dp-*`
+tokens, the dead pre-DP global stylesheet deleted (commit `08d7f5f`), 48px touch targets, and the two
+never-reviewed rebuild bugs fixed (the joker-gold member dot re-tokened to a neutral sky accent per
+§5; the dead OS-native-picker CSS removed now that SelectField is a listbox). Two owner rulings govern
+the stage and are recorded here as the durable record:
+
+**Ruling A — single-competition wins; the prototype's hero switcher is superseded on this point.**
+The approved Leagues contract (`docs/reference-prototypes/euro28-league-page-prototype.html`, "League
+table D") shows an Original / KO segmented switcher inside one league's hero. The shipped model —
+established by Migration `202607070019_euro28_league_single_competition` and the a2d5cb1 rebuild — is
+that a league IS Original **or** KO, fixed at creation. **The build wins:** the re-cut has no
+competition switcher and no tabs on the Leagues surfaces. The prototype's switcher is recorded as
+**superseded on this one point**; the rest of the contract (compact match strip, full-row-to-PlayerView,
+subtle chevrons, movement arrows, separate Original/KO tables, no last-score clutter) stands.
+Consequence: the shared-tabs 48px touch-target debt does not fire on Leagues, because Leagues has no
+tabs.
+
+**Ruling B — rank movement and gap-to-leader are a designed not-yet state.** No previous-rank history
+exists, so per-row movement chips would be empty scaffold. Movement is instead stated **once per
+scored table** using the existing `RANK_MOVEMENT_PENDING_REASON` copy, and gap-to-leader is rendered
+as **static text** on trailing members' rows — never a live chip, and **no previous-rank storage is
+built** in this stage. **Retirement condition:** this not-yet state retires when the Results +
+Leaderboards work builds rank history; at that point the movement chips become live and the once-per-
+table note is removed. The dead `buildLeagueRaceSummary` model (no renderer, no importer) is deleted
+in this stage, and the five stale league audits (c2–c6) are re-pointed at the re-cut source structure
+— tightened, not loosened, with each retired marker replaced by an equal-or-stricter assertion and the
+reason recorded in each script (Constitution §5.8). Their archived stage-record docs are removed from
+the assertions in the same change.
+
+No scoring, resolver, Supabase write, Auth, service-role, fake-result or migration change. Original
+Predictor and KO Predictor remain separate. Active migrations remain 21.

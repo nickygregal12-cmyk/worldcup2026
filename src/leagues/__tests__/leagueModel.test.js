@@ -5,7 +5,6 @@ import {
   buildLeagueCompetitionSummary,
   buildLeagueLifecycleState,
   buildLeagueRaceRows,
-  buildLeagueRaceSummary,
   buildSharedLeagueMemberList,
   buildSharedPredictionJourney,
   buildStandingComparison,
@@ -138,42 +137,6 @@ describe('league model', () => {
     expect(raceRows[1].rankMovementReason).toBe(RANK_MOVEMENT_PENDING_REASON)
   })
 
-  it('builds a league race summary strip model without combining competitions', () => {
-    const rows = [
-      { userId: 'leader', displayName: 'Amy', rank: 1, totalPoints: 80, matchPoints: 70, bracketPoints: 10, scoredMatchCount: 5, isCurrentUser: false },
-      { userId: 'me', displayName: 'Nicky', rank: 2, totalPoints: 63, matchPoints: 53, bracketPoints: 10, scoredMatchCount: 5, isCurrentUser: true },
-    ]
-
-    const summary = buildLeagueRaceSummary(rows, LEAGUE_COMPETITION.ORIGINAL)
-    expect(summary).toMatchObject({
-      competitionKey: LEAGUE_COMPETITION.ORIGINAL,
-      competitionLabel: 'Original Predictor',
-      state: 'active',
-      headline: 'You are 17 behind leader',
-      currentLabel: '2nd · 63 pts',
-      leaderLabel: 'Amy · 80 pts',
-      gapLabel: '17 behind leader',
-      gapToLeader: 17,
-    })
-    expect(() => buildLeagueRaceSummary(rows, 'combined')).toThrow('Unsupported league competition')
-  })
-
-  it('builds pre-scoring and empty league race summary states', () => {
-    expect(buildLeagueRaceSummary([], LEAGUE_COMPETITION.KO_PREDICTOR)).toMatchObject({
-      state: 'empty',
-      competitionLabel: 'KO Predictor',
-      gapLabel: 'Race starts when members appear',
-    })
-
-    expect(buildLeagueRaceSummary([
-      { userId: 'me', displayName: 'Nicky', rank: 1, totalPoints: 0, matchPoints: 0, bracketPoints: 0, scoredMatchCount: 0, isCurrentUser: true },
-    ], LEAGUE_COMPETITION.ORIGINAL)).toMatchObject({
-      state: 'pre_scoring',
-      headline: 'Original Predictor race has not started',
-      gapLabel: 'No points scored yet',
-    })
-  })
-
 
   it('builds league lifecycle copy without combining Original and KO states', () => {
     const state = buildLeagueLifecycleState({
@@ -220,7 +183,6 @@ describe('league model', () => {
     // Unaffected when the caller doesn't know the league's fixed competition (today's callers) --
     // this is what keeps the change backward compatible.
     expect(() => buildLeagueCompetitionSummary(originalRows, LEAGUE_COMPETITION.ORIGINAL)).not.toThrow()
-    expect(() => buildLeagueRaceSummary(originalRows, LEAGUE_COMPETITION.ORIGINAL)).not.toThrow()
     expect(() => buildLeagueCompetitionLifecycleCopy({ competitionKey: LEAGUE_COMPETITION.ORIGINAL, lifecycle: { locked: false }, summary: { state: 'pre_competition' } })).not.toThrow()
 
     // Passes when the request matches the league's fixed competition.
@@ -228,8 +190,6 @@ describe('league model', () => {
 
     // Throws when a caller that does know the league's fixed competition asks for the other one.
     expect(() => buildLeagueCompetitionSummary(originalRows, LEAGUE_COMPETITION.KO_PREDICTOR, { leagueCompetition: LEAGUE_COMPETITION.ORIGINAL }))
-      .toThrow(/does not match this league/)
-    expect(() => buildLeagueRaceSummary(originalRows, LEAGUE_COMPETITION.KO_PREDICTOR, { leagueCompetition: LEAGUE_COMPETITION.ORIGINAL }))
       .toThrow(/does not match this league/)
     expect(() => buildLeagueCompetitionLifecycleCopy({
       competitionKey: LEAGUE_COMPETITION.KO_PREDICTOR,
