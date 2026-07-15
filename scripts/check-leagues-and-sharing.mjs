@@ -47,7 +47,7 @@ for (const file of [
   'src/leagues/Leagues.jsx',
   'src/leagues/__tests__/leagueModel.test.js',
   'src/leagues/__tests__/leagueService.test.js',
-  'docs/STAGE-11-LEAGUES-AND-SHARED-PREDICTIONS.md',
+  'docs/archive/STAGE-11-LEAGUES-AND-SHARED-PREDICTIONS.md',
   'supabase/tests/database/013_leagues_and_shared_predictions.test.sql',
 ]) if (!fs.existsSync(path.join(root, file))) fail(`Stage 11 file is missing: ${file}`)
 

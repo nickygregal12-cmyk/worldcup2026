@@ -31,20 +31,10 @@ const BANNER_OPENER = '> **ARCHIVED — historical record of completed work.**'
 // PROJECT-CONTROL.md is the live dashboard; README.md is for humans arriving cold.
 const ALLOWED_ROOT_MARKDOWN = Object.freeze(['CLAUDE.md', 'AGENTS.md', 'PROJECT-CONTROL.md', 'README.md'])
 
-// Closed stage records that an interrupted Leagues session pins in place: each is asserted by a
-// league-named audit script, and archiving them would force edits to exactly the scripts that must
-// rebase cleanly on recovery. Allowed by name, and NOT because they are living. Remove this list —
-// and archive the files — once Leagues recovery lands.
-const LEAGUE_DEFERRED = Object.freeze([
-  'STAGE-11-LEAGUES-AND-SHARED-PREDICTIONS.md',
-  'STAGE-13G-B-LEAGUE-LIFECYCLE.md',
-  'STAGE-13G-C2-LEAGUE-RACE-STORY.md',
-  'STAGE-13G-C3-LEAGUE-RACE-SUMMARY.md',
-  'STAGE-13G-C4-COMPACT-LEAGUE-STANDINGS.md',
-  'STAGE-13G-C5-LEAGUE-DETAIL-DESTINATION.md',
-  'STAGE-13G-C6-COMPACT-LEAGUE-SHELL.md',
-  'STAGE-LEAGUE-SETUP-AND-INVITES-1.md',
-])
+// The eight league-named stage records that were once deferred behind the Leagues boundary are
+// archived as of the DP-LEAGUES re-cut (2026-07-15): the audits that asserted them were re-pointed at
+// the re-cut source in the same change, so the exception they needed is gone. No named exception
+// remains — every docs/*.md is either declared living or archived.
 
 if (!fs.existsSync(path.join(root, MAP))) {
   console.error(`Documentation-structure audit failed: the authority map ${MAP} is missing.`)
@@ -69,7 +59,6 @@ const topLevelDocs = fs.readdirSync(path.join(root, 'docs'))
 
 for (const name of topLevelDocs) {
   if (declaredLiving.has(name)) continue
-  if (LEAGUE_DEFERRED.includes(name)) continue
   fail(
     `docs/${name} is not in the living set declared by ${MAP}. Either add a row for it in the same `
     + `commit (a new document needs a job no existing document has), or archive it: `
@@ -142,5 +131,5 @@ const archivedCount = fs.existsSync(path.join(root, ARCHIVE_DIR))
   : 0
 console.log(
   `Documentation-structure audit passed. ${declaredLiving.size} living documents declared in the authority map; `
-  + `${archivedCount} archived and bannered; ${LEAGUE_DEFERRED.length} deferred behind the Leagues boundary; root markdown clean.`,
+  + `${archivedCount} archived and bannered; no named exceptions; root markdown clean.`,
 )

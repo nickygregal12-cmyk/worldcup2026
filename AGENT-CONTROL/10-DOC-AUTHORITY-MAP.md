@@ -162,16 +162,12 @@ order. `10` is this map.
 
 ## 3. Pending — not classified, and deliberately so
 
-**Deferred behind the Leagues boundary.** These eight are closed stage records and belong in
-`docs/archive/`, but each is asserted by a league-named audit script, and an interrupted Leagues
-session's work must rebase cleanly. Archiving them would force edits to exactly those scripts. They
-stay at the top of `docs/` and are allowed by `audit:doc-structure` as an explicit, named exception —
-**not** because they are living. Archive them once Leagues recovery lands.
-
-`STAGE-11-LEAGUES-AND-SHARED-PREDICTIONS.md`, `STAGE-13G-B-LEAGUE-LIFECYCLE.md`,
-`STAGE-13G-C2-LEAGUE-RACE-STORY.md`, `STAGE-13G-C3-LEAGUE-RACE-SUMMARY.md`,
-`STAGE-13G-C4-COMPACT-LEAGUE-STANDINGS.md`, `STAGE-13G-C5-LEAGUE-DETAIL-DESTINATION.md`,
-`STAGE-13G-C6-COMPACT-LEAGUE-SHELL.md`, `STAGE-LEAGUE-SETUP-AND-INVITES-1.md`.
+**Leagues boundary — resolved 2026-07-15 (DP-LEAGUES re-cut).** The eight league-named stage records
+that were deferred here are now **archived**. The league audits that asserted them (c2–c6,
+`leagues`, `league-lifecycle`, `league-setup-invites`) were re-pointed at the re-cut source in the same
+change — `check-stage-league-setup-invites` re-derived to assert the designed entry-point states in
+source rather than doc prose — so the named exception in `check-doc-structure` is deleted. No named
+exception remains: every `docs/*.md` is either declared living or archived.
 
 **Owner to confirm.** Kept living pending a ruling, because archiving a document asserts it records
 *completed* work — and for this one that assertion may be false:

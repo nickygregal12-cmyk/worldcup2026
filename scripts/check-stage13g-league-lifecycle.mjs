@@ -24,7 +24,7 @@ const required = [
   ['src/player/PlayerHeadToHead.jsx', 'Original picks release after the global lock'],
   ['src/leagues/__tests__/leagueModel.test.js', 'builds league lifecycle copy without combining Original and KO states'],
   ['src/player/__tests__/playerComparisonModel.test.js', 'model.release.copy'],
-  ['docs/STAGE-13G-B-LEAGUE-LIFECYCLE.md', 'No database migration'],
+  ['docs/archive/STAGE-13G-B-LEAGUE-LIFECYCLE.md', 'No database migration'],
   ['docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md', 'v1.28'],
 ]
 
