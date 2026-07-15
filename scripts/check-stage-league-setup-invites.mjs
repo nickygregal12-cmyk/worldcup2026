@@ -42,12 +42,15 @@ for (const marker of [
   requireText(presentation, marker, 'the create/join league entry-point flow must ship in source')
 }
 
-// Invite copy/share affordances, and the settings not-yet state (a designed placeholder, not a stub:
-// `hasSettings` gates a real Settings destination vs the designed coming-soon state).
+// Invite copy/share affordances wired to their handlers through the on-button confirmation runner,
+// and the settings not-yet state (`hasSettings` gates a real Settings destination vs the coming-soon
+// placeholder). The confirmation-on-button mechanism (runAction) is asserted so the copy/share
+// feedback can never silently regress to an off-screen notice.
 for (const marker of [
   'export function LeagueActionsCard',
-  'onClick={onCopyInvite}',
-  'onClick={onShareLeague}',
+  'runAction(',
+  'onCopyInvite',
+  'onShareLeague',
   'hasSettings ?',
 ]) {
   requireText(presentation, marker, 'the invite/share/settings entry-point states must ship in source')

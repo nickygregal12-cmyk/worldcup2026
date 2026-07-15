@@ -1,4 +1,4 @@
-import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
+import { useEffect, useRef, useState } from 'react'
 import layoutStyles from './LeagueLayout.module.css'
 import heroStyles from './LeagueHero.module.css'
 import raceStyles from './leagueRace.module.css'
@@ -207,14 +207,9 @@ export function LeaderList({ rows, onOpenPlayer }) {
           raceStyles.leaderRow,
           row.isCurrentUser ? raceStyles.currentUserRow : '',
         ].filter(Boolean).join(' ')
-        // Gap-to-leader is static text under the identity, not a live movement chip.
-        const showGap = hasScoring && row.gapToLeader > 0
-        const identity = (
-          <span className={raceStyles.rowIdentity}>
-            <PlayerIdentity player={row} isCurrentUser={row.isCurrentUser} meta={row.memberRole === 'owner' ? 'League owner' : (showGap ? row.gapToLeaderLabel : null)} />
-          </span>
-        )
-
+        // One line of work per row (rank · identity · points · chevron) at the 48px floor. Meta is
+        // trimmed to the essential inline marker: "You" or "League owner". Gap-to-leader is not shown
+        // per row (owner ruling 2026-07-15: it tightens or trims) — it would stack the row at scale.
         return (
           <button
             key={row.userId}
@@ -223,10 +218,10 @@ export function LeaderList({ rows, onOpenPlayer }) {
             aria-label={row.isCurrentUser ? 'Open your Player View' : `Open ${row.displayName}'s Player View`}
             onClick={() => onOpenPlayer(row)}
           >
-            <span className={raceStyles.rankGroup}>
-              <span className={raceStyles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
+            <span className={raceStyles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
+            <span className={raceStyles.rowIdentity}>
+              <PlayerIdentity player={row} isCurrentUser={row.isCurrentUser} inline meta={row.memberRole === 'owner' ? 'League owner' : null} />
             </span>
-            {identity}
             <span className={raceStyles.points}>{row.totalPoints}</span>
             <span className={raceStyles.rowGo} aria-hidden="true"><Icon name="chevron" size={13} /></span>
           </button>
@@ -239,7 +234,7 @@ export function LeaderList({ rows, onOpenPlayer }) {
 export function LeagueManagePanel({ open, createName, onCreateNameChange, createCompetition, onCreateCompetitionChange, onSubmitCreate, joinCode, onJoinCodeChange, onSubmitJoin, busy, koReadiness }) {
   return (
     <details className={layoutStyles.managePanel} open={open}>
-      <summary>Manage leagues</summary>
+      <summary>Create or join a league</summary>
       <div className={layoutStyles.manageActions}>
         <form onSubmit={onSubmitCreate}>
           <span className={layoutStyles.kicker}>Create</span>
@@ -298,7 +293,8 @@ export function LeagueStandingsPanel({
           ) : (
             <LeagueSummaryCard title={competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'} summary={activeSummary} section={activeSection} />
           )}
-          <p className={layoutStyles.memberRow}>Members: <strong>{selectedLeague.memberCount}</strong>. Open a member row for the detailed comparison.</p>
+          {/* The "Members: N · open a member row" line was deleted: it duplicated the identity
+              strip's member-count pill and its "open any member row" hint. */}
           <div className={raceStyles.dangerZone}>
             <span className={layoutStyles.kicker}>Danger zone</span>
             {selectedLeague.memberRole === 'owner' ? (
@@ -314,16 +310,37 @@ export function LeagueStandingsPanel({
   )
 }
 
-export function LeagueActionsCard({ joinCode, onCopyInvite, onShareLeague, hasSettings, onOpenSettings }) {
+export function LeagueActionsCard({ joinCode, onCopyInvite, onShareLeague, hasSettings, onOpenSettings, confirmMs = 1800 }) {
+  // Confirmation lives ON the button: the handler returns a short label on success, the button shows
+  // it with a tick for a moment, and stays inert during the interval so double-taps don't stack. This
+  // is always in view at the point of tap — the old up-the-page notice for copy/share is gone.
+  const [confirmed, setConfirmed] = useState(null) // { key, label } | null
+  const timer = useRef(null)
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
+
+  const runAction = async (key, handler) => {
+    const label = await handler()
+    if (!label) return // failure, or a native share sheet handled it — no on-button confirmation
+    setConfirmed({ key, label })
+    if (timer.current) clearTimeout(timer.current)
+    timer.current = setTimeout(() => setConfirmed(null), confirmMs)
+  }
+
+  const isDone = key => confirmed?.key === key
+
   return (
     <aside className={layoutStyles.actionsCard} aria-label="League actions">
       <span className={layoutStyles.kicker}>Actions</span>
       <div className={layoutStyles.actionPills}>
-        <button type="button" className={layoutStyles.actionPill} onClick={onCopyInvite} disabled={!joinCode}>
-          Copy invite <span>Code {joinCode ?? '—'}</span>
+        <button type="button" className={layoutStyles.actionPill} onClick={() => runAction('invite', onCopyInvite)} disabled={!joinCode || isDone('invite')} aria-live="polite">
+          {isDone('invite')
+            ? <span className={layoutStyles.actionDone}>{confirmed.label} <Icon name="check" size={15} /></span>
+            : <>Copy invite <span>Code {joinCode ?? '—'}</span></>}
         </button>
-        <button type="button" className={layoutStyles.actionPill} onClick={onShareLeague} disabled={!joinCode}>
-          Share league <span>Code</span>
+        <button type="button" className={layoutStyles.actionPill} onClick={() => runAction('share', onShareLeague)} disabled={!joinCode || isDone('share')} aria-live="polite">
+          {isDone('share')
+            ? <span className={layoutStyles.actionDone}>{confirmed.label} <Icon name="check" size={15} /></span>
+            : <>Share league <span>Invite link</span></>}
         </button>
         {hasSettings ? (
           <button type="button" className={layoutStyles.actionPill} onClick={onOpenSettings}>

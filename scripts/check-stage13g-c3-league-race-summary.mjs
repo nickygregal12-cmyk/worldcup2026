@@ -77,4 +77,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log('Stage 13G-C3 passed: rank movement is a designed not-yet state (once per table), gap is static text, and the dead race-summary model stays deleted.')
+console.log('Stage 13G-C3 passed: rank movement is a designed not-yet state (once per table), gap is trimmed from the compact rows, and the dead race-summary model stays deleted.')

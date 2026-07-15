@@ -4,6 +4,7 @@ import {
   buildLeagueCompetitionLifecycleCopy,
   buildLeagueCompetitionSummary,
   buildLeagueLifecycleState,
+  buildInviteLink,
   buildLeagueRaceRows,
   buildSharedLeagueMemberList,
   buildSharedPredictionJourney,
@@ -12,6 +13,7 @@ import {
   canCreateKoLeague,
   compareSharedPredictionBundles,
   formatOrdinal,
+  normaliseInboundJoinCode,
   normaliseLeague,
   normaliseStanding,
   RANK_MOVEMENT_PENDING_REASON,
@@ -37,6 +39,21 @@ describe('league model', () => {
     expect(formatOrdinal(11)).toBe('11th')
     expect(formatOrdinal(21)).toBe('21st')
     expect(formatOrdinal(null)).toBe('—')
+  })
+
+  it('builds a followable invite link that opens the app into the join flow with the code applied', () => {
+    expect(buildInviteLink('https://euro28.example', 'SYNTHLARGE')).toBe('https://euro28.example/#/leagues?join=SYNTHLARGE')
+    // A trailing slash on the origin does not double up.
+    expect(buildInviteLink('https://euro28.example/', 'SYNTHLARGE')).toBe('https://euro28.example/#/leagues?join=SYNTHLARGE')
+  })
+
+  it('normalises an inbound invite code (the continuation gate), rejecting anything not a real code', () => {
+    // A signed-out recipient can arrive with a lower-cased or padded code; it is normalised before use.
+    expect(normaliseInboundJoinCode('synthlarge')).toBe('SYNTHLARGE')
+    expect(normaliseInboundJoinCode('SYNTHLARGE')).toBe('SYNTHLARGE')
+    expect(normaliseInboundJoinCode('too-short')).toBeNull()
+    expect(normaliseInboundJoinCode(null)).toBeNull()
+    expect(normaliseInboundJoinCode('')).toBeNull()
   })
 
   it('normalises join codes', () => {

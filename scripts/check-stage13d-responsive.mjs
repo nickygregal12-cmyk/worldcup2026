@@ -57,10 +57,14 @@ const theme = read('src/app/useTheme.js')
 if (!theme.includes("'stage13d'")) fail('Stage 13D visual captures cannot force light and dark themes')
 
 const leagues = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresentation.jsx')].join('\n')
+// Re-pointed at the DP-LEAGUES finalisation (2026-07-15): the member-comparison hint moved into the
+// identity strip, the standalone member-row line was deleted as a duplicate, and copy confirmation
+// moved ONTO the button. The usability journey is asserted through the surviving structure — a member
+// row opens the comparison, the strip carries the hint, and copy is wired — not the retired copy.
 for (const marker of [
-  'Open a member row for the detailed comparison',
-  'layoutStyles.memberRow',
-  'League code copied.',
+  'onOpenPlayer',
+  'heroStyles.hint',
+  'onCopyInvite',
   'formatOrdinal',
 ]) {
   if (!leagues.includes(marker)) fail(`League usability journey is missing: ${marker}`)

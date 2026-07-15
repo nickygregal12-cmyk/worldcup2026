@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueOverview, readLeagueSession } from './leagueService.js'
-import { buildLeagueLifecycleState, canCreateKoLeague, LEAGUE_COMPETITION, validateJoinCode, validateLeagueName } from './leagueModel.js'
+import { buildInviteLink, buildLeagueLifecycleState, canCreateKoLeague, LEAGUE_COMPETITION, normaliseInboundJoinCode, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { buildMatchCentreNavigation, defaultMatchNumber } from '../matchCentre/matchCentreModel.js'
@@ -13,7 +13,12 @@ import {
   MiniMatchStrip,
 } from './LeaguePresentation.jsx'
 import { openPlayerView } from '../player/index.js'
+import { hashSearchParams } from '../app/appRoutes.js'
 import layoutStyles from './LeagueLayout.module.css'
+
+// A pending inbound invite code, stashed so it survives the sign-in/sign-up round-trip a signed-out
+// recipient makes before they can join.
+const PENDING_JOIN_KEY = 'euro28:pendingJoin'
 
 function messageForError(error) {
   const message = error instanceof Error ? error.message : String(error)
@@ -34,6 +39,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const [createName, setCreateName] = useState('')
   const [createCompetition, setCreateCompetition] = useState(LEAGUE_COMPETITION.ORIGINAL)
   const [joinCode, setJoinCode] = useState('')
+  const [manageOpen, setManageOpen] = useState(false)
   const [pendingLeagueAction, setPendingLeagueAction] = useState(null)
   const [liveFixture, setLiveFixture] = useState(null)
   const overviewRequests = useRef(createLatestRequestGuard())
@@ -121,6 +127,31 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     refreshLeagues().catch(error => { if (active) setNotice({ tone: 'danger', message: messageForError(error) }) })
     return () => { active = false }
   }, [refreshLeagues])
+
+  // Inbound invite link (#/leagues?join=CODE): capture the code and clear it from the URL so a refresh
+  // won't re-fire. It is applied by the effect below — immediately if signed in, or after the
+  // signed-out recipient signs in/up and continues.
+  useEffect(() => {
+    const code = hashSearchParams(typeof window === 'undefined' ? '' : window.location.hash).get('join')
+    if (!code) return
+    try { window.sessionStorage.setItem(PENDING_JOIN_KEY, code.toUpperCase()) } catch { /* storage unavailable */ }
+    try { window.history.replaceState(null, '', '#/leagues') } catch { /* history unavailable */ }
+  }, [])
+
+  // Consume the pending join once a session exists: prefill the join field and open the create/join
+  // panel so the recipient lands on "join this league", not the homepage or a bare code to retype.
+  useEffect(() => {
+    if (!session?.user) return
+    let pending = null
+    try { pending = window.sessionStorage.getItem(PENDING_JOIN_KEY) } catch { /* storage unavailable */ }
+    if (!pending) return
+    try { window.sessionStorage.removeItem(PENDING_JOIN_KEY) } catch { /* storage unavailable */ }
+    const code = normaliseInboundJoinCode(pending)
+    if (!code) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- applying the captured invite once a session exists is the intended continuation
+    setJoinCode(code)
+    setManageOpen(true)
+  }, [session])
 
   useEffect(() => {
     if (!client || !selectedLeague?.id) return undefined
@@ -230,29 +261,37 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     }
   }, [createCompetition, koReadiness])
 
-  const copyText = async (text, successMessage) => {
+  // Copy handlers return a short confirmation label on success (rendered on the button) or null on
+  // failure; success no longer routes through the up-the-page notice. Failures still notice.
+  const copyToClipboard = async text => {
     try {
       await navigator.clipboard.writeText(text)
-      setNotice({ tone: 'safe', message: successMessage })
+      return true
     } catch {
       setNotice({ tone: 'info', message: text })
+      return false
     }
   }
 
-  const copyLeagueCode = () => selectedLeague?.joinCode && copyText(selectedLeague.joinCode, 'League code copied.')
+  const copyLeagueCode = async () => {
+    if (!selectedLeague?.joinCode) return null
+    return (await copyToClipboard(selectedLeague.joinCode)) ? 'Copied' : null
+  }
 
   const shareLeague = async () => {
-    if (!selectedLeague?.joinCode) return
-    const shareText = `Join my Euro 2028 Predictor league "${selectedLeague.name}" with code ${selectedLeague.joinCode}.`
+    if (!selectedLeague?.joinCode) return null
+    const url = buildInviteLink(window.location.origin, selectedLeague.joinCode)
+    const shareText = `Join my Euro 2028 Predictor league "${selectedLeague.name}". Tap to join: ${url}`
     if (navigator.share) {
       try {
-        await navigator.share({ title: selectedLeague.name, text: shareText })
-        return
+        await navigator.share({ title: selectedLeague.name, text: shareText, url })
+        return null // the native sheet is its own confirmation
       } catch (error) {
-        if (error?.name === 'AbortError') return
+        if (error?.name === 'AbortError') return null
       }
     }
-    await copyText(shareText, 'Share text copied.')
+    // No native share sheet: fall back to copying the LINK (not a bare code) with on-button feedback.
+    return (await copyToClipboard(url)) ? 'Link copied' : null
   }
 
   const matchStripHref = liveFixture
@@ -273,7 +312,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
       {!loadingSession && session?.user && (
         <>
           <LeagueManagePanel
-            open={leagues.length === 0}
+            open={leagues.length === 0 || manageOpen}
             createName={createName}
             onCreateNameChange={setCreateName}
             createCompetition={createCompetition}

@@ -178,6 +178,15 @@
   font-size: var(--text-xs);
 }
 
+/* On-button copy confirmation. Success ink; the span keeps its own colour, not the muted default. */
+.actionDone {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--dp-success-ink);
+  font-weight: 800;
+}
+
 .destructiveConfirmation {
   display: flex;
   flex-wrap: wrap;
@@ -228,11 +237,6 @@
 
 .summaryCard.isError strong {
   color: var(--dp-danger-ink);
-}
-
-.memberRow {
-  color: var(--dp-text-muted);
-  font-size: var(--text-sm);
 }
 
 @media (min-width: 640px) {

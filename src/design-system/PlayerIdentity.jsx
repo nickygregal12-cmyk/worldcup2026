@@ -13,6 +13,7 @@ export default function PlayerIdentity({
   onActivate = null,
   meta = null,
   size = 'medium',
+  inline = false,
   actionLabel = null,
   className = '',
 }) {
@@ -20,10 +21,13 @@ export default function PlayerIdentity({
   // Your own name is just as clickable as anyone else's: callers that offer an
   // activation are offering it for every row, including the current user's.
   const interactive = typeof onActivate === 'function'
+  // inline keeps name and meta on ONE line (compact table rows at the 48px floor); the default
+  // stacks them.
+  const copyClass = `${styles.copy} ${inline ? styles.copyInline : ''}`.trim()
   const content = (
     <>
       <span className={styles.avatar} aria-hidden="true">{initialsForName(displayName)}</span>
-      <span className={styles.copy}>
+      <span className={copyClass}>
         <span className={styles.name}>{displayName}</span>
         {(meta || isCurrentUser) && (
           <span className={`${styles.meta} ${isCurrentUser ? styles.current : ''}`.trim()}>

@@ -82,6 +82,20 @@ export function validateJoinCode(value) {
   return Object.freeze({ valid: true, value: normalised, error: null })
 }
 
+// A followable invite link that opens the app straight into the join flow with the code applied.
+// Built from an origin (the caller passes window.location.origin) so a future domain switch is free.
+export function buildInviteLink(origin, joinCode) {
+  return `${String(origin ?? '').replace(/\/+$/, '')}/#/leagues?join=${joinCode}`
+}
+
+// Normalise an inbound invite code (from the URL or a stashed pending join) to the canonical code, or
+// null if it is not a valid 10-character code. This is the continuation's validation gate.
+export function normaliseInboundJoinCode(raw) {
+  if (!raw) return null
+  const checked = validateJoinCode(raw)
+  return checked.valid ? checked.value : null
+}
+
 export function validateLeagueCompetition(value) {
   if (!Object.values(LEAGUE_COMPETITION).includes(value)) {
     return Object.freeze({ valid: false, value: null, error: 'Choose Original Predictor or KO Predictor for this league.' })

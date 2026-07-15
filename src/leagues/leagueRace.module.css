@@ -1,8 +1,8 @@
 /* Leagues standings — DP re-cut. Compact leader rows on DP tokens.
  * 48px minimum row target (§5). Movement/gap is a designed not-yet state rendered ONCE per
- * table (see .movementNote / .gapNote below and the RANK_MOVEMENT_PENDING_REASON copy): there
- * is no previous-rank history yet, so per-row movement chips are deliberately not rendered and
- * gap-to-leader is stated as static text, not a live chip. The not-yet retires when Results +
+ * table (see .movementNote below and the RANK_MOVEMENT_PENDING_REASON copy): there is no
+ * previous-rank history yet, so per-row movement chips are deliberately not rendered, and
+ * gap-to-leader is trimmed from the compact single-line rows. The not-yet retires when Results +
  * Leaderboards builds rank history (owner ruling 2026-07-15). */
 
 .standingsCard {
@@ -85,12 +85,6 @@ button.leaderRow:focus-visible {
   background: var(--dp-info-soft);
 }
 
-.rankGroup {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
 .rankMarker {
   display: inline-flex;
   min-height: 1.55rem;
@@ -110,13 +104,6 @@ button.leaderRow:focus-visible {
   align-items: center;
   gap: var(--space-2);
   min-width: 0;
-}
-
-/* Gap-to-leader as static text under the identity, not a live chip. */
-.gapNote {
-  color: var(--dp-text-muted);
-  font-size: 0.72rem;
-  font-weight: 700;
 }
 
 .points {
