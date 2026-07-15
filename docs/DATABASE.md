@@ -16,6 +16,13 @@
 12. `202607010012_euro28_admin_results_operations.sql`
 13. `202607010013_euro28_leagues_and_shared_predictions.sql`
 14. `202607020014_euro28_admin_control_room.sql`
+15. `202607020015_euro28_team_profile_sheet.sql`
+16. `202607030016_euro28_staging_time_phase_controls.sql`
+17. `202607030017_euro28_player_insight.sql`
+18. `202607030018_euro28_complete_admin_operations.sql`
+19. `202607070019_euro28_league_single_competition.sql`
+20. `202607080020_euro28_matches_venue_fk.sql`
+21. `202607090021_euro28_venue_metadata.sql`
 
 ## Competition model
 
