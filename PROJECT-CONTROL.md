@@ -20,7 +20,7 @@ that goes stale. The return-point commit is the exception, because holding it is
 | --- | --- |
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
-| Latest verified commit | `ba9b4f3 The document whose job is current state stops being the one nothing verifies` |
+| Latest verified commit | `fabdde8 The dashboard stops naming Leagues the next unfinished page, because it closed on the 16th` |
 | Current stage | Design Programme per-page re-cut — **complete**. Every core page is on the DP; the Leagues re-cut closed 2026-07-16. |
 | Immediate next stage | The page re-cut is closed. Next by priority is the **`visual.yml` CI lift** (see Immediate Priority Order). |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
