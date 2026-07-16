@@ -21,8 +21,8 @@ that goes stale. The return-point commit is the exception, because holding it is
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
 | Latest verified commit | `ba9b4f3 The document whose job is current state stops being the one nothing verifies` |
-| Current stage | Design Programme per-page re-cut — **near-complete**. Every core page is on the DP except Leagues. |
-| Immediate next stage | The **Leagues re-cut**. A prior run was lost when the Codespace hit a quota stop; it is being rerun on this Mac. |
+| Current stage | Design Programme per-page re-cut — **complete**. Every core page is on the DP; the Leagues re-cut closed 2026-07-16. |
+| Immediate next stage | The page re-cut is closed. Next by priority is the **`visual.yml` CI lift** (see Immediate Priority Order). |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
 | Active migration count | Owned by `docs/DATABASE.md` — not repeated here. Asserted against `supabase/migrations/` by `audit:governance-coherence`. |
 | Migration 021 | Not present in the tree. Before authoring any new SQL, check for a **stranded Migration 021** (it may exist only on another machine — CLAUDE.md §2). |
@@ -37,10 +37,9 @@ must exist and must be an ancestor of `HEAD`.
 
 ## Immediate Priority Order
 
-1. **Leagues re-cut** — the last core page not yet on the Design Programme.
-2. **The `visual.yml` CI lift** — the visual tier runs on this Mac but has no CI workflow.
+1. **The `visual.yml` CI lift** — the visual tier runs on this Mac but has no CI workflow.
    `.github/workflows/` currently holds only `euro28-checks.yml`.
-3. **The `save_my_prediction_bundle` conflict-loop fix — high care.** On 2026-07-14 a runaway
+2. **The `save_my_prediction_bundle` conflict-loop fix — high care.** On 2026-07-14 a runaway
    internal retry flooded staging with roughly **2.6 million failed requests**. The fix is a retry
    cap, a revision re-read, and a statement timeout. This touches a prediction-write path: take a
    **fresh verified backup first, every time** (CLAUDE.md §2), and do not modify scoring, resolver or
@@ -65,7 +64,6 @@ Not forgotten, not blocked — sequenced on purpose. Do not pick these up opport
 - Scoring logic, resolver logic, Supabase Auth, and public signup — unless explicitly scoped.
 - Production config and production data.
 - CI workflows, `package.json` and migrations — unless the stage explicitly scopes them.
-- `src/leagues/`, the league audit scripts and the leagues CSS while the Leagues re-cut is in flight.
 
 ## Source-Of-Truth Uncertainty
 
