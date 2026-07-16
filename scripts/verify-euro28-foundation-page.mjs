@@ -107,7 +107,7 @@ for (const text of [
   'How the tie is decided',
   'Your KO points',
   'KO jokers',
-  'One member list, two separate competitions',
+  'Each league runs one competition',
   'Open a member row for the detailed comparison',
   'Fixtures and results',
   'Official results',

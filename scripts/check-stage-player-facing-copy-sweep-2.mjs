@@ -9,6 +9,7 @@ const fail = message => errors.push(message)
 const read = file => fs.readFileSync(path.join(root, file), 'utf8')
 
 const playerFacingFiles = [
+  'src/App.jsx', // the Leagues page-intro copy lives in the standard PageIntro here
   'src/home/HomeDashboard.jsx',
   'src/home/homeDashboardModel.js',
   'src/auth/AccountAccess.jsx',
@@ -41,7 +42,7 @@ const requiredPlainCopy = [
   ['team that goes through', 'scores and methods are not needed'],
   ['follow official results', 'saved predictions'],
   ['live scores', 'shown separately from your picks'],
-  ['track original predictor', 'own points race'],
+  ['one competition', 'points race'], // re-pointed 2026-07-16: the retired "track both competitions" lead is replaced by the single-competition model copy in the Leagues PageIntro
   ['once picks lock', 'no longer available'],
   ['simple guide', 'account privacy'],
 ]

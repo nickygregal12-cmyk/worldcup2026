@@ -281,7 +281,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const shareLeague = async () => {
     if (!selectedLeague?.joinCode) return null
     const url = buildInviteLink(window.location.origin, selectedLeague.joinCode)
-    const shareText = `Join my Euro 2028 Predictor league "${selectedLeague.name}". Tap to join: ${url}`
+    const shareText = `Join my Euro 2028 Predictor league "${selectedLeague.name}" — open this link and your invite code is filled in ready to join: ${url}`
     if (navigator.share) {
       try {
         await navigator.share({ title: selectedLeague.name, text: shareText, url })
@@ -300,9 +300,8 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
 
   return (
     <section className={layoutStyles.page} aria-label="Private leagues">
-      {/* The page title is owned by App.jsx's standard PageIntro ("Your leagues …"); the re-cut
-          drops the duplicate in-surface heading and keeps only this one-line explainer. */}
-      <p className={layoutStyles.lead}>Track Original Predictor and KO Predictor separately. Each table has its own points race.</p>
+      {/* The page title and its one-line model explainer are owned by App.jsx's PageIntro; the old
+          in-surface lead described the retired two-competitions-per-league model and is deleted. */}
       <LeagueNotice notice={notice} />
       {loadingSession && <p className={layoutStyles.emptyCopy}>Checking your league access…</p>}
       {!loadingSession && !session?.user && (

@@ -180,7 +180,7 @@ export default function App() {
   } else if (route === APP_ROUTE.LEAGUES) {
     content = (
       <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Private competitions" title="Your leagues" description="One member list, two separate competitions." />
+        <PageIntro eyebrow="Private competitions" title="Your leagues" description="Each league runs one competition — Original or KO Predictor — with its own table and points race." />
         <Leagues client={activeClient} tournamentId={appData.tournament.id} reference={appData.guestReference} lifecycle={lifecycle} koReadiness={koReadiness} />
       </div>
     )

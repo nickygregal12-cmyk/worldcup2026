@@ -1,6 +1,14 @@
 -- Stage DP-SCORING — align the runtime scorer with the locked scoring contract
 -- (CLAUDE.md §4, owner ruling 2026-07-10).
 --
+-- MIGRATION NUMBER — READ BEFORE PROMOTING: this file's `021` is NOT the recovered
+-- Migration 021. `202607090021_euro28_venue_metadata` already holds `021` in
+-- supabase/migrations/ (and in both local and Euro-staging history — see the
+-- Decision Register, "Stranded Migration 021 recovered"). When this scoring change
+-- is promoted to a real migration it MUST be renumbered 022+ to avoid colliding
+-- with a migration both databases already ran. Do not move it into
+-- supabase/migrations/ under the number 021.
+--
 -- STAGING/PRODUCTION SAFETY: this migration changes scoring SQL. It was authored
 -- and is committed for LOCAL application + pgTAP verification. It must NOT be
 -- applied to Euro staging (gcfdwobpnanjchcnvdco) except as its own backup-first

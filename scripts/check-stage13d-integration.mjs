@@ -27,7 +27,10 @@ for (const required of [
 assert(leagueService.includes('Promise.allSettled'), 'League overview must preserve partial competition-table failures')
 assert(leagueService.includes('LEAGUE_COMPETITION.ORIGINAL'), 'League overview must request Original standings explicitly')
 assert(leagueService.includes('LEAGUE_COMPETITION.KO_PREDICTOR'), 'League overview must request KO standings explicitly')
-assert(leaguesPage.includes('Track Original Predictor') && leaguesPage.includes('own points race'), 'League page must state the competition boundary')
+// Single-competition model (register §15): each league IS one competition, named in the strip
+// eyebrow. Asserted structurally — the retired "track both competitions" copy is gone, replaced by
+// the model statement in App.jsx's PageIntro (policed by player-facing-copy-sweep-2).
+assert(leaguesPage.includes('competitionName(league.competition)'), 'League strip must name its own competition (single-competition boundary)')
 assert(leaguesPage.includes('You only see picks that are available for this player right now.'), 'Member comparison must explain server-authorised visibility')
 assert(productApp.includes('reference={appData.guestReference}'), 'League journey must receive the canonical public reference')
 

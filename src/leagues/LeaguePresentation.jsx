@@ -92,12 +92,13 @@ export function CompetitionChoice({ value, onChange, koReadiness }) {
 
 export function LeaguePicker({ leagues, selectedId, onSelect }) {
   if (leagues.length <= 1) return null
-  // SelectField has no optgroup support, so the competition moves into each option label.
+  // The label says what the control DOES, not the page title again. SelectField has no optgroup
+  // support, so the competition moves into each option label.
   const optionLabel = league =>
     `${competitionName(league.competition)} · ${league.name} · ${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
   return (
     <SelectField
-      label="Your leagues"
+      label="Switch league"
       className={heroStyles.leaguePicker}
       value={selectedId ?? ''}
       onChange={onSelect}
@@ -108,20 +109,17 @@ export function LeaguePicker({ leagues, selectedId, onSelect }) {
 
 export function LeagueHero({ league, leagues, onSelectLeague }) {
   const original = league.competition === LEAGUE_COMPETITION.ORIGINAL
+  const members = `${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
+  // Compact identity: the competition and member count share one eyebrow line (the "Leagues" prefix
+  // is dropped — the page title already says it), the league names itself once, and a single-line
+  // hint carries the row affordance. For a member of more than one league the picker restates all of
+  // this, so it is the only thing that repeats — by design, because it must.
   return (
     <section className={heroStyles.identity} aria-label={`${league.name} overview`}>
-      <div className={heroStyles.identityMain}>
-        <span className={heroStyles.eyebrow}>Leagues · {competitionName(league.competition)}</span>
-        <h2>{league.name}</h2>
-        <p className={heroStyles.hint}>
-          <Icon name="info" size={14} />
-          <span>Open any member row to compare standings and released predictions.</span>
-        </p>
-      </div>
-      <div className={heroStyles.identityMeta}>
-        <span className={heroStyles.memberPill}><span className={heroStyles.memberDot} aria-hidden="true" />{league.memberCount} member{league.memberCount === 1 ? '' : 's'}</span>
-        <LeaguePicker leagues={leagues} selectedId={league.id} onSelect={onSelectLeague} />
-      </div>
+      <span className={heroStyles.eyebrow}><span className={heroStyles.memberDot} aria-hidden="true" />{competitionName(league.competition)} · {members}</span>
+      <h2 className={heroStyles.name}>{league.name}</h2>
+      <p className={heroStyles.hint}>Tap any row to compare picks and points.</p>
+      <LeaguePicker leagues={leagues} selectedId={league.id} onSelect={onSelectLeague} />
       {!original && <span className="sr-only">This is a KO Predictor league, separate from Original Predictor leagues.</span>}
     </section>
   )
