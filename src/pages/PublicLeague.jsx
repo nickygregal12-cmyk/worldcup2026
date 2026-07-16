@@ -32,7 +32,7 @@ export default function PublicLeague() {
 
     const { data: tournamentLeague } = await supabase
       .from('leagues')
-      .select('id, name, invite_code, created_at, scoring_preset, custom_scoring, creator:created_by(username, display_name)')
+      .select('id, name, invite_code, created_at, scoring_preset, custom_scoring, lock_type, snapshot_taken_at, creator:created_by(username, display_name)')
       .eq('invite_code', cleanCode)
       .maybeSingle()
 
@@ -111,6 +111,10 @@ export default function PublicLeague() {
   }
 
   // Combine and sort all members by points
+  const usesStoredLeaguePoints = leagueType === 'tournament' && (
+    (league?.scoring_preset && league.scoring_preset !== 'standard')
+    || (league?.lock_type === 'pre_tournament' && Boolean(league?.snapshot_taken_at))
+  )
   const allMembers = [
     ...(members || []).map(m => ({
       id: m.user_id,
@@ -118,7 +122,7 @@ export default function PublicLeague() {
       avatar: m.profile?.avatar_emoji || '👤',
       points: leagueType === 'ko'
         ? (m.profile?.ko_points || 0)
-        : (m.league_points > 0 ? m.league_points : (m.profile?.total_points || 0)),
+        : usesStoredLeaguePoints ? (m.league_points || 0) : (m.profile?.total_points || 0),
       streak: leagueType === 'ko' ? 0 : (m.profile?.streak_current || 0),
       exactScores: leagueType === 'ko' ? (m.profile?.ko_exact_scores || 0) : 0,
       isOffline: false,

@@ -17,7 +17,6 @@ const TOURNAMENT_START   = DATES.TOURNAMENT_START // first kickoff
 const GROUP_STAGE_END    = DATES.GROUP_STAGE_END // last group game
 const KNOCKOUT_BANNER    = DATES.KNOCKOUT_BANNER // banner appears
 const KNOCKOUT_LIVE      = DATES.KO_PREDICTOR_OPEN // predictor opens 27 Jun 23:00 BST
-const TOURNAMENT_END     = DATES.TOURNAMENT_END // final
 const REQUIRED_KNOCKOUT_PICKS = ALL_STAGES.reduce((total, stage) => total + (stage.matches?.length || 0), 0)
 
 
@@ -76,8 +75,12 @@ function useCountdown(targetDate) {
 }
 
 // ── Smart CTA logic ──────────────────────────────────────────────────────────
-function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, koLive, koCompleted = 0, koAvailable = 0) {
+function getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, koLive, koCompleted = 0, koAvailable = 0, tournamentOver = false) {
   if (!user) return { label: '🏆 Start predicting free', to: '/register', secondary: { label: 'How does it work?', to: '/how-to-play' } }
+
+  if (tournamentOver) {
+    return { label: '🏆 View final leaderboard', to: '/leaderboard', secondary: { label: 'Your points breakdown →', to: '/points' } }
+  }
 
   const groupsDone    = predictionCount >= 72
   const knockoutsDone = (profile?.knockout_picks_count || 0) >= REQUIRED_KNOCKOUT_PICKS
@@ -125,6 +128,9 @@ export default function Home() {
   const [liveLeaguePreds, setLiveLeaguePreds] = useState([]) // league members' picks for live match
   const [liveMatches, setLiveMatches]     = useState([])
   const [remainingGroupMatches, setRemainingGroupMatches] = useState(null)
+  const [finalMatchCompleted, setFinalMatchCompleted] = useState(false)
+  const [finalChampion, setFinalChampion] = useState(null)
+  const [settledAwardCount, setSettledAwardCount] = useState(0)
   const { memberModal, setMemberModal, memberPredictions, memberReactions, loadingPreds, openProfile, groupPositionBreakdown } = useMemberPredictions()
   const [upcomingMatches, setUpcomingMatches] = useState([])
   const [topPredictors, setTopPredictors] = useState([])
@@ -177,7 +183,10 @@ export default function Home() {
     ? true
     : phaseOverride && phaseOverride !== 'ko_predictor' ? false
     : koOpenByData || now >= KNOCKOUT_LIVE
-  const tournamentOver = phaseOverride === 'post_tournament' ? true : now >= TOURNAMENT_END
+  const pointsAreSettling = appSettings?.points_maintenance === 'true'
+  const settlementComplete = finalMatchCompleted && settledAwardCount === 3 && !pointsAreSettling
+  const tournamentOver = phaseOverride === 'post_tournament' || settlementComplete
+  const tournamentSettling = finalMatchCompleted && !tournamentOver
 
   // Live match data takes priority over date/phase overrides. The final group
   // fixtures must keep the group Matchday Hub visible until they are finished.
@@ -381,7 +390,7 @@ export default function Home() {
       const windowStart = new Date() // now
       const windowEnd   = new Date(windowStart.getTime() + 24 * 60 * 60 * 1000)
 
-      const [liveRes, liveFromKickoffRes, nextRes, upcomingRes, predictorRes, koPredictorRes, todayRes, remainingGroupsRes] = await Promise.all([
+      const [liveRes, liveFromKickoffRes, nextRes, upcomingRes, predictorRes, koPredictorRes, todayRes, remainingGroupsRes, finalRes, settledAwardsRes] = await Promise.all([
         supabase.from('matches')
           .select('*, home_team:home_team_id(name,flag_emoji,short_code), away_team:away_team_id(name,flag_emoji,short_code), venue:venue_id(city)')
           .eq('status', 'live').order('kickoff_time', { ascending: true }),
@@ -429,6 +438,17 @@ export default function Home() {
           .select('id', { count: 'exact', head: true })
           .eq('stage', 'group')
           .neq('status', 'completed'),
+
+        supabase.from('matches')
+          .select('status, winner_team:winner_team_id(name, flag_emoji)')
+          .eq('match_number', 104)
+          .eq('stage', 'final')
+          .maybeSingle(),
+
+        supabase.from('award_results')
+          .select('award_type', { count: 'exact', head: true })
+          .in('award_type', ['golden_boot', 'golden_glove', 'player_of_tournament'])
+          .not('winner_name', 'is', null),
       ])
 
       const allLive = [...(liveRes.data || []), ...(liveFromKickoffRes.data || [])]
@@ -473,6 +493,9 @@ export default function Home() {
       setKoTopPredictors(koPredictorRes.data || [])
       setTodayMatches(todayRes.data || [])
       setRemainingGroupMatches(remainingGroupsRes.count ?? null)
+      setFinalMatchCompleted(finalRes.data?.status === 'completed')
+      setFinalChampion(finalRes.data?.winner_team || null)
+      setSettledAwardCount(settledAwardsRes.count || 0)
 
       // Load user completion counts from source tables so Home doesn't rely on stale cached profile values.
       if (user) {
@@ -605,7 +628,7 @@ export default function Home() {
       ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', ...tz }) + ' BST'
   }
 
-  const cta = getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, knockoutLive, koPredictionCount, koAvailableCount)
+  const cta = getSmartCTA(user, profile, predictionCount, tournamentStarted, groupStageDone, knockoutLive, koPredictionCount, koAvailableCount, tournamentOver)
 
   const groupsComplete = predictionCount >= 72
   const knockoutsComplete = knockoutPickCount >= REQUIRED_KNOCKOUT_PICKS
@@ -813,6 +836,8 @@ export default function Home() {
   // ── Hero subtitle ─────────────────────────────────────────────────────────
   const heroSubtitle = tournamentOver
     ? 'Thanks for playing — see you next time! 🏆'
+    : tournamentSettling
+    ? 'The final is complete — results and awards are being verified.'
     : groupStageDone
     ? 'Group stage complete — knockout stage underway!'
     : tournamentStarted
@@ -1774,10 +1799,21 @@ export default function Home() {
           )}
 
           {/* Tournament over */}
+          {tournamentSettling && (
+            <div className="card fade-in" style={{ textAlign: 'center', padding: '28px', border: '1px solid var(--accent-gold)' }}>
+              <div style={{ fontSize: '38px', marginBottom: '10px' }}>⏳</div>
+              <div style={{ fontWeight: '800', fontSize: '18px', marginBottom: '8px' }}>Final results being verified</div>
+              <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+                The final is complete. Standings will be declared final after all awards and points checks pass.
+              </div>
+            </div>
+          )}
+
           {tournamentOver && (
             <div className="card fade-in" style={{ textAlign: 'center', padding: '32px' }}>
               <div style={{ fontSize: '48px', marginBottom: '12px' }}>🏆</div>
               <div style={{ fontWeight: '800', fontSize: '20px', marginBottom: '8px' }}>Tournament Complete!</div>
+              {finalChampion && <div style={{ fontWeight: '800', fontSize: '16px', marginBottom: '6px' }}>{finalChampion.flag_emoji} {finalChampion.name} are World Champions</div>}
               <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Thanks for playing WC26 Predictor</div>
             </div>
           )}

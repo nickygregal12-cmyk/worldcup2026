@@ -593,7 +593,11 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
     if (home?.id) uniqueStageTeams.set(home.id, home)
     if (away?.id) uniqueStageTeams.set(away.id, away)
   })
-  const stagePoints = [...uniqueStageTeams.values()].reduce((sum, team) => sum + teamOutcome(team, activeStage).points, 0)
+  const completedFinal = matches.find(match => match.match_number === 104 && match.stage === 'final' && match.status === 'completed')
+  const championBonus = activeStage.key === 'final'
+    && completedFinal?.winner_team_id
+    && picks[104]?.winner_id === completedFinal.winner_team_id ? 25 : 0
+  const stagePoints = [...uniqueStageTeams.values()].reduce((sum, team) => sum + teamOutcome(team, activeStage).points, 0) + championBonus
 
   const outcomeStyle = (outcome) => {
     if (outcome.status === 'advanced') return { colour: 'var(--accent-green)', bg: 'rgba(0,122,51,0.09)', border: 'rgba(0,122,51,0.24)' }
@@ -680,6 +684,8 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
 
           const renderTeamCard = (team, outcome) => {
             const selected = team?.id === pick.winner_id
+            const teamChampionBonus = activeStage.key === 'final' && selected && team?.id === completedFinal?.winner_team_id ? 25 : 0
+            const displayedPoints = outcome.points + teamChampionBonus
             const style = outcomeStyle(outcome)
             return (
               <div style={{ position: 'relative', minHeight: '128px', padding: '13px 10px 11px', borderRadius: '13px', textAlign: 'center', background: selected ? 'rgba(11,63,145,0.06)' : style.bg, border: `2px solid ${selected ? 'var(--scottish-navy)' : style.border}` }}>
@@ -687,9 +693,9 @@ function KnockoutPicksView({ userId, leagueId, lockedSnapshot = false }) {
                 <div style={{ fontSize: '27px', lineHeight: 1, marginTop: selected ? '13px' : '4px' }}>{team?.flag_emoji || '🏳️'}</div>
                 <div style={{ marginTop: '7px', fontSize: '12px', fontWeight: '900', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{team?.name || team?.short_code || 'TBC'}</div>
                 <div style={{ marginTop: '12px', fontSize: '12px', fontWeight: '900', color: style.colour }}>
-                  {outcome.points > 0 ? `+${outcome.points} pts` : outcome.status === 'pending' ? '—' : '0 pts'}
+                  {displayedPoints > 0 ? `+${displayedPoints} pts` : outcome.status === 'pending' ? '—' : '0 pts'}
                 </div>
-                <div style={{ marginTop: '2px', fontSize: '9px', fontWeight: '800', color: style.colour }}>{outcome.label}</div>
+                <div style={{ marginTop: '2px', fontSize: '9px', fontWeight: '800', color: style.colour }}>{teamChampionBonus ? 'Champion · includes +25 bonus' : outcome.label}</div>
               </div>
             )
           }
@@ -1939,4 +1945,3 @@ export default function MemberPredictionsModal({ memberModal, setMemberModal, me
     </div>
   )
 }
-

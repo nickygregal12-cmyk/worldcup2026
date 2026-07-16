@@ -13,11 +13,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger score sync
+        env:
+          ADMIN_FUNCTION_SECRET: ${{ secrets.ADMIN_FUNCTION_SECRET }}
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+          if [ -z "$ADMIN_FUNCTION_SECRET" ]; then
+            echo "Missing required ADMIN_FUNCTION_SECRET repository secret"
+            exit 1
+          fi
+          STATUS=$(curl --silent --show-error --output sync-response.json --write-out "%{http_code}" --request POST \
+            --header "x-admin-secret: $ADMIN_FUNCTION_SECRET" \
             https://wc26predictor1.netlify.app/.netlify/functions/sync-scores)
           echo "Sync response: $STATUS"
-          if [ "$STATUS" -ge 500 ]; then
+          cat sync-response.json
+          if [ "$STATUS" -lt 200 ] || [ "$STATUS" -ge 300 ]; then
             echo "Sync failed with status $STATUS"
             exit 1
           fi

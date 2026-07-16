@@ -8,6 +8,7 @@ import AdminKOFixtures from '../components/AdminKOFixtures.jsx'
 import { useAuthStore, useAppStore } from '../store/index.js'
 import { calculateGroupPredictionPoints } from '../lib/scoring.js'
 import { DATES } from '../lib/tournamentDates.js'
+import { tournamentGoalTotal } from '../lib/goalTotals.js'
 import AdminDashboard from '../components/admin/AdminDashboard.jsx'
 import MatchManager from '../components/admin/MatchManager.jsx'
 import AwardsManager from '../components/admin/AwardsManager.jsx'
@@ -75,6 +76,8 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
   const [players, setPlayers] = useState([])
   const [search, setSearch] = useState({})
   const [openKey, setOpenKey] = useState(null)
+  const [settlementChecks, setSettlementChecks] = useState(null)
+  const [checkingSettlement, setCheckingSettlement] = useState(false)
 
   useEffect(() => {
     supabase.from('players').select('id, name, position, team:team_id(name, flag_emoji)').order('name').then(({ data }) => setPlayers(data || []))
@@ -105,6 +108,34 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="card" style={{ border: '1px solid var(--accent-gold)' }}>
+        <div style={{ fontWeight: '800', fontSize: '15px', marginBottom: '5px' }}>🏁 Final settlement check</div>
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '10px' }}>
+          Read-only verification of all 104 fixtures, the final result, extra-time data, official awards and tournament goal total.
+        </div>
+        <button
+          className="btn btn-sm"
+          disabled={checkingSettlement}
+          onClick={async () => {
+            setCheckingSettlement(true)
+            const { data, error } = await supabase.rpc('wc26_final_settlement_check')
+            setSettlementChecks(error ? [{ check_name: 'Settlement check', passed: false, details: error.message }] : (data || []))
+            setCheckingSettlement(false)
+          }}
+        >
+          {checkingSettlement ? 'Checking…' : 'Run final settlement check'}
+        </button>
+        {settlementChecks && (
+          <div style={{ display: 'grid', gap: '6px', marginTop: '12px' }}>
+            {settlementChecks.map(check => (
+              <div key={check.check_name} style={{ padding: '8px 10px', borderRadius: '8px', background: check.passed ? 'var(--accent-green-light)' : 'rgba(198,40,40,0.08)', color: check.passed ? 'var(--accent-green)' : 'var(--accent-red)', fontSize: '12px', fontWeight: '700' }}>
+                {check.passed ? '✓' : '✗'} {check.check_name} · {check.details}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="card" style={{ background: 'var(--accent-blue-light)', border: '1px solid var(--accent-blue)' }}>
         <div style={{ fontSize: '13px', color: 'var(--accent-blue)', fontWeight: '600' }}>
           ℹ️ Search and select from the players table — this guarantees the name matches exactly what users picked. Points auto-award on save.
@@ -165,13 +196,26 @@ function AwardsTab({ awardResults, awardSaving, saveAwardResult }) {
               </div>
               <button
                 onClick={async () => {
-                  const { data } = await supabase.from('matches').select('home_score, away_score').eq('status', 'completed')
-                  if (!data || data.length < 104) {
-                    alert(`Only ${data?.length || 0}/104 matches completed — wait until all matches are done.`)
+                  const { data, error } = await supabase.from('matches')
+                    .select('match_number, home_score, away_score, outcome_type, aet_home_score, aet_away_score')
+                    .eq('status', 'completed')
+                  if (error) {
+                    alert(`Could not load completed matches: ${error.message}`)
                     return
                   }
-                  const total = data.reduce((sum, m) => sum + (m.home_score || 0) + (m.away_score || 0), 0)
-                  if (window.confirm(`Auto-calculated total: ${total} goals from ${data.length} completed matches. Save and award points?`)) {
+                  const tournamentMatches = (data || []).filter(m => Number.isInteger(m.match_number) && m.match_number >= 1 && m.match_number <= 104)
+                  const uniqueMatchNumbers = new Set(tournamentMatches.map(m => m.match_number))
+                  if (tournamentMatches.length !== 104 || uniqueMatchNumbers.size !== 104) {
+                    alert(`Expected 104 unique completed tournament matches; found ${uniqueMatchNumbers.size}. Resolve missing or duplicate fixtures before settlement.`)
+                    return
+                  }
+                  const invalidExtraTime = tournamentMatches.find(m => ['et', 'penalties'].includes(m.outcome_type) && (m.aet_home_score == null || m.aet_away_score == null))
+                  if (invalidExtraTime) {
+                    alert(`Match ${invalidExtraTime.match_number} is missing its after-extra-time score. Fix it before calculating total goals.`)
+                    return
+                  }
+                  const total = tournamentGoalTotal(tournamentMatches)
+                  if (window.confirm(`Auto-calculated total: ${total} goals from 104 matches, including extra time but excluding shootouts. Save and award points?`)) {
                     saveAwardResult(award.key, String(total), award.pts)
                   }
                 }}
@@ -709,15 +753,25 @@ export default function AdminPanel() {
 
   const saveAwardResult = async (awardType, winner, pts) => {
     setAwardSaving(prev => ({ ...prev, [awardType]: true }))
-    await supabase.from('award_results').upsert(
-      { award_type: awardType, winner_name: winner, points_value: parseInt(pts) },
-      { onConflict: 'award_type' }
-    )
-    await supabase.rpc('calculate_award_points', { p_award_type: awardType }).catch(() => {})
-    await logAudit('AWARD_RESULT', { award_type: awardType, winner })
-    setActionResult(`${awardType} result saved — points being awarded`)
-    loadAwardResults()
-    setAwardSaving(prev => ({ ...prev, [awardType]: false }))
+    try {
+      const { error: saveError } = await supabase.from('award_results').upsert(
+        { award_type: awardType, winner_name: winner, points_value: parseInt(pts) },
+        { onConflict: 'award_type' }
+      )
+      if (saveError) throw new Error(`Result was not saved: ${saveError.message}`)
+
+      const { error: pointsError } = await supabase.rpc('calculate_award_points', { p_award_type: awardType })
+      if (pointsError) throw new Error(`Result saved, but points were not recalculated: ${pointsError.message}`)
+
+      await logAudit('AWARD_RESULT', { award_type: awardType, winner, points: parseInt(pts) })
+      setActionResult(`✅ ${awardType} result saved and all totals recalculated`)
+      await loadAwardResults()
+    } catch (error) {
+      console.error('Award settlement failed:', error)
+      setActionResult(`❌ ${error.message}`)
+    } finally {
+      setAwardSaving(prev => ({ ...prev, [awardType]: false }))
+    }
   }
 
   // ── KO Predictor functions ──────────────────────────────────

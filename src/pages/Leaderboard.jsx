@@ -67,8 +67,9 @@ export default function Leaderboard() {
     if (!silent) setLoading(true)
     const [tRes, koRes, prevRes, koEntriesRes] = await Promise.all([
       supabase.from('profiles')
-        .select('id, username, display_name, avatar_emoji, total_points, group_position_points, bracket_points, streak_current, perfect_rounds, streak_best, prediction_accuracy, total_predictions, is_banned')
+        .select('id, username, display_name, avatar_emoji, total_points, group_position_points, bracket_points, exact_scores, streak_current, perfect_rounds, streak_best, prediction_accuracy, total_predictions, is_banned')
         .order('total_points', { ascending: false })
+        .order('exact_scores', { ascending: false })
         .order('username', { ascending: true })
         .limit(200),
       supabase.from('profiles')
@@ -263,8 +264,7 @@ export default function Leaderboard() {
           <>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' }}>
               {paginated.map(player => {
-                const playerPts = isTournament ? (player.total_points || 0) : (player.ko_points || 0)
-                const rank = currentPlayers.filter(other => (isTournament ? (other.total_points || 0) : (other.ko_points || 0)) > playerPts).length + 1
+                const rank = currentPlayers.findIndex(other => other.id === player.id) + 1
                 const isCurrentUser = user?.id === player.id
                 const movement = getRankMovement(player.id, rank)
                 const pts = appSettings?.points_maintenance === 'true' && !isAdmin 
