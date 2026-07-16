@@ -85,6 +85,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+  /* §5 48px floor: the Original/KO leaderboard rows are links; grow the tap target to 48px. */
+  min-height: 3rem;
   padding: var(--space-3) 0;
   border-top: 1px solid var(--dp-border-subtle);
   color: var(--dp-text-body);

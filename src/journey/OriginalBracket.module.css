@@ -170,7 +170,8 @@
   justify-content: center;
   gap: var(--space-2);
   flex: 0 0 auto;
-  min-height: 2.5rem;
+  /* §5 48px floor: compact round pills, tap target grown to 48px (was 2.5rem/40px). */
+  min-height: 3rem;
   padding: 0 var(--space-3);
   border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-full);
@@ -216,7 +217,7 @@
   align-items: center;
   gap: var(--space-2);
   flex: none;
-  min-height: 2.5rem;
+  min-height: 3rem;
   padding: 0 var(--space-3);
   border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-full);

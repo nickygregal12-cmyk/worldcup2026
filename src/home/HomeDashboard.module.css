@@ -58,6 +58,13 @@
 }
 
 .sectMore {
+  /* §5 48px floor: the "more" link keeps its compact type and its place on the heading row,
+     but its tap box is grown to 48px. Negative block margin absorbs the growth so the header
+     row keeps its rhythm — the box overlaps into the surrounding gap, not the layout. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 3rem;
+  margin-block: -0.85rem;
   color: var(--dp-action-ink);
   font-size: var(--text-xs);
   font-weight: 700;
@@ -211,8 +218,14 @@
 }
 
 .howto {
-  display: block;
-  margin-top: var(--space-3);
+  /* §5 48px floor: centred footer link grown to a 48px tap box. The negative bottom margin
+     absorbs the growth at the card's edge so the card height is undisturbed (was ~14px). */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3rem;
+  margin-top: var(--space-1);
+  margin-bottom: -0.85rem;
   color: var(--dp-text-muted);
   font-size: var(--text-xs);
   text-align: center;

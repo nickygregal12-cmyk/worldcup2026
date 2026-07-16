@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Badge, Button, Card, LinkButton, PlayerIdentity, SelectField, StatusBar, Tabs, TeamLabel } from '../design-system/index.jsx'
 import { RESULT_COMPETITION } from '../results/resultModel.js'
+import { formatKickoffDateTime } from '../home/homeFormat.js'
 import { buildMatchCentreLifecycle } from './matchCentreModel.js'
 import { loadMatchCentre } from './matchCentreService.js'
 import styles from './MatchCentre.module.css'
@@ -43,7 +44,7 @@ function FixtureHero({ fixture }) {
         <TeamLabel team={fixture.away} label={fixture.away.label} isoCode={fixture.away.isoCode} unresolved={fixture.away.unresolved} />
       </div>
       <div className={styles.meta}>
-        <span>{fixture.kickoffAt ?? fixture.scheduledDate ?? 'Kick-off time to be confirmed'}</span>
+        <span>{formatKickoffDateTime(fixture.kickoffAt ?? fixture.scheduledDate, 'Kick-off time to be confirmed')}</span>
         {fixture.venueLabel && <span>{fixture.venueLabel}</span>}
         {fixture.resultDetail && <span>{fixture.resultDetail}</span>}
         {fixture.corrected && <span>Corrected result · revision {fixture.resultRevision}</span>}

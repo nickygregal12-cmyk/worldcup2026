@@ -675,7 +675,7 @@ button {
 .auth-mode-tabs button {
   border: 0;
   border-radius: 10px;
-  padding: 0.7rem 0.9rem;
+  padding: 0.7rem 0.9rem; min-height: 3rem; /* §5 48px floor (was ~41px) */
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
@@ -707,7 +707,7 @@ button {
   width: 100%;
   border: 1px solid var(--border-default);
   border-radius: 12px;
-  padding: 0.78rem 0.9rem;
+  padding: 0.78rem 0.9rem; min-height: 3rem; /* §5 48px floor (was ~44px) */
   background: var(--surface-raised);
   color: var(--text-strong);
   font: inherit;
@@ -722,7 +722,7 @@ button {
   justify-self: start;
   border: 0;
   border-radius: 12px;
-  padding: 0.78rem 1rem;
+  padding: 0.78rem 1rem; min-height: 3rem; /* §5 48px floor (was ~44px) */
   background: var(--surface-inverse);
   color: var(--text-on-brand);
   font: inherit;
