@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 import { ALL_STAGES, calcPredictedStandings, getBest3rdTeams } from '../lib/bracketUtils.js'
+import { tournamentGoalTotal } from '../lib/goalTotals.js'
 
 const NAVY = 'var(--scottish-navy)'
 const GOLD = '#c8a430'
@@ -21,6 +22,7 @@ export default function PointsSummary() {
   const [matchLines, setMatchLines] = useState([])
   const [groupLines, setGroupLines] = useState([])
   const [bracketLines, setBracketLines] = useState([])
+  const [bonusPoints, setBonusPoints] = useState({ champion: 0, awards: 0, goals: 0, awardLines: [], goalsReady: false })
   const [stats, setStats] = useState(null)
   const [open, setOpen] = useState({ match: true, group: false, bracket: false, awards: false })
 
@@ -41,6 +43,10 @@ export default function PointsSummary() {
       { data: allTotals },
       { data: knockoutPickRows },
       { data: knockoutMatchRows },
+      { data: awardPredictionRows },
+      { data: awardResultRows },
+      { data: goalPredictionRows },
+      { data: tournamentMatchRows },
     ] = await Promise.all([
       supabase.from('profiles').select('id, username, display_name, avatar_emoji, total_points, group_position_points, bracket_points, exact_scores, streak_current').eq('id', uid).maybeSingle(),
       supabase.from('predictions').select('home_score, away_score, is_confident, points_awarded, match:match_id(match_number, kickoff_time, stage, status, home_score, away_score, home_team:home_team_id(short_code, flag_emoji), away_team:away_team_id(short_code, flag_emoji))').eq('user_id', uid),
@@ -53,6 +59,10 @@ export default function PointsSummary() {
       supabase.from('matches')
         .select('id, match_number, stage, status, home_team_id, away_team_id, winner_team_id, home_score, away_score, home_team:home_team_id(id, name, short_code, flag_emoji), away_team:away_team_id(id, name, short_code, flag_emoji)')
         .neq('stage', 'group'),
+      supabase.from('award_predictions').select('award_type, predicted_player_name').eq('user_id', uid),
+      supabase.from('award_results').select('award_type, winner_name'),
+      supabase.from('tournament_predictions').select('int_value').eq('user_id', uid).eq('prediction_type', 'total_goals').maybeSingle(),
+      supabase.from('matches').select('match_number, status, home_score, away_score, outcome_type, aet_home_score, aet_away_score').gte('match_number', 1).lte('match_number', 104),
     ])
     setProfile(prof)
 
@@ -209,6 +219,31 @@ export default function PointsSummary() {
 
     setBracketLines(bl)
 
+    const finalMatch = (knockoutMatchRows || []).find(match => match.match_number === 104 && match.stage === 'final')
+    const finalPick = (knockoutPickRows || []).find(pick => pick.match_number === 104 && pick.stage === 'final')
+    const championPoints = finalMatch?.status === 'completed'
+      && finalMatch?.winner_team_id
+      && finalPick?.winner_team_id === finalMatch.winner_team_id ? 25 : 0
+
+    const awardValues = { golden_boot: 15, golden_glove: 10, player_of_tournament: 10 }
+    const resultByType = Object.fromEntries((awardResultRows || []).map(result => [result.award_type, result]))
+    const awardLines = (awardPredictionRows || []).map(prediction => {
+      const result = resultByType[prediction.award_type]
+      const correct = Boolean(result?.winner_name)
+        && prediction.predicted_player_name?.trim().toLowerCase() === result.winner_name.trim().toLowerCase()
+      return { ...prediction, winner: result?.winner_name, points: correct ? (awardValues[prediction.award_type] || 0) : 0 }
+    }).filter(line => line.winner)
+    const awardPoints = awardLines.reduce((sum, line) => sum + line.points, 0)
+
+    const completedTournamentMatches = (tournamentMatchRows || []).filter(match => match.status === 'completed')
+    const uniqueCompleted = new Set(completedTournamentMatches.map(match => match.match_number))
+    const goalsReady = completedTournamentMatches.length === 104 && uniqueCompleted.size === 104
+    const actualGoals = goalsReady ? tournamentGoalTotal(completedTournamentMatches) : null
+    const goalPrediction = goalPredictionRows?.int_value
+    const goalDifference = actualGoals == null || goalPrediction == null ? null : Math.abs(goalPrediction - actualGoals)
+    const goalsPoints = goalDifference == null ? 0 : goalDifference === 0 ? 15 : goalDifference <= 5 ? 5 : goalDifference <= 10 ? 3 : 0
+    setBonusPoints({ champion: championPoints, awards: awardPoints, goals: goalsReady ? goalsPoints : 0, awardLines, goalsReady, actualGoals, goalPrediction })
+
     // ── Your Tournament stats ──
     const completed = (preds || []).filter(p => p.match && p.match.status === 'completed' && p.points_awarded != null)
     const correct = completed.filter(p => p.points_awarded > 0).length
@@ -283,16 +318,17 @@ export default function PointsSummary() {
     const total = profile?.total_points || 0
     const group = profile?.group_position_points || 0
     const bracket = profile?.bracket_points || 0
-    const match = Math.max(total - group - bracket, 0)
-    return { total, group, bracket, match }
-  }, [profile])
+    const bonus = bonusPoints.champion + bonusPoints.awards + bonusPoints.goals
+    const match = Math.max(total - group - bracket - bonus, 0)
+    return { total, group, bracket, match, bonus }
+  }, [profile, bonusPoints])
 
   const name = profile?.display_name || profile?.username || 'Player'
   const isMe = targetId === user?.id
 
   if (loading) return <div style={{ minHeight: '70vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}><div className="spinner" /></div>
 
-  const barTotal = Math.max(totals.match + totals.group + totals.bracket, 1)
+  const barTotal = Math.max(totals.match + totals.group + totals.bracket + totals.bonus, 1)
   const w = (v) => `${(v / barTotal * 100).toFixed(1)}%`
 
   return (
@@ -339,11 +375,13 @@ export default function PointsSummary() {
           <div style={{ width: w(totals.match), background: '#dfe6f5' }} />
           <div style={{ width: w(totals.group), background: GOLD }} />
           <div style={{ width: w(totals.bracket), background: '#4caf7d' }} />
+          <div style={{ width: w(totals.bonus), background: '#8b5cf6' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '14px', marginTop: '8px', flexWrap: 'wrap' }}>
           <Legend c="#dfe6f5" label="Matches" v={totals.match} />
           <Legend c={GOLD} label="Groups" v={totals.group} />
           <Legend c="#4caf7d" label="Bracket" v={totals.bracket} />
+          <Legend c="#8b5cf6" label="Final bonuses" v={totals.bonus} />
         </div>
       </div>
 
@@ -454,8 +492,21 @@ export default function PointsSummary() {
         </Category>
 
         <Category open={open.awards} onToggle={() => setOpen(o => ({ ...o, awards: !o.awards }))}
-          icon="🥇" iconBg="#f0f1f5" title="Awards & goals" sub="Settle after the final" pts={0} muted>
-          <div style={lnStyle}><div style={{ flex: 1 }}><b style={{ fontWeight: '700', fontSize: '13px' }}>Golden Boot, Best Player…</b><span style={subLn}>Locked until the tournament ends</span></div><span style={{ ...vStyle, color: 'var(--text-muted)' }}>pending</span></div>
+          icon="🥇" iconBg="#f0f1f5" title="Champion, awards & goals" sub="Final tournament bonuses" pts={totals.bonus} muted={totals.bonus === 0}>
+          {bonusPoints.champion > 0 && (
+            <div style={lnStyle}><div style={{ flex: 1 }}><b style={{ fontWeight: '700', fontSize: '13px' }}>World Cup champion</b><span style={subLn}>Correct winner in the original bracket</span></div><span style={vStyle}>+25</span></div>
+          )}
+          {bonusPoints.awardLines.map(line => (
+            <div key={line.award_type} style={lnStyle}>
+              <div style={{ flex: 1 }}><b style={{ fontWeight: '700', fontSize: '13px' }}>{({ golden_boot: 'Golden Boot', golden_glove: 'Golden Glove', player_of_tournament: 'Player of the Tournament' })[line.award_type] || line.award_type}</b><span style={subLn}>Pick: {line.predicted_player_name} · Winner: {line.winner}</span></div>
+              <span style={{ ...vStyle, color: line.points ? 'var(--accent-green)' : 'var(--text-muted)' }}>{line.points ? `+${line.points}` : '0'}</span>
+            </div>
+          ))}
+          {bonusPoints.goalsReady ? (
+            <div style={lnStyle}><div style={{ flex: 1 }}><b style={{ fontWeight: '700', fontSize: '13px' }}>Total tournament goals</b><span style={subLn}>Predicted {bonusPoints.goalPrediction ?? '—'} · Actual {bonusPoints.actualGoals}</span></div><span style={{ ...vStyle, color: bonusPoints.goals ? 'var(--accent-green)' : 'var(--text-muted)' }}>{bonusPoints.goals ? `+${bonusPoints.goals}` : '0'}</span></div>
+          ) : (
+            <div style={lnStyle}><div style={{ flex: 1 }}><b style={{ fontWeight: '700', fontSize: '13px' }}>Final bonuses</b><span style={subLn}>Pending final settlement</span></div><span style={{ ...vStyle, color: 'var(--text-muted)' }}>pending</span></div>
+          )}
         </Category>
 
         <div style={{ textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', padding: '6px 24px' }}>
