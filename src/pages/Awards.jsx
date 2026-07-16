@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase.js'
 import { useAuthStore } from '../store/index.js'
 import { DATES } from '../lib/tournamentDates.js'
+import { tournamentGoalTotal } from '../lib/goalTotals.js'
 import WorldCupLogo from '../components/WorldCupLogo.jsx'
 
 // Reordered: awards first, goals last. Final Four removed.
@@ -86,15 +87,13 @@ export default function Awards() {
       const [awardRes, scorersRes, goalsRes] = await Promise.all([
         supabase.from('award_results').select('*'),
         supabase.from('tournament_scorers').select('*').order('goals', { ascending: false }).limit(5),
-        supabase.from('matches').select('home_score, away_score').eq('status', 'completed'),
+        supabase.from('matches').select('home_score, away_score, outcome_type, aet_home_score, aet_away_score').eq('status', 'completed'),
       ])
       const awardMap = {}
       ;(awardRes.data || []).forEach(r => { awardMap[r.award_type] = r })
       setAwardResults(awardMap)
       setTopScorers(scorersRes.data || [])
-      const totalLiveGoals = (goalsRes.data || []).reduce((sum, m) =>
-        sum + (m.home_score || 0) + (m.away_score || 0), 0)
-      setLiveGoals(totalLiveGoals)
+      setLiveGoals(tournamentGoalTotal(goalsRes.data || []))
     }
 
     if (user) {
