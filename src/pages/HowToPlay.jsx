@@ -110,11 +110,11 @@ const FAQS = [
   },
   {
     q: 'What is the KO Predictor?',
-    a: 'The KO Predictor is completely separate from the Knockout Bracket. For every match, predict the score after 90 minutes, the team that will advance, the method of advancement when required, and the first-goal band. An exact 90-minute score earns 10pts, a correct 90-minute result earns 5pts, the correct advancing team can earn +5pts where it is not already rewarded by the normal-time result, the correct method earns +3pts only when the advancing team is also correct, and the first-goal band earns +3pts. A joker doubles the complete total.',
+    a: 'The KO Predictor is completely separate from the Knockout Bracket. For every match, predict the score after 90 minutes, the team that will advance, the method of advancement when required, and the first-goal band. An exact 90-minute score earns 10pts, a correct 90-minute result earns 5pts, the correct advancing team can earn +5pts where it is not already rewarded by the normal-time result, the correct method earns +3pts for extra time or +5pts for penalties when the advancing team is also correct, and the first-goal band earns +3pts. A joker doubles the complete total.',
   },
   {
     q: 'How does the leaderboard work?',
-    a: 'Ranked by total points across group predictions, knockout bracket, and awards. Ties are broken by exact scores first, then correct results. The KO Predictor has its own separate leaderboard.',
+    a: 'Ranked by total points across group predictions, knockout bracket, and awards. Ties are broken by exact scores first, then username. The KO Predictor has its own separate leaderboard.',
   },
   {
     q: 'What are leagues?',
