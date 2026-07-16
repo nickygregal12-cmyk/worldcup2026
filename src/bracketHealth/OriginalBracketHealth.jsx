@@ -21,7 +21,7 @@ function Matchup({ reference, homeTeamId, awayTeamId, unresolved = false }) {
 // `model` lets the caller hand in a model it has already built — the Bracket page needs one
 // anyway to put the alive count on the Health tab, and building it twice would be waste.
 // Left optional so the component still stands alone.
-export default function OriginalBracketHealth({ reference, preview, liveSnapshot, status = 'ready', error = null, model: providedModel = null }) {
+export default function OriginalBracketHealth({ reference, preview, liveSnapshot, status = 'ready', error = null, model: providedModel = null, subjectLabel = 'Your' }) {
   const builtModel = useMemo(() => !providedModel && status === 'ready' && liveSnapshot
     ? buildOriginalBracketHealth({ reference, preview, liveSnapshot })
     : null, [liveSnapshot, preview, providedModel, reference, status])
@@ -30,6 +30,7 @@ export default function OriginalBracketHealth({ reference, preview, liveSnapshot
 
   if (status === 'loading') return <div className={styles.state} role="status">Loading live bracket comparison…</div>
   if (status === 'error') return <div className={styles.state} role="alert">Live bracket comparison is unavailable. {error}</div>
+  if (model?.status === 'pending') return <div className={styles.state}>Bracket health appears once the live group tables have enough results to project the knockout places.</div>
   if (!model || model.status !== 'ready') return null
 
   const round = model.rounds.find(item => item.key === roundKey) ?? model.rounds[0]
@@ -40,8 +41,8 @@ export default function OriginalBracketHealth({ reference, preview, liveSnapshot
       <div className={styles.heading}>
         <div>
           <span>Live comparison</span>
-          <h3 id="bracket-health-heading">Original bracket health</h3>
-          <p>Your saved bracket never changes. Known real fixtures are compared against it; unresolved fixtures continue to show your original matchup.</p>
+          <h3 id="bracket-health-heading">{subjectLabel} Original bracket health</h3>
+          <p>{subjectLabel} saved bracket never changes. Known real fixtures are compared against it; unresolved fixtures continue to show the original matchup.</p>
         </div>
         <Badge tone={model.provisional ? 'warning' : 'info'}>
           {model.provisional ? 'Provisional' : 'Prediction remains locked'}
@@ -81,7 +82,7 @@ export default function OriginalBracketHealth({ reference, preview, liveSnapshot
         {cards.map(card => (
           <article className={`${styles.card} ${styles[`tone_${card.tone}`]}`} key={card.matchNumber}>
             <div className={styles.cardMeta}>
-              <span>Your original pick · M{card.matchNumber}</span>
+              <span>{subjectLabel} original pick · M{card.matchNumber}</span>
               <Badge tone={card.tone === 'neutral' ? 'info' : card.tone}>{card.title}</Badge>
             </div>
 

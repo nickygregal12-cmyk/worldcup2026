@@ -88,11 +88,14 @@ function UnknownDestination({ requestedHash }) {
   )
 }
 
-export default function App() {
+export function EuroAppRuntime({
+  clientFactory = createAppClient,
+  appLoader = loadEuroApp,
+}) {
   const hashLocation = useHashLocation()
   const route = hashLocation.route
   const theme = useTheme()
-  const clientState = useMemo(() => createAppClient(), [])
+  const clientState = useMemo(() => clientFactory(), [clientFactory])
   const activeClient = clientState.client
   const sessionState = useEuroSession(activeClient)
   const [state, setState] = useState(() => clientState.client
@@ -103,21 +106,21 @@ export default function App() {
     if (!clientState.client) return
     setState(previous => ({ ...previous, status: 'loading', error: null }))
     try {
-      const data = await loadEuroApp(clientState.client)
+      const data = await appLoader(clientState.client)
       setState({ status: 'ready', data, error: null })
     } catch (error) {
       setState({ status: 'error', data: null, error: error instanceof Error ? error.message : String(error) })
     }
-  }, [clientState])
+  }, [appLoader, clientState])
 
   useEffect(() => {
     if (!clientState.client) return undefined
     let active = true
-    loadEuroApp(clientState.client)
+    appLoader(clientState.client)
       .then(data => { if (active) setState({ status: 'ready', data, error: null }) })
       .catch(error => { if (active) setState({ status: 'error', data: null, error: error instanceof Error ? error.message : String(error) }) })
     return () => { active = false }
-  }, [clientState])
+  }, [appLoader, clientState])
 
   const activeSession = sessionState
   const timeState = useTournamentTimeControl({
@@ -195,14 +198,14 @@ export default function App() {
           lifecycle={lifecycle}
           memberUserId={playerView.userId}
           initialCompetition={playerView.competition}
+          initialTab={playerView.tab}
         />
       </div>
     )
   } else if (route === APP_ROUTE.MATCH_CENTRE) {
     const matchCentre = matchCentreParamsFromHash(hashLocation.hash)
     content = (
-      <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Fixture intelligence" title="Euro Match Centre" description="Follow the fixture, community selections and points available without combining the Original and KO Predictor competitions." />
+      <div className="content-stack match-centre-page">
         <MatchCentre
           client={activeClient}
           reference={appData.guestReference}
@@ -216,14 +219,12 @@ export default function App() {
   } else if (route === APP_ROUTE.RESULTS) {
     content = (
       <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Live tournament" title="Results" description="Official scores, live group tables and the live knockout bracket." />
         <ResultsAndLeaderboards view="results" client={activeClient} reference={appData.guestReference} lifecycle={lifecycle} />
       </div>
     )
   } else if (route === APP_ROUTE.LEADERBOARDS) {
     content = (
       <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Separate competition standings" title="Leaderboards" description="View the full Original Predictor or KO Predictor table and your matching points breakdown." />
         <ResultsAndLeaderboards
           view="leaderboards"
           initialCompetition={leaderboardCompetitionFromHash(hashLocation.hash)}
@@ -282,4 +283,8 @@ export default function App() {
       >{content}</EuroAppShell>
     </TeamProfileProvider>
   )
+}
+
+export default function App() {
+  return <EuroAppRuntime />
 }

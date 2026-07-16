@@ -28,7 +28,8 @@ const sharedComparison = [read('src/player/PlayerHeadToHead.jsx'), read('src/pla
 const leagues = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresentation.jsx'), read('src/player/PlayerView.jsx'), sharedComparison].join('\n')
 for (const marker of [
   'createLatestRequestGuard',
-  'competitionKey: selectedLeague.competition',
+  'const competitionKey = selectedLeague.competition',
+  'loadLeagueOverview(client, { leagueId, competitionKey })',
   'buildStandingComparison',
   'destructiveConfirmation',
   'Confirm delete',

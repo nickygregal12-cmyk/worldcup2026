@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueOverview, readLeagueSession } from './leagueService.js'
-import { buildInviteLink, buildLeagueLifecycleState, canCreateKoLeague, LEAGUE_COMPETITION, normaliseInboundJoinCode, validateJoinCode, validateLeagueName } from './leagueModel.js'
+import { buildInviteLink, buildLeagueLifecycleState, LEAGUE_COMPETITION, normaliseInboundJoinCode, validateJoinCode, validateLeagueName } from './leagueModel.js'
+import { buildLeagueCollections, reconcileLeagueSelections } from './leagueCollections.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { buildMatchCentreNavigation, defaultMatchNumber } from '../matchCentre/matchCentreModel.js'
@@ -12,12 +13,11 @@ import {
   LeagueStandingsPanel,
   MiniMatchStrip,
 } from './LeaguePresentation.jsx'
-import { openPlayerView } from '../player/index.js'
+import { EmptyLeagueCollection, LeagueCollectionTabs } from './LeagueCollectionTabs.jsx'
+import PlayerQuickView from '../player/PlayerQuickView.jsx'
 import { hashSearchParams } from '../app/appRoutes.js'
 import layoutStyles from './LeagueLayout.module.css'
 
-// A pending inbound invite code, stashed so it survives the sign-in/sign-up round-trip a signed-out
-// recipient makes before they can join.
 const PENDING_JOIN_KEY = 'euro28:pendingJoin'
 
 function messageForError(error) {
@@ -32,21 +32,25 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const [loadingSession, setLoadingSession] = useState(Boolean(client))
   const [leagues, setLeagues] = useState([])
   const [leagueListStatus, setLeagueListStatus] = useState('idle')
-  const [selectedLeagueId, setSelectedLeagueId] = useState(null)
-  const [overview, setOverview] = useState({ status: 'idle', data: null, leagueId: null })
+  const [activeCompetition, setActiveCompetition] = useState(LEAGUE_COMPETITION.ORIGINAL)
+  const [selectedLeagueIds, setSelectedLeagueIds] = useState({ [LEAGUE_COMPETITION.ORIGINAL]: null, [LEAGUE_COMPETITION.KO_PREDICTOR]: null })
+  const [overview, setOverview] = useState({ status: 'idle', data: null, leagueId: null, competitionKey: null })
   const [actionStatus, setActionStatus] = useState('idle')
   const [notice, setNotice] = useState(null)
   const [createName, setCreateName] = useState('')
-  const [createCompetition, setCreateCompetition] = useState(LEAGUE_COMPETITION.ORIGINAL)
   const [joinCode, setJoinCode] = useState('')
   const [manageOpen, setManageOpen] = useState(false)
   const [pendingLeagueAction, setPendingLeagueAction] = useState(null)
+  const [quickPlayer, setQuickPlayer] = useState(null)
   const [liveFixture, setLiveFixture] = useState(null)
   const overviewRequests = useRef(createLatestRequestGuard())
 
+  const koLeagueReady = Boolean(koReadiness?.open)
+  const leagueCollections = useMemo(() => buildLeagueCollections(leagues), [leagues])
+  const visibleLeagues = leagueCollections[activeCompetition]
   const selectedLeague = useMemo(
-    () => leagues.find(league => league.id === selectedLeagueId) ?? leagues[0] ?? null,
-    [leagues, selectedLeagueId],
+    () => visibleLeagues.find(league => league.id === selectedLeagueIds[activeCompetition]) ?? visibleLeagues[0] ?? null,
+    [activeCompetition, selectedLeagueIds, visibleLeagues],
   )
 
   const refreshLeagues = useCallback(async preferredId => {
@@ -55,34 +59,36 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     try {
       const nextLeagues = await getMyLeagues(client, tournamentId)
       setLeagues(nextLeagues)
-      setSelectedLeagueId(previous => {
-        if (preferredId && nextLeagues.some(league => league.id === preferredId)) return preferredId
-        return nextLeagues.some(league => league.id === previous) ? previous : nextLeagues[0]?.id ?? null
-      })
+      setSelectedLeagueIds(previous => reconcileLeagueSelections(nextLeagues, previous, preferredId).selectedIds)
+      const preferredLeague = preferredId ? nextLeagues.find(league => league.id === preferredId) : null
+      if (preferredLeague && (preferredLeague.competition === LEAGUE_COMPETITION.ORIGINAL || koLeagueReady)) {
+        setActiveCompetition(preferredLeague.competition)
+      }
       setLeagueListStatus('ready')
       return nextLeagues
     } catch (error) {
       setLeagueListStatus('error')
       throw error
     }
-  }, [client, session, tournamentId])
+  }, [client, koLeagueReady, session, tournamentId])
 
   const refreshOverview = useCallback(async () => {
     if (!client || !selectedLeague?.id) {
       overviewRequests.current.cancel()
-      setOverview({ status: 'idle', data: null, leagueId: null })
+      setOverview({ status: 'idle', data: null, leagueId: null, competitionKey: null })
       return
     }
     const leagueId = selectedLeague.id
+    const competitionKey = selectedLeague.competition
     const requestToken = overviewRequests.current.begin()
-    setOverview(previous => ({ ...previous, status: 'loading', leagueId }))
+    setOverview(previous => ({ status: 'loading', data: previous.leagueId === leagueId && previous.competitionKey === competitionKey ? previous.data : null, leagueId, competitionKey }))
     try {
-      const data = await loadLeagueOverview(client, leagueId)
+      const data = await loadLeagueOverview(client, { leagueId, competitionKey })
       if (!overviewRequests.current.isCurrent(requestToken)) return
-      setOverview({ status: data.status, data, leagueId })
+      setOverview({ status: data.status, data, leagueId, competitionKey })
     } catch (error) {
       if (!overviewRequests.current.isCurrent(requestToken)) return
-      setOverview(previous => ({ status: previous.data ? 'partial' : 'error', data: previous.data, leagueId }))
+      setOverview({ status: 'error', data: null, leagueId, competitionKey })
       setNotice({ tone: 'danger', message: messageForError(error) })
     }
   }, [client, selectedLeague])
@@ -108,10 +114,12 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
       setLoadingSession(false)
       if (!nextSession) {
         setLeagues([])
-        setSelectedLeagueId(null)
-        setOverview({ status: 'idle', data: null, leagueId: null })
+        setSelectedLeagueIds({ [LEAGUE_COMPETITION.ORIGINAL]: null, [LEAGUE_COMPETITION.KO_PREDICTOR]: null })
+        setActiveCompetition(LEAGUE_COMPETITION.ORIGINAL)
+        setOverview({ status: 'idle', data: null, leagueId: null, competitionKey: null })
         overviewRequests.current.cancel()
         setPendingLeagueAction(null)
+        setQuickPlayer(null)
       }
     })
 
@@ -128,9 +136,12 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     return () => { active = false }
   }, [refreshLeagues])
 
-  // Inbound invite link (#/leagues?join=CODE): capture the code and clear it from the URL so a refresh
-  // won't re-fire. It is applied by the effect below — immediately if signed in, or after the
-  // signed-out recipient signs in/up and continues.
+  useEffect(() => {
+    if (koLeagueReady || activeCompetition === LEAGUE_COMPETITION.ORIGINAL) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- a closed KO collection is never a reachable page state
+    setActiveCompetition(LEAGUE_COMPETITION.ORIGINAL)
+  }, [activeCompetition, koLeagueReady])
+
   useEffect(() => {
     const code = hashSearchParams(typeof window === 'undefined' ? '' : window.location.hash).get('join')
     if (!code) return
@@ -138,8 +149,6 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     try { window.history.replaceState(null, '', '#/leagues') } catch { /* history unavailable */ }
   }, [])
 
-  // Consume the pending join once a session exists: prefill the join field and open the create/join
-  // panel so the recipient lands on "join this league", not the homepage or a bare code to retype.
   useEffect(() => {
     if (!session?.user) return
     let pending = null
@@ -161,7 +170,6 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     return () => { requestGuard.cancel() }
   }, [client, refreshOverview, selectedLeague])
 
-  // Reuses the canonical live snapshot/fixture-picking used by Home & Match Centre; no minute-level clock exists in this data.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing the stale live fixture when preconditions drop is an intentional reset
     if (!client || !session?.user || !reference?.tournamentId) { setLiveFixture(null); return undefined }
@@ -198,10 +206,10 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
       return
     }
     run(async () => {
-      const created = await createLeague(client, { tournamentId, name: checked.value, competition: createCompetition, koReadiness })
+      const created = await createLeague(client, { tournamentId, name: checked.value, competition: activeCompetition, koReadiness })
       setCreateName('')
-      setCreateCompetition(LEAGUE_COMPETITION.ORIGINAL)
       await refreshLeagues(created.league_id)
+      setManageOpen(false)
       setNotice({ tone: 'safe', message: `${created.name} was created.` })
     })
   }
@@ -217,6 +225,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
       const joined = await joinLeague(client, { tournamentId, joinCode: checked.value })
       setJoinCode('')
       await refreshLeagues(joined.league_id)
+      setManageOpen(false)
       setNotice({ tone: 'safe', message: `Joined ${joined.name}.` })
     })
   }
@@ -235,34 +244,23 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     setNotice({ tone: 'safe', message: action === 'delete' ? `${leagueName} was deleted.` : `You left ${leagueName}.` })
   }
 
-  // Opening a member row navigates straight to their dedicated Player View, carrying the
-  // league's fixed competition so Original and KO Predictor context is preserved.
   const openMemberPlayerView = row => {
     if (!row?.userId || !selectedLeague) return
-    openPlayerView({ userId: row.userId, competitionKey: selectedLeague.competition })
+    setQuickPlayer(row)
   }
 
-  const overviewLoading = Boolean(selectedLeague?.id) && overview.leagueId !== selectedLeague.id
+  const overviewLoading = Boolean(selectedLeague?.id) && (
+    overview.leagueId !== selectedLeague.id || overview.competitionKey !== selectedLeague.competition
+  )
   const activeOverview = overviewLoading ? null : overview.data
-  const koLeagueReady = Boolean(koReadiness?.open)
   const activeCompetitionKey = selectedLeague?.competition ?? LEAGUE_COMPETITION.ORIGINAL
-  const activeSection = activeCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.sections.original : activeOverview?.sections.koPredictor
-  const standings = activeSection?.data ?? []
-  const activeSummary = activeCompetitionKey === LEAGUE_COMPETITION.ORIGINAL ? activeOverview?.summaries.original : activeOverview?.summaries.koPredictor
+  const standings = activeOverview?.standings ?? []
+  const activeSummary = activeOverview?.summary ?? null
   const leagueLifecycle = activeOverview
-    ? buildLeagueLifecycleState({ lifecycle, originalSummary: activeOverview.summaries.original, koSummary: activeOverview.summaries.koPredictor, koReadiness })
-    : buildLeagueLifecycleState({ lifecycle, koReadiness })
+    ? buildLeagueLifecycleState({ lifecycle, competitionKey: activeCompetitionKey, summary: activeSummary, koReadiness })
+    : buildLeagueLifecycleState({ lifecycle, competitionKey: activeCompetitionKey, koReadiness })
   const leagueListLoading = ['idle', 'loading'].includes(leagueListStatus)
 
-  useEffect(() => {
-    if (createCompetition === LEAGUE_COMPETITION.KO_PREDICTOR && !canCreateKoLeague(koReadiness)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- corrects the create form when KO readiness regresses; intentional guarded reset
-      setCreateCompetition(LEAGUE_COMPETITION.ORIGINAL)
-    }
-  }, [createCompetition, koReadiness])
-
-  // Copy handlers return a short confirmation label on success (rendered on the button) or null on
-  // failure; success no longer routes through the up-the-page notice. Failures still notice.
   const copyToClipboard = async text => {
     try {
       await navigator.clipboard.writeText(text)
@@ -290,18 +288,19 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
         if (error?.name === 'AbortError') return null
       }
     }
-    // No native share sheet: fall back to copying the LINK (not a bare code) with on-button feedback.
     return (await copyToClipboard(url)) ? 'Link copied' : null
   }
 
+  const liveFixtureCompetition = liveFixture?.matchNumber <= 36
+    ? LEAGUE_COMPETITION.ORIGINAL
+    : LEAGUE_COMPETITION.KO_PREDICTOR
+  const matchStripLeague = selectedLeague?.competition === liveFixtureCompetition ? selectedLeague.id : null
   const matchStripHref = liveFixture
-    ? `#/match-centre?match=${liveFixture.matchNumber}&competition=${liveFixture.matchNumber <= 36 ? LEAGUE_COMPETITION.ORIGINAL : LEAGUE_COMPETITION.KO_PREDICTOR}${selectedLeague?.id ? `&league=${selectedLeague.id}` : ''}`
+    ? `#/match-centre?match=${liveFixture.matchNumber}&competition=${liveFixtureCompetition}${matchStripLeague ? `&league=${matchStripLeague}` : ''}`
     : null
 
   return (
     <section className={layoutStyles.page} aria-label="Private leagues">
-      {/* The page title and its one-line model explainer are owned by App.jsx's PageIntro; the old
-          in-surface lead described the retired two-competitions-per-league model and is deleted. */}
       <LeagueNotice notice={notice} />
       {loadingSession && <p className={layoutStyles.emptyCopy}>Checking your league access…</p>}
       {!loadingSession && !session?.user && (
@@ -310,29 +309,45 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
 
       {!loadingSession && session?.user && (
         <>
+          {koLeagueReady && (
+            <LeagueCollectionTabs
+              activeCompetition={activeCompetition}
+              collections={leagueCollections}
+              onChange={competitionKey => {
+                overviewRequests.current.cancel()
+                setActiveCompetition(competitionKey)
+                setPendingLeagueAction(null)
+                setQuickPlayer(null)
+              }}
+            />
+          )}
+
           <LeagueManagePanel
-            open={leagues.length === 0 || manageOpen}
+            open={visibleLeagues.length === 0 || manageOpen}
             createName={createName}
             onCreateNameChange={setCreateName}
-            createCompetition={createCompetition}
-            onCreateCompetitionChange={setCreateCompetition}
+            competitionKey={activeCompetition}
             onSubmitCreate={submitCreate}
             joinCode={joinCode}
             onJoinCodeChange={setJoinCode}
             onSubmitJoin={submitJoin}
             busy={actionStatus === 'loading'}
-            koReadiness={koReadiness}
           />
 
-          {leagueListLoading && <p className={layoutStyles.emptyCopy}>Loading your leagues…</p>}
-          {!leagueListLoading && leagues.length === 0 ? (
-            <p className={layoutStyles.emptyCopy}>You have not created or joined a league yet.</p>
-          ) : selectedLeague && (
+          <div id="league-collection-panel" role={koLeagueReady ? 'tabpanel' : undefined} className={layoutStyles.collectionPanel}>
+            {leagueListLoading && <p className={layoutStyles.emptyCopy}>Loading your leagues…</p>}
+            {!leagueListLoading && visibleLeagues.length === 0 ? (
+              <EmptyLeagueCollection competitionKey={activeCompetition} />
+            ) : selectedLeague && (
             <>
               <LeagueHero
                 league={selectedLeague}
-                leagues={leagues}
-                onSelectLeague={value => { overviewRequests.current.cancel(); setSelectedLeagueId(value); setPendingLeagueAction(null) }}
+                leagues={visibleLeagues}
+                onSelectLeague={value => {
+                  overviewRequests.current.cancel()
+                  setSelectedLeagueIds(previous => ({ ...previous, [activeCompetition]: value }))
+                  setPendingLeagueAction(null)
+                }}
               />
 
               <MiniMatchStrip fixture={liveFixture} href={matchStripHref} />
@@ -344,14 +359,12 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                     overview={overview}
                     overviewLoading={overviewLoading}
                     activeOverview={activeOverview}
-                    activeSection={activeSection}
                     standings={standings}
                     onOpenPlayer={openMemberPlayerView}
                     leagueLifecycle={leagueLifecycle}
                     lifecycle={lifecycle}
                     activeSummary={activeSummary}
                     koReadiness={koReadiness}
-                    koLeagueReady={koLeagueReady}
                     selectedLeague={selectedLeague}
                     pendingLeagueAction={pendingLeagueAction}
                     actionStatus={actionStatus}
@@ -369,9 +382,11 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                 />
               </div>
             </>
-          )}
+            )}
+          </div>
         </>
       )}
+      <PlayerQuickView player={quickPlayer} competitionKey={selectedLeague?.competition ?? activeCompetition} onClose={() => setQuickPlayer(null)} />
     </section>
   )
 }

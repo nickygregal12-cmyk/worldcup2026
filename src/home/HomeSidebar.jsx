@@ -125,13 +125,14 @@ export function StatTiles({ dashboard }) {
   )
 }
 
-export function LeaguesTeaser({ dashboard }) {
+export function LeaguesTeaser({ dashboard, preTournament = false }) {
   // "Create or join a league" asserts an absence. If the leagues fetch failed we
   // do not know there are none, and telling a member of three leagues that they
   // have none is worse than saying nothing.
   const { count, members } = dashboard.leagues
   let detail
   if (dashboard.sectionErrors.leagues) detail = 'Your leagues could not be loaded just now.'
+  else if (count > 0 && preTournament) detail = `${count} league${count === 1 ? '' : 's'} ready · invite people before kick-off`
   else if (count > 0) detail = `${count} league${count === 1 ? '' : 's'} · ${members} members`
   else detail = 'Create or join a league'
 
@@ -139,7 +140,28 @@ export function LeaguesTeaser({ dashboard }) {
     <a className={styles.panel} href="#/leagues">
       <h3>Your leagues</h3>
       <p>{detail}</p>
-      <span className={styles.panelGo}>Open leagues ›</span>
+      <span className={styles.panelGo}>{preTournament && count > 0 ? 'Share or manage leagues ›' : 'Open leagues ›'}</span>
+    </a>
+  )
+}
+
+/** Quiet from the start: useful context, never a rival to the Original entry. */
+export function KoTeaser({ dashboard }) {
+  const ready = dashboard.koReadiness.open
+  const available = dashboard.koReadiness.available
+
+  return (
+    <a className={styles.koTeaser} href={ready ? '#/ko-predictor' : '#/how-to-play'}>
+      <span className={styles.koIcon}><Icon name="trophy" size={18} /></span>
+      <span className={styles.koCopy}>
+        <strong>KO Predictor</strong>
+        <small>
+          {ready
+            ? `${available} confirmed fixture${available === 1 ? '' : 's'} ready to predict`
+            : 'A separate bonus game. Fixtures unlock as the knockout teams are confirmed.'}
+        </small>
+      </span>
+      <Icon name="chevron" size={18} />
     </a>
   )
 }

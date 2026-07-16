@@ -178,21 +178,23 @@ describe('Mobile bottom nav auto-hide — real scroll, real focus', () => {
     expect(isHidden()).toBe(true)
   })
 
-  it('translates as ONE UNIT: the raised Home circle is inside the nav that moves', () => {
+  it('keeps the aligned Home circle inside the nav that moves as one unit', () => {
     const { container } = render(<Harness />)
 
-    // §5 says the bar translates as one unit WITH the raised Home circle. The only way
-    // to guarantee that is for the circle to be a child of the transformed element and
-    // not independently positioned — so that is what is asserted, structurally, because
-    // jsdom has no layout engine and cannot measure the transform itself.
+    // The bar translates as one unit with the Home treatment, so the circle stays a
+    // child of the transformed element. jsdom cannot measure its visual overlap.
     const circle = container.querySelector('[class*="circle"]')
     expect(circle).not.toBeNull()
     expect(nav().contains(circle)).toBe(true)
 
-    // It is lifted by a negative margin (a child in flow), NOT by position:fixed/absolute,
-    // which would take it out of the nav's transform and leave it stranded on screen.
     const home = circle.closest('a')
     expect(home.getAttribute('href')).toBe('#/')
+
+    // Every destination has the same icon slot. The circle is centred inside that
+    // shared slot; the button itself is not raised.
+    const slots = container.querySelectorAll('[class*="iconSlot"]')
+    expect(slots).toHaveLength(5)
+    expect(circle.parentElement).toBe(slots[2])
 
     // And the hidden state is carried on the nav itself — the single element that moves.
     parkAt(1000)

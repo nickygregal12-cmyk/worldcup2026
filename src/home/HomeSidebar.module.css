@@ -152,6 +152,49 @@
   font-weight: 700;
 }
 
+/* ===== quiet KO explainer ===== */
+
+.koTeaser {
+  min-height: 3.5rem;
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-3);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-page);
+  color: var(--dp-text-body);
+  text-decoration: none;
+}
+
+.koIcon {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--dp-surface-raised);
+  color: var(--dp-action-ink);
+}
+
+.koCopy {
+  min-width: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.koCopy strong {
+  color: var(--dp-text-strong);
+  font-size: var(--text-sm);
+}
+
+.koCopy small {
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.35;
+}
+
 /* Quiet, not invisible. The prototype's sunken grey is --dp-surface-page, which
    IS the ground this card sits on: 1.03:1 in light and indistinguishable in dark,
    leaving a card bounded only by a border the tokens rate as decorative. It takes
@@ -185,6 +228,7 @@
 .rankCell:focus-visible,
 .lbRow:focus-visible,
 .panel:focus-visible,
+.koTeaser:focus-visible,
 .quiet:focus-visible {
   outline: 2px solid var(--dp-action);
   outline-offset: 2px;

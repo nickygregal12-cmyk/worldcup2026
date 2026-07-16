@@ -10,6 +10,30 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.59 — Product Experience v3 first implementation slice
+
+Stage PRODUCT-EXPERIENCE-V3-SLICE-1 is implemented in the working tree and awaits owner visual
+approval. It adds deterministic visual CI, the aligned auto-hiding mobile shell, grouped More
+directory, phase-aware Home ordering, Groups next-match landing and Match Centre links, stronger
+Original Bracket prediction treatment, independent Original/KO league collections, compact player
+profile sheets with competition-scoped deep links, authorised player bracket reconstruction, and a
+mobile-first Match Centre with league scopes and current points-target states. Results and
+Leaderboards now use clear destination and competition tabs. Production state continues to come
+from existing models, services and database reads; no hard-coded player or tournament state enters
+the production graph. Pinned-rival persistence, its cross-surface placements, fuller dynamic Results
+impact storytelling and final visual polish remain later Product Experience v3 slices. No scoring,
+resolver, Supabase write, Auth, service-role, result-entry, fake-result, production-config or
+migration change is introduced; active migrations remain 21.
+
+### Version 1.58 — Product Experience v3 authority adopted
+
+Stage DESIGN-REFRESH-V3-ADOPTION is accepted as a docs/authority-only supersession. The binding
+contract is `docs/reference-prototypes/euro28-product-experience-v3.md`. It supersedes earlier visual
+treatment and records the approved shell, lifecycle, Groups, Bracket, KO, single-competition league
+collections, Results, Match Centre, profile, H2H, pinned-rival and More direction. No runtime UI,
+database, scoring, resolver, Auth, service-role, official-result, fake-result or migration change is
+claimed by this row. Implementation remains staged and must receive visual approval.
+
 ### Version 1.57 — Groups player-facing copy repair
 
 Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS-COPY-REPAIR is accepted as a focused repair after the first Groups adoption slice. It removes internal lifecycle/config/save-contract wording from the player-facing Groups journey, replaces it with plain autosave, lock, joker and tables wording, and extends audit coverage so the internal terms cannot reappear on the live Groups/Prediction Journey UI. No scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change is introduced. Active migrations remain 21 and Migration 019 is applied.

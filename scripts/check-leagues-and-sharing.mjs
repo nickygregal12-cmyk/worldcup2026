@@ -7,6 +7,8 @@ const errors = []
 const fail = message => errors.push(message)
 const migrationName = '202607010013_euro28_leagues_and_shared_predictions.sql'
 const migrationPath = path.join(root, 'supabase/migrations', migrationName)
+const singleCompetitionMigrationName = '202607070019_euro28_league_single_competition.sql'
+const singleCompetitionMigrationPath = path.join(root, 'supabase/migrations', singleCompetitionMigrationName)
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(name => name.endsWith('.sql')).sort()
 
 if (migrations.length < 14) fail(`Stage 12 requires the original fourteen-migration baseline, found ${migrations.length}`)
@@ -39,6 +41,17 @@ else {
   if (sql.includes('total_points +') || sql.includes('original_points + ko')) {
     fail('league logic appears to combine competition totals')
   }
+}
+
+if (!fs.existsSync(singleCompetitionMigrationPath)) fail(`Single-competition migration is missing: ${singleCompetitionMigrationName}`)
+else {
+  const sql = fs.readFileSync(singleCompetitionMigrationPath, 'utf8').toLowerCase()
+  for (const snippet of [
+    "add column competition text not null default 'original'",
+    'p_competition text',
+    "p_competition not in ('original', 'ko_predictor')",
+    "'competition', league_row.competition",
+  ]) if (!sql.includes(snippet)) fail(`Migration 019 is missing: ${snippet}`)
 }
 
 for (const file of [
@@ -85,6 +98,18 @@ const model = fs.existsSync(path.join(root, 'src/leagues/leagueModel.js'))
 if (!model.includes("ORIGINAL: 'original'")) fail('original league competition key is missing')
 if (!model.includes("KO_PREDICTOR: 'ko_predictor'")) fail('KO Predictor league competition key is missing')
 
+const leaguesUi = fs.readFileSync(path.join(root, 'src/leagues/Leagues.jsx'), 'utf8')
+const collectionModel = fs.readFileSync(path.join(root, 'src/leagues/leagueCollections.js'), 'utf8')
+if (!leaguesUi.includes('LeagueCollectionTabs') || !leaguesUi.includes('visibleLeagues')) {
+  fail('league UI does not expose independent Original and KO collections')
+}
+if (!collectionModel.includes('buildLeagueCollections') || !collectionModel.includes('reconcileLeagueSelections')) {
+  fail('league collection model does not preserve independent selections')
+}
+if (!service.includes('loadLeagueOverview(client, { leagueId, competitionKey })')) {
+  fail('league overview does not load the fixed competition explicitly')
+}
+
 if (errors.length) {
   console.error('Euro leagues and shared prediction audit failed:')
   errors.forEach(error => console.error(`- ${error}`))
@@ -92,8 +117,8 @@ if (errors.length) {
 }
 
 console.log('Euro leagues and shared prediction audit passed.')
-console.log('Membership: one private league member list across both competitions')
-console.log('Standings: Original Predictor and KO Predictor remain separate')
+console.log('Membership: each private league belongs to one fixed competition')
+console.log('Collections: Original Predictor and KO Predictor leagues remain independent')
 console.log('Original sharing: hidden until the global tournament lock')
 console.log('KO sharing: only fixtures that have individually started')
 console.log('Direct browser league table writes: none')

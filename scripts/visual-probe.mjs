@@ -27,9 +27,9 @@
  *   node scripts/visual-probe.mjs                 # the bracket
  *   node scripts/visual-probe.mjs '#/groups'      # any route
  *
- * Proof-of-concept, like the harness it sits beside: deliberately NOT wired into `npm run check`.
- * Whether it becomes a gate is a separate decision, and a real one — the contrast walk in
- * particular will have opinions about surfaces nobody has looked at yet.
+ * Local runs use the developer's local Supabase stack. CI opts into the isolated visual-product
+ * entry with VISUAL_USE_FIXTURE=true, mounting the same App and page components with deterministic
+ * read-only fixture data. The fixture entry is outside the production module graph.
  *
  * The dev-server and theme trickery is inherited wholesale from visual-shot.mjs; see the comments
  * there for why the Supabase URL is rewritten and why Vite is pinned to 127.0.0.1.
@@ -40,6 +40,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { chromium } from 'playwright'
 import { THEME_STORAGE_KEY } from '../src/app/theme.js'
+import { resolveVisualAppUrl } from './lib/visualAppTarget.mjs'
 import { resolveVisualTimeTravel } from './lib/visualTimeTravel.mjs'
 
 const PORT = 5174 // not 5173: so a probe and a shot run can coexist
@@ -324,7 +325,7 @@ const bad = message => { problems.push(message); failed = true; console.log(`  F
  * winner in every tie the resolver has unblocked, round by round — each pick resolves the next.
  */
 async function populateBracket(page) {
-  await page.goto(`${ORIGIN}/#/groups`, { waitUntil: 'networkidle', timeout: 45_000 })
+  await page.goto(resolveVisualAppUrl(ORIGIN, '#/groups'), { waitUntil: 'networkidle', timeout: 45_000 })
   await page.waitForSelector('.app-shell[data-route]', { timeout: 20_000 }).catch(() => {})
   // Through the DOM, not Playwright's actionability: the lucky dip lives inside a collapsed
   // disclosure, and opening the panel is not what is being tested here — having 36 scores is.
@@ -338,7 +339,7 @@ async function populateBracket(page) {
   if (!dipped) return { picks: 0, champion: null, note: 'no lucky dip control found on Groups' }
   await page.waitForTimeout(1200)
 
-  await page.goto(`${ORIGIN}/#/bracket`, { waitUntil: 'networkidle', timeout: 45_000 })
+  await page.goto(resolveVisualAppUrl(ORIGIN, '#/bracket'), { waitUntil: 'networkidle', timeout: 45_000 })
   await page.waitForSelector('.app-shell[data-route]', { timeout: 20_000 }).catch(() => {})
 
   // Lanes outside the open round are display:none, but they are in the DOM and a real click on
@@ -385,7 +386,7 @@ async function probe(browser, route, viewport, theme) {
     if (filled.picks < 15) bad(`only ${filled.picks} of 15 ties could be picked — the bracket is not in the state the defects live in`)
     else note(`  set up: all 15 ties picked · champion card reads "${filled.champion}"`)
   } else {
-    await page.goto(`${ORIGIN}/${route}`, { waitUntil: 'networkidle', timeout: 45_000 })
+    await page.goto(resolveVisualAppUrl(ORIGIN, route), { waitUntil: 'networkidle', timeout: 45_000 })
     await page.waitForSelector('.app-shell[data-route]', { timeout: 20_000 }).catch(() => {})
   }
   await page.waitForLoadState('networkidle').catch(() => {})

@@ -24,12 +24,15 @@ resolving it silently.
   ratchet, never loosened to pass — §5.8 exceptions require an explicit owner decision
   recorded in the code and the commit).
 - The Consolidated Decision Register — product decisions (append-only).
-- `docs/EURO28-DESIGN-CHARTER.md` + the approved prototypes in
-  `docs/reference-prototypes/` — binding visual/content contracts.
+- `docs/reference-prototypes/euro28-product-experience-v3.md` — the binding Product
+  Experience v3 visual/behaviour contract. The non-visual architecture rules in
+  `docs/EURO28-DESIGN-CHARTER.md` remain live.
+- The other approved prototypes in `docs/reference-prototypes/` remain binding content/
+  interaction contracts where Product Experience v3 does not amend them.
 - `docs/RULES-SCORING-LOCKED-CONTRACT.md` — the ONLY scoring authority. See §4.
-- **`docs/design programme/` (note the space) is PROPOSED, NOT ADOPTED.** It governs
-  nothing. Cite it only as "(design programme — proposed, not yet adopted)". Owner
-  rulings extracted from it are binding only where recorded as owner rulings.
+- `docs/design programme/` is superseded visual provenance. It no longer governs new
+  implementation; owner rulings extracted from it remain binding only where preserved in
+  the Decision Register or Product Experience v3.
 
 ## 2. Git and cross-session truths
 
@@ -97,9 +100,16 @@ Per `docs/RULES-SCORING-LOCKED-CONTRACT.md`:
 - Fail-loud provisional indicators (the "Provisional — kick-off time not confirmed"
   label, Rules-hub provenance sentence, amber PROVISIONAL chip) are FEATURES. Never
   remove them; they appear only when the database genuinely lacks confirmed data.
-- Mobile bottom nav auto-hide is an approved amendment: hides after ~40–60px sustained
-  downward scroll, reveals instantly on any upward scroll, never hides while an input is
-  focused, translates as one unit with the raised Home circle.
+- Mobile bottom nav auto-hide is approved: it hides after ~40–60px sustained downward
+  scroll, reveals instantly on any upward scroll and stays visible while a text input is
+  focused. All five items share one alignment. Home's larger circle may overlap the bar
+  edge slightly, but the Home item, icon, label and tap target are not raised.
+- Theme choice follows the device preference on first visit. A manual light/dark choice is
+  saved and overrides the device preference on later visits.
+- Home carries a quiet KO Predictor teaser before readiness. Confirmed fixtures may open
+  early; KO becomes prominent only after the group stage officially ends.
+- Leagues remain single-competition entities. Original/KO collection tabs, once available,
+  switch between separate league lists and never change a league's competition.
 - Score entry: steppers (▲/▼ per side) AND direct numeric entry, 48px targets.
 - `SelectField` is a **custom-rendered listbox** as of Stage DP-PRIMITIVES (2026-07-11):
   button trigger + popover option list, no native `<select>` underneath, so the OS wheel

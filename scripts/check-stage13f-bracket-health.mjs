@@ -17,13 +17,17 @@ for (const file of required) {
 const model = fs.readFileSync(path.join(root, 'src/bracketHealth/bracketHealthModel.js'), 'utf8')
 const view = fs.readFileSync(path.join(root, 'src/bracketHealth/OriginalBracketHealth.jsx'), 'utf8')
 const journey = fs.readFileSync(path.join(root, 'src/journey/PredictionJourneyView.jsx'), 'utf8')
+const playerView = fs.readFileSync(path.join(root, 'src/player/PlayerView.jsx'), 'utf8')
 for (const phrase of ['ROUTE_CONFLICT', 'ORIGINAL_ONLY', 'matchCentreHref', 'pointsSecured', 'pointsAvailable']) {
   if (!model.includes(phrase)) throw new Error(`Bracket-health model is missing ${phrase}`)
 }
-for (const phrase of ['Your saved bracket never changes', 'Known real fixture', 'Real fixture not known yet', 'View Match Centre']) {
+for (const phrase of ['saved bracket never changes', 'Known real fixture', 'Real fixture not known yet', 'View Match Centre']) {
   if (!view.includes(phrase)) throw new Error(`Bracket-health view is missing: ${phrase}`)
 }
 if (!journey.includes('<OriginalBracketHealth')) throw new Error('Original bracket does not render the bracket-health comparison')
+if (!playerView.includes('<OriginalBracketHealth') || !playerView.includes('subjectLabel=')) {
+  throw new Error('Player View does not expose competition-scoped bracket health for released profiles')
+}
 
 // ── Reveal timing — owner ruling 2026-07-14 ────────────────────────────────────────────
 // Health used to be gated on (locked || reviewMode). reviewMode is true the moment a player

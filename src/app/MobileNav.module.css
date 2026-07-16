@@ -18,7 +18,7 @@
     min-height: var(--mobile-nav-height);
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    align-items: end;
+    align-items: stretch;
     padding:
       var(--space-2)
       max(var(--space-2), env(safe-area-inset-right))
@@ -28,9 +28,8 @@
     background: var(--dp-surface-raised);
     box-shadow: var(--shadow-2);
 
-    /* AUTO-HIDE (CLAUDE.md §5). The transform is on the NAV, so the raised Home
-       circle — a child, lifted by a negative margin, never independently
-       positioned — is carried with it. The bar and the circle cannot come apart. */
+    /* AUTO-HIDE. The transform is on the NAV, so the aligned Home control and its
+       slightly overlapping background ring are carried with it as one unit. */
     transform: translateY(0);
     transition: transform var(--motion-panel) var(--ease-standard);
     will-change: transform;
@@ -48,7 +47,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: end;
     gap: var(--space-1);
     padding: var(--space-1);
     border: none;
@@ -77,18 +76,28 @@
     white-space: nowrap;
   }
 
-  /* The raised Home circle. Lifted by a negative margin — NOT positioned — so it is
-     part of the nav's own box and moves with the bar's transform as one unit. The
-     ring is painted in the page ground so the circle reads as cut out of the page;
-     that is why the DP page ground had to land globally in this same stage. */
+  .iconSlot {
+    position: relative;
+    width: 100%;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+  }
+
+  /* The Home icon shares the exact centre line used by the other icons. Its larger
+     circular background is positioned inside that common slot and only the ring
+     overlaps the bar edge, preserving the approved small "pop" without raising the
+     button, label or tap target. */
   .homeItem {
     overflow: visible;
   }
 
   .circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
     width: 2.875rem;
     height: 2.875rem;
-    margin-top: -1.125rem;
     display: grid;
     place-items: center;
     border: 4px solid var(--dp-surface-page);
@@ -97,6 +106,7 @@
        and misses 4.5. The ink variant carries the same hue at 4.89:1. */
     background: var(--dp-action-ink);
     color: var(--dp-text-on-accent);
+    transform: translate(-50%, -50%);
   }
 
   .homeItem[aria-current='page'] .circle {

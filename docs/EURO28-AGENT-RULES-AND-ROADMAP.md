@@ -12,9 +12,28 @@ Accepted as a broad player-facing copy repair before continuing to `STAGE-CORE-P
 
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.38 — Groups player-facing copy repair
+### Version 4.40 — Product Experience v3 slice 1 implemented
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
+
+### Stage PRODUCT-EXPERIENCE-V3-SLICE-1
+
+The first v3 implementation slice is in the working tree: deterministic visual CI; aligned,
+auto-hiding mobile navigation; grouped More; phase-aware Home; next-match Groups landing;
+prediction-context Original Bracket emphasis; independent Original/KO league collections; quick
+player profiles and deep links; and the Match Centre points-target presentation. It preserves the
+single source of truth in existing models, services and authorised database reads. Do not claim v3
+complete until pinned rivals, fuller Results impact storytelling and owner visual approval close in
+later slices. No scoring, resolver, Auth, Supabase write or migration expansion is authorised by
+this stage.
+
+### Stage DESIGN-REFRESH-V3-ADOPTION
+
+Product Experience v3 is the current visual/behaviour authority. Implementation must adapt the
+existing React, model/service and Supabase architecture; prototype code and mock data are never
+ported. Leagues remain fixed to one competition: the new Original/KO collection tabs switch between
+separate league lists. The first implementation batch is shell, Home and More after the visual CI
+prerequisite. Scoring, resolver, Auth, public signup and migrations remain outside this stage.
 
 ### Stage STAGE-CORE-PAGE-ADOPTION-1A-GROUPS-COPY-REPAIR
 

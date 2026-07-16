@@ -9,6 +9,8 @@ import { loadPlayerView } from './playerViewService.js'
 import PlayerHeadToHead from './PlayerHeadToHead.jsx'
 import PlayerInsight from './PlayerInsight.jsx'
 import { PLAYER_COMPARISON_CONTEXT } from './playerComparisonModel.js'
+import { OriginalBracketHealth } from '../bracketHealth/index.js'
+import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import styles from './PlayerView.module.css'
 
 const COMPETITION_OPTIONS = [
@@ -25,8 +27,6 @@ const TAB_OPTIONS = [
 const POINTS_TAB = { value: 'points', label: 'Points Breakdown' }
 const HEAD_TO_HEAD_TAB = { value: 'headToHead', label: 'Head-to-Head' }
 
-// Maps the shared head-to-head load into the single-player insight section the viewed
-// member's Points Breakdown tab expects (`insights.other` is always the viewed player).
 function viewedInsightSection(comparison, currentUserId) {
   if (!comparison) {
     return currentUserId
@@ -55,10 +55,11 @@ const COMPETITION_CONTEXT = {
   },
 }
 
-function setHashParams({ userId, competitionKey }) {
+function setHashParams({ userId, competitionKey, tab }) {
   const params = new URLSearchParams()
   if (userId) params.set('user', userId)
   params.set('competition', competitionKey)
+  if (tab && tab !== 'predictions') params.set('tab', tab)
   globalThis.history?.replaceState?.(null, '', `#/player?${params.toString()}`)
 }
 
@@ -158,7 +159,7 @@ function PredictionsPanel({ view }) {
   )
 }
 
-function BracketPanel({ view }) {
+function BracketPanel({ view, healthState, reference }) {
   if (view.competitionKey !== LEAGUE_COMPETITION.ORIGINAL) {
     return (
       <Card className={styles.panel} as="section">
@@ -183,6 +184,16 @@ function BracketPanel({ view }) {
         <div><span>Champion pick</span><strong>{view.bracketSummary.champion ?? 'Hidden'}</strong></div>
         <div><span>Released picks</span><strong>{view.bracketSummary.visibleCount}</strong></div>
       </div>
+      {view.bracketPreview && (
+        <OriginalBracketHealth
+          reference={reference}
+          preview={view.bracketPreview}
+          liveSnapshot={healthState.snapshot}
+          status={healthState.status}
+          error={healthState.error}
+          subjectLabel={view.player.isCurrentUser ? 'Your' : `${view.player.displayName}’s`}
+        />
+      )}
       {view.bracket.length === 0 ? (
         <EmptyState title="No bracket picks to show yet">
           Bracket picks will appear here once they are available to share.
@@ -249,6 +260,7 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
     ? { status: 'ready', data: initialData, error: null }
     : { status: 'loading', data: null, error: null })
   const [comparison, setComparison] = useState(null)
+  const [healthState, setHealthState] = useState({ status: 'unavailable', snapshot: null, error: null })
   const comparisonRequests = useRef(createLatestRequestGuard())
 
   const load = useCallback(async () => {
@@ -256,7 +268,6 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
     try {
       const data = await loadPlayerView(client, { reference, memberUserId, competitionKey, lifecycle })
       setState({ status: 'ready', data, error: null })
-      setHashParams({ userId: data.memberUserId, competitionKey: data.competitionKey })
     } catch (error) {
       setState({ status: 'error', data: null, error: error instanceof Error ? error.message : String(error) })
     }
@@ -270,14 +281,21 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
   const isSelf = state.data?.isSelf ?? Boolean(currentUserId && viewedUserId && currentUserId === viewedUserId)
   const canCompare = Boolean(currentUserId && viewedUserId && currentUserId !== viewedUserId)
 
+  useEffect(() => {
+    if (!client || competitionKey !== LEAGUE_COMPETITION.ORIGINAL || !view?.bracketPreview) return undefined
+    let active = true
+    setHealthState({ status: 'loading', snapshot: null, error: null })
+    loadCanonicalTournamentSnapshot(client, reference)
+      .then(snapshot => { if (active) setHealthState({ status: 'ready', snapshot, error: null }) })
+      .catch(error => { if (active) setHealthState({ status: 'error', snapshot: null, error: error instanceof Error ? error.message : String(error) }) })
+    return () => { active = false }
+  }, [client, competitionKey, reference, view?.bracketPreview])
+
   const standingsRows = useMemo(
     () => (state.data?.standingsRows ?? []).map(row => ({ ...row, isCurrentUser: row.userId === currentUserId })),
     [state.data, currentUserId],
   )
 
-  // Head-to-Head and Points Breakdown both draw on the same authorised comparison read
-  // (`insights.other` is the viewed player). Competition context is carried through so
-  // Original and KO Predictor stories stay separate.
   const loadComparison = useCallback(async () => {
     if (!client || !currentUserId || !viewedUserId || !reference?.tournamentId) {
       comparisonRequests.current.cancel()
@@ -327,8 +345,13 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
   }, [competitionKey, canCompare])
 
   useEffect(() => {
-    if (!tabOptions.some(tab => tab.value === activeTab)) setActiveTab('predictions')
-  }, [activeTab, tabOptions])
+    if (state.status === 'ready' && !tabOptions.some(tab => tab.value === activeTab)) setActiveTab('predictions')
+  }, [activeTab, state.status, tabOptions])
+
+  useEffect(() => {
+    if (state.status !== 'ready' || !viewedUserId) return
+    setHashParams({ userId: viewedUserId, competitionKey, tab: activeTab })
+  }, [activeTab, competitionKey, state.status, viewedUserId])
 
   if (state.status === 'loading' && !view) return <div className={styles.root} role="status">Loading player view…</div>
   if (state.status === 'error') return <StatusBar tone="danger" title="Player view could not load" action={<Button variant="secondary" size="small" icon="refresh" onClick={load}>Try again</Button>}>{state.error}</StatusBar>
@@ -350,7 +373,7 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
       </Card>
 
       {activeTab === 'predictions' && <PredictionsPanel view={view} />}
-      {activeTab === 'bracket' && <BracketPanel view={view} />}
+      {activeTab === 'bracket' && <BracketPanel view={view} healthState={healthState} reference={reference} />}
       {activeTab === 'tables' && <TablesPanel view={view} />}
       {activeTab === 'points' && (
         <PlayerInsight

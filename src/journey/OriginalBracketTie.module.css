@@ -31,7 +31,8 @@
 }
 
 .tieComplete {
-  border-color: var(--dp-success);
+  border-color: var(--dp-action);
+  box-shadow: inset 0.2rem 0 0 var(--dp-action);
 }
 
 .tieBlocked,
@@ -139,10 +140,11 @@
 
 /* Picked. The unpicked side fades rather than vanishing, so the tie still reads as a tie. */
 .slotAction[aria-pressed='true'] {
-  border-color: var(--dp-action);
-  background: var(--dp-info-soft);
-  color: var(--dp-info-ink);
-  font-weight: 700;
+  border-color: var(--dp-surface-chrome);
+  background: var(--dp-surface-chrome);
+  color: var(--dp-text-on-chrome);
+  box-shadow: var(--shadow-1);
+  font-weight: 800;
 }
 
 .slotAction:disabled {
@@ -165,7 +167,7 @@
 }
 
 .slotAction[aria-pressed='true'] .slotActionText {
-  color: var(--dp-info-ink);
+  color: var(--dp-text-muted-chrome);
 }
 
 .slotSelected {
@@ -369,6 +371,12 @@
 [data-wall-mode='on'] [data-wall-side='right'] .tie::before { left: -0.75rem; }
 [data-wall-mode='on'] [data-wall-side='centre'] .tie::before { left: -0.75rem; }
 [data-wall-mode='on'] [data-wall-side='centre'] .tie::after { right: -0.75rem; }
+
+[data-wall-mode='on'] [data-wall-side] .tieComplete::before,
+[data-wall-mode='on'] [data-wall-side] .tieComplete::after {
+  height: 2px;
+  background: var(--dp-action);
+}
 
 /* A finger is not a mouse pointer, and the chart is now something a finger reaches. 36px is fine for
    a cursor on the desktop chart and under every touch floor there is on the phone one. Keyed on the

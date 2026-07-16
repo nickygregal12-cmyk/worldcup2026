@@ -206,17 +206,12 @@ export function buildLeagueRaceRows(rows) {
   }))
 }
 
-// NOTE: this still takes both an originalSummary and a koSummary for one league, which was the
-// correct shape when a league could be viewed in either competition. Leagues are now fixed to a
-// single competition at creation, so a real single-competition league only ever has meaningful
-// data for one side of this pair going forward. This is deliberately left unchanged: the current
-// caller (Leagues.jsx) still fetches and displays both sides for every league and is out of scope
-// for this change -- reshaping this function now would break that caller before its own UI update
-// lands. Simplifying this to take one summary (matching the league's fixed competition) is a
-// natural follow-up once Leagues.jsx stops dual-fetching.
-export function buildLeagueLifecycleState({ lifecycle, originalSummary, koSummary, koReadiness } = {}) {
-  const originalActive = originalSummary?.state === 'active'
-  const koActive = koSummary?.state === 'active'
+export function buildLeagueLifecycleState({ lifecycle, competitionKey = LEAGUE_COMPETITION.ORIGINAL, summary, koReadiness } = {}) {
+  if (!Object.values(LEAGUE_COMPETITION).includes(competitionKey)) {
+    throw new TypeError('Unsupported league competition')
+  }
+  const originalActive = competitionKey === LEAGUE_COMPETITION.ORIGINAL && summary?.state === 'active'
+  const koActive = competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR && summary?.state === 'active'
   const locked = Boolean(lifecycle?.locked)
   const tournamentStarted = Boolean(lifecycle?.tournamentStarted)
   const koOpen = Boolean(koReadiness?.open)
@@ -322,18 +317,14 @@ export function buildStandingComparison(rows, otherUserId) {
   })
 }
 
-// NOTE: same dual-competition shape as buildLeagueLifecycleState above, left unchanged for the
-// same reason -- the current caller still merges both competitions' member lists for one league
-// and is out of scope for this change.
-export function buildSharedLeagueMemberList(originalRows, koRows) {
+export function buildLeagueMemberList(rows) {
   const members = new Map()
-  for (const row of [...(originalRows ?? []), ...(koRows ?? [])]) {
-    const existing = members.get(row.userId)
+  for (const row of rows ?? []) {
     members.set(row.userId, Object.freeze({
       userId: row.userId,
       displayName: row.displayName,
-      memberRole: row.memberRole ?? existing?.memberRole ?? 'member',
-      isCurrentUser: Boolean(row.isCurrentUser || existing?.isCurrentUser),
+      memberRole: row.memberRole ?? 'member',
+      isCurrentUser: Boolean(row.isCurrentUser),
     }))
   }
   return freezeRows([...members.values()].sort((left, right) => left.displayName.localeCompare(right.displayName, 'en-GB')))

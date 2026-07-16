@@ -5,15 +5,12 @@ import styles from './MobileNav.module.css'
 /**
  * The mobile bottom nav — the app shell's, not any page's.
  *
- * Two things landed here at DP-SHELL:
+ * Two things are owned here:
  *
- * 1. The RAISED HOME CIRCLE, per the approved prototype. CLAUDE.md §5 already spoke
- *    of the nav "translating as one unit with the raised Home circle", but no such
- *    circle existed: EuroAppShell emitted an `app-nav-link__home-icon` span that no
- *    stylesheet in the repo ever painted. It is real now, and — this is the part §5
- *    cares about — it is a CHILD of the nav element, lifted by a negative margin
- *    rather than positioned independently. So the transform that hides the bar
- *    carries the circle with it, as one unit, because it cannot do anything else.
+ * 1. The larger Home circle remains the visual centre, but Product Experience v3
+ *    aligns its icon, label and tap target with the other four items. Only the
+ *    background ring overlaps the bar edge slightly. It is still a child of the nav,
+ *    so the auto-hide transform always carries the complete control with the bar.
  *
  * 2. AUTO-HIDE, per §5. The behaviour is `useNavAutoHide`; all this file does is
  *    carry the answer to the CSS as a data attribute.
@@ -40,9 +37,11 @@ export default function MobileNav({ destinations, route, moreActive, moreOpen, o
             className={home ? `${styles.item} ${styles.homeItem}` : styles.item}
             aria-current={active ? 'page' : undefined}
           >
-            {home
-              ? <span className={styles.circle}><Icon name={destination.icon} size={24} /></span>
-              : <Icon name={destination.icon} size={22} />}
+            <span className={styles.iconSlot}>
+              {home
+                ? <span className={styles.circle}><Icon name={destination.icon} size={24} /></span>
+                : <Icon name={destination.icon} size={22} />}
+            </span>
             <span className={styles.label}>{destination.shortLabel ?? destination.label}</span>
           </a>
         )
@@ -56,7 +55,7 @@ export default function MobileNav({ destinations, route, moreActive, moreOpen, o
         aria-haspopup="dialog"
         onClick={onMoreOpen}
       >
-        <Icon name="more" size={22} />
+        <span className={styles.iconSlot}><Icon name="more" size={22} /></span>
         <span className={styles.label}>More</span>
       </button>
     </nav>

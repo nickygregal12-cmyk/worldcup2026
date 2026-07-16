@@ -152,9 +152,12 @@ export function destinationForRoute(routeKey) {
 export function playerViewParamsFromHash(hashValue = '') {
   const params = hashSearchParams(hashValue)
   const competition = params.get('competition') === 'ko_predictor' ? 'ko_predictor' : 'original'
+  const requestedTab = params.get('tab')
+  const tab = ['predictions', 'bracket', 'tables', 'points', 'headToHead'].includes(requestedTab) ? requestedTab : 'predictions'
   return Object.freeze({
     userId: params.get('user') || params.get('member') || null,
     competition,
+    tab,
   })
 }
 

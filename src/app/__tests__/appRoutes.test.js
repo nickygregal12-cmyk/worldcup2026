@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ADMIN_SECTIONS, APP_ROUTE, adminSectionFromHash, destinationForRoute, hasInvalidAdminSection, isKnownAppHash, leaderboardCompetitionFromHash, LEADERBOARD_COMPETITION, matchCentreParamsFromHash, normaliseHashPath, routeFromHash } from '../appRoutes.js'
+import { ADMIN_SECTIONS, APP_ROUTE, adminSectionFromHash, destinationForRoute, hasInvalidAdminSection, isKnownAppHash, leaderboardCompetitionFromHash, LEADERBOARD_COMPETITION, matchCentreParamsFromHash, normaliseHashPath, playerViewParamsFromHash, routeFromHash } from '../appRoutes.js'
 
 describe('Euro app routes', () => {
   it('normalises hashes without depending on a server-side router', () => {
@@ -47,6 +47,11 @@ describe('Euro app routes', () => {
   it('parses Match Centre context safely', () => {
     expect(matchCentreParamsFromHash('#/match-centre?match=37&competition=ko_predictor&league=abc')).toEqual({ matchNumber: 37, competition: 'ko_predictor', leagueId: 'abc' })
     expect(matchCentreParamsFromHash('#/match-centre?match=bad&competition=combined')).toEqual({ matchNumber: null, competition: 'original', leagueId: null })
+  })
+
+  it('parses Player View breakdown links safely', () => {
+    expect(playerViewParamsFromHash('#/player?user=amy&competition=original&tab=headToHead')).toEqual({ userId: 'amy', competition: 'original', tab: 'headToHead' })
+    expect(playerViewParamsFromHash('#/player?competition=combined&tab=private')).toEqual({ userId: null, competition: 'original', tab: 'predictions' })
   })
 
   it('resolves query-addressed Admin sections without treating them as unknown hash routes', () => {

@@ -15,6 +15,7 @@ for (const file of [
   'docs/archive/STAGE-13F-0-SITE-ACCESS-ARCHITECTURE.md',
   'src/app/appRoutes.js',
   'src/app/EuroAppShell.jsx',
+  'src/app/MoreMenu.jsx',
   'src/home/HomeDashboard.jsx',
   'src/results/ResultsAndLeaderboards.jsx',
   'src/results/ResultsAccess.module.css',
@@ -37,10 +38,13 @@ if (routes.includes("['/leaderboards', APP_ROUTE.RESULTS]")) fail('Leaderboards 
 const shell = read('src/app/EuroAppShell.jsx')
 for (const marker of [
   'leaderboardsDestination',
-  'Full Original and KO Predictor tables',
   'leaderboardsDestination,',
 ]) {
   if (!shell.includes(marker)) fail(`Leaderboards access is missing from More: ${marker}`)
+}
+const moreMenu = read('src/app/MoreMenu.jsx')
+if (!moreMenu.includes("destination.key === 'leaderboards'")) {
+  fail('Leaderboards access is missing from grouped More directory')
 }
 
 const app = read('src/App.jsx')

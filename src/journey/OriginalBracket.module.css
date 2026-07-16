@@ -25,6 +25,10 @@
  */
 .bracket {
   display: flow-root;
+  padding: clamp(var(--space-3), 3vw, var(--space-6));
+  border: 1px solid var(--dp-info-border);
+  border-radius: var(--radius-lg);
+  background: var(--dp-info-soft);
   /*
    * The one declaration standing between a 70rem chart and a phone that pans sideways.
    *
@@ -141,7 +145,7 @@
   padding-block: var(--space-2);
   /* Opaque, or the ties scroll visibly through the pills. The page's own colour, so the bar is
      invisible until something is actually behind it; the hairline is what says where it ends. */
-  background: var(--dp-surface-page);
+  background: var(--dp-info-soft);
   border-bottom: 1px solid var(--dp-border-subtle);
 }
 

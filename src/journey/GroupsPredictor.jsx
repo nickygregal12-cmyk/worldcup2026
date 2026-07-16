@@ -26,12 +26,14 @@ import actionStyles from './GroupsPredictorActions.module.css'
 import viewStyles from './GroupsPredictor.module.css'
 import flowStyles from './GroupsPredictorFlow.module.css'
 import { GROUPS_DATE_TABLES_COPY } from './predictionJourneyCopy.js'
+import useGroupsLanding from './useGroupsLanding.js'
 
 const GROUP_TOTAL = 36
 
 // The bracket's own registered destination, not a hash spelled out here. The route
 // registry is the single source of truth and the route audit is what keeps it honest.
 const BRACKET_DESTINATION = APP_DESTINATIONS.find(destination => destination.key === APP_ROUTE.BRACKET)
+const MATCH_CENTRE_DESTINATION = APP_DESTINATIONS.find(destination => destination.key === APP_ROUTE.MATCH_CENTRE)
 
 // The nine venues and their host nations are central confirmed facts, not something
 // a match row carries — the reference model has only the venue's name and city.
@@ -179,10 +181,9 @@ export default function GroupsPredictor({
   onOpenReview,
 }) {
   const [replaceOpen, setReplaceOpen] = useState(false)
-  const [viewMode, setViewMode] = useState(GROUPS_VIEW_MODE.GROUP)
+  const { viewMode, setViewMode, openGroup, setOpenGroup } = useGroupsLanding(reference)
   const [tablesOpen, setTablesOpen] = useState(false)
   const [selectedTableKey, setSelectedTableKey] = useState('A')
-  const [openGroup, setOpenGroup] = useState(reference.groups?.[0]?.code ?? 'A')
   const [savedTies, setSavedTies] = useState({})
   const groupProgress = useMemo(() => buildGroupProgress(reference, draft), [reference, draft])
   const dateSections = useMemo(() => buildGroupDateSections(reference), [reference])
@@ -241,6 +242,7 @@ export default function GroupsPredictor({
     return (
       <MatchCard
         key={match.matchId}
+        id={`group-match-${match.matchNumber}`}
         className={`group-match-card${row.jokerApplied ? ' group-match-card--joker' : ''}`}
         lineClassName="group-match-card__prediction"
         data-match-number={match.matchNumber}
@@ -270,6 +272,7 @@ export default function GroupsPredictor({
           onHomeChange={homeScore => onChange(match, { homeScore })}
           onAwayChange={awayScore => onChange(match, { awayScore })}
         />}
+        note={<a className={flowStyles.matchCentreLink} href={`${MATCH_CENTRE_DESTINATION.hash}?match=${match.matchNumber}&competition=original`}>Match Centre <Icon name="chevron" size={16} /></a>}
         action={<JokerPill aria-pressed={row.jokerApplied} active={row.jokerApplied} disabled={jokerDisabled} multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER} statusLabel={jokerLabel} matchLabel={`match ${match.matchNumber}`} onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })} />}
       />
     )

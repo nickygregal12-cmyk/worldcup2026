@@ -73,6 +73,8 @@ function fixtureFromMatch(reference, liveSnapshot, match) {
     status: result?.status ?? match.status ?? 'scheduled',
     score: result?.scoreVisible ? `${result.normalTimeHomeGoals}–${result.normalTimeAwayGoals}` : null,
     resultDetail: result?.decisionMethod ? result.decisionMethod.replaceAll('_', ' ') : null,
+    winnerTeamId: result?.winnerTeamId ?? null,
+    confirmed: Boolean(result?.confirmed),
     resultRevision: Number(result?.resultRevision ?? 0),
     corrected: Number(result?.resultRevision ?? 0) > 1,
   })
@@ -141,6 +143,17 @@ export function buildMatchCentreNavigation({ reference, liveSnapshot, matchNumbe
     previous: safeIndex > 0 ? fixtureFromMatch(reference, liveSnapshot, all[safeIndex - 1]) : null,
     next: safeIndex < all.length - 1 ? fixtureFromMatch(reference, liveSnapshot, all[safeIndex + 1]) : null,
     requestedFound: index >= 0,
+  })
+}
+
+export function buildMatchCentreLeagueScopes(leagues, competitionKey, requestedLeagueId = null) {
+  const competitionLeagues = (leagues ?? []).filter(league => league.competition === competitionKey)
+  return Object.freeze({
+    scopes: Object.freeze([
+      Object.freeze({ id: 'overall', label: 'Overall' }),
+      ...competitionLeagues.map(league => Object.freeze({ id: league.id, label: league.name })),
+    ]),
+    selectedLeague: competitionLeagues.find(league => league.id === requestedLeagueId) ?? null,
   })
 }
 
@@ -281,6 +294,34 @@ function groupPredictionStatus(line, fixture) {
   if (predictedHome === score.home && predictedAway === score.away) return 'exact'
   if (outcomeFor(predictedHome, predictedAway) === outcomeFor(score.home, score.away)) return 'outcome'
   return 'different'
+}
+
+export function buildPredictionTargetState({ line, fixture, competitionKey }) {
+  if (line?.visibility !== 'visible') return Object.freeze({ key: 'protected', label: 'Prediction protected', tone: 'neutral' })
+  const scoreStatus = groupPredictionStatus(line, fixture)
+  const completed = fixture?.state === 'completed' && fixture?.confirmed
+  const hasAdvancer = Boolean(line.advancingTeamId)
+  const advancerCorrect = hasAdvancer && line.advancingTeamId === fixture?.winnerTeamId
+
+  if (completed && hasAdvancer && !advancerCorrect) {
+    return Object.freeze({ key: 'lost', label: 'Pick missed', tone: 'danger' })
+  }
+  if (completed && hasAdvancer && advancerCorrect) {
+    const exact = scoreStatus === 'exact'
+    return Object.freeze({ key: exact ? 'exact' : 'secured', label: exact ? 'Advancer and exact score hit' : 'Advancer correct', tone: 'safe' })
+  }
+  if (fixture?.state === 'live') {
+    if (scoreStatus === 'exact') return Object.freeze({ key: 'exact', label: 'On target: exact score', tone: 'safe' })
+    if (scoreStatus === 'outcome') return Object.freeze({ key: 'outcome', label: 'On target: outcome', tone: 'info' })
+    if (competitionKey === RESULT_COMPETITION.ORIGINAL && hasAdvancer) return Object.freeze({ key: 'alive', label: 'Winner pick still live', tone: 'info' })
+    return Object.freeze({ key: 'different', label: 'Currently off target', tone: 'warning' })
+  }
+  if (completed) {
+    if (scoreStatus === 'exact') return Object.freeze({ key: 'exact', label: 'Exact score hit', tone: 'safe' })
+    if (scoreStatus === 'outcome') return Object.freeze({ key: 'outcome', label: 'Outcome hit', tone: 'info' })
+    return Object.freeze({ key: 'different', label: 'No match points', tone: 'neutral' })
+  }
+  return Object.freeze({ key: 'waiting', label: 'Waiting for kick-off', tone: 'neutral' })
 }
 
 function buildGroupPredictionRows({ impact, fixture }) {

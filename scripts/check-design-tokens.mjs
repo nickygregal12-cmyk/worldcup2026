@@ -110,8 +110,13 @@ if (iconSource.includes('<svg') || iconSource.includes('<path')) fail('The ordin
 const shell = read('src/app/EuroAppShell.jsx')
 for (const marker of [
   'primaryDestination', 'bracketDestination', 'navigationDestinations.phaseMoreDestinations',
-  '<MobileNav', 'data-navigation-phase', 'aria-expanded={moreOpen}', '<Dialog',
+  '<MobileNav', 'data-navigation-phase', 'aria-expanded={moreOpen}', '<MoreMenu',
+  'Follow the tournament', 'Account and information',
 ]) if (!shell.includes(marker)) fail(`App shell is missing charter navigation behaviour: ${marker}`)
+const moreMenu = read('src/app/MoreMenu.jsx')
+for (const marker of ['<Dialog', 'groups.filter', 'Appearance is saved on this device']) {
+  if (!moreMenu.includes(marker)) fail(`Grouped More directory is missing charter behaviour: ${marker}`)
+}
 if (shell.includes('knockoutOpen') || shell.includes('knockoutNavigationDestination')) {
   fail('The superseded phase-aware Bracket/KO navigation remains in the app shell')
 }
@@ -154,22 +159,20 @@ for (const marker of [
   'font-variant-numeric: tabular-nums', 'prefers-reduced-motion',
 ]) if (!appCss.includes(marker)) fail(`Charter CSS behaviour is missing: ${marker}`)
 
-// DP-SHELL: the mobile bottom nav moved out of app.css into its own CSS Module, so the
-// raised-Home-circle marker moved with it. This is a REPOINT and a tightening, not a
-// relaxation — `.app-nav-link--home` only ever proved a class name existed in app.css,
-// and in fact nothing painted it: there was no raised circle in the product at all. The
-// module is now held to the behaviour itself (the circle, and the §5 auto-hide transform
-// that must live on the NAV so the bar and the circle translate as one unit).
+// The mobile bottom nav lives in its own CSS Module. Product Experience v3 keeps a
+// larger centre circle while aligning all five icon slots, labels and tap targets.
 const mobileNavCss = read('src/app/MobileNav.module.css')
 for (const marker of [
-  '.circle',                                        // the raised Home circle exists
-  'margin-top: -1.125rem',                          // ...raised in flow, not positioned out of the nav
+  '.iconSlot',                                      // all five icons share one alignment row
+  '.circle',                                        // the larger Home background exists
+  'top: 50%',                                       // ...centred inside the shared icon slot
+  'transform: translate(-50%, -50%)',               // ...without raising the Home button
   "[data-nav-hidden='true']",                       // §5 auto-hide
   'transform: translateY(',                         // ...by translating
   'prefers-reduced-motion',
 ]) if (!mobileNavCss.includes(marker)) fail(`Charter mobile-nav behaviour is missing: ${marker}`)
-if (/\.circle[^}]*position:\s*(fixed|absolute)/.test(mobileNavCss)) {
-  fail('The raised Home circle must stay in the nav\'s flow — positioning it out of the nav breaks §5 "translates as one unit"')
+if (/margin-top:\s*-/.test(mobileNavCss)) {
+  fail('Product Experience v3 aligns every mobile-nav button; Home must not be lifted with a negative margin')
 }
 
 const mobileNav = read('src/app/MobileNav.jsx')
@@ -237,7 +240,7 @@ console.log('Euro Stage 13A v6 design-token audit passed.')
 console.log('Identity: independent blue palette controlled from one semantic token file')
 console.log('Typography: self-hosted Big Shoulders Display and Public Sans')
 console.log('Icons: Lucide for ordinary interface actions')
-console.log('Navigation: Groups/KO · permanent Bracket · raised Home · Leagues · More')
+console.log('Navigation: Groups/KO · permanent Bracket · aligned centre Home · Leagues · More')
 console.log('Themes: light and dark share the same semantic component rules')
 console.log(`Contrast: ${CONTRAST_PAIRS.length * 2} light/dark token pairs checked; ${contrastAudit.acceptedExceptions.length} ratcheted Stage 14B exceptions remain`)
 console.log(`Database: original 14-migration baseline preserved; ${migrations.length} active migrations detected`)

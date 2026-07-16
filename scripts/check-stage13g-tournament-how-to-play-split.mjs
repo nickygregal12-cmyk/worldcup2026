@@ -13,6 +13,7 @@ for (const file of [
   'src/config/tournament.js',
   'src/app/appRoutes.js',
   'src/app/EuroAppShell.jsx',
+  'src/app/MoreMenu.jsx',
   'src/App.jsx',
   'src/tournament/TournamentOverview.jsx',
   'src/tournament/tournamentPageModel.js',
@@ -60,12 +61,18 @@ for (const marker of [
 
 const shell = read('src/app/EuroAppShell.jsx')
 for (const marker of [
-  'Hosts, venues, dates and format',
-  'Scoring, locks and predictor rules',
   'destinationForRoute(APP_ROUTE.HOW_TO_PLAY)',
   '<a href="#/how-to-play">How to play</a>',
 ]) {
   if (!shell.includes(marker)) fail(`Shell navigation copy is missing: ${marker}`)
+}
+
+const moreMenu = read('src/app/MoreMenu.jsx')
+for (const marker of [
+  "destination.key === 'tournament'",
+  "destination.key === 'how-to-play'",
+]) {
+  if (!moreMenu.includes(marker)) fail(`More directory destination is missing: ${marker}`)
 }
 
 const model = read('src/tournament/tournamentPageModel.js')

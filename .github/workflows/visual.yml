@@ -1,0 +1,67 @@
+# Deterministic browser-level visual guardrails for the Euro 2028 product shell.
+# The workflow mounts the real application against read-only test fixtures. It
+# never receives staging credentials and cannot write to a remote Supabase project.
+name: visual
+
+on:
+  push:
+    branches: [euro28-development]
+  pull_request:
+    branches: [euro28-development]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visual-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies (exact lockfile)
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Capture primary product routes
+        env:
+          VISUAL_USE_FIXTURE: 'true'
+          VISUAL_FIXTURE_AUTH: signed-in
+        run: >-
+          node scripts/visual-shot.mjs
+          '#/'
+          '#/groups'
+          '#/bracket'
+          '#/leagues'
+          '#/results'
+          '#/leaderboards'
+
+      - name: Probe the interactive Original Bracket
+        env:
+          VISUAL_USE_FIXTURE: 'true'
+          VISUAL_FIXTURE_AUTH: guest
+        run: node scripts/visual-probe.mjs '#/bracket'
+
+      - name: Exercise share-image edge cases
+        run: node scripts/visual-share-cases.mjs
+
+      - name: Upload visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: euro28-visual-${{ github.run_id }}
+          path: .visual-shots/
+          if-no-files-found: warn
+          retention-days: 14

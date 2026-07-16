@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildPlayerViewTestReference } from './playerViewTestReference.js'
-import { buildPlayerView } from '../playerViewModel.js'
+import { buildPlayerBracketPreview, buildPlayerView } from '../playerViewModel.js'
+import { VISUAL_BRACKET_DRAFT, VISUAL_GROUP_REFERENCE } from '../../testFixtures/visualFixture.js'
 
 const reference = buildPlayerViewTestReference()
 
@@ -18,6 +19,25 @@ const bundle = {
 }
 
 describe('player view model', () => {
+  it('rebuilds a released player bracket preview for live health comparisons', () => {
+    const predictionBundle = {
+      visible: true,
+      match_predictions: Object.values(VISUAL_BRACKET_DRAFT.groupPredictions).map(row => ({
+        match_number: row.matchNumber,
+        home_score_90: row.homeScore,
+        away_score_90: row.awayScore,
+        joker_applied: row.jokerApplied,
+      })),
+      bracket_predictions: Object.values(VISUAL_BRACKET_DRAFT.bracketPredictions).map(row => ({
+        match_number: row.matchNumber,
+        advancing_tournament_team_id: row.advancingTeamId,
+      })),
+    }
+    const preview = buildPlayerBracketPreview({ predictionBundle, reference: VISUAL_GROUP_REFERENCE })
+    expect(preview.completeness.groups.complete).toBe(36)
+    expect(preview.completeness.bracket.complete).toBe(15)
+  })
+
   it('builds an Original Player View with predictions, bracket and table sections', () => {
     const view = buildPlayerView({
       memberUserId: 'player-1',
@@ -34,6 +54,7 @@ describe('player view model', () => {
     expect(view.predictions.length).toBeGreaterThan(0)
     expect(view.bracketSummary.totalCount).toBeGreaterThan(0)
     expect(view.predictedTables.length).toBeGreaterThan(0)
+    expect(view.bracketPreview).toBeNull()
     expect(view.counts.jokerPredictions).toBe(1)
   })
 
@@ -61,6 +82,7 @@ describe('player view model', () => {
     expect(view.counts.visiblePredictions).toBe(0)
     expect(view.counts.protectedPredictions).toBe(view.predictions.length)
     expect(view.predictions[0].visibility).toBe('private')
+    expect(view.bracketPreview).toBeNull()
   })
 
   it('shows your own Original picks in full before the lock', () => {

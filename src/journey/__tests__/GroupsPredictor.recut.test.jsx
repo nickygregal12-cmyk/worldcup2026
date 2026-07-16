@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import GroupsPredictor from '../GroupsPredictor.jsx'
+import { GROUPS_VIEW_STORAGE_KEY } from '../useGroupsLanding.js'
 
 // The DP Groups re-cut, asserted where it can be: structure and behaviour.
 //
@@ -78,6 +79,8 @@ function renderGroups(overrides = {}) {
   )
 }
 
+afterEach(() => window.localStorage.removeItem(GROUPS_VIEW_STORAGE_KEY))
+
 describe('Groups re-cut — the joker wears its own mark', () => {
   it('draws the joker card on every joker control, and no star anywhere', () => {
     const { container } = renderGroups()
@@ -128,5 +131,40 @@ describe('Groups re-cut — the card says when and where', () => {
     // indicator a feature — rather than borrowing match 1's time or guessing a default.
     const provisional = container.querySelectorAll('[data-match-number] [class*="provisional"]')
     expect(provisional.length).toBe(5)
+  })
+})
+
+describe('Groups re-cut — the next match and Match Centre stay close', () => {
+  it('opens the group containing a live match on entry', () => {
+    const liveReference = {
+      ...reference,
+      groupMatches: reference.groupMatches.map(match => ({
+        ...match,
+        status: match.matchNumber === 7 ? 'live' : 'scheduled',
+      })),
+    }
+
+    renderGroups({ reference: liveReference })
+
+    expect(screen.getByLabelText('England score in match 7')).toBeTruthy()
+    expect(screen.queryByLabelText('Wales score in match 1')).toBeNull()
+  })
+
+  it('gives every visible fixture a direct Match Centre link', () => {
+    renderGroups()
+
+    const links = screen.getAllByRole('link', { name: /Match Centre/ })
+    expect(links).toHaveLength(6)
+    expect(links[0].getAttribute('href')).toBe('#/match-centre?match=1&competition=original')
+  })
+
+  it('remembers the By date preference on the next visit', async () => {
+    const user = userEvent.setup({ delay: null })
+    const first = renderGroups()
+    await user.click(screen.getByRole('button', { name: 'By date' }))
+    first.unmount()
+
+    renderGroups()
+    expect(screen.getByLabelText('England score in match 7')).toBeTruthy()
   })
 })

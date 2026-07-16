@@ -144,7 +144,7 @@ function OriginalBracketSlot({ slot, disabled, onSelect }) {
           aria-pressed={slot.selected}
           onClick={() => onSelect(slot.teamId)}
         >
-          <TeamLabel team={slot.team} label={slot.label} compact profileDisabled className={tieStyles.slotTeam} />
+          <TeamLabel team={slot.team} label={slot.label} compact profileDisabled onChrome={slot.selected} className={tieStyles.slotTeam} />
           {/* The instruction is for a player reading a card, not for someone scanning the
               wall chart — where seven lanes of it would crowd out the names it sits beside.
               The chart hides it and lets the tick carry the state. */}

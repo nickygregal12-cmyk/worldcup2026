@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { RESULT_COMPETITION } from '../../results/resultModel.js'
-import { buildFixtureImpact, buildMatchCentreLifecycle, buildMatchCentreNavigation } from '../matchCentreModel.js'
+import { buildFixtureImpact, buildMatchCentreLeagueScopes, buildMatchCentreLifecycle, buildMatchCentreNavigation, buildPredictionTargetState } from '../matchCentreModel.js'
 
 const reference = {
   tournamentId: 'tournament-1',
@@ -60,6 +60,38 @@ describe('Euro Match Centre model', () => {
     })
     expect(impact.lines[0].maximumPoints).toBe(15)
     expect(impact.competitionKey).toBe(RESULT_COMPETITION.KO_PREDICTOR)
+  })
+
+  it('keeps Original and KO league scopes in separate Match Centre collections', () => {
+    const leagues = [
+      { id: 'original-1', name: 'Original Friends', competition: 'original' },
+      { id: 'ko-1', name: 'KO Friends', competition: 'ko_predictor' },
+    ]
+    expect(buildMatchCentreLeagueScopes(leagues, 'ko_predictor', 'original-1')).toEqual({
+      scopes: [{ id: 'overall', label: 'Overall' }, { id: 'ko-1', label: 'KO Friends' }],
+      selectedLeague: null,
+    })
+    expect(buildMatchCentreLeagueScopes(leagues, 'ko_predictor', 'ko-1').selectedLeague.id).toBe('ko-1')
+  })
+
+  it('describes whether a released prediction is currently on target', () => {
+    const liveFixture = { state: 'live', score: '2–1', confirmed: false }
+    expect(buildPredictionTargetState({
+      line: { visibility: 'visible', score: '2–1' }, fixture: liveFixture, competitionKey: 'original',
+    })).toMatchObject({ key: 'exact', label: 'On target: exact score', tone: 'safe' })
+    expect(buildPredictionTargetState({
+      line: { visibility: 'visible', score: '0–1' }, fixture: liveFixture, competitionKey: 'original',
+    })).toMatchObject({ key: 'different', tone: 'warning' })
+  })
+
+  it('marks a confirmed knockout advancer as correct or missed', () => {
+    const fixture = { state: 'completed', confirmed: true, winnerTeamId: 'a', score: '1–1' }
+    expect(buildPredictionTargetState({
+      line: { visibility: 'visible', advancingTeamId: 'a', score: '1–1' }, fixture, competitionKey: 'ko_predictor',
+    }).key).toBe('exact')
+    expect(buildPredictionTargetState({
+      line: { visibility: 'visible', advancingTeamId: 'b', score: '1–1' }, fixture, competitionKey: 'ko_predictor',
+    })).toMatchObject({ key: 'lost', label: 'Pick missed' })
   })
 
   it('derives Match Centre lifecycle for live and unresolved knockout states', () => {

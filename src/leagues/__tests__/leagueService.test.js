@@ -104,21 +104,28 @@ describe('league service', () => {
     })
   })
 
-  it('loads both league tables and preserves a partial result', async () => {
+  it('loads only the fixed competition table for the selected league', async () => {
     const client = {
-      rpc: vi.fn(async (_name, args) => {
-        if (args.p_competition_key === 'ko_predictor') return { data: null, error: { message: 'temporary failure' } }
-        return {
-          data: [{ rank: 1, user_id: 'me', display_name: 'Nicky', total_points: 10, is_current_user: true }],
-          error: null,
-        }
-      }),
+      rpc: vi.fn(async () => ({
+        data: [{ rank: 1, user_id: 'me', display_name: 'Nicky', total_points: 10, is_current_user: true }],
+        error: null,
+      })),
     }
-    const overview = await loadLeagueOverview(client, 'l1')
-    expect(overview.status).toBe('partial')
-    expect(overview.sections.original.status).toBe('ready')
-    expect(overview.sections.koPredictor.status).toBe('error')
-    expect(overview.members).toHaveLength(1)
+    const overview = await loadLeagueOverview(client, { leagueId: 'l1', competitionKey: 'original' })
+    expect(overview.status).toBe('ready')
+    expect(overview.competitionKey).toBe('original')
+    expect(overview.standings).toHaveLength(1)
+    expect(overview.summary.competitionKey).toBe('original')
+    expect(client.rpc).toHaveBeenCalledTimes(1)
+    expect(client.rpc).toHaveBeenCalledWith('get_league_standings', {
+      p_league_id: 'l1', p_competition_key: 'original',
+    })
+  })
+
+  it('rejects an overview without an explicit fixed competition', async () => {
+    const client = rpcClient({})
+    await expect(loadLeagueOverview(client, { leagueId: 'l1' })).rejects.toThrow(/Choose Original Predictor or KO Predictor/)
+    expect(client.rpc).not.toHaveBeenCalled()
   })
 
   it('loads two member bundles and isolated canonical insight for a head-to-head comparison', async () => {

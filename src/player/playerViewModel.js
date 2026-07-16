@@ -1,4 +1,5 @@
 import { buildSharedPredictionJourney, LEAGUE_COMPETITION } from '../leagues/leagueModel.js'
+import { createGuestPredictionState, resolveGuestTournamentPreview, updateGuestBracketPrediction, updateGuestGroupPrediction } from '../guest/index.js'
 
 const SUPPORTED_COMPETITIONS = new Set([
   LEAGUE_COMPETITION.ORIGINAL,
@@ -143,6 +144,35 @@ function buildBracketSummary(bracketRows) {
   })
 }
 
+export function buildPlayerBracketPreview({ predictionBundle, reference, isSelf = false }) {
+  if (!(isSelf || predictionBundle?.visible) || reference?.context !== 'guest') return null
+  const groupRows = new Map((predictionBundle?.match_predictions ?? []).map(row => [Number(row.match_number), row]))
+  if ((reference.groupMatches ?? []).some(match => !groupRows.has(match.matchNumber))) return null
+
+  try {
+    let draft = createGuestPredictionState(reference)
+    for (const match of reference.groupMatches) {
+      const row = groupRows.get(match.matchNumber)
+      draft = updateGuestGroupPrediction(draft, {
+        matchNumber: match.matchNumber,
+        homeScore: Number(row.home_score_90),
+        awayScore: Number(row.away_score_90),
+        jokerApplied: Boolean(row.joker_applied),
+      })
+    }
+    for (const row of predictionBundle?.bracket_predictions ?? []) {
+      draft = updateGuestBracketPrediction(draft, {
+        matchNumber: Number(row.match_number),
+        advancingTeamId: row.advancing_tournament_team_id ?? null,
+      })
+    }
+    const preview = resolveGuestTournamentPreview(reference, draft)
+    return preview.completeness.bracket.complete > 0 ? preview : null
+  } catch {
+    return null
+  }
+}
+
 export function buildPlayerView({
   memberUserId,
   displayName,
@@ -159,6 +189,9 @@ export function buildPlayerView({
   const predictionRows = buildPredictionRows(journey)
   const bracketRows = competitionKey === LEAGUE_COMPETITION.ORIGINAL ? buildBracketRows(journey) : Object.freeze([])
   const predictedTables = competitionKey === LEAGUE_COMPETITION.ORIGINAL ? buildPredictedTables(journey) : Object.freeze([])
+  const bracketPreview = competitionKey === LEAGUE_COMPETITION.ORIGINAL
+    ? buildPlayerBracketPreview({ predictionBundle, reference, isSelf })
+    : null
 
   return Object.freeze({
     competitionKey,
@@ -168,6 +201,7 @@ export function buildPlayerView({
     predictions: predictionRows,
     bracket: bracketRows,
     bracketSummary: buildBracketSummary(bracketRows),
+    bracketPreview,
     predictedTables,
     counts: Object.freeze({
       visiblePredictions: predictionRows.filter(row => row.visibility === 'visible').length,

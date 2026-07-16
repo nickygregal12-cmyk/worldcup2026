@@ -19,6 +19,22 @@
   align-items: start;
 }
 
+.preLayout {
+  display: grid;
+  grid-template-areas:
+    'priority'
+    'hero'
+    'main'
+    'support';
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.prePriority { grid-area: priority; }
+.preHero { grid-area: hero; min-width: 0; }
+.preMain { grid-area: main; }
+.preSupport { grid-area: support; }
+
 .column {
   display: grid;
   gap: var(--space-3);
@@ -250,6 +266,15 @@
   .grid {
     grid-template-columns: 1.6fr 1fr;
     gap: var(--space-6);
+  }
+
+  .preLayout {
+    grid-template-columns: 1.6fr 1fr;
+    grid-template-areas:
+      'hero hero'
+      'main priority'
+      'main support';
+    gap: var(--space-4) var(--space-6);
   }
 
   .sect h1,

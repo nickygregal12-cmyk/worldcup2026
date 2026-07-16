@@ -33,7 +33,7 @@ const openingMatch = {
   awayTeamId: 'team-ger',
 }
 
-function fixtureFor({ now, results = null, reference = referenceWith([openingMatch]), originalBundle, session = { user: { id: 'user-1' } } }) {
+function fixtureFor({ now, results = null, reference = referenceWith([openingMatch]), originalBundle, session = { user: { id: 'user-1' } }, leagues = [] }) {
   return buildHomeDashboard({
     tournament,
     reference,
@@ -43,7 +43,7 @@ function fixtureFor({ now, results = null, reference = referenceWith([openingMat
     originalBundle: originalBundle ?? { predictions: [{ prediction_kind: 'group_score', match_id: 'm1', home_score_90: 2, away_score_90: 1 }] },
     koBundle: null,
     results,
-    leagues: [],
+    leagues,
     sectionErrors: {},
     now,
   })
@@ -104,6 +104,24 @@ describe('Home dashboard rendering', () => {
     expect(html.match(/Days/g)).toHaveLength(1)
     expect(html).not.toContain('Tournament starts')
     expect(html).toContain('How scoring works')
+  })
+
+  it('puts rank and leagues before the countdown in the signed-in phone reading order', () => {
+    const html = renderHome(fixtureFor({
+      now: new Date('2028-06-07T17:30:00Z'),
+      leagues: [{ memberCount: 8 }],
+    }))
+
+    expect(html.indexOf('aria-label="Your rank and leagues"')).toBeLessThan(html.indexOf('Countdown to prediction lock'))
+    expect(html).toContain('Share or manage leagues')
+  })
+
+  it('keeps a quiet KO Predictor explainer before any real knockout fixture is ready', () => {
+    const html = renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z') }))
+
+    expect(html).toContain('KO Predictor')
+    expect(html).toContain('A separate bonus game')
+    expect(html).not.toContain('ready to predict')
   })
 
   it('renders the countdown sub-line at 8pm UK, the moment the lock lands', () => {

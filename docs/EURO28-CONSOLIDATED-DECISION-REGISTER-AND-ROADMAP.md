@@ -1,3 +1,48 @@
+## Stage PRODUCT-EXPERIENCE-V3-SLICE-1 (2026-07-16 — implementation checkpoint)
+
+The first Product Experience v3 implementation slice is present in the working tree and awaits
+owner visual approval. The slice covers visual CI, mobile shell, More, Home hierarchy, Groups
+landing, Original Bracket emphasis, independent league collections, quick player profiles,
+competition-scoped Player View links and Match Centre points-target presentation. It deliberately
+does not claim pinned-rival persistence, the complete dynamic Results impact story or final visual
+approval. Existing central models, services, database reads, privacy gates and competition locks
+remain authoritative; no scoring, resolver, Auth, Supabase write, result-entry, fake-result,
+production-config or migration change is included.
+
+## Stage DESIGN-REFRESH-V3-ADOPTION (2026-07-16 — owner rulings, final)
+
+`docs/reference-prototypes/euro28-product-experience-v3.md` is adopted as the binding Product
+Experience v3 contract. It supersedes the Design Programme and earlier page prototypes on visual
+treatment and on the explicit behaviour amendments it records. Earlier artefacts remain provenance;
+their functional/content requirements still carry forward where v3 does not amend them.
+
+Owner-confirmed amendments recorded by this stage:
+
+1. The five mobile navigation items share one alignment. Home keeps a slightly larger circular
+   background that may overlap the bar edge, but the Home item itself is not raised.
+2. Theme choice follows the device on first visit and remembers a later manual choice.
+3. Home carries a quiet KO Predictor teaser from the start. Confirmed knockout fixtures may be entered
+   as they become known; KO becomes prominent only after the group stage officially ends.
+4. Groups keeps By group and By date, persists the choice, positions the next relevant match on entry,
+   and makes every match card a Match Centre route without stealing embedded-control taps.
+5. Original Bracket stays separate from KO Predictor, defaults to round-by-round on phones, retains an
+   optional wall chart and strengthens selected winner paths.
+6. Leagues remain single-competition entities per Migration 019. Once KO prediction opens, the Leagues
+   page may show large Original/KO collection tabs; each tab owns separate leagues and an empty KO tab
+   offers Create or Join rather than reusing an Original league.
+7. Results become match-state dynamic and explain canonical table, points, league and bracket effects.
+8. Player activation gains a compact profile sheet, permissioned full profile, persisted pinned rivals,
+   points-swing H2H and a complete scoring audit. Points evidence remains available to anyone authorised
+   to see the scored row even when full-profile access is unavailable.
+9. More becomes a grouped lifecycle-aware directory for high-traffic destinations omitted from the
+   five-position mobile navigation.
+
+Boundaries unchanged: Original and KO competitions never combine; scoring values and resolver logic are
+not changed; guest mode remains browser-only and unscored; public signup remains closed; simulated
+results remain isolated; WC26 production remains blocked. This adoption record authorises the subsequent
+v3 implementation stages but introduces no source, database, Auth, scoring, resolver or migration change
+by itself.
+
 **Stage DESIGN-PROGRAMME-ADOPTION-1 (2026-07-10 — owner rulings, final)** adopts the
 `docs/design programme/` package as the binding visual authority for the Euro 2028
 Predictor and records the owner rulings that resolved the prior verification. All rulings

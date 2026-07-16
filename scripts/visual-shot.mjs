@@ -1,8 +1,9 @@
 /**
  * Visual verification harness — screenshots of the real app, from this container.
  *
- * Proof-of-concept only. It is deliberately NOT wired into `npm run check`: making it a
- * required gate is a separate decision, once we know it holds up.
+ * Local runs use the developer's local Supabase stack. CI opts into the isolated visual-product
+ * entry with VISUAL_USE_FIXTURE=true, mounting the same App and page components with deterministic
+ * read-only fixture data. The fixture entry is outside the production module graph.
  *
  * What it does: boots the real Vite dev server, drives the real routes in headless
  * Chromium, and writes a PNG per (viewport × theme) into a gitignored folder. Nothing it
@@ -31,6 +32,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { chromium } from 'playwright'
 import { THEME_STORAGE_KEY } from '../src/app/theme.js'
+import { resolveVisualAppUrl } from './lib/visualAppTarget.mjs'
 import { resolveVisualTimeTravel } from './lib/visualTimeTravel.mjs'
 
 const PORT = 5173
@@ -144,7 +146,7 @@ async function shoot(browser, route, viewport, theme) {
   page.on('console', message => { if (message.type() === 'error') problems.push(message.text()) })
   page.on('pageerror', error => problems.push(error.message))
 
-  await page.goto(`${ORIGIN}/${route}`, { waitUntil: 'networkidle', timeout: 45_000 })
+  await page.goto(resolveVisualAppUrl(ORIGIN, route), { waitUntil: 'networkidle', timeout: 45_000 })
   // The shell paints before its data lands. Wait for the app to say it has a route rather
   // than sleeping for a guessed interval and screenshotting a spinner.
   await page.waitForSelector('.app-shell[data-route]', { timeout: 20_000 }).catch(() => {})
@@ -177,7 +179,7 @@ try {
         // Report them; do not swallow them. A page that renders while throwing is not a
         // page that works, and a screenshot alone will not tell you that.
         for (const problem of problems.slice(0, 3)) console.log(`    console error: ${problem}`)
-        if (resolvedTheme !== theme) failed = true
+        if (resolvedTheme !== theme || problems.length > 0) failed = true
       }
     }
   }

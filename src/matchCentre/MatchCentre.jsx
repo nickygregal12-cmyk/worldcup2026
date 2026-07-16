@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Badge, Button, Card, LinkButton, PlayerIdentity, SelectField, StatusBar, Tabs, TeamLabel } from '../design-system/index.jsx'
 import { RESULT_COMPETITION } from '../results/resultModel.js'
 import { formatKickoffDateTime } from '../home/homeFormat.js'
-import { buildMatchCentreLifecycle } from './matchCentreModel.js'
+import { buildMatchCentreLifecycle, buildPredictionTargetState } from './matchCentreModel.js'
 import { loadMatchCentre } from './matchCentreService.js'
+import { openPlayerView } from '../player/index.js'
 import styles from './MatchCentre.module.css'
 
 const COMPETITION_OPTIONS = [
@@ -19,10 +20,11 @@ function setHashParams({ matchNumber, competitionKey, leagueId }) {
   globalThis.history?.replaceState?.(null, '', `#/match-centre?${params.toString()}`)
 }
 
-function FixtureLink({ fixture, direction }) {
+function FixtureLink({ fixture, direction, competitionKey, leagueId }) {
   if (!fixture) return <span />
+  const leagueParam = leagueId && leagueId !== 'overall' ? `&league=${leagueId}` : ''
   return (
-    <a className={styles.fixtureLink} href={`#/match-centre?match=${fixture.matchNumber}`}>
+    <a className={styles.fixtureLink} href={`#/match-centre?match=${fixture.matchNumber}&competition=${competitionKey}${leagueParam}`}>
       <small>{direction}</small>
       <strong>Match {fixture.matchNumber}</strong>
       <span>{fixture.home.label} v {fixture.away.label}</span>
@@ -70,9 +72,9 @@ function Community({ impact }) {
 }
 
 function statusLabel(status) {
-  if (status === 'exact') return 'matching exact score'
-  if (status === 'outcome') return 'matching outcome'
-  if (status === 'different') return 'different right now'
+  if (status === 'exact') return 'on target for exact-score points'
+  if (status === 'outcome') return 'on target for outcome points'
+  if (status === 'different') return 'currently off target'
   return 'waiting for score'
 }
 
@@ -119,7 +121,7 @@ function GroupPredictionComparison({ context }) {
         <ol className={styles.playerList}>
           {context.predictionComparison.rows.map(line => (
             <li key={line.userId} className={`${styles.playerLine} ${line.isCurrentUser ? styles.current : ''}`}>
-              <PlayerIdentity player={line} isCurrentUser={line.isCurrentUser} />
+              <PlayerIdentity player={line} isCurrentUser={line.isCurrentUser} onActivate={() => openPlayerView({ userId: line.userId, competitionKey: RESULT_COMPETITION.ORIGINAL })} actionLabel={`Open ${line.displayName}'s player view`} />
               <span className={styles.rank}>#{line.rank || '—'} · {line.totalPoints} pts</span>
               {line.visibility === 'visible' ? (
                 <div className={styles.selection}>
@@ -138,10 +140,11 @@ function GroupPredictionComparison({ context }) {
 }
 
 
-function PlayerLine({ line }) {
+function PlayerLine({ line, fixture, competitionKey }) {
+  const target = buildPredictionTargetState({ line, fixture, competitionKey })
   return (
     <li className={`${styles.playerLine} ${line.isCurrentUser ? styles.current : ''}`}>
-      <PlayerIdentity player={line} isCurrentUser={line.isCurrentUser} />
+      <PlayerIdentity player={line} isCurrentUser={line.isCurrentUser} onActivate={() => openPlayerView({ userId: line.userId, competitionKey })} actionLabel={`Open ${line.displayName}'s player view`} />
       <span className={styles.rank}>#{line.rank || '—'} · {line.totalPoints} pts</span>
       {line.visibility === 'visible' ? (
         <div className={styles.selection}>
@@ -151,6 +154,7 @@ function PlayerLine({ line }) {
           {line.jokerApplied && <Badge tone="warning">Joker</Badge>}
         </div>
       ) : <p className={styles.protected}>{line.reason}</p>}
+      {line.visibility === 'visible' && <Badge tone={target.tone}>{target.label}</Badge>}
       <strong className={styles.points}>{line.maximumPoints > 0 ? `Up to ${line.maximumPoints} pts` : 'No points available'}</strong>
     </li>
   )
@@ -190,13 +194,13 @@ export default function MatchCentre({ client, reference, lifecycle, requestedMat
 
   return (
     <div className={styles.root}>
-      <nav className={styles.fixtureNav} aria-label="Fixture navigation">
-        <FixtureLink fixture={data.navigation.previous} direction="Previous fixture" />
-        <FixtureLink fixture={data.navigation.next} direction="Next fixture" />
-      </nav>
       {!data.navigation.requestedFound && <StatusBar tone="warning" title="Requested fixture was not found">Showing Match {currentMatchNumber} instead.</StatusBar>}
       <FixtureHero fixture={data.navigation.current} />
       <StatusBar tone={matchLifecycle.tone} title={matchLifecycle.title}>{matchLifecycle.body}</StatusBar>
+      <nav className={styles.fixtureNav} aria-label="Fixture navigation">
+        <FixtureLink fixture={data.navigation.previous} direction="Previous fixture" competitionKey={selectedCompetitionKey} leagueId={data.selectedScope} />
+        <FixtureLink fixture={data.navigation.next} direction="Next fixture" competitionKey={selectedCompetitionKey} leagueId={data.selectedScope} />
+      </nav>
 
       <Card className={styles.controls} as="section">
         <Tabs label="Match Centre competition" value={selectedCompetitionKey} options={competitionOptions} onChange={value => { setCompetitionKey(value); setLeagueId('overall') }} />
@@ -220,7 +224,7 @@ export default function MatchCentre({ client, reference, lifecycle, requestedMat
             <Card className={styles.panel} as="section">
               <div className={styles.panelHeading}><div><span className="page-eyebrow">Points on the line</span><h3>{data.impact.memberCount} player{data.impact.memberCount === 1 ? '' : 's'} in this scope</h3></div><Badge tone="info">Maximum available</Badge></div>
               <p>Rows show what the saved selection can still earn under the current Euro scoring rules. Protected predictions stay hidden.</p>
-              {data.impact.lines.length === 0 ? <p>No players are available in this scope.</p> : <ol className={styles.playerList}>{data.impact.lines.map(line => <PlayerLine key={line.userId} line={line} />)}</ol>}
+              {data.impact.lines.length === 0 ? <p>No players are available in this scope.</p> : <ol className={styles.playerList}>{data.impact.lines.map(line => <PlayerLine key={line.userId} line={line} fixture={data.navigation.current} competitionKey={selectedCompetitionKey} />)}</ol>}
             </Card>
           </>
         )

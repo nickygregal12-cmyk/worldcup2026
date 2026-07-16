@@ -20,17 +20,18 @@ const packageJson = JSON.parse(read('package.json'))
 
 for (const required of [
   'buildLeagueCompetitionSummary',
-  'buildSharedLeagueMemberList',
+  'buildLeagueMemberList',
   'buildSharedPredictionJourney',
 ]) assert(leagueModel.includes(`export function ${required}`), `Missing league presentation model: ${required}`)
 
-assert(leagueService.includes('Promise.allSettled'), 'League overview must preserve partial competition-table failures')
-assert(leagueService.includes('LEAGUE_COMPETITION.ORIGINAL'), 'League overview must request Original standings explicitly')
-assert(leagueService.includes('LEAGUE_COMPETITION.KO_PREDICTOR'), 'League overview must request KO standings explicitly')
+assert(leagueService.includes('loadLeagueOverview(client, { leagueId, competitionKey })'), 'League overview must receive the selected league competition explicitly')
+assert(leagueService.includes('validateLeagueCompetition(competitionKey)'), 'League overview must reject an invalid or missing competition')
+assert(!leagueService.includes('Promise.allSettled'), 'A fixed-competition league overview must not fetch both competition tables')
 // Single-competition model (register §15): each league IS one competition, named in the strip
 // eyebrow. Asserted structurally — the retired "track both competitions" copy is gone, replaced by
 // the model statement in App.jsx's PageIntro (policed by player-facing-copy-sweep-2).
 assert(leaguesPage.includes('competitionName(league.competition)'), 'League strip must name its own competition (single-competition boundary)')
+assert(leaguesPage.includes('LeagueCollectionTabs'), 'Original and KO league collections must switch independently once KO opens')
 assert(leaguesPage.includes('You only see picks that are available for this player right now.'), 'Member comparison must explain server-authorised visibility')
 assert(productApp.includes('reference={appData.guestReference}'), 'League journey must receive the canonical public reference')
 

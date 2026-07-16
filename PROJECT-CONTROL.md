@@ -21,11 +21,11 @@ that goes stale. The return-point commit is the exception, because holding it is
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
 | Latest verified commit | `fabdde8 The dashboard stops naming Leagues the next unfinished page, because it closed on the 16th` |
-| Current stage | Design Programme per-page re-cut — **complete**. Every core page is on the DP; the Leagues re-cut closed 2026-07-16. |
-| Immediate next stage | The page re-cut is closed. Next by priority is the **`visual.yml` CI lift** (see Immediate Priority Order). |
+| Current stage | Product Experience v3 slice 1 is implemented in the working tree and awaiting owner visual review. |
+| Immediate next stage | Review/repair the v3 slice across routes, breakpoints and themes; then schedule pinned rivals and fuller dynamic Results impact. Prediction-write reliability remains a separate high-care stage. |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
 | Active migration count | Owned by `docs/DATABASE.md` — not repeated here. Asserted against `supabase/migrations/` by `audit:governance-coherence`. |
-| Migration 021 | Not present in the tree. Before authoring any new SQL, check for a **stranded Migration 021** (it may exist only on another machine — CLAUDE.md §2). |
+| Migration 021 | Present as `202607090021_euro28_venue_metadata.sql`; `docs/DATABASE.md` owns the active sequence. Any later migration must verify local and Euro staging alignment first. |
 | Primary environment | **This Mac.** Full stack validated here: `npm run check` green, Playwright 1.61.1 installed with Chromium, the visual probe/shot harness present and exercised. |
 
 ### The "Latest verified commit" convention
@@ -54,7 +54,7 @@ must exist and must be an ancestor of `HEAD`.
 Not forgotten, not blocked — sequenced on purpose. Do not pick these up opportunistically:
 
 - **Push-notification sends** — post-draw.
-- **Top Scorer build** — Stage 17A. Check for a stranded Migration 021 before authoring SQL.
+- **Top Scorer build** — Stage 17A. Verify the current local and Euro staging migration sequence before authoring SQL.
 - **Public signup** — post-draw. It remains closed.
 
 ## Do-Not-Touch Areas
@@ -73,5 +73,5 @@ Not forgotten, not blocked — sequenced on purpose. Do not pick these up opport
   record the conflict** — do not resolve it silently (CLAUDE.md §0, Constitution §5.8).
 
 <!-- Owner-judgement fields (current stage, priorities, blockers, deferrals) supplied by owner ruling
-     2026-07-15. Mechanical fields (verified commit, migration count, visual tooling) are verified
+     2026-07-16. Mechanical fields (verified commit, migration count, visual tooling) are verified
      against the tree, not asserted from memory. -->

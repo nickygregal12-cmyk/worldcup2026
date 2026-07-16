@@ -16,7 +16,7 @@ Mobile positions:
 
 1. Groups or KO Predictor according to the confirmed readiness lifecycle;
 2. permanent Original Bracket;
-3. raised Home;
+3. aligned Home with a slightly overlapping circular treatment;
 4. Leagues;
 5. More.
 
@@ -24,11 +24,15 @@ Desktop remains Home, lifecycle Groups/KO, Bracket, Leagues and Results, with th
 
 No sixth mobile position is introduced.
 
+When KO prediction first becomes available, Leagues may show large Original/KO collection tabs.
+These switch between separate single-competition league lists. They never change a league's fixed
+competition or reuse an Original league as a KO league. An empty KO collection offers Create or Join.
+
 ## 3. Direct destinations
 
 | Destination | Direct route and aliases | Desktop path | Mobile path | Contextual path | User expectation |
 |---|---|---|---|---|---|
-| Home | `#/`, `#/home` | Home/brand | Raised Home/brand | — | Next action, live context and personal progress |
+| Home | `#/`, `#/home` | Home/brand | Aligned centre Home/brand | — | Next action, live context and personal progress |
 | Groups Predictor | `#/groups`; aliases `#/predict`, `#/predictions`, `#/group-stage-review` | Lifecycle primary | Position 1 before full KO readiness | Home Original CTA | Enter/review all group scores |
 | Original Bracket | `#/bracket` | Primary | Position 2 permanently | Original journey and points evidence | Build/monitor the permanent pre-tournament bracket |
 | KO Predictor | `#/ko-predictor`; alias `#/ko` | Lifecycle primary or More | More at early access; Position 1 at full readiness | Deliberate teaser/Home mention | Predict resolved real knockout fixtures in a separate competition |
@@ -97,7 +101,9 @@ No screen may build a local substitute for these shared surfaces.
 6. Appearance
 7. Admin — authorised only and visually separated
 
-Before early access, the KO item is an explainer only. It shows no unresolved fixture or prediction control.
+Before early access, Home and More may show a quiet KO explainer only. They show no unresolved fixture
+or prediction control. Once a complete real KO fixture is known, that fixture may open for entry while
+the feature remains secondary until the group stage officially ends.
 
 ## 5A. Player insight access
 
@@ -198,4 +204,3 @@ Stage 13G-MATCH-CENTRE-REF Match Centre group-match reference adoption is accept
 After `64f2f3e`, the deployed user-facing destinations include the split Tournament/How to Play pages, rebuilt Account destination and restyled protected Admin control room. Match Centre remains contextual. The next Match Centre build may improve group-fixture content and conditional tabs, but it must not change the entry route shape or make Match Centre a permanent navigation item.
 
 Future Player View destinations should use `#/player/:userId`, `#/player/:userId/head-to-head` and `#/player/:userId/points` route shapes unless the implementation proves a better route contract before build. League rows should route to the dedicated Player View once Stage 13G-PLAYER-1 is implemented.
-

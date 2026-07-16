@@ -2,7 +2,7 @@
 //
 //   "hides after ~40–60px sustained downward scroll, reveals instantly on any
 //    upward scroll, never hides while an input is focused, translates as one unit
-//    with the raised Home circle"
+//    with the centre Home circle"
 //
 // The decision is kept pure here so every rule can be stated once and exercised
 // directly; useNavAutoHide.js does nothing but feed it real scroll positions and

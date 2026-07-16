@@ -15,8 +15,8 @@ const required = [
   ['src/App.jsx', 'koReadiness={koReadiness}'],
   ['src/leagues/Leagues.jsx', 'buildLeagueLifecycleState'],
   ['src/leagues/Leagues.jsx', 'koLeagueReady'],
+  ['src/leagues/Leagues.jsx', 'LeagueCollectionTabs'],
   ['src/leagues/LeaguePresentation.jsx', 'buildLeagueCompetitionLifecycleCopy'],
-  ['src/leagues/LeaguePresentation.jsx', 'LeagueKoReadinessCard'],
   ['src/leagues/leagueModel.js', 'buildLeagueLifecycleState'],
   ['src/leagues/leagueModel.js', 'private_until_global_lock'],
   ['src/leagues/leagueModel.js', 'fixture_release_started'],
@@ -35,7 +35,7 @@ for (const [file, token] of required) {
 // This composition may live in either the Leagues page component or the presentation
 // module it composes from (e.g. consolidated there to fit the architecture line cap) —
 // checking file location rather than behaviour would make this gate stale on refactors.
-const requiredInEitherLeaguesFile = ['LeagueLifecycleBanner', 'CompetitionLifecycleNote', 'LeagueKoReadinessCard']
+const requiredInEitherLeaguesFile = ['LeagueLifecycleBanner', 'CompetitionLifecycleNote', 'LeagueCollectionTabs']
 const leaguesComponentSource = read('src/leagues/Leagues.jsx')
 const leaguesPresentationSource = read('src/leagues/LeaguePresentation.jsx')
 for (const token of requiredInEitherLeaguesFile) {

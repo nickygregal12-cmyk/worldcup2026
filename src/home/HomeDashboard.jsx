@@ -6,7 +6,7 @@ import { HOME_STATE } from './homeDashboardModel.js'
 import { loadHomeDashboard } from './homeDashboardService.js'
 import CountdownHero from './HomeHero.jsx'
 import HomeMatchCard from './HomeMatchCard.jsx'
-import { LeaderboardsCard, LeaguesTeaser, RankStrip, RulesCard, StatTiles, TournamentCard } from './HomeSidebar.jsx'
+import { KoTeaser, LeaderboardsCard, LeaguesTeaser, RankStrip, RulesCard, StatTiles, TournamentCard } from './HomeSidebar.jsx'
 import { formatDayLabel, formatKickoffTime, formatPoints, summariseDay } from './homeFormat.js'
 import styles from './HomeDashboard.module.css'
 
@@ -74,11 +74,17 @@ function PreTournament({ dashboard }) {
   const { original, home } = dashboard
 
   return (
-    <>
-      <CountdownHero lockAt={home.lockAt} countdown={home.countdown} openingMatch={home.openingMatch} provisional={dashboard.lifecycle.provisional} />
+    <div className={styles.preLayout}>
+      <div className={`${styles.column} ${styles.prePriority}`} aria-label="Your rank and leagues">
+        <StatTiles dashboard={dashboard} />
+        <LeaguesTeaser dashboard={dashboard} preTournament />
+      </div>
 
-      <div className={styles.grid}>
-        <div className={styles.column}>
+      <div className={styles.preHero}>
+        <CountdownHero lockAt={home.lockAt} countdown={home.countdown} openingMatch={home.openingMatch} provisional={dashboard.lifecycle.provisional} />
+      </div>
+
+      <div className={`${styles.column} ${styles.preMain}`}>
           <section className={styles.card}>
             <PredictionProgress original={original} />
             {home.predictionCta
@@ -92,16 +98,14 @@ function PreTournament({ dashboard }) {
           </section>
 
           <OpeningMatch dashboard={dashboard} />
-        </div>
-
-        <div className={styles.column}>
-          <StatTiles dashboard={dashboard} />
-          <LeaderboardsCard dashboard={dashboard} />
-          <LeaguesTeaser dashboard={dashboard} />
-          <RulesCard />
-        </div>
       </div>
-    </>
+
+      <div className={`${styles.column} ${styles.preSupport}`}>
+        <KoTeaser dashboard={dashboard} />
+        <LeaderboardsCard dashboard={dashboard} />
+        <RulesCard />
+      </div>
+    </div>
   )
 }
 

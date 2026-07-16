@@ -2,16 +2,16 @@ import React, { useEffect, useMemo, useState } from 'react' // eslint-disable-li
 import { APP_ROUTE, destinationForRoute } from './appRoutes.js'
 import { buildNavigationDestinations } from './navigationLifecycle.js'
 import MobileNav from './MobileNav.jsx'
-import { Dialog, Icon } from '../design-system/index.jsx'
+import { Icon } from '../design-system/index.jsx'
+import MoreMenu from './MoreMenu.jsx'
 
 function initials(value) {
   const words = String(value ?? '').trim().split(/\s+/).filter(Boolean)
   return words.slice(0, 2).map(word => word[0]).join('').toUpperCase() || 'U'
 }
 
-// The DESKTOP nav link. The mobile bar is MobileNav's own — including the raised Home
-// circle, which used to be a `centre` variant here that emitted classes no stylesheet
-// ever painted. Those props and classes went with it rather than being left to rot.
+// The desktop nav link. MobileNav owns the five-position phone bar and its aligned
+// centre Home treatment.
 function NavLink({ destination, route, onClick }) {
   const active = destination.key === route
   return (
@@ -25,18 +25,6 @@ function NavLink({ destination, route, onClick }) {
       <span>{destination.label}</span>
     </a>
   )
-}
-
-function describeMoreDestination(destination) {
-  if (destination.key === APP_ROUTE.RESULTS) return 'Scores, live tables and the live bracket'
-  if (destination.key === APP_ROUTE.LEADERBOARDS) return 'Full Original and KO Predictor tables'
-  if (destination.key === APP_ROUTE.ACCOUNT) return 'Sign in and profile'
-  if (destination.key === APP_ROUTE.TOURNAMENT) return 'Hosts, venues, dates and format'
-  if (destination.key === APP_ROUTE.HOW_TO_PLAY) return 'Scoring, locks and predictor rules'
-  if (destination.key === APP_ROUTE.ADMIN) return 'Tournament operations'
-  if (destination.key === APP_ROUTE.KO_PREDICTOR) return 'Only confirmed real knockout fixtures are shown'
-  if (destination.key === APP_ROUTE.PREDICT) return 'Review every group-stage prediction and result'
-  return ''
 }
 
 export default function EuroAppShell({ route, theme, sessionState, navigation, adminVisibility, children }) {
@@ -59,7 +47,7 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, a
   ], [homeDestination, primaryDestination, bracketDestination, leaguesDestination, resultsDestination])
 
   // Home sits third of five (the fifth is the More button MobileNav renders itself),
-  // so the raised circle lands dead centre of the bar.
+  // so its larger circular background lands dead centre without raising the control.
   const mobileDestinations = useMemo(() => [
     primaryDestination,
     bracketDestination,
@@ -67,17 +55,24 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, a
     leaguesDestination,
   ], [primaryDestination, bracketDestination, homeDestination, leaguesDestination])
 
-  const moreDestinations = useMemo(() => {
-    const destinations = [
-      resultsDestination,
-      leaderboardsDestination,
-      ...navigationDestinations.phaseMoreDestinations,
-      destinationForRoute(APP_ROUTE.ACCOUNT),
-      destinationForRoute(APP_ROUTE.TOURNAMENT),
-      destinationForRoute(APP_ROUTE.HOW_TO_PLAY),
+  const moreGroups = useMemo(() => {
+    const groups = [
+      { key: 'follow', label: 'Follow the tournament', destinations: [resultsDestination, leaderboardsDestination] },
+      { key: 'predictor', label: 'Your predictor', destinations: navigationDestinations.phaseMoreDestinations },
+      {
+        key: 'account-info',
+        label: 'Account and information',
+        destinations: [
+          destinationForRoute(APP_ROUTE.ACCOUNT),
+          destinationForRoute(APP_ROUTE.TOURNAMENT),
+          destinationForRoute(APP_ROUTE.HOW_TO_PLAY),
+        ],
+      },
     ]
-    if (adminVisibility?.isAdmin) destinations.push(destinationForRoute(APP_ROUTE.ADMIN))
-    return destinations
+    if (adminVisibility?.isAdmin) {
+      groups.push({ key: 'admin', label: 'Administration', destinations: [destinationForRoute(APP_ROUTE.ADMIN)] })
+    }
+    return groups
   }, [resultsDestination, leaderboardsDestination, navigationDestinations, adminVisibility?.isAdmin])
 
   const visibleMobileRoutes = new Set([
@@ -152,21 +147,7 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, a
         onMoreOpen={() => setMoreOpen(true)}
       />
 
-      <Dialog open={moreOpen} title="More" onClose={() => setMoreOpen(false)} className="app-more-dialog">
-        <nav className="app-more-grid" aria-label="More destinations">
-          {moreDestinations.map(item => (
-            <a key={`${item.key}-${item.label}`} href={item.hash} className={item.key === route ? 'is-active' : ''} aria-current={item.key === route ? 'page' : undefined} onClick={() => setMoreOpen(false)}>
-              <Icon name={item.icon} />
-              <span><strong>{item.label}</strong><small>{describeMoreDestination(item)}</small></span>
-              <Icon name="chevron" size={18} />
-            </a>
-          ))}
-        </nav>
-        <button type="button" className="app-theme-row" onClick={theme.toggleTheme}>
-          <Icon name={theme.resolvedTheme === 'dark' ? 'sun' : 'moon'} />
-          <span><strong>{theme.resolvedTheme === 'dark' ? 'Use light mode' : 'Use dark mode'}</strong><small>Appearance is saved on this device</small></span>
-        </button>
-      </Dialog>
+      <MoreMenu open={moreOpen} onClose={() => setMoreOpen(false)} route={route} groups={moreGroups} theme={theme} />
     </div>
   )
 }

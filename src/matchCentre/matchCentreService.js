@@ -3,7 +3,7 @@ import { normaliseLeaderboard, RESULT_COMPETITION } from '../results/resultModel
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { parseExternal } from '../contracts/externalValidation.js'
 import { leaderboardRowsSchema, sharedPredictionBundleSchema } from '../contracts/externalSchemas.js'
-import { buildFixtureImpact, buildGroupMatchCentreContext, buildMatchCentreNavigation, defaultMatchNumber } from './matchCentreModel.js'
+import { buildFixtureImpact, buildGroupMatchCentreContext, buildMatchCentreLeagueScopes, buildMatchCentreNavigation, defaultMatchNumber } from './matchCentreModel.js'
 
 function throwForError(label, error) {
   if (error) throw new Error(`${label}: ${error.message}`)
@@ -71,11 +71,7 @@ export async function loadMatchCentre(client, { reference, requestedMatchNumber,
   }
 
   const leagues = await getMyLeagues(client, reference.tournamentId)
-  const scopes = Object.freeze([
-    Object.freeze({ id: 'overall', label: 'Overall' }),
-    ...leagues.map(league => Object.freeze({ id: league.id, label: league.name })),
-  ])
-  const selectedLeague = leagues.find(league => league.id === leagueId) ?? null
+  const { scopes, selectedLeague } = buildMatchCentreLeagueScopes(leagues, safeCompetitionKey, leagueId)
   const members = selectedLeague
     ? await getLeagueStandings(client, { leagueId: selectedLeague.id, competitionKey: safeCompetitionKey })
     : await overallStandings(client, reference.tournamentId, safeCompetitionKey)

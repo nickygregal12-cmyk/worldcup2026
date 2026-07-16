@@ -68,54 +68,20 @@
   color: var(--dp-text-strong);
 }
 
+.manageHint {
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+}
+
 @media (min-width: 640px) {
   .manageActions {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-.competitionChoice {
+.collectionPanel {
   display: grid;
-  gap: var(--space-1);
-}
-
-.competitionOptions {
-  display: inline-flex;
-  gap: var(--space-1);
-  padding: 0.2rem;
-  border: 1px solid var(--dp-border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--dp-surface-page);
-}
-
-.competitionOption {
-  min-height: 3rem;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-sm);
-  color: var(--dp-text-muted);
-  font: 700 var(--text-xs)/1 var(--font-display);
-}
-
-.competitionOption[aria-checked='true'] {
-  background: var(--dp-surface-chrome);
-  color: var(--dp-text-on-chrome);
-  box-shadow: var(--shadow-1);
-}
-
-.competitionOption:disabled {
-  color: var(--dp-text-muted);
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.competitionOption:focus-visible {
-  outline: 2px solid var(--dp-action);
-  outline-offset: 2px;
-}
-
-.competitionChoice small {
-  color: var(--dp-text-muted);
-  font-size: var(--text-xs);
+  gap: var(--space-4);
 }
 
 .layout {

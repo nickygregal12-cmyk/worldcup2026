@@ -7,4 +7,4 @@ export { loadPlayerInsightPair, readPlayerCompetitionPoints } from './playerInsi
 export { default as PlayerView } from './PlayerView.jsx'
 export { buildPlayerView } from './playerViewModel.js'
 export { loadPlayerView } from './playerViewService.js'
-export { buildPlayerViewHref, normalisePlayerViewCompetition, openPlayerView } from './playerViewLinks.js'
+export { buildPlayerViewHref, normalisePlayerViewCompetition, normalisePlayerViewTab, openPlayerView } from './playerViewLinks.js'

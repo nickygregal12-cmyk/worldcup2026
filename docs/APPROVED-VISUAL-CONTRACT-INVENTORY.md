@@ -1,10 +1,10 @@
-> **SUPERSEDED — Night Broadcast visual direction (2026-07-10, Stage DESIGN-PROGRAMME-ADOPTION-1).**
-> The Night Broadcast visual language inventoried here is superseded by `docs/design programme/`,
-> the binding visual authority. The content/interaction contracts of the listed prototypes remain
-> binding until each page's re-cut is approved; only their visual treatment is retired. Retained
-> for provenance. See `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`.
+> **SUPERSEDED VISUAL SET — Product Experience v3 (2026-07-16).**
+> `docs/reference-prototypes/euro28-product-experience-v3.md` is the binding visual/behaviour
+> authority. The contracts inventoried below remain binding for content and interaction where v3
+> does not amend them. Their earlier visual treatment is retained for provenance only. See
+> `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`.
 
-# Approved visual-contract inventory — locked set v2
+# Approved visual-contract inventory — v3 supersession map
 
 This inventory records the approved/confirmed visual contracts after the design workshop. The current countable approved visual-contract inventory is 20 HTML files in `docs/reference-prototypes/`.
 

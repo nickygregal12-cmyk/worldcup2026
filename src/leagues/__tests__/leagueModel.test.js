@@ -6,7 +6,7 @@ import {
   buildLeagueLifecycleState,
   buildInviteLink,
   buildLeagueRaceRows,
-  buildSharedLeagueMemberList,
+  buildLeagueMemberList,
   buildSharedPredictionJourney,
   buildStandingComparison,
   LEAGUE_COMPETITION,
@@ -158,8 +158,8 @@ describe('league model', () => {
   it('builds league lifecycle copy without combining Original and KO states', () => {
     const state = buildLeagueLifecycleState({
       lifecycle: { locked: false, tournamentStarted: false },
-      originalSummary: { state: 'pre_competition' },
-      koSummary: { state: 'pre_competition' },
+      competitionKey: LEAGUE_COMPETITION.ORIGINAL,
+      summary: { state: 'pre_competition' },
     })
     expect(state.originalState).toBe('pre_lock')
     expect(state.koState).toBe('waiting_for_knockout_fixtures')
@@ -170,8 +170,8 @@ describe('league model', () => {
   it('keeps KO league tables waiting when the tournament has started but KO readiness is closed', () => {
     const state = buildLeagueLifecycleState({
       lifecycle: { locked: true, tournamentStarted: true },
-      originalSummary: { state: 'active' },
-      koSummary: { state: 'active' },
+      competitionKey: LEAGUE_COMPETITION.KO_PREDICTOR,
+      summary: { state: 'active' },
       koReadiness: { open: false, available: 0, label: 'KO Predictor opens when real fixtures are known' },
     })
 
@@ -229,11 +229,9 @@ describe('league model', () => {
     expect(summary).not.toHaveProperty('combinedPoints')
   })
 
-  it('creates one shared member list from either competition table', () => {
-    const members = buildSharedLeagueMemberList([
+  it('creates a member list from one fixed-competition league table', () => {
+    const members = buildLeagueMemberList([
       { userId: 'b', displayName: 'Zara', memberRole: 'member', isCurrentUser: false },
-      { userId: 'a', displayName: 'Nicky', memberRole: 'owner', isCurrentUser: true },
-    ], [
       { userId: 'a', displayName: 'Nicky', memberRole: 'owner', isCurrentUser: true },
       { userId: 'c', displayName: 'Amy', memberRole: 'member', isCurrentUser: false },
     ])

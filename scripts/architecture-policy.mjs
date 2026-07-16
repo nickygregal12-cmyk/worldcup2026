@@ -52,9 +52,11 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   // CSS Modules, so the only survivor is .home-section-heading, which TournamentOverview uses.
   // 1517 -> 1461 at Stage DP-SHELL: the mobile bottom nav left. It was three near-duplicate
   // .app-mobile-nav blocks spread across two legacy media queries; it is now one CSS Module
-  // (src/app/MobileNav.module.css) on DP tokens, which is where the raised Home circle and
+  // (src/app/MobileNav.module.css) on DP tokens, which is where the centre Home circle and
   // the §5 auto-hide transform live. The cap comes down with the file, in the same commit.
-  'src/styles/app.css': 1461,
+  // 1461 -> 1415 at Product Experience v3: the legacy global More-directory rules moved into
+  // MoreMenu.module.css with the grouped, lifecycle-aware directory component.
+  'src/styles/app.css': 1415,
   // 555 -> 385 at the Groups re-cut: TeamLabel, JokerControl (pill + meter) and
   // PredictionStateBadge left for their own --dp-* CSS Modules. They are shared
   // design-system primitives, not page styling, and three surfaces were reaching

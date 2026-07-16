@@ -22,8 +22,8 @@ export function isEditableElement(element) {
  * Drives the mobile bottom nav's auto-hide from real scroll position and real focus.
  *
  * Returns a single boolean. The nav element itself carries it as a data attribute and
- * the CSS Module does the translating, so the bar and its raised Home circle move as
- * ONE element — the circle is a child of the nav, never separately positioned.
+ * the CSS Module does the translating, so the bar and its aligned Home circle move as
+ * one element — the circle remains a child of the nav.
  */
 export default function useNavAutoHide() {
   const [hidden, setHidden] = useState(false)

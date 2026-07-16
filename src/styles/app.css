@@ -617,52 +617,6 @@ a {
   letter-spacing: -0.035em;
 }
 
-.app-more-grid {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.app-more-grid > a,
-.app-theme-row {
-  width: 100%;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: var(--space-3);
-  align-items: center;
-  padding: var(--space-3);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-primary);
-  text-align: left;
-  text-decoration: none;
-}
-
-.app-more-grid > a:hover,
-.app-more-grid > a.is-active,
-.app-theme-row:hover {
-  border-color: var(--border-default);
-  background: var(--surface-soft);
-}
-
-.app-more-grid span,
-.app-theme-row span {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.app-more-grid small,
-.app-theme-row small {
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-}
-
-.app-theme-row {
-  margin-top: var(--space-3);
-  border-top: 1px solid var(--border-default);
-  border-radius: 0;
-}
-
 .home-section-heading {
   display: flex;
   align-items: flex-start;

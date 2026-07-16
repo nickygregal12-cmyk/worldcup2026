@@ -1,14 +1,15 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.16 — Visual direction superseded by the design programme (2026-07-10); non-visual rules remain live
+### Version 1.17 — Product Experience v3 visual direction; non-visual rules remain live
 
-> **SUPERSESSION BANNER (2026-07-10 — Stage DESIGN-PROGRAMME-ADOPTION-1).** The **visual
+> **SUPERSESSION BANNER (2026-07-16 — Stage DESIGN-REFRESH-V3-ADOPTION).** The **visual
 > direction** of this Charter — identity, colour roles and values, typography choices, spacing
 > and shape values, iconography direction, page composition and the visual treatment of the
-> reference prototypes — is **SUPERSEDED** by `docs/design programme/`, now the binding visual
-> authority (registered in `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`). Where this Charter and the
-> design programme differ on appearance, the design programme wins; the approved Dark Theme
-> Palette file is the dark-theme authority.
+> reference prototypes — is **SUPERSEDED** by
+> `docs/reference-prototypes/euro28-product-experience-v3.md`, now the binding visual/behaviour
+> authority (registered in `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`). Where this Charter and v3
+> differ on appearance, v3 wins. The existing semantic token palettes remain the implementation
+> source of colour truth.
 >
 > **What remains LIVE in this Charter (not superseded):** the non-visual/process rules —
 > §11 Frontend architecture and enforcement in full (component ownership, scoped styling / CSS
@@ -17,12 +18,12 @@
 > completion terminology), the visual-contract *process discipline* (§12A), and the
 > Original/KO separation and predicted-vs-live distinction principles. These continue to govern.
 > Individual visual sections below (§1, §4, §5, §6, §8, colour/type/spacing specifics) are
-> retained for provenance but yield to the design programme on any appearance question.
+> retained for provenance but yield to Product Experience v3 on any appearance question.
 >
 > **Authority:** This document governs the Euro 2028 Predictor's non-visual frontend rules and,
-> for provenance, its former visual direction. The design programme governs appearance. The
+> for provenance, its former visual direction. Product Experience v3 governs appearance. The
 > Consolidated Decision Register governs product rules. The Agent Rules govern build process. A
-> visual deviation is now proposed against the design programme, not here.
+> visual deviation is now proposed against Product Experience v3, not here.
 
 ## 1. Identity — CONFIRMED
 
@@ -92,7 +93,10 @@ Gold must not be used for unrelated decoration.
 
 ## 7. Navigation — CONFIRMED
 
-Mobile uses five positions with Home centred, slightly larger and raised above the bar. Position 2 is permanently Bracket. Position 1 changes from Groups to KO only at the full readiness boundary below.
+Mobile uses five equal-width positions with every item on one alignment. Home is centred and its
+larger circular background may overlap the bar edge slightly, but the Home item itself is not raised.
+Position 2 is permanently Bracket. Position 1 changes from Groups to KO only at the full readiness
+boundary below.
 
 ### State 1 — no display-ready Round of 16 fixture
 

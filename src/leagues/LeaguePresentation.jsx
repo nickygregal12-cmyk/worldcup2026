@@ -3,7 +3,7 @@ import layoutStyles from './LeagueLayout.module.css'
 import heroStyles from './LeagueHero.module.css'
 import raceStyles from './leagueRace.module.css'
 import { Badge, Button, Icon, PlayerIdentity, SelectField, StatusBar, TextField } from '../design-system/index.jsx'
-import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, canCreateKoLeague, formatOrdinal, LEAGUE_COMPETITION, RANK_MOVEMENT_PENDING_REASON } from './leagueModel.js'
+import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, formatOrdinal, LEAGUE_COMPETITION, RANK_MOVEMENT_PENDING_REASON } from './leagueModel.js'
 
 function competitionName(competitionKey) {
   return competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'
@@ -58,44 +58,14 @@ export function LeagueCompetitionHeading({ competitionKey }) {
         <span className={layoutStyles.kicker}>{competitionName(competitionKey)}</span>
         <h3>Standings</h3>
       </div>
-      <Badge tone={original ? 'info' : 'warning'}>{original ? 'League table' : 'Separate table'}</Badge>
-    </div>
-  )
-}
-
-export function CompetitionChoice({ value, onChange, koReadiness }) {
-  const koCreatable = canCreateKoLeague(koReadiness)
-  return (
-    <div className={layoutStyles.competitionChoice}>
-      <div className={layoutStyles.competitionOptions} role="radiogroup" aria-label="League competition">
-        {Object.values(LEAGUE_COMPETITION).map(key => {
-          const disabled = key === LEAGUE_COMPETITION.KO_PREDICTOR && !koCreatable
-          return (
-            <button
-              key={key}
-              type="button"
-              role="radio"
-              aria-checked={value === key}
-              className={layoutStyles.competitionOption}
-              disabled={disabled}
-              onClick={() => { if (!disabled) onChange(key) }}
-            >
-              {competitionName(key)}
-            </button>
-          )
-        })}
-      </div>
-      {!koCreatable && <small>KO Predictor leagues open once a real knockout fixture is known.</small>}
+      <Badge tone={original ? 'info' : 'warning'}>{original ? 'League table' : 'Independent table'}</Badge>
     </div>
   )
 }
 
 export function LeaguePicker({ leagues, selectedId, onSelect }) {
   if (leagues.length <= 1) return null
-  // The label says what the control DOES, not the page title again. SelectField has no optgroup
-  // support, so the competition moves into each option label.
-  const optionLabel = league =>
-    `${competitionName(league.competition)} · ${league.name} · ${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
+  const optionLabel = league => `${league.name} · ${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
   return (
     <SelectField
       label="Switch league"
@@ -146,16 +116,6 @@ export function LeagueSecondaryDetails({ title = 'League details', children }) {
         {children}
       </div>
     </details>
-  )
-}
-
-export function LeagueKoReadinessCard({ koReadiness }) {
-  return (
-    <article className={layoutStyles.summaryCard}>
-      <span className={layoutStyles.kicker}>KO Predictor</span>
-      <strong>Waiting for real fixtures</strong>
-      <small>{koReadiness?.label ?? 'KO Predictor opens when real fixtures are known'}</small>
-    </article>
   )
 }
 
@@ -229,21 +189,22 @@ export function LeaderList({ rows, onOpenPlayer }) {
   )
 }
 
-export function LeagueManagePanel({ open, createName, onCreateNameChange, createCompetition, onCreateCompetitionChange, onSubmitCreate, joinCode, onJoinCodeChange, onSubmitJoin, busy, koReadiness }) {
+export function LeagueManagePanel({ open, createName, onCreateNameChange, competitionKey, onSubmitCreate, joinCode, onJoinCodeChange, onSubmitJoin, busy }) {
   return (
     <details className={layoutStyles.managePanel} open={open}>
       <summary>Create or join a league</summary>
       <div className={layoutStyles.manageActions}>
         <form onSubmit={onSubmitCreate}>
           <span className={layoutStyles.kicker}>Create</span>
-          <h3>Start a private league</h3>
+          <h3>Start a {competitionName(competitionKey)} league</h3>
+          <small className={layoutStyles.manageHint}>It will have its own members, invite and standings.</small>
           <TextField label="League name" value={createName} onChange={event => onCreateNameChange(event.target.value)} maxLength={40} required />
-          <CompetitionChoice value={createCompetition} onChange={onCreateCompetitionChange} koReadiness={koReadiness} />
           <Button type="submit" loading={busy}>Create league</Button>
         </form>
         <form onSubmit={onSubmitJoin}>
           <span className={layoutStyles.kicker}>Join</span>
           <h3>Enter a league code</h3>
+          <small className={layoutStyles.manageHint}>The invite opens its Original or KO league collection automatically.</small>
           <TextField label="10-character code" value={joinCode} onChange={event => onJoinCodeChange(event.target.value.toUpperCase())} maxLength={12} required />
           <Button type="submit" loading={busy}>Join league</Button>
         </form>
@@ -259,25 +220,26 @@ export function LeagueNotice({ notice }) {
 }
 
 export function LeagueStandingsPanel({
-  competitionKey, overview, overviewLoading, activeOverview, activeSection, standings,
+  competitionKey, overview, overviewLoading, activeOverview, standings,
   onOpenPlayer,
-  leagueLifecycle, lifecycle, activeSummary, koReadiness, koLeagueReady,
+  leagueLifecycle, lifecycle, activeSummary, koReadiness,
   selectedLeague, pendingLeagueAction, actionStatus, onRequestAction, onConfirmAction,
 }) {
   const loadingFirstLoad = (overview.status === 'loading' || overviewLoading) && !overview.data
   const stillRefreshing = overview.status === 'loading' || overviewLoading
-  const showEmpty = !stillRefreshing && activeSection?.status === 'ready' && standings.length === 0
-  const koWaiting = competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR && !koLeagueReady
+  const showEmpty = !stillRefreshing && overview.status === 'ready' && standings.length === 0
+  const activeSection = activeOverview
+    ? { status: 'ready', data: standings, error: null }
+    : overview.status === 'error'
+      ? { status: 'error', data: [], error: 'League standings could not be loaded.' }
+      : null
 
   return (
     <article className={raceStyles.standingsCard}>
       <LeagueCompetitionHeading competitionKey={competitionKey} />
 
       {loadingFirstLoad && <p className={layoutStyles.emptyCopy}>Loading league standings…</p>}
-      {activeOverview && overview.status === 'partial' && !koWaiting && (
-        <StatusBar tone="warning" title="This competition table could not be loaded" />
-      )}
-      {activeSection?.status === 'error' && !koWaiting && <StatusBar tone="danger" title={activeSection.error} />}
+      {activeSection?.status === 'error' && <StatusBar tone="danger" title={activeSection.error} />}
       {stillRefreshing && <p className={layoutStyles.emptyCopy}>Refreshing standings…</p>}
       {showEmpty && <p className={layoutStyles.emptyCopy}>No league members were returned.</p>}
       {standings.length > 0 && <LeaderList rows={standings} onOpenPlayer={onOpenPlayer} />}
@@ -286,11 +248,7 @@ export function LeagueStandingsPanel({
         <LeagueSecondaryDetails title="League details">
           <LeagueLifecycleBanner lifecycleState={leagueLifecycle} competitionKey={competitionKey} />
           <CompetitionLifecycleNote competitionKey={competitionKey} lifecycle={lifecycle} summary={activeSummary} koReadiness={koReadiness} />
-          {koWaiting ? (
-            <LeagueKoReadinessCard koReadiness={koReadiness} />
-          ) : (
-            <LeagueSummaryCard title={competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'} summary={activeSummary} section={activeSection} />
-          )}
+          <LeagueSummaryCard title={competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'} summary={activeSummary} section={activeSection} />
           {/* The "Members: N · open a member row" line was deleted: it duplicated the identity
               strip's member-count pill and its "open any member row" hint. */}
           <div className={raceStyles.dangerZone}>

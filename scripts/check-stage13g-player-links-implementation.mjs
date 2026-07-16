@@ -28,15 +28,16 @@ for (const marker of [
 if (!playerIndex.includes('playerViewLinks')) fail('Player View link helper is not exported')
 
 for (const marker of [
-  'openPlayerView',
+  'PlayerQuickView',
+  'quickPlayer',
   'openMemberPlayerView',
   'onOpenPlayer={openMemberPlayerView}',
 ]) {
   if (!leagues.includes(marker)) fail(`Leagues controller missing ${marker}`)
 }
 
-// Opening a league member row now navigates straight to the Player View; there is no inline
-// comparison panel on the Leagues page anymore.
+// A league row opens a lightweight profile sheet; full profile, points and H2H remain dedicated
+// Player View destinations rather than an inline data dump on the league page.
 if (leagues.includes('PlayerHeadToHead state={comparison}')) {
   fail('Leagues controller must not render an inline head-to-head panel; member rows navigate to the Player View')
 }
@@ -106,7 +107,7 @@ if (errors.length > 0) {
 }
 
 console.log('Stage 13G-PLAYER-LINKS-1 audit passed.')
-console.log('Player rows now route to the dedicated Player View.')
+console.log('League rows open a quick profile sheet with dedicated Player View destinations.')
 console.log('League and leaderboard comparison remains available as a separate action.')
 console.log('Original and KO Predictor links remain competition-scoped.')
 console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

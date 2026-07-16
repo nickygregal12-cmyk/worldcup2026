@@ -2,10 +2,15 @@
 
 ## Current Priorities
 
-- Current immediate product priority: `STAGE-CORE-PAGE-ADOPTION-1B-ORIGINAL-BRACKET-GRID-NATIVE-CONNECTORS`.
-- Current repo-control priority: this stage creates the durable agent-control layer first.
-- Original Bracket still needs a targeted follow-up to remove the silent unknown-placement fallback.
-- Audit/doc bloat needs a later controlled split, not this stage.
+- Current product priority: review Product Experience v3 slice 1 in both themes and approve or
+  repair its phone/tablet/desktop presentation.
+- Current implementation checkpoint: visual CI, shell, Home, More, Groups landing, Original
+  Bracket emphasis, independent league collections, quick player profiles and Match Centre are in
+  the working tree.
+- Next v3 depth: pinned-rival persistence and placements, fuller Results impact storytelling and
+  owner-requested visual polish after the review gallery.
+- Prediction-save conflict-loop repair remains a separate high-care stage with a fresh backup.
+- Scoring, resolver, Auth, public signup and migrations remain out of scope unless explicitly opened.
 
 ## Recommended Near-Term Order
 
@@ -17,11 +22,13 @@
 6. narrow Playwright visual baseline
 7. continue feature/design/product-flow fixes
 
-## Design Programme (DP) stage plan — installed 2026-07-10 (Stage DESIGN-PROGRAMME-ADOPTION-1)
+## Superseded Design Programme (DP) stage plan — installed 2026-07-10
 
-`docs/design programme/` is the binding visual authority (see `10-DOC-AUTHORITY-MAP.md` and the
-register entry DESIGN-PROGRAMME-ADOPTION-1). Every per-page re-cut stage below **inherits the
-per-page finalisation standard by reference** (recorded 2026-07-09): each exits FINAL — flaws
+Product Experience v3 supersedes this programme as the current visual/behaviour authority. The
+completed plan is retained here as implementation history and as evidence for already-landed
+architecture. New work follows `docs/reference-prototypes/euro28-product-experience-v3.md` while
+preserving existing functional contracts. Every per-page re-cut stage below originally inherited the
+**per-page finalisation standard by reference** (recorded 2026-07-09): each exits FINAL — flaws
 fixed in-stage, CSS modularised in-stage, no scaffold UI, fail-loud provisional indicators are
 features and stay; exit = owner gallery approval → visual blessing (once the Playwright visual
 tier is present) → FINAL. Appearance only — no functional change beyond what each stage records.
