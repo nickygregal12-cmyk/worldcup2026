@@ -28,6 +28,9 @@ export function PlayerHeader({ view, competitionOptions, onCompetitionChange }) 
   const context = CONTEXT[view.competitionKey]
   return (
     <section className={styles.header} aria-label={`${view.player.displayName} profile summary`}>
+      {competitionOptions.length > 1 && (
+        <Tabs className={styles.competitionTabs} label="Player View competition" value={view.competitionKey} options={competitionOptions} onChange={onCompetitionChange} />
+      )}
       <div className={styles.hero}>
         <div className={styles.heroCopy}>
           <span className="page-eyebrow">{context.eyebrow}</span>
@@ -42,9 +45,6 @@ export function PlayerHeader({ view, competitionOptions, onCompetitionChange }) 
         <div><strong>{statValue(view.counts.visiblePredictions)}</strong><span>Released picks</span></div>
         <div><strong>{statValue(view.counts.protectedPredictions)}</strong><span>Hidden picks</span></div>
       </div>
-      {competitionOptions.length > 1 && (
-        <Tabs className={styles.competitionTabs} label="Player View competition" value={view.competitionKey} options={competitionOptions} onChange={onCompetitionChange} />
-      )}
     </section>
   )
 }

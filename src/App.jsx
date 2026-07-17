@@ -182,16 +182,18 @@ export function EuroAppRuntime({
     )
   } else if (route === APP_ROUTE.LEAGUES) {
     content = (
-      <div className="content-stack">
-        <PageIntro eyebrow="Private competitions" title="Your leagues" description="Each league is one competition. Switch leagues, share invites and follow every points race from one clear table." />
+      <div className="content-stack leagues-page">
+        {/* Leagues owns its context hierarchy: competition, league, then table. A generic page
+            intro above those controls pushed the primary switch out of the first phone viewport. */}
         <Leagues client={activeClient} tournamentId={appData.tournament.id} reference={appData.guestReference} lifecycle={lifecycle} koReadiness={koReadiness} />
       </div>
     )
   } else if (route === APP_ROUTE.PLAYER) {
     const playerView = playerViewParamsFromHash(hashLocation.hash)
     content = (
-      <div className="content-stack">
-        <PageIntro eyebrow="Player View" title="Prediction profile" description="See how every visible point was earned, compare calls and follow bracket health against the real tournament." />
+      <div className="content-stack player-page">
+        {/* PlayerHeader owns the player and competition context. Keeping a second generic title
+            above it pushed the actual evidence and section controls below the phone viewport. */}
         <PlayerView
           client={activeClient}
           reference={appData.guestReference}

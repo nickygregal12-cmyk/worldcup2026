@@ -1,3 +1,24 @@
+## Stage FINAL-LEAGUES-VERTICAL-SLICE (2026-07-17 — owner visual direction)
+
+The owner selected the navy/sky, compact FPL-style Leagues review as the final production direction
+instead of continuing to reconcile competing prototype families. The final page hierarchy is global
+competition collection first, competition-specific league selection second, selected league identity
+and phase-aware rank/share context third, then the compact standings table. Original and KO leagues
+remain separate entities with separate memberships; this is a navigation hierarchy amendment, not a
+combined-league model.
+
+The generic Leagues and Player View page introductions are retired where they duplicate the page-owned
+context and push the primary controls below the first phone viewport. Every standings row opens the
+compact player sheet, which preserves full profile, complete points receipt, H2H and Original Bracket
+health routes. The default standings table remains rank, player and points because exact-score counts,
+source splits and other evidence do not belong in every compact row unless a canonical aggregate read
+supplies them.
+
+The older standalone League HTML is retained only as provenance and is no longer an active visual
+implementation authority. Production React components, shared tokens, domain models, services and
+Supabase reads remain mandatory; hard-coded prototype people, points, flags and tournament state remain
+prohibited. This stage makes no scoring, resolver, Auth, Supabase write, result-entry or migration change.
+
 ## Stage PRODUCT-EXPERIENCE-V3-SLICE-2 (2026-07-16 — owner scope and audit amendments)
 
 The second Product Experience v3 slice is authorised as a whole-site coherence pass, with Leagues

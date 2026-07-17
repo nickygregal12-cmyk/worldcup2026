@@ -9,7 +9,7 @@ const fail = message => errors.push(message)
 const read = file => fs.readFileSync(path.join(root, file), 'utf8')
 
 const playerFacingFiles = [
-  'src/App.jsx', // the Leagues page-intro copy lives in the standard PageIntro here
+  'src/App.jsx',
   'src/home/HomeDashboard.jsx',
   'src/home/homeDashboardModel.js',
   'src/auth/AccountAccess.jsx',
@@ -27,6 +27,7 @@ const playerFacingFiles = [
   'src/results/ResultsPresentation.jsx',
   'src/results/resultModel.js',
   'src/leagues/Leagues.jsx',
+  'src/leagues/LeaguePresentation.jsx', // 2026-07-17: the selected league now owns the page's plain-language lead
   'src/leagues/leagueModel.js',
   'src/matchCentre/MatchCentre.jsx',
   'src/matchCentre/matchCentreModel.js',
@@ -42,7 +43,9 @@ const requiredPlainCopy = [
   ['team that goes through', 'scores and methods are not needed'],
   ['follow official results', 'saved predictions'],
   ['live scores', 'shown separately from your picks'],
-  ['one competition', 'points race'], // re-pointed 2026-07-16: the retired "track both competitions" lead is replaced by the single-competition model copy in the Leagues PageIntro
+  // §5.8 amendment, owner-ratified by FINAL-LEAGUES-VERTICAL-SLICE: the generic Leagues
+  // PageIntro is retired, so plain race/share language now lives in the selected-league hero.
+  ['follow the live points race', 'share the league before kick-off'],
   ['once picks lock', 'no longer available'],
   ['simple guide', 'account privacy'],
 ]

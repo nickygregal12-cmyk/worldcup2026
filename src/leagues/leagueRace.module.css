@@ -1,42 +1,151 @@
-/* Leagues standings — DP re-cut. Compact leader rows on DP tokens.
- * 48px minimum row target (§5). Movement/gap is a designed not-yet state rendered ONCE per
- * table (see .movementNote below and the RANK_MOVEMENT_PENDING_REASON copy): there is no
- * previous-rank history yet, so per-row movement chips are deliberately not rendered, and
- * gap-to-leader is trimmed from the compact single-line rows. The not-yet retires when Results +
- * Leaderboards builds rank history (owner ruling 2026-07-15). */
-
 .standingsCard {
   display: grid;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  overflow: hidden;
   border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-lg);
   background: var(--dp-surface-raised);
-  box-shadow: var(--shadow-1);
+  box-shadow: var(--shadow-2);
 }
 
 .compactCompetitionHeading {
   display: flex;
-  align-items: end;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-5) var(--space-5);
+  border-bottom: 1px solid var(--dp-border-subtle);
+}
+
+.compactCompetitionHeading > div {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
 }
 
 .compactCompetitionHeading h3 {
-  margin: 0.1rem 0 0;
+  margin: 0;
   color: var(--dp-text-strong);
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  text-transform: uppercase;
 }
 
-.compactCompetitionHeading small {
+.compactCompetitionHeading p {
+  margin: var(--space-1) 0 0;
   color: var(--dp-text-muted);
+  font-size: var(--text-sm);
+}
+
+.leaderList {
+  display: grid;
+}
+
+.tableHeader,
+.leaderRow {
+  display: grid;
+  grid-template-columns: 4.75rem minmax(0, 1fr) minmax(4.25rem, auto) 2rem;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tableHeader {
+  min-height: 3rem;
+  padding: 0 var(--space-5);
+  border-bottom: 1px solid var(--dp-border-subtle);
+  background: var(--dp-info-soft);
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tableHeader span:nth-child(3) {
   text-align: right;
 }
 
-/* The once-per-table not-yet note for rank movement. Amber provisional role. */
+.loadingRows {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+
+.leaderRow {
+  position: relative;
+  width: 100%;
+  min-height: 5rem;
+  padding: var(--space-3) var(--space-5);
+  border: 0;
+  border-bottom: 1px solid var(--dp-border-subtle);
+  border-radius: 0;
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-body);
+  text-align: left;
+}
+
+button.leaderRow {
+  cursor: pointer;
+  transition: background var(--motion-micro) var(--ease-standard);
+}
+
+button.leaderRow:hover {
+  background: var(--dp-surface-page);
+}
+
+button.leaderRow:focus-visible {
+  z-index: 1;
+  outline: 3px solid var(--dp-action);
+  outline-offset: -3px;
+}
+
+.currentUserRow {
+  background: var(--dp-info-soft);
+  box-shadow: inset 0.3rem 0 0 var(--dp-action);
+}
+
+button.currentUserRow:hover {
+  background: color-mix(in srgb, var(--dp-info-soft) 72%, var(--dp-surface-raised));
+}
+
+.rankMarker {
+  color: var(--dp-text-strong);
+  font: 850 clamp(1.75rem, 5vw, 2.4rem)/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.rowIdentity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+.points {
+  color: var(--dp-text-strong);
+  font: 850 clamp(1.45rem, 4vw, 2rem)/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.rowGo {
+  width: 2rem;
+  height: 2rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  color: var(--dp-text-muted);
+}
+
+button.leaderRow:hover .rowGo {
+  background: var(--dp-action-ink);
+  color: var(--dp-text-on-accent);
+}
+
 .movementNote {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  margin: var(--space-4);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--dp-info-border);
   border-radius: var(--radius-md);
@@ -46,97 +155,11 @@
   font-weight: 700;
 }
 
-.leaderList {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.loadingRows {
-  display: grid;
-  gap: var(--space-2);
-}
-
-.leaderRow {
-  display: grid;
-  grid-template-columns: minmax(2.2rem, auto) 1fr auto 1.5rem;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  min-height: 3rem;
-  padding: var(--space-2) var(--space-3);
+.secondaryDetails {
+  margin: var(--space-4);
   border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-md);
   background: var(--dp-surface-page);
-  text-align: left;
-}
-
-button.leaderRow {
-  cursor: pointer;
-  transition: transform var(--motion-micro) var(--ease-standard), border-color var(--motion-micro) var(--ease-standard);
-}
-
-button.leaderRow:hover {
-  transform: translateY(-1px);
-  border-color: var(--dp-border-strong);
-}
-
-button.leaderRow:focus-visible {
-  outline: 2px solid var(--dp-action);
-  outline-offset: 2px;
-}
-
-.currentUserRow {
-  border-color: var(--dp-border-strong);
-  background: var(--dp-info-soft);
-}
-
-.rankMarker {
-  display: inline-flex;
-  min-height: 1.55rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--dp-border-strong);
-  border-radius: var(--radius-full);
-  padding: 0.1rem 0.4rem;
-  color: var(--dp-text-muted);
-  font-size: 0.72rem;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-
-.rowIdentity {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.points {
-  color: var(--dp-text-strong);
-  font: 800 var(--text-lg)/1 var(--font-display);
-  font-variant-numeric: tabular-nums;
-}
-
-.rowGo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: var(--radius-full);
-  background: var(--dp-surface-raised);
-  color: var(--dp-text-muted);
-}
-
-button.leaderRow:hover .rowGo {
-  background: var(--dp-action-ink);
-  color: var(--dp-text-on-accent);
-}
-
-.secondaryDetails {
-  border: 1px solid var(--dp-border-subtle);
-  border-radius: var(--radius-md);
-  background: var(--dp-surface-raised);
   padding: var(--space-2) var(--space-3);
 }
 
@@ -149,29 +172,54 @@ button.leaderRow:hover .rowGo {
   font-weight: 800;
 }
 
+.secondaryDetailsBody,
 .dangerZone {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-4);
 }
 
 .secondaryDetailsBody {
-  display: grid;
-  gap: var(--space-4);
   padding-top: var(--space-3);
+}
+
+.dangerZone {
+  gap: var(--space-2);
 }
 
 @media (max-width: 640px) {
   .compactCompetitionHeading {
-    align-items: start;
-    flex-direction: column;
-    gap: 0.35rem;
+    padding: var(--space-5) var(--space-4) var(--space-4);
   }
 
-  .compactCompetitionHeading small {
-    text-align: left;
+  .compactCompetitionHeading h3 {
+    font-size: clamp(1.85rem, 10vw, 2.5rem);
+  }
+
+  .tableHeader,
+  .leaderRow {
+    grid-template-columns: 3.5rem minmax(0, 1fr) minmax(3.7rem, auto) 1.5rem;
+    gap: var(--space-2);
+  }
+
+  .tableHeader,
+  .leaderRow {
+    padding-inline: var(--space-4);
   }
 
   .leaderRow {
-    grid-template-columns: minmax(2rem, auto) 1fr auto 1.25rem;
+    min-height: 4.75rem;
+  }
+
+  .rowGo {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+@media (max-width: 370px) {
+  .tableHeader,
+  .leaderRow {
+    grid-template-columns: 2.8rem minmax(0, 1fr) minmax(3.25rem, auto) 1.25rem;
+    padding-inline: var(--space-3);
   }
 }

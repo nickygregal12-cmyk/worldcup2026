@@ -16,19 +16,12 @@ import {
   MiniMatchStrip,
 } from './LeaguePresentation.jsx'
 import { EmptyLeagueCollection, LeagueCollectionTabs } from './LeagueCollectionTabs.jsx'
+import LeagueToolbar from './LeagueToolbar.jsx'
+import { messageForLeagueError, PENDING_JOIN_KEY } from './leaguePageHelpers.js'
 import PlayerQuickView from '../player/PlayerQuickView.jsx'
 import { hashSearchParams } from '../app/appRoutes.js'
 import { SkeletonPage } from '../design-system/index.jsx'
 import layoutStyles from './LeagueLayout.module.css'
-
-const PENDING_JOIN_KEY = 'euro28:pendingJoin'
-
-function messageForError(error) {
-  const message = error instanceof Error ? error.message : String(error)
-  if (/League code was not found/i.test(message)) return 'That league code was not found for Euro 2028.'
-  if (/League membership is required/i.test(message)) return 'You are no longer a member of that league.'
-  return message
-}
 
 export default function Leagues({ client, tournamentId, reference, lifecycle, koReadiness }) {
   const [session, setSession] = useState(null)
@@ -92,7 +85,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     } catch (error) {
       if (!overviewRequests.current.isCurrent(requestToken)) return
       setOverview({ status: 'error', data: null, leagueId, competitionKey })
-      setNotice({ tone: 'danger', message: messageForError(error) })
+      setNotice({ tone: 'danger', message: messageForLeagueError(error) })
     }
   }, [client, selectedLeague])
 
@@ -108,7 +101,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
       .catch(error => {
         if (!active) return
         setLoadingSession(false)
-        setNotice({ tone: 'danger', message: messageForError(error) })
+        setNotice({ tone: 'danger', message: messageForLeagueError(error) })
       })
 
     const { data } = client.auth.onAuthStateChange((_event, nextSession) => {
@@ -135,7 +128,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   useEffect(() => {
     let active = true
     // eslint-disable-next-line react-hooks/set-state-in-effect -- setNotice runs in a deferred promise rejection, not synchronously during the effect
-    refreshLeagues().catch(error => { if (active) setNotice({ tone: 'danger', message: messageForError(error) }) })
+    refreshLeagues().catch(error => { if (active) setNotice({ tone: 'danger', message: messageForLeagueError(error) }) })
     return () => { active = false }
   }, [refreshLeagues])
 
@@ -196,7 +189,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
       return true
     } catch (error) {
       setActionStatus('error')
-      setNotice({ tone: 'danger', message: messageForError(error) })
+      setNotice({ tone: 'danger', message: messageForLeagueError(error) })
       return false
     }
   }
@@ -269,9 +262,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     onUnavailable: text => setNotice({ tone: 'info', message: text }),
   })
 
-  const liveFixtureCompetition = liveFixture?.matchNumber <= 36
-    ? LEAGUE_COMPETITION.ORIGINAL
-    : LEAGUE_COMPETITION.KO_PREDICTOR
+  const liveFixtureCompetition = liveFixture?.matchNumber <= 36 ? LEAGUE_COMPETITION.ORIGINAL : LEAGUE_COMPETITION.KO_PREDICTOR
   const matchStripLeague = selectedLeague?.competition === liveFixtureCompetition ? selectedLeague.id : null
   const matchStripHref = liveFixture
     ? `#/match-centre?match=${liveFixture.matchNumber}&competition=${liveFixtureCompetition}${matchStripLeague ? `&league=${matchStripLeague}` : ''}`
@@ -285,18 +276,33 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
 
       {!loadingSession && session?.user && (
         <>
-          {koLeagueReady && (
-            <LeagueCollectionTabs
-              activeCompetition={activeCompetition}
-              collections={leagueCollections}
-              onChange={competitionKey => {
-                overviewRequests.current.cancel()
-                setActiveCompetition(competitionKey)
-                setPendingLeagueAction(null)
-                setQuickPlayer(null)
-              }}
-            />
-          )}
+          <div className={layoutStyles.contextDock} aria-label="League context">
+            {koLeagueReady && (
+              <LeagueCollectionTabs
+                activeCompetition={activeCompetition}
+                collections={leagueCollections}
+                onChange={competitionKey => {
+                  overviewRequests.current.cancel()
+                  setActiveCompetition(competitionKey)
+                  setPendingLeagueAction(null)
+                  setQuickPlayer(null)
+                }}
+              />
+            )}
+            {visibleLeagues.length > 0 && (
+              <LeagueToolbar
+                leagues={visibleLeagues}
+                selectedLeagueId={selectedLeague?.id}
+                manageOpen={manageOpen}
+                onToggleManage={() => setManageOpen(previous => !previous)}
+                onSelectLeague={value => {
+                  overviewRequests.current.cancel()
+                  setSelectedLeagueIds(previous => ({ ...previous, [activeCompetition]: value }))
+                  setPendingLeagueAction(null)
+                }}
+              />
+            )}
+          </div>
 
           {manageOpen && visibleLeagues.length > 0 && (
             <LeagueManagePanel
@@ -333,17 +339,13 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
             <>
               <LeagueHero
                 league={selectedLeague}
-                leagues={visibleLeagues}
-                onSelectLeague={value => {
-                  overviewRequests.current.cancel()
-                  setSelectedLeagueIds(previous => ({ ...previous, [activeCompetition]: value }))
-                  setPendingLeagueAction(null)
-                }}
+                summary={activeSummary}
+                lifecycleState={leagueLifecycle}
               />
 
               <MiniMatchStrip fixture={liveFixture} href={matchStripHref} />
 
-              <div className={layoutStyles.layout}>
+              <div className={`${layoutStyles.layout} ${leagueLifecycle.tournamentStarted ? layoutStyles.inPlay : layoutStyles.preTournament}`.trim()}>
                 <LeagueActionsCard
                   joinCode={selectedLeague.joinCode}
                   onCopyInvite={copyLeagueCode}

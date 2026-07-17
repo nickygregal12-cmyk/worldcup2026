@@ -50,15 +50,19 @@ export function LeagueActionConfirmation({ action, leagueName, actionStatus, onC
   )
 }
 
-export function LeagueCompetitionHeading({ competitionKey }) {
+export function LeagueCompetitionHeading({ competitionKey, summary, refreshing = false }) {
   const original = competitionKey === LEAGUE_COMPETITION.ORIGINAL
+  const scoring = summary?.state === 'active'
   return (
     <div className={raceStyles.compactCompetitionHeading}>
       <div>
         <span className={layoutStyles.kicker}>{competitionName(competitionKey)}</span>
-        <h3>Standings</h3>
+        <h3>{competitionName(competitionKey)} table</h3>
+        <p>{refreshing ? 'Loading the latest official standings.' : scoring ? 'Scores update from confirmed tournament results.' : 'The table will move when official scoring begins.'}</p>
       </div>
-      <Badge tone={original ? 'info' : 'warning'}>{original ? 'League table' : 'Independent table'}</Badge>
+      <Badge tone={refreshing ? 'info' : scoring ? 'safe' : original ? 'info' : 'neutral'}>
+        {refreshing ? 'Updating' : scoring ? 'Up to date' : original ? 'Ready' : 'Separate table'}
+      </Badge>
     </div>
   )
 }
@@ -77,20 +81,33 @@ export function LeaguePicker({ leagues, selectedId, onSelect }) {
   )
 }
 
-export function LeagueHero({ league, leagues, onSelectLeague }) {
+export function LeagueHero({ league, summary, lifecycleState }) {
   const original = league.competition === LEAGUE_COMPETITION.ORIGINAL
   const members = `${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
+  const raceActive = summary?.state === 'active'
+  const tournamentStarted = Boolean(lifecycleState?.tournamentStarted)
+  const rankLabel = raceActive && summary.currentRank ? `#${summary.currentRank}` : '28'
   return (
     <section className={heroStyles.identity} aria-label={`${league.name} overview`}>
+      <span className={heroStyles.watermark} aria-hidden="true">{rankLabel}</span>
       <div className={heroStyles.identityMain}>
         <div className={heroStyles.identityCopy}>
-          <span className={heroStyles.eyebrow}><span className={heroStyles.memberDot} aria-hidden="true" />{competitionName(league.competition)}</span>
+          <span className={heroStyles.eyebrow}>{competitionName(league.competition)} league</span>
           <h2 className={heroStyles.name}>{league.name}</h2>
-          <p className={heroStyles.hint}>Tap any member to open their profile, points and head-to-head.</p>
+          <p className={heroStyles.hint}>{raceActive
+            ? 'Follow the live points race and open any player for the full breakdown.'
+            : tournamentStarted
+              ? 'Official results will move this table as soon as scoring records are available.'
+              : 'Share the league before kick-off. Every saved Original pick stays protected until lock.'}</p>
         </div>
-        <span className={heroStyles.memberCount}><Icon name="leagues" size={16} />{members}</span>
+        <span className={heroStyles.memberCount}><Icon name="leagues" size={15} />{members}</span>
       </div>
-      <LeaguePicker leagues={leagues} selectedId={league.id} onSelect={onSelectLeague} />
+      <div className={heroStyles.heroStats} aria-label="League position summary">
+        <div><strong>{raceActive ? formatOrdinal(summary.currentRank) : '—'}</strong><span>Your rank</span></div>
+        <div><strong>{summary ? summary.currentPoints : '—'}</strong><span>Points</span></div>
+        <div><strong>{summary?.gapToLeader == null ? '—' : summary.gapToLeader === 0 ? 'Top' : summary.gapToLeader}</strong><span>{summary?.gapToLeader > 0 ? 'To leader' : 'Gap'}</span></div>
+      </div>
+      <span className={heroStyles.timing}>{tournamentStarted ? 'Official scoring record' : 'Predictions private until tournament lock'}</span>
       {!original && <span className="sr-only">This is a KO Predictor league, separate from Original Predictor leagues.</span>}
     </section>
   )
@@ -153,22 +170,16 @@ export function LeaderList({ rows, onOpenPlayer }) {
   const hasScoring = raceRows.some(row => row.scoredMatchCount > 0 || row.totalPoints > 0)
   return (
     <div className={raceStyles.leaderList}>
-      {/* Rank movement is a designed not-yet state: no earlier table exists to compare against,
-          so it is stated once here rather than as an empty per-row chip (owner ruling 2026-07-15). */}
-      {hasScoring && (
-        <p className={raceStyles.movementNote}>
-          <Icon name="info" size={13} />
-          <span>{RANK_MOVEMENT_PENDING_REASON}</span>
-        </p>
-      )}
+      <div className={raceStyles.tableHeader} aria-hidden="true">
+        <span>Rank</span><span>Player</span><span>Points</span><span />
+      </div>
       {raceRows.map(row => {
         const rowClassName = [
           raceStyles.leaderRow,
           row.isCurrentUser ? raceStyles.currentUserRow : '',
         ].filter(Boolean).join(' ')
-        // One line of work per row (rank · identity · points · chevron) at the 48px floor. Meta is
-        // trimmed to the essential inline marker: "You" or "League owner". Gap-to-leader is not shown
-        // per row (owner ruling 2026-07-15: it tightens or trims) — it would stack the row at scale.
+        // The table remains intentionally compact: rank, player and points are the default evidence.
+        // Detailed scoring sources, gap context and comparisons live behind the full-row destination.
         return (
           <button
             key={row.userId}
@@ -179,13 +190,21 @@ export function LeaderList({ rows, onOpenPlayer }) {
           >
             <span className={raceStyles.rankMarker}>{hasScoring ? row.rank : '—'}</span>
             <span className={raceStyles.rowIdentity}>
-              <PlayerIdentity player={row} isCurrentUser={row.isCurrentUser} inline meta={row.memberRole === 'owner' ? 'League owner' : null} />
+              <PlayerIdentity player={row} isCurrentUser={row.isCurrentUser} meta={row.memberRole === 'owner' ? 'League owner' : null} />
             </span>
             <span className={raceStyles.points}>{row.totalPoints}</span>
             <span className={raceStyles.rowGo} aria-hidden="true"><Icon name="chevron" size={13} /></span>
           </button>
         )
       })}
+      {/* Rank movement is a designed not-yet state: no earlier table exists to compare against,
+          so it is stated once after the table rather than faked per row. */}
+      {hasScoring && (
+        <p className={raceStyles.movementNote}>
+          <Icon name="info" size={13} />
+          <span>{RANK_MOVEMENT_PENDING_REASON}</span>
+        </p>
+      )}
     </div>
   )
 }
@@ -251,7 +270,7 @@ export function LeagueStandingsPanel({
 
   return (
     <article className={raceStyles.standingsCard}>
-      <LeagueCompetitionHeading competitionKey={competitionKey} />
+      <LeagueCompetitionHeading competitionKey={competitionKey} summary={activeSummary} refreshing={stillRefreshing} />
 
       {loadingFirstLoad && (
         <div className={raceStyles.loadingRows} role="status" aria-label="Loading league standings">

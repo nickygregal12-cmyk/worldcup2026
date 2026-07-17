@@ -4,6 +4,14 @@
 
 Owner-approved product and visual contract, recorded 2026-07-16.
 
+League finalisation amendment, owner-approved 2026-07-17: the production Leagues journey uses the
+high-contrast navy/sky hierarchy and compact FPL-style table selected from the review prototype. The
+global Original/KO collection switch comes first, followed by the league selector for that collection,
+then the selected league identity and standings. This ordering reinforces rather than changes the
+single-competition league model: switching collection never carries a league or its membership across.
+The generic page intro is omitted where the context controls and selected league already name the page.
+The older standalone League HTML is visual provenance only; it is not an active implementation authority.
+
 This contract supersedes the earlier Design Programme and v2 page references on appearance and on
 the explicit behaviour amendments below. Existing scoring, resolver, guest, privacy, operations and
 competition contracts remain binding unless this document explicitly records an owner amendment.
@@ -79,10 +87,14 @@ React components, CSS Modules, domain models, services, Supabase reads and serve
 ## Leagues
 
 - The first phone viewport adapts to tournament phase: share/invite before play, then rank, movement and gap.
-- Two large Original/KO collection tabs appear only once KO prediction is available.
+- Two large Original/KO collection tabs appear only once KO prediction is available. They are the first
+  page-level control, above the competition-specific league selector and selected league identity.
 - Each tab lists leagues created for that competition only and remembers its own selected league.
 - An empty KO collection offers Create KO league and Join KO league; it never displays an Original league.
-- Member rows stay compact and open the shared player-profile flow.
+- The selected league uses a navy/sky identity panel and a contiguous mobile standings table. The default
+  table is rank, player and points; deeper scoring sources remain in Player View and H2H.
+- The current player row receives a stronger sky highlight and every member row opens the shared profile
+  sheet before the full Player View.
 
 ## Results, Leaderboards and Match Centre
 
@@ -128,4 +140,3 @@ React components, CSS Modules, domain models, services, Supabase reads and serve
 - Preserve loading, empty, partial-failure, error, signed-out, unauthorised, direct-link, responsive, light and
   dark states.
 - UI changes require focused tests, full checks, browser review and owner visual approval.
-

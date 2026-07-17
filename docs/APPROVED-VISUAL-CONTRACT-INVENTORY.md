@@ -17,7 +17,7 @@ The visual-contract rule remains:
 | Surface | Contract | Status |
 |---|---|---|
 | Groups | Approved Groups Night Broadcast contract | Recorded in repo |
-| Leagues | League table D / Leagues refinement | Recorded in repo |
+| Leagues | League table D / Leagues refinement | Retained as provenance; the 2026-07-17 Product Experience v3 League amendment and production shared components are active. |
 | Original Bracket | Bracket G | Recorded in repo |
 | KO Predictor | KO Predictor F | Recorded in repo |
 
