@@ -12,6 +12,21 @@ const OFFICIAL_EURO_2028_VENUES = Object.freeze([
   Object.freeze({ name: 'Dublin Arena', city: 'Dublin', hostNation: 'Republic of Ireland', tags: Object.freeze([]) }),
 ])
 
+export const EURO28_HOST_NATION_ISO = Object.freeze({
+  England: 'ENG',
+  Scotland: 'SCO',
+  Wales: 'WAL',
+  'Republic of Ireland': 'IRL',
+})
+
+export const EURO28_VENUE_HOST_ISO = Object.freeze(Object.fromEntries(
+  OFFICIAL_EURO_2028_VENUES.map(venue => [venue.name, EURO28_HOST_NATION_ISO[venue.hostNation] ?? null]),
+))
+
+export function euro28VenueHostIso(venueName) {
+  return EURO28_VENUE_HOST_ISO[venueName] ?? null
+}
+
 /**
  * Tournament-level configuration.
  *

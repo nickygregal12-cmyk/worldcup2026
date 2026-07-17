@@ -246,7 +246,7 @@ export function EuroAppRuntime({
       </div>
     )
   } else if (route === APP_ROUTE.TOURNAMENT) {
-    content = <TournamentOverview foundation={appData} />
+    content = <TournamentOverview foundation={appData} client={activeClient} lifecycle={lifecycle} />
   } else if (route === APP_ROUTE.HOW_TO_PLAY) {
     content = <HowToPlayOverview foundation={appData} />
   } else if (route === APP_ROUTE.ADMIN) {

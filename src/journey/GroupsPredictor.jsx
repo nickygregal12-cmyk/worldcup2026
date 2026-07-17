@@ -1,7 +1,7 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { useMemo, useState } from 'react'
 import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
-import { TOURNAMENT_CONFIG } from '../config/tournament.js'
+import { euro28VenueHostIso } from '../config/tournament.js'
 import { APP_DESTINATIONS, APP_ROUTE } from '../app/appRoutes.js'
 import { PredictionInputRow, TeamLabel, PredictionStateBadge, Button, Dialog, JokerMeter, JokerPill, MatchCard, TiebreakPositionPicker, Icon } from '../design-system/index.jsx'
 import { flagAssetForTeamIso } from '../design-system/teamFlagRegistry.js'
@@ -27,6 +27,7 @@ import viewStyles from './GroupsPredictor.module.css'
 import flowStyles from './GroupsPredictorFlow.module.css'
 import { GROUPS_DATE_TABLES_COPY } from './predictionJourneyCopy.js'
 import useGroupsLanding from './useGroupsLanding.js'
+import { GroupStandingsTable, ThirdPlaceQualificationTable } from '../tournament/QualificationTables.jsx'
 
 const GROUP_TOTAL = 36
 
@@ -34,19 +35,6 @@ const GROUP_TOTAL = 36
 // registry is the single source of truth and the route audit is what keeps it honest.
 const BRACKET_DESTINATION = APP_DESTINATIONS.find(destination => destination.key === APP_ROUTE.BRACKET)
 const MATCH_CENTRE_DESTINATION = APP_DESTINATIONS.find(destination => destination.key === APP_ROUTE.MATCH_CENTRE)
-
-// The nine venues and their host nations are central confirmed facts, not something
-// a match row carries — the reference model has only the venue's name and city.
-// Joining on the name is how the card earns its host flag without inventing one: an
-// unmatched venue simply has no flag, which is the honest outcome, not a guessed one.
-// Four host nations, not five: Northern Ireland left the confirmed venue list when
-// Casement Park was dropped.
-const HOST_NATION_ISO = Object.freeze({
-  England: 'ENG', Scotland: 'SCO', Wales: 'WAL', 'Republic of Ireland': 'IRL',
-})
-const VENUE_HOST_ISO = Object.freeze(Object.fromEntries(
-  TOURNAMENT_CONFIG.confirmedFacts.venues.map(venue => [venue.name, HOST_NATION_ISO[venue.hostNation] ?? null]),
-))
 
 function formatMatchDate(dateValue) {
   if (!dateValue) return 'Date to be confirmed'
@@ -63,46 +51,10 @@ function formatKickoff(kickoffAt) {
     .replace(' ', '')
 }
 
-function teamName(row) {
-  return row.label ?? row.name ?? row.stableKey ?? row.teamId
-}
-
-function GroupTable({ table, rows = table?.rows ?? [], bestThird = false }) {
-  return (
-    <table className={flowStyles.table}>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Team</th>
-          {bestThird ? <th>Grp</th> : null}
-          <th className={flowStyles.right}>P</th>
-          <th className={flowStyles.right}>GD</th>
-          <th className={flowStyles.right}>Pts</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map(row => {
-          const qualifies = bestThird ? row.qualifiesAsBestThird : row.rank <= 2
-          return (
-            <tr className={qualifies ? flowStyles.qualifies : ''} key={`${row.groupCode ?? table?.groupCode}-${row.teamId}`}>
-              <td>{bestThird ? row.bestThirdRank : row.rank}</td>
-              <td>{teamName(row)}</td>
-              {bestThird ? <td>{row.groupCode}</td> : null}
-              <td className={flowStyles.right}>{row.played}</td>
-              <td className={flowStyles.right}>{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
-              <td className={flowStyles.right}><strong>{row.points}</strong></td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
-  )
-}
-
 // The tables, inline and one tap away, open by default while you are predicting.
 // They replace the two bordered asides that used to sit below every group — the same
 // numbers, but as a thing you open rather than a thing you scroll past.
-function PredictedTables({ table, groupCode, ranking, open }) {
+function PredictedTables({ table, groupCode, ranking, reference, open }) {
   return (
     <details className={flowStyles.tables} open={open}>
       <summary>
@@ -112,7 +64,7 @@ function PredictedTables({ table, groupCode, ranking, open }) {
       {table && (
         <div className={flowStyles.tableCard}>
           <h4>Group {groupCode}</h4>
-          <GroupTable table={table} />
+          <GroupStandingsTable groupCode={groupCode} table={table} reference={reference} caption={`Your predicted Group ${groupCode} table`} />
           <p className={flowStyles.tableNote}>The top two teams qualify automatically. The best third-place teams can also reach the knockouts.</p>
         </div>
       )}
@@ -120,14 +72,14 @@ function PredictedTables({ table, groupCode, ranking, open }) {
         {/* The summary above already says these are YOUR predicted tables; the prototype
             repeats "from your predictions" on each heading, which is duplication here. */}
         <h4>Best third-placed</h4>
-        <GroupTable rows={ranking.slice(0, 5)} bestThird />
+        <ThirdPlaceQualificationTable ranking={ranking} reference={reference} caption="Your predicted third-place qualification table" />
         <p className={flowStyles.tableNote}>These four also reach the Round of 16.</p>
       </div>
     </details>
   )
 }
 
-function GroupsTablesSheet({ model, open, selectedKey, onSelect, onClose }) {
+function GroupsTablesSheet({ model, reference, open, selectedKey, onSelect, onClose }) {
   const selectedGroup = model.groups.find(group => group.code === selectedKey) ?? model.groups[0]
   const showThird = selectedKey === GROUPS_TABLE_KEY.THIRD_PLACE
   const title = showThird ? 'Predicted third-place ranking' : `Predicted table — Group ${selectedGroup.code}`
@@ -156,8 +108,8 @@ function GroupsTablesSheet({ model, open, selectedKey, onSelect, onClose }) {
             </button>
           </nav>
           {showThird
-            ? <GroupTable rows={model.bestThird.ranking} bestThird />
-            : <GroupTable table={selectedGroup.table} />}
+            ? <ThirdPlaceQualificationTable ranking={model.bestThird.ranking} reference={reference} caption="Your predicted third-place qualification table" />
+            : <GroupStandingsTable groupCode={selectedGroup.code} table={selectedGroup.table} reference={reference} caption={`Your predicted Group ${selectedGroup.code} table`} />}
           <p className={viewStyles.sheetNote}>Top two qualify from each group. The third-place tab shows the best-four ranking that shapes your bracket.</p>
         </div>
       </section>
@@ -237,7 +189,7 @@ export default function GroupsPredictor({
     const awayTeam = reference.teamsById?.[match.awayTeamId]
     const jokerLabel = jokerControlLabel({ applied: row.jokerApplied, disabled: jokerDisabled, capReached, started, reviewMode })
     const kickoff = formatKickoff(match.kickoffAt)
-    const hostFlag = flagAssetForTeamIso(VENUE_HOST_ISO[match.venueName])
+    const hostFlag = flagAssetForTeamIso(euro28VenueHostIso(match.venueName))
 
     return (
       <MatchCard
@@ -318,7 +270,7 @@ export default function GroupsPredictor({
 
           <div className={flowStyles.cardList}>{openGroupMatches.map(renderMatchCard)}</div>
           {renderTiebreak(tieForGroup(openGroup))}
-          <PredictedTables table={openGroupTable} groupCode={openGroup} ranking={tablesModel.bestThird.ranking} open />
+          <PredictedTables table={openGroupTable} groupCode={openGroup} ranking={tablesModel.bestThird.ranking} reference={reference} open />
         </>
       ) : (
         <section className={viewStyles.dateView} aria-label="Group matches by date">
@@ -331,13 +283,13 @@ export default function GroupsPredictor({
           {/* Ties are a property of a group, not a date, but a player who never leaves
               this view must still be told their positions need setting. */}
           {ties.map(renderTiebreak)}
-          <PredictedTables table={null} groupCode={openGroup} ranking={tablesModel.bestThird.ranking} open={false} />
+          <PredictedTables table={null} groupCode={openGroup} ranking={tablesModel.bestThird.ranking} reference={reference} open={false} />
           <p className={viewStyles.sheetNote}>{GROUPS_DATE_TABLES_COPY}</p>
           <button className={viewStyles.tablesPill} type="button" onClick={() => setTablesOpen(true)}>Tables</button>
         </section>
       )}
 
-      <GroupsTablesSheet model={tablesModel} open={tablesOpen} selectedKey={selectedTableKey} onSelect={setSelectedTableKey} onClose={() => setTablesOpen(false)} />
+      <GroupsTablesSheet model={tablesModel} reference={reference} open={tablesOpen} selectedKey={selectedTableKey} onSelect={setSelectedTableKey} onClose={() => setTablesOpen(false)} />
 
       {/* Groups is a step, not a destination: the tables you just built ARE the seeding.
           The bracket is named in full — "bracket" alone would be ambiguous between this

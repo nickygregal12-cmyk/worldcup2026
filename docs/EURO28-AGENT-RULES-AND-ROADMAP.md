@@ -12,9 +12,21 @@ Accepted as a broad player-facing copy repair before continuing to `STAGE-CORE-P
 
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.41 — final Product Experience authority adopted
+### Version 4.42 — shared qualification and Tournament implementation
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
+
+### Stage PRODUCT-EXPERIENCE-FINAL-BATCH-1
+
+The first final-experience production slice composes one shared group/third-place qualification
+presentation across Groups, Results and Tournament. The third-place table always renders all six
+teams and marks the top four explicitly; team identity remains owned by the shared ISO-keyed flag
+registry and Team Profile activation. Tournament is now a live-aware football destination using the
+existing canonical result read, resolver snapshot and central confirmed facts for phase/progress,
+priority fixture, Match Centre, groups, qualification, dates, format, hosts and venues. Do not fork
+these tables or create page-local emoji/flag/fact sources in later batches. This stage changes no
+scoring, resolver, locks, Supabase writes, Auth, RLS, production data or migrations. Automated checks
+and owner visual review are separate exit gates; neither may be inferred from implementation alone.
 
 ### Stage PRODUCT-EXPERIENCE-FINAL-ADOPTION
 

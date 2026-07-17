@@ -1,3 +1,19 @@
+## Stage PRODUCT-EXPERIENCE-FINAL-BATCH-1 (2026-07-17 — implementation checkpoint)
+
+The first implementation slice under the final Product Experience authority establishes the shared
+qualification compound and upgrades Tournament. Groups, Results and Tournament consume one group
+standings and six-team third-place presentation backed by the canonical resolver output; the top
+four third-place teams are labelled explicitly and teams use the shared ISO-keyed flag identity with
+Team Profile activation. Tournament consumes the existing official-result read and central confirmed
+tournament facts for phase/progress, priority fixture, Match Centre routing, group directory,
+qualification, format, dates, hosts and venues. Groups, Results, Bracket and How to Play remain
+separate linked destinations rather than duplicated page content.
+
+This is a read-only React/model/test/audit slice. It changes no scoring values, resolver rules,
+prediction locks, Supabase writes, Auth, RLS, production data or migrations. The full repository
+check passes; owner visual review remains required before acceptance. The separate official-data item to
+consolidate venue facts onto the final database-backed source remains open and is not closed here.
+
 ## Stage PRODUCT-EXPERIENCE-FINAL-ADOPTION (2026-07-17 — owner-approved)
 
 The owner approved `docs/reference-prototypes/euro28-product-experience-final.md` as the sole

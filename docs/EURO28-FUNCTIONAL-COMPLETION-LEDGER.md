@@ -10,6 +10,21 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.62 — shared qualification and Tournament implementation
+
+Stage PRODUCT-EXPERIENCE-FINAL-BATCH-1 is implemented in the working tree, passes the full
+repository check and awaits owner phone/tablet/desktop light/dark review. Groups, Results and Tournament
+now compose the same canonical group and six-team third-place qualification presentation; the top
+four third-place qualifiers are explicit and team identity comes from the existing shared ISO-keyed
+flag registry. Tournament now reads the canonical official-result snapshot and existing central
+tournament facts to present phase/progress, a priority fixture with Match Centre routing, six groups
+with Team Profile activation, qualification, dates, format, hosts and venues, plus routes into Groups,
+Results, Bracket and How to Play. Focused tests and a new enforcement audit prevent the sixth
+third-place team or a consuming surface from disappearing. This is a read-only presentation/model
+slice: no scoring, resolver, prediction lock, Supabase write, Auth, RLS, production data or migration
+change is introduced. The owner visual gate remains open and wider Team Profile, Groups live/predicted
+switching and Tournament venue-source consolidation remain later tracked work.
+
 ### Version 1.61 — final Product Experience authority adopted
 
 Stage PRODUCT-EXPERIENCE-FINAL-ADOPTION is accepted as a governance/audit-only supersession. The

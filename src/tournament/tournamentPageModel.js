@@ -1,6 +1,7 @@
 import { buildPublicSignupReadiness } from '../auth/publicSignupReadiness.js'
 import { EURO_SCORING_CONFIG, SCORING_CONFIG_STATUS } from '../config/scoringConfig.js'
 import { TOURNAMENT_CONFIG } from '../config/tournament.js'
+import { buildCanonicalResultFeed } from '../results/resultModel.js'
 
 function formatDate(value) {
   if (!value) return 'To be confirmed'
@@ -22,15 +23,60 @@ function groupSlotStatus(group) {
   return confirmed === slots.length && slots.length > 0 ? 'Confirmed' : 'Qualifying under way'
 }
 
-export function buildTournamentPageModel(foundation, config = TOURNAMENT_CONFIG) {
+function buildPhase(lifecycle, liveSnapshot, totalMatches) {
+  const results = liveSnapshot?.results ?? []
+  const liveMatches = Number(liveSnapshot?.summary?.liveMatches ?? 0)
+  const confirmedMatches = Number(liveSnapshot?.summary?.confirmedMatches ?? 0)
+  const visibleMatches = results.filter(result => result.scoreVisible).length
+  const knockoutStarted = results.some(result => result.matchNumber > 36 && result.scoreVisible)
+  const groupsComplete = Object.values(liveSnapshot?.groups ?? {}).length === 6 &&
+    Object.values(liveSnapshot.groups).every(table => table.completedMatchCount === 6)
+
+  if (confirmedMatches >= totalMatches) {
+    return Object.freeze({ key: 'complete', tone: 'safe', eyebrow: 'Tournament complete', title: 'Euro 2028 is complete', detail: 'Every official result is confirmed.', completed: totalMatches, total: totalMatches })
+  }
+  if (knockoutStarted || groupsComplete) {
+    return Object.freeze({ key: 'knockout', tone: liveMatches > 0 ? 'danger' : 'info', eyebrow: liveMatches > 0 ? 'Live now' : 'Knockout phase', title: 'The knockout path is taking shape', detail: `${confirmedMatches} official results confirmed. Real knockout positions now drive the bracket.`, completed: Math.max(visibleMatches, confirmedMatches), total: totalMatches })
+  }
+  if (liveMatches > 0 || visibleMatches > 0 || lifecycle?.started || lifecycle?.locked) {
+    return Object.freeze({ key: 'groups', tone: liveMatches > 0 ? 'danger' : 'info', eyebrow: liveMatches > 0 ? 'Live now' : 'Group stage', title: 'Qualification is moving', detail: `${confirmedMatches} official results confirmed. Live group and third-place positions update together.`, completed: Math.max(visibleMatches, confirmedMatches), total: totalMatches })
+  }
+  return Object.freeze({ key: 'pre_tournament', tone: 'info', eyebrow: 'Before kick-off', title: 'The road to Euro 2028', detail: 'Build your predictions, inspect the format and follow confirmed tournament information.', completed: 0, total: totalMatches })
+}
+
+function buildPriorityFixture(reference, liveSnapshot) {
+  if (!liveSnapshot) return null
+  const feed = buildCanonicalResultFeed({ reference, liveSnapshot })
+  const row = feed.sections.live?.[0]
+    ?? feed.sections.review?.[0]
+    ?? feed.sections.upcoming?.[0]
+    ?? feed.sections.completed?.[0]
+    ?? null
+  if (!row) return null
+  const source = [...reference.groupMatches, ...reference.knockoutMatches].find(match => match.matchNumber === row.matchNumber)
+  return Object.freeze({
+    ...row,
+    groupCode: source?.groupCode ?? null,
+    venueName: source?.venueName ?? null,
+    city: source?.city ?? null,
+    homeTeam: row.homeTeamId ? reference.teamsById?.[row.homeTeamId] ?? null : null,
+    awayTeam: row.awayTeamId ? reference.teamsById?.[row.awayTeamId] ?? null : null,
+  })
+}
+
+export function buildTournamentPageModel(foundation, config = TOURNAMENT_CONFIG, runtime = {}) {
   const facts = config.confirmedFacts
   const totals = foundation.totals
   const reference = foundation.guestReference
   const stages = foundation.stages ?? []
+  const liveSnapshot = runtime.liveSnapshot ?? null
+  const phase = buildPhase(runtime.lifecycle, liveSnapshot, facts.format.totalMatches)
 
   return Object.freeze({
     heading: config.name,
     context: 'Tournament',
+    phase,
+    priorityFixture: buildPriorityFixture(reference, liveSnapshot),
     summary: Object.freeze([
       Object.freeze({ label: 'Dates', value: formatDateRange(facts.tournamentStartDate, facts.tournamentEndDate), note: 'Confirmed by UEFA schedule announcement' }),
       Object.freeze({ label: 'Hosts', value: facts.hostNations.join(', '), note: facts.hostNationNote }),
@@ -52,8 +98,10 @@ export function buildTournamentPageModel(foundation, config = TOURNAMENT_CONFIG)
     groups: Object.freeze(reference.groups.map(group => Object.freeze({
       code: group.code,
       status: groupSlotStatus(group),
-      slots: Object.freeze(group.teams.map(team => Object.freeze({ code: team.slotCode, label: team.isProvisional ? 'Qualifying slot' : team.label }))),
+      teams: Object.freeze(group.teams.map(team => Object.freeze(team))),
+      slots: Object.freeze(group.teams.map(team => Object.freeze({ code: team.slotCode, label: team.label, team }))),
     }))),
+    qualification: liveSnapshot ? Object.freeze({ groups: liveSnapshot.groups, bestThird: liveSnapshot.bestThird }) : null,
     certainty: Object.freeze({
       confirmed: `${totals.officialDateVenueMatches}/${totals.matches} fixtures have official date and venue skeletons`,
       provisional: facts.unconfirmed.join(' '),

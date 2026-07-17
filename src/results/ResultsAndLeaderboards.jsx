@@ -4,7 +4,8 @@ import { LEADERBOARD_COMPETITION } from '../app/appRoutes.js'
 import { loadOverallHeadToHead, loadResultsAndLeaderboards } from './resultService.js'
 import { buildCanonicalResultFeed, buildLeaderboardLifecycle, buildLiveBracketRounds, buildResultsLifecycle, RESULT_COMPETITION } from './resultModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { GroupTable, Leaderboard, LiveBracket, ResultsFeed, SectionError } from './ResultsPresentation.jsx'
+import { Leaderboard, LiveBracket, ResultsFeed, SectionError } from './ResultsPresentation.jsx'
+import QualificationTables from '../tournament/QualificationTables.jsx'
 import { buildStandingComparison } from '../leagues/leagueModel.js'
 import { PlayerHeadToHead, PlayerInsight, PLAYER_COMPARISON_CONTEXT, openPlayerView } from '../player/index.js'
 import { RESULTS_PAGE_VIEW } from './resultsAccess.js'
@@ -63,7 +64,6 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, k
 
   const summary = state.data?.live?.summary ?? null
   const hasResultSummary = Boolean(summary && [summary.confirmedMatches, summary.liveMatches, summary.pendingResults, summary.manualReviewResults].some(value => Number(value) > 0))
-  const groups = useMemo(() => Object.entries(state.data?.live?.groups ?? {}), [state.data])
   const feed = useMemo(() => buildCanonicalResultFeed({ reference, liveSnapshot: state.data?.live }), [reference, state.data])
   const bracketRounds = useMemo(() => buildLiveBracketRounds({ reference, liveSnapshot: state.data?.live }), [reference, state.data])
   const resultsLifecycle = useMemo(() => buildResultsLifecycle({ lifecycle, liveSnapshot: state.data?.live }), [lifecycle, state.data])
@@ -183,9 +183,13 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, k
                   <span className="foundation-kicker">Live standings</span>
                   <h3>Live group tables</h3>
                   <p>Calculated only from live and confirmed group results.</p>
-                  <div className="foundation-live-groups">
-                    {groups.map(([groupCode, table]) => <GroupTable key={groupCode} groupCode={groupCode} table={table} reference={reference} />)}
-                  </div>
+                  <QualificationTables
+                    groupTables={state.data.live.groups}
+                    bestThird={state.data.live.bestThird}
+                    reference={reference}
+                    contextLabel="Live qualification"
+                    qualificationActive={hasResultSummary}
+                  />
                 </article>
                 <article className="foundation-results-card">
                   <span className="foundation-kicker">Live bracket · separate from your picks</span>

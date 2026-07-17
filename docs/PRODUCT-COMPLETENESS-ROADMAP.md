@@ -29,7 +29,7 @@ prototype data or markup eligible for production use.
 |---|---|---|---|
 | Shared desktop/mobile shell and bottom navigation | ADOPTED | Final acceptance | One aligned five-position mobile bar, centred circular Home treatment, smooth scroll hide/show, shared light/dark tokens and shared loading states. |
 | Home `#/` | ADOPTED | Results story + final acceptance | Rank and leagues lead on phones; KO stays quiet until primary readiness; later live impact uses only canonical results. |
-| Groups `#/groups` | CURRENT REVIEW | Current coherence batch | Keep By group/By date, persisted choice, next-match landing, clickable Match Centre cards and current phone density; use a two-column match grid on wider screens. |
+| Groups `#/groups` | CURRENT REVIEW | Groups and qualification | Keep By group/By date, persisted choice, next-match landing, clickable Match Centre cards and current phone density; the shared six-team third-place compound is implemented, while live/predicted switching and final visual approval remain. |
 | Original Bracket `#/bracket` | ADOPTED | Final acceptance | Keep predicted-page colour treatment, strong winner path, round-by-round phone default and optional wall chart. Never merge with KO Predictor or live results. |
 | Review `#/review` | SCHEDULED | Journey cohesion | Re-cut completion blockers, locked snapshot, joker confirmation and contextual next actions into the same v3 anatomy. |
 | KO Predictor `#/ko-predictor` | SCHEDULED | KO adoption | Preserve early fixture entry, per-fixture locks and separate scoring; make it prominent only after full group-stage readiness. |
@@ -37,12 +37,12 @@ prototype data or markup eligible for production use.
 | Player profile `#/player` | CURRENT REVIEW | Current coherence batch | Overview-first profile with competition tabs, points receipt, released picks, predicted tables, Original Bracket health and H2H entry. |
 | H2H / points receipt / bracket health | CURRENT REVIEW | Current coherence batch | Explain scoreline, sources and decisive match swings; always expose authorised scoring evidence; keep protected picks protected. |
 | Match Centre `#/match-centre` | PARTIAL | Results story | Existing league prediction and target states remain; complete canonical table/bracket/league impact storytelling and final visual pass. |
-| Results `#/results` | PARTIAL | Results story | Phase-order live, review, completed and upcoming sections; complete dynamic table and live-bracket consequences from canonical results. |
+| Results `#/results` | PARTIAL | Results story | Phase-order live, review, completed and upcoming sections; shared group/third-place qualification is implemented; complete dynamic live-bracket consequences and final presentation. |
 | Leaderboards `#/leaderboards` | PARTIAL | Results story + public-read gate | Reuse profile/receipt/H2H system, phase-gate KO tabs and finish full final-system table styling. Signed-out reads require the dedicated RPC/RLS gate below. |
 | Public signed-out leaderboard read | GATED | Database access review | Permit public table rows without inventing a personal standing; review RPC grants, RLS, abuse/load limits and privacy before a migration. |
 | More directory | ADOPTED | Final acceptance | Keep grouped lifecycle ordering so every non-nav high-traffic route remains findable; Account stays in the final account grouping. |
 | Account `#/account` | SCHEDULED | Supporting destinations | Preserve auth and guest-transfer behaviour while adopting the same v3 header, cards, loading, empty and destructive-action language. |
-| Tournament `#/tournament` and How to play `#/how-to-play` | SCHEDULED | Supporting destinations | Make Tournament the canonical football-format, phase, team, date, host, venue and qualification hub with the shared third-place table; keep predictor rules/scoring in How to Play. |
+| Tournament `#/tournament` and How to play `#/how-to-play` | CURRENT REVIEW | Teams and Tournament | Tournament now owns live phase/progress, priority fixture, teams, the shared third-place table, dates, format, hosts and venues; How to Play retains predictor rules. Owner visual review and final venue-source consolidation remain open. |
 | Team Profile contextual sheet | SCHEDULED | Supporting destinations | Match the player-sheet anatomy, shared flags and contextual return behaviour while retaining authorised data boundaries. |
 | Welcome `#/welcome`, unknown-route recovery and shared error states | SCHEDULED | Supporting destinations | One recognisable v3 first-run/recovery system across light/dark modes and breakpoints. |
 | Restricted Admin `#/admin` | SCHEDULED | Protected consistency | Preserve every permission and operational guardrail; align presentation only after player-facing routes are accepted. |

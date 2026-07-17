@@ -7,8 +7,11 @@
 - Current implementation checkpoint: the final contract is the sole visual/product-experience
   authority. Earlier Product Experience v3 work remains production code to improve, not a competing
   design authority.
-- Next implementation batch: shared foundations plus the canonical Tournament/qualification
-  compound, including proper flags and the mandatory shared third-place qualification table.
+- Current implementation batch: the shared Tournament/qualification compound is in the working
+  tree, passes the full automated review and awaits owner visual review. Groups, Results and Tournament now share
+  the six-team third-place presentation and existing ISO-keyed flag identity.
+- Next visual batch after acceptance: finish Teams/Team Profile and the remaining Groups tracking
+  states before proceeding to Bracket Health and Leagues.
 - Prediction-save conflict-loop repair remains a separate high-care stage with a fresh backup.
 - Scoring, resolver, Auth, public signup and migrations remain out of scope unless explicitly opened.
 
