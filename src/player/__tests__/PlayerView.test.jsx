@@ -5,7 +5,7 @@ import PlayerView from '../PlayerView.jsx'
 import { buildPlayerView } from '../playerViewModel.js'
 import { buildPlayerViewTestReference } from './playerViewTestReference.js'
 
-function loadedData({ tab = 'predictions', competitionKey = 'original' } = {}) {
+function loadedData({ tab = 'overview', competitionKey = 'original' } = {}) {
   const reference = buildPlayerViewTestReference()
   const view = buildPlayerView({
     memberUserId: 'player-1',
@@ -53,22 +53,32 @@ describe('PlayerView component markers', () => {
   })
 
   it('renders the dedicated predictions section from a loaded view', () => {
-    const { props } = loadedData()
+    const { props } = loadedData({ tab: 'predictions' })
     const html = renderToStaticMarkup(createElement(PlayerView, props))
 
     expect(html).toContain('Dougie')
-    expect(html).toContain('Viewing Original Predictor picks')
+    expect(html).toContain('Original Predictor profile')
     expect(html).toContain('Match picks')
     expect(html).toContain('Original points')
     expect(html).toContain('Hidden picks')
     expect(html).toContain('Joker')
   })
 
+  it('opens on a profile overview that links the main evidence views', () => {
+    const { props } = loadedData()
+    const html = renderToStaticMarkup(createElement(PlayerView, props))
+
+    expect(html).toContain('Profile overview')
+    expect(html).toContain('Points receipt')
+    expect(html).toContain('Bracket health')
+    expect(html).toContain('Predicted tables')
+  })
+
   it('renders the Original bracket section from a loaded view', () => {
     const { props } = loadedData({ tab: 'bracket' })
     const html = renderToStaticMarkup(createElement(PlayerView, props))
 
-    expect(html).toContain('Original bracket')
+    expect(html).toContain('Original Bracket')
     expect(html).toContain('Champion pick')
   })
 
@@ -85,7 +95,7 @@ describe('PlayerView component markers', () => {
     const html = renderToStaticMarkup(createElement(PlayerView, props))
 
     expect(html).toContain('KO Predictor')
-    expect(html).toContain('Viewing KO Predictor picks')
+    expect(html).toContain('KO Predictor profile')
     expect(html).toContain('Match picks')
     expect(html).not.toContain('Champion pick')
     expect(html).not.toContain('Group A')

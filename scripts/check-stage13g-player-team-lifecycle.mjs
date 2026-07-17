@@ -34,7 +34,7 @@ if (!playerModel.includes('export function buildPlayerInsightLifecycle')) fail('
 if (!playerModel.includes('You only see picks that are available for this player right now')) fail('Player Insight did not preserve player-facing privacy copy')
 if (!playerModel.includes('KO Predictor points are shown separately')) fail('Player Insight Original/KO separation copy is missing')
 if (!playerUi.includes('buildPlayerInsightLifecycle') || !playerUi.includes('lifecycleNote')) fail('Player Insight UI is not rendering lifecycle copy')
-if (!playerH2h.includes('lifecycle = null') || !playerH2h.includes('lifecycle={lifecycle}')) fail('H2H does not pass lifecycle to Player Insight')
+if (!playerH2h.includes('lifecycle = null') || !playerH2h.includes('buildPlayerInsightLifecycle') || !playerH2h.includes('lifecycleNote')) fail('H2H does not render central lifecycle context')
 if (!resultsUi.includes('lifecycle={lifecycle}') || !leaguesUi.includes('lifecycle={lifecycle}')) fail('Results or Leagues do not pass lifecycle to player surfaces')
 
 if (!teamModel.includes('export function buildTeamProfileLifecycle')) fail('Team Profile lifecycle model is missing')

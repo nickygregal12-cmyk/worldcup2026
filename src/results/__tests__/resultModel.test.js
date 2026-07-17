@@ -90,6 +90,21 @@ describe('Stage 13D result model', () => {
     expect(feed.sections.upcoming).toHaveLength(50)
   })
 
+  it('does not leak stale correction metadata onto an upcoming fixture', () => {
+    const model = reference()
+    const first = model.groupMatches[0]
+    const snapshot = buildLiveTournamentSnapshot({
+      reference: model,
+      resultRows: [{
+        id: first.matchId, match_number: first.matchNumber, status: 'scheduled', result_status: 'pending',
+        result_revision: 4, home_score_90: 3, away_score_90: 2, result_method: 'penalties',
+      }],
+    })
+    const row = buildCanonicalResultFeed({ reference: model, liveSnapshot: snapshot }).rows[0]
+
+    expect(row).toMatchObject({ state: 'upcoming', score: null, detail: null, corrected: false })
+  })
+
   it('shows all 15 live bracket positions including unresolved source labels', () => {
     const model = reference()
     const snapshot = buildLiveTournamentSnapshot({ reference: model, resultRows: [] })

@@ -22,6 +22,6 @@ describe('player view links', () => {
     expect(buildPlayerViewHref({ userId: 'player-2', competitionKey: 'original', tab: 'points' }))
       .toBe('#/player?user=player-2&competition=original&tab=points')
     expect(normalisePlayerViewTab('headToHead')).toBe('headToHead')
-    expect(normalisePlayerViewTab('private-data')).toBe('predictions')
+    expect(normalisePlayerViewTab('private-data')).toBe('overview')
   })
 })

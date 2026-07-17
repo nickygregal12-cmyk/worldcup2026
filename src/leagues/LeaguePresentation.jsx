@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import layoutStyles from './LeagueLayout.module.css'
 import heroStyles from './LeagueHero.module.css'
 import raceStyles from './leagueRace.module.css'
-import { Badge, Button, Icon, PlayerIdentity, SelectField, StatusBar, TextField } from '../design-system/index.jsx'
+import { Badge, Button, Icon, LinkButton, PlayerIdentity, SelectField, SkeletonBlock, StatusBar, TextField } from '../design-system/index.jsx'
 import { buildLeagueCompetitionLifecycleCopy, buildLeagueRaceRows, formatOrdinal, LEAGUE_COMPETITION, RANK_MOVEMENT_PENDING_REASON } from './leagueModel.js'
 
 function competitionName(competitionKey) {
@@ -80,15 +80,16 @@ export function LeaguePicker({ leagues, selectedId, onSelect }) {
 export function LeagueHero({ league, leagues, onSelectLeague }) {
   const original = league.competition === LEAGUE_COMPETITION.ORIGINAL
   const members = `${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
-  // Compact identity: the competition and member count share one eyebrow line (the "Leagues" prefix
-  // is dropped — the page title already says it), the league names itself once, and a single-line
-  // hint carries the row affordance. For a member of more than one league the picker restates all of
-  // this, so it is the only thing that repeats — by design, because it must.
   return (
     <section className={heroStyles.identity} aria-label={`${league.name} overview`}>
-      <span className={heroStyles.eyebrow}><span className={heroStyles.memberDot} aria-hidden="true" />{competitionName(league.competition)} · {members}</span>
-      <h2 className={heroStyles.name}>{league.name}</h2>
-      <p className={heroStyles.hint}>Tap any row to compare picks and points.</p>
+      <div className={heroStyles.identityMain}>
+        <div className={heroStyles.identityCopy}>
+          <span className={heroStyles.eyebrow}><span className={heroStyles.memberDot} aria-hidden="true" />{competitionName(league.competition)}</span>
+          <h2 className={heroStyles.name}>{league.name}</h2>
+          <p className={heroStyles.hint}>Tap any member to open their profile, points and head-to-head.</p>
+        </div>
+        <span className={heroStyles.memberCount}><Icon name="leagues" size={16} />{members}</span>
+      </div>
       <LeaguePicker leagues={leagues} selectedId={league.id} onSelect={onSelectLeague} />
       {!original && <span className="sr-only">This is a KO Predictor league, separate from Original Predictor leagues.</span>}
     </section>
@@ -219,6 +220,20 @@ export function LeagueNotice({ notice }) {
   return <StatusBar tone={tone} title={notice.message} />
 }
 
+export function LeagueSignedOut() {
+  return (
+    <section className={layoutStyles.signedOutCard} aria-labelledby="league-sign-in-heading">
+      <span className={layoutStyles.signedOutIcon}><Icon name="leagues" size={28} /></span>
+      <div>
+        <span className={layoutStyles.kicker}>Your private tables</span>
+        <h2 id="league-sign-in-heading">Bring your predictor league together</h2>
+        <p>Sign in to create a league, join with an invite code and follow every points race from one place.</p>
+      </div>
+      <LinkButton href="#/account" icon="account">Sign in to continue</LinkButton>
+    </section>
+  )
+}
+
 export function LeagueStandingsPanel({
   competitionKey, overview, overviewLoading, activeOverview, standings,
   onOpenPlayer,
@@ -238,7 +253,13 @@ export function LeagueStandingsPanel({
     <article className={raceStyles.standingsCard}>
       <LeagueCompetitionHeading competitionKey={competitionKey} />
 
-      {loadingFirstLoad && <p className={layoutStyles.emptyCopy}>Loading league standings…</p>}
+      {loadingFirstLoad && (
+        <div className={raceStyles.loadingRows} role="status" aria-label="Loading league standings">
+          <SkeletonBlock height="line" />
+          <SkeletonBlock height="line" />
+          <SkeletonBlock height="line" />
+        </div>
+      )}
       {activeSection?.status === 'error' && <StatusBar tone="danger" title={activeSection.error} />}
       {stillRefreshing && <p className={layoutStyles.emptyCopy}>Refreshing standings…</p>}
       {showEmpty && <p className={layoutStyles.emptyCopy}>No league members were returned.</p>}
@@ -266,7 +287,15 @@ export function LeagueStandingsPanel({
   )
 }
 
-export function LeagueActionsCard({ joinCode, onCopyInvite, onShareLeague, hasSettings, onOpenSettings, confirmMs = 1800 }) {
+export function LeagueActionsCard({
+  joinCode,
+  onCopyInvite,
+  onShareLeague,
+  summary = null,
+  lifecycleState = null,
+  fixture = null,
+  confirmMs = 1800,
+}) {
   // Confirmation lives ON the button: the handler returns a short label on success, the button shows
   // it with a tick for a moment, and stays inert during the interval so double-taps don't stack. This
   // is always in view at the point of tap — the old up-the-page notice for copy/share is gone.
@@ -283,30 +312,48 @@ export function LeagueActionsCard({ joinCode, onCopyInvite, onShareLeague, hasSe
   }
 
   const isDone = key => confirmed?.key === key
+  const raceActive = summary?.state === 'active'
+  const preTournament = !lifecycleState?.tournamentStarted
+  const headline = preTournament
+    ? 'Fill the league before kick-off'
+    : fixture?.state === 'live'
+      ? 'Your league is live'
+      : raceActive
+        ? 'Your league race'
+        : 'The table is ready'
+  const copy = preTournament
+    ? 'Share the invite now. Everyone’s Original picks stay hidden until the tournament lock.'
+    : fixture?.state === 'live'
+      ? 'Open Match Centre to see who is on target and how this fixture could move the table.'
+      : raceActive
+        ? 'Rank, points and the gap to the leader update from the official scoring record.'
+        : 'Points and ranks will move when confirmed results are scored.'
 
   return (
     <aside className={layoutStyles.actionsCard} aria-label="League actions">
-      <span className={layoutStyles.kicker}>Actions</span>
+      <header className={layoutStyles.spotlightHeading}>
+        <span className={layoutStyles.spotlightIcon}><Icon name={fixture?.state === 'live' ? 'live' : preTournament ? 'share' : 'results'} size={21} /></span>
+        <div><span>{preTournament ? 'Before the tournament' : raceActive ? 'Current position' : 'League status'}</span><h3>{headline}</h3></div>
+      </header>
+      <p className={layoutStyles.spotlightCopy}>{copy}</p>
+      {summary && (
+        <div className={layoutStyles.raceStats} aria-label="Your league position">
+          <div><strong>{summary.state === 'active' ? formatOrdinal(summary.currentRank) : '—'}</strong><span>Your rank</span></div>
+          <div><strong>{summary.currentPoints}</strong><span>Points</span></div>
+          <div><strong>{summary.gapToLeader == null ? '—' : summary.gapToLeader === 0 ? 'Top' : summary.gapToLeader}</strong><span>{summary.gapToLeader > 0 ? 'To leader' : 'Gap'}</span></div>
+        </div>
+      )}
       <div className={layoutStyles.actionPills}>
+        <button type="button" className={`${layoutStyles.actionPill} ${preTournament ? layoutStyles.actionPrimary : ''}`.trim()} onClick={() => runAction('share', onShareLeague)} disabled={!joinCode || isDone('share')} aria-live="polite">
+          {isDone('share')
+            ? <span className={layoutStyles.actionDone}>{confirmed.label} <Icon name="check" size={15} /></span>
+            : <><span><Icon name="share" size={16} /> Share league</span><small>Invite link</small></>}
+        </button>
         <button type="button" className={layoutStyles.actionPill} onClick={() => runAction('invite', onCopyInvite)} disabled={!joinCode || isDone('invite')} aria-live="polite">
           {isDone('invite')
             ? <span className={layoutStyles.actionDone}>{confirmed.label} <Icon name="check" size={15} /></span>
-            : <>Copy invite <span>Code {joinCode ?? '—'}</span></>}
+            : <><span><Icon name="copy" size={16} /> Copy invite</span><small>Code {joinCode ?? '—'}</small></>}
         </button>
-        <button type="button" className={layoutStyles.actionPill} onClick={() => runAction('share', onShareLeague)} disabled={!joinCode || isDone('share')} aria-live="polite">
-          {isDone('share')
-            ? <span className={layoutStyles.actionDone}>{confirmed.label} <Icon name="check" size={15} /></span>
-            : <>Share league <span>Invite link</span></>}
-        </button>
-        {hasSettings ? (
-          <button type="button" className={layoutStyles.actionPill} onClick={onOpenSettings}>
-            Settings <span>Manage</span>
-          </button>
-        ) : (
-          <button type="button" className={layoutStyles.actionPill} disabled>
-            Settings <span>Coming soon</span>
-          </button>
-        )}
       </div>
     </aside>
   )

@@ -1,4 +1,5 @@
 import { buildSharedPredictionJourney, LEAGUE_COMPETITION } from '../leagues/leagueModel.js'
+import { buildPlayerInsight } from './playerInsightModel.js'
 
 export const PLAYER_COMPARISON_CONTEXT = Object.freeze({
   LEAGUE: 'league',
@@ -151,5 +152,100 @@ export function buildAlignedPlayerComparison({ currentBundle, otherBundle, refer
       privateSelections: rows.filter(row => row.current.visibility === 'private' || row.other.visibility === 'private').length,
       missingSelections: rows.filter(row => row.current.visibility === 'not_saved' || row.other.visibility === 'not_saved').length,
     }),
+  })
+}
+
+function sourceRows(current, other, competitionKey) {
+  if (!current.sources || !other.sources) return Object.freeze([])
+  const definitions = competitionKey === LEAGUE_COMPETITION.ORIGINAL
+    ? [
+        ['exactScore', 'Exact scores'],
+        ['correctOutcome', 'Correct outcomes'],
+        ['bracket', 'Original bracket'],
+        ['jokerBonus', 'Joker bonus'],
+        ['unallocatedPoints', 'Other awarded points'],
+      ]
+    : [
+        ['exactScore', 'Exact 90-minute scores'],
+        ['correctOutcome', 'Result components'],
+        ['advancingTeam', 'Advancing teams'],
+        ['decisionMethod', 'Decision components'],
+        ['jokerBonus', 'Joker bonus'],
+        ['unallocatedPoints', 'Other awarded points'],
+      ]
+
+  return freezeRows(definitions
+    .map(([key, label]) => ({
+      key,
+      label,
+      current: Number(current.sources[key] ?? 0),
+      other: Number(other.sources[key] ?? 0),
+    }))
+    .filter(row => row.current > 0 || row.other > 0))
+}
+
+function decisiveMatchRows(current, other) {
+  const currentByMatch = new Map(current.matchRows.map(row => [row.matchNumber, row]))
+  const otherByMatch = new Map(other.matchRows.map(row => [row.matchNumber, row]))
+  const matchNumbers = [...new Set([...currentByMatch.keys(), ...otherByMatch.keys()])]
+  return freezeRows(matchNumbers.map(matchNumber => {
+    const currentRow = currentByMatch.get(matchNumber) ?? null
+    const otherRow = otherByMatch.get(matchNumber) ?? null
+    const currentPoints = Number(currentRow?.totalPoints ?? 0)
+    const otherPoints = Number(otherRow?.totalPoints ?? 0)
+    return {
+      matchNumber,
+      stageLabel: currentRow?.stageLabel ?? otherRow?.stageLabel ?? 'Match',
+      currentPoints,
+      otherPoints,
+      swing: currentPoints - otherPoints,
+    }
+  })
+    .filter(row => row.swing !== 0)
+    .sort((left, right) => Math.abs(right.swing) - Math.abs(left.swing) || left.matchNumber - right.matchNumber)
+    .slice(0, 4))
+}
+
+export function buildHeadToHeadStory({
+  currentSection,
+  otherSection,
+  currentPlayer,
+  otherPlayer,
+  competitionKey,
+  standingsRows = [],
+}) {
+  const current = buildPlayerInsight({
+    points: currentSection?.status === 'ready' ? currentSection.data : null,
+    leaderboardRows: standingsRows,
+    memberUserId: currentPlayer?.userId,
+    competitionKey,
+  })
+  const other = buildPlayerInsight({
+    points: otherSection?.status === 'ready' ? otherSection.data : null,
+    leaderboardRows: standingsRows,
+    memberUserId: otherPlayer?.userId,
+    competitionKey,
+  })
+  const currentPoints = current.rank.totalPoints
+  const otherPoints = other.rank.totalPoints
+  const margin = Math.abs(currentPoints - otherPoints)
+  const leader = currentPoints === otherPoints ? 'level' : currentPoints > otherPoints ? 'current' : 'other'
+  const currentName = currentPlayer?.displayName ?? 'You'
+  const otherName = otherPlayer?.displayName ?? 'Player'
+  const headline = leader === 'level'
+    ? 'Level on points'
+    : `${leader === 'current' ? currentName : otherName} leads by ${margin}`
+
+  return Object.freeze({
+    available: current.state === 'scored' || other.state === 'scored',
+    currentPoints,
+    otherPoints,
+    margin,
+    leader,
+    headline,
+    sources: sourceRows(current, other, competitionKey),
+    decisiveMatches: decisiveMatchRows(current, other),
+    currentInsight: current,
+    otherInsight: other,
   })
 }

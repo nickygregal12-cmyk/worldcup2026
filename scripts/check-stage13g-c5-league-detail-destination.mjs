@@ -48,7 +48,7 @@ for (const marker of [
 }
 
 for (const marker of [
-  "href('predictions')",
+  "href('overview')",
   "href('points')",
   "href('headToHead')",
   "href('bracket')",

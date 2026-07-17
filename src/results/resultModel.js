@@ -343,6 +343,7 @@ export function buildCanonicalResultFeed({ reference, liveSnapshot }) {
     const homeTeamId = match.matchNumber > 36 ? participants?.homeTeamId ?? null : match.homeTeamId
     const awayTeamId = match.matchNumber > 36 ? participants?.awayTeamId ?? null : match.awayTeamId
     const state = resultState(result, result?.status ?? match.status)
+    const showResultMetadata = state !== 'upcoming' && Boolean(result?.scoreVisible)
 
     return Object.freeze({
       matchId: match.matchId,
@@ -357,10 +358,10 @@ export function buildCanonicalResultFeed({ reference, liveSnapshot }) {
       state,
       status: result?.status ?? match.status ?? 'scheduled',
       resultStatus: result?.resultStatus ?? 'pending',
-      score: scoreText(result),
-      detail: resultDetail(result, reference),
+      score: showResultMetadata ? scoreText(result) : null,
+      detail: showResultMetadata ? resultDetail(result, reference) : null,
       resultRevision: result?.resultRevision ?? 0,
-      corrected: Number(result?.resultRevision ?? 0) > 1,
+      corrected: showResultMetadata && Number(result?.resultRevision ?? 0) > 1,
     })
   })
 
@@ -393,6 +394,7 @@ export function buildLiveBracketRounds({ reference, liveSnapshot }) {
     matches: freezeRows(liveSnapshot.knockout.matches.filter(match => match.stage === stage).map(match => {
       const result = resultByNumber.get(match.matchNumber) ?? null
       const participants = liveParticipants(match, liveSnapshot)
+      const showResultMetadata = Boolean(result?.scoreVisible)
       return {
         matchNumber: match.matchNumber,
         homeTeamId: participants.homeTeamId,
@@ -402,10 +404,10 @@ export function buildLiveBracketRounds({ reference, liveSnapshot }) {
         participantsResolved: Boolean(participants.homeTeamId && participants.awayTeamId),
         winnerTeamId: match.winnerTeamId,
         winnerLabel: match.winnerTeamId ? teamLabel(reference, match.winnerTeamId) : null,
-        score: scoreText(result),
-        detail: resultDetail(result, reference),
+        score: showResultMetadata ? scoreText(result) : null,
+        detail: showResultMetadata ? resultDetail(result, reference) : null,
         resultRevision: result?.resultRevision ?? 0,
-        corrected: Number(result?.resultRevision ?? 0) > 1,
+        corrected: showResultMetadata && Number(result?.resultRevision ?? 0) > 1,
       }
     })),
   })))

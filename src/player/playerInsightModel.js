@@ -81,7 +81,7 @@ export function buildPlayerInsightLifecycle({ competitionKey, lifecycle, insight
   if (!SUPPORTED_COMPETITIONS.has(competitionKey)) throw new TypeError('Unsupported player insight competition')
 
   const locked = Boolean(lifecycle?.locked)
-  const tournamentStarted = Boolean(lifecycle?.tournamentStarted)
+  const tournamentStarted = Boolean(lifecycle?.tournamentStarted ?? lifecycle?.started ?? lifecycle?.locked)
   const scored = insightState === 'scored'
 
   if (competitionKey === 'original') {

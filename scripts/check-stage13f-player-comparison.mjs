@@ -84,12 +84,15 @@ if (!charter.includes('DECIDED — Share Card')) fail('Design Charter has not se
 
 const comparisonView = read('src/player/PlayerHeadToHead.jsx')
 for (const marker of [
-  'Original and KO Predictor comparisons stay separate.',
-  'You only see picks that are available for this player right now.',
+  'buildAlignedPlayerComparison',
+  'buildPlayerInsightLifecycle',
   'Comparison protected',
   'Same selection',
   'Different selection',
 ]) if (!comparisonView.includes(marker)) fail(`Shared comparison presentation is missing: ${marker}`)
+const insightLifecycle = read('src/player/playerInsightModel.js')
+if (!insightLifecycle.includes('export function buildPlayerInsightLifecycle') || !insightLifecycle.includes("state: 'original_private_until_lock'")) fail('Central player lifecycle model is missing the authorised-read boundary')
+if (!comparison.includes("competitionKey === LEAGUE_COMPETITION.ORIGINAL") || !comparison.includes('KO comparisons release only the real fixtures')) fail('Aligned comparison model is missing competition-specific release boundaries')
 
 const services = [read('src/leagues/leagueService.js'), read('src/results/resultService.js')].join('\n')
 for (const marker of ['get_league_member_predictions', 'get_member_predictions_after_lock']) {

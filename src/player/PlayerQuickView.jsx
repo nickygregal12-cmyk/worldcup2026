@@ -26,9 +26,13 @@ export default function PlayerQuickView({ player, competitionKey, onClose }) {
           <div className={styles.stats} aria-label="League standing summary">
             <div><strong>{player.rank > 0 ? `#${player.rank}` : '—'}</strong><span>League rank</span></div>
             <div><strong>{player.totalPoints ?? 0}</strong><span>Points earned</span></div>
+            <div>
+              <strong>{player.gapToLeader == null ? '—' : player.gapToLeader === 0 ? 'Top' : player.gapToLeader}</strong>
+              <span>{player.gapToLeader > 0 ? 'To leader' : 'Gap'}</span>
+            </div>
           </div>
           <nav className={styles.actions} aria-label={`${player.displayName} profile options`}>
-            <Action href={href('predictions')} icon="account" title="View full profile" copy="Released picks, predicted tables and bracket" onClose={onClose} />
+            <Action href={href('overview')} icon="account" title="View full profile" copy="Overview, released picks, tables and bracket health" onClose={onClose} />
             <Action href={href('points')} icon="results" title="Points breakdown" copy="See exactly how every available point was earned" onClose={onClose} />
             {!player.isCurrentUser && <Action href={href('headToHead')} icon="leagues" title="Head-to-head" copy="Compare your picks and points side by side" onClose={onClose} />}
             {competitionKey === LEAGUE_COMPETITION.ORIGINAL && <Action href={href('bracket')} icon="bracket" title="Bracket and health" copy="Compare this released knockout path with real life" onClose={onClose} />}

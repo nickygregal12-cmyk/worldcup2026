@@ -32,7 +32,11 @@ assert(!leagueService.includes('Promise.allSettled'), 'A fixed-competition leagu
 // the model statement in App.jsx's PageIntro (policed by player-facing-copy-sweep-2).
 assert(leaguesPage.includes('competitionName(league.competition)'), 'League strip must name its own competition (single-competition boundary)')
 assert(leaguesPage.includes('LeagueCollectionTabs'), 'Original and KO league collections must switch independently once KO opens')
-assert(leaguesPage.includes('You only see picks that are available for this player right now.'), 'Member comparison must explain server-authorised visibility')
+assert(
+  leaguesPage.includes('Original comparisons release all saved selections only after the global lock.') &&
+    leaguesPage.includes('KO comparisons release only the real fixtures that have individually started.'),
+  'Member comparison must explain the distinct server-authorised Original and KO release boundaries',
+)
 assert(productApp.includes('reference={appData.guestReference}'), 'League journey must receive the canonical public reference')
 
 for (const required of [

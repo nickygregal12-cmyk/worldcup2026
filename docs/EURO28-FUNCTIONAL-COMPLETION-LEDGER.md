@@ -10,6 +10,19 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.60 — Product Experience v3 coherence and player evidence slice
+
+Stage PRODUCT-EXPERIENCE-V3-SLICE-2 is implemented in the working tree and awaits full check and
+owner visual approval. Leagues now prioritises the phase-relevant share, rank or live task; player
+rows open a compact action sheet; Player View is Overview-first; points are presented as an
+always-visible canonical receipt; H2H explains source gaps and decisive match swings; shared
+skeletons replace bare loading copy; upcoming fixtures suppress stale result metadata; and wider
+Groups layouts use the same match cards in two columns. Home keeps KO leaderboard prominence hidden
+until full KO readiness. The route-adoption register now schedules every destination still awaiting
+v3 treatment. Public signed-out leaderboard data remains a deliberate database-access stage because
+the current RPC is authenticated-only. No scoring, resolver, Auth, Supabase, production-data or
+migration change is included.
+
 ### Version 1.59 — Product Experience v3 first implementation slice
 
 Stage PRODUCT-EXPERIENCE-V3-SLICE-1 is implemented in the working tree and awaits owner visual
@@ -172,7 +185,8 @@ Stage 13G-B-TOURNAMENT-1 implements the Tournament/How to Play split: `#/tournam
 | KO Predictor | ✅ FUNCTIONAL | Separate real-fixture competition accepted in Stage 13C | — |
 | Private leagues | ✅ FUNCTIONAL | Both standings exist; controller remains within the enforced hard cap with presentation extracted | — |
 | Results and leaderboards data | ✅ FUNCTIONAL | Both complete overall tables are returned and rendered for signed-in users | — |
-| Results and leaderboards access | ✅ FUNCTIONAL | `#/results` owns live tournament content; `#/leaderboards` owns the full competition tables and points, with More and competition-specific Home links | — |
+| Results and leaderboards access | 🟠 PARTIAL | The separate routes, signed-in tables, points receipt and phase-aware Home entry are functional. The owner-required signed-out public table read is not: the current RPC is authenticated-only and requires a dedicated RLS/RPC review before migration. | Product Experience v3 Results story |
+| Public signed-out leaderboard read | 🕓 SCHEDULED | Public visitors should see table rows without a personal standing. Do not fake this client-side; review RPC grants, RLS, privacy and load limits in the dedicated database-access stage. | Product Experience v3 Results story |
 | Core player information architecture | ✅ FUNCTIONAL | Authoritative site-access map, direct destinations and contextual entry rules are enforced by `audit:access`; restricted Admin visibility remains its own Stage 13F-E row | — |
 | Team Profile Sheet | ✅ FUNCTIONAL | Accepted in Stage 13E | — |
 | Head-to-head comparison | ✅ FUNCTIONAL | League and overall tables open one shared, competition-scoped surface aligning all 51 Original positions or all 15 KO fixtures with same/different/private/not-saved states | — |
@@ -182,7 +196,7 @@ Stage 13G-B-TOURNAMENT-1 implements the Tournament/How to Play split: `#/tournam
 | Bracket Health | ✅ FUNCTIONAL | Immutable Original bracket compared with canonical known fixtures, round health, route conflicts, secured/remaining points, unresolved-original fallback and Match Centre links accepted in Stage 13F-D | — |
 | Tournament-pick contract | ✅ FUNCTIONAL | Contract only: approved Original-only set is total group-stage goals (auto-calculated, tiered 25/15/5) and top scorer (30); official joint top-scorer winners receive the full 30; one global lock; no joker; no KO points. Highest-Scoring Team was dropped entirely (Stage DP-SCORING). The audit proves this contract and Admin readiness, not a player-facing entry surface. | — |
 | Tournament-pick persistence and player-facing UI | 🟠 PARTIAL | Admin readiness and the contract exist, but ordinary players cannot yet enter total group-stage goals or top scorer. Build the player surface inside the Original Predictor journey, lock it at the global lock, score via the central ruleset and show the live race on Home during the tournament. Moving this earlier than Stage 17A requires explicit schedule acceptance. | 13G-C / 17A re-approval |
-| Player insight engine and points storytelling | 🟠 PARTIAL | Canonical insight data, lifecycle copy and H2H engines exist, but the accepted product shape is not the current inline strip. Player-name activation must open a dedicated player view with overview, predictions, bracket/tables, dedicated H2H and dedicated points-breakdown destinations, plus informative pre-lock placeholders. The new H2H and Points Breakdown prototypes are recorded as references; implementation remains scheduled. | 13G-PLAYER-DESTINATIONS-REF / 13G-PLAYER-1 |
+| Player insight engine and points storytelling | 🟠 PARTIAL | The v3 profile sheet, Overview-first full profile, always-visible points receipt, released predictions, predicted tables, Original Bracket health and source/swing H2H are implemented in the working tree and await check plus visual approval. Persisted pinned rivals and final cross-route adoption remain scheduled. | Product Experience v3 current coherence batch |
 | Provisional team seeding and zero-code-change rehearsal | 🕓 SCHEDULED | Guarded 24-team staging seed, replace/confirm mode and Stage 17 zero-code-change rehearsal | 16A |
 | Synthetic identities and deterministic persona catalogue | ✅ FUNCTIONAL | Stage 16A-P1 defines the Privacy-safe synthetic identity plumbing local catalogue, exactly nineteen deterministic personas, reserved `@synthetic.euro28.test` emails, required `synthetic_euro28: true` metadata, dual-marker teardown guard and Euro-staging/WC26 fail-closed project boundary. No user creation, no database writes, no UI exposure and no Migration 019. | 16A-P1 |
 | Synthetic prediction and scenario oracle | 🕓 SCHEDULED | Independent precomputed points at every Time & Phase preset, including correction replacement | 16A |

@@ -32,6 +32,8 @@ describe('PlayerInsight', () => {
     )
 
     expect(html).toContain('How the total was earned')
+    expect(html).toContain('Full audit')
+    expect(html).toContain('Points by matchday')
     expect(html).toContain('Original points only')
     expect(html).toContain('10 pts')
     expect(html).toContain('Corrected result revision 2')

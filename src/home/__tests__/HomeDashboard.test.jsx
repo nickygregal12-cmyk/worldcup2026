@@ -206,27 +206,22 @@ describe('Home dashboard rendering', () => {
     expect(live).toContain('#/leaderboards?competition=original')
   })
 
-  it('carries both competition deep links in every state, signed in or out', () => {
-    const states = [
-      renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z') })),
-      renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z'), session: null })),
-      renderHome(fixtureFor({
-        now: new Date('2028-06-09T19:30:00Z'),
-        results: { live: { summary: {}, results: [{ matchNumber: 1, status: 'live' }] } },
-      })),
-    ]
-
-    // CW1: Leaderboards is a More-nav destination, so Home is its only primary
-    // entry point. Original and KO never combine, so both routes are always
-    // offered — in every state, and never merged into one tap.
-    for (const html of states) {
-      expect(html).toContain('#/leaderboards?competition=original')
-      expect(html).toContain('#/leaderboards?competition=koPredictor')
-      expect(html).toContain('Leaderboards')
+  it('keeps KO leaderboard access quiet until the KO game becomes primary', () => {
+    const preDashboard = fixtureFor({ now: new Date('2028-06-07T17:30:00Z') })
+    const primaryDashboard = {
+      ...preDashboard,
+      koReadiness: { ...preDashboard.koReadiness, open: true, earlyAccess: true, primaryReady: true },
     }
+    const pre = renderHome(preDashboard)
+    const primary = renderHome(primaryDashboard)
+
+    expect(pre).toContain('#/leaderboards?competition=original')
+    expect(pre).not.toContain('#/leaderboards?competition=koPredictor')
+    expect(primary).toContain('#/leaderboards?competition=original')
+    expect(primary).toContain('#/leaderboards?competition=koPredictor')
   })
 
-  it('withholds the rank strip from a signed-out visitor, keeping the deep links', () => {
+  it('withholds the rank strip from a signed-out visitor while keeping Original standings findable', () => {
     const pre = renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z'), session: null }))
 
     // A guest has no rank to show. The rank strip is the only thing that labels a
@@ -234,7 +229,8 @@ describe('Home dashboard rendering', () => {
     // the Leaderboards card still carries the access.
     expect(pre).not.toContain('Open full leaderboard')
     expect(pre).toContain('#/leaderboards?competition=original')
-    expect(pre).toContain('#/leaderboards?competition=koPredictor')
+    expect(pre).not.toContain('#/leaderboards?competition=koPredictor')
+    expect(pre).toContain('Sign in during this preview')
   })
 
   describe('team badges', () => {

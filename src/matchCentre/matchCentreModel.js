@@ -58,6 +58,8 @@ function displayState(result, fallbackStatus) {
 function fixtureFromMatch(reference, liveSnapshot, match) {
   const participants = liveParticipants(match, liveSnapshot)
   const result = resultFor(liveSnapshot, match.matchId)
+  const state = displayState(result, result?.status ?? match.status)
+  const showResultMetadata = state !== 'upcoming' && Boolean(result?.scoreVisible)
   return Object.freeze({
     matchId: match.matchId,
     matchNumber: match.matchNumber,
@@ -69,14 +71,14 @@ function fixtureFromMatch(reference, liveSnapshot, match) {
     home: team(reference, participants.homeTeamId, match.matchNumber > 36 ? 'Home slot unresolved' : 'Home team TBC'),
     away: team(reference, participants.awayTeamId, match.matchNumber > 36 ? 'Away slot unresolved' : 'Away team TBC'),
     participantsResolved: Boolean(participants.homeTeamId && participants.awayTeamId),
-    state: displayState(result, result?.status ?? match.status),
+    state,
     status: result?.status ?? match.status ?? 'scheduled',
-    score: result?.scoreVisible ? `${result.normalTimeHomeGoals}–${result.normalTimeAwayGoals}` : null,
-    resultDetail: result?.decisionMethod ? result.decisionMethod.replaceAll('_', ' ') : null,
-    winnerTeamId: result?.winnerTeamId ?? null,
+    score: showResultMetadata ? `${result.normalTimeHomeGoals}–${result.normalTimeAwayGoals}` : null,
+    resultDetail: showResultMetadata && result?.decisionMethod ? result.decisionMethod.replaceAll('_', ' ') : null,
+    winnerTeamId: showResultMetadata ? result?.winnerTeamId ?? null : null,
     confirmed: Boolean(result?.confirmed),
     resultRevision: Number(result?.resultRevision ?? 0),
-    corrected: Number(result?.resultRevision ?? 0) > 1,
+    corrected: showResultMetadata && Number(result?.resultRevision ?? 0) > 1,
   })
 }
 

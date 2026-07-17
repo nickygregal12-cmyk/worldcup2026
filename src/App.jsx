@@ -182,20 +182,21 @@ export function EuroAppRuntime({
     )
   } else if (route === APP_ROUTE.LEAGUES) {
     content = (
-      <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Private competitions" title="Your leagues" description="Each league runs one competition — Original or KO Predictor — with its own table and points race." />
+      <div className="content-stack">
+        <PageIntro eyebrow="Private competitions" title="Your leagues" description="Each league is one competition. Switch leagues, share invites and follow every points race from one clear table." />
         <Leagues client={activeClient} tournamentId={appData.tournament.id} reference={appData.guestReference} lifecycle={lifecycle} koReadiness={koReadiness} />
       </div>
     )
   } else if (route === APP_ROUTE.PLAYER) {
     const playerView = playerViewParamsFromHash(hashLocation.hash)
     content = (
-      <div className="content-stack legacy-page">
-        <PageIntro eyebrow="Player View" title="Player predictions" description="Open released picks, bracket context and predicted table evidence without combining competitions." />
+      <div className="content-stack">
+        <PageIntro eyebrow="Player View" title="Prediction profile" description="See how every visible point was earned, compare calls and follow bracket health against the real tournament." />
         <PlayerView
           client={activeClient}
           reference={appData.guestReference}
           lifecycle={lifecycle}
+          koReadiness={koReadiness}
           memberUserId={playerView.userId}
           initialCompetition={playerView.competition}
           initialTab={playerView.tab}
@@ -219,7 +220,7 @@ export function EuroAppRuntime({
   } else if (route === APP_ROUTE.RESULTS) {
     content = (
       <div className="content-stack legacy-page">
-        <ResultsAndLeaderboards view="results" client={activeClient} reference={appData.guestReference} lifecycle={lifecycle} />
+        <ResultsAndLeaderboards view="results" client={activeClient} reference={appData.guestReference} lifecycle={lifecycle} koReadiness={koReadiness} />
       </div>
     )
   } else if (route === APP_ROUTE.LEADERBOARDS) {
@@ -231,6 +232,7 @@ export function EuroAppRuntime({
           client={activeClient}
           reference={appData.guestReference}
           lifecycle={lifecycle}
+          koReadiness={koReadiness}
         />
       </div>
     )

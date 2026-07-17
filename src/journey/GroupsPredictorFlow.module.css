@@ -23,6 +23,13 @@
   gap: var(--space-3);
 }
 
+@media (min-width: 56.25rem) {
+  .cardList {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
+
 .matchCentreLink {
   min-height: 2.75rem;
   display: inline-flex;

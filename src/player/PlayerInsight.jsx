@@ -27,25 +27,28 @@ function StoryGrid({ insight }) {
   )
 }
 
-function Source({ label, points }) {
-  return <div><strong>{points}</strong><span>{label}</span></div>
+function Source({ label, points, total }) {
+  const percent = total > 0 ? Math.round((points / total) * 100) : 0
+  return <div><strong>{points}</strong><span>{label}</span><i aria-hidden="true"><b style={{ width: `${percent}%` }} /></i></div>
 }
 
 function SourceGrid({ insight }) {
   const original = insight.competitionKey === 'original'
+  const total = Math.max(1, insight.rank.totalPoints)
   return (
     <div className={styles.sourceGrid} aria-label="Point sources">
-      <Source label="Exact scores" points={insight.sources.exactScore} />
-      <Source label="Correct outcomes" points={insight.sources.correctOutcome} />
+      <Source label="Exact scores" points={insight.sources.exactScore} total={total} />
+      <Source label={original ? 'Correct outcomes' : 'Result components'} points={insight.sources.correctOutcome} total={total} />
       {original ? (
-        <Source label="Original bracket" points={insight.sources.bracket} />
+        <Source label="Original bracket" points={insight.sources.bracket} total={total} />
       ) : (
         <>
-          <Source label="Advancing teams" points={insight.sources.advancingTeam} />
-          <Source label="Decision methods" points={insight.sources.decisionMethod} />
+          <Source label="Advancing teams" points={insight.sources.advancingTeam} total={total} />
+          <Source label="Decision components" points={insight.sources.decisionMethod} total={total} />
         </>
       )}
-      <Source label="Joker bonus" points={insight.sources.jokerBonus} />
+      <Source label="Joker bonus" points={insight.sources.jokerBonus} total={total} />
+      {insight.sources.unallocatedPoints > 0 && <Source label="Other awarded points" points={insight.sources.unallocatedPoints} total={total} />}
     </div>
   )
 }
@@ -65,7 +68,7 @@ function Statistics({ insight }) {
 }
 
 function pointLine(row, competitionKey) {
-  const parts = [`Score ${row.exactScorePoints}`, `Outcome ${row.correctOutcomePoints}`]
+  const parts = [`Exact ${row.exactScorePoints}`, `${competitionKey === 'ko_predictor' ? 'Result' : 'Outcome'} ${row.correctOutcomePoints}`]
   if (competitionKey === 'ko_predictor') {
     parts.push(`Team ${row.advancingTeamPoints}`, `Method ${row.decisionMethodPoints}`)
   }
@@ -88,8 +91,8 @@ function MatchEvidence({ row, competitionKey }) {
 
 function PeriodEvidence({ insight }) {
   return (
-    <details className={styles.details}>
-      <summary><strong>Points by matchday</strong><span>{insight.periods.length}</span></summary>
+    <section className={styles.receipt}>
+      <header><div><span>Full audit</span><h4>Points by matchday</h4></div><b>{insight.periods.length}</b></header>
       {insight.periods.length === 0 ? (
         <p className={styles.empty}>No match point rows have been recorded.</p>
       ) : (
@@ -102,15 +105,15 @@ function PeriodEvidence({ insight }) {
           ))}
         </div>
       )}
-    </details>
+    </section>
   )
 }
 
 function BracketEvidence({ insight }) {
   if (insight.competitionKey !== 'original') return null
   return (
-    <details className={styles.details}>
-      <summary><strong>Original bracket progression</strong><span>{insight.bracketRows.length}</span></summary>
+    <section className={styles.receipt}>
+      <header><div><span>Original Predictor</span><h4>Bracket progression</h4></div><b>{insight.bracketRows.length}</b></header>
       {insight.bracketRows.length === 0 ? (
         <p className={styles.empty}>No Original bracket points have been recorded.</p>
       ) : (
@@ -124,7 +127,17 @@ function BracketEvidence({ insight }) {
         </div>
       )}
       <a className={styles.contextLink} href="#/bracket">Open full bracket context</a>
-    </details>
+    </section>
+  )
+}
+
+function BestCalls({ insight }) {
+  if (insight.bestCalls.length === 0) return null
+  return (
+    <section className={styles.bestCalls} aria-labelledby="best-calls-heading">
+      <div><span>Best calls</span><h4 id="best-calls-heading">Highest-scoring match{insight.bestCalls.length === 1 ? '' : 'es'}</h4></div>
+      <div>{insight.bestCalls.slice(0, 3).map(row => <MatchEvidence key={row.matchId} row={row} competitionKey={insight.competitionKey} />)}</div>
+    </section>
   )
 }
 
@@ -181,18 +194,19 @@ export default function PlayerInsight({
         <>
           <StoryGrid insight={insight} />
           <div className={styles.sectionHeading}>
-            <div><span>How the total was earned</span><strong>Scoring rows only</strong></div>
-            <small>{insight.statistics.scoredMatches} processed match{insight.statistics.scoredMatches === 1 ? '' : 'es'}</small>
+            <div><span>How the total was earned</span><strong>Every awarded source</strong></div>
+            <small>{insight.statistics.scoredMatches} scored match{insight.statistics.scoredMatches === 1 ? '' : 'es'}</small>
           </div>
           <SourceGrid insight={insight} />
-          <Statistics insight={insight} />
           {insight.statistics.correctedMatches > 0 && (
             <p className={styles.correction}>{insight.statistics.correctedMatches} match breakdown{insight.statistics.correctedMatches === 1 ? ' has' : 's have'} been recalculated after a corrected result.</p>
           )}
+          <BestCalls insight={insight} />
           <div className={styles.evidence}>
             <PeriodEvidence insight={insight} />
             <BracketEvidence insight={insight} />
           </div>
+          <Statistics insight={insight} />
         </>
       )}
     </article>

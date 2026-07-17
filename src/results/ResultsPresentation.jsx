@@ -134,16 +134,31 @@ function ResultFeedSection({ title, rows, open = false, empty }) {
 }
 
 export function ResultsFeed({ feed }) {
+  const sections = feed?.sections ?? { live: [], review: [], completed: [], upcoming: [] }
+  const sectionDefinitions = {
+    live: { title: 'Live now', rows: sections.live, empty: 'No matches are live.' },
+    review: { title: 'Needs confirmation or review', rows: sections.review, empty: 'No results need review.' },
+    completed: { title: 'Completed', rows: sections.completed, empty: 'No confirmed results yet.' },
+    upcoming: { title: 'Upcoming', rows: sections.upcoming, empty: 'No upcoming fixtures.' },
+  }
+  const order = sections.live.length > 0
+    ? ['live', 'review', 'upcoming', 'completed']
+    : sections.review.length > 0
+      ? ['review', 'completed', 'upcoming', 'live']
+      : sections.completed.length > 0
+        ? ['completed', 'upcoming', 'live', 'review']
+        : ['upcoming', 'live', 'review', 'completed']
+  const primaryKey = order[0]
+
   return (
     <article className="foundation-results-card foundation-results-card--full">
       <span className="foundation-kicker">Official results</span>
       <h3>Fixtures and results</h3>
       <p>Live scores, confirmed results and corrections are shown separately from your picks.</p>
       <div className="foundation-result-feed">
-        <ResultFeedSection title="Live now" rows={feed.sections.live} open empty="No matches are live." />
-        <ResultFeedSection title="Needs confirmation or review" rows={feed.sections.review} open={feed.sections.review.length > 0} empty="No results need review." />
-        <ResultFeedSection title="Completed" rows={feed.sections.completed} empty="No confirmed results yet." />
-        <ResultFeedSection title="Upcoming" rows={feed.sections.upcoming} empty="No upcoming fixtures." />
+        {order.map(key => (
+          <ResultFeedSection key={key} {...sectionDefinitions[key]} open={key === primaryKey} />
+        ))}
       </div>
     </article>
   )

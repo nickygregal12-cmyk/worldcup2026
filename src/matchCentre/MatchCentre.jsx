@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Badge, Button, Card, LinkButton, PlayerIdentity, SelectField, StatusBar, Tabs, TeamLabel } from '../design-system/index.jsx'
+import { Badge, Button, Card, LinkButton, PlayerIdentity, SelectField, SkeletonPage, StatusBar, Tabs, TeamLabel } from '../design-system/index.jsx'
 import { RESULT_COMPETITION } from '../results/resultModel.js'
 import { formatKickoffDateTime } from '../home/homeFormat.js'
 import { buildMatchCentreLifecycle, buildPredictionTargetState } from './matchCentreModel.js'
@@ -189,7 +189,7 @@ export default function MatchCentre({ client, reference, lifecycle, requestedMat
     lifecycle,
   }), [selectedCompetitionKey, data, lifecycle])
 
-  if (state.status === 'loading' && !data) return <div className={styles.loading} role="status">Loading Match Centre…</div>
+  if (state.status === 'loading' && !data) return <SkeletonPage cards={2} label="Loading Match Centre" />
   if (state.status === 'error') return <StatusBar tone="danger" title="Match Centre could not load" action={<Button variant="secondary" size="small" icon="refresh" onClick={load}>Try again</Button>}>{state.error}</StatusBar>
 
   return (

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
-import { LinkButton, StatusBar, Tabs } from '../design-system/index.jsx'
+import { LinkButton, SkeletonPage, StatusBar, Tabs } from '../design-system/index.jsx'
 import { LEADERBOARD_COMPETITION } from '../app/appRoutes.js'
 import { loadOverallHeadToHead, loadResultsAndLeaderboards } from './resultService.js'
 import { buildCanonicalResultFeed, buildLeaderboardLifecycle, buildLiveBracketRounds, buildResultsLifecycle, RESULT_COMPETITION } from './resultModel.js'
@@ -19,14 +19,23 @@ function AccessSwitcher({ view }) {
   )
 }
 
-export default function ResultsAndLeaderboards({ client, reference, lifecycle, view = RESULTS_PAGE_VIEW.RESULTS, initialCompetition = LEADERBOARD_COMPETITION.ORIGINAL }) {
+export default function ResultsAndLeaderboards({ client, reference, lifecycle, koReadiness = null, view = RESULTS_PAGE_VIEW.RESULTS, initialCompetition = LEADERBOARD_COMPETITION.ORIGINAL }) {
   const [state, setState] = useState({ status: 'loading', data: null, error: null })
   const [comparison, setComparison] = useState(null)
   const [competitionKey, setCompetitionKey] = useState(initialCompetition)
   const loadRequests = useRef(createLatestRequestGuard())
   const comparisonRequests = useRef(createLatestRequestGuard())
+  const koLeaderboardVisible = Boolean(koReadiness?.open)
 
   useEffect(() => setCompetitionKey(initialCompetition), [initialCompetition])
+
+  useEffect(() => {
+    if (koLeaderboardVisible || competitionKey !== LEADERBOARD_COMPETITION.KO_PREDICTOR) return
+    setCompetitionKey(LEADERBOARD_COMPETITION.ORIGINAL)
+    if (view === RESULTS_PAGE_VIEW.LEADERBOARDS && typeof window !== 'undefined') {
+      window.history.replaceState(null, '', '#/leaderboards?competition=original')
+    }
+  }, [competitionKey, koLeaderboardVisible, view])
 
   const load = useCallback(async () => {
     const requestToken = loadRequests.current.begin()
@@ -53,6 +62,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
   }, [load])
 
   const summary = state.data?.live?.summary ?? null
+  const hasResultSummary = Boolean(summary && [summary.confirmedMatches, summary.liveMatches, summary.pendingResults, summary.manualReviewResults].some(value => Number(value) > 0))
   const groups = useMemo(() => Object.entries(state.data?.live?.groups ?? {}), [state.data])
   const feed = useMemo(() => buildCanonicalResultFeed({ reference, liveSnapshot: state.data?.live }), [reference, state.data])
   const bracketRounds = useMemo(() => buildLiveBracketRounds({ reference, liveSnapshot: state.data?.live }), [reference, state.data])
@@ -112,7 +122,8 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
   }
 
   const isLeaderboards = view === RESULTS_PAGE_VIEW.LEADERBOARDS
-  const selectedIsOriginal = competitionKey === LEADERBOARD_COMPETITION.ORIGINAL
+  const effectiveCompetitionKey = koLeaderboardVisible ? competitionKey : LEADERBOARD_COMPETITION.ORIGINAL
+  const selectedIsOriginal = effectiveCompetitionKey === LEADERBOARD_COMPETITION.ORIGINAL
   const selectedLeaderboard = selectedIsOriginal ? state.data?.sections.originalLeaderboard : state.data?.sections.koLeaderboard
   const selectedPoints = selectedIsOriginal ? state.data?.sections.originalPoints : state.data?.sections.koPoints
   const resultCompetitionKey = selectedIsOriginal ? RESULT_COMPETITION.ORIGINAL : RESULT_COMPETITION.KO_PREDICTOR
@@ -146,7 +157,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
         </div>
       </div>
 
-      {state.status === 'loading' && !state.data && <p className="foundation-empty-copy">Loading {isLeaderboards ? 'competition tables' : 'official results'}…</p>}
+      {state.status === 'loading' && !state.data && <SkeletonPage cards={2} label={`Loading ${isLeaderboards ? 'competition tables' : 'official results'}`} />}
       {state.status === 'error' && !state.data && <p className="foundation-warning-text">{state.error}</p>}
       {state.status === 'loading' && state.data && <p className="foundation-empty-copy">Updating available sections…</p>}
       {state.error && state.data && <p className="foundation-warning-text">Refresh failed. The last available data remains visible: {state.error}</p>}
@@ -156,7 +167,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
         <>
           <StatusBar tone={resultsLifecycle.tone} title={resultsLifecycle.title}>{resultsLifecycle.body}</StatusBar>
           <SectionError section={state.data.sections.live} fallback="Official results could not be loaded." />
-          {summary && (
+          {hasResultSummary && (
             <div className="foundation-result-summary">
               <div><strong>{summary.confirmedMatches}</strong><span>confirmed</span></div>
               <div><strong>{summary.liveMatches}</strong><span>live</span></div>
@@ -193,10 +204,10 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
           <div className={styles.competitionTabs}>
             <Tabs
               label="Leaderboard competition"
-              value={competitionKey}
+              value={effectiveCompetitionKey}
               options={[
                 { value: LEADERBOARD_COMPETITION.ORIGINAL, label: 'Original Predictor' },
-                { value: LEADERBOARD_COMPETITION.KO_PREDICTOR, label: 'KO Predictor' },
+                ...(koLeaderboardVisible ? [{ value: LEADERBOARD_COMPETITION.KO_PREDICTOR, label: 'KO Predictor' }] : []),
               ]}
               onChange={selectCompetition}
             />
@@ -212,7 +223,7 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
               onOpenPlayer={openLeaderboardPlayerView}
             />
             <PlayerInsight
-              title="Your points story"
+              title="Your points receipt"
               section={selectedPoints}
               leaderboardRows={selectedLeaderboardRows}
               player={{ ...selectedCurrentPlayer, isCurrentUser: true }}
@@ -220,15 +231,15 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, v
               lifecycle={lifecycle}
             />
           </div>
-          <PlayerHeadToHead state={comparison} reference={reference} lifecycle={lifecycle} onClose={closeComparison} context={PLAYER_COMPARISON_CONTEXT.OVERALL} />
+          <PlayerHeadToHead state={comparison} reference={reference} liveSnapshot={state.data.live} lifecycle={lifecycle} onClose={closeComparison} context={PLAYER_COMPARISON_CONTEXT.OVERALL} />
         </>
       )}
 
       {state.data && isLeaderboards && !state.data.signedIn && (
         <article className={`foundation-results-card ${styles.signInCard}`}>
-          <span className="foundation-kicker">Account required</span>
-          <h3>Sign in to view the scored leaderboards</h3>
-          <p>Guest predictions stay in this browser and remain unscored until they are safely added to an account.</p>
+          <span className="foundation-kicker">Preview access</span>
+          <h3>Public leaderboards are part of tournament launch</h3>
+          <p>This preview currently asks you to sign in. Guest predictions stay in this browser and remain unchanged.</p>
           <LinkButton href="#/account" icon="account">Sign in or create an account</LinkButton>
         </article>
       )}

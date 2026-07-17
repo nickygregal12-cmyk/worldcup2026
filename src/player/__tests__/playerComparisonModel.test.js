@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildGuestReference } from '../../guest/__tests__/fixtures.js'
 import { LEAGUE_COMPETITION } from '../../leagues/leagueModel.js'
-import { buildAlignedPlayerComparison } from '../playerComparisonModel.js'
+import { buildAlignedPlayerComparison, buildHeadToHeadStory } from '../playerComparisonModel.js'
 
 function originalBundle(score = [2, 1], winner = 'A1') {
   return {
@@ -63,5 +63,37 @@ describe('aligned player comparison', () => {
     expect(model.summary.methodMatches).toBe(1)
     expect(model.rows[1].other.visibility).toBe('private')
     expect(model.release.copy).toContain('fixture')
+  })
+
+  it('builds a data-backed scoreline, source gap and decisive match swings', () => {
+    const points = (memberUserId, totalPoints, exactScorePoints) => ({
+      status: 'ready',
+      data: {
+        state: 'scored', memberUserId, totalPoints, scoredMatchCount: 1,
+        matchBreakdown: [{
+          matchId: `match-${memberUserId}`, matchNumber: 1, matchday: 1, stageLabel: 'Group A',
+          totalPoints: exactScorePoints, exactScorePoints, correctOutcomePoints: 0,
+          advancingTeamPoints: 0, decisionMethodPoints: 0, jokerMultiplier: 1, jokerBonus: 0,
+        }],
+        bracketBreakdown: [],
+      },
+    })
+    const currentPlayer = { userId: 'current', displayName: 'Nicky' }
+    const otherPlayer = { userId: 'other', displayName: 'Amy' }
+    const story = buildHeadToHeadStory({
+      currentSection: points('current', 10, 10),
+      otherSection: points('other', 5, 5),
+      currentPlayer,
+      otherPlayer,
+      competitionKey: LEAGUE_COMPETITION.ORIGINAL,
+      standingsRows: [
+        { userId: 'current', displayName: 'Nicky', rank: 1, totalPoints: 10 },
+        { userId: 'other', displayName: 'Amy', rank: 2, totalPoints: 5 },
+      ],
+    })
+
+    expect(story).toMatchObject({ currentPoints: 10, otherPoints: 5, margin: 5, headline: 'Nicky leads by 5' })
+    expect(story.sources).toContainEqual(expect.objectContaining({ key: 'exactScore', current: 10, other: 5 }))
+    expect(story.decisiveMatches[0]).toMatchObject({ matchNumber: 1, swing: 5 })
   })
 })

@@ -21,8 +21,8 @@ that goes stale. The return-point commit is the exception, because holding it is
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
 | Latest verified commit | `fabdde8 The dashboard stops naming Leagues the next unfinished page, because it closed on the 16th` |
-| Current stage | Product Experience v3 slice 1 is implemented in the working tree and awaiting owner visual review. |
-| Immediate next stage | Review/repair the v3 slice across routes, breakpoints and themes; then schedule pinned rivals and fuller dynamic Results impact. Prediction-write reliability remains a separate high-care stage. |
+| Current stage | Product Experience v3 slice 2 coherence work is implemented in the working tree and awaiting full checks plus owner visual review. |
+| Immediate next stage | Review Leagues, Player Overview, points receipts and H2H across breakpoints/themes; then build the scheduled Results/Leaderboards/Match Centre story and separately review public leaderboard database access. Prediction-write reliability remains a separate high-care stage. |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
 | Active migration count | Owned by `docs/DATABASE.md` — not repeated here. Asserted against `supabase/migrations/` by `audit:governance-coherence`. |
 | Migration 021 | Present as `202607090021_euro28_venue_metadata.sql`; `docs/DATABASE.md` owns the active sequence. Any later migration must verify local and Euro staging alignment first. |
@@ -37,9 +37,13 @@ must exist and must be an ancestor of `HEAD`.
 
 ## Immediate Priority Order
 
-1. **The `visual.yml` CI lift** — the visual tier runs on this Mac but has no CI workflow.
+1. **Product Experience v3 slice 2 acceptance** — full checks and phone/desktop, light/dark visual
+   review for Leagues, Player Overview, points receipts, H2H and lifecycle states.
+2. **Results story slice** — dynamic Results, Leaderboards and Match Centre consequences from
+   canonical data. Signed-out public leaderboard reads require a separate RPC/RLS review.
+3. **The `visual.yml` CI lift** — the visual tier runs on this Mac but has no CI workflow.
    `.github/workflows/` currently holds only `euro28-checks.yml`.
-2. **The `save_my_prediction_bundle` conflict-loop fix — high care.** On 2026-07-14 a runaway
+4. **The `save_my_prediction_bundle` conflict-loop fix — high care.** On 2026-07-14 a runaway
    internal retry flooded staging with roughly **2.6 million failed requests**. The fix is a retry
    cap, a revision re-read, and a statement timeout. This touches a prediction-write path: take a
    **fresh verified backup first, every time** (CLAUDE.md §2), and do not modify scoring, resolver or

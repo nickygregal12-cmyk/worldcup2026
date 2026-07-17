@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueOverview, readLeagueSession } from './leagueService.js'
-import { buildInviteLink, buildLeagueLifecycleState, LEAGUE_COMPETITION, normaliseInboundJoinCode, validateJoinCode, validateLeagueName } from './leagueModel.js'
+import { buildLeagueLifecycleState, LEAGUE_COMPETITION, normaliseInboundJoinCode, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { buildLeagueCollections, reconcileLeagueSelections } from './leagueCollections.js'
+import { buildLeagueShareActions } from './leagueShareActions.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { buildMatchCentreNavigation, defaultMatchNumber } from '../matchCentre/matchCentreModel.js'
@@ -10,12 +11,14 @@ import {
   LeagueHero,
   LeagueManagePanel,
   LeagueNotice,
+  LeagueSignedOut,
   LeagueStandingsPanel,
   MiniMatchStrip,
 } from './LeaguePresentation.jsx'
 import { EmptyLeagueCollection, LeagueCollectionTabs } from './LeagueCollectionTabs.jsx'
 import PlayerQuickView from '../player/PlayerQuickView.jsx'
 import { hashSearchParams } from '../app/appRoutes.js'
+import { SkeletonPage } from '../design-system/index.jsx'
 import layoutStyles from './LeagueLayout.module.css'
 
 const PENDING_JOIN_KEY = 'euro28:pendingJoin'
@@ -261,35 +264,10 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     : buildLeagueLifecycleState({ lifecycle, competitionKey: activeCompetitionKey, koReadiness })
   const leagueListLoading = ['idle', 'loading'].includes(leagueListStatus)
 
-  const copyToClipboard = async text => {
-    try {
-      await navigator.clipboard.writeText(text)
-      return true
-    } catch {
-      setNotice({ tone: 'info', message: text })
-      return false
-    }
-  }
-
-  const copyLeagueCode = async () => {
-    if (!selectedLeague?.joinCode) return null
-    return (await copyToClipboard(selectedLeague.joinCode)) ? 'Copied' : null
-  }
-
-  const shareLeague = async () => {
-    if (!selectedLeague?.joinCode) return null
-    const url = buildInviteLink(window.location.origin, selectedLeague.joinCode)
-    const shareText = `Join my Euro 2028 Predictor league "${selectedLeague.name}" — open this link and your invite code is filled in ready to join: ${url}`
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: selectedLeague.name, text: shareText, url })
-        return null // the native sheet is its own confirmation
-      } catch (error) {
-        if (error?.name === 'AbortError') return null
-      }
-    }
-    return (await copyToClipboard(url)) ? 'Link copied' : null
-  }
+  const { copyLeagueCode, shareLeague } = buildLeagueShareActions({
+    league: selectedLeague,
+    onUnavailable: text => setNotice({ tone: 'info', message: text }),
+  })
 
   const liveFixtureCompetition = liveFixture?.matchNumber <= 36
     ? LEAGUE_COMPETITION.ORIGINAL
@@ -302,10 +280,8 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   return (
     <section className={layoutStyles.page} aria-label="Private leagues">
       <LeagueNotice notice={notice} />
-      {loadingSession && <p className={layoutStyles.emptyCopy}>Checking your league access…</p>}
-      {!loadingSession && !session?.user && (
-        <p className={layoutStyles.emptyCopy}>Sign in to create or join private leagues. Guest predictions remain browser-only and cannot enter a leaderboard.</p>
-      )}
+      {loadingSession && <SkeletonPage cards={1} label="Checking your league access" />}
+      {!loadingSession && !session?.user && <LeagueSignedOut />}
 
       {!loadingSession && session?.user && (
         <>
@@ -322,22 +298,37 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
             />
           )}
 
-          <LeagueManagePanel
-            open={visibleLeagues.length === 0 || manageOpen}
-            createName={createName}
-            onCreateNameChange={setCreateName}
-            competitionKey={activeCompetition}
-            onSubmitCreate={submitCreate}
-            joinCode={joinCode}
-            onJoinCodeChange={setJoinCode}
-            onSubmitJoin={submitJoin}
-            busy={actionStatus === 'loading'}
-          />
+          {manageOpen && visibleLeagues.length > 0 && (
+            <LeagueManagePanel
+              open
+              createName={createName}
+              onCreateNameChange={setCreateName}
+              competitionKey={activeCompetition}
+              onSubmitCreate={submitCreate}
+              joinCode={joinCode}
+              onJoinCodeChange={setJoinCode}
+              onSubmitJoin={submitJoin}
+              busy={actionStatus === 'loading'}
+            />
+          )}
 
           <div id="league-collection-panel" role={koLeagueReady ? 'tabpanel' : undefined} className={layoutStyles.collectionPanel}>
-            {leagueListLoading && <p className={layoutStyles.emptyCopy}>Loading your leagues…</p>}
+            {leagueListLoading && <SkeletonPage cards={1} label="Loading your leagues" />}
             {!leagueListLoading && visibleLeagues.length === 0 ? (
-              <EmptyLeagueCollection competitionKey={activeCompetition} />
+              <>
+                <EmptyLeagueCollection competitionKey={activeCompetition} />
+                <LeagueManagePanel
+                  open
+                  createName={createName}
+                  onCreateNameChange={setCreateName}
+                  competitionKey={activeCompetition}
+                  onSubmitCreate={submitCreate}
+                  joinCode={joinCode}
+                  onJoinCodeChange={setJoinCode}
+                  onSubmitJoin={submitJoin}
+                  busy={actionStatus === 'loading'}
+                />
+              </>
             ) : selectedLeague && (
             <>
               <LeagueHero
@@ -353,7 +344,16 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
               <MiniMatchStrip fixture={liveFixture} href={matchStripHref} />
 
               <div className={layoutStyles.layout}>
-                <div>
+                <LeagueActionsCard
+                  joinCode={selectedLeague.joinCode}
+                  onCopyInvite={copyLeagueCode}
+                  onShareLeague={shareLeague}
+                  summary={activeSummary}
+                  lifecycleState={leagueLifecycle}
+                  fixture={liveFixture}
+                />
+
+                <div className={layoutStyles.standingsColumn}>
                   <LeagueStandingsPanel
                     competitionKey={activeCompetitionKey}
                     overview={overview}
@@ -372,15 +372,21 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                     onConfirmAction={confirmLeagueAction}
                   />
                 </div>
-
-                <LeagueActionsCard
-                  joinCode={selectedLeague.joinCode}
-                  onCopyInvite={copyLeagueCode}
-                  onShareLeague={shareLeague}
-                  hasSettings={false}
-                  onOpenSettings={null}
-                />
               </div>
+
+              {!manageOpen && (
+                <LeagueManagePanel
+                  open={false}
+                  createName={createName}
+                  onCreateNameChange={setCreateName}
+                  competitionKey={activeCompetition}
+                  onSubmitCreate={submitCreate}
+                  joinCode={joinCode}
+                  onJoinCodeChange={setJoinCode}
+                  onSubmitJoin={submitJoin}
+                  busy={actionStatus === 'loading'}
+                />
+              )}
             </>
             )}
           </div>

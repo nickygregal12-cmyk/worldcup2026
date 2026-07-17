@@ -6,22 +6,22 @@ const errors = []
 const fail = message => errors.push(message)
 const read = file => fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : ''
 
-const ui = read('src/player/PlayerView.jsx')
+const ui = `${read('src/player/PlayerView.jsx')}\n${read('src/player/PlayerViewPresentation.jsx')}`
 const styles = read('src/player/PlayerView.module.css')
 const tests = read('src/player/__tests__/PlayerView.test.jsx')
 const pkg = JSON.parse(read('package.json'))
 
 for (const marker of [
-  'COMPETITION_CONTEXT',
-  'Viewing Original Predictor picks',
-  'Viewing KO Predictor picks',
+  'const CONTEXT',
+  'Original Predictor profile',
+  'KO Predictor profile',
   'Original points',
   'KO points',
   'Hidden picks',
   'PanelIntro',
   'EmptyState',
   'Match picks',
-  'Original bracket',
+  'Original Bracket',
   'Predicted tables',
 ]) {
   if (!ui.includes(marker)) fail(`Player View polish marker missing: ${marker}`)
@@ -39,10 +39,10 @@ for (const marker of [
 }
 
 for (const marker of [
-  'Viewing Original Predictor picks',
+  'Original Predictor profile',
   'Original points',
   'Hidden picks',
-  'Viewing KO Predictor picks',
+  'KO Predictor profile',
 ]) {
   if (!tests.includes(marker)) fail(`Player View polish test marker missing: ${marker}`)
 }

@@ -1,3 +1,51 @@
+## Stage PRODUCT-EXPERIENCE-V3-SLICE-2 (2026-07-16 — owner scope and audit amendments)
+
+The second Product Experience v3 slice is authorised as a whole-site coherence pass, with Leagues
+and player evidence as the first implementation focus. A page upgraded in this slice must use the
+shared v3 shell, tokens, identity and loading treatment; every route not upgraded now must appear in
+the living route-adoption register in `docs/PRODUCT-COMPLETENESS-ROADMAP.md`. No route may silently
+remain on the old visual system.
+
+Owner-confirmed scope:
+
+1. Original Predictor remains globally locked at the first tournament kick-off. KO Predictor remains
+   a separate bonus game, locks per real knockout fixture and stays visually secondary until the group
+   stage officially ends.
+2. The Leagues phone viewport changes with tournament phase: sharing is primary before kick-off;
+   rank, points, gap and live Match Centre context take over once scoring begins. Original/KO league
+   collection tabs appear only after KO prediction opens and never reuse a league across competitions.
+3. A league member opens a compact profile sheet first. The full profile then owns Overview, a complete
+   points receipt, released predictions, Original Bracket health, predicted tables and H2H. Points
+   evidence remains visible wherever the viewer is authorised to see the scored row, independently of
+   full-profile permission.
+4. H2H must explain the scoreline through point sources, decisive match swings and visibly different
+   selections. Match Centre remains the canonical destination for each fixture's result and league
+   prediction impact.
+5. Signed-out visitors are intended to view public leaderboards without receiving a personal rank.
+   The current leaderboard RPC is authenticated-only, so this requires a dedicated RLS/RPC review and
+   migration stage; the UI must state the current preview limitation and must not simulate public data.
+6. Staging audit, scoring and synthetic test records must be cleared through the guarded tournament
+   readiness procedure before launch, not during this visual implementation batch.
+
+Audit amendments are explicit under Constitution §5.8: the League Setup audit no longer requires a
+disabled Settings placeholder; the site-access audit keeps both competition routes but requires Home
+to phase-gate KO prominence; and Player View implementation/polish audits follow the extracted
+`PlayerViewPresentation` module and the new Overview-first language. The Player Insight audit now
+requires the always-visible full receipt plus source/swing H2H story instead of the retired nested
+`PlayerInsight` cards, and the League Lifecycle audit follows its release copy in the shared
+comparison model rather than requiring duplicate presentation copy. The Stage 13D integration gate
+likewise asserts both Original global-lock and KO fixture-release model copy instead of a retired
+generic sentence. The League Detail Destination gate now requires the approved Overview-first full
+profile link rather than the superseded Predictions-first link. The Player/Team Lifecycle gate now
+accepts the redesigned H2H surface rendering its central lifecycle note directly instead of passing
+that context into the retired pair of nested Player Insight cards. The Player Comparison gate now
+asserts the central lifecycle and competition-release models consumed by H2H instead of requiring
+their sentences to be duplicated inside the presentation file. The Bracket Health gate follows the
+Player View controller into the extracted presentation module where the competition-scoped health
+panel now renders. These are contract-aligned audit
+repairs, not weaker coverage. This slice makes no scoring, resolver, Auth, Supabase, result-entry,
+production-data or migration change.
+
 ## Stage PRODUCT-EXPERIENCE-V3-SLICE-1 (2026-07-16 — implementation checkpoint)
 
 The first Product Experience v3 implementation slice is present in the working tree and awaits

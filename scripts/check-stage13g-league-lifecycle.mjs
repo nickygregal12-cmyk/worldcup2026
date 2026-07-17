@@ -21,7 +21,7 @@ const required = [
   ['src/leagues/leagueModel.js', 'private_until_global_lock'],
   ['src/leagues/leagueModel.js', 'fixture_release_started'],
   ['src/player/playerComparisonModel.js', 'release: Object.freeze'],
-  ['src/player/PlayerHeadToHead.jsx', 'Original picks release after the global lock'],
+  ['src/player/playerComparisonModel.js', 'Original comparisons release all saved selections only after the global lock.'],
   ['src/leagues/__tests__/leagueModel.test.js', 'builds league lifecycle copy without combining Original and KO states'],
   ['src/player/__tests__/playerComparisonModel.test.js', 'model.release.copy'],
   ['docs/archive/STAGE-13G-B-LEAGUE-LIFECYCLE.md', 'No database migration'],

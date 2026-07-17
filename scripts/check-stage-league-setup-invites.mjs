@@ -5,9 +5,10 @@ import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 // The original guard was docs-only: it asserted prose in seven documents, one of which
 // (STAGE-LEAGUE-SETUP-AND-INVITES-1) is now archived, and proved nothing about the UI. This version
 // asserts the DESIGNED ENTRY-POINT STATES that actually ship in source — the create-league and
-// join-league flows, the invite copy/share affordances, and the settings not-yet state — while the
-// full Setup & Invites build and the Settings/Manage sheet remain separate later stages (scope
-// boundary). The behavioural contract still lives in the LIVING docs/LEAGUE-SETUP-AND-INVITES-CONTRACT.md,
+// join-league flows plus the invite copy/share affordances. Product Experience v3 removed the old
+// disabled Settings scaffold: a control must either work or stay out of the interface. The full
+// Settings/Manage sheet remains a separately scheduled route upgrade. The behavioural contract still
+// lives in the LIVING docs/LEAGUE-SETUP-AND-INVITES-CONTRACT.md,
 // which this guard continues to police; the archived stage record is no longer a dependency.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -42,18 +43,16 @@ for (const marker of [
   requireText(presentation, marker, 'the create/join league entry-point flow must ship in source')
 }
 
-// Invite copy/share affordances wired to their handlers through the on-button confirmation runner,
-// and the settings not-yet state (`hasSettings` gates a real Settings destination vs the coming-soon
-// placeholder). The confirmation-on-button mechanism (runAction) is asserted so the copy/share
-// feedback can never silently regress to an off-screen notice.
+// Invite copy/share affordances wired to their handlers through the on-button confirmation runner.
+// The confirmation-on-button mechanism (runAction) is asserted so the copy/share feedback can never
+// silently regress to an off-screen notice.
 for (const marker of [
   'export function LeagueActionsCard',
   'runAction(',
   'onCopyInvite',
   'onShareLeague',
-  'hasSettings ?',
 ]) {
-  requireText(presentation, marker, 'the invite/share/settings entry-point states must ship in source')
+  requireText(presentation, marker, 'the invite/share entry-point states must ship in source')
 }
 
 // Signed-out continuation: the page routes signed-out users to sign-in rather than exposing a broken
@@ -95,6 +94,6 @@ if (errors.length > 0) {
 }
 
 console.log('League setup and invites audit passed.')
-console.log('Source: create-league and join-league flows, invite copy/share and the settings not-yet state ship as designed entry points.')
+console.log('Source: create-league and join-league flows plus invite copy/share ship as working entry points; no disabled Settings scaffold is required.')
 console.log('Contract: the behavioural spec (invite-code states, signup-gate and Original/KO separation) stays explicit in the living contract doc.')
 console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)

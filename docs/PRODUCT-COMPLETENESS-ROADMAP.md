@@ -13,6 +13,45 @@ widely) or [GATE: tournament] (must exist before the first ball is kicked) or
 
 Current repair note: `STAGE-CORE-PAGE-ADOPTION-1A-GROUPS-COPY-REPAIR` is accepted. Core-page adoption must pass the Nicky eye test for player-facing wording as well as automated copy audits; internal lifecycle/config/save-contract terms must not appear on live player surfaces.
 
+## Product Experience v3 route adoption register
+
+This is the whole-site visual migration register. `CURRENT REVIEW` means the route is in the active
+uncommitted v3 coherence batch and still needs automated and visual proof. `ADOPTED` means the route
+already has the v3 baseline but remains part of the final cross-route acceptance. `SCHEDULED` and
+`GATED` are mandatory later work, not optional polish.
+
+| Surface / route | State | Owning batch | Required outcome |
+|---|---|---|---|
+| Shared desktop/mobile shell and bottom navigation | ADOPTED | Final acceptance | One aligned five-position mobile bar, centred circular Home treatment, smooth scroll hide/show, shared light/dark tokens and shared loading states. |
+| Home `#/` | ADOPTED | Results story + final acceptance | Rank and leagues lead on phones; KO stays quiet until primary readiness; later live impact uses only canonical results. |
+| Groups `#/groups` | CURRENT REVIEW | Current coherence batch | Keep By group/By date, persisted choice, next-match landing, clickable Match Centre cards and current phone density; use a two-column match grid on wider screens. |
+| Original Bracket `#/bracket` | ADOPTED | Final acceptance | Keep predicted-page colour treatment, strong winner path, round-by-round phone default and optional wall chart. Never merge with KO Predictor or live results. |
+| Review `#/review` | SCHEDULED | Journey cohesion | Re-cut completion blockers, locked snapshot, joker confirmation and contextual next actions into the same v3 anatomy. |
+| KO Predictor `#/ko-predictor` | SCHEDULED | KO adoption | Preserve early fixture entry, per-fixture locks and separate scoring; make it prominent only after full group-stage readiness. |
+| Leagues `#/leagues` | CURRENT REVIEW | Current coherence batch | Phase-aware share/rank/live spotlight, strong league identity, easy switching, working create/join/share, compact player sheet and separate KO collections only after opening. |
+| Player profile `#/player` | CURRENT REVIEW | Current coherence batch | Overview-first profile with competition tabs, points receipt, released picks, predicted tables, Original Bracket health and H2H entry. |
+| H2H / points receipt / bracket health | CURRENT REVIEW | Current coherence batch | Explain scoreline, sources and decisive match swings; always expose authorised scoring evidence; keep protected picks protected. |
+| Match Centre `#/match-centre` | PARTIAL | Results story | Existing league prediction and target states remain; complete canonical table/bracket/league impact storytelling and final v3 visual pass. |
+| Results `#/results` | PARTIAL | Results story | Phase-order live, review, completed and upcoming sections; complete dynamic table and live-bracket consequences from canonical results. |
+| Leaderboards `#/leaderboards` | PARTIAL | Results story + public-read gate | Reuse profile/receipt/H2H system, phase-gate KO tabs and finish full v3 table styling. Signed-out reads require the dedicated RPC/RLS gate below. |
+| Public signed-out leaderboard read | GATED | Database access review | Permit public table rows without inventing a personal standing; review RPC grants, RLS, abuse/load limits and privacy before a migration. |
+| More directory | ADOPTED | Final acceptance | Keep grouped lifecycle ordering so every non-nav high-traffic route remains findable. |
+| Account `#/account` | SCHEDULED | Supporting destinations | Preserve auth and guest-transfer behaviour while adopting the same v3 header, cards, loading, empty and destructive-action language. |
+| Tournament `#/tournament` and How to play `#/how-to-play` | SCHEDULED | Supporting destinations | Align typography, content cards and sticky/mobile navigation without duplicating scoring constants. |
+| Team Profile contextual sheet | SCHEDULED | Supporting destinations | Match the player-sheet anatomy, shared flags and contextual return behaviour while retaining authorised data boundaries. |
+| Welcome `#/welcome`, unknown-route recovery and shared error states | SCHEDULED | Supporting destinations | One recognisable v3 first-run/recovery system across light/dark modes and breakpoints. |
+| Restricted Admin `#/admin` | SCHEDULED | Protected consistency | Preserve every permission and operational guardrail; align presentation only after player-facing routes are accepted. |
+| League invite direct-link continuation | SCHEDULED | League management | Finish server-visible invite URLs, invalid/deleted/full states and post-auth continuation in the v3 league system. |
+| Pre-tournament data reset and readiness | GATED | Tournament readiness | Use guarded teardown/verification for staging audit, scoring and synthetic test data immediately before tournament readiness; never wipe data opportunistically. |
+
+Required sequence:
+
+1. Current coherence batch — Leagues, profile sheet, full Player View, points receipt, H2H, lifecycle metadata and shared skeletons.
+2. Results story — Results, Leaderboards and Match Centre dynamic consequences plus signed-out public-read design and database review.
+3. Supporting destinations — Review, KO, Account, Tournament/How to play, Team Profile, Welcome and shared recovery states.
+4. Protected consistency and final acceptance — Admin presentation, every breakpoint/theme, route access, performance and visual regression.
+5. Tournament readiness — guarded data reset, seeded load proof and deployment acceptance.
+
 ## A. Already decided and specced (pointers — no further decision needed)
 
 1. **Tie-break ladders** — CONFIRMED, see DECISION-DRAFT-TIEBREAKS.md. Register

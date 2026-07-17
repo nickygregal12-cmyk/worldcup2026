@@ -8,21 +8,14 @@ const COMPETITIONS = Object.freeze([
   { key: 'koPredictor', name: 'KO Predictor', href: '#/leaderboards?competition=koPredictor' },
 ])
 
-/**
- * CW1 — the Leaderboards entry point, present in EVERY state.
- *
- * Leaderboards is a More-nav destination: the bottom nav never exposes it, so
- * Home is its only primary entry point. Original and KO standings never
- * combine, so the two routes are always two rows and never merge into one tap.
- */
+/** Leaderboards stays findable from Home while KO remains deliberately quiet. */
 export function LeaderboardsCard({ dashboard }) {
-  // Two competitions, two tables, two totals — said as copy for a player. The
-  // prototype's own note line ("Original and KO standings and totals never
-  // combine") is the spec sentence word for word, which is spec wording on a
-  // player surface.
+  const competitions = dashboard.koReadiness.primaryReady ? COMPETITIONS : COMPETITIONS.slice(0, 1)
   const note = dashboard.signedIn
-    ? 'Your Original and KO Predictor scores are ranked separately. They never add up into one total.'
-    : 'Tables are open to everyone. Sign in to see where you sit.'
+    ? dashboard.koReadiness.primaryReady
+      ? 'Original and KO Predictor scores are ranked separately. They never add up into one total.'
+      : 'Original Predictor standings begin when confirmed results are scored.'
+    : 'Leaderboards will be public for the tournament. Sign in during this preview.'
 
   return (
     <section className={page.card} aria-labelledby="home-leaderboards">
@@ -30,7 +23,7 @@ export function LeaderboardsCard({ dashboard }) {
         <h2 id="home-leaderboards">Leaderboards</h2>
       </div>
 
-      {COMPETITIONS.map(competition => (
+      {competitions.map(competition => (
         <a className={styles.lbRow} href={competition.href} key={competition.key}>
           <span className={styles.lbName}>{competition.name}</span>
           {dashboard.signedIn
@@ -62,15 +55,13 @@ export function RankStrip({ dashboard }) {
       rank: formatRank(dashboard.original.rank),
       detail: `${formatPoints(dashboard.original.points, dashboard.original.dataAvailable)} pts${leaderGap(dashboard.original)}`,
     },
-    {
+    ...(dashboard.koReadiness.primaryReady ? [{
       key: 'koPredictor',
       label: 'KO Predictor',
       href: '#/leaderboards?competition=koPredictor',
-      rank: dashboard.koReadiness.open ? formatRank(dashboard.koPredictor.rank) : '—',
-      detail: dashboard.koReadiness.open
-        ? `${formatPoints(dashboard.koPredictor.points, dashboard.koPredictor.dataAvailable)} pts${leaderGap(dashboard.koPredictor)}`
-        : dashboard.koReadiness.label,
-    },
+      rank: formatRank(dashboard.koPredictor.rank),
+      detail: `${formatPoints(dashboard.koPredictor.points, dashboard.koPredictor.dataAvailable)} pts${leaderGap(dashboard.koPredictor)}`,
+    }] : []),
   ]
 
   return (

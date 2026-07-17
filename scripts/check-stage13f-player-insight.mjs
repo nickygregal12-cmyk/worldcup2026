@@ -60,16 +60,17 @@ if (/groupPosition|combinedPoints|combinedTotal/.test(model)) fail('Player insig
 const view = read('src/player/PlayerInsight.jsx')
 for (const marker of [
   'How the total was earned',
-  'Scoring rows only',
+  'Every awarded source',
   'Behind leader',
   'Points by matchday',
-  'Original bracket progression',
+  'Bracket progression',
+  'Full audit',
   '<TeamLabel',
   '#/match-centre?match=',
 ]) if (!view.includes(marker)) fail(`Player insight presentation is missing: ${marker}`)
 
 const h2h = read('src/player/PlayerHeadToHead.jsx')
-for (const marker of ['state.data.insights.current', 'state.data.insights.other', '<PlayerInsight', '<TeamLabel']) {
+for (const marker of ['state.data?.insights?.current', 'state.data?.insights?.other', 'buildHeadToHeadStory', 'SourceComparison', 'DecisiveMatches', '<TeamLabel']) {
   if (!h2h.includes(marker)) fail(`H2H insight integration is missing: ${marker}`)
 }
 
@@ -145,7 +146,7 @@ if (errors.length) {
 console.log('Euro Stage 13F-J player insight engine audit passed.')
 console.log('Story engine: canonical source totals, rank gaps, matchday/round evidence, streaks, best calls and corrections')
 console.log('Privacy: self detail plus existing Original global-lock and KO fixture-release boundaries for other players')
-console.log('Ledger: engine remains accepted; dedicated player view, H2H and points-breakdown destinations are partial/scheduled')
+console.log('Ledger: the engine and v3 player evidence surfaces are active; persisted rivals and final visual acceptance remain partial/scheduled')
 console.log('Separation: Original and KO Predictor totals remain independent; no group-position category')
 console.log('Stage 16A: provisional teams, nineteen deterministic personas, scenario oracle, leagues and marker-safe teardown recorded as later staging work')
 console.log(`Database: ${migrations.length} active migrations; Migration 017 remains read-only`)

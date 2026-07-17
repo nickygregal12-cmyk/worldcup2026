@@ -9,6 +9,7 @@ const exists = file => fs.existsSync(file)
 
 const files = [
   'src/player/PlayerView.jsx',
+  'src/player/PlayerViewPresentation.jsx',
   'src/player/PlayerView.module.css',
   'src/player/playerViewModel.js',
   'src/player/playerViewService.js',
@@ -26,6 +27,8 @@ const index = read('src/player/index.js')
 const model = exists('src/player/playerViewModel.js') ? read('src/player/playerViewModel.js') : ''
 const service = exists('src/player/playerViewService.js') ? read('src/player/playerViewService.js') : ''
 const ui = exists('src/player/PlayerView.jsx') ? read('src/player/PlayerView.jsx') : ''
+const presentation = exists('src/player/PlayerViewPresentation.jsx') ? read('src/player/PlayerViewPresentation.jsx') : ''
+const playerUi = `${ui}\n${presentation}`
 const pkg = JSON.parse(read('package.json'))
 
 for (const marker of [
@@ -68,9 +71,9 @@ for (const marker of [
   'PredictionsPanel',
   'BracketPanel',
   'TablesPanel',
-  'Tabs label="Player View sections"',
+  'label="Player View sections"',
 ]) {
-  if (!ui.includes(marker)) fail(`Player View UI missing ${marker}`)
+  if (!playerUi.includes(marker)) fail(`Player View UI missing ${marker}`)
 }
 
 for (const marker of [

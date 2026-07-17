@@ -6,6 +6,7 @@ import {
   ChevronRight,
   CircleUserRound,
   Clock3,
+  Copy,
   Ellipsis,
   GitBranch,
   Home,
@@ -17,6 +18,7 @@ import {
   Share2,
   Moon,
   RefreshCw,
+  Radio,
   ShieldCheck,
   Sun,
   TriangleAlert,
@@ -56,6 +58,8 @@ const ICONS = Object.freeze({
   unlock: UnlockKeyhole,
   save: Save,
   share: Share2,
+  copy: Copy,
+  live: Radio,
 })
 
 export default function Icon({ name, size = 22, strokeWidth = 1.9, className = '' }) {

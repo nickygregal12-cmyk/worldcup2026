@@ -51,7 +51,7 @@ describe('Euro app routes', () => {
 
   it('parses Player View breakdown links safely', () => {
     expect(playerViewParamsFromHash('#/player?user=amy&competition=original&tab=headToHead')).toEqual({ userId: 'amy', competition: 'original', tab: 'headToHead' })
-    expect(playerViewParamsFromHash('#/player?competition=combined&tab=private')).toEqual({ userId: null, competition: 'original', tab: 'predictions' })
+    expect(playerViewParamsFromHash('#/player?competition=combined&tab=private')).toEqual({ userId: null, competition: 'original', tab: 'overview' })
   })
 
   it('resolves query-addressed Admin sections without treating them as unknown hash routes', () => {

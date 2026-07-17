@@ -213,7 +213,9 @@ export function buildLeagueLifecycleState({ lifecycle, competitionKey = LEAGUE_C
   const originalActive = competitionKey === LEAGUE_COMPETITION.ORIGINAL && summary?.state === 'active'
   const koActive = competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR && summary?.state === 'active'
   const locked = Boolean(lifecycle?.locked)
-  const tournamentStarted = Boolean(lifecycle?.tournamentStarted)
+  // The application lifecycle's `locked` boundary is the first tournament kick-off.
+  // Tests and scenario fixtures may still supply the older `tournamentStarted` alias.
+  const tournamentStarted = Boolean(lifecycle?.tournamentStarted ?? lifecycle?.started ?? lifecycle?.locked)
   const koOpen = Boolean(koReadiness?.open)
   const koAvailable = Number(koReadiness?.available ?? 0)
 

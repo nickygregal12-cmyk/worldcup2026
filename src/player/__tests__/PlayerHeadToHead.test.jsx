@@ -22,12 +22,14 @@ describe('PlayerHeadToHead', () => {
       },
     }
     const html = renderToStaticMarkup(
-      <PlayerHeadToHead state={state} reference={buildGuestReference()} onClose={() => {}} context={PLAYER_COMPARISON_CONTEXT.OVERALL} />,
+      <PlayerHeadToHead state={state} reference={buildGuestReference()} lifecycle={{ locked: false }} onClose={() => {}} context={PLAYER_COMPARISON_CONTEXT.OVERALL} />,
     )
     expect(html).toContain('Overall head to head')
     expect(html).toContain('Original Predictor')
     expect(html).toContain('Comparison protected')
     expect(html).toContain('Private until lock')
+    expect(html).toContain('Original Predictor privacy')
+    expect(html).toContain('global prediction lock')
     expect(html).not.toContain('combined')
   })
 })

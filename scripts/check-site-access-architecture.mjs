@@ -57,17 +57,17 @@ for (const marker of [
   if (!app.includes(marker)) fail(`Application route composition is missing: ${marker}`)
 }
 
-// CW1 — Leaderboards is a More-nav destination, so the bottom nav never exposes
-// it and Home is its only primary entry point. LeaderboardsCard replaced the
-// single LinkButton at Stage DP-HOME: it carries BOTH competition deep links, as
-// two rows that never merge into one tap, in every state including signed out.
-// The rank strip is signed-in only, which is why it cannot be the entry point.
+// Leaderboards is a More-nav destination, so Home retains the primary Original
+// entry in every phase. KO remains a distinct deep link but Product Experience
+// v3 only renders it from Home after central readiness says the KO game is
+// primary. The rank strip remains signed-in only.
 const home = readHomeView()
 for (const marker of [
   '#/leaderboards?competition=original',
   '#/leaderboards?competition=koPredictor',
   'LeaderboardsCard',
   'Open full leaderboard',
+  'koReadiness.primaryReady',
 ]) {
   if (!home.includes(marker)) fail(`Home leaderboard access is missing: ${marker}`)
 }
@@ -135,6 +135,6 @@ if (errors.length) {
 
 console.log('Euro site-access architecture audit passed.')
 console.log('Results: fixtures, live tables and live bracket have a dedicated destination')
-console.log('Leaderboards: full Original and KO tables have a dedicated route and Home deep links')
+console.log('Leaderboards: separate Original and KO routes remain; Home phase-gates KO prominence through central readiness')
 console.log('Navigation: the five-position mobile lifecycle remains unchanged')
 console.log(`Database: ${migrations.length} active migrations; approved staging Time & Phase Migration 016 present`)

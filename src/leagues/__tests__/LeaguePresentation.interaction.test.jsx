@@ -51,7 +51,7 @@ describe('league actions — on-button copy confirmation', () => {
     const user = userEvent.setup()
     const onCopyInvite = vi.fn().mockResolvedValue('Copied')
     // A short confirmation interval keeps the test on real timers (waitFor + fake timers deadlock).
-    render(<LeagueActionsCard joinCode="SYNTHLARGE" onCopyInvite={onCopyInvite} onShareLeague={() => null} hasSettings={false} confirmMs={60} />)
+    render(<LeagueActionsCard joinCode="SYNTHLARGE" onCopyInvite={onCopyInvite} onShareLeague={() => null} confirmMs={60} />)
 
     await user.click(screen.getByRole('button', { name: /Copy invite/i }))
 

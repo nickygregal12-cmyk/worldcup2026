@@ -28,6 +28,25 @@ describe('Euro Match Centre model', () => {
     expect(navigation.next).toBeNull()
   })
 
+  it('hides stale result metadata while a fixture is still upcoming', () => {
+    const navigation = buildMatchCentreNavigation({
+      reference,
+      matchNumber: 2,
+      liveSnapshot: {
+        results: [{
+          matchId: 'm2', status: 'scheduled', scoreVisible: true,
+          normalTimeHomeGoals: 4, normalTimeAwayGoals: 1,
+          decisionMethod: 'penalties', resultRevision: 3, winnerTeamId: 'b',
+        }],
+        knockout: { byMatchNumber: {} },
+      },
+    })
+
+    expect(navigation.current).toMatchObject({
+      state: 'upcoming', score: null, resultDetail: null, corrected: false, winnerTeamId: null,
+    })
+  })
+
   it('keeps private predictions protected and calculates only visible maximums', () => {
     const impact = buildFixtureImpact({
       members: [

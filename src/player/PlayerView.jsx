@@ -1,16 +1,22 @@
 import * as React from 'react'
 
 const { useCallback, useEffect, useMemo, useRef, useState } = React
-import { Badge, Button, Card, LinkButton, PlayerIdentity, StatusBar, Tabs, TeamLabel } from '../design-system/index.jsx'
+import { Button, LinkButton, SkeletonPage, StatusBar } from '../design-system/index.jsx'
 import { buildStandingComparison, LEAGUE_COMPETITION } from '../leagues/leagueModel.js'
-import { loadOverallHeadToHead } from '../results/resultService.js'
+import { loadCanonicalTournamentSnapshot, loadOverallHeadToHead } from '../results/resultService.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { loadPlayerView } from './playerViewService.js'
 import PlayerHeadToHead from './PlayerHeadToHead.jsx'
 import PlayerInsight from './PlayerInsight.jsx'
 import { PLAYER_COMPARISON_CONTEXT } from './playerComparisonModel.js'
-import { OriginalBracketHealth } from '../bracketHealth/index.js'
-import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
+import {
+  BracketPanel,
+  OverviewPanel,
+  PlayerHeader,
+  PlayerSectionNav,
+  PredictionsPanel,
+  TablesPanel,
+} from './PlayerViewPresentation.jsx'
 import styles from './PlayerView.module.css'
 
 const COMPETITION_OPTIONS = [
@@ -18,14 +24,21 @@ const COMPETITION_OPTIONS = [
   { value: LEAGUE_COMPETITION.KO_PREDICTOR, label: 'KO Predictor' },
 ]
 
-const TAB_OPTIONS = [
+const ORIGINAL_TABS = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'points', label: 'Points' },
   { value: 'predictions', label: 'Predictions' },
-  { value: 'bracket', label: 'Bracket' },
+  { value: 'bracket', label: 'Bracket health' },
   { value: 'tables', label: 'Tables' },
 ]
 
-const POINTS_TAB = { value: 'points', label: 'Points Breakdown' }
-const HEAD_TO_HEAD_TAB = { value: 'headToHead', label: 'Head-to-Head' }
+const KO_TABS = [
+  { value: 'overview', label: 'Overview' },
+  { value: 'points', label: 'Points' },
+  { value: 'predictions', label: 'Predictions' },
+]
+
+const HEAD_TO_HEAD_TAB = { value: 'headToHead', label: 'Head-to-head' }
 
 function viewedInsightSection(comparison, currentUserId) {
   if (!comparison) {
@@ -38,229 +51,31 @@ function viewedInsightSection(comparison, currentUserId) {
   return comparison.data?.insights?.other ?? { status: 'error', data: null, error: 'Points breakdown is unavailable.' }
 }
 
-const COMPETITION_CONTEXT = {
-  [LEAGUE_COMPETITION.ORIGINAL]: {
-    eyebrow: 'Viewing Original Predictor picks',
-    summary: 'Group scores, bracket picks and table evidence appear here as they are shared.',
-    pointsLabel: 'Original points',
-    releaseLabel: 'Original sharing',
-    controlsTitle: 'Choose Original or KO',
-  },
-  [LEAGUE_COMPETITION.KO_PREDICTOR]: {
-    eyebrow: 'Viewing KO Predictor picks',
-    summary: 'Real knockout fixture picks stay separate from the Original Predictor.',
-    pointsLabel: 'KO points',
-    releaseLabel: 'KO sharing',
-    controlsTitle: 'Choose KO or Original',
-  },
-}
-
 function setHashParams({ userId, competitionKey, tab }) {
   const params = new URLSearchParams()
   if (userId) params.set('user', userId)
   params.set('competition', competitionKey)
-  if (tab && tab !== 'predictions') params.set('tab', tab)
+  if (tab && tab !== 'overview') params.set('tab', tab)
   globalThis.history?.replaceState?.(null, '', `#/player?${params.toString()}`)
 }
 
-function formatRank(rank) {
-  return rank ? `#${rank}` : '—'
-}
-
-function statValue(value) {
-  return Number(value) > 0 ? value : '—'
-}
-
-function PlayerHeader({ view }) {
-  const context = COMPETITION_CONTEXT[view.competitionKey]
-
-  return (
-    <Card className={styles.header} as="section">
-      <div className={styles.hero}>
-        <div className={styles.heroCopy}>
-          <span className="page-eyebrow">{context.eyebrow}</span>
-          <PlayerIdentity player={view.player} isCurrentUser={view.player.isCurrentUser} size="large" />
-          <p>{context.summary}</p>
-        </div>
-        <Badge tone={view.release.state === 'released' ? 'safe' : 'info'}>{context.releaseLabel}</Badge>
-      </div>
-      <div className={styles.headerStats} aria-label="Player summary">
-        <div><strong>{formatRank(view.player.rank)}</strong><span>Rank</span></div>
-        <div><strong>{view.player.totalPoints}</strong><span>{context.pointsLabel}</span></div>
-        <div><strong>{statValue(view.counts.visiblePredictions)}</strong><span>Released picks</span></div>
-        <div><strong>{statValue(view.counts.protectedPredictions)}</strong><span>Hidden picks</span></div>
-      </div>
-    </Card>
-  )
-}
-
-function PanelIntro({ eyebrow, title, badge = null, children }) {
-  return (
-    <div className={styles.sectionIntro}>
-      <div>
-        <span className="page-eyebrow">{eyebrow}</span>
-        <h3>{title}</h3>
-        {children && <p>{children}</p>}
-      </div>
-      {badge}
-    </div>
-  )
-}
-
-function EmptyState({ title, children }) {
-  return (
-    <div className={styles.emptyState}>
-      <strong>{title}</strong>
-      <p>{children}</p>
-    </div>
-  )
-}
-
-function PredictionRow({ row }) {
-  return (
-    <article className={styles.row}>
-      <div className={styles.rowMain}>
-        <div>
-          <span>{row.stageLabel} · Match {row.matchNumber}</span>
-          <div className={styles.fixture}>
-            <TeamLabel team={row.homeTeam} label={row.homeLabel} unresolved={!row.homeTeam} compact />
-            <span>v</span>
-            <TeamLabel team={row.awayTeam} label={row.awayLabel} unresolved={!row.awayTeam} compact />
-          </div>
-        </div>
-        <div className={styles.chips}>
-          {row.visibility === 'visible' ? <Badge tone="safe">{row.outcomeLabel}</Badge> : <Badge tone="neutral">Protected</Badge>}
-          {row.jokerApplied && <Badge tone="warning">Joker</Badge>}
-        </div>
-      </div>
-      {row.visibility !== 'visible' && <p className={styles.protected}>{row.message}</p>}
-    </article>
-  )
-}
-
-function PredictionsPanel({ view }) {
-  return (
-    <Card className={styles.panel} as="section">
-      <PanelIntro
-        eyebrow="Predictions"
-        title="Match picks"
-        badge={<Badge tone="info">{view.counts.visiblePredictions}/{view.predictions.length} shown</Badge>}
-      >
-        Released picks appear here. Hidden picks stay hidden until sharing opens.
-      </PanelIntro>
-      {view.predictions.length === 0 ? (
-        <EmptyState title="No match picks to show yet">
-          This player’s picks will appear here once there is something available to share.
-        </EmptyState>
-      ) : (
-        <div className={styles.rows}>{view.predictions.map(row => <PredictionRow key={row.key} row={row} />)}</div>
-      )}
-    </Card>
-  )
-}
-
-function BracketPanel({ view, healthState, reference }) {
-  if (view.competitionKey !== LEAGUE_COMPETITION.ORIGINAL) {
-    return (
-      <Card className={styles.panel} as="section">
-        <PanelIntro eyebrow="Bracket" title="Original bracket only" />
-        <EmptyState title="No bracket in KO Predictor">
-          KO Predictor uses real knockout fixtures, so the pre-tournament bracket does not appear here.
-        </EmptyState>
-      </Card>
-    )
-  }
-
-  return (
-    <Card className={styles.panel} as="section">
-      <PanelIntro
-        eyebrow="Bracket"
-        title="Original bracket"
-        badge={<Badge tone="info">{view.bracketSummary.visibleCount}/{view.bracketSummary.totalCount} shown</Badge>}
-      >
-        Original bracket picks stay separate from KO Predictor match picks.
-      </PanelIntro>
-      <div className={styles.summaryStrip}>
-        <div><span>Champion pick</span><strong>{view.bracketSummary.champion ?? 'Hidden'}</strong></div>
-        <div><span>Released picks</span><strong>{view.bracketSummary.visibleCount}</strong></div>
-      </div>
-      {view.bracketPreview && (
-        <OriginalBracketHealth
-          reference={reference}
-          preview={view.bracketPreview}
-          liveSnapshot={healthState.snapshot}
-          status={healthState.status}
-          error={healthState.error}
-          subjectLabel={view.player.isCurrentUser ? 'Your' : `${view.player.displayName}’s`}
-        />
-      )}
-      {view.bracket.length === 0 ? (
-        <EmptyState title="No bracket picks to show yet">
-          Bracket picks will appear here once they are available to share.
-        </EmptyState>
-      ) : (
-        <div className={styles.rows}>{view.bracket.map(row => <PredictionRow key={row.key} row={row} />)}</div>
-      )}
-    </Card>
-  )
-}
-
-function TablesPanel({ view }) {
-  if (view.competitionKey !== LEAGUE_COMPETITION.ORIGINAL) {
-    return (
-      <Card className={styles.panel} as="section">
-        <PanelIntro eyebrow="Tables" title="Predicted tables" />
-        <EmptyState title="Tables belong to Original Predictor">
-          KO Predictor stays focused on the real knockout fixture list.
-        </EmptyState>
-      </Card>
-    )
-  }
-
-  return (
-    <Card className={styles.panel} as="section">
-      <PanelIntro
-        eyebrow="Tables"
-        title="Predicted tables"
-        badge={<Badge tone="info">{view.predictedTables.length} groups</Badge>}
-      >
-        Group table evidence is rebuilt from this player’s released group score picks.
-      </PanelIntro>
-      {view.predictedTables.length === 0 ? (
-        <EmptyState title="No table rows to show yet">
-          Predicted tables will appear here once released group picks are available.
-        </EmptyState>
-      ) : (
-        <div className={styles.tableGroups}>
-          {view.predictedTables.map(group => (
-            <section key={group.groupCode} className={styles.row}>
-              <div className={styles.tableGroupHeader}>
-                <h4>Group {group.groupCode}</h4>
-                <span>{group.rows.length} fixtures</span>
-              </div>
-              {group.rows.map(row => (
-                <div key={row.key} className={styles.tableRow}>
-                  <strong>Match {row.matchNumber}: {row.fixture}</strong>
-                  <span>{row.score ?? row.note}</span>
-                  {row.jokerApplied && <Badge tone="warning">Joker</Badge>}
-                </div>
-              ))}
-            </section>
-          ))}
-        </div>
-      )}
-    </Card>
-  )
-}
-
-export default function PlayerView({ client, reference, lifecycle, memberUserId = null, initialCompetition = LEAGUE_COMPETITION.ORIGINAL, initialTab = 'predictions', initialData = null }) {
+export default function PlayerView({
+  client,
+  reference,
+  lifecycle,
+  koReadiness = null,
+  memberUserId = null,
+  initialCompetition = LEAGUE_COMPETITION.ORIGINAL,
+  initialTab = 'overview',
+  initialData = null,
+}) {
   const [competitionKey, setCompetitionKey] = useState(initialCompetition)
   const [activeTab, setActiveTab] = useState(initialTab)
   const [state, setState] = useState(() => initialData
     ? { status: 'ready', data: initialData, error: null }
     : { status: 'loading', data: null, error: null })
   const [comparison, setComparison] = useState(null)
-  const [healthState, setHealthState] = useState({ status: 'unavailable', snapshot: null, error: null })
+  const [snapshotState, setSnapshotState] = useState({ status: 'unavailable', snapshot: null, error: null })
   const comparisonRequests = useRef(createLatestRequestGuard())
 
   const load = useCallback(async () => {
@@ -282,14 +97,14 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
   const canCompare = Boolean(currentUserId && viewedUserId && currentUserId !== viewedUserId)
 
   useEffect(() => {
-    if (!client || competitionKey !== LEAGUE_COMPETITION.ORIGINAL || !view?.bracketPreview) return undefined
+    if (!client || (!view?.bracketPreview && !canCompare)) return undefined
     let active = true
-    setHealthState({ status: 'loading', snapshot: null, error: null })
+    setSnapshotState({ status: 'loading', snapshot: null, error: null })
     loadCanonicalTournamentSnapshot(client, reference)
-      .then(snapshot => { if (active) setHealthState({ status: 'ready', snapshot, error: null }) })
-      .catch(error => { if (active) setHealthState({ status: 'error', snapshot: null, error: error instanceof Error ? error.message : String(error) }) })
+      .then(snapshot => { if (active) setSnapshotState({ status: 'ready', snapshot, error: null }) })
+      .catch(error => { if (active) setSnapshotState({ status: 'error', snapshot: null, error: error instanceof Error ? error.message : String(error) }) })
     return () => { active = false }
-  }, [client, competitionKey, reference, view?.bracketPreview])
+  }, [canCompare, client, reference, view?.bracketPreview])
 
   const standingsRows = useMemo(
     () => (state.data?.standingsRows ?? []).map(row => ({ ...row, isCurrentUser: row.userId === currentUserId })),
@@ -336,16 +151,18 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
   }, [loadComparison])
 
   const tabOptions = useMemo(() => {
-    const base = competitionKey === LEAGUE_COMPETITION.ORIGINAL
-      ? TAB_OPTIONS
-      : TAB_OPTIONS.filter(tab => tab.value === 'predictions')
-    const extended = [...base, POINTS_TAB]
-    if (canCompare) extended.push(HEAD_TO_HEAD_TAB)
-    return extended
+    const options = competitionKey === LEAGUE_COMPETITION.ORIGINAL ? [...ORIGINAL_TABS] : [...KO_TABS]
+    if (canCompare) options.push(HEAD_TO_HEAD_TAB)
+    return options
   }, [competitionKey, canCompare])
 
+  const competitionOptions = useMemo(
+    () => koReadiness?.open || competitionKey === LEAGUE_COMPETITION.KO_PREDICTOR ? COMPETITION_OPTIONS : COMPETITION_OPTIONS.slice(0, 1),
+    [competitionKey, koReadiness?.open],
+  )
+
   useEffect(() => {
-    if (state.status === 'ready' && !tabOptions.some(tab => tab.value === activeTab)) setActiveTab('predictions')
+    if (state.status === 'ready' && !tabOptions.some(tab => tab.value === activeTab)) setActiveTab('overview')
   }, [activeTab, state.status, tabOptions])
 
   useEffect(() => {
@@ -353,31 +170,27 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
     setHashParams({ userId: viewedUserId, competitionKey, tab: activeTab })
   }, [activeTab, competitionKey, state.status, viewedUserId])
 
-  if (state.status === 'loading' && !view) return <div className={styles.root} role="status">Loading player view…</div>
+  if (state.status === 'loading' && !view) return <SkeletonPage cards={2} label="Loading player view" />
   if (state.status === 'error') return <StatusBar tone="danger" title="Player view could not load" action={<Button variant="secondary" size="small" icon="refresh" onClick={load}>Try again</Button>}>{state.error}</StatusBar>
-  if (!state.data?.signedIn) return <StatusBar tone="info" title="Sign in to open player views" action={<LinkButton href="#/account" size="small">Account</LinkButton>}>Player prediction detail follows the same privacy rules as leagues and leaderboards.</StatusBar>
+  if (!state.data?.signedIn) return <StatusBar tone="info" title="Sign in to open player views" action={<LinkButton href="#/account" size="small">Account</LinkButton>}>Scored rows can still expose their points receipt where authorised; full profiles follow separate privacy rules.</StatusBar>
 
   return (
     <div className={styles.root}>
-      <PlayerHeader view={view} />
+      <PlayerHeader
+        view={view}
+        competitionOptions={competitionOptions}
+        onCompetitionChange={value => { setCompetitionKey(value); setActiveTab('overview') }}
+      />
       <StatusBar tone={view.release.state === 'released' ? 'safe' : 'info'} title={view.release.title}>{view.release.copy}</StatusBar>
+      <PlayerSectionNav activeTab={activeTab} options={tabOptions} onChange={setActiveTab} />
 
-      <Card className={`${styles.panel} ${styles.controls}`} as="section">
-        <div className={styles.controlIntro}>
-          <span className="page-eyebrow">Player picks</span>
-          <h2>{COMPETITION_CONTEXT[competitionKey].controlsTitle}</h2>
-        </div>
-        <Tabs label="Player View competition" value={competitionKey} options={COMPETITION_OPTIONS} onChange={value => { setCompetitionKey(value); setActiveTab('predictions') }} />
-        <Tabs label="Player View sections" value={activeTab} options={tabOptions} onChange={setActiveTab} />
-        <small className={styles.controlNote}>Original and KO Predictor stay separate. This page is read-only.</small>
-      </Card>
-
+      {activeTab === 'overview' && <OverviewPanel view={view} canCompare={canCompare} onOpenTab={setActiveTab} />}
       {activeTab === 'predictions' && <PredictionsPanel view={view} />}
-      {activeTab === 'bracket' && <BracketPanel view={view} healthState={healthState} reference={reference} />}
+      {activeTab === 'bracket' && <BracketPanel view={view} healthState={snapshotState} reference={reference} />}
       {activeTab === 'tables' && <TablesPanel view={view} />}
       {activeTab === 'points' && (
         <PlayerInsight
-          title={isSelf ? 'Your points story' : `${view.player.displayName}'s points story`}
+          title={isSelf ? 'Your points receipt' : `${view.player.displayName}'s points receipt`}
           section={viewedInsightSection(comparison, currentUserId)}
           leaderboardRows={standingsRows}
           player={{ ...view.player, isCurrentUser: isSelf }}
@@ -389,8 +202,9 @@ export default function PlayerView({ client, reference, lifecycle, memberUserId 
         <PlayerHeadToHead
           state={comparison}
           reference={reference}
+          liveSnapshot={snapshotState.snapshot}
           lifecycle={lifecycle}
-          onClose={() => setActiveTab('predictions')}
+          onClose={() => setActiveTab('overview')}
           context={PLAYER_COMPARISON_CONTEXT.OVERALL}
         />
       )}

@@ -197,7 +197,7 @@ export function buildPlayerView({
     competitionKey,
     player,
     release: buildPrivacyState({ journey, competitionKey, lifecycle, isSelf }),
-    tabs: Object.freeze(['predictions', 'bracket', 'tables']),
+    tabs: Object.freeze(['overview', 'points', 'predictions', 'bracket', 'tables']),
     predictions: predictionRows,
     bracket: bracketRows,
     bracketSummary: buildBracketSummary(bracketRows),

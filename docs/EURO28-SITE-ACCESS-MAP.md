@@ -108,10 +108,11 @@ the feature remains secondary until the group stage officially ends.
 ## 5A. Player insight access
 
 - Home shows concise competition-specific rank and leader-gap context.
-- Leaderboards remains the full signed-in player-insight destination until Stage 13G-C moves all player-name activation into one shared Player Overview surface.
-- Overall and private-league player identities retain the existing authorised H2H and points-story entry.
+- Overall and private-league player identities open one compact profile sheet and then the shared Player Overview route.
+- Player Overview owns the authorised points receipt, predictions, Original bracket health, predicted tables and H2H entry without combining competitions.
 - Match evidence deep-links to Match Centre and Original bracket evidence returns to the permanent Bracket destination.
-- Protected point detail remains protected even when a public standings row is visible.
+- Points evidence remains available wherever the viewer is authorised for the scored row; full-profile permission is evaluated separately.
+- Protected prediction detail remains protected even when a public standings row is visible.
 - Tournament-pick point presentation remains deferred to Stage 17A.
 
 ## 6. Results and Leaderboards separation
@@ -122,10 +123,17 @@ Leaderboards owns full Original and KO tables, competition selection, personal p
 
 Original and KO standings and totals never combine.
 
-Home retains the explicit competition deep links:
+Home always retains the Original competition deep link:
 
 - `#/leaderboards?competition=original`;
-- `#/leaderboards?competition=koPredictor`.
+
+The distinct KO deep link `#/leaderboards?competition=koPredictor` remains implemented, but Home
+only renders it after central KO readiness says the bonus game is primary. Early resolved fixtures
+remain reachable through the quiet KO entry paths without giving KO equal Home prominence.
+
+Public tournament intent is for signed-out visitors to read leaderboard rows without receiving a
+personal standing. The current authenticated-only RPC does not meet that intent; it remains a gated
+RLS/RPC and load-review stage, never a client-side simulated state.
 
 ## 7. Match organisation
 
@@ -203,4 +211,7 @@ Stage 13G-MATCH-CENTRE-REF Match Centre group-match reference adoption is accept
 
 After `64f2f3e`, the deployed user-facing destinations include the split Tournament/How to Play pages, rebuilt Account destination and restyled protected Admin control room. Match Centre remains contextual. The next Match Centre build may improve group-fixture content and conditional tabs, but it must not change the entry route shape or make Match Centre a permanent navigation item.
 
-Future Player View destinations should use `#/player/:userId`, `#/player/:userId/head-to-head` and `#/player/:userId/points` route shapes unless the implementation proves a better route contract before build. League rows should route to the dedicated Player View once Stage 13G-PLAYER-1 is implemented.
+Player View implementation proved one query-addressed route to be the safer hash-router contract:
+`#/player?user=<id>&competition=<key>&tab=<section>`. It keeps Overview, points, H2H, predictions,
+tables and bracket health reloadable without duplicating page controllers. League rows open the
+compact profile sheet before routing into this destination.
