@@ -20,7 +20,7 @@ that goes stale. The return-point commit is the exception, because holding it is
 | --- | --- |
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
-| Latest verified commit | `f303399 Finalize leagues and player profile experience` |
+| Latest verified commit | `a9789ba Finalize leagues and player profile experience` |
 | Current stage | The owner-approved `docs/reference-prototypes/euro28-product-experience-final.md` authority and no-loss legacy tracker reconciliation are in the working tree awaiting full checks. No runtime UI change is included in this adoption batch. |
 | Immediate next stage | Implement shared foundations and the canonical Tournament/qualification compound, including proper flags and the mandatory shared third-place table, then continue through the controlled production tracker. Prediction-write reliability remains a separate high-care stage. |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
