@@ -15,6 +15,11 @@ const requiredFiles = [
   'src/tournament/TournamentExperience.module.css',
   'src/tournament/__tests__/QualificationTables.test.jsx',
   'src/tournament/__tests__/TournamentExperience.test.jsx',
+  'src/results/ResultsExperience.jsx',
+  'src/results/ResultsExperience.module.css',
+  'src/results/resultsHubModel.js',
+  'src/results/__tests__/ResultsExperience.test.jsx',
+  'src/results/__tests__/resultsHubModel.test.js',
 ]
 for (const file of requiredFiles) {
   if (!exists(file)) fail(`Final Product Experience batch-one file is missing: ${file}`)
@@ -41,8 +46,10 @@ if (groups.includes('ranking.slice(0, 5)')) fail('Groups still hides the sixth t
 if (groups.includes('HOST_NATION_ISO') || groups.includes('VENUE_HOST_ISO')) fail('Groups still owns a page-local venue/host fact map.')
 
 const results = read('src/results/ResultsAndLeaderboards.jsx')
-for (const marker of ['QualificationTables', 'bestThird={state.data.live.bestThird}', 'contextLabel="Live qualification"']) {
-  if (!results.includes(marker)) fail(`Results does not pair group and third-place tables: ${marker}`)
+if (!results.includes('<ResultsExperience')) fail('Results is not composed through the phase-aware experience.')
+const resultsExperience = read('src/results/ResultsExperience.jsx')
+for (const marker of ['QualificationTables', 'bestThird={liveSnapshot.bestThird}', 'data-results-experience="phase-aware"', '<details']) {
+  if (!resultsExperience.includes(marker)) fail(`Results experience is missing its progressive tournament presentation: ${marker}`)
 }
 
 const tournament = read('src/tournament/TournamentExperience.jsx')

@@ -14,7 +14,7 @@ const playerComparison = [read('src/player/PlayerHeadToHead.jsx'), read('src/pla
 const leaguesPage = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresentation.jsx'), playerComparison].join('\n')
 const resultModel = read('src/results/resultModel.js')
 const resultService = read('src/results/resultService.js')
-const resultsPage = [read('src/results/ResultsAndLeaderboards.jsx'), read('src/results/ResultsPresentation.jsx'), playerComparison].join('\n')
+const resultsPage = [read('src/results/ResultsAndLeaderboards.jsx'), read('src/results/ResultsExperience.jsx'), read('src/results/ResultsPresentation.jsx'), playerComparison].join('\n')
 const productApp = read('src/App.jsx')
 const packageJson = JSON.parse(read('package.json'))
 
@@ -46,7 +46,7 @@ for (const required of [
 ]) assert(resultModel.includes(`export function ${required}`), `Missing result presentation model: ${required}`)
 
 assert(resultService.includes('Promise.allSettled'), 'Results loading must preserve partial section failures')
-assert(resultsPage.includes('Live bracket') && resultsPage.includes('separate from your picks'), 'Live bracket must identify itself as separate from saved picks')
+assert(resultsPage.includes('Live bracket') && resultsPage.includes('real tournament path') && resultsPage.includes('Original Bracket'), 'Live bracket must identify itself as separate from saved picks')
 assert(resultsPage.includes('Original and KO Predictor') && resultsPage.includes('separate leaderboards'), 'Results page must state the competition boundary')
 assert(resultsPage.includes('Recalculated from corrected result revision'), 'Points presentation must expose corrected-result recalculation')
 

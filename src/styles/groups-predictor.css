@@ -124,6 +124,11 @@
   box-shadow: 0 0 0 3px var(--dp-joker-soft), var(--shadow-1);
 }
 
+.group-match-card {
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
 /* THREE columns, because the line has three children.
  *
  * This read `minmax(0, 1fr) auto 1rem auto minmax(0, 1fr)` — five columns, from when
@@ -253,39 +258,26 @@
 }
 
 @media (max-width: 40rem) {
-  /* Buy the team columns their width back.
-   *
-   * At 390px the name box came to 80px and "Switzerland" wants 82 — it missed by two
-   * pixels, and the 2-line clamp broke it mid-word rather than lose it. Hyphenation is
-   * not the answer on its own: `hyphens: auto` is set on the name and Chromium on Linux
-   * ships no hyphenation dictionary, so it silently does nothing (measured, not assumed).
-   * The name has to FIT. Dropping this card's padding a step and closing the grid gap
-   * hands roughly 8px back to each team column, which clears the longest single-word name
-   * in the tournament — and costs nothing a player would notice, unlike shrinking the type.
-   */
-  .group-match-card {
-    padding: var(--space-3);
-  }
-
+  /* Teams keep full row width; the compact score control sits below them. */
   .group-match-card__prediction {
-    gap: var(--space-1);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "home away"
+      "score score";
+    gap: var(--space-2);
   }
 
-  .score-input {
-    grid-template-columns: 1fr;
-    min-height: 3.5rem;
+  .group-match-card .match-card__team--home {
+    grid-area: home;
   }
 
-  .score-input__step {
-    display: none;
+  .group-match-card .match-card__team--away {
+    grid-area: away;
   }
 
-  .score-input input {
-    border: 0;
-  }
-
-  .score-input--readonly {
-    width: 3.75rem;
+  .group-match-card [data-prediction-input-row="true"] {
+    grid-area: score;
+    justify-self: center;
   }
 
   .group-match-card .match-card__footer {

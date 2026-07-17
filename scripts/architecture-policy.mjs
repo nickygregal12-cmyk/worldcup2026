@@ -71,9 +71,9 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   // the Groups overrides of them live here — plus PredictionReview's rules, which
   // belong to a page that has not been re-cut.
   // 291 -> 305 when the phone breakpoint bought the team columns their width back. The
-  // rules have to be global: they override `match-card__*` class names MatchCard emits,
-  // which a CSS Module cannot reach.
-  'src/styles/groups-predictor.css': 305,
+  // compact score-row repair removes that obsolete width workaround; 305 -> 297. The
+  // remaining rules have to be global because they override MatchCard's emitted classes.
+  'src/styles/groups-predictor.css': 297,
   // 463 -> 462: the two rules that reached into TeamLabel from a KO score row are
   // now TeamLabel variants (alignEnd, collapseCopy), passed by the caller.
   'src/styles/knockout-experiences.css': 462,

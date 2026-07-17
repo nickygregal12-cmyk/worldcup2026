@@ -117,6 +117,14 @@ describe('Groups re-cut — one group at a time', () => {
     expect(screen.getByLabelText('England score in match 7')).toBeTruthy()
     expect(screen.queryByLabelText('Wales score in match 1')).toBeNull()
   })
+
+  it('uses the compact score-entry contract for every visible phone-first card', () => {
+    const { container } = renderGroups()
+    const scoreRows = container.querySelectorAll('[data-prediction-input-row="true"]')
+
+    expect(scoreRows).toHaveLength(6)
+    scoreRows.forEach(row => expect(row.getAttribute('data-compact')).toBe('true'))
+  })
 })
 
 describe('Groups re-cut — the card says when and where', () => {

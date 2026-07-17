@@ -37,4 +37,23 @@ describe('PredictionInputRow', () => {
     expect((html.match(/data-score-input="readonly"/g) ?? []).length).toBe(2)
     expect(html).not.toContain('<input')
   })
+
+  it('keeps both tap directions and direct entry in the compact phone layout', () => {
+    const html = renderToStaticMarkup(
+      <PredictionInputRow
+        homeValue={2}
+        awayValue={1}
+        homeLabel="Wales score"
+        awayLabel="Germany score"
+        compact
+        onHomeChange={() => {}}
+        onAwayChange={() => {}}
+      />,
+    )
+
+    expect(html).toContain('data-compact="true"')
+    expect(html).toContain('Decrease Wales score')
+    expect(html).toContain('Increase Wales score')
+    expect((html.match(/type="number"/g) ?? [])).toHaveLength(2)
+  })
 })

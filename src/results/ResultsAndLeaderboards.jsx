@@ -4,11 +4,12 @@ import { LEADERBOARD_COMPETITION } from '../app/appRoutes.js'
 import { loadOverallHeadToHead, loadResultsAndLeaderboards } from './resultService.js'
 import { buildCanonicalResultFeed, buildLeaderboardLifecycle, buildLiveBracketRounds, buildResultsLifecycle, RESULT_COMPETITION } from './resultModel.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
-import { Leaderboard, LiveBracket, ResultsFeed, SectionError } from './ResultsPresentation.jsx'
-import QualificationTables from '../tournament/QualificationTables.jsx'
+import { Leaderboard, SectionError } from './ResultsPresentation.jsx'
 import { buildStandingComparison } from '../leagues/leagueModel.js'
 import { PlayerHeadToHead, PlayerInsight, PLAYER_COMPARISON_CONTEXT, openPlayerView } from '../player/index.js'
 import { RESULTS_PAGE_VIEW } from './resultsAccess.js'
+import ResultsExperience from './ResultsExperience.jsx'
+import { buildResultsHubModel } from './resultsHubModel.js'
 import styles from './ResultsAccess.module.css'
 
 function AccessSwitcher({ view }) {
@@ -62,11 +63,10 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, k
     return () => { requestGuard.cancel() }
   }, [load])
 
-  const summary = state.data?.live?.summary ?? null
-  const hasResultSummary = Boolean(summary && [summary.confirmedMatches, summary.liveMatches, summary.pendingResults, summary.manualReviewResults].some(value => Number(value) > 0))
   const feed = useMemo(() => buildCanonicalResultFeed({ reference, liveSnapshot: state.data?.live }), [reference, state.data])
   const bracketRounds = useMemo(() => buildLiveBracketRounds({ reference, liveSnapshot: state.data?.live }), [reference, state.data])
   const resultsLifecycle = useMemo(() => buildResultsLifecycle({ lifecycle, liveSnapshot: state.data?.live }), [lifecycle, state.data])
+  const resultsHub = useMemo(() => buildResultsHubModel({ lifecycle, lifecycleState: resultsLifecycle, feed }), [lifecycle, resultsLifecycle, feed])
 
   const compareOverall = async (row, requestedCompetitionKey) => {
     if (!state.data?.currentUserId) return
@@ -144,16 +144,16 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, k
     rank: null,
     totalPoints: selectedPoints?.data?.totalPoints ?? 0,
   }
-  const title = isLeaderboards ? 'Full competition leaderboards' : 'Results, tables and live bracket'
+  const title = isLeaderboards ? 'Full competition leaderboards' : 'Results & standings'
 
   return (
-    <section className="foundation-panel foundation-results" aria-labelledby="euro28-results-heading">
+    <section className={`${isLeaderboards ? 'foundation-panel' : styles.resultsPage} foundation-results`} aria-labelledby="euro28-results-heading">
       <AccessSwitcher view={view} />
-      <div className="foundation-section-heading">
+      <div className={isLeaderboards ? 'foundation-section-heading' : styles.resultsHeader}>
         <div>
-          <span className="foundation-kicker">{isLeaderboards ? 'Separate competition standings' : 'Live tournament'}</span>
+          <span className="foundation-kicker">{isLeaderboards ? 'Separate competition standings' : 'Official tournament'}</span>
           <h2 id="euro28-results-heading">{title}</h2>
-          <p>{isLeaderboards ? 'View every ranked player and your points breakdown. Original and KO Predictor have separate leaderboards.' : 'Follow official results without changing your saved predictions.'}</p>
+          <p>{isLeaderboards ? 'View every ranked player and your points breakdown. Original and KO Predictor have separate leaderboards.' : 'Live scores, fixtures and the qualification picture.'}</p>
         </div>
       </div>
 
@@ -165,40 +165,15 @@ export default function ResultsAndLeaderboards({ client, reference, lifecycle, k
 
       {state.data && !isLeaderboards && (
         <>
-          <StatusBar tone={resultsLifecycle.tone} title={resultsLifecycle.title}>{resultsLifecycle.body}</StatusBar>
           <SectionError section={state.data.sections.live} fallback="Official results could not be loaded." />
-          {hasResultSummary && (
-            <div className="foundation-result-summary">
-              <div><strong>{summary.confirmedMatches}</strong><span>confirmed</span></div>
-              <div><strong>{summary.liveMatches}</strong><span>live</span></div>
-              <div><strong>{summary.pendingResults}</strong><span>pending scores</span></div>
-              <div><strong>{summary.manualReviewResults}</strong><span>manual review</span></div>
-            </div>
-          )}
           {state.data.live && (
-            <>
-              <ResultsFeed feed={feed} />
-              <div className="foundation-results-grid">
-                <article className="foundation-results-card">
-                  <span className="foundation-kicker">Live standings</span>
-                  <h3>Live group tables</h3>
-                  <p>Calculated only from live and confirmed group results.</p>
-                  <QualificationTables
-                    groupTables={state.data.live.groups}
-                    bestThird={state.data.live.bestThird}
-                    reference={reference}
-                    contextLabel="Live qualification"
-                    qualificationActive={hasResultSummary}
-                  />
-                </article>
-                <article className="foundation-results-card">
-                  <span className="foundation-kicker">Live bracket · separate from your picks</span>
-                  <h3>Knockout bracket</h3>
-                  <p>All 15 knockout matches are shown. Teams still to be decided stay marked TBC.</p>
-                  <LiveBracket rounds={bracketRounds} />
-                </article>
-              </div>
-            </>
+            <ResultsExperience
+              model={resultsHub}
+              feed={feed}
+              liveSnapshot={state.data.live}
+              bracketRounds={bracketRounds}
+              reference={reference}
+            />
           )}
         </>
       )}

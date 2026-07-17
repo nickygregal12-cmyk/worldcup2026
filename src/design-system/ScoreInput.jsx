@@ -12,6 +12,7 @@ export default function ScoreInput({
   state = 'idle',
   min = 0,
   max = 99,
+  compact = false,
   onChange,
 }) {
   // Values the user has already confirmed as intentional high scores, so we
@@ -23,6 +24,7 @@ export default function ScoreInput({
     styles.scoreInput,
     disabled || readOnly ? styles.readonly : '',
     grace ? styles.grace : '',
+    compact ? styles.compact : '',
     styles[state] ?? '',
   ].filter(Boolean).join(' ')
 
@@ -67,7 +69,8 @@ export default function ScoreInput({
   return (
     <div className={classes} data-score-input="editable" data-state={state}>
       <div className={styles.stepper}>
-        <button type="button" className={styles.step} aria-label={`Increase ${label}`} disabled={(value ?? 0) >= max} onClick={() => step(1)}>▲</button>
+        {compact && <button type="button" className={styles.step} aria-label={`Decrease ${label}`} disabled={(value ?? 0) <= min} onClick={() => step(-1)}>▼</button>}
+        {!compact && <button type="button" className={styles.step} aria-label={`Increase ${label}`} disabled={(value ?? 0) >= max} onClick={() => step(1)}>▲</button>}
         <input
           className={styles.number}
           type="number"
@@ -79,7 +82,8 @@ export default function ScoreInput({
           value={displayValue}
           onChange={onType}
         />
-        <button type="button" className={styles.step} aria-label={`Decrease ${label}`} disabled={(value ?? 0) <= min} onClick={() => step(-1)}>▼</button>
+        {compact && <button type="button" className={styles.step} aria-label={`Increase ${label}`} disabled={(value ?? 0) >= max} onClick={() => step(1)}>▲</button>}
+        {!compact && <button type="button" className={styles.step} aria-label={`Decrease ${label}`} disabled={(value ?? 0) <= min} onClick={() => step(-1)}>▼</button>}
       </div>
       {pendingHigh != null && (
         <div className={styles.confirm} role="group" aria-label={`Confirm ${pendingHigh} goals`}>

@@ -1,13 +1,32 @@
 .switcher {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
-  margin-bottom: var(--space-4);
+  display: inline-flex;
+  width: fit-content;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-full);
+  background: var(--dp-surface-page);
 }
 
 .switcher a {
-  min-height: 3.5rem;
+  min-height: 3rem;
   justify-content: center;
+}
+
+.resultsPage {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.resultsHeader h2 {
+  margin: var(--space-1) 0;
+  color: var(--dp-text-strong);
+  font-size: clamp(var(--text-2xl), 4vw, var(--text-3xl));
+}
+
+.resultsHeader p {
+  margin: 0;
+  color: var(--dp-text-muted);
 }
 
 .competitionTabs {
@@ -31,4 +50,16 @@
   display: grid;
   gap: var(--space-4);
   justify-items: start;
+}
+
+@media (max-width: 40rem) {
+  .switcher {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .switcher a {
+    width: 100%;
+  }
 }

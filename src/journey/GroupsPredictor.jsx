@@ -221,6 +221,7 @@ export default function GroupsPredictor({
           readOnly={scoreReadOnly}
           grace={hasGrace}
           state={state}
+          compact
           onHomeChange={homeScore => onChange(match, { homeScore })}
           onAwayChange={awayScore => onChange(match, { awayScore })}
         />}

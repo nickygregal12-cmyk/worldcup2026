@@ -16,13 +16,14 @@ export default function PredictionInputRow({
   readOnly = false,
   grace = false,
   state = 'idle',
+  compact = false,
   className = '',
 }) {
   return (
-    <div className={`${styles.row} ${className}`.trim()} data-prediction-input-row="true">
-      <ScoreInput value={homeValue} label={homeLabel} readOnly={readOnly} grace={grace} state={state} onChange={onHomeChange} />
+    <div className={`${styles.row} ${compact ? styles.compact : ''} ${className}`.trim()} data-prediction-input-row="true" data-compact={compact || undefined}>
+      <ScoreInput value={homeValue} label={homeLabel} readOnly={readOnly} grace={grace} state={state} compact={compact} onChange={onHomeChange} />
       <span className={styles.dash} aria-hidden="true">–</span>
-      <ScoreInput value={awayValue} label={awayLabel} readOnly={readOnly} grace={grace} state={state} onChange={onAwayChange} />
+      <ScoreInput value={awayValue} label={awayLabel} readOnly={readOnly} grace={grace} state={state} compact={compact} onChange={onAwayChange} />
     </div>
   )
 }

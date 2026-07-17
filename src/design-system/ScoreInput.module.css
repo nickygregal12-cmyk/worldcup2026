@@ -16,6 +16,23 @@
   width: 3.75rem;
 }
 
+.compact .stepper {
+  flex-direction: row;
+  width: auto;
+}
+
+.compact .step,
+.compact .number {
+  width: 3rem;
+  min-width: 3rem;
+  min-height: 48px;
+}
+
+.compact .step {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
 .step {
   min-height: 48px;
   border: 1px solid var(--dp-border-strong);

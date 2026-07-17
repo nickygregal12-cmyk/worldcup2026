@@ -24,6 +24,7 @@ const playerFacingFiles = [
   'src/koPredictor/KoPredictorMatchCentre.jsx',
   'src/koPredictor/koPredictorPresentationModel.js',
   'src/results/ResultsAndLeaderboards.jsx',
+  'src/results/ResultsExperience.jsx',
   'src/results/ResultsPresentation.jsx',
   'src/results/resultModel.js',
   'src/leagues/Leagues.jsx',
@@ -41,7 +42,6 @@ const combinedLower = combined.toLowerCase()
 const requiredPlainCopy = [
   ['top two teams qualify', 'best third-place teams'],
   ['team that goes through', 'scores and methods are not needed'],
-  ['follow official results', 'saved predictions'],
   ['live scores', 'shown separately from your picks'],
   // §5.8 amendment, owner-ratified by FINAL-LEAGUES-VERTICAL-SLICE: the generic Leagues
   // PageIntro is retired, so plain race/share language now lives in the selected-league hero.
@@ -53,6 +53,8 @@ const requiredPlainCopy = [
 for (const fragments of requiredPlainCopy) {
   if (!fragments.every(fragment => combinedLower.includes(fragment))) fail(`Plain player-facing replacement copy is missing fragments: ${fragments.join(' + ')}`)
 }
+if (!sources['src/results/ResultsAndLeaderboards.jsx'].includes('<ResultsExperience')) fail('Results must use its phase-aware presentation component')
+if (!sources['src/results/ResultsExperience.jsx'].includes('data-results-experience="phase-aware"')) fail('Results phase-aware presentation marker is missing')
 if (!combined.includes(ORIGINAL_BRACKET_CONTEXT_COPY)) fail('Original Bracket context copy constant is not available to player-facing surfaces')
 if (!combined.includes(ORIGINAL_BRACKET_KO_SUBLINE)) fail('Original Bracket KO subline copy constant is not available to player-facing surfaces')
 

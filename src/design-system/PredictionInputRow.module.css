@@ -12,3 +12,12 @@
   font-size: var(--text-xl);
   color: var(--dp-text-muted);
 }
+
+.compact {
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.compact .dash {
+  padding-top: 0;
+}

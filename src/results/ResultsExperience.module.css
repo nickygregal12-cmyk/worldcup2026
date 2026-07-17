@@ -1,0 +1,83 @@
+.experience { display: grid; gap: var(--space-4); }
+
+.fixtureSection,
+.dataSection,
+.archive {
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--dp-surface-raised);
+  box-shadow: var(--shadow-1);
+}
+
+.fixtureSection,
+.dataSection { padding: var(--space-4); }
+
+.sectionHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.sectionHeading > div { display: grid; gap: var(--space-1); }
+.sectionHeading span { color: var(--dp-action-ink); font-size: var(--text-xs); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.sectionHeading h3 { margin: 0; color: var(--dp-text-strong); font-size: var(--text-xl); }
+.sectionHeading > strong { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border-radius: var(--radius-full); background: var(--dp-info-soft); color: var(--dp-info-ink); }
+
+.fixtureGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+
+.fixtureCard {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-page);
+  color: var(--dp-text-body);
+  text-decoration: none;
+  transition: border-color var(--motion-micro) var(--ease-standard), transform var(--motion-micro) var(--ease-standard);
+}
+
+.fixtureCard:hover { border-color: var(--dp-action); transform: translateY(-1px); }
+.fixtureCard:focus-visible { outline: 2px solid var(--dp-action); outline-offset: 2px; }
+.fixtureCard.live { border-color: var(--dp-danger); background: var(--dp-danger-soft); }
+.fixtureCard.completed { border-color: var(--dp-success); }
+.fixtureCard header,
+.fixtureCard footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.fixtureCard header > span,
+.fixtureCard footer > span { color: var(--dp-text-muted); font-size: var(--text-xs); font-weight: 700; }
+
+.fixtureTeams { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-3); }
+.fixtureTeams > :last-child { justify-self: end; text-align: right; }
+.score { color: var(--dp-text-strong); font: 800 var(--text-xl)/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.open { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--dp-action-ink) !important; white-space: nowrap; }
+
+.sectionCopy,
+.quietNote { margin: 0 0 var(--space-3); color: var(--dp-text-muted); font-size: var(--text-sm); }
+.quietNote { padding: 0 var(--space-1); }
+
+.archive { overflow: hidden; }
+.archive > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); min-height: 4.5rem; padding: var(--space-3) var(--space-4); cursor: pointer; list-style: none; }
+.archive > summary::-webkit-details-marker { display: none; }
+.archive > summary > span { display: grid; gap: var(--space-1); color: var(--dp-text-muted); font-size: var(--text-xs); }
+.archive > summary > span:last-child { display: flex; align-items: center; text-align: right; }
+.archive small { color: var(--dp-action-ink); font-size: var(--text-xs); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.archive strong { color: var(--dp-text-strong); font-size: var(--text-body); }
+.archive[open] > summary { border-bottom: 1px solid var(--dp-border-subtle); }
+.archiveBody { padding: var(--space-3); }
+.archiveBody > article { border: 0; padding: 0; box-shadow: none; }
+
+@media (max-width: 48rem) {
+  .fixtureGrid { grid-template-columns: 1fr; }
+  .fixtureSection,
+  .dataSection { padding: var(--space-3); }
+}
+
+@media (max-width: 40rem) {
+  .fixtureCard footer { align-items: flex-start; }
+  .fixtureCard footer > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .archive > summary { align-items: flex-start; min-height: 4rem; }
+  .archive > summary > span:last-child { justify-content: flex-end; }
+}

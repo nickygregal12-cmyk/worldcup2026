@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 31564)
+Total output lines: 1520
+
 ### Stage CONTRACTS-PROTOTYPE-V2-INSTALL
 
 Home, Groups, KO Predictor and Original Bracket are now governed by their `-v2` reference prototypes; the v1 files are retained with a `-v1-superseded` suffix as provenance only and are never implemented against. Recorded in the Decision Register, the Design Charter (v1.15) and the Functional Completion Ledger. Docs/audit-only: no `src/`, scoring, resolver, Supabase write, Auth, service-role, fake-result, league-write or migration change is introduced. It introduces no migration change; active migrations remain 21 and Migration 020 is applied. Active migrations remain 21 and Migration 020 is applied at the current head, corrected from the stale count of 19 that predated `202607080020_euro28_matches_venue_fk.sql`.
@@ -12,9 +15,22 @@ Accepted as a broad player-facing copy repair before continuing to `STAGE-CORE-P
 
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.42 — shared qualification and Tournament implementation
+### Version 4.43 — phone Groups and phase-aware Results repair
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
+
+### Stage PRODUCT-EXPERIENCE-FINAL-BATCH-1-VISUAL-REPAIR
+
+The first owner eye test after the shared Tournament/qualification slice found two presentation
+failures: Groups inherited the shared score primitive's desktop vertical geometry on phones, and
+Results still presented the entire historical feed, zero-value qualification tables and unresolved
+knockout bracket as one unfinished page. The repair keeps both arrow steppers and direct entry but
+uses the primitive's compact composition inside Groups. Results now derives one phase-aware view
+from the existing canonical feed: current fixtures first, a bounded next list, group/third-place
+qualification only after result activity, the real bracket only as the groups near completion, and
+the complete feed in progressive disclosure. Never restore page-local flags, duplicate result data
+or permanently expanded all-tournament content. This remains read-only presentation/model work;
+scoring, resolver, locks, Supabase writes, Auth, RLS and migrations stay outside scope.
 
 ### Stage PRODUCT-EXPERIENCE-FINAL-BATCH-1
 
@@ -826,101 +842,7 @@ Stage 13G-C6 simplifies the default private-league shell around the compact tabl
 
 ## Stage 16A-P1 agent rules — synthetic identity plumbing
 
-Stage 16A-P1 Privacy-safe synthetic identity plumbing is complete as local catalogue and guard tooling only.
-
-Agents must preserve these rules:
-
-- Use exactly nineteen deterministic personas: `exact_score_heavy`, `outcome_only`, `all_wrong`, `partial_predictions`, `no_predictions`, `submitted_complete`, `unsubmitted_identical`, `joker_cap_reached`, `zero_jokers`, `engineered_tie_a`, `engineered_tie_b`, `bracket_survives_deep`, `bracket_dead_early`, `ko_only`, `original_only`, `ko_advancing_only`, `ko_method_variant`, `ko_joker_variant`, `correction_sensitive`.
-- Every future synthetic account must use `@synthetic.euro28.test` and `synthetic_euro28: true`.
-- Teardown must require both markers before deletion.
-- P1 contains no database writes, no user creation, no service-role handling, no UI exposure, no scoring changes, no resolver changes and no Migration 019.
-- Tooling must fail closed to Euro staging `gcfdwobpnanjchcnvdco` and explicitly block WC26 production `ouhxawizadnwrhrjppld`.
-- Original Predictor and KO Predictor evidence must remain separate.
-- Do not start the full seeded cast until Stage 16A-P2 is complete or deliberately re-sequenced.
-
-
-
-## Stage 13G-REF agent rules — Home and League prototype adoption
-
-The approved Home and League prototypes are reference artefacts only. Agents must rebuild natively in the Euro design system rather than porting single-file HTML, CSS or JavaScript.
-
-Mandatory Home rules:
-
-- Use one countdown only: `First match & prediction lock`, `Euro 2028 starts in`, `Predictions lock at first kick-off.` and `One deadline. Your Original Predictor locks when the opening match kicks off.`
-- The Home countdown, displayed prediction-lock deadline and Original Predictor lock enforcement must read the same central first-kick-off config value.
-- Before KO Predictor readiness, Home has zero KO Predictor presence: no card, tease, prompt, locked state, countdown, banner or placeholder.
-- Before readiness, KO Predictor discovery is only in the More sheet and the how-to-play guide; the guide line is `everyone starts the knockouts on zero`.
-- One readiness signal governs nav tab, Home KO card existence, More KO entry state and league KO standings together.
-- Signed-out Home uses the approved thesis hook, three-beat flow, account-first CTAs and guest-draft promise.
-- Matchday Home leads with points/rank and uses row order live → upcoming by kick-off → finished.
-- Bottom nav baseline rule: the Home circle overlaps the bar line and all five labels share one baseline.
-
-Mandatory League rules:
-
-- League tables are pure: one running total per competition, no stat chips.
-- Gap-to-leader appears on every row; leader shows clear of second.
-- Top-three badges are designed elements: accent-filled first, accent outline second, quiet ring third. No gold and no emoji.
-- Player row tap opens the dedicated S5 player view; inline H2H below the league is retired.
-- League switching uses a design-system bottom sheet; delete uses danger-ghost plus shared dialog; copy invite uses confirmed-state plus toast; freshness is passive with no refresh controls.
-- KO pre-readiness has no KO tab and no KO table. It shows only: `KO Predictor standings arrive at the knockouts — everyone starts on zero.`
-- One central readiness signal drives the KO note, competition tabs and player-view KO line.
-- Rules strip must render from the central versioned ruleset.
-
-Do not import prototype sample data, stub toasts, state switches, readiness switches, Google-hosted fonts, CDN flags or single-file architecture. This reference-adoption package creates no Migration 019 and leaves active migrations at 18.
-
-
-Stage 13G-REF phrase locks: Home and League reference prototype adoption; euro28-home-page-prototype.html; euro28-league-page-prototype.html; not as code to port; sample data; stub toasts; prototype switches; Google-hosted fonts; CDN flags; single-file architecture; same central first-kick-off config value; Predict every match. Beat your mates.; updates if your group predictions change; stat-chip question is closed; rules strip renders from the central versioned ruleset.
-
-
-Stage 13G-REF audit phrase locks: one countdown, not two; KO Predictor zero Home presence pre-readiness; no KO Predictor card; navigation tab state; More sheet KO entry state; league KO standings availability; leader shows points clear of second; inline-H2H-below-the-league presentation is retired; Freshness is passive.
-
-## Stage 13G-REF-2 — Groups and Original Bracket Reference Prototype Adoption
-
-Status: **SCHEDULED — docs/audit only**
-Package date: 2026-07-04
-Amended package: includes Groups decisions 9 and 10 before local application
-Branch target: `euro28-development`
-
-This package records the approved **Groups** and **Original Bracket** reference prototypes before any build work. It follows the established format: ledger rows first; rebuild natively in the real Euro design system; the prototype's behaviour, hierarchy and copy are the spec; conflicts with confirmed rules are flagged, never silently resolved.
-
-Reference artefacts:
-
-- `docs/reference-prototypes/euro28-groups-page-prototype.html`
-- `docs/reference-prototypes/euro28-bracket-page-prototype.html`
-
-These are **reference artefacts, not code to port**. Do not import their sample data, prototype switches, Google-hosted fonts, CDN flags, single-file structure or hardcoded demo picks/results.
-
-Scope locks:
-
-- no UI build
-- no route implementation
-- no scoring change
-- no resolver change
-- no Supabase write
-- no fixture-data implementation
-- no score-stepper UI implementation
-- no migration change in this slice
-- active migrations remain 21
-
-## Stage 13F-K3 preservation repair
-
-The Stage 13F-K3 staging acceptance evidence marker must remain preserved across later documentation amendments.
-
-Required preserved marker:
-
-`b7f50de`
-
-Required register line:
-
-`Stage 13F-K3 staging acceptance evidence remains recorded at commit b7f50de and must remain preserved across later Stage 13G and Stage 16A documentation amendments.`
-
-This package includes an idempotent application script that restores the marker if it has been dropped.
-
-## Groups — ledger rows first
-
-| Ledger row | Status | Record |
-| --- | ---: | --- |
-| 13G Groups reference prototype adoption | SUPERSEDED / SCHEDULED | Superseded by `STAGE-CORE-PAGE-ADOPTION-1` in the v9+ order; approved Groups prototype remains binding and must be rebuilt natively, not ported. |
+Stage 16A-P1 Privac…1564 tokens truncated…tion | SUPERSEDED / SCHEDULED | Superseded by `STAGE-CORE-PAGE-ADOPTION-1` in the v9+ order; approved Groups prototype remains binding and must be rebuilt natively, not ported. |
 | S3.1 Joker control | AMENDED / CLOSED | The bare `J` circle is retired. The joker control is a pill with star icon, `Joker` label and `2×` when armed. Gold fill and gold card border appear when on. Disabled treatment appears at cap. |
 | Groups joker meter | SCHEDULED | A five-dot gold JOKER METER sits in the page controls. The same meter pattern is used everywhere jokers exist, including Groups and KO. |
 | S3.3 Groups view switcher | AMENDED / CLOSED | `By group | By date` uses the design-system segmented control. Phase defaults follow the recorded rule: by group while predicting, by date once play begins. |

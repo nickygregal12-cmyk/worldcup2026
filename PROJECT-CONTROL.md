@@ -20,9 +20,9 @@ that goes stale. The return-point commit is the exception, because holding it is
 | --- | --- |
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
-| Latest verified commit | `6bb5de1 Adopt final Product Experience contract` |
-| Current stage | Final Product Experience batch one under `docs/reference-prototypes/euro28-product-experience-final.md` is implemented in the working tree: Groups, Results and Tournament share the six-team third-place qualification compound, and Tournament is live-aware. The full repository check passes; owner visual review remains open. The preceding authority adoption remains docs-only: No runtime UI change is included in this adoption batch. |
-| Immediate next stage | Complete real-device visual review for Tournament/qualification, then continue Teams/Team Profile and the remaining Groups tracking states. Prediction-write reliability remains a separate high-care stage. |
+| Latest verified commit | `feae838 Implement shared qualification and Tournament experience` |
+| Current stage | Final Product Experience batch-one owner-review repair under `docs/reference-prototypes/euro28-product-experience-final.md` is in the working tree: Groups uses compact phone score entry without losing arrows or direct typing, and Results is phase-aware rather than an always-expanded historical feed. Tournament and the shared six-team third-place qualification compound remain in place. The full repository check passes; owner visual review remains open. The preceding authority adoption remains docs-only: No runtime UI change is included in this adoption batch. |
+| Immediate next stage | Deploy the repair for real-device light/dark review of Groups, Results and Tournament; then continue Teams/Team Profile and the remaining Groups tracking states. Prediction-write reliability remains a separate high-care stage. |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
 | Active migration count | Owned by `docs/DATABASE.md` — not repeated here. Asserted against `supabase/migrations/` by `audit:governance-coherence`. |
 | Migration 021 | Present as `202607090021_euro28_venue_metadata.sql`; `docs/DATABASE.md` owns the active sequence. Any later migration must verify local and Euro staging alignment first. |
