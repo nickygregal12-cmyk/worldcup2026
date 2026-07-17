@@ -12,9 +12,27 @@ Accepted as a broad player-facing copy repair before continuing to `STAGE-CORE-P
 
 # EURO 2028 PREDICTOR
 ## Agent Rules and Functional-Completion Roadmap
-### Version 4.40 — Product Experience v3 slice 1 implemented
+### Version 4.41 — final Product Experience authority adopted
 
 > **Authority:** The Decision Register governs product rules. The Design Charter governs presentation and frontend architecture. The Functional Completion Ledger governs actual state. This document governs process and sequence.
+
+### Stage PRODUCT-EXPERIENCE-FINAL-ADOPTION
+
+The binding implementation reference is
+`docs/reference-prototypes/euro28-product-experience-final.md`. Product Experience v3 and older
+prototype files are provenance; do not reconcile their visual differences page by page. Adapt the
+existing production React, CSS Modules, model/service and Supabase architecture to the final
+contract. Never port prototype markup or mock state.
+
+Implementation is batch-based: shared primitives and canonical data contracts precede consuming
+pages; every group-table/qualification context composes the same third-place qualification table;
+flags come from the shared ISO-keyed asset component; League Table and Activity replace one another;
+Player Profile is a destination hub; Tournament owns football reference facts and How to Play owns
+predictor rules. Each batch updates the ledger, adds focused enforcement, passes the full suite and
+enters phone/tablet/desktop light/dark owner review. Prediction-write, scoring, signup/moderation,
+simulation, live-readiness and official-data work remain parallel safety programmes and cannot be
+closed by cosmetic work. Scoring, resolver, Auth, Supabase writes and migrations remain outside this
+adoption stage.
 
 ### Stage PRODUCT-EXPERIENCE-V3-SLICE-1
 

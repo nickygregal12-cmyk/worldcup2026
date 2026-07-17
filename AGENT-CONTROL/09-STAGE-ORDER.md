@@ -2,13 +2,13 @@
 
 ## Current Priorities
 
-- Current product priority: review Product Experience v3 slice 1 in both themes and approve or
-  repair its phone/tablet/desktop presentation.
-- Current implementation checkpoint: visual CI, shell, Home, More, Groups landing, Original
-  Bracket emphasis, independent league collections, quick player profiles and Match Centre are in
-  the working tree.
-- Next v3 depth: pinned-rival persistence and placements, fuller Results impact storytelling and
-  owner-requested visual polish after the review gallery.
+- Current product priority: adopt and implement the owner-approved final Product Experience in
+  controlled, visually reviewed batches without changing the existing scoring or competition rules.
+- Current implementation checkpoint: the final contract is the sole visual/product-experience
+  authority. Earlier Product Experience v3 work remains production code to improve, not a competing
+  design authority.
+- Next implementation batch: shared foundations plus the canonical Tournament/qualification
+  compound, including proper flags and the mandatory shared third-place qualification table.
 - Prediction-save conflict-loop repair remains a separate high-care stage with a fresh backup.
 - Scoring, resolver, Auth, public signup and migrations remain out of scope unless explicitly opened.
 
@@ -24,9 +24,10 @@
 
 ## Superseded Design Programme (DP) stage plan — installed 2026-07-10
 
-Product Experience v3 supersedes this programme as the current visual/behaviour authority. The
+The final Product Experience supersedes this programme as the current visual/product-experience
+authority. The
 completed plan is retained here as implementation history and as evidence for already-landed
-architecture. New work follows `docs/reference-prototypes/euro28-product-experience-v3.md` while
+architecture. New work follows `docs/reference-prototypes/euro28-product-experience-final.md` while
 preserving existing functional contracts. Every per-page re-cut stage below originally inherited the
 **per-page finalisation standard by reference** (recorded 2026-07-09): each exits FINAL — flaws
 fixed in-stage, CSS modularised in-stage, no scaffold UI, fail-loud provisional indicators are

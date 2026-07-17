@@ -1,3 +1,26 @@
+## Stage PRODUCT-EXPERIENCE-FINAL-ADOPTION (2026-07-17 — owner-approved)
+
+The owner approved `docs/reference-prototypes/euro28-product-experience-final.md` as the sole
+binding visual/product-experience contract. It supersedes Product Experience v3 and every older
+page prototype on appearance and on its explicit behaviour amendments. Those older references are
+retained as provenance and continue to supply content/interaction requirements only where the final
+contract does not amend them. Prototype markup, people, fixtures, points and calculations are not
+production source and must not enter the live module graph.
+
+This final direction retains the existing light/dark palette, five-position app shell, Original/KO
+competition boundary, central data/service ownership and server-enforced locks/privacy. It adds the
+destination-based Player Profile hub, mutually exclusive League Table/Activity views, upgraded Team
+Profile, stage-aware Match Centre and a useful Tournament football-reference destination. Every
+group-table or qualification context must compose the shared third-place qualification table from
+the canonical resolver data; emoji icons/flags and page-local tournament facts are prohibited.
+
+The old master tracker is reconciled into the production implementation tracker as parallel visual,
+prediction-write, scoring, CI, signup/moderation, simulation, live-readiness and official-data work
+programmes. A visual rebuild cannot silently close one of those correctness or launch-safety tracks.
+Implementation proceeds in controlled batches with focused enforcement, full checks and owner visual
+review. This adoption changes no runtime page, scoring, resolver, Auth, Supabase write, RLS,
+production data or migration.
+
 ## Stage FINAL-LEAGUES-VERTICAL-SLICE (2026-07-17 — owner visual direction)
 
 The owner selected the navy/sky, compact FPL-style Leagues review as the final production direction

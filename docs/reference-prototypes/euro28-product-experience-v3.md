@@ -1,5 +1,9 @@
 # Euro 2028 Predictor — Product Experience v3
 
+> **SUPERSEDED 17 July 2026.** Retained as provenance only. The binding visual/product-experience
+> authority is `euro28-product-experience-final.md`. Do not implement new work against v3 where the
+> final contract amends it.
+
 ## Status
 
 Owner-approved product and visual contract, recorded 2026-07-16.

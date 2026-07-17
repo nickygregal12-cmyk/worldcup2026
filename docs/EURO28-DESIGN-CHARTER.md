@@ -1,15 +1,15 @@
 # EURO 2028 PREDICTOR
 ## Design Charter
-### Version 1.17 — Product Experience v3 visual direction; non-visual rules remain live
+### Version 1.18 — final Product Experience visual direction; non-visual rules remain live
 
-> **SUPERSESSION BANNER (2026-07-16 — Stage DESIGN-REFRESH-V3-ADOPTION).** The **visual
+> **SUPERSESSION BANNER (2026-07-17 — Stage PRODUCT-EXPERIENCE-FINAL-ADOPTION).** The **visual
 > direction** of this Charter — identity, colour roles and values, typography choices, spacing
 > and shape values, iconography direction, page composition and the visual treatment of the
 > reference prototypes — is **SUPERSEDED** by
-> `docs/reference-prototypes/euro28-product-experience-v3.md`, now the binding visual/behaviour
-> authority (registered in `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`). Where this Charter and v3
-> differ on appearance, v3 wins. The existing semantic token palettes remain the implementation
-> source of colour truth.
+> `docs/reference-prototypes/euro28-product-experience-final.md`, now the binding visual/product-
+> experience authority (registered in `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`). Where this Charter
+> and the final contract differ on appearance, the final contract wins. The existing semantic
+> token palettes remain the implementation source of colour truth.
 >
 > **What remains LIVE in this Charter (not superseded):** the non-visual/process rules —
 > §11 Frontend architecture and enforcement in full (component ownership, scoped styling / CSS
@@ -18,12 +18,12 @@
 > completion terminology), the visual-contract *process discipline* (§12A), and the
 > Original/KO separation and predicted-vs-live distinction principles. These continue to govern.
 > Individual visual sections below (§1, §4, §5, §6, §8, colour/type/spacing specifics) are
-> retained for provenance but yield to Product Experience v3 on any appearance question.
+> retained for provenance but yield to the final Product Experience on any appearance question.
 >
 > **Authority:** This document governs the Euro 2028 Predictor's non-visual frontend rules and,
-> for provenance, its former visual direction. Product Experience v3 governs appearance. The
+> for provenance, its former visual direction. The final Product Experience governs appearance. The
 > Consolidated Decision Register governs product rules. The Agent Rules govern build process. A
-> visual deviation is now proposed against Product Experience v3, not here.
+> visual deviation is now proposed against the final Product Experience, not here.
 
 ## 1. Identity — CONFIRMED
 

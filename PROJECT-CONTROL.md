@@ -20,9 +20,9 @@ that goes stale. The return-point commit is the exception, because holding it is
 | --- | --- |
 | Project | Euro 2028 Predictor |
 | Branch | `euro28-development` |
-| Latest verified commit | `fabdde8 The dashboard stops naming Leagues the next unfinished page, because it closed on the 16th` |
-| Current stage | Product Experience v3 slice 2 coherence work is implemented in the working tree and awaiting full checks plus owner visual review. |
-| Immediate next stage | Review Leagues, Player Overview, points receipts and H2H across breakpoints/themes; then build the scheduled Results/Leaderboards/Match Centre story and separately review public leaderboard database access. Prediction-write reliability remains a separate high-care stage. |
+| Latest verified commit | `f303399 Finalize leagues and player profile experience` |
+| Current stage | The owner-approved `docs/reference-prototypes/euro28-product-experience-final.md` authority and no-loss legacy tracker reconciliation are in the working tree awaiting full checks. No runtime UI change is included in this adoption batch. |
+| Immediate next stage | Implement shared foundations and the canonical Tournament/qualification compound, including proper flags and the mandatory shared third-place table, then continue through the controlled production tracker. Prediction-write reliability remains a separate high-care stage. |
 | Current deployment URL | `https://euro28-predictor-dev.netlify.app` |
 | Active migration count | Owned by `docs/DATABASE.md` — not repeated here. Asserted against `supabase/migrations/` by `audit:governance-coherence`. |
 | Migration 021 | Present as `202607090021_euro28_venue_metadata.sql`; `docs/DATABASE.md` owns the active sequence. Any later migration must verify local and Euro staging alignment first. |
@@ -37,10 +37,10 @@ must exist and must be an ancestor of `HEAD`.
 
 ## Immediate Priority Order
 
-1. **Product Experience v3 slice 2 acceptance** — full checks and phone/desktop, light/dark visual
-   review for Leagues, Player Overview, points receipts, H2H and lifecycle states.
-2. **Results story slice** — dynamic Results, Leaderboards and Match Centre consequences from
-   canonical data. Signed-out public leaderboard reads require a separate RPC/RLS review.
+1. **Final Product Experience adoption** — make the final contract, route register and enforcement
+   gate the sole implementation authority; keep older prototypes as provenance.
+2. **Shared foundations and Tournament/qualification** — shared flags, compound group/third-place
+   presentation and canonical football facts before consuming pages are rebuilt.
 3. **The `visual.yml` CI lift** — the visual tier runs on this Mac but has no CI workflow.
    `.github/workflows/` currently holds only `euro28-checks.yml`.
 4. **The `save_my_prediction_bundle` conflict-loop fix — high care.** On 2026-07-14 a runaway
@@ -77,5 +77,5 @@ Not forgotten, not blocked — sequenced on purpose. Do not pick these up opport
   record the conflict** — do not resolve it silently (CLAUDE.md §0, Constitution §5.8).
 
 <!-- Owner-judgement fields (current stage, priorities, blockers, deferrals) supplied by owner ruling
-     2026-07-16. Mechanical fields (verified commit, migration count, visual tooling) are verified
+     2026-07-17. Mechanical fields (verified commit, migration count, visual tooling) are verified
      against the tree, not asserted from memory. -->

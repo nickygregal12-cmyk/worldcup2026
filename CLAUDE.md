@@ -24,15 +24,15 @@ resolving it silently.
   ratchet, never loosened to pass — §5.8 exceptions require an explicit owner decision
   recorded in the code and the commit).
 - The Consolidated Decision Register — product decisions (append-only).
-- `docs/reference-prototypes/euro28-product-experience-v3.md` — the binding Product
-  Experience v3 visual/behaviour contract. The non-visual architecture rules in
+- `docs/reference-prototypes/euro28-product-experience-final.md` — the binding final
+  visual/product-experience contract. The non-visual architecture rules in
   `docs/EURO28-DESIGN-CHARTER.md` remain live.
 - The other approved prototypes in `docs/reference-prototypes/` remain binding content/
-  interaction contracts where Product Experience v3 does not amend them.
+  interaction contracts where the final product-experience contract does not amend them.
 - `docs/RULES-SCORING-LOCKED-CONTRACT.md` — the ONLY scoring authority. See §4.
 - `docs/design programme/` is superseded visual provenance. It no longer governs new
   implementation; owner rulings extracted from it remain binding only where preserved in
-  the Decision Register or Product Experience v3.
+  the Decision Register or the final product-experience contract.
 
 ## 2. Git and cross-session truths
 

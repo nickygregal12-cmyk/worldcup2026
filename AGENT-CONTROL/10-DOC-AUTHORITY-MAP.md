@@ -77,7 +77,7 @@ order. `10` is this map.
 | --- | --- |
 | `docs/EURO28-PROJECT-CONSTITUTION.md` | Process law: discrepancies reported not resolved; the check suite is a ratchet. |
 | `docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md` | The append-only register of confirmed product decisions. |
-| `docs/EURO28-DESIGN-CHARTER.md` | Non-visual design law (architecture, CSS Modules, tokens). Visual direction is superseded by Product Experience v3. |
+| `docs/EURO28-DESIGN-CHARTER.md` | Non-visual design law (architecture, CSS Modules, tokens). Visual direction is superseded by the final Product Experience. |
 | `docs/RULES-SCORING-LOCKED-CONTRACT.md` | The ONLY scoring authority. Nothing else may assert point values. |
 
 ### Current state and plan
@@ -152,7 +152,7 @@ order. `10` is this map.
 | Path | Its one job |
 | --- | --- |
 | `docs/archive/` | Frozen history. Every file carries the ARCHIVED banner. Never current guidance. |
-| `docs/reference-prototypes/` | Product Experience v3 plus approved prototypes. `euro28-product-experience-v3.md` is the binding visual/behaviour authority; other references remain binding content/interaction contracts where v3 does not amend them. |
+| `docs/reference-prototypes/` | Final Product Experience plus historical references. `euro28-product-experience-final.md` is the sole binding visual/product-experience authority; v3 and older references are provenance and retain content/interaction requirements only where the final contract does not amend them. |
 | `docs/design programme/` (note the space) | Superseded visual provenance. It does not govern new implementation. |
 | `docs/design-workshop/locked-design-docs-v9/` | The locked v9 design pack — a frozen source snapshot. |
 | `docs/design-baselines/` | Visual baseline captures used for review and regression. |

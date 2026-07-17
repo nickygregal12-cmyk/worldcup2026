@@ -1,10 +1,11 @@
-> **SUPERSEDED VISUAL SET — Product Experience v3 (2026-07-16).**
-> `docs/reference-prototypes/euro28-product-experience-v3.md` is the binding visual/behaviour
-> authority. The contracts inventoried below remain binding for content and interaction where v3
-> does not amend them. Their earlier visual treatment is retained for provenance only. See
+> **SUPERSEDED VISUAL SET — final Product Experience (2026-07-17).**
+> `docs/reference-prototypes/euro28-product-experience-final.md` is the sole binding visual/product-
+> experience authority. Product Experience v3 and the contracts inventoried below are provenance;
+> they retain content and interaction requirements only where the final contract does not amend
+> them. Their earlier visual treatment is not an implementation choice. See
 > `AGENT-CONTROL/10-DOC-AUTHORITY-MAP.md`.
 
-# Approved visual-contract inventory — v3 supersession map
+# Approved visual-contract inventory — final supersession map
 
 This inventory records the approved/confirmed visual contracts after the design workshop. The current countable approved visual-contract inventory is 20 HTML files in `docs/reference-prototypes/`.
 
@@ -17,7 +18,7 @@ The visual-contract rule remains:
 | Surface | Contract | Status |
 |---|---|---|
 | Groups | Approved Groups Night Broadcast contract | Recorded in repo |
-| Leagues | League table D / Leagues refinement | Retained as provenance; the 2026-07-17 Product Experience v3 League amendment and production shared components are active. |
+| Leagues | League table D / Leagues refinement | Retained as provenance; the 2026-07-17 final Product Experience and production shared components are active. |
 | Original Bracket | Bracket G | Recorded in repo |
 | KO Predictor | KO Predictor F | Recorded in repo |
 

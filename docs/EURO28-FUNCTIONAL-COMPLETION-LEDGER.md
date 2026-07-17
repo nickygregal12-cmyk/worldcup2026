@@ -10,6 +10,19 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.61 — final Product Experience authority adopted
+
+Stage PRODUCT-EXPERIENCE-FINAL-ADOPTION is accepted as a governance/audit-only supersession. The
+sole binding visual/product-experience contract is now
+`docs/reference-prototypes/euro28-product-experience-final.md`; Product Experience v3 and older
+page prototypes are provenance. The contract records the approved shell, Groups/third-place
+compound, Bracket and Health, separate KO competition, League Table/Activity switch, destination-
+based Player Profile, Team Profile, stage-aware Match Centre, Results, Leaderboards, Tournament and
+More direction. The old master tracker is reconciled into the delivery programme so visual work
+cannot hide prediction-write, scoring, CI, signup, simulation, live-readiness or official-data
+gates. No runtime UI, scoring, resolver, Auth, Supabase, RLS, production-data or migration change is
+claimed by this row. Production implementation remains staged and requires owner visual approval.
+
 ### Version 1.60 — Product Experience v3 coherence and player evidence slice
 
 Stage PRODUCT-EXPERIENCE-V3-SLICE-2 is implemented in the working tree and awaits full check and

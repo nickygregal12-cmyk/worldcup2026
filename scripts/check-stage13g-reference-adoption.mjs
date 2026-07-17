@@ -20,14 +20,15 @@ const spec = read('docs/archive/STAGE-13G-REF-PROTOTYPE-ADOPTION.md')
 const register = read('docs/EURO28-CONSOLIDATED-DECISION-REGISTER-AND-ROADMAP.md')
 const ledger = read('docs/EURO28-FUNCTIONAL-COMPLETION-LEDGER.md')
 const agentRules = read('docs/EURO28-AGENT-RULES-AND-ROADMAP.md')
-// Home is now governed by its v2 contract. Leagues was amended by the owner on 2026-07-17:
-// Product Experience v3 plus the shared production modules now own the final direction, while the
+// Home is now governed by the final Product Experience, with its v2 contract retained as provenance.
+// Leagues was amended by the owner on 2026-07-17: the final Product Experience plus the shared
+// production modules own the final direction, while the
 // standalone League HTML is retained as provenance only. The checks below replace the former
 // "movement arrows remain active" prototype assertion with stronger production-hierarchy checks;
 // this is the explicit §5.8 ratchet amendment recorded by FINAL-LEAGUES-VERTICAL-SLICE.
 const homePrototype = read('docs/reference-prototypes/euro28-home-page-prototype-v2.html')
 const leaguePrototype = read('docs/reference-prototypes/euro28-league-page-prototype.html')
-const productExperience = read('docs/reference-prototypes/euro28-product-experience-v3.md')
+const productExperience = read('docs/reference-prototypes/euro28-product-experience-final.md')
 const leaguePage = read('src/leagues/Leagues.jsx')
 const leagueToolbar = read('src/leagues/LeagueToolbar.jsx')
 const leaguePresentation = read('src/leagues/LeaguePresentation.jsx')
@@ -181,7 +182,7 @@ for (const [label, text, markers] of [
     'Post-match',
   ]],
   ['Retired League prototype provenance', leaguePrototype, ['RETIRED AS ACTIVE VISUAL AUTHORITY 2026-07-17', 'historical visual provenance only', 'compact Match Centre at the top', 'full user row clickable']],
-  ['Final Product Experience League authority', productExperience, ['League finalisation amendment, owner-approved 2026-07-17', 'global Original/KO collection switch comes first', 'competition-specific league selector', 'contiguous mobile standings table']],
+  ['Final Product Experience League authority', productExperience, ['The page begins with the Original/KO collection switch only when KO is available', 'competition-specific league selector', 'one contiguous mobile standings table', 'Table and Activity are mutually exclusive views']],
   ['Final League page hierarchy', leaguePage, ['layoutStyles.contextDock', '<LeagueCollectionTabs', '<LeagueToolbar', '<LeagueHero', '<LeagueStandingsPanel']],
   ['Final competition-specific league toolbar', leagueToolbar, ['<LeaguePicker', 'selectedLeagueId', 'Manage leagues']],
   ['Final League presentation', leaguePresentation, ['LeagueCompetitionHeading', 'raceStyles.tableHeader', 'currentUserRow', '<PlayerIdentity']],
@@ -225,6 +226,6 @@ if (failures.length > 0) {
 
 console.log('Euro Stage 13G-REF prototype adoption audit passed.')
 console.log('Home: binding v2 contract — single countdown (lock IS first kick-off), Groups card language on the featured match, tap-through to Match Centre, three tournament states.')
-console.log('Leagues: Product Experience v3 final hierarchy is active; the standalone League HTML is provenance only.')
+console.log('Leagues: the final Product Experience hierarchy is active; the standalone League HTML is provenance only.')
 console.log('Production: collection switch → competition-specific league picker → league identity → compact full-row standings.')
 console.log(`Database: ${migrations.length} active migrations, sequentially numbered with no gaps.`)
