@@ -10,6 +10,17 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.70 — player quick view takes the prototype stat tiles
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, player-flow opener. The quick-profile sheet's standing
+summary becomes the prototype's stat-tile trio: three bordered surface cards with big display
+numerals and small uppercase labels, on certified contrast pairings. The sheet's content contract
+(identity header, Full profile / Points / Head-to-head / Bracket actions, privacy line) already
+matched the prototype drawer and is unchanged. The full profile hub and H2H re-cuts are the next
+slices; exacts/outcomes tiles wait on the per-member aggregate stage. No scoring, resolver,
+prediction lock, Supabase write, Auth, RLS, production data, package or migration change. The full
+repository check passes; owner visual review remains open.
+
 ### Version 1.69 — Groups match cards take the prototype team rows
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups team-row slice. The match card's identities become

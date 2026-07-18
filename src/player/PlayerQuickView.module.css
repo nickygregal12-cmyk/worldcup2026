@@ -22,31 +22,27 @@
   text-transform: uppercase;
 }
 
+/* The prototype's stat tiles (full-redesign 2026-07-18): three bordered surface
+   cards with a big display number and a small uppercase label. */
 .stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
-  padding: var(--space-3);
-  border-radius: var(--radius-lg);
-  background: var(--dp-surface-chrome);
-  box-shadow: var(--shadow-1);
 }
 
 .stats div {
   min-width: 0;
   display: grid;
   gap: var(--space-1);
-  padding: var(--space-2);
-  border-right: 1px solid color-mix(in srgb, var(--dp-text-on-chrome) 16%, transparent);
-}
-
-.stats div:last-child {
-  border-right: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-raised);
 }
 
 .stats strong {
-  color: var(--dp-text-on-chrome);
-  font: 850 var(--text-xl)/1 var(--font-display);
+  color: var(--dp-text-strong);
+  font: 800 var(--text-2xl)/1 var(--font-display);
   font-variant-numeric: tabular-nums;
 }
 
@@ -58,8 +54,11 @@
 }
 
 .stats span {
-  color: var(--dp-text-muted-chrome);
-  font-weight: 700;
+  color: var(--dp-text-muted);
+  font-weight: 800;
+  font-size: var(--text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .actions {
