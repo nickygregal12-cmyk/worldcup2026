@@ -200,12 +200,12 @@ The intended player-name activation destination is a dedicated Player Overview, 
 `#/account` is the real Account destination and renders `src/auth/AccountAccess.jsx`. The signed-in state owns identity, quick stats, security/preferences, leagues shortcut and danger-zone actions. Legacy `src/pages/Profile.jsx` is retired as unreachable WC26 code.
 
 
-Stage 13G-ADMIN-1 Admin control-room cosmetic restyle preserves the restricted Admin access model. The change is cosmetic presentation only: protected routing, permission checks, section destinations and operation contracts remain unchanged. Active migrations remain 21 and Migration 019 is applied.
+Stage 13G-ADMIN-1 Admin control-room cosmetic restyle preserves the restricted Admin access model. The change is cosmetic presentation only: protected routing, permission checks, section destinations and operation contracts remain unchanged. Active migrations remain 22 and Migration 019 is applied.
 
 
 ## Stage 13G-MATCH-CENTRE-REF Match Centre checkpoint
 
-Stage 13G-MATCH-CENTRE-REF Match Centre group-match reference adoption is accepted as an access-map checkpoint. Match Centre remains a contextual route at `#/match-centre?match=<number>` and does not become a permanent navigation item. Stage 13G-MATCH-CENTRE-REF accepts group-match behaviour for the next build only: group fixtures show Original Predictor context, knockout fixtures retain Original/KO Predictor context, group impact uses `Live projection` or `Final`, projection maths reuses `resolveGroupTable`, bracket-point preview is read-only, and knockout `Points on the line` remains unchanged. Stage 13G-MATCH-CENTRE-1 owns implementation. Active migrations remain 21 and Migration 019 is applied.
+Stage 13G-MATCH-CENTRE-REF Match Centre group-match reference adoption is accepted as an access-map checkpoint. Match Centre remains a contextual route at `#/match-centre?match=<number>` and does not become a permanent navigation item. Stage 13G-MATCH-CENTRE-REF accepts group-match behaviour for the next build only: group fixtures show Original Predictor context, knockout fixtures retain Original/KO Predictor context, group impact uses `Live projection` or `Final`, projection maths reuses `resolveGroupTable`, bracket-point preview is read-only, and knockout `Points on the line` remains unchanged. Stage 13G-MATCH-CENTRE-1 owns implementation. Active migrations remain 22 and Migration 019 is applied.
 
 ## Stage 13G handover access checkpoint
 

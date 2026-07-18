@@ -23,6 +23,7 @@
 19. `202607070019_euro28_league_single_competition.sql`
 20. `202607080020_euro28_matches_venue_fk.sql`
 21. `202607090021_euro28_venue_metadata.sql`
+22. `202607180022_euro28_admin_tournament_simulator.sql`
 
 ## Competition model
 

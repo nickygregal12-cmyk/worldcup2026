@@ -85,7 +85,10 @@ if (!pkg.scripts?.['lint:foundation']?.includes('scripts/check-product-experienc
 }
 
 const migrations = fs.readdirSync(path.join(root, 'supabase/migrations')).filter(file => file.endsWith('.sql'))
-if (migrations.length !== 21) fail(`Final Product Experience batch one must not change migrations; found ${migrations.length}.`)
+// 22 = through Migration 022, the Stage GODMODE-1 Admin Tournament Simulator —
+// the owner-approved charter (Decision Register, 2026-07-18) explicitly
+// authorises that migration; batch-one work itself still must not add any.
+if (migrations.length !== 22) fail(`Final Product Experience batch one must not change migrations; found ${migrations.length}.`)
 
 if (errors.length) {
   console.error('Final Product Experience batch-one audit failed:')
