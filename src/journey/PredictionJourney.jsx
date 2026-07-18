@@ -11,6 +11,7 @@ import PredictionJourneyView from './PredictionJourneyView.jsx'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
 import { browserStorage, messageForError, readGuestReview, writeGuestReview } from './predictionJourneyRuntime.js'
 import { useTournamentLifecycle } from '../config/index.js'
+import { getNow } from '../lib/clock.js'
 
 export default function PredictionJourney({ client, reference, tournament, initialView = PREDICTION_JOURNEY_VIEW.GROUPS, surface = initialView, fixtureDraft = null }) {
   const guestStorage = useMemo(() => createGuestPredictionStorage({
@@ -225,13 +226,17 @@ export default function PredictionJourney({ client, reference, tournament, initi
   function updateGroup(match, patch) {
     if (reviewMode) return
     setActiveGroupMatchNumber(match.matchNumber)
+    // Grace and match-started both read the sim-aware clock, so a scrubbed
+    // simulated instant governs these edit gates exactly as the lock does.
+    const now = getNow()
     const hasGrace = hasActivePredictionGrace(graceWindows, {
       competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
       matchId: match.matchId,
+      now,
     })
     const scoreChange = Object.hasOwn(patch, 'homeScore') || Object.hasOwn(patch, 'awayScore')
     if (scoreChange && locked && !hasGrace) return
-    if (Object.hasOwn(patch, 'jokerApplied') && isPredictionMatchStarted(match)) return
+    if (Object.hasOwn(patch, 'jokerApplied') && isPredictionMatchStarted(match, now)) return
     applyDraftUpdate(current => updatePredictionJourneyGroup(current, {
       matchNumber: match.matchNumber,
       ...patch,
@@ -244,6 +249,7 @@ export default function PredictionJourney({ client, reference, tournament, initi
     const hasGrace = hasActivePredictionGrace(graceWindows, {
       competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
       matchId: referenceMatch?.matchId,
+      now: getNow(),
     })
     if (locked && !hasGrace) return
     applyDraftUpdate(current => clearDisconnectedBracketSelections(

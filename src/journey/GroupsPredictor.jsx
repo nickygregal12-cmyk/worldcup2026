@@ -152,6 +152,11 @@ export default function GroupsPredictor({
   const dateSections = useMemo(() => buildGroupDateSections(reference), [reference])
   const tablesModel = useMemo(() => buildGroupsTablesSheetModel(reference, draft), [reference, draft])
   const isDateView = viewMode === GROUPS_VIEW_MODE.DATE
+  // The sim-aware clock: match-started, grace and the default date section all
+  // read it, so a scrubbed simulated instant governs the board like real time.
+  // This component re-renders when the parent's tournament lifecycle observes a
+  // clock move, so reading it in render stays correct under time travel.
+  const now = getNow()
 
   // Item 64. The resolver tells us which teams its criteria could not separate;
   // a saved ordering survives only while that group's scores are untouched.
@@ -180,10 +185,11 @@ export default function GroupsPredictor({
     const row = draft.groupPredictions[String(match.matchNumber)] ?? { homeScore: null, awayScore: null, jokerApplied: false }
     const complete = row.homeScore != null && row.awayScore != null
     const capReached = summary.groupJokers >= summary.groupJokerCap && !row.jokerApplied
-    const started = isPredictionMatchStarted(match)
+    const started = isPredictionMatchStarted(match, now)
     const hasGrace = hasActivePredictionGrace(graceWindows, {
       competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
       matchId: match.matchId,
+      now,
     })
     const scoreReadOnly = reviewMode || (scoreLocked && !hasGrace)
     const jokerDisabled = reviewMode || started || capReached
@@ -246,7 +252,6 @@ export default function GroupsPredictor({
     )
   }
 
-  const now = getNow()
   const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(now)
   const openDateSection = dateSections.find(section => section.key === openDateKey)
     ?? dateSections.find(section => String(section.date).slice(0, 10) === todayKey)

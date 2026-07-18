@@ -1,6 +1,7 @@
 import React from 'react' // eslint-disable-line no-unused-vars -- React is required for JSX under the current lint config
 import { useEffect, useState } from 'react'
 import { hasActivePredictionGrace, PREDICTION_COMPETITION_KEY } from '../grace/index.js'
+import { getNow } from '../lib/clock.js'
 import { Icon, PredictionStateBadge, TeamLabel } from '../design-system/index.jsx'
 import {
   buildOriginalBracketRoundProgress,
@@ -222,12 +223,16 @@ export default function OriginalBracket({ reference, draft, preview, contentLock
   const progress = buildOriginalBracketRoundProgress(preview)
   const champion = predictedChampion(preview, reference)
   const surface = buildOriginalBracketSurface({ reference, draft, preview })
+  // Grace reads the sim-aware clock so a scrubbed instant governs bracket edits
+  // like the lock; this component re-renders on a clock move via its parent.
+  const now = getNow()
 
   const renderTie = tie => {
     const referenceMatch = reference.knockoutMatches.find(item => item.matchNumber === tie.matchNumber)
     const hasGrace = hasActivePredictionGrace(graceWindows, {
       competitionKey: PREDICTION_COMPETITION_KEY.ORIGINAL,
       matchId: referenceMatch?.matchId,
+      now,
     })
     const disabled = reviewMode || (contentLocked && !hasGrace) || !tie.participantsResolved
     const state = deriveOriginalBracketMatchState({

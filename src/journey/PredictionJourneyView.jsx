@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Button, PredictionStateBadge, Tabs } from '../design-system/index.jsx'
 import GuestAccountPrompt from '../guest/GuestAccountPrompt.jsx'
 import { hasActivePredictionGrace } from '../grace/index.js'
+import { getNow } from '../lib/clock.js'
 import OriginalBracket from './OriginalBracket.jsx'
 import { BRACKET_HEALTH_PENDING_COPY, OriginalBracketHealth, buildLiveSlotProjection, buildOriginalBracketHealth } from '../bracketHealth/index.js'
 import GroupsPredictor from './GroupsPredictor.jsx'
@@ -264,6 +265,7 @@ export default function PredictionJourneyView({
       {signedIn && graceWindows.some(window => hasActivePredictionGrace(graceWindows, {
         competitionKey: window.competition_key,
         matchId: window.match_id,
+        now: getNow(),
       })) && (
         <p className="guest-notice guest-notice--safe">
           A temporary match-specific grace window is active. It applies only to the named competition and unstarted match, and expires automatically.
