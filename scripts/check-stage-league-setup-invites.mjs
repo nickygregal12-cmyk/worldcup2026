@@ -43,14 +43,14 @@ for (const marker of [
   requireText(presentation, marker, 'the create/join league entry-point flow must ship in source')
 }
 
-// Invite copy/share affordances wired to their handlers through the on-button confirmation runner.
-// The confirmation-on-button mechanism (runAction) is asserted so the copy/share feedback can never
-// silently regress to an off-screen notice.
+// Invite copy/share affordances — re-pointed at the PROTOTYPE-PACK-CONSOLIDATION-1 full-redesign
+// ruling (2026-07-18): the actions card is retired; share and copy-invite live directly on the
+// league identity card, wired to the share-action handlers.
 for (const marker of [
-  'export function LeagueActionsCard',
-  'runAction(',
-  'onCopyInvite',
-  'onShareLeague',
+  'aria-label="Share league"',
+  'aria-label="Copy invite code"',
+  'void onShare()',
+  'void onCopyCode()',
 ]) {
   requireText(presentation, marker, 'the invite/share entry-point states must ship in source')
 }

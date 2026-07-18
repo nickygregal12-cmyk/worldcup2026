@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createLeague, deleteLeague, getMyLeagues, joinLeague, leaveLeague, loadLeagueOverview, readLeagueSession } from './leagueService.js'
-import { buildLeagueLifecycleState, LEAGUE_COMPETITION, normaliseInboundJoinCode, validateJoinCode, validateLeagueName } from './leagueModel.js'
+import { buildLeagueActivityEntries, buildLeagueLifecycleState, LEAGUE_COMPETITION, normaliseInboundJoinCode, validateJoinCode, validateLeagueName } from './leagueModel.js'
 import { buildLeagueCollections, reconcileLeagueSelections } from './leagueCollections.js'
 import { buildLeagueShareActions } from './leagueShareActions.js'
 import { createLatestRequestGuard } from '../lib/latestRequest.js'
 import { loadCanonicalTournamentSnapshot } from '../results/resultService.js'
-import { buildMatchCentreNavigation, defaultMatchNumber } from '../matchCentre/matchCentreModel.js'
 import {
-  LeagueActionsCard,
+  LeagueActivityPanel,
   LeagueHero,
   LeagueManagePanel,
   LeagueNotice,
   LeagueSignedOut,
   LeagueStandingsPanel,
+  LeagueViewToggle,
 } from './LeaguePresentation.jsx'
 import { EmptyLeagueCollection, LeagueCollectionTabs } from './LeagueCollectionTabs.jsx'
 import LeagueToolbar from './LeagueToolbar.jsx'
@@ -37,7 +37,8 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
   const [manageOpen, setManageOpen] = useState(false)
   const [pendingLeagueAction, setPendingLeagueAction] = useState(null)
   const [quickPlayer, setQuickPlayer] = useState(null)
-  const [liveFixture, setLiveFixture] = useState(null)
+  const [liveSnapshotState, setLiveSnapshotState] = useState(null)
+  const [leagueView, setLeagueView] = useState('standings')
   const overviewRequests = useRef(createLatestRequestGuard())
 
   const koLeagueReady = Boolean(koReadiness?.open)
@@ -167,15 +168,11 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- clearing the stale live fixture when preconditions drop is an intentional reset
-    if (!client || !session?.user || !reference?.tournamentId) { setLiveFixture(null); return undefined }
+    if (!client || !session?.user || !reference?.tournamentId) { setLiveSnapshotState(null); return undefined }
     let active = true
     loadCanonicalTournamentSnapshot(client, reference)
-      .then(liveSnapshot => {
-        if (!active) return
-        const matchNumber = defaultMatchNumber(reference, liveSnapshot)
-        setLiveFixture(buildMatchCentreNavigation({ reference, liveSnapshot, matchNumber }).current)
-      })
-      .catch(() => { if (active) setLiveFixture(null) })
+      .then(liveSnapshot => { if (active) setLiveSnapshotState(liveSnapshot) })
+      .catch(() => { if (active) setLiveSnapshotState(null) })
     return () => { active = false }
   }, [client, session, reference])
 
@@ -308,6 +305,11 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
               onJoinCodeChange={setJoinCode}
               onSubmitJoin={submitJoin}
               busy={actionStatus === 'loading'}
+              selectedLeague={selectedLeague}
+              pendingLeagueAction={pendingLeagueAction}
+              actionStatus={actionStatus}
+              onRequestAction={setPendingLeagueAction}
+              onConfirmAction={confirmLeagueAction}
             />
           )}
 
@@ -330,10 +332,13 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
               </>
             ) : selectedLeague && (
             <>
-              <LeagueHero league={selectedLeague} summary={activeSummary} lifecycleState={leagueLifecycle} onShare={shareLeague} />
+              <LeagueHero league={selectedLeague} summary={activeSummary} lifecycleState={leagueLifecycle} onShare={shareLeague} onCopyCode={copyLeagueCode} />
 
-              {/* Full-redesign ruling 2026-07-18: the prototype flow is identity card straight to
-                  the standings table. Invite/share detail rides inside League details. */}
+              {/* Prototype flow: identity card, Standings | Live activity, then the table. */}
+              <LeagueViewToggle view={leagueView} onChange={setLeagueView} />
+              {leagueView === 'activity' ? (
+                <LeagueActivityPanel entries={buildLeagueActivityEntries({ reference, snapshot: liveSnapshotState })} tournamentStarted={leagueLifecycle.tournamentStarted} />
+              ) : (
               <LeagueStandingsPanel
                 competitionKey={activeCompetitionKey}
                 overview={overview}
@@ -341,30 +346,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
                 activeOverview={activeOverview}
                 standings={standings}
                 onOpenPlayer={openMemberPlayerView}
-                actionsCard={<LeagueActionsCard joinCode={selectedLeague.joinCode} onCopyInvite={copyLeagueCode} onShareLeague={shareLeague} summary={activeSummary} lifecycleState={leagueLifecycle} fixture={liveFixture} />}
-                leagueLifecycle={leagueLifecycle}
-                lifecycle={lifecycle}
-                activeSummary={activeSummary}
-                koReadiness={koReadiness}
-                selectedLeague={selectedLeague}
-                pendingLeagueAction={pendingLeagueAction}
-                actionStatus={actionStatus}
-                onRequestAction={setPendingLeagueAction}
-                onConfirmAction={confirmLeagueAction}
               />
-
-              {!manageOpen && (
-                <LeagueManagePanel
-                  open={false}
-                  createName={createName}
-                  onCreateNameChange={setCreateName}
-                  competitionKey={activeCompetition}
-                  onSubmitCreate={submitCreate}
-                  joinCode={joinCode}
-                  onJoinCodeChange={setJoinCode}
-                  onSubmitJoin={submitJoin}
-                  busy={actionStatus === 'loading'}
-                />
               )}
             </>
             )}

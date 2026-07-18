@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { LeaderList, LeagueActionsCard } from '../LeaguePresentation.jsx'
+import { LeaderList, LeagueHero } from '../LeaguePresentation.jsx'
 import { RANK_MOVEMENT_PENDING_REASON } from '../leagueModel.js'
 
 // The Leagues rows and actions, driven by REAL taps. Static tests prove markup; these prove the
@@ -46,22 +46,18 @@ describe('league standings interaction', () => {
   })
 })
 
-describe('league actions — on-button copy confirmation', () => {
-  it('swaps the button to a confirmation, holds it inert, then reverts', async () => {
+describe('league identity card — share and copy invite', () => {
+  it('carries share and copy-invite on the card, wired to their handlers', async () => {
     const user = userEvent.setup()
-    const onCopyInvite = vi.fn().mockResolvedValue('Copied')
-    // A short confirmation interval keeps the test on real timers (waitFor + fake timers deadlock).
-    render(<LeagueActionsCard joinCode="SYNTHLARGE" onCopyInvite={onCopyInvite} onShareLeague={() => null} confirmMs={60} />)
+    const onShare = vi.fn().mockResolvedValue(null)
+    const onCopyCode = vi.fn().mockResolvedValue(null)
+    const league = { id: 'l1', name: 'Jimmy Dynasty', joinCode: 'SYNTHLARGE', competition: 'original', memberCount: 12, memberRole: 'owner' }
+    render(<LeagueHero league={league} summary={null} lifecycleState={{ tournamentStarted: false }} onShare={onShare} onCopyCode={onCopyCode} />)
 
-    await user.click(screen.getByRole('button', { name: /Copy invite/i }))
-
-    // The label swaps to the confirmation, and the button is inert during the interval.
-    const confirmed = await screen.findByRole('button', { name: /Copied/i })
-    expect(confirmed.disabled).toBe(true)
-    await user.click(confirmed) // a double-tap during the interval must not re-fire
-    expect(onCopyInvite).toHaveBeenCalledTimes(1)
-
-    // After the interval it reverts to the copy affordance.
-    await waitFor(() => expect(screen.getByRole('button', { name: /Copy invite/i })).toBeTruthy())
+    expect(screen.getByText('12 members · code SYNTHLARGE')).toBeTruthy()
+    await user.click(screen.getByRole('button', { name: 'Share league' }))
+    expect(onShare).toHaveBeenCalledTimes(1)
+    await user.click(screen.getByRole('button', { name: 'Copy invite code' }))
+    expect(onCopyCode).toHaveBeenCalledTimes(1)
   })
 })

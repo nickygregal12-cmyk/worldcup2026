@@ -35,7 +35,13 @@ if (!playerModel.includes('You only see picks that are available for this player
 if (!playerModel.includes('KO Predictor points are shown separately')) fail('Player Insight Original/KO separation copy is missing')
 if (!playerUi.includes('buildPlayerInsightLifecycle') || !playerUi.includes('lifecycleNote')) fail('Player Insight UI is not rendering lifecycle copy')
 if (!playerH2h.includes('lifecycle = null') || !playerH2h.includes('buildPlayerInsightLifecycle') || !playerH2h.includes('lifecycleNote')) fail('H2H does not render central lifecycle context')
-if (!resultsUi.includes('lifecycle={lifecycle}') || !leaguesUi.includes('lifecycle={lifecycle}')) fail('Results or Leagues do not pass lifecycle to player surfaces')
+if (!resultsUi.includes('lifecycle={lifecycle}')) fail('Results does not pass lifecycle to player surfaces')
+// Leagues re-pointed at the PROTOTYPE-PACK-CONSOLIDATION-1 full-redesign ruling (2026-07-18):
+// the in-flow lifecycle note is retired. Leagues still derives the central lifecycle state for
+// its own copy, and the full player surface reached from a league row receives lifecycle at the
+// App route (<PlayerView ... lifecycle={lifecycle}>), asserted below via the App source.
+if (!leaguesUi.includes('buildLeagueLifecycleState({ lifecycle')) fail('Leagues no longer derives the central lifecycle state')
+if (!app.includes('<PlayerView') || !app.includes('lifecycle={lifecycle}')) fail('The PlayerView route must receive central lifecycle')
 
 if (!teamModel.includes('export function buildTeamProfileLifecycle')) fail('Team Profile lifecycle model is missing')
 if (!teamModel.includes('KO Predictor points stay out of it')) fail('Team Profile separation copy is missing')

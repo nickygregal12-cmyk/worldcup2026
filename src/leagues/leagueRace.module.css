@@ -44,14 +44,14 @@
 .tableHeader,
 .leaderRow {
   display: grid;
-  grid-template-columns: 4.75rem minmax(0, 1fr) minmax(4.25rem, auto) 2rem;
+  grid-template-columns: 1.75rem minmax(0, 1fr) minmax(3rem, auto) 1.25rem;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .tableHeader {
-  min-height: 3rem;
-  padding: 0 var(--space-5);
+  min-height: 2.25rem;
+  padding: 0 var(--space-4);
   border-bottom: 1px solid var(--dp-border-subtle);
   background: var(--dp-info-soft);
   color: var(--dp-text-muted);
@@ -74,8 +74,8 @@
 .leaderRow {
   position: relative;
   width: 100%;
-  min-height: 5rem;
-  padding: var(--space-3) var(--space-5);
+  min-height: 3rem;
+  padding: var(--space-1) var(--space-4);
   border: 0;
   border-bottom: 1px solid var(--dp-border-subtle);
   border-radius: 0;
@@ -109,8 +109,9 @@ button.currentUserRow:hover {
 }
 
 .rankMarker {
-  color: var(--dp-text-strong);
-  font: 850 clamp(1.75rem, 5vw, 2.4rem)/1 var(--font-display);
+  color: var(--dp-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
@@ -122,7 +123,7 @@ button.currentUserRow:hover {
 
 .points {
   color: var(--dp-text-strong);
-  font: 850 clamp(1.45rem, 4vw, 2rem)/1 var(--font-display);
+  font: 800 var(--text-lg)/1 var(--font-display);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -151,7 +152,7 @@ button.leaderRow:hover .rowGo {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-1) var(--space-5);
+  padding: var(--space-1) var(--space-4);
 }
 
 .podiumCutline span {
@@ -171,7 +172,7 @@ button.leaderRow:hover .rowGo {
 
 .tableFootnote {
   margin: 0;
-  padding: var(--space-3) var(--space-5) var(--space-4);
+  padding: var(--space-2) var(--space-4) var(--space-3);
   color: var(--dp-text-muted);
   font-size: var(--text-xs);
   line-height: 1.5;
@@ -258,4 +259,66 @@ button.leaderRow:hover .rowGo {
     grid-template-columns: 2.8rem minmax(0, 1fr) minmax(3.25rem, auto) 1.25rem;
     padding-inline: var(--space-3);
   }
+}
+
+/* Standings | Live activity segmented toggle (prototype idiom). */
+.viewToggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-page);
+}
+
+.viewToggle button {
+  min-height: 2.75rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.viewToggle .viewOn {
+  background: var(--dp-surface-chrome);
+  color: var(--dp-text-on-chrome);
+}
+
+.viewToggle button:focus-visible {
+  outline: 2px solid var(--dp-action);
+  outline-offset: 2px;
+}
+
+.activityList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.activityList li + li { border-top: 1px solid var(--dp-border-subtle); }
+
+.activityList a {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-4);
+  color: var(--dp-text-body);
+  text-decoration: none;
+}
+
+.activityList a:hover { background: var(--dp-surface-page); }
+.activityList strong { font-weight: 800; }
+
+.activityList small {
+  margin-left: auto;
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
 }

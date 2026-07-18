@@ -1,4 +1,3 @@
-import { useEffect, useRef, useState } from 'react'
 import layoutStyles from './LeagueLayout.module.css'
 import heroStyles from './LeagueHero.module.css'
 import raceStyles from './leagueRace.module.css'
@@ -93,7 +92,7 @@ export function LeaguePicker({ leagues, selectedId, onSelect }) {
 
 // The league identity card is the prototype's pitch-striped surface card (full-redesign
 // ruling 2026-07-18): name, members-and-code meta and share. Nothing else.
-export function LeagueHero({ league, summary, lifecycleState, onShare }) {
+export function LeagueHero({ league, summary, lifecycleState, onShare, onCopyCode = null }) {
   const original = league.competition === LEAGUE_COMPETITION.ORIGINAL
   const members = `${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
   const raceActive = summary?.state === 'active'
@@ -105,11 +104,18 @@ export function LeagueHero({ league, summary, lifecycleState, onShare }) {
           <h2 className={heroStyles.name}>{league.name}</h2>
           <p className={heroStyles.meta}>{members} · code {league.joinCode ?? '—'}</p>
         </div>
-        {onShare && (
-          <button type="button" className={heroStyles.shareButton} aria-label="Share league" onClick={() => { void onShare() }}>
-            <Icon name="share" size={16} />
-          </button>
-        )}
+        <div className={heroStyles.cardActions}>
+          {onCopyCode && (
+            <button type="button" className={heroStyles.shareButton} aria-label="Copy invite code" onClick={() => { void onCopyCode() }}>
+              <Icon name="copy" size={16} />
+            </button>
+          )}
+          {onShare && (
+            <button type="button" className={heroStyles.shareButton} aria-label="Share league" onClick={() => { void onShare() }}>
+              <Icon name="share" size={16} />
+            </button>
+          )}
+        </div>
       </div>
       {!tournamentStarted && (
         <p className={heroStyles.hint}>
@@ -123,19 +129,6 @@ export function LeagueHero({ league, summary, lifecycleState, onShare }) {
       {/* Single-competition boundary, stated for assistive tech: a league IS one competition. */}
       <span className="sr-only">{competitionName(league.competition)} league{original ? '' : ' — separate from Original Predictor leagues'}.</span>
     </section>
-  )
-}
-
-export function MiniMatchStrip({ fixture, href }) {
-  if (!fixture || fixture.state !== 'live' || !fixture.participantsResolved) return null
-  return (
-    <a className={heroStyles.matchStrip} href={href} aria-label="Open Match Centre">
-      <Badge tone="danger">Live</Badge>
-      <span className={heroStyles.matchStripTeams}>
-        {fixture.home.label} {fixture.score ?? 'v'} {fixture.away.label}
-      </span>
-      <span className={heroStyles.matchStripGo} aria-hidden="true"><Icon name="chevron" size={14} /></span>
-    </a>
   )
 }
 
@@ -225,7 +218,7 @@ export function LeaderList({ rows, onOpenPlayer }) {
   )
 }
 
-export function LeagueManagePanel({ open, createName, onCreateNameChange, competitionKey, onSubmitCreate, joinCode, onJoinCodeChange, onSubmitJoin, busy }) {
+export function LeagueManagePanel({ open, createName, onCreateNameChange, competitionKey, onSubmitCreate, joinCode, onJoinCodeChange, onSubmitJoin, busy, selectedLeague = null, pendingLeagueAction = null, actionStatus = 'idle', onRequestAction = null, onConfirmAction = null }) {
   return (
     <details className={layoutStyles.managePanel} open={open}>
       <summary>Create or join a league</summary>
@@ -245,6 +238,17 @@ export function LeagueManagePanel({ open, createName, onCreateNameChange, compet
           <Button type="submit" loading={busy}>Join league</Button>
         </form>
       </div>
+      {selectedLeague && onRequestAction && (
+        <div className={raceStyles.dangerZone}>
+          <span className={layoutStyles.kicker}>Danger zone</span>
+          {selectedLeague.memberRole === 'owner' ? (
+            <Button type="button" variant="danger" size="small" disabled={actionStatus === 'loading'} onClick={() => onRequestAction('delete')}>Delete league</Button>
+          ) : (
+            <Button type="button" variant="secondary" size="small" disabled={actionStatus === 'loading'} onClick={() => onRequestAction('leave')}>Leave league</Button>
+          )}
+          <LeagueActionConfirmation action={pendingLeagueAction} leagueName={selectedLeague.name} actionStatus={actionStatus} onConfirm={onConfirmAction} onCancel={() => onRequestAction(null)} />
+        </div>
+      )}
     </details>
   )
 }
@@ -269,12 +273,7 @@ export function LeagueSignedOut() {
   )
 }
 
-export function LeagueStandingsPanel({
-  competitionKey, overview, overviewLoading, activeOverview, standings,
-  onOpenPlayer, actionsCard = null,
-  leagueLifecycle, lifecycle, activeSummary, koReadiness,
-  selectedLeague, pendingLeagueAction, actionStatus, onRequestAction, onConfirmAction,
-}) {
+export function LeagueStandingsPanel({ overview, overviewLoading, activeOverview, standings, onOpenPlayer }) {
   const loadingFirstLoad = (overview.status === 'loading' || overviewLoading) && !overview.data
   const stillRefreshing = overview.status === 'loading' || overviewLoading
   const showEmpty = !stillRefreshing && overview.status === 'ready' && standings.length === 0
@@ -302,97 +301,48 @@ export function LeagueStandingsPanel({
       {showEmpty && <p className={layoutStyles.emptyCopy}>No league members were returned.</p>}
       {standings.length > 0 && <LeaderList rows={standings} onOpenPlayer={onOpenPlayer} />}
 
-      {activeOverview && (
-        <LeagueSecondaryDetails title="League details">
-          {actionsCard}
-          <LeagueLifecycleBanner lifecycleState={leagueLifecycle} competitionKey={competitionKey} />
-          <CompetitionLifecycleNote competitionKey={competitionKey} lifecycle={lifecycle} summary={activeSummary} koReadiness={koReadiness} />
-          <LeagueSummaryCard title={competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'} summary={activeSummary} section={activeSection} />
-          {/* The "Members: N · open a member row" line was deleted: it duplicated the identity
-              strip's member-count pill and its "open any member row" hint. */}
-          <div className={raceStyles.dangerZone}>
-            <span className={layoutStyles.kicker}>Danger zone</span>
-            {selectedLeague.memberRole === 'owner' ? (
-              <Button type="button" variant="danger" size="small" disabled={actionStatus === 'loading'} onClick={() => onRequestAction('delete')}>Delete league</Button>
-            ) : (
-              <Button type="button" variant="secondary" size="small" disabled={actionStatus === 'loading'} onClick={() => onRequestAction('leave')}>Leave league</Button>
-            )}
-            <LeagueActionConfirmation action={pendingLeagueAction} leagueName={selectedLeague.name} actionStatus={actionStatus} onConfirm={onConfirmAction} onCancel={() => onRequestAction(null)} />
-          </div>
-        </LeagueSecondaryDetails>
+    </article>
+  )
+}
+
+/* Standings | Live activity — the prototype's mutually exclusive views. */
+export function LeagueViewToggle({ view, onChange }) {
+  const options = [['standings', 'Standings'], ['activity', 'Live activity']]
+  return (
+    <div className={raceStyles.viewToggle} role="group" aria-label="League view">
+      {options.map(([value, label]) => (
+        <button key={value} type="button" aria-pressed={view === value} className={view === value ? raceStyles.viewOn : ''} onClick={() => onChange(value)}>
+          {label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/* Real match events from the canonical official-result feed; member-level entries
+   join when per-member scoring aggregates exist server-side. */
+export function LeagueActivityPanel({ entries, tournamentStarted }) {
+  return (
+    <article className={raceStyles.standingsCard}>
+      {entries.length === 0 && (
+        <p className={layoutStyles.emptyCopy}>{tournamentStarted
+          ? 'No match events yet. Activity appears as official scores arrive.'
+          : 'Activity starts at kick-off. Match events and scoring moments will land here.'}</p>
+      )}
+      {entries.length > 0 && (
+        <ul className={raceStyles.activityList}>
+          {entries.map(entry => (
+            <li key={entry.key}>
+              <a href={`#/match-centre?match=${entry.matchNumber}&competition=original`}>
+                {entry.live && <Badge tone="danger">Live</Badge>}
+                <strong>{entry.label}</strong>
+                <small>{entry.detail}</small>
+              </a>
+            </li>
+          ))}
+        </ul>
       )}
     </article>
   )
 }
 
-export function LeagueActionsCard({
-  joinCode,
-  onCopyInvite,
-  onShareLeague,
-  summary = null,
-  lifecycleState = null,
-  fixture = null,
-  confirmMs = 1800,
-}) {
-  // Confirmation lives ON the button: the handler returns a short label on success, the button shows
-  // it with a tick for a moment, and stays inert during the interval so double-taps don't stack. This
-  // is always in view at the point of tap — the old up-the-page notice for copy/share is gone.
-  const [confirmed, setConfirmed] = useState(null) // { key, label } | null
-  const timer = useRef(null)
-  useEffect(() => () => { if (timer.current) clearTimeout(timer.current) }, [])
-
-  const runAction = async (key, handler) => {
-    const label = await handler()
-    if (!label) return // failure, or a native share sheet handled it — no on-button confirmation
-    setConfirmed({ key, label })
-    if (timer.current) clearTimeout(timer.current)
-    timer.current = setTimeout(() => setConfirmed(null), confirmMs)
-  }
-
-  const isDone = key => confirmed?.key === key
-  const raceActive = summary?.state === 'active'
-  const preTournament = !lifecycleState?.tournamentStarted
-  const headline = preTournament
-    ? 'Fill the league before kick-off'
-    : fixture?.state === 'live'
-      ? 'Your league is live'
-      : raceActive
-        ? 'Your league race'
-        : 'The table is ready'
-  const copy = preTournament
-    ? 'Share the invite now. Everyone’s Original picks stay hidden until the tournament lock.'
-    : fixture?.state === 'live'
-      ? 'Open Match Centre to see who is on target and how this fixture could move the table.'
-      : raceActive
-        ? 'Rank, points and the gap to the leader update from the official scoring record.'
-        : 'Points and ranks will move when confirmed results are scored.'
-
-  return (
-    <aside className={layoutStyles.actionsCard} aria-label="League actions">
-      <header className={layoutStyles.spotlightHeading}>
-        <span className={layoutStyles.spotlightIcon}><Icon name={fixture?.state === 'live' ? 'live' : preTournament ? 'share' : 'results'} size={21} /></span>
-        <div><span>{preTournament ? 'Before the tournament' : raceActive ? 'Current position' : 'League status'}</span><h3>{headline}</h3></div>
-      </header>
-      <p className={layoutStyles.spotlightCopy}>{copy}</p>
-      {summary && (
-        <div className={layoutStyles.raceStats} aria-label="Your league position">
-          <div><strong>{summary.state === 'active' ? formatOrdinal(summary.currentRank) : '—'}</strong><span>Your rank</span></div>
-          <div><strong>{summary.currentPoints}</strong><span>Points</span></div>
-          <div><strong>{summary.gapToLeader == null ? '—' : summary.gapToLeader === 0 ? 'Top' : summary.gapToLeader}</strong><span>{summary.gapToLeader > 0 ? 'To leader' : 'Gap'}</span></div>
-        </div>
-      )}
-      <div className={layoutStyles.actionPills}>
-        <button type="button" className={`${layoutStyles.actionPill} ${preTournament ? layoutStyles.actionPrimary : ''}`.trim()} onClick={() => runAction('share', onShareLeague)} disabled={!joinCode || isDone('share')} aria-live="polite">
-          {isDone('share')
-            ? <span className={layoutStyles.actionDone}>{confirmed.label} <Icon name="check" size={15} /></span>
-            : <><span><Icon name="share" size={16} /> Share league</span><small>Invite link</small></>}
-        </button>
-        <button type="button" className={layoutStyles.actionPill} onClick={() => runAction('invite', onCopyInvite)} disabled={!joinCode || isDone('invite')} aria-live="polite">
-          {isDone('invite')
-            ? <span className={layoutStyles.actionDone}>{confirmed.label} <Icon name="check" size={15} /></span>
-            : <><span><Icon name="copy" size={16} /> Copy invite</span><small>Code {joinCode ?? '—'}</small></>}
-        </button>
-      </div>
-    </aside>
-  )
-}

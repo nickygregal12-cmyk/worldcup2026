@@ -1,12 +1,9 @@
-// Stage 13G-C6 — re-pointed at the DP re-cut (Stage DP-LEAGUES, 2026-07-15).
-//
-// The compact shell survives the re-cut: standings are leader-list rows, the league code lives in
-// the actions card, and lifecycle copy plus competition summaries stay behind the "League details"
-// disclosure. The load-bearing ordering proof — LeaderList renders BEFORE the details disclosure,
-// and the competition summary lives inside/after it — is carried forward verbatim. The archived C6
-// doc dependency is dropped, and the `Private leagues` / `Track Original Predictor` markers are
-// removed because the re-cut deleted the duplicate in-surface heading (App.jsx's PageIntro owns the
-// page title now).
+// Stage 13G-C6 — re-pointed twice: at the DP re-cut (2026-07-15), then at the
+// PROTOTYPE-PACK-CONSOLIDATION-1 full-redesign ruling (2026-07-18). The prototype is the final
+// design: the "League details" disclosure and actions card left the flow, Standings and Live
+// activity are mutually exclusive views behind one toggle, the identity card carries share/copy,
+// and league management (create/join/danger zone) lives in ONE place — the manage panel opened by
+// the dashed entry actions. The anti-clutter markers are carried forward and extended.
 import { migrationSequenceError } from './lib/migrationSequenceGuard.mjs'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 
@@ -34,33 +31,30 @@ const migrations = existsSync('supabase/migrations')
   : []
 
 for (const marker of [
-  'export function LeagueActionsCard',
-  'export function LeagueSecondaryDetails',
-  'raceStyles.compactCompetitionHeading',
-  'Copy invite',
+  'export function LeagueViewToggle',
+  'export function LeagueActivityPanel',
+  'podiumCutline',
 ]) {
   if (!presentation.includes(marker)) fail(`LeaguePresentation.jsx missing shell marker: ${marker}`)
 }
 
 for (const marker of [
-  'LeagueActionsCard',
+  'LeagueViewToggle',
   'LeagueStandingsPanel',
   'standings={standings}',
+  'buildLeagueActivityEntries',
 ]) {
   if (!leaguesPage.includes(marker)) fail(`Leagues.jsx missing shell marker: ${marker}`)
 }
 
-// Ordering proof: the compact standings render before the "League details" disclosure, and the
-// competition summary lives inside/after that disclosure — not as top-level clutter.
-const tableIndex = presentation.indexOf('<LeaderList rows={standings}')
-const detailsIndex = presentation.indexOf('LeagueSecondaryDetails title="League details"')
-if (tableIndex === -1 || detailsIndex === -1 || detailsIndex < tableIndex) {
-  fail('League details must render after the compact standings rows')
+// One management surface: the manage panel (with the danger zone) is the only create/join
+// location, and the retired League-details disclosure must not return to the flow.
+if (!presentation.includes('dangerZone')) fail('The danger zone must live in the manage panel')
+if ((leaguesPage.match(/<LeagueManagePanel/g) ?? []).length > 2) {
+  fail('LeagueManagePanel must render in at most two places: the open panel and the empty-collection state')
 }
-
-const summaryCardIndex = presentation.indexOf('<LeagueSummaryCard', detailsIndex)
-if (summaryCardIndex === -1) {
-  fail('Competition summary must live inside/after the secondary league details section')
+if (leaguesPage.includes('LeagueSecondaryDetails')) {
+  fail('The League details disclosure is retired from the Leagues flow (full-redesign ruling)')
 }
 
 for (const forbidden of [
@@ -77,9 +71,9 @@ for (const forbidden of [
 }
 
 for (const marker of [
-  '.compactCompetitionHeading',
-  '.secondaryDetails',
-  '.secondaryDetailsBody',
+  '.viewToggle',
+  '.activityList',
+  '.podiumCutline',
 ]) {
   if (!cssModule.includes(marker)) fail(`leagueRace.module.css missing shell class: ${marker}`)
 }

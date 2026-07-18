@@ -61,10 +61,12 @@ const leagues = [read('src/leagues/Leagues.jsx'), read('src/leagues/LeaguePresen
 // identity strip, the standalone member-row line was deleted as a duplicate, and copy confirmation
 // moved ONTO the button. The usability journey is asserted through the surviving structure — a member
 // row opens the comparison, the strip carries the hint, and copy is wired — not the retired copy.
+// onCopyInvite re-pointed at the PROTOTYPE-PACK-CONSOLIDATION-1 full-redesign ruling
+// (2026-07-18): copy-invite lives on the identity card as onCopyCode.
 for (const marker of [
   'onOpenPlayer',
   'heroStyles.hint',
-  'onCopyInvite',
+  'onCopyCode',
   'formatOrdinal',
 ]) {
   if (!leagues.includes(marker)) fail(`League usability journey is missing: ${marker}`)

@@ -544,3 +544,29 @@ export function compareSharedPredictionBundles(leftBundle, rightBundle, competit
     rows: Object.freeze(rows),
   })
 }
+
+/* The Live activity feed (full-redesign ruling 2026-07-18) is derived from the canonical
+   official-result snapshot — real match events, never authored page copy. Member-level
+   entries join when per-member scoring aggregates exist server-side. */
+export function buildLeagueActivityEntries({ reference, snapshot, limit = 12 }) {
+  const results = snapshot?.results ?? []
+  const matches = [...(reference?.groupMatches ?? []), ...(reference?.knockoutMatches ?? [])]
+  const matchByNumber = new Map(matches.map(match => [match.matchNumber, match]))
+  const teamLabel = teamId => reference?.teamsById?.[teamId]?.label ?? 'TBC'
+  const entries = results
+    .filter(row => row.scoreVisible)
+    .sort((left, right) => right.matchNumber - left.matchNumber)
+    .slice(0, limit)
+    .map(row => {
+      const match = matchByNumber.get(row.matchNumber)
+      const live = row.status === 'live'
+      return Object.freeze({
+        key: `match-${row.matchNumber}`,
+        matchNumber: row.matchNumber,
+        live,
+        label: `${teamLabel(match?.homeTeamId)} ${row.normalTimeHomeGoals}–${row.normalTimeAwayGoals} ${teamLabel(match?.awayTeamId)}`,
+        detail: live ? 'In play — live score' : row.resultStatus === 'confirmed' ? 'Full time — official result' : 'Score awaiting confirmation',
+      })
+    })
+  return Object.freeze(entries)
+}

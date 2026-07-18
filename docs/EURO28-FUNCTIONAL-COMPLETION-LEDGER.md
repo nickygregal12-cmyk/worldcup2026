@@ -10,6 +10,22 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.67 — Leagues owner-review corrections: compact rows, one manage surface, Live activity
+
+Owner review of the Leagues re-cut demanded exact prototype fidelity. Standings rows compact to
+the prototype's density (small rank, 48px-floor rows, right-hand points). Create/join collapses to
+ONE surface: the dashed pair opens the single manage panel, which now also carries the danger
+zone; the duplicate bottom panel and the League-details disclosure are deleted. The identity card
+carries share AND copy-invite. Standings and Live activity are the prototype's mutually exclusive
+views behind one toggle: activity is real — derived from the canonical official-result feed
+(match scored/live entries linking to Match Centre) with an honest pre-tournament empty state;
+member-level entries join when per-member scoring aggregates exist server-side, and per-matchday
+and ceiling lenses wait on the same data stage (recorded follow-ups). The retired actions card and
+match strip components are deleted, their behaviour pins re-pointed at the identity-card
+affordances (shell, setup-invites, responsive, player-lifecycle audits — each cites the ruling).
+No scoring, resolver, prediction lock, Supabase write, Auth, RLS, production data, package or
+migration change. The full repository check passes; owner visual review remains open.
+
 ### Version 1.66 — full-redesign ruling; Leagues becomes the prototype page
 
 The owner ruled the prototype pack is the final design, not an upgrade source: page chrome with no
