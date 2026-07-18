@@ -40,20 +40,28 @@
   text-transform: uppercase;
 }
 
+/* The prototype's versus card (full-redesign 2026-07-18): both identities centred
+   around the VS verdict on the pitch-striped surface. */
 .scoreboard {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: stretch;
   gap: var(--space-3);
-  padding: var(--space-3);
+  padding: var(--space-4);
   border: 1px solid var(--dp-border-subtle);
-  border-top: 0.25rem solid var(--dp-action);
   border-radius: var(--radius-lg);
-  background: var(--dp-surface-page);
+  background: repeating-linear-gradient(
+    180deg,
+    var(--dp-surface-raised) 0 24px,
+    color-mix(in srgb, var(--dp-surface-page) 72%, var(--dp-surface-raised)) 24px 25.5px
+  );
+  box-shadow: var(--shadow-1);
 }
 
 .scorePlayer {
   align-content: center;
+  justify-items: center;
+  text-align: center;
   padding: var(--space-3);
 }
 
@@ -72,8 +80,8 @@
 }
 
 .scorePlayerAway {
-  justify-items: end;
-  text-align: right;
+  justify-items: center;
+  text-align: center;
 }
 
 .verdict {

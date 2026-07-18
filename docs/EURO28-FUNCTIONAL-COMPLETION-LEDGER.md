@@ -10,6 +10,17 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.78 — H2H opens with the prototype versus card
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, H2H slice. The head-to-head scoreboard becomes the
+prototype's versus card: both identities centred around the verdict on the pitch-striped surface
+with the big display points, replacing the flat page-tinted band. The story sections beneath —
+points by source, decisive matches and the match ledger — already carry the prototype's content
+and stand unchanged. The points-race chart remains a data-gated follow-up (it needs per-match
+scoring history for both players from the evidence rows; nothing is faked). No scoring, resolver,
+prediction lock, Supabase write, Auth, RLS, production data, package or migration change. The full
+repository check passes; owner visual review remains open.
+
 ### Version 1.77 — Profile overview becomes the prototype scroll: the ledger inline
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, player-profile slice two. The prototype's "every point,
