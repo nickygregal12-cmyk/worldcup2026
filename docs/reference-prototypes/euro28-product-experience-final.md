@@ -79,10 +79,15 @@ ruled treatments, flat full-width navigation) survive through v3.
 ### Page-adoption programme (owner instruction, 18 July 2026)
 
 The owner reviewed the deployed consolidation and ruled that the prototype pack is the approved
-composition authority page by page — every destination adopts the prototype's layout and flow on
-production data, with contracts amended where they contradict it (scoring values excepted: the
-locked scoring contract always wins over prototype copy). Bonus games ships with KO Predictor as
-its only game; Last Man Standing and Duels wait for owner-approved rules and database stages.
+composition authority page by page. **This is a full redesign, not an upgrade pass: the prototype
+is the final version of how each page looks and flows.** Existing page chrome, heading cards,
+banners, copy blocks and layout that have no counterpart in the prototype are removed, not
+preserved. Production contributes what the prototype cannot: real data, services, locks, privacy,
+accessibility semantics and honest states — where the prototype displays data production does not
+yet have (live in-play points, per-member scoring sublines, activity events, rank movement), the
+prototype's layout is adopted and that element appears only when its data exists, never as mock
+content. Scoring values remain the locked contract's, always. Bonus games ships with KO Predictor
+as its only game; Last Man Standing and Duels wait for owner-approved rules and database stages.
 
 - **Leagues (adopted first, 18 July):** the league switcher is a chip rail; Create league and
   Join with code are dashed entry actions; the identity card is compact — name, members-and-code

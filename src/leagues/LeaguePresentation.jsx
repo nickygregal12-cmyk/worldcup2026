@@ -91,21 +91,17 @@ export function LeaguePicker({ leagues, selectedId, onSelect }) {
   )
 }
 
-// Compact league identity card (consolidated prototype-pack ruling 2026-07-18):
-// name, members-and-code meta and share in one card; rank stats live in the
-// actions card, not here.
+// The league identity card is the prototype's pitch-striped surface card (full-redesign
+// ruling 2026-07-18): name, members-and-code meta and share. Nothing else.
 export function LeagueHero({ league, summary, lifecycleState, onShare }) {
   const original = league.competition === LEAGUE_COMPETITION.ORIGINAL
   const members = `${league.memberCount} member${league.memberCount === 1 ? '' : 's'}`
   const raceActive = summary?.state === 'active'
   const tournamentStarted = Boolean(lifecycleState?.tournamentStarted)
-  const rankLabel = raceActive && summary.currentRank ? `#${summary.currentRank}` : '28'
   return (
     <section className={heroStyles.identity} aria-label={`${league.name} overview`}>
-      <span className={heroStyles.watermark} aria-hidden="true">{rankLabel}</span>
       <div className={heroStyles.identityMain}>
         <div className={heroStyles.identityCopy}>
-          <span className={heroStyles.eyebrow}>{competitionName(league.competition)} league</span>
           <h2 className={heroStyles.name}>{league.name}</h2>
           <p className={heroStyles.meta}>{members} · code {league.joinCode ?? '—'}</p>
         </div>
@@ -122,9 +118,10 @@ export function LeagueHero({ league, summary, lifecycleState, onShare }) {
         </p>
       )}
       {tournamentStarted && (
-        <span className={heroStyles.timing}>{raceActive ? 'Follow the live points race — official scoring record' : 'Official results will move this table as soon as scoring records are available.'}</span>
+        <p className={heroStyles.hint}>{raceActive ? 'Follow the live points race — official scoring record.' : 'Official results will move this table as soon as scoring records are available.'}</p>
       )}
-      {!original && <span className="sr-only">This is a KO Predictor league, separate from Original Predictor leagues.</span>}
+      {/* Single-competition boundary, stated for assistive tech: a league IS one competition. */}
+      <span className="sr-only">{competitionName(league.competition)} league{original ? '' : ' — separate from Original Predictor leagues'}.</span>
     </section>
   )
 }
@@ -274,7 +271,7 @@ export function LeagueSignedOut() {
 
 export function LeagueStandingsPanel({
   competitionKey, overview, overviewLoading, activeOverview, standings,
-  onOpenPlayer,
+  onOpenPlayer, actionsCard = null,
   leagueLifecycle, lifecycle, activeSummary, koReadiness,
   selectedLeague, pendingLeagueAction, actionStatus, onRequestAction, onConfirmAction,
 }) {
@@ -287,9 +284,11 @@ export function LeagueStandingsPanel({
       ? { status: 'error', data: [], error: 'League standings could not be loaded.' }
       : null
 
+  // Full-redesign ruling 2026-07-18: the table card opens straight onto the rows, like the
+  // prototype — the old competition heading card is gone from the flow. Invite/share detail,
+  // lifecycle notes and the danger zone live behind League details below the rows.
   return (
     <article className={raceStyles.standingsCard}>
-      <LeagueCompetitionHeading competitionKey={competitionKey} summary={activeSummary} refreshing={stillRefreshing} />
 
       {loadingFirstLoad && (
         <div className={raceStyles.loadingRows} role="status" aria-label="Loading league standings">
@@ -305,6 +304,7 @@ export function LeagueStandingsPanel({
 
       {activeOverview && (
         <LeagueSecondaryDetails title="League details">
+          {actionsCard}
           <LeagueLifecycleBanner lifecycleState={leagueLifecycle} competitionKey={competitionKey} />
           <CompetitionLifecycleNote competitionKey={competitionKey} lifecycle={lifecycle} summary={activeSummary} koReadiness={koReadiness} />
           <LeagueSummaryCard title={competitionKey === LEAGUE_COMPETITION.ORIGINAL ? 'Original Predictor' : 'KO Predictor'} summary={activeSummary} section={activeSection} />

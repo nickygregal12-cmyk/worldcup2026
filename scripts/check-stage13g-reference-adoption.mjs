@@ -184,12 +184,12 @@ for (const [label, text, markers] of [
   ['Retired League prototype provenance', leaguePrototype, ['RETIRED AS ACTIVE VISUAL AUTHORITY 2026-07-17', 'historical visual provenance only', 'compact Match Centre at the top', 'full user row clickable']],
   ['Final Product Experience League authority', productExperience, ['The page begins with the Original/KO collection switch only when KO is available', 'competition-specific league selector', 'one contiguous mobile standings table', 'Table and Activity are mutually exclusive views']],
   ['Final League page hierarchy', leaguePage, ['layoutStyles.contextDock', '<LeagueCollectionTabs', '<LeagueToolbar', '<LeagueHero', '<LeagueStandingsPanel']],
-  // Toolbar and hero pins re-pointed at PROTOTYPE-PACK-CONSOLIDATION-1 (2026-07-18): the
-  // switcher is a chip rail, create/join are dashed entry actions, and the identity card is
-  // compact with share — rank stats live in the actions card.
+  // Toolbar and hero pins re-pointed at the PROTOTYPE-PACK-CONSOLIDATION-1 full-redesign
+  // ruling (2026-07-18): the switcher is a chip rail, create/join are dashed entry actions,
+  // and the identity card is the prototype's pitch-striped surface card with share.
   ['Final competition-specific league toolbar', leagueToolbar, ['<LeaguePicker', 'selectedLeagueId', 'Create league', 'Join with code']],
   ['Final League presentation', leaguePresentation, ['LeagueCompetitionHeading', 'raceStyles.tableHeader', 'currentUserRow', '<PlayerIdentity', 'podiumCutline']],
-  ['Final League hero styling', leagueHeroStyles, ['.watermark', '.shareButton', '.leagueChip', '--dp-surface-chrome']],
+  ['Final League hero styling', leagueHeroStyles, ['.shareButton', '.leagueChip', 'repeating-linear-gradient']],
   ['Final League table styling', leagueRaceStyles, ['.tableHeader', '.currentUserRow', 'box-shadow: inset 0.3rem 0 0 var(--dp-action)']],
 ]) {
   for (const marker of markers) assertIncludes(label, text, marker)

@@ -10,6 +10,19 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.66 — full-redesign ruling; Leagues becomes the prototype page
+
+The owner ruled the prototype pack is the final design, not an upgrade source: page chrome with no
+prototype counterpart is removed, and production contributes data, services, locks, privacy,
+accessibility and honest not-yet states. The ruling is recorded in the final contract. Leagues is
+re-cut to the prototype flow exactly: collection tabs, chip rail, dashed create/join, the
+pitch-striped surface identity card (name, members-and-code meta, share) and straight into the
+standings table — the competition heading card, actions card and match strip leave the main flow,
+with invite/share, lifecycle notes, the competition summary and the danger zone behind League
+details below the rows. The hero-styling and shell audits were re-pointed at the new anatomy in
+the same change. No scoring, resolver, prediction lock, Supabase write, Auth, RLS, production
+data, package or migration change. Owner visual review remains open.
+
 ### Version 1.65 — Leagues adopts the prototype composition
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1 slice two (owner-instructed page adoption, Leagues first) is

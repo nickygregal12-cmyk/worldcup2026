@@ -13,7 +13,6 @@ import {
   LeagueNotice,
   LeagueSignedOut,
   LeagueStandingsPanel,
-  MiniMatchStrip,
 } from './LeaguePresentation.jsx'
 import { EmptyLeagueCollection, LeagueCollectionTabs } from './LeagueCollectionTabs.jsx'
 import LeagueToolbar from './LeagueToolbar.jsx'
@@ -262,12 +261,6 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
     onUnavailable: text => setNotice({ tone: 'info', message: text }),
   })
 
-  const liveFixtureCompetition = liveFixture?.matchNumber <= 36 ? LEAGUE_COMPETITION.ORIGINAL : LEAGUE_COMPETITION.KO_PREDICTOR
-  const matchStripLeague = selectedLeague?.competition === liveFixtureCompetition ? selectedLeague.id : null
-  const matchStripHref = liveFixture
-    ? `#/match-centre?match=${liveFixture.matchNumber}&competition=${liveFixtureCompetition}${matchStripLeague ? `&league=${matchStripLeague}` : ''}`
-    : null
-
   return (
     <section className={layoutStyles.page} aria-label="Private leagues">
       <LeagueNotice notice={notice} />
@@ -339,38 +332,26 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
             <>
               <LeagueHero league={selectedLeague} summary={activeSummary} lifecycleState={leagueLifecycle} onShare={shareLeague} />
 
-              <MiniMatchStrip fixture={liveFixture} href={matchStripHref} />
-
-              <div className={`${layoutStyles.layout} ${leagueLifecycle.tournamentStarted ? layoutStyles.inPlay : layoutStyles.preTournament}`.trim()}>
-                <LeagueActionsCard
-                  joinCode={selectedLeague.joinCode}
-                  onCopyInvite={copyLeagueCode}
-                  onShareLeague={shareLeague}
-                  summary={activeSummary}
-                  lifecycleState={leagueLifecycle}
-                  fixture={liveFixture}
-                />
-
-                <div className={layoutStyles.standingsColumn}>
-                  <LeagueStandingsPanel
-                    competitionKey={activeCompetitionKey}
-                    overview={overview}
-                    overviewLoading={overviewLoading}
-                    activeOverview={activeOverview}
-                    standings={standings}
-                    onOpenPlayer={openMemberPlayerView}
-                    leagueLifecycle={leagueLifecycle}
-                    lifecycle={lifecycle}
-                    activeSummary={activeSummary}
-                    koReadiness={koReadiness}
-                    selectedLeague={selectedLeague}
-                    pendingLeagueAction={pendingLeagueAction}
-                    actionStatus={actionStatus}
-                    onRequestAction={setPendingLeagueAction}
-                    onConfirmAction={confirmLeagueAction}
-                  />
-                </div>
-              </div>
+              {/* Full-redesign ruling 2026-07-18: the prototype flow is identity card straight to
+                  the standings table. Invite/share detail rides inside League details. */}
+              <LeagueStandingsPanel
+                competitionKey={activeCompetitionKey}
+                overview={overview}
+                overviewLoading={overviewLoading}
+                activeOverview={activeOverview}
+                standings={standings}
+                onOpenPlayer={openMemberPlayerView}
+                actionsCard={<LeagueActionsCard joinCode={selectedLeague.joinCode} onCopyInvite={copyLeagueCode} onShareLeague={shareLeague} summary={activeSummary} lifecycleState={leagueLifecycle} fixture={liveFixture} />}
+                leagueLifecycle={leagueLifecycle}
+                lifecycle={lifecycle}
+                activeSummary={activeSummary}
+                koReadiness={koReadiness}
+                selectedLeague={selectedLeague}
+                pendingLeagueAction={pendingLeagueAction}
+                actionStatus={actionStatus}
+                onRequestAction={setPendingLeagueAction}
+                onConfirmAction={confirmLeagueAction}
+              />
 
               {!manageOpen && (
                 <LeagueManagePanel
