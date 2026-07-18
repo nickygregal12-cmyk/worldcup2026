@@ -376,6 +376,8 @@
 .dateRail { display: flex; gap: var(--space-2); flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .dateRail::-webkit-scrollbar { display: none; }
 
+.groupRail .railTables { flex: 0 0 auto; }
+
 .dateRail button,
 .railTables {
   flex: none;

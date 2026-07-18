@@ -88,7 +88,6 @@ export default function PredictionJourneyView({
           <summary>
             <div className={chromeStyles.statusTitle}>
               <span className={chromeStyles.statusKicker}>Original Predictor</span>
-              <strong>{surface === PREDICTION_JOURNEY_VIEW.GROUPS ? 'Group scores workspace' : 'Bracket picks workspace'}</strong>
             </div>
             {/* The whole-journey count — group scores AND bracket picks — belongs on a
                 surface where it is the only count. It was dropped from Groups because the

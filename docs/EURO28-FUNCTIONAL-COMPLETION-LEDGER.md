@@ -10,6 +10,17 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.73 — Groups owner-review corrections: flanked band, uniform Tables, no workspace title
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups correction slice. The prototype's flanked band —
+teams beside the score controls on one line — now holds from 26rem up; only truly narrow phones
+stack the score row (the 48px direct-entry ruling stands). The Tables chip stops stretching in the
+date rail and is identical in both views. The workspace strip loses its old-version title
+entirely: one quiet row — the Original Predictor kicker and the autosave state. groups-predictor.css
+folds further and its cap follows (290 -> 281). No scoring, resolver, prediction lock, Supabase
+write, Auth, RLS, production data, package or migration change. The full repository check passes;
+owner visual review remains open.
+
 ### Version 1.72 — Groups By-date takes the prototype date rail; uniform Tables; reading column
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups dock slice. By date becomes the prototype's rail of
