@@ -34,10 +34,10 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: var(--space-3);
   align-items: center;
-  min-height: 4rem;
-  padding: var(--space-3) var(--space-4);
-  background: var(--dp-surface-chrome);
-  color: var(--dp-text-muted-chrome);
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-4);
+  background: var(--dp-surface-raised);
+  color: var(--dp-text-muted);
   cursor: pointer;
   list-style: none;
 }
@@ -58,7 +58,7 @@
 }
 
 .statusKicker {
-  color: var(--dp-text-muted-chrome);
+  color: var(--dp-text-muted);
   font-size: var(--text-xs);
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -67,8 +67,8 @@
 
 .statusDisclosure summary strong {
   overflow: hidden;
-  color: var(--dp-text-on-chrome);
-  font: 700 var(--text-lg)/1.2 var(--font-display);
+  color: var(--dp-text-strong);
+  font: 700 var(--text-body)/1.2 var(--font-display);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -76,7 +76,7 @@
 /* The whole-journey count (group scores + bracket picks). It is rendered on the Bracket
    surface and NOT on Groups — see PredictionJourneyView for why. */
 .statusCount {
-  color: var(--dp-text-on-chrome);
+  color: var(--dp-text-strong);
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }

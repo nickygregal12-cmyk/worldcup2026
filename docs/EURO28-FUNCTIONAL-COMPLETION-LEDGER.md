@@ -10,6 +10,17 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.71 — Groups drops the workspace hero for the prototype's quiet strip
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups chrome slice. The navy "Group scores workspace"
+disclosure flattens to a quiet one-line surface strip — the mandated autosave state and
+lock/lifecycle cards stay behind it — so the page opens like the prototype: view toggle, joker
+meter and progress, the A–F rail, then the match cards. Remaining Groups refinements are recorded:
+sticky dock with the Tables button in the rail row, group in the card meta line, joker as a header
+pill, Open/Locked status chips. No scoring, resolver, prediction lock, Supabase write, Auth, RLS,
+production data, package or migration change. The full repository check passes; owner visual
+review remains open.
+
 ### Version 1.70 — player quick view takes the prototype stat tiles
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, player-flow opener. The quick-profile sheet's standing
