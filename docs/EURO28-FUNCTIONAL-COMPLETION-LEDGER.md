@@ -10,6 +10,17 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.76 — Player profile opens with the prototype identity card
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, player-profile slice one. The profile hub's header becomes
+the prototype's identity pitch card: avatar and name with the rank meta line on the left, the big
+display points figure on the right, the release chip beneath, on the striped surface — and it
+holds that row at every width. The four summary tiles sit on raised cards beneath. Competition
+tabs, the release status bar and the section navigation continue to work unchanged; the deeper
+single-scroll merge of points ledger, bracket summary and H2H link into the overview is the next
+slice. No scoring, resolver, prediction lock, Supabase write, Auth, RLS, production data, package
+or migration change. The full repository check passes; owner visual review remains open.
+
 ### Version 1.75 — Groups cards finish the prototype anatomy: header joker pill, group in meta, Open chip
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups card-anatomy slice. The joker moves from a

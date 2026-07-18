@@ -34,10 +34,13 @@ export function PlayerHeader({ view, competitionOptions, onCompetitionChange }) 
       <div className={styles.hero}>
         <div className={styles.heroCopy}>
           <span className="page-eyebrow">{context.eyebrow}</span>
-          <PlayerIdentity player={view.player} isCurrentUser={view.player.isCurrentUser} size="large" />
-          <p>{context.summary}</p>
+          <PlayerIdentity player={view.player} isCurrentUser={view.player.isCurrentUser} size="large" meta={view.player.rank > 0 ? `${formatRank(view.player.rank)} · ${context.eyebrow}` : null} />
+          <Badge tone={view.release.state === 'released' ? 'safe' : 'info'}>{view.release.state === 'released' ? 'Picks released' : 'Picks protected'}</Badge>
         </div>
-        <Badge tone={view.release.state === 'released' ? 'safe' : 'info'}>{view.release.state === 'released' ? 'Picks released' : 'Picks protected'}</Badge>
+        <div className={styles.heroPoints}>
+          <strong>{view.player.totalPoints}</strong>
+          <span>{context.pointsLabel}</span>
+        </div>
       </div>
       <div className={styles.headerStats} aria-label="Player summary">
         <div><strong>{formatRank(view.player.rank)}</strong><span>Rank</span></div>
