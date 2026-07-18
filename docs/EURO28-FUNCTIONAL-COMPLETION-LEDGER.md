@@ -10,6 +10,29 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.81 — Stage GODMODE-1: the Admin Tournament Simulator
+
+Stage GODMODE-1 (owner-approved 2026-07-18) is implemented. Migration 022
+(`202607180022_euro28_admin_tournament_simulator.sql`) adds six admin-only, owner-gated,
+provisional-tournament-only database functions that drive the existing scenario-runner operations
+from inside the app: `admin_simulator_status`, `admin_simulator_set_time` (timeline scrubbing to any
+instant; a null target returns to real time and unwinds every simulated result),
+`admin_simulator_script_score` / `admin_simulator_clear_score_script` (per-match group-score
+overrides stored in the private-schema `simulation_score_scripts` namespace), and
+`admin_simulator_seed_world` / `admin_simulator_teardown_world` (the nineteen Stage 16A synthetic
+personas, dual-marker only, zero-residue teardown). A new `#/admin?section=simulator` Control Room
+section (`AdminSimulator.jsx` plus its model and service) wires these behind the existing admin auth,
+confirm-dialog and audit-note pipeline; the simulated-instant field is a validated UTC text input,
+not a native date control. Scoring and resolver logic are reused untouched
+(`private.euro28_record_match_result`, `euro28_expected_knockout_participants`,
+`euro28_recalculate_points`); simulated results are recorded as `system` results with no
+recorded-by user and never become official records. The stage also closes the sim-clock coverage
+gap: the prediction journey's joker lock (`isPredictionMatchStarted`) and grace
+(`hasActivePredictionGrace`) now read the sim-aware `getNow()`, so a scrubbed instant governs them
+like the global lock. Active migrations remain 22; Migration 022 is applied to local only, and
+applying it to Euro staging remains an owner-gated, backup-first step. The full repository check
+passes (144 test files / 884 tests); owner visual review of the Simulator section remains open.
+
 ### Version 1.80 — Match Centre opens with the prototype match hero
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, Match Centre slice one. The fixture hero becomes the
