@@ -211,8 +211,8 @@ export default function GroupsPredictor({
         badge={isDateView
           ? <button className={viewStyles.groupTag} type="button" onClick={() => openTable(match.groupCode)}>Group {match.groupCode}</button>
           : <PredictionStateBadge state={state} />}
-        home={<TeamLabel team={homeTeam} compact stacked />}
-        away={<TeamLabel team={awayTeam} compact stacked />}
+        home={<TeamLabel team={homeTeam} compact />}
+        away={<TeamLabel team={awayTeam} compact reverse alignEnd />}
         centre={<PredictionInputRow
           homeValue={row.homeScore}
           awayValue={row.awayScore}

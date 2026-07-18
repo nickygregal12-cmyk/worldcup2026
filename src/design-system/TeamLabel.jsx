@@ -33,6 +33,7 @@ export default function TeamLabel({
   compact = false,
   stacked = false,
   alignEnd = false,
+  reverse = false,
   collapseCopy = false,
   // The identity is painted for the light page it usually sits on: --dp-text-strong for the
   // name, --dp-text-muted for the "Provisional" line. Dropped on a chrome (navy) surface in the
@@ -83,6 +84,7 @@ export default function TeamLabel({
     compact ? styles.compact : '',
     stacked ? styles.stacked : '',
     alignEnd ? styles.alignEnd : '',
+    reverse ? styles.reverse : '',
     collapseCopy ? styles.collapseCopy : '',
     onChrome ? styles.onChrome : '',
     activation ? styles.interactive : '',

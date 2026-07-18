@@ -10,6 +10,18 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.69 — Groups match cards take the prototype team rows
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups team-row slice. The match card's identities become
+the prototype's horizontal rows: flag beside the name (with the fail-loud Provisional line kept),
+home left-aligned and away mirrored with its flag on the outer edge, via a new TeamLabel `reverse`
+variant. The stacked-centered identity leaves the Groups card. Phone keeps the score controls on
+their own row beneath the teams because steppers-plus-direct-entry at 48px targets is a locked
+owner ruling the prototype's minus/plus stepper cannot satisfy. groups-predictor.css folds the
+phone rules to one-liners and its frozen cap follows the file down (297 -> 293). No scoring,
+resolver, prediction lock, Supabase write, Auth, RLS, production data, package or migration
+change. The full repository check passes; owner visual review remains open.
+
 ### Version 1.68 — Home becomes the prototype page (pre-tournament flow)
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, Home slice. The pre-tournament Home is re-cut to the

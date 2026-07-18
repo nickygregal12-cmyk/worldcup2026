@@ -180,6 +180,16 @@ button.teamLabel {
   justify-self: end;
 }
 
+/* The prototype's away-side mirror (full-redesign 2026-07-18): flag on the outer
+   edge, text right-aligned, so the two teams read symmetrically around the score. */
+.reverse {
+  flex-direction: row-reverse;
+}
+
+.reverse .copy {
+  text-align: right;
+}
+
 @media (max-width: 40rem) {
   .collapseCopy .copy {
     display: none;
