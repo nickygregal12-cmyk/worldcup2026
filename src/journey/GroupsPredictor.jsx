@@ -215,13 +215,18 @@ export default function GroupsPredictor({
             {kickoff
               ? <span>· {kickoff}</span>
               : <span className={flowStyles.provisional}>PROVISIONAL</span>}
+            <span>· Group {match.groupCode}</span>
             {match.venueName && <span className={flowStyles.venue}>· {match.venueName}</span>}
             {hostFlag && <span className={flowStyles.hostFlag}><img src={hostFlag} alt="" /></span>}
           </span>
         }
-        badge={isDateView
-          ? <button className={viewStyles.groupTag} type="button" onClick={() => openTable(match.groupCode)}>Group {match.groupCode}</button>
-          : <PredictionStateBadge state={state} />}
+        badge={
+          <span className={flowStyles.headerChips}>
+            {isDateView
+              ? <button className={viewStyles.groupTag} type="button" onClick={() => openTable(match.groupCode)}>Tables</button>
+              : <PredictionStateBadge state={state} />}
+            <JokerPill aria-pressed={row.jokerApplied} active={row.jokerApplied} disabled={jokerDisabled} multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER} statusLabel={jokerLabel} matchLabel={`match ${match.matchNumber}`} onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })} />
+          </span>}
         home={<TeamLabel team={homeTeam} compact />}
         away={<TeamLabel team={awayTeam} compact reverse alignEnd />}
         centre={<PredictionInputRow
@@ -237,7 +242,6 @@ export default function GroupsPredictor({
           onAwayChange={awayScore => onChange(match, { awayScore })}
         />}
         note={<a className={flowStyles.matchCentreLink} href={`${MATCH_CENTRE_DESTINATION.hash}?match=${match.matchNumber}&competition=original`}>Match Centre <Icon name="chevron" size={16} /></a>}
-        action={<JokerPill aria-pressed={row.jokerApplied} active={row.jokerApplied} disabled={jokerDisabled} multiplier={EURO_SCORING_CONFIG.joker.MULTIPLIER} statusLabel={jokerLabel} matchLabel={`match ${match.matchNumber}`} onClick={() => onChange(match, { jokerApplied: !row.jokerApplied })} />}
       />
     )
   }

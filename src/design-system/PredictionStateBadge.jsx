@@ -9,7 +9,7 @@ import styles from './PredictionStateBadge.module.css'
 // 'complete' means every field is filled in. It is NOT a save state, so it must not say
 // "Complete" on its own — that read as "saved" and was the reported confusion.
 const STATE = Object.freeze({
-  empty: { label: 'Needs prediction', tone: 'neutral', icon: 'clock' },
+  empty: { label: 'Open', tone: 'neutral', icon: 'clock' },
   complete: { label: 'Filled in', tone: 'safe', icon: 'check' },
   local: { label: 'Saved on this device only', tone: 'warning', icon: 'save' },
   dirty: { label: 'Not saved yet', tone: 'warning', icon: 'clock' },

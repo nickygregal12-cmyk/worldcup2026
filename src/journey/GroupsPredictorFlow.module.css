@@ -47,6 +47,15 @@
   outline-offset: 2px;
 }
 
+/* The header chips: state (or the Tables shortcut in By date) beside the joker pill. */
+.headerChips {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
 /* WHEN and WHERE. The card used to say "Match 7" and a bare date — a match number
    is an internal ordinal, and it was the most prominent thing on the card. */
 .matchMeta {

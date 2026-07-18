@@ -10,6 +10,16 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.75 — Groups cards finish the prototype anatomy: header joker pill, group in meta, Open chip
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups card-anatomy slice. The joker moves from a
+full-width footer button to the compact pill in the card header chips, beside the state chip (or
+the Tables shortcut in By date, relabelled from the duplicate group name). Every card's meta line
+now carries its group — "Fri 9 June · 8:00pm · Group A" — in both views. The empty prediction
+state chip becomes the prototype's "Open" (shared badge; save-state labels unchanged). No scoring,
+resolver, prediction lock, Supabase write, Auth, RLS, production data, package or migration
+change. The full repository check passes; owner visual review remains open.
+
 ### Version 1.74 — Groups flow order: Lucky Dip first, one next-step block
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups flow slice. Lucky Dip moves above the match cards —
