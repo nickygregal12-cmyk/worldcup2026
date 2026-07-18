@@ -10,6 +10,22 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.68 — Home becomes the prototype page (pre-tournament flow)
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, Home slice. The pre-tournament Home is re-cut to the
+prototype flow: one pitch-striped hero card carrying the kick-off pill (real lock date and venue),
+the "N days to lock-in." display headline, the prediction meter and the primary actions
+(Start/Continue predicting from the routed CTA, Build bracket); then the league card and the
+"How scoring works" duo — scoring values rendered from the central versioned config, never prose;
+then the opening fixtures (the model gains an additive openingMatches rail) and the mandated quiet
+KO teaser. The old four-region pre layout, corner ribbon, unit-grid countdown and stat tiles leave
+the pre flow; leaderboards stay on the live/post states and in More, per the prototype. The
+fail-loud provisional indicator and the single lock-framed countdown are preserved and tested; the
+retired ribbon test file is replaced by the new hero contract tests. The live-phase "as it stands"
+rank hero and league preview need league standings wired onto Home and follow with the matchday
+pass. No scoring, resolver, prediction lock, Supabase write, Auth, RLS, production data, package or
+migration change. The full repository check passes; owner visual review remains open.
+
 ### Version 1.67 — Leagues owner-review corrections: compact rows, one manage surface, Live activity
 
 Owner review of the Leagues re-cut demanded exact prototype fidelity. Standings rows compact to

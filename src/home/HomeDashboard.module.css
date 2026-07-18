@@ -19,21 +19,28 @@
   align-items: start;
 }
 
-.preLayout {
+/* The prototype's single-column pre-tournament flow (full-redesign 2026-07-18):
+   hero, league/scoring duo, opening fixtures, quiet KO teaser. */
+.preFlow {
   display: grid;
-  grid-template-areas:
-    'priority'
-    'hero'
-    'main'
-    'support';
   gap: var(--space-3);
+  width: min(100%, 45rem);
+  margin-inline: auto;
   align-items: start;
 }
 
-.prePriority { grid-area: priority; }
-.preHero { grid-area: hero; min-width: 0; }
-.preMain { grid-area: main; }
-.preSupport { grid-area: support; }
+.duoGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+  align-items: stretch;
+}
+
+@media (max-width: 26rem) {
+  .duoGrid {
+    grid-template-columns: 1fr;
+  }
+}
 
 .column {
   display: grid;
@@ -266,15 +273,6 @@
   .grid {
     grid-template-columns: 1.6fr 1fr;
     gap: var(--space-6);
-  }
-
-  .preLayout {
-    grid-template-columns: 1.6fr 1fr;
-    grid-template-areas:
-      'hero hero'
-      'main priority'
-      'main support';
-    gap: var(--space-4) var(--space-6);
   }
 
   .sect h1,

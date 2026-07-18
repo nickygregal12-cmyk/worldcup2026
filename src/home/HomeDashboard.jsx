@@ -6,7 +6,7 @@ import { HOME_STATE } from './homeDashboardModel.js'
 import { loadHomeDashboard } from './homeDashboardService.js'
 import CountdownHero from './HomeHero.jsx'
 import HomeMatchCard from './HomeMatchCard.jsx'
-import { KoTeaser, LeaderboardsCard, LeaguesTeaser, RankStrip, RulesCard, StatTiles, TournamentCard } from './HomeSidebar.jsx'
+import { KoTeaser, LeaderboardsCard, LeaguesTeaser, RankStrip, RulesCard, TournamentCard } from './HomeSidebar.jsx'
 import { formatDayLabel, formatKickoffTime, formatPoints, summariseDay } from './homeFormat.js'
 import styles from './HomeDashboard.module.css'
 
@@ -70,41 +70,37 @@ function OpeningMatch({ dashboard }) {
   )
 }
 
+// The prototype's pre-tournament flow (full-redesign ruling 2026-07-18): one column —
+// the pitch hero (countdown, meter, actions), the league and scoring duo, the opening
+// fixtures, then the mandated quiet KO teaser.
 function PreTournament({ dashboard }) {
   const { original, home } = dashboard
+  const openers = home.openingMatches?.length ? home.openingMatches : home.openingMatch ? [home.openingMatch] : []
 
   return (
-    <div className={styles.preLayout}>
-      <div className={`${styles.column} ${styles.prePriority}`} aria-label="Your rank and leagues">
-        <StatTiles dashboard={dashboard} />
+    <div className={styles.preFlow}>
+      <CountdownHero
+        lockAt={home.lockAt}
+        countdown={home.countdown}
+        openingMatch={home.openingMatch}
+        provisional={dashboard.lifecycle.provisional}
+        original={original}
+        predictionCta={home.predictionCta}
+      />
+
+      <div className={styles.duoGrid}>
         <LeaguesTeaser dashboard={dashboard} preTournament />
-      </div>
-
-      <div className={styles.preHero}>
-        <CountdownHero lockAt={home.lockAt} countdown={home.countdown} openingMatch={home.openingMatch} provisional={dashboard.lifecycle.provisional} />
-      </div>
-
-      <div className={`${styles.column} ${styles.preMain}`}>
-          <section className={styles.card}>
-            <PredictionProgress original={original} />
-            {home.predictionCta
-              ? (
-                <a className={styles.cta} href={home.predictionCta.href}>
-                  {original.totalComplete > 0 ? 'Finish your predictions' : 'Start your predictions'}
-                </a>
-              )
-              : <p className={styles.ctaDone}>All predictions in. You can still change them until the lock.</p>}
-            <a className={styles.howto} href="#/how-to-play">How scoring works</a>
-          </section>
-
-          <OpeningMatch dashboard={dashboard} />
-      </div>
-
-      <div className={`${styles.column} ${styles.preSupport}`}>
-        <KoTeaser dashboard={dashboard} />
-        <LeaderboardsCard dashboard={dashboard} />
         <RulesCard />
       </div>
+
+      {openers.length > 0 && (
+        <>
+          <SectionHeading title="Opening fixtures" link={{ href: '#/groups', label: 'All fixtures' }} />
+          {openers.map(card => <HomeMatchCard card={card} key={card.matchNumber} showPrediction={dashboard.signedIn} />)}
+        </>
+      )}
+
+      <KoTeaser dashboard={dashboard} />
     </div>
   )
 }

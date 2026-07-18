@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getNow } from '../lib/clock.js'
+import { Icon } from '../design-system/index.jsx'
 import { countdownParts } from './homeDashboardModel.js'
 import { formatKickoffDateTime } from './homeFormat.js'
 import styles from './HomeHero.module.css'
@@ -17,80 +18,72 @@ function useCountdown(lockAt, initial) {
   return parts
 }
 
+function headline(live) {
+  if (!live) return 'Predictions are locked.'
+  if (live.days > 0) return `${live.days} day${live.days === 1 ? '' : 's'} to lock-in.`
+  if (live.hours > 0) return `${live.hours} hour${live.hours === 1 ? '' : 's'} to lock-in.`
+  return `${Math.max(live.minutes, 1)} minute${live.minutes === 1 ? '' : 's'} to lock-in.`
+}
+
 /**
- * The broadcast countdown hero.
- *
- * The hero no longer names the two teams. It previously carried a title that
- * fell back to a bare "Match 1" whenever either participant read as unresolved,
- * while the fixture card immediately below named Wales and Germany from the same
- * data — one surface, two conditions, two answers. The re-cut gives the teams a
- * single home: the fixture card. The hero identifies the match (number, group)
- * and the moment, so there is no second condition left to disagree.
+ * The pre-tournament hero — the prototype's pitch card (full-redesign ruling
+ * 2026-07-18): kick-off pill, "N days to lock-in." headline, the prediction
+ * meter and the primary actions, all on one card. The provisional indicator is
+ * a mandated fail-loud feature and stays.
  */
-export default function CountdownHero({ lockAt, countdown, openingMatch, provisional = false }) {
+export default function CountdownHero({ lockAt, countdown, openingMatch, provisional = false, original = null, predictionCta = null, actions = null }) {
   const live = useCountdown(lockAt, countdown)
-  const units = live
-    ? [{ value: live.days, label: 'Days' }, { value: live.hours, label: 'Hours' }, { value: live.minutes, label: 'Mins' }]
-    : null
-
   const where = openingMatch?.venueName ?? ''
-
-  // Two carriers for the match identity, and they do NOT get the same copy.
-  //
-  // The corner ribbon is a fixed-width band, rotated into a corner that clips it,
-  // and it is the variant shown below 64rem — so it is what a 390px phone sees.
-  // "MATCH 1 · GROUP A" did not fit: the owner's eye test on the built app caught
-  // the final letter sheared off by the clip. Truncated text does not ship, and
-  // when the geometry cannot hold the copy, the copy gives way — so the ribbon
-  // carries the match number alone.
-  //
-  // Nothing is lost by that. The flat chip below (shown from 64rem, unrotated and
-  // unclipped, with room to spare) keeps the group, and the fixture card directly
-  // beneath the hero already reads "GROUP A · MATCH 1" at every width.
-  const ribbon = openingMatch ? `Match ${openingMatch.matchNumber}` : null
-  const tag = openingMatch
-    ? [`Match ${openingMatch.matchNumber}`, openingMatch.stageLabel].filter(Boolean).join(' · ')
-    : null
+  const done = original?.totalComplete ?? 0
+  const total = original?.total ?? 0
+  const percent = total > 0 ? Math.round((done / total) * 100) : 0
 
   return (
     <section className={styles.countHero} aria-label="Countdown to prediction lock">
-      <span className={styles.countWash} aria-hidden="true" />
-      <span className={styles.countHatch} aria-hidden="true" />
-      <span className={styles.countAccent} aria-hidden="true" />
-      {openingMatch && <span className={styles.countWatermark} aria-hidden="true">{openingMatch.matchNumber}</span>}
-      {/* The match identity, as real content rather than decoration. The rotated
-          corner ribbon is a mobile device; the wide hero wants a flat chip in the
-          body. Exactly one of the two is displayed at any width, so it is spoken
-          once — and each carries only the copy its geometry can actually hold. */}
-      {ribbon && <span className={styles.countRibbon}>{ribbon}</span>}
-
+      <span className={styles.countRing} aria-hidden="true" />
       <div className={styles.countBody}>
-        {tag && <span className={styles.countTag}>{tag}</span>}
-        <h1 className={styles.countEyebrow}>Predictions lock at kick-off</h1>
-
-        {units
-          ? (
-            <div className={styles.countBig}>
-              {units.map(unit => (
-                <span className={styles.countUnit} key={unit.label}>
-                  <strong>{String(unit.value).padStart(2, '0')}</strong>
-                  <small>{unit.label}</small>
-                </span>
-              ))}
-            </div>
-          )
-          : <div className={styles.countBig}><span className={styles.countUnit}><strong>Locked</strong></span></div>}
-
-        <p className={styles.countWhen}>
-          {formatKickoffDateTime(lockAt)}
-          {where ? ` · ${where}` : ''}
+        <span className={styles.countPill}>
+          <Icon name="clock" size={12} />
+          Kick-off {formatKickoffDateTime(lockAt)}{where ? ` · ${where}` : ''}
+        </span>
+        <h1 className={styles.countBig}>{headline(live)}</h1>
+        <p className={styles.countCopy}>
+          Every group score and every bracket pick freezes at the first kick-off.
+          After that, it&rsquo;s all tracking and bragging rights.
         </p>
 
         {provisional && (
-          <p className={styles.countProvisional}>
-            <span>Provisional — kick-off time not confirmed</span>
-          </p>
+          <p className={styles.countProvisional}><span>Provisional — kick-off time not confirmed</span></p>
         )}
+
+        {original && (
+          <div className={styles.countMeterBlock}>
+            <div className={styles.countMeterRow}>
+              <span>Predictions complete</span>
+              <strong>{done}/{total}</strong>
+            </div>
+            <div
+              className={styles.countMeter}
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={total}
+              aria-valuenow={done}
+              aria-label={`Your predictions: ${done} of ${total} complete`}
+            >
+              <span style={{ width: `${percent}%` }} />
+            </div>
+          </div>
+        )}
+
+        <div className={styles.countActions}>
+          {predictionCta && (
+            <a className={styles.countAction} href={predictionCta.href}>
+              {done === total && total > 0 ? 'Review your picks' : done > 0 ? 'Continue predicting' : 'Start predicting'}
+            </a>
+          )}
+          <a className={styles.countActionGhost} href="#/bracket">Build bracket</a>
+          {actions}
+        </div>
       </div>
     </section>
   )

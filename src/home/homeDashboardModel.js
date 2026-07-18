@@ -419,6 +419,8 @@ export function buildHomeDashboard({
       lockAt: lifecycle.predictionLockAt,
       predictionCta,
       openingMatch: openingMatch ? toCard(openingMatch) : null,
+      // The prototype's pre-tournament "Opening fixtures" rail: the first three fixtures.
+      openingMatches: Object.freeze(allMatches.slice(0, 3).map(toCard)),
       liveMatches: Object.freeze(today.live.map(toCard)),
       upcomingMatches: Object.freeze(today.upcoming.map(toCard)),
       completedMatches: Object.freeze(today.completed.map(toCard)),

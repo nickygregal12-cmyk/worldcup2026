@@ -100,20 +100,18 @@ describe('Home dashboard rendering', () => {
   it('shows exactly one countdown before the tournament, framed as the lock', () => {
     const html = renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z') }))
 
-    expect(html).toContain('Predictions lock at kick-off')
-    expect(html.match(/Days/g)).toHaveLength(1)
+    expect(html).toContain('to lock-in.')
+    expect(html.match(/to lock-in\./g)).toHaveLength(1)
     expect(html).not.toContain('Tournament starts')
     expect(html).toContain('How scoring works')
   })
 
-  it('puts rank and leagues before the countdown in the signed-in phone reading order', () => {
+  it('leads with the lock-in hero before the league card pre-tournament', () => {
     const html = renderHome(fixtureFor({
       now: new Date('2028-06-07T17:30:00Z'),
-      leagues: [{ memberCount: 8 }],
+      session: { user: { id: 'user-1' } },
     }))
-
-    expect(html.indexOf('aria-label="Your rank and leagues"')).toBeLessThan(html.indexOf('Countdown to prediction lock'))
-    expect(html).toContain('Share or manage leagues')
+    expect(html.indexOf('Countdown to prediction lock')).toBeLessThan(html.indexOf('Your leagues'))
   })
 
   it('keeps a quiet KO Predictor explainer before any real knockout fixture is ready', () => {
@@ -162,26 +160,24 @@ describe('Home dashboard rendering', () => {
     it('routes to Groups while group scores are still missing', () => {
       const html = renderHome(fixtureFor({ now: preTournament, reference: withKnockout, originalBundle: bundleFor({ groups: 0, bracket: 0 }) }))
 
-      // The CTA is the only thing on Home that links to Groups — the sibling
-      // cases below prove it by asserting the route disappears with the CTA.
       expect(html).toContain('href="#/groups"')
-      expect(html).toContain('Start your predictions')
+      expect(html).toContain('Start predicting')
     })
 
     it('routes to Bracket once Groups is complete but Bracket is not', () => {
       const html = renderHome(fixtureFor({ now: preTournament, reference: withKnockout, originalBundle: bundleFor({ groups: 1, bracket: 0 }) }))
 
+      // The CTA itself points at the bracket; the hero's ghost action does too.
       expect(html).toContain('href="#/bracket"')
-      expect(html).toContain('Finish your predictions')
-      expect(html).not.toContain('href="#/groups"')
+      expect(html).toContain('Continue predicting')
     })
 
     it('withdraws the CTA once every stage that exists is complete', () => {
       const html = renderHome(fixtureFor({ now: preTournament, reference: withKnockout, originalBundle: bundleFor({ groups: 1, bracket: 1 }) }))
 
-      expect(html).toContain('All predictions in')
-      expect(html).not.toContain('Finish your predictions')
-      expect(html).not.toContain('href="#/bracket"')
+      expect(html).not.toContain('Start predicting')
+      expect(html).not.toContain('Continue predicting')
+      expect(html).not.toContain('Review your picks')
     })
 
     it('keeps the "How scoring works" link in every CTA state', () => {
@@ -193,30 +189,31 @@ describe('Home dashboard rendering', () => {
     })
   })
 
-  it('offers leaderboard access from every state, including pre-tournament', () => {
+  it('keeps leaderboards out of the prototype pre flow but present once play begins', () => {
     const pre = renderHome(fixtureFor({ now: new Date('2028-06-07T17:30:00Z') }))
     const live = renderHome(fixtureFor({
-      now: new Date('2028-06-09T19:30:00Z'),
+      now: new Date('2028-06-14T19:30:00Z'),
       results: { live: { summary: {}, results: [{ matchNumber: 1, status: 'live' }] } },
     }))
 
-    // The pre-tournament state has no rank strip, so without a standalone link
-    // Home would offer no route to the leaderboards in the state everyone sees.
-    expect(pre).toContain('#/leaderboards?competition=original')
+    expect(pre).not.toContain('#/leaderboards?competition=original')
     expect(live).toContain('#/leaderboards?competition=original')
   })
 
   it('keeps KO leaderboard access quiet until the KO game becomes primary', () => {
-    const preDashboard = fixtureFor({ now: new Date('2028-06-07T17:30:00Z') })
+    const liveDashboard = fixtureFor({
+      now: new Date('2028-06-14T19:30:00Z'),
+      results: { live: { summary: {}, results: [{ matchNumber: 1, status: 'live' }] } },
+    })
     const primaryDashboard = {
-      ...preDashboard,
-      koReadiness: { ...preDashboard.koReadiness, open: true, earlyAccess: true, primaryReady: true },
+      ...liveDashboard,
+      koReadiness: { ...liveDashboard.koReadiness, open: true, earlyAccess: true, primaryReady: true },
     }
-    const pre = renderHome(preDashboard)
+    const quiet = renderHome(liveDashboard)
     const primary = renderHome(primaryDashboard)
 
-    expect(pre).toContain('#/leaderboards?competition=original')
-    expect(pre).not.toContain('#/leaderboards?competition=koPredictor')
+    expect(quiet).toContain('#/leaderboards?competition=original')
+    expect(quiet).not.toContain('#/leaderboards?competition=koPredictor')
     expect(primary).toContain('#/leaderboards?competition=original')
     expect(primary).toContain('#/leaderboards?competition=koPredictor')
   })
@@ -283,7 +280,7 @@ describe('Home dashboard rendering', () => {
       }))
 
       for (const html of [resolved, provisional]) {
-        expect(heroOf(html)).toContain('Match 1')
+        expect(heroOf(html)).toContain('Kick-off')
         expect(heroOf(html)).not.toContain('Scotland')
         expect(heroOf(html)).not.toContain('Germany')
       }

@@ -2,6 +2,7 @@ import { Icon } from '../design-system/index.jsx'
 import { formatPoints, formatRank, leaderGap } from './homeFormat.js'
 import page from './HomeDashboard.module.css'
 import styles from './HomeSidebar.module.css'
+import { EURO_SCORING_CONFIG } from '../config/scoringConfig.js'
 
 const COMPETITIONS = Object.freeze([
   { key: 'original', name: 'Original Predictor', href: '#/leaderboards?competition=original' },
@@ -157,14 +158,15 @@ export function KoTeaser({ dashboard }) {
   )
 }
 
+// The prototype's "How scoring works" duo card. Values render from the central
+// versioned scoring config, never hardcoded prose.
 export function RulesCard() {
+  const match = EURO_SCORING_CONFIG.match
+  const joker = EURO_SCORING_CONFIG.joker
   return (
     <a className={styles.quiet} href="#/how-to-play">
-      <h3>Rules, scoring &amp; trust</h3>
-      <p>
-        Group scores lock at the first kick-off. A joker doubles that match’s score points —
-        group and KO Predictor only, never the Original Bracket.
-      </p>
+      <h3>How scoring works</h3>
+      <p>Exact {match.EXACT_SCORE} · result {match.CORRECT_OUTCOME} · joker ×{joker.MULTIPLIER} on that match&rsquo;s score points.</p>
     </a>
   )
 }
