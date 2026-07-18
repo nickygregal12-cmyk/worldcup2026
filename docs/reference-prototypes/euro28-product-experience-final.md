@@ -76,6 +76,22 @@ ruled treatments, flat full-width navigation) survive through v3.
   scoring notes, which contradict the locked scoring contract — noted for the owner; the locked
   contract is unaffected and remains the only scoring authority).
 
+### Page-adoption programme (owner instruction, 18 July 2026)
+
+The owner reviewed the deployed consolidation and ruled that the prototype pack is the approved
+composition authority page by page — every destination adopts the prototype's layout and flow on
+production data, with contracts amended where they contradict it (scoring values excepted: the
+locked scoring contract always wins over prototype copy). Bonus games ships with KO Predictor as
+its only game; Last Man Standing and Duels wait for owner-approved rules and database stages.
+
+- **Leagues (adopted first, 18 July):** the league switcher is a chip rail; Create league and
+  Join with code are dashed entry actions; the identity card is compact — name, members-and-code
+  meta and share, with rank stats in the actions card; the standings table draws the dashed
+  **podium cutline** under the top three once real scoring separates the table; member rows keep
+  rank, identity and confirmed points with the quick-profile activation.
+- Home, Groups match-card rows, Player Profile/H2H, Match Centre, Results, Tournament and the
+  Bonus games hub follow as later slices under this same ruling.
+
 ### Resulting amendments to this contract
 
 - The earlier "top bar stays compact" ruling is amended to: the top bar stays compact **and is

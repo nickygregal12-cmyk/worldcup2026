@@ -337,11 +337,7 @@ export default function Leagues({ client, tournamentId, reference, lifecycle, ko
               </>
             ) : selectedLeague && (
             <>
-              <LeagueHero
-                league={selectedLeague}
-                summary={activeSummary}
-                lifecycleState={leagueLifecycle}
-              />
+              <LeagueHero league={selectedLeague} summary={activeSummary} lifecycleState={leagueLifecycle} onShare={shareLeague} />
 
               <MiniMatchStrip fixture={liveFixture} href={matchStripHref} />
 

@@ -38,7 +38,10 @@ if (!design.includes('export function ConfirmDialog') || !design.includes('Selec
 const selectField = read('src/design-system/SelectField.jsx')
 if (!selectField.includes('role="listbox"') || !selectField.includes('role="combobox"')) fail('SelectField must be a custom-rendered listbox (button trigger + option list), not a native select')
 if (!account.includes('ConfirmDialog') || !account.includes('Sign out of Euro 2028 Predictor?')) fail('Sign-out must use the shared confirmation dialog')
-if (!leagues.includes('SelectField') || leagues.includes('<select value={selectedId')) fail('League pickers must use the design-system selector groundwork')
+// Re-pointed at PROTOTYPE-PACK-CONSOLIDATION-1 (2026-07-18): the league switcher is the
+// approved chip rail (buttons with aria-pressed), not a dropdown. The native-<select>
+// prohibition stands and the designed idiom is now asserted directly — tightened, not loosened.
+if (!leagues.includes('aria-pressed') || !leagues.includes('leagueChip') || leagues.includes('<select')) fail('The league switcher must be the designed chip rail with no native select')
 if (!refresh.includes('REFRESH_POLICY') || !refresh.includes('manualButton: false')) fail('Refresh-policy groundwork is missing')
 if (!packageJson.scripts['audit:shared-primitives']) fail('audit:shared-primitives script is not registered')
 if (!packageJson.scripts.check.includes('npm run audit:shared-primitives')) fail('npm run check must include the shared-primitives audit')

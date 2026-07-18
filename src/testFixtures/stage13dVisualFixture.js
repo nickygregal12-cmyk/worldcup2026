@@ -165,7 +165,7 @@ const LEAGUES = Object.freeze([
   Object.freeze({
     league_id: 'visual-league-family',
     league_name: 'Jimmy Dynasty',
-    join_code: 'JIMMY2028A',
+    join_code: 'JIMMY2028A', competition: 'original',
     member_role: 'owner',
     member_count: MEMBER_NAMES.length,
     created_at: '2028-01-18T12:00:00.000Z',
@@ -173,7 +173,7 @@ const LEAGUES = Object.freeze([
   Object.freeze({
     league_id: 'visual-league-work',
     league_name: 'Office Predictor',
-    join_code: 'OFFICE28UK',
+    join_code: 'OFFICE28UK', competition: 'original',
     member_role: 'member',
     member_count: 8,
     created_at: '2028-02-03T09:30:00.000Z',

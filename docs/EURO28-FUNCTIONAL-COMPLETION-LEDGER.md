@@ -10,6 +10,23 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.65 — Leagues adopts the prototype composition
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1 slice two (owner-instructed page adoption, Leagues first) is
+implemented in the working tree. The owner ruled the prototype pack the approved composition
+authority page by page; the programme is recorded in the final contract. Leagues now composes the
+prototype anatomy on production data: a chip-rail league switcher (buttons, no native select),
+dashed Create league / Join with code entry actions, a compact identity card with name,
+members-and-code meta and share, and the standings table with the dashed podium cutline under the
+top three once real scoring separates the table. The shared-primitives, reference-adoption and
+copy-sweep audits were re-pointed at the new idiom in the same change (tightened: the chip rail is
+asserted directly and the native-select prohibition stands); the visual fixture's league rows
+gained the post-Migration-019 competition field; a selected-chip contrast pairing was corrected to
+the certified info-ink family after the token contrast-usage audit caught it. Last Man Standing and
+Duels remain unbuilt pending owner rules and database stages; Bonus games ships KO-only later. No
+scoring, resolver, prediction lock, Supabase write, Auth, RLS, production data, package or
+migration change. The full repository check passes; owner visual review remains open.
+
 ### Version 1.64 — consolidated prototype-pack visual identity
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1 is implemented in the working tree and awaits owner

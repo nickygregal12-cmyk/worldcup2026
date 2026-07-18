@@ -18,6 +18,7 @@ import {
   Settings2,
   Share2,
   Moon,
+  Plus,
   RefreshCw,
   Radio,
   ShieldCheck,
@@ -25,6 +26,7 @@ import {
   TriangleAlert,
   UnlockKeyhole,
   Trophy,
+  UserRoundPlus,
   Users,
   X,
 } from 'lucide-react'
@@ -61,6 +63,8 @@ const ICONS = Object.freeze({
   settings: Settings2,
   share: Share2,
   copy: Copy,
+  plus: Plus,
+  'account-plus': UserRoundPlus,
   live: Radio,
 })
 

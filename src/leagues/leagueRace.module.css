@@ -141,6 +141,42 @@ button.leaderRow:hover .rowGo {
   color: var(--dp-text-on-accent);
 }
 
+.rowGroup {
+  display: grid;
+}
+
+/* The podium cutline (consolidated 2026-07-18): the dashed boundary drawn under
+   the top three once real scoring separates the table. */
+.podiumCutline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-5);
+}
+
+.podiumCutline span {
+  flex: 1;
+  border-top: 2px dashed var(--dp-action);
+  opacity: 0.55;
+}
+
+.podiumCutline em {
+  color: var(--dp-action-ink);
+  font-size: var(--text-xs);
+  font-style: normal;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.tableFootnote {
+  margin: 0;
+  padding: var(--space-3) var(--space-5) var(--space-4);
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
 .movementNote {
   display: flex;
   align-items: center;
