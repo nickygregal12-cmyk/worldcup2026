@@ -90,7 +90,6 @@ export function OverviewPanel({ view, canCompare, onOpenTab }) {
     <Card className={styles.panel} as="section">
       <PanelIntro eyebrow="At a glance" title="Profile overview">Everything available for this competition, without mixing Original and KO points.</PanelIntro>
       <div className={styles.overviewGrid}>
-        <OverviewAction icon="results" title="Points receipt" copy="Every awarded scoring row" value={`${view.player.totalPoints} pts`} onClick={() => onOpenTab('points')} />
         <OverviewAction icon="predict" title="Released predictions" copy="Scores available to view" value={`${view.counts.visiblePredictions}/${view.predictions.length}`} onClick={() => onOpenTab('predictions')} />
         {original && <OverviewAction icon="bracket" title="Bracket health" copy="Saved path against real life" value={view.bracketPreview ? 'Open' : 'Waiting'} onClick={() => onOpenTab('bracket')} />}
         {original && <OverviewAction icon="leagues" title="Predicted tables" copy="Group score evidence" value={`${view.predictedTables.length} groups`} onClick={() => onOpenTab('tables')} />}

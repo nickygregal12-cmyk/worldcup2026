@@ -10,6 +10,18 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.77 — Profile overview becomes the prototype scroll: the ledger inline
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, player-profile slice two. The prototype's "every point,
+accounted for" ledger renders inline on the profile overview — identity card, summary tiles, the
+evidence destinations, then the full points receipt on one scroll. The separate Points tab
+retires; deep links carrying tab=points fall back to the overview, where the ledger now lives, and
+the quick-view Points action keeps working through that fallback. The marker test follows the
+ledger. Badges, rank-journey and prediction-DNA remain data-gated follow-ups (no badge system or
+rank history exists; nothing is faked). No scoring, resolver, prediction lock, Supabase write,
+Auth, RLS, production data, package or migration change. The full repository check passes; owner
+visual review remains open.
+
 ### Version 1.76 — Player profile opens with the prototype identity card
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, player-profile slice one. The profile hub's header becomes

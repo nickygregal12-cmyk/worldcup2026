@@ -26,7 +26,6 @@ const COMPETITION_OPTIONS = [
 
 const ORIGINAL_TABS = [
   { value: 'overview', label: 'Overview' },
-  { value: 'points', label: 'Points' },
   { value: 'predictions', label: 'Predictions' },
   { value: 'bracket', label: 'Bracket health' },
   { value: 'tables', label: 'Tables' },
@@ -34,7 +33,6 @@ const ORIGINAL_TABS = [
 
 const KO_TABS = [
   { value: 'overview', label: 'Overview' },
-  { value: 'points', label: 'Points' },
   { value: 'predictions', label: 'Predictions' },
 ]
 
@@ -184,20 +182,23 @@ export default function PlayerView({
       <StatusBar tone={view.release.state === 'released' ? 'safe' : 'info'} title={view.release.title}>{view.release.copy}</StatusBar>
       <PlayerSectionNav activeTab={activeTab} options={tabOptions} onChange={setActiveTab} />
 
-      {activeTab === 'overview' && <OverviewPanel view={view} canCompare={canCompare} onOpenTab={setActiveTab} />}
+      {activeTab === 'overview' && (
+        <>
+          <OverviewPanel view={view} canCompare={canCompare} onOpenTab={setActiveTab} />
+          {/* The prototype's "every point, accounted for" ledger, inline on the profile. */}
+          <PlayerInsight
+            title={isSelf ? 'Your points receipt' : `${view.player.displayName}'s points receipt`}
+            section={viewedInsightSection(comparison, currentUserId)}
+            leaderboardRows={standingsRows}
+            player={{ ...view.player, isCurrentUser: isSelf }}
+            competitionKey={competitionKey}
+            lifecycle={lifecycle}
+          />
+        </>
+      )}
       {activeTab === 'predictions' && <PredictionsPanel view={view} />}
       {activeTab === 'bracket' && <BracketPanel view={view} healthState={snapshotState} reference={reference} />}
       {activeTab === 'tables' && <TablesPanel view={view} />}
-      {activeTab === 'points' && (
-        <PlayerInsight
-          title={isSelf ? 'Your points receipt' : `${view.player.displayName}'s points receipt`}
-          section={viewedInsightSection(comparison, currentUserId)}
-          leaderboardRows={standingsRows}
-          player={{ ...view.player, isCurrentUser: isSelf }}
-          competitionKey={competitionKey}
-          lifecycle={lifecycle}
-        />
-      )}
       {activeTab === 'headToHead' && (
         <PlayerHeadToHead
           state={comparison}

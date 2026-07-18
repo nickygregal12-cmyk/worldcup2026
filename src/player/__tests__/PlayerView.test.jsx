@@ -69,7 +69,7 @@ describe('PlayerView component markers', () => {
     const html = renderToStaticMarkup(createElement(PlayerView, props))
 
     expect(html).toContain('Profile overview')
-    expect(html).toContain('Points receipt')
+    expect(html).toContain('points receipt')
     expect(html).toContain('Bracket health')
     expect(html).toContain('Predicted tables')
   })
