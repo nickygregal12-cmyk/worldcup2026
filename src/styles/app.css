@@ -97,37 +97,13 @@ a {
   flex-direction: column;
 }
 
-.app-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  min-height: var(--header-height);
-  background: var(--surface-header);
-  border-bottom: 1px solid color-mix(in srgb, var(--border-default) 80%, transparent);
-  backdrop-filter: blur(18px) saturate(150%);
-}
-
-.app-header__inner,
+/* The masthead (header, brand, desktop nav, header actions) lives in
+   src/app/Masthead.module.css — the navy broadcast chrome, consolidated 2026-07-18.
+   Only the bootstrap-screen brand mark and the shared width rule stay global. */
 .app-main,
 .app-footer {
   width: min(var(--content-max), calc(100% - 2rem));
   margin-inline: auto;
-}
-
-.app-header__inner {
-  min-height: var(--header-height);
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-}
-
-.app-brand {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-3);
-  color: var(--text-strong);
-  text-decoration: none;
 }
 
 .app-brand__mark {
@@ -135,73 +111,11 @@ a {
   aspect-ratio: 1;
   display: grid;
   place-items: center;
-  border-radius: 0.9rem;
+  border-radius: var(--radius-md);
   background: var(--gradient-brand);
   color: var(--text-on-brand);
-  box-shadow: 0 9px 24px color-mix(in srgb, var(--brand) 24%, transparent);
   font-weight: 950;
   letter-spacing: -0.08em;
-}
-
-.app-brand strong,
-.app-brand small {
-  display: block;
-}
-
-.app-brand strong {
-  font-size: 0.94rem;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-
-.app-brand small {
-  margin-top: 0.2rem;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.app-desktop-nav {
-  flex: 1 1 auto;
-  display: flex;
-  justify-content: center;
-  gap: var(--space-1);
-}
-
-.app-nav-link {
-  min-height: 2.75rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: 0.65rem 0.85rem;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-secondary);
-  font-weight: 780;
-  font-size: 0.88rem;
-  text-decoration: none;
-  transition: color 140ms ease, background 140ms ease, transform 140ms ease;
-}
-
-.app-nav-link:hover {
-  color: var(--text-strong);
-  background: var(--surface-soft);
-}
-
-.app-nav-link.is-active {
-  color: var(--brand-strong);
-  background: var(--brand-soft);
-}
-
-.app-header__actions {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .ui-icon-button {
@@ -222,42 +136,6 @@ a {
   color: var(--dp-info-ink);
   border-color: color-mix(in srgb, var(--dp-action) 45%, var(--dp-border-subtle));
   background: var(--dp-info-soft);
-}
-
-.app-account-link {
-  min-height: 2.7rem;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 0.25rem 0.7rem 0.25rem 0.3rem;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-full);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow-1);
-  color: var(--text-primary);
-  font-size: 0.82rem;
-  font-weight: 800;
-  text-decoration: none;
-}
-
-.app-account-link.is-active {
-  border-color: var(--brand);
-}
-
-.app-avatar {
-  width: 2.05rem;
-  aspect-ratio: 1;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--gradient-accent);
-  color: var(--text-on-brand);
-  font-size: 0.72rem;
-  font-weight: 900;
-}
-
-.app-more-button {
-  display: inline-grid;
 }
 
 .app-main {
@@ -541,7 +419,7 @@ a {
   min-height: 3rem;
   padding: 0.5rem 0.8rem;
   border: 0;
-  border-radius: 0.65rem;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--dp-text-muted);
   font-weight: 800;
@@ -832,32 +710,7 @@ a {
   border-color: var(--border-strong);
 }
 
-@media (max-width: 75rem) {
-  .app-header__inner {
-    gap: var(--space-3);
-  }
-
-  .app-desktop-nav .app-nav-link {
-    padding-inline: 0.62rem;
-  }
-
-  .app-account-link > span:last-child {
-    display: none;
-  }
-}
-
 @media (max-width: 56.25rem) {
-  .app-desktop-nav {
-    display: none;
-  }
-
-  .app-header__inner {
-    justify-content: space-between;
-  }
-
-  .app-more-button {
-    display: inline-grid;
-  }
   .tournament-content-grid {
     grid-template-columns: 1fr;
   }
@@ -876,38 +729,9 @@ a {
     scroll-padding-bottom: calc(var(--mobile-nav-height) + 1rem);
   }
 
-  .app-header__inner,
   .app-main,
   .app-footer {
     width: min(100% - 1.1rem, var(--content-max));
-  }
-
-  .app-brand__mark {
-    width: 2.45rem;
-    border-radius: 0.8rem;
-  }
-
-  .app-brand strong {
-    font-size: 0.84rem;
-  }
-
-  .app-brand small {
-    font-size: 0.64rem;
-  }
-
-  .app-account-link {
-    width: 2.65rem;
-    padding: 0;
-    justify-content: center;
-    border-radius: var(--radius-md);
-  }
-
-  .app-avatar {
-    width: 2rem;
-  }
-
-  .app-header__actions .app-more-button {
-    display: none;
   }
 
   .app-main {
@@ -998,17 +822,6 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
-.app-brand__mark {
-  background: var(--gradient-brand);
-  color: var(--text-on-brand);
-  box-shadow: var(--shadow-1);
-}
-
-.app-avatar {
-  background: var(--gradient-accent);
-  color: var(--text-on-brand);
-}
-
 @media (max-width: 56.25rem) {
   html {
     scroll-padding-bottom: calc(var(--mobile-nav-height) + var(--space-4));
@@ -1019,10 +832,6 @@ a {
   }
 
   .app-footer {
-    display: none;
-  }
-
-  .app-header__actions .app-more-button {
     display: none;
   }
 

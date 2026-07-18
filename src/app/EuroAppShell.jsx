@@ -4,6 +4,7 @@ import { buildNavigationDestinations } from './navigationLifecycle.js'
 import MobileNav from './MobileNav.jsx'
 import { Icon } from '../design-system/index.jsx'
 import MoreMenu from './MoreMenu.jsx'
+import masthead from './Masthead.module.css'
 
 function initials(value) {
   const words = String(value ?? '').trim().split(/\s+/).filter(Boolean)
@@ -17,7 +18,7 @@ function NavLink({ destination, route, onClick }) {
   return (
     <a
       href={destination.hash}
-      className={active ? 'app-nav-link is-active' : 'app-nav-link'}
+      className={active ? `app-nav-link is-active ${masthead.navLink} ${masthead.isActive}` : `app-nav-link ${masthead.navLink}`}
       aria-current={active ? 'page' : undefined}
       onClick={onClick}
     >
@@ -93,34 +94,36 @@ export default function EuroAppShell({ route, theme, sessionState, navigation, a
   return (
     <div className="app-shell" data-route={route} data-navigation-phase={navigation?.phase ?? 'groups_primary'}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
-      <header className="app-header">
-        <div className="app-header__inner">
-          <a href="#/" className="app-brand" aria-label="Euro 2028 Predictor home">
-            <span className="app-brand__mark" aria-hidden="true">28</span>
+      <header className={`app-header ${masthead.header}`}>
+        <div className={`app-header__inner ${masthead.inner}`}>
+          <a href="#/" className={`app-brand ${masthead.brand}`} aria-label="Euro 2028 Predictor home">
+            <span className={`app-brand__mark ${masthead.brandMark}`} aria-hidden="true">28</span>
             <span><strong>Euro 2028</strong><small>Predictor</small></span>
           </a>
 
-          <nav className="app-desktop-nav" aria-label="Main navigation">
+          <nav className={`app-desktop-nav ${masthead.desktopNav}`} aria-label="Main navigation">
             {desktopDestinations.map(item => <NavLink key={item.key} destination={item} route={route} />)}
           </nav>
 
-          <div className="app-header__actions">
+          <div className={`app-header__actions ${masthead.actions}`}>
             <button
               type="button"
-              className="ui-icon-button"
+              className={`ui-icon-button ${masthead.chromeIconButton}`}
               onClick={theme.toggleTheme}
               aria-label={`Switch to ${theme.resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
               title={`Switch to ${theme.resolvedTheme === 'dark' ? 'light' : 'dark'} mode`}
             >
               <Icon name={theme.resolvedTheme === 'dark' ? 'sun' : 'moon'} />
             </button>
-            <a href="#/account" className={route === APP_ROUTE.ACCOUNT ? 'app-account-link is-active' : 'app-account-link'} aria-label={sessionState.session ? `Account: ${displayName}` : 'Sign in or create an account'}>
-              <span className="app-avatar">{sessionState.session ? initials(displayName) : <Icon name="account" size={19} />}</span>
+            <a href="#/account" className={route === APP_ROUTE.ACCOUNT ? `app-account-link ${masthead.accountLink} ${masthead.isActive}` : `app-account-link ${masthead.accountLink}`} aria-label={sessionState.session ? `Account: ${displayName}` : 'Sign in or create an account'}>
+              <span className={`app-avatar ${masthead.avatar}`}>{sessionState.session ? initials(displayName) : <Icon name="account" size={19} />}</span>
               <span>{sessionState.session ? sessionState.profile?.display_name ?? 'Account' : 'Sign in'}</span>
             </a>
             <button
               type="button"
-              className={moreActive ? 'ui-icon-button app-more-button is-active' : 'ui-icon-button app-more-button'}
+              className={moreActive
+                ? `ui-icon-button app-more-button ${masthead.chromeIconButton} ${masthead.moreButton} ${masthead.isActive}`
+                : `ui-icon-button app-more-button ${masthead.chromeIconButton} ${masthead.moreButton}`}
               aria-label="More destinations"
               aria-expanded={moreOpen}
               aria-haspopup="dialog"

@@ -2025,3 +2025,31 @@ the assertions in the same change.
 
 No scoring, resolver, Supabase write, Auth, service-role, fake-result or migration change. Original
 Predictor and KO Predictor remain separate. Active migrations remain 21.
+
+---
+
+## Stage PROTOTYPE-PACK-CONSOLIDATION-1 — the three-prototype pack is consolidated (2026-07-18)
+
+The owner supplied `euro28-prototypes.zip` (v1-scottish-navy, v2-matchday-programme,
+v3-final-hybrid — identical functionality, three visual identities) and authorised a genuine
+re-evaluation with folder labels ignored. The consolidated ruling is recorded in
+`docs/reference-prototypes/euro28-product-experience-final.md` under "Consolidated visual
+identity — prototype-pack review, 18 July 2026", which remains the sole binding visual authority.
+
+**Ruling A — the v3 composition is confirmed on merit.** v1's navy broadcast palette is the
+certified production `--dp-*` set; v2 contributes structure (sharp geometry, ruled treatments,
+flat full-width navigation) but its palette is rejected because its brand and success colours are
+one green hex, which collapses the semantic-separation law. The masthead becomes navy chrome in
+both themes; radius tokens flatten to 2/4/6px with circles identity-exclusive; the bottom nav is
+a ruled bar with a 2px sky rule keeping the approved circular Home; the third-place table draws
+the dashed cutline below the qualifying four.
+
+**Ruling B — production constraints beat prototype styling.** Self-hosted Public Sans and Big
+Shoulders Display stand (serif/CDN display numerals rejected); the device-preference theme
+default stands; joker gold stays joker-exclusive; circular ISO-keyed badges stand over the
+prototypes' squared chips; no prototype mock data, mock scoring or mock draw content enters
+production. The pack README's scoring notes contradict `docs/RULES-SCORING-LOCKED-CONTRACT.md`
+and are recorded here as ignored — the locked contract remains the only scoring authority.
+
+No scoring, resolver, Supabase write, Auth, service-role, fake-result, package or migration
+change. Original Predictor and KO Predictor remain separate.

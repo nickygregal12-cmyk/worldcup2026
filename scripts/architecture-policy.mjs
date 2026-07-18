@@ -56,7 +56,11 @@ export const GLOBAL_STYLESHEET_CAPS = Object.freeze({
   // the §5 auto-hide transform live. The cap comes down with the file, in the same commit.
   // 1461 -> 1415 at Product Experience v3: the legacy global More-directory rules moved into
   // MoreMenu.module.css with the grouped, lifecycle-aware directory component.
-  'src/styles/app.css': 1415,
+  // 1415 -> 1224 at PROTOTYPE-PACK-CONSOLIDATION-1: the masthead (header, brand, desktop
+  // nav, header actions) moved to src/app/Masthead.module.css as the navy broadcast chrome.
+  // Only the bootstrap-screen brand mark and the shared width rule stay global. The cap
+  // comes down with the file, in the same change.
+  'src/styles/app.css': 1224,
   // 555 -> 385 at the Groups re-cut: TeamLabel, JokerControl (pill + meter) and
   // PredictionStateBadge left for their own --dp-* CSS Modules. They are shared
   // design-system primitives, not page styling, and three surfaces were reaching

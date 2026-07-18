@@ -24,4 +24,17 @@ describe('shared qualification tables', () => {
     await user.click(screen.getByRole('button', { name: 'B' }))
     expect(screen.getByRole('table', { name: 'Group B standings' })).toBeTruthy()
   })
+
+  it('draws the cutline on the first third-place row below the qualification boundary', () => {
+    const reference = buildGuestReference()
+    const snapshot = buildLiveTournamentSnapshot({ reference, resultRows: [] })
+    render(
+      <QualificationTables groupTables={snapshot.groups} bestThird={snapshot.bestThird} reference={reference} contextLabel="Live qualification" />,
+    )
+
+    const rows = [...screen.getByRole('table', { name: 'Third-place qualification standings' }).querySelectorAll('tbody tr')]
+    const cutlineRows = rows.filter(row => row.className.includes('cutline'))
+    expect(cutlineRows).toHaveLength(1)
+    expect(rows.indexOf(cutlineRows[0])).toBe(4)
+  })
 })

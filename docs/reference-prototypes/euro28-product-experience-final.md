@@ -17,6 +17,75 @@ records and server-enforced locks/privacy.
 Existing scoring, resolver, competition separation, guest, operations, database and privacy
 contracts remain unchanged.
 
+## Consolidated visual identity — prototype-pack review, 18 July 2026
+
+The owner supplied a three-prototype pack (`euro28-prototypes.zip`: `v1-scottish-navy`,
+`v2-matchday-programme`, `v3-final-hybrid` — three ~4,300-line single-file JSX prototypes with
+identical functionality and three visual identities) and authorised a genuine re-evaluation with
+folder labels ("approved", "final", "hybrid") ignored. All three were compared at token, shell,
+component and page level against the ten stated priorities (clarity, mobile usability,
+accessibility, consistency, token/architecture compatibility, action hierarchy, responsiveness,
+maintainability, performance, distinctiveness). This section records the consolidated result. It
+amends this contract's visual rulings where stated; everything it does not amend stands.
+
+### Verdict
+
+**Foundation: the v3 composition — v1's navy broadcast palette carrying v2's editorial
+structure — confirmed on merit, not by its folder name.** v1 and v3 share an identical navy
+palette that maps 1:1 onto the certified production `--dp-*` token set; v2's cream/ink/green
+palette was rejected on objective grounds (below). v2's structural contributions (sharp geometry,
+ruled treatments, flat full-width navigation) survive through v3.
+
+### Selected
+
+- **From v1 (and shared by v3):** the navy broadcast masthead — the app header becomes navy
+  chrome (`--dp-surface-chrome`) in both themes with `--dp-text-on-chrome` /
+  `--dp-text-muted-chrome` text and the sky family as the active accent; these pairings are
+  already contrast-certified in the token file. The **cutline** — the dashed qualification
+  boundary — becomes a shared motif of qualification contexts, starting with the shared six-team
+  third-place qualification table (drawn between the qualifying four and the eliminated two).
+- **From v2 (via v3):** sharp editorial geometry. The corner-radius tokens flatten to
+  `--radius-sm: 2px`, `--radius-md: 4px`, `--radius-lg: 6px`. `--radius-full` and true circles
+  are retained exclusively for identity (team badges, avatars, the mobile Home circle) and pills
+  that are already circular by ruling. The flat, full-width bottom navigation bar with a ruled
+  top edge replaces any floating-dock treatment; the rule is a 2px sky line, echoing the hero's
+  existing sky top rule.
+- **From v3 itself:** the hybrid principle — structure from the programme identity, colour from
+  the broadcast identity — and the finer ruled texture direction for hero surfaces (already
+  present as the hero hatch; retained, not multiplied).
+
+### Rejected, with reasons
+
+- **v2's palette.** Its `--brand` and `--good` are the same green hex — brand and success become
+  one colour, which breaks the semantic-separation law and accessibility priorities; adopting it
+  would also discard the WCAG-certified `--dp-*` palette and violate the standing navy/sky and
+  joker-gold rulings.
+- **v1's floating rounded nav dock and 18px geometry.** The full-width ruled bar wastes no edge
+  tap space and suits the flat identity; the soft 18px radius family belongs to the superseded
+  look.
+- **v3's serif display numerals (Fraunces), and every prototype's Google-Fonts CDN loading.**
+  Fonts remain self-hosted Public Sans + Big Shoulders Display; display numerals remain Big
+  Shoulders Display. Package additions are outside this task's authority and one display face is
+  enough.
+- **v3's square Home tile, squared identity chips and hard-offset print shadows.** Circular
+  ISO-keyed badges, the circular Home treatment and the soft elevation system are standing owner
+  rulings and read better against the sharp card geometry than a second competing shadow idiom.
+- **Prototype dark-first / light-first defaults.** Theme choice continues to follow the device
+  preference on first visit with a saved manual override.
+- **All prototype mock content, mock scoring and mock draw data** (including the pack README's
+  scoring notes, which contradict the locked scoring contract — noted for the owner; the locked
+  contract is unaffected and remains the only scoring authority).
+
+### Resulting amendments to this contract
+
+- The earlier "top bar stays compact" ruling is amended to: the top bar stays compact **and is
+  navy chrome in both themes**; theme and Account remain the global actions.
+- Card, control and chip geometry across the product follows the flattened radius tokens; no
+  page reintroduces the soft radius family.
+- Every context presenting the third-place qualification table draws the shared cutline.
+- No other section of this contract, no scoring/resolver/Auth/data rule, and no release policy
+  changes under this review.
+
 ## Product-wide rules
 
 - Preserve the existing production light and dark token palettes. The improvement is hierarchy,

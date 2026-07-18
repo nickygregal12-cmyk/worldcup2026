@@ -72,10 +72,17 @@ export function ThirdPlaceQualificationTable({ ranking = [], reference, caption 
           </tr>
         </thead>
         <tbody>
-          {ranking.map(row => {
+          {ranking.map((row, index) => {
             const qualifies = qualificationActive && Boolean(row.qualifiesAsBestThird ?? Number(row.bestThirdRank) <= 4)
+            const previous = ranking[index - 1]
+            const previousQualifies = qualificationActive && Boolean(previous && (previous.qualifiesAsBestThird ?? Number(previous.bestThirdRank) <= 4))
+            const rowClasses = [
+              qualificationActive ? (qualifies ? styles.qualifies : styles.outside) : '',
+              // The cutline: the dashed qualification boundary sits on the first row below the line.
+              !qualifies && previousQualifies ? styles.cutline : '',
+            ].filter(Boolean).join(' ')
             return (
-              <tr key={`third-${row.teamId}`} className={qualificationActive ? (qualifies ? styles.qualifies : styles.outside) : ''}>
+              <tr key={`third-${row.teamId}`} className={rowClasses}>
                 <td><strong>{qualificationActive ? row.bestThirdRank : '—'}</strong></td>
                 <th scope="row"><TeamLabel team={teamFor(reference, row)} compact /></th>
                 <td>{row.groupCode}</td>

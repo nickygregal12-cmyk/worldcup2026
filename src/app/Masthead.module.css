@@ -1,0 +1,215 @@
+/* The navy broadcast masthead — consolidated prototype-pack ruling 2026-07-18.
+   Extracted from app.css (its frozen cap comes down in the same change): the shell
+   header is component styling and belongs in a module. Chrome is opaque navy in both
+   themes via the certified --dp-surface-chrome / on-chrome / sky pairings; the legacy
+   global class names stay on the elements as inert hooks for probes and typography. */
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  min-height: var(--header-height);
+  background: var(--dp-surface-chrome);
+  border-bottom: 2px solid var(--sky);
+  color: var(--dp-text-on-chrome);
+}
+
+.inner {
+  width: min(var(--content-max), calc(100% - 2rem));
+  margin-inline: auto;
+  min-height: var(--header-height);
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.brand {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--dp-text-on-chrome);
+  text-decoration: none;
+}
+
+.header .brandMark {
+  width: 2.75rem;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--dp-text-on-chrome) 30%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--dp-text-on-chrome) 10%, transparent);
+  box-shadow: none;
+  color: var(--sky-bright);
+  font-weight: 950;
+  letter-spacing: -0.08em;
+}
+
+.brand strong,
+.brand small {
+  display: block;
+}
+
+.brand strong {
+  font-size: 0.94rem;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.brand small {
+  margin-top: 0.2rem;
+  color: var(--dp-text-muted-chrome);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.desktopNav {
+  flex: 1 1 auto;
+  display: flex;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.navLink {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 0.65rem 0.85rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--dp-text-muted-chrome);
+  font-weight: 780;
+  font-size: 0.88rem;
+  text-decoration: none;
+  transition: color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.navLink:hover {
+  color: var(--dp-text-on-chrome);
+  background: color-mix(in srgb, var(--dp-text-on-chrome) 8%, transparent);
+}
+
+.navLink.isActive {
+  color: var(--sky-bright);
+  background: color-mix(in srgb, var(--dp-text-on-chrome) 10%, transparent);
+}
+
+.actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* On-chrome variant for the shared icon button; composed with the global class. */
+.header .chromeIconButton {
+  border-color: color-mix(in srgb, var(--dp-text-on-chrome) 28%, transparent);
+  background: color-mix(in srgb, var(--dp-text-on-chrome) 8%, transparent);
+  color: var(--dp-text-on-chrome);
+  box-shadow: none;
+}
+
+.header .chromeIconButton:hover,
+.header .chromeIconButton.isActive {
+  color: var(--sky-bright);
+  border-color: color-mix(in srgb, var(--sky) 55%, transparent);
+  background: color-mix(in srgb, var(--dp-text-on-chrome) 12%, transparent);
+}
+
+.accountLink {
+  min-height: 2.7rem;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.25rem 0.7rem 0.25rem 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--dp-text-on-chrome) 28%, transparent);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--dp-text-on-chrome) 8%, transparent);
+  color: var(--dp-text-on-chrome);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.accountLink.isActive {
+  border-color: var(--sky);
+}
+
+.avatar {
+  width: 2.05rem;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gradient-accent);
+  color: var(--text-on-brand);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.moreButton {
+  display: inline-grid;
+}
+
+@media (max-width: 75rem) {
+  .inner {
+    gap: var(--space-3);
+  }
+
+  .desktopNav .navLink {
+    padding-inline: 0.62rem;
+  }
+
+  .accountLink > span:last-child {
+    display: none;
+  }
+}
+
+@media (max-width: 56.25rem) {
+  .desktopNav {
+    display: none;
+  }
+
+  .inner {
+    justify-content: space-between;
+  }
+
+  .actions .moreButton {
+    display: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  .inner {
+    width: min(100% - 1.1rem, var(--content-max));
+  }
+
+  .header .brandMark {
+    width: 2.45rem;
+  }
+
+  .brand strong {
+    font-size: 0.84rem;
+  }
+
+  .brand small {
+    font-size: 0.64rem;
+  }
+
+  .accountLink {
+    width: 2.65rem;
+    padding: 0;
+    justify-content: center;
+    border-radius: var(--radius-md);
+  }
+
+  .avatar {
+    width: 2rem;
+  }
+}

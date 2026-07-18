@@ -10,6 +10,27 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.64 — consolidated prototype-pack visual identity
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1 is implemented in the working tree and awaits owner
+phone/tablet/desktop light/dark review. The owner's three-prototype pack (v1-scottish-navy,
+v2-matchday-programme, v3-final-hybrid) was genuinely compared with folder labels ignored; the
+consolidated ruling is recorded in `euro28-product-experience-final.md` ("Consolidated visual
+identity — prototype-pack review, 18 July 2026"). Implementation is system-level: the app header
+becomes the navy broadcast masthead on the certified `--dp-surface-chrome`/on-chrome/sky pairings
+in both themes; the corner-radius tokens flatten to the sharp editorial scale (2/4/6px) with
+circles retained exclusively for identity; the mobile navigation becomes a ruled bar with a 2px
+sky top rule while keeping the approved circular Home treatment, auto-hide and safe-area
+behaviour; the shared third-place qualification table draws the dashed cutline on the first row
+below the qualification boundary, covered by a focused test; hardcoded soft corner radii across
+the live stylesheets were re-pointed at the radius tokens; and a real phone-width overflow on
+Groups (the qualification tables' minimum width escaping grid items with default min-width) was
+repaired so no route scrolls horizontally at 360px. v2's palette was rejected (its brand and
+success are one green hex; the certified navy/sky palette and joker-gold exclusivity stand);
+serif display numerals and CDN fonts were rejected (self-hosted Public Sans and Big Shoulders
+Display stand). No scoring, resolver, prediction lock, Supabase write, Auth, RLS, production
+data, package or migration change is introduced.
+
 ### Version 1.63 — phone Groups and phase-aware Results repair
 
 Stage PRODUCT-EXPERIENCE-FINAL-BATCH-1-VISUAL-REPAIR is implemented in the working tree and

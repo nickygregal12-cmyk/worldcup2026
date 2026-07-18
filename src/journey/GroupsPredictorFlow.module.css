@@ -111,6 +111,10 @@
   border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-md);
   background: var(--dp-surface-raised);
+  /* As a grid item, min-width:auto would let the qualification tables' minimum
+     width stretch the whole page sideways on phones instead of scrolling inside
+     their own wrapper. */
+  min-width: 0;
 }
 
 .tables summary {

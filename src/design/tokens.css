@@ -32,9 +32,11 @@
   --space-12: 3rem;
   --space-16: 4rem;
 
-  --radius-sm: 0.375rem;
-  --radius-md: 0.625rem;
-  --radius-lg: 1rem;
+  /* Sharp editorial geometry — consolidated prototype-pack ruling 2026-07-18.
+     --radius-full stays: circles are identity-exclusive (badges, avatars, Home). */
+  --radius-sm: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
   --radius-full: 999px;
 
   --motion-micro: 150ms;
@@ -61,7 +63,6 @@
   --surface-soft: #f7faff;
   --surface-sunken: #e6edf5;
   --surface-emphasis: #d9e7f7;
-  --surface-header: rgb(255 255 255 / 0.92);
   --surface-glass: rgb(255 255 255 / 0.82);
   --surface-inverse: #07172f;
   --surface-inverse-soft: #0d2b55;
@@ -125,7 +126,6 @@
   --surface-soft: #13243a;
   --surface-sunken: #081421;
   --surface-emphasis: #1a2f48;
-  --surface-header: rgb(9 20 34 / 0.94);
   --surface-glass: rgb(15 29 47 / 0.88);
   --surface-inverse: #dcecff;
   --surface-inverse-soft: #aacdea;

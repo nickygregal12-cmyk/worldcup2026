@@ -10,7 +10,7 @@
   min-height: 7.25rem;
   padding: 0.9rem 1rem;
   border: 1px solid var(--border-default);
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   background: var(--surface-raised);
 }
 

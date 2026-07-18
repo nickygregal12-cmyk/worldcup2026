@@ -24,9 +24,11 @@
       max(var(--space-2), env(safe-area-inset-right))
       calc(var(--space-2) + env(safe-area-inset-bottom))
       max(var(--space-2), env(safe-area-inset-left));
-    border-top: 1px solid var(--dp-border-subtle);
+    /* Ruled bar (consolidated 2026-07-18): a 2px sky top rule — the chrome accent —
+       echoing the hero's sky rule, replacing the hairline + heavy shadow. */
+    border-top: 2px solid var(--sky);
     background: var(--dp-surface-raised);
-    box-shadow: var(--shadow-2);
+    box-shadow: var(--shadow-1);
 
     /* AUTO-HIDE. The transform is on the NAV, so the aligned Home control and its
        slightly overlapping background ring are carried with it as one unit. */

@@ -2,8 +2,8 @@
 .banner span { font-size:.82rem; }
 .panel { display:grid; gap:.85rem; }
 .panel h3,.panel p { margin:0; }
-.blocked { padding:.75rem; border:1px solid var(--state-danger-border); border-radius:.75rem; background:var(--state-danger-soft); color:var(--state-danger); }
-.current { display:grid; gap:.2rem; padding:.85rem; border:1px solid var(--border-default); border-radius:.8rem; background:var(--surface-soft); }
+.blocked { padding:.75rem; border:1px solid var(--state-danger-border); border-radius:var(--radius-lg); background:var(--state-danger-soft); color:var(--state-danger); }
+.current { display:grid; gap:.2rem; padding:.85rem; border:1px solid var(--border-default); border-radius:var(--radius-lg); background:var(--surface-soft); }
 .current span,.current small { color:var(--text-secondary); }
 .formGrid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
 .formGrid label { display:grid; gap:.35rem; }

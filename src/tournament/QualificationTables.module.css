@@ -119,6 +119,11 @@
 .qualifies > :first-child { box-shadow: inset 3px 0 var(--dp-success-ink); }
 .outside { color: var(--dp-text-muted); }
 
+/* The cutline (consolidated 2026-07-18): the dashed qualification boundary drawn
+   between the qualifying four and the eliminated third-placed teams. */
+.cutline > th,
+.cutline > td { border-top: 2px dashed var(--dp-action); }
+
 .statusIn,
 .statusOut {
   display: inline-flex;
