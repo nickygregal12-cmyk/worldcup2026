@@ -27,6 +27,7 @@ import viewStyles from './GroupsPredictor.module.css'
 import flowStyles from './GroupsPredictorFlow.module.css'
 import { GROUPS_DATE_TABLES_COPY } from './predictionJourneyCopy.js'
 import useGroupsLanding from './useGroupsLanding.js'
+import { getNow } from '../lib/clock.js'
 import { GroupStandingsTable, ThirdPlaceQualificationTable } from '../tournament/QualificationTables.jsx'
 
 const GROUP_TOTAL = 36
@@ -35,6 +36,15 @@ const GROUP_TOTAL = 36
 // registry is the single source of truth and the route audit is what keeps it honest.
 const BRACKET_DESTINATION = APP_DESTINATIONS.find(destination => destination.key === APP_ROUTE.BRACKET)
 const MATCH_CENTRE_DESTINATION = APP_DESTINATIONS.find(destination => destination.key === APP_ROUTE.MATCH_CENTRE)
+
+function formatDateChip(dateValue, now) {
+  if (!dateValue) return 'TBC'
+  const day = String(dateValue).slice(0, 10)
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(now)
+  if (day === today) return 'Today'
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/London' })
+    .format(new Date(`${day}T12:00:00Z`))
+}
 
 function formatMatchDate(dateValue) {
   if (!dateValue) return 'Date to be confirmed'
@@ -135,6 +145,7 @@ export default function GroupsPredictor({
   const [replaceOpen, setReplaceOpen] = useState(false)
   const { viewMode, setViewMode, openGroup, setOpenGroup } = useGroupsLanding(reference)
   const [tablesOpen, setTablesOpen] = useState(false)
+  const [openDateKey, setOpenDateKey] = useState(null)
   const [selectedTableKey, setSelectedTableKey] = useState('A')
   const [savedTies, setSavedTies] = useState({})
   const groupProgress = useMemo(() => buildGroupProgress(reference, draft), [reference, draft])
@@ -231,6 +242,12 @@ export default function GroupsPredictor({
     )
   }
 
+  const now = getNow()
+  const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(now)
+  const openDateSection = dateSections.find(section => section.key === openDateKey)
+    ?? dateSections.find(section => String(section.date).slice(0, 10) === todayKey)
+    ?? dateSections[0]
+
   const openGroupMatches = reference.groupMatches.filter(match => match.groupCode === openGroup)
   const openGroupTable = tablesModel.groups.find(item => item.code === openGroup)?.table
 
@@ -267,6 +284,7 @@ export default function GroupsPredictor({
                 </button>
               )
             })}
+            <button type="button" className={viewStyles.railTables} onClick={() => setTablesOpen(true)}>Tables</button>
           </nav>
 
           <div className={flowStyles.cardList}>{openGroupMatches.map(renderMatchCard)}</div>
@@ -275,18 +293,27 @@ export default function GroupsPredictor({
         </>
       ) : (
         <section className={viewStyles.dateView} aria-label="Group matches by date">
-          {dateSections.map(section => (
-            <section className={viewStyles.dateSection} key={section.key}>
-              <header><strong>{section.label}</strong><span>{formatMatchDate(section.date)}</span></header>
-              <div className={flowStyles.cardList}>{section.matches.map(renderMatchCard)}</div>
+          {/* The prototype's date rail: one matchday at a time, Today named as such. */}
+          <nav className={viewStyles.groupRail} aria-label="Choose a matchday">
+            <div className={viewStyles.dateRail}>
+              {dateSections.map(section => (
+                <button type="button" key={section.key} className={section.key === openDateSection?.key ? viewStyles.selected : ''} aria-pressed={section.key === openDateSection?.key} onClick={() => setOpenDateKey(section.key)}>
+                  {formatDateChip(section.date, now)}
+                </button>
+              ))}
+            </div>
+            <button type="button" className={viewStyles.railTables} onClick={() => setTablesOpen(true)}>Tables</button>
+          </nav>
+          {openDateSection && (
+            <section className={viewStyles.dateSection} key={openDateSection.key}>
+              <header><strong>{openDateSection.label}</strong><span>{formatMatchDate(openDateSection.date)}</span></header>
+              <div className={flowStyles.cardList}>{openDateSection.matches.map(renderMatchCard)}</div>
             </section>
-          ))}
+          )}
           {/* Ties are a property of a group, not a date, but a player who never leaves
               this view must still be told their positions need setting. */}
           {ties.map(renderTiebreak)}
-          <PredictedTables table={null} groupCode={openGroup} ranking={tablesModel.bestThird.ranking} reference={reference} open={false} />
           <p className={viewStyles.sheetNote}>{GROUPS_DATE_TABLES_COPY}</p>
-          <button className={viewStyles.tablesPill} type="button" onClick={() => setTablesOpen(true)}>Tables</button>
         </section>
       )}
 

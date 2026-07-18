@@ -47,7 +47,7 @@ assertIncludes('src/journey/GroupsPredictor.module.css', [
   '.viewToggle',
   '.dateView',
   '.groupTag',
-  '.tablesPill',
+  '.railTables' /* re-pointed 2026-07-18: the floating pill became the rail Tables button, uniform in both views (full-redesign ruling) */,
   '.sheet',
   '.sheetRail',
   '.qualifies',

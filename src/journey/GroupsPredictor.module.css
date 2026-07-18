@@ -134,8 +134,8 @@
 
 .groupRail button {
   position: relative;
-  flex: 0 0 auto;
-  min-width: 2.75rem;
+  flex: 1 1 2.5rem;
+  min-width: 2.25rem;
   /* §5 48px floor: compact letter tabs, but the tap target clears 48px (was 2.5rem/40px). */
   min-height: 3rem;
   padding: 0 var(--space-3);
@@ -246,27 +246,6 @@
 /* The sticky Tables fast path. It floated alone at the bottom of By date on a glass
    blur with a brand-tinted edge — the reason that view read as unfinished. It now
    sits on DP ground, and clears the mobile nav rather than guessing its height. */
-.tablesPill {
-  position: sticky;
-  bottom: calc(var(--mobile-nav-height) + var(--space-3));
-  z-index: 7;
-  justify-self: center;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 2.75rem;
-  padding: 0 var(--space-5);
-  border: 1px solid var(--dp-border-strong);
-  border-radius: var(--radius-full);
-  background: var(--dp-surface-raised);
-  color: var(--dp-text-strong);
-  box-shadow: var(--shadow-2);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* ===== predicted-tables sheet ===== */
 
 .sheetVeil {
   position: fixed;
@@ -390,4 +369,21 @@
     border-bottom-right-radius: 0;
     border-bottom-left-radius: 0;
   }
+}
+
+/* The prototype's date rail (scrollable matchday chips) and the Tables affordance,
+   which ends the rail in BOTH views — the uniform dock. */
+.dateRail { display: flex; gap: var(--space-2); flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.dateRail::-webkit-scrollbar { display: none; }
+
+.dateRail button,
+.railTables {
+  flex: none;
+  min-height: 3rem;
+  padding: 0 var(--space-3);
+  font-size: var(--text-xs);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }

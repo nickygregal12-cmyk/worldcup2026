@@ -10,6 +10,17 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.72 — Groups By-date takes the prototype date rail; uniform Tables; reading column
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups dock slice. By date becomes the prototype's rail of
+matchday chips — sim-clock-aware "Today" when applicable — showing one matchday at a time instead
+of every day stacked. The Tables affordance is uniform in both views: one button ending the rail
+row, replacing the floating pill that overlapped cards (its audit pin re-pointed, tightened). The
+whole Groups page sits in the prototype's ~45rem reading column so wide phones no longer stretch
+the cards apart. The A–F chips share the row so the rail fits at 360px. No scoring, resolver,
+prediction lock, Supabase write, Auth, RLS, production data, package or migration change. The full
+repository check passes; owner visual review remains open.
+
 ### Version 1.71 — Groups drops the workspace hero for the prototype's quiet strip
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups chrome slice. The navy "Group scores workspace"

@@ -106,11 +106,8 @@
   background: var(--state-warning-soft);
 }
 
-.groups-predictor {
-  display: grid;
-  gap: var(--space-4);
-  min-height: 2.75rem;
-}
+/* The prototype's reading column: Groups never sprawls wider than ~45rem. */
+.groups-predictor { display: grid; gap: var(--space-4); min-height: 2.75rem; width: min(100%, 45rem); margin-inline: auto; }
 
 /* The card frame, header and footer live in match-card.css, shared with the
    matchday hubs. What remains here is specific to a score-entry card. */
