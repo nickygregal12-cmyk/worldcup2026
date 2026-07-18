@@ -269,6 +269,17 @@ export default function GroupsPredictor({
         </div>
       </section>
 
+      <details className={viewStyles.helperDisclosure}>
+        <summary><strong>Lucky Dip</strong><span>Need a starting point?</span></summary>
+        <div className={actionStyles.actions} aria-label="Lucky Dip group score helper">
+          <div><p>Generate realistic group scores locally. Lucky Dip never uses odds and never changes your jokers.</p></div>
+          <div className={actionStyles.buttons}>
+            <Button variant="secondary" onClick={() => onLuckyDip(EURO_LUCKY_DIP_MODE.EMPTY)} disabled={luckyDipDisabled}>Fill empty scores</Button>
+            <Button variant="secondary" onClick={() => setReplaceOpen(true)} disabled={luckyDipDisabled}>Replace all scores</Button>
+          </div>
+        </div>
+      </details>
+
       {!isDateView ? (
         <>
           <nav className={viewStyles.groupRail} aria-label="Choose a group">
@@ -319,27 +330,7 @@ export default function GroupsPredictor({
 
       <GroupsTablesSheet model={tablesModel} reference={reference} open={tablesOpen} selectedKey={selectedTableKey} onSelect={setSelectedTableKey} onClose={() => setTablesOpen(false)} />
 
-      {/* Groups is a step, not a destination: the tables you just built ARE the seeding.
-          The bracket is named in full — "bracket" alone would be ambiguous between this
-          one and the KO Predictor's, and §4 keeps those two strictly apart. */}
-      <a className={flowStyles.flowCta} href={BRACKET_DESTINATION.hash}>
-        <span>
-          <span className={flowStyles.title}>Continue to your Original Bracket</span>
-          <span className={flowStyles.sub}>Your Group A–F tables feed the Round of 16</span>
-        </span>
-        <span className={flowStyles.arrow} aria-hidden="true"><Icon name="chevron" size={20} /></span>
-      </a>
 
-      <details className={viewStyles.helperDisclosure}>
-        <summary><strong>Lucky Dip</strong><span>Need a starting point?</span></summary>
-        <div className={actionStyles.actions} aria-label="Lucky Dip group score helper">
-          <div><p>Generate realistic group scores locally. Lucky Dip never uses odds and never changes your jokers.</p></div>
-          <div className={actionStyles.buttons}>
-            <Button variant="secondary" onClick={() => onLuckyDip(EURO_LUCKY_DIP_MODE.EMPTY)} disabled={luckyDipDisabled}>Fill empty scores</Button>
-            <Button variant="secondary" onClick={() => setReplaceOpen(true)} disabled={luckyDipDisabled}>Replace all scores</Button>
-          </div>
-        </div>
-      </details>
 
       <Dialog open={replaceOpen} title="Replace every group score?" onClose={() => setReplaceOpen(false)}>
         <div className={actionStyles.dialog}>
@@ -351,11 +342,21 @@ export default function GroupsPredictor({
         </div>
       </Dialog>
 
+      {/* One next step, not three: the bracket is the flow's destination ("bracket"
+          in full — §4 keeps Original and KO strictly apart), with Review progress as
+          the quiet secondary in the same block. */}
       <section className={flowStyles.nextStep}>
         <div>
           <h3>{summary.groupComplete === GROUP_TOTAL ? 'Your group predictions are complete' : `${GROUP_TOTAL - summary.groupComplete} group scores left`}</h3>
           <p>{summary.groupComplete === GROUP_TOTAL ? 'Your group tables are ready for the bracket.' : 'You can leave and return at any time. Completed scores stay saved.'}</p>
         </div>
+        <a className={flowStyles.flowCta} href={BRACKET_DESTINATION.hash}>
+          <span>
+            <span className={flowStyles.title}>Continue to your Original Bracket</span>
+            <span className={flowStyles.sub}>Your Group A–F tables feed the Round of 16</span>
+          </span>
+          <span className={flowStyles.arrow} aria-hidden="true"><Icon name="chevron" size={20} /></span>
+        </a>
         <Button variant="secondary" icon="check" onClick={onOpenReview}>Review progress</Button>
       </section>
     </div>

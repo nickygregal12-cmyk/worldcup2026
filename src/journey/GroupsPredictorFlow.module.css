@@ -257,16 +257,18 @@
 
 /* The secondary way on: Review. It stays a quiet, bordered action so the bracket
    remains the obvious next step and the two do not compete. */
+/* One tidy block: heading and copy, the bracket CTA, then Review progress quiet below. */
 .nextStep {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
+  display: grid;
+  gap: var(--space-3);
   padding: var(--space-4);
   border: 1px solid var(--dp-border-subtle);
   border-radius: var(--radius-md);
   background: var(--dp-surface-raised);
+}
+
+.nextStep .flowCta {
+  margin: 0;
 }
 
 .nextStep h3 {

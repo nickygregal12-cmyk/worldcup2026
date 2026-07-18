@@ -10,6 +10,15 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.74 — Groups flow order: Lucky Dip first, one next-step block
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups flow slice. Lucky Dip moves above the match cards —
+a starting-point helper belongs before the scores, not after them. The two stacked bottom CTAs
+merge into one tidy next-step block: the completion heading and copy, the single Continue to your
+Original Bracket action, and Review progress as the quiet secondary inside the same card. No
+scoring, resolver, prediction lock, Supabase write, Auth, RLS, production data, package or
+migration change. The full repository check passes; owner visual review remains open.
+
 ### Version 1.73 — Groups owner-review corrections: flanked band, uniform Tables, no workspace title
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, Groups correction slice. The prototype's flanked band —
