@@ -6,6 +6,7 @@ import AdminFixtureOperations from './AdminFixtureOperations.jsx'
 import AdminMatchOperations from './AdminMatchOperations.jsx'
 import AdminReadiness from './AdminReadiness.jsx'
 import AdminScoringRecovery from './AdminScoringRecovery.jsx'
+import AdminSimulator from './AdminSimulator.jsx'
 import AdminTeamProfiles from './AdminTeamProfiles.jsx'
 import AdminTournamentPicks from './AdminTournamentPicks.jsx'
 import styles from './AdminControlRoom.module.css'
@@ -158,6 +159,14 @@ export default function AdminOperations({ client, reference, hash = '#/admin' })
         <div data-admin-section="time">
           <AdminTimePhaseSection client={client} tournamentId={reference.tournamentId} adminRole={data.access.adminRole} timeState={timeState} onChanged={timeState.refresh} sectionClass={styles.section} headerClass={styles.sectionHeader} />
         </div>
+      )
+    }
+    if (activeSection === ADMIN_SECTION.SIMULATOR) {
+      return (
+        <section className={styles.section} id="admin-simulator" aria-labelledby="admin-simulator-heading" data-admin-section="simulator">
+          <div className={styles.sectionHeader}><div><h3 id="admin-simulator-heading">Tournament simulator</h3><p>Scrub the timeline, script group-match scores and seed or tear down the synthetic world through the audited scenario-runner operations.</p></div></div>
+          <AdminSimulator client={client} tournamentId={reference.tournamentId} adminRole={data.access.adminRole} matches={matches} runAction={runAction} onClockChanged={timeState.refresh} />
+        </section>
       )
     }
     if (activeSection === ADMIN_SECTION.PROFILES) {
