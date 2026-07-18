@@ -10,6 +10,17 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.80 — Match Centre opens with the prototype match hero
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, Match Centre slice one. The fixture hero becomes the
+prototype's match card: the stage/match/moment/venue line above, stacked team identities either
+side, the big display score in the centre with the state chip beneath it, on the pitch-striped
+surface. The redundant "Live/Full-time Match Centre" page title retires — the score is the story.
+Result detail and correction notices keep their fail-loud line beneath. Everything else on the
+page (impact, projections, comparisons, navigation) stands. No scoring, resolver, prediction lock,
+Supabase write, Auth, RLS, production data, package or migration change. The full repository check
+passes; owner visual review remains open.
+
 ### Version 1.79 — Easy wins from existing data: the H2H points-race chart and prediction DNA
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, data-visual slice (owner direction: use the data already in

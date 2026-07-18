@@ -32,25 +32,32 @@ function FixtureLink({ fixture, direction, competitionKey, leagueId }) {
   )
 }
 
+// The prototype's match hero (full-redesign 2026-07-18): stacked identities either
+// side of the big score, the state pill beneath it, the moment and place above.
+// The page-title h2 retired — the score is the story.
 function FixtureHero({ fixture }) {
   const tone = fixture.state === 'live' ? 'danger' : fixture.state === 'completed' ? 'safe' : 'info'
   return (
     <Card className={styles.hero} as="article">
-      <div className={styles.heroHeading}>
-        <div><span className="page-eyebrow">{fixture.stageLabel} · Match {fixture.matchNumber}</span><h2>{fixture.state === 'live' ? 'Live Match Centre' : fixture.state === 'completed' ? 'Full-time Match Centre' : 'Fixture Match Centre'}</h2></div>
-        <Badge tone={tone}>{fixture.state.replaceAll('_', ' ')}</Badge>
+      <div className={styles.meta}>
+        <span className="page-eyebrow">{fixture.stageLabel} · Match {fixture.matchNumber}</span>
+        <span>{formatKickoffDateTime(fixture.kickoffAt ?? fixture.scheduledDate, 'Kick-off time to be confirmed')}</span>
+        {fixture.venueLabel && <span>· {fixture.venueLabel}</span>}
       </div>
       <div className={styles.teams}>
-        <TeamLabel team={fixture.home} label={fixture.home.label} isoCode={fixture.home.isoCode} unresolved={fixture.home.unresolved} />
-        <strong className={styles.score}>{fixture.score ?? 'v'}</strong>
-        <TeamLabel team={fixture.away} label={fixture.away.label} isoCode={fixture.away.isoCode} unresolved={fixture.away.unresolved} />
+        <TeamLabel team={fixture.home} label={fixture.home.label} isoCode={fixture.home.isoCode} unresolved={fixture.home.unresolved} stacked />
+        <div className={styles.scoreBlock}>
+          <strong className={styles.score}>{fixture.score ?? 'v'}</strong>
+          <Badge tone={tone}>{fixture.state.replaceAll('_', ' ')}</Badge>
+        </div>
+        <TeamLabel team={fixture.away} label={fixture.away.label} isoCode={fixture.away.isoCode} unresolved={fixture.away.unresolved} stacked />
       </div>
-      <div className={styles.meta}>
-        <span>{formatKickoffDateTime(fixture.kickoffAt ?? fixture.scheduledDate, 'Kick-off time to be confirmed')}</span>
-        {fixture.venueLabel && <span>{fixture.venueLabel}</span>}
-        {fixture.resultDetail && <span>{fixture.resultDetail}</span>}
-        {fixture.corrected && <span>Corrected result · revision {fixture.resultRevision}</span>}
-      </div>
+      {(fixture.resultDetail || fixture.corrected) && (
+        <div className={styles.meta}>
+          {fixture.resultDetail && <span>{fixture.resultDetail}</span>}
+          {fixture.corrected && <span>Corrected result · revision {fixture.resultRevision}</span>}
+        </div>
+      )}
     </Card>
   )
 }
