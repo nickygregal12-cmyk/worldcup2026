@@ -10,6 +10,19 @@ Stage STAGE-PLAYER-FACING-COPY-SWEEP-2 is accepted as a broad copy/audit repair.
 
 # EURO 2028 PREDICTOR
 ## Functional Completion Ledger
+### Version 1.79 — Easy wins from existing data: the H2H points-race chart and prediction DNA
+
+Stage PROTOTYPE-PACK-CONSOLIDATION-1, data-visual slice (owner direction: use the data already in
+hand). H2H gains the prototype's cumulative points-race chart, drawn as a token-coloured SVG from
+the same per-match award rows the decisive-matches list already uses — you against them, match by
+match, with an accessible summary label; it appears whenever two or more scored matches exist, and
+the model's race series is unit-tested. The profile overview gains the prototype's prediction-DNA
+strip, computed entirely from released group scores on the page: home-win/draw/away-win shares,
+goals a game and the most-called scoreline, with model tests. No new reads, no fan-out, nothing
+faked. Predicted-standings graphs need a resolver pass per player and remain a recorded follow-up.
+No scoring, resolver, prediction lock, Supabase write, Auth, RLS, production data, package or
+migration change. The full repository check passes; owner visual review remains open.
+
 ### Version 1.78 — H2H opens with the prototype versus card
 
 Stage PROTOTYPE-PACK-CONSOLIDATION-1, H2H slice. The head-to-head scoreboard becomes the

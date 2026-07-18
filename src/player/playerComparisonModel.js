@@ -206,6 +206,26 @@ function decisiveMatchRows(current, other) {
     .slice(0, 4))
 }
 
+// The cumulative points race, match by match — built from the same per-match award
+// rows the decisive-matches list uses. Existing data only; no new reads.
+function raceSeries(current, other) {
+  const currentByMatch = new Map(current.matchRows.map(row => [row.matchNumber, row]))
+  const otherByMatch = new Map(other.matchRows.map(row => [row.matchNumber, row]))
+  const matchNumbers = [...new Set([...currentByMatch.keys(), ...otherByMatch.keys()])].sort((a, b) => a - b)
+  let mine = 0
+  let theirs = 0
+  return freezeRows(matchNumbers.map(matchNumber => {
+    mine += Number(currentByMatch.get(matchNumber)?.totalPoints ?? 0)
+    theirs += Number(otherByMatch.get(matchNumber)?.totalPoints ?? 0)
+    return {
+      matchNumber,
+      stageLabel: currentByMatch.get(matchNumber)?.stageLabel ?? otherByMatch.get(matchNumber)?.stageLabel ?? 'Match',
+      current: mine,
+      other: theirs,
+    }
+  }))
+}
+
 export function buildHeadToHeadStory({
   currentSection,
   otherSection,
@@ -245,6 +265,7 @@ export function buildHeadToHeadStory({
     headline,
     sources: sourceRows(current, other, competitionKey),
     decisiveMatches: decisiveMatchRows(current, other),
+    race: raceSeries(current, other),
     currentInsight: current,
     otherInsight: other,
   })

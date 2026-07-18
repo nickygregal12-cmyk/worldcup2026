@@ -95,5 +95,8 @@ describe('aligned player comparison', () => {
     expect(story).toMatchObject({ currentPoints: 10, otherPoints: 5, margin: 5, headline: 'Nicky leads by 5' })
     expect(story.sources).toContainEqual(expect.objectContaining({ key: 'exactScore', current: 10, other: 5 }))
     expect(story.decisiveMatches[0]).toMatchObject({ matchNumber: 1, swing: 5 })
+    // The cumulative race series carries both players' running totals per scored match.
+    expect(story.race).toHaveLength(1)
+    expect(story.race[0]).toMatchObject({ matchNumber: 1, current: 10, other: 5 })
   })
 })

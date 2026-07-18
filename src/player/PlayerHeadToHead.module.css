@@ -320,3 +320,59 @@
   .scorePlayer { padding: var(--space-2); }
   .scorePlayer > strong { font-size: 2.4rem; }
 }
+
+/* The points-race chart — token colours only. You = action ink; them = locked neutral. */
+.raceChart {
+  width: 100%;
+  display: block;
+}
+
+.raceGrid {
+  stroke: var(--dp-border-subtle);
+  stroke-width: 1;
+}
+
+.raceAxis {
+  fill: var(--dp-text-muted);
+  font-size: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.raceCurrent {
+  fill: none;
+  stroke: var(--dp-action-ink);
+  stroke-width: 2.4;
+  stroke-linejoin: round;
+}
+
+.raceOther {
+  fill: none;
+  stroke: var(--dp-locked);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.raceLegend {
+  display: flex;
+  gap: var(--space-3);
+  color: var(--dp-text-muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.raceLegend span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.raceLegend i {
+  width: 0.75rem;
+  height: 3px;
+  border-radius: var(--radius-sm);
+  background: var(--dp-locked);
+}
+
+.raceLegend i[data-line='current'] {
+  background: var(--dp-action-ink);
+}

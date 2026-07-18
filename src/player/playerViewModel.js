@@ -66,6 +66,37 @@ function buildBracketRows(journey) {
   })))
 }
 
+// Prediction DNA — the prototype's style card, computed entirely from released
+// group scores already on the page. Nothing new is fetched.
+export function buildPredictionDna(predictionRows) {
+  const scores = predictionRows
+    .filter(row => row.visibility === 'visible' && row.stageLabel?.startsWith?.('Group ') && typeof row.score === 'string')
+    .map(row => row.score.split('–').map(Number))
+    .filter(pair => pair.length === 2 && pair.every(Number.isFinite))
+  if (scores.length === 0) return null
+
+  const counts = { home: 0, draw: 0, away: 0 }
+  const byLine = new Map()
+  let goals = 0
+  for (const [home, away] of scores) {
+    counts[home > away ? 'home' : home < away ? 'away' : 'draw'] += 1
+    goals += home + away
+    const line = `${home}–${away}`
+    byLine.set(line, (byLine.get(line) ?? 0) + 1)
+  }
+  const [topScoreline] = [...byLine.entries()].sort((left, right) => right[1] - left[1] || (left[0] < right[0] ? -1 : 1))
+  const percent = value => Math.round((value / scores.length) * 100)
+
+  return Object.freeze({
+    sampleSize: scores.length,
+    homeWinsPercent: percent(counts.home),
+    drawsPercent: percent(counts.draw),
+    awayWinsPercent: percent(counts.away),
+    averageGoals: (goals / scores.length).toFixed(1),
+    topScoreline: topScoreline[0],
+  })
+}
+
 function buildPredictedTables(journey) {
   const groupRows = journey.matches.filter(row => row.stageLabel?.startsWith?.('Group '))
   const groups = new Map()
@@ -199,6 +230,7 @@ export function buildPlayerView({
     release: buildPrivacyState({ journey, competitionKey, lifecycle, isSelf }),
     tabs: Object.freeze(['overview', 'points', 'predictions', 'bracket', 'tables']),
     predictions: predictionRows,
+    dna: buildPredictionDna(predictionRows),
     bracket: bracketRows,
     bracketSummary: buildBracketSummary(bracketRows),
     bracketPreview,

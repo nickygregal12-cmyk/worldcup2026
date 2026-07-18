@@ -89,6 +89,15 @@ export function OverviewPanel({ view, canCompare, onOpenTab }) {
   return (
     <Card className={styles.panel} as="section">
       <PanelIntro eyebrow="At a glance" title="Profile overview">Everything available for this competition, without mixing Original and KO points.</PanelIntro>
+      {view.dna && (
+        <div className={styles.dna} aria-label="Prediction style, from released picks">
+          <div><strong>{view.dna.homeWinsPercent}%</strong><span>Home wins</span></div>
+          <div><strong>{view.dna.drawsPercent}%</strong><span>Draws</span></div>
+          <div><strong>{view.dna.awayWinsPercent}%</strong><span>Away wins</span></div>
+          <div><strong>{view.dna.averageGoals}</strong><span>Goals a game</span></div>
+          <div><strong>{view.dna.topScoreline}</strong><span>Most called</span></div>
+        </div>
+      )}
       <div className={styles.overviewGrid}>
         <OverviewAction icon="predict" title="Released predictions" copy="Scores available to view" value={`${view.counts.visiblePredictions}/${view.predictions.length}`} onClick={() => onOpenTab('predictions')} />
         {original && <OverviewAction icon="bracket" title="Bracket health" copy="Saved path against real life" value={view.bracketPreview ? 'Open' : 'Waiting'} onClick={() => onOpenTab('bracket')} />}

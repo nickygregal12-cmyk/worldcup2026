@@ -289,3 +289,42 @@
   .overviewAction > svg { grid-column: 3; grid-row: 1 / span 2; }
   .summaryStrip { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Prediction DNA — the prototype's style strip, from released picks only. */
+.dna {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.dna div {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+  border: 1px solid var(--dp-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--dp-surface-raised);
+  text-align: center;
+}
+
+.dna strong {
+  color: var(--dp-text-strong);
+  font: 800 var(--text-lg)/1 var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.dna span {
+  overflow: hidden;
+  color: var(--dp-text-muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 560px) {
+  .dna { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

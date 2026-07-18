@@ -69,6 +69,44 @@ function Scoreboard({ currentPlayer, otherPlayer, story }) {
   )
 }
 
+/* The prototype's points-race chart: cumulative totals per scored match, you against
+   them, drawn from the story's race series. Tokens only; no raw colour. */
+function PointsRaceChart({ story, currentPlayer, otherPlayer }) {
+  const race = story.race ?? []
+  if (race.length < 2) return null
+  const W = 340
+  const H = 140
+  const padL = 28
+  const padR = 12
+  const padT = 12
+  const padB = 20
+  const maxY = Math.max(5, ...race.map(point => Math.max(point.current, point.other)))
+  const x = index => padL + (index / (race.length - 1)) * (W - padL - padR)
+  const y = value => padT + (1 - value / maxY) * (H - padT - padB)
+  const path = key => race.map((point, index) => `${index === 0 ? 'M' : 'L'}${x(index).toFixed(1)},${y(point[key]).toFixed(1)}`).join(' ')
+  return (
+    <section className={styles.storySection} aria-labelledby="h2h-race-heading">
+      <div className={styles.storyHeading}>
+        <div><span>Match by match</span><h4 id="h2h-race-heading">Points race</h4></div>
+        <span className={styles.raceLegend}>
+          <span><i data-line="current" />{currentPlayer.isCurrentUser ? 'You' : currentPlayer.displayName}</span>
+          <span><i data-line="other" />{otherPlayer.displayName}</span>
+        </span>
+      </div>
+      <svg viewBox={`0 0 ${W} ${H}`} className={styles.raceChart} role="img" aria-label={`Cumulative points after each scored match: ${currentPlayer.displayName} ${race[race.length - 1].current}, ${otherPlayer.displayName} ${race[race.length - 1].other}`}>
+        {[0, 0.5, 1].map(fraction => (
+          <g key={fraction}>
+            <line x1={padL} x2={W - padR} y1={y(maxY * fraction)} y2={y(maxY * fraction)} className={styles.raceGrid} strokeDasharray={fraction === 0 ? undefined : '3 4'} />
+            <text x={padL - 5} y={y(maxY * fraction) + 3} textAnchor="end" className={styles.raceAxis}>{Math.round(maxY * fraction)}</text>
+          </g>
+        ))}
+        <path d={path('other')} className={styles.raceOther} />
+        <path d={path('current')} className={styles.raceCurrent} />
+      </svg>
+    </section>
+  )
+}
+
 function SourceComparison({ story }) {
   if (story.sources.length === 0) return null
   return (
@@ -171,6 +209,7 @@ export default function PlayerHeadToHead({ state, reference, liveSnapshot = null
       {state.status === 'error' && <p className={`${styles.state} ${styles.stateError}`.trim()} role="alert">{state.error}</p>}
       {state.status === 'ready' && <p className={`${styles.state} ${styles.lifecycleNote}`.trim()}><strong>{lifecycleNote.label}</strong><span>{lifecycleNote.copy}</span></p>}
       {story && <Scoreboard currentPlayer={currentPlayer} otherPlayer={otherPlayer} story={story} />}
+      {story && <PointsRaceChart story={story} currentPlayer={currentPlayer} otherPlayer={otherPlayer} />}
       {story && <SourceComparison story={story} />}
       {story && <DecisiveMatches story={story} competitionKey={state.competitionKey} />}
       {comparison && <p className={styles.state}>{comparison.release.copy}</p>}

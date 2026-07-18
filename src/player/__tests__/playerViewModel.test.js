@@ -157,3 +157,28 @@ describe('player view model', () => {
     expect(view.predictedTables).toHaveLength(0)
   })
 })
+
+describe('prediction DNA', () => {
+  it('computes style shares, goals and the most-called line from released group scores', async () => {
+    const { buildPredictionDna } = await import('../playerViewModel.js')
+    const dna = buildPredictionDna([
+      { visibility: 'visible', stageLabel: 'Group A', score: '2–1' },
+      { visibility: 'visible', stageLabel: 'Group A', score: '2–1' },
+      { visibility: 'visible', stageLabel: 'Group B', score: '0–0' },
+      { visibility: 'visible', stageLabel: 'Group B', score: '0–2' },
+      { visibility: 'private', stageLabel: 'Group C', score: null },
+      { visibility: 'visible', stageLabel: 'Round of 16', score: '1–0' },
+    ])
+    expect(dna.sampleSize).toBe(4)
+    expect(dna.homeWinsPercent).toBe(50)
+    expect(dna.drawsPercent).toBe(25)
+    expect(dna.awayWinsPercent).toBe(25)
+    expect(dna.averageGoals).toBe('2.0')
+    expect(dna.topScoreline).toBe('2–1')
+  })
+
+  it('returns null with no released group scores', async () => {
+    const { buildPredictionDna } = await import('../playerViewModel.js')
+    expect(buildPredictionDna([{ visibility: 'private', stageLabel: 'Group A', score: null }])).toBeNull()
+  })
+})
