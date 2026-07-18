@@ -2053,3 +2053,29 @@ and are recorded here as ignored — the locked contract remains the only scorin
 
 No scoring, resolver, Supabase write, Auth, service-role, fake-result, package or migration
 change. Original Predictor and KO Predictor remain separate.
+
+---
+
+## Stage GODMODE-1 — Admin Tournament Simulator (owner-approved 2026-07-18)
+
+The owner approves building the in-app "god mode" simulator as its own high-care stage: a
+Simulator section in the Admin Control Room that drives the existing scenario-runner operations —
+timeline scrubbing to any tournament instant, per-match score scripting on top of the
+deterministic defaults, one-tap synthetic world seed/teardown — so leaderboards, leagues, Home,
+H2H and Match Centre can be exercised in-app under simulated inputs, all fail-loud labelled by the
+existing simulated-time banner.
+
+**Scope and safety, binding on the executing session:**
+- Reuse `private.euro28_record_match_result`, the real resolver and
+  `private.euro28_recalculate_points` untouched. No scoring or resolver logic changes.
+- New admin-only database functions and a migration are authorised for this purpose alone. Verify
+  local and Euro staging migration alignment before authoring SQL (Top Scorer/Stage 17A rule).
+- Staging writes take a fresh verified backup first, every time (CLAUDE.md §2).
+- Simulated results must never become official records (SIMULATION-SAFETY-GUIDELINES); the
+  simulator remains admin-only behind the existing admin auth and invisibility rules.
+- The stage also closes the sim-clock coverage gap: every lock/countdown surface reads the
+  simulated clock when it is active.
+- WC26 production remains permanently out of scope.
+
+Original Predictor and KO Predictor remain separate. Active migrations remain 21 until this
+stage's migration lands.
