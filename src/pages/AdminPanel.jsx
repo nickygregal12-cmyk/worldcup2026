@@ -755,7 +755,7 @@ export default function AdminPanel() {
     setAwardSaving(prev => ({ ...prev, [awardType]: true }))
     try {
       const { error: saveError } = await supabase.from('award_results').upsert(
-        { award_type: awardType, winner_name: winner, points_value: parseInt(pts) },
+        { award_type: awardType, winner_name: winner, finalized: true, updated_at: new Date().toISOString() },
         { onConflict: 'award_type' }
       )
       if (saveError) throw new Error(`Result was not saved: ${saveError.message}`)
