@@ -84,7 +84,7 @@ export default function HeadToHead() {
         .select('user_id, award_type, predicted_player_name')
         .in('user_id', [meId, themId]),
       supabase.from('award_results')
-        .select('award_type, winner_name, points_value'),
+        .select('award_type, winner_name'),
       supabase.from('tournament_predictions')
         .select('user_id, prediction_type, int_value')
         .in('user_id', [meId, themId])
